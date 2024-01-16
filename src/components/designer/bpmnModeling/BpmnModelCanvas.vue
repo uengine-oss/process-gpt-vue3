@@ -2425,7 +2425,7 @@
         .tools {
             position: absolute;
             width: 48px;
-            left: 300px;
+            left: 30px;
             top: 20px;
             padding: 4px;
             overflow: hidden;
