@@ -7,20 +7,54 @@ const MainRoutes = {
     component: () => import('@/layouts/full/FullLayout.vue'),
     children: [
         {
-            name: 'dashboard',
-            path: '/dashboard1',
+            name: 'Todolist',
+            path: '/todolist',
+            component: () => import('@/views/tables/Todolist.vue'),
+        },
+        {
+            name: 'Calendar',
+            path: '/calendar',
+            component: () => import('@/views/apps/calendar/Calendar.vue')
+        },
+        {
+            name: 'Chats',
+            path: '/chats',
+            component: () => import('@/views/apps/chat/Chats.vue')
+        },
+
+        {
+            name: 'Instance Chat',
+            path: '/instances/chat',
+            component: () => import('@/views/apps/chat/Chats.vue')
+        },
+        {
+            name: 'instances',
+            path: '/instances/:id',
+            component: () => import('@/views/apps/chat/Chats.vue')
+        },
+        
+        {
+            name: 'organization',
+            path: '/organization',
             component: () => import('@/views/dashboard/dashboard1.vue'),
         },
+        {
+            name: 'Definition Chat',
+            path: '/definitions/chat',
+            component: () => import('@/views/dashboard/dashboard1.vue'),
+        },
+        {
+            name: 'definitions',
+            path: '/definitions/:id',
+            component: () => import('@/views/dashboard/dashboard1.vue'),
+        },
+        
         {
             name: 'dashboard 2',
             path: '/dashboard2',
             component: () => import('@/views/dashboard/dashboard2.vue'),
         },
-        {
-            name: 'Chats',
-            path: '/apps/chats',
-            component: () => import('@/views/apps/chat/Chats.vue')
-        },
+        
         {
             name: 'ChatBase',
             path: '/apps/chat-base',

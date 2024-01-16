@@ -8,8 +8,6 @@ import Navigations from '@/components/landingpage/layout/Navigation.vue';
 import MobileSidebar from '@/components/landingpage/layout/MobileSidebar.vue';
 /*import tabler icons*/
 import { Menu2Icon } from 'vue-tabler-icons';
-
-import UserProfile from '@/layouts/components/UserProfile.vue'
 const appsdrawer = ref(false);
 const customizer = useCustomizerStore();
 </script>
@@ -23,14 +21,16 @@ const customizer = useCustomizerStore();
                 <v-container class="maxWidth py-sm-4 py-0">
                     <v-toolbar class="d-flex align-center bg-surface">
                         <div>
-                            <Logo />
+                            Process-GPT
                         </div>
                         <!-- Desktop view Navigation -->
                         <div class="navigation d-lg-flex d-none">
-                        <Navigations />
+                            <Navigations />
                         </div>
                         <!-- Login  -->
-                        <span class="text-white"><UserProfile /></span>
+                        <v-btn class="custom-hover-primary bg-primary d-lg-flex d-none rounded-pill px-8 align-center login-shadow">
+                            <span class="text-white">Login</span>
+                        </v-btn>
                         <!-- Mobile Toggle Button -->
                         <v-btn variant="text" class="hidden-lg-and-up " icon @click.stop="appsdrawer = !appsdrawer">
                             <Menu2Icon size="22" stroke-width="1.5" />
