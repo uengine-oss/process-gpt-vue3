@@ -4,6 +4,7 @@ import { useCustomizerStore } from '@/stores/customizer';
 import Logo from '@/layouts/full/logo/Logo.vue';
 // import RtlLogo from '@/layouts/full/logo/RtlLogo.vue';
 import Navigations from '@/components/landingpage/layout/Navigation.vue';
+import UserProfile from '@/layouts/components/UserProfile.vue'
 /*Mobile Sidebar*/
 import MobileSidebar from '@/components/landingpage/layout/MobileSidebar.vue';
 /*import tabler icons*/
@@ -29,7 +30,7 @@ const customizer = useCustomizerStore();
                         </div>
                         <!-- Login  -->
                         <v-btn class="custom-hover-primary bg-primary d-lg-flex d-none rounded-pill px-8 align-center login-shadow">
-                            <span class="text-white">Login</span>
+                            <UserProfile />
                         </v-btn>
                         <!-- Mobile Toggle Button -->
                         <v-btn variant="text" class="hidden-lg-and-up " icon @click.stop="appsdrawer = !appsdrawer">

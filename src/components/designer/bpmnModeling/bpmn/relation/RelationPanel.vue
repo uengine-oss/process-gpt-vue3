@@ -10,7 +10,7 @@
                         </v-tab>
                     </v-tabs>
                     <v-tabs v-model="tab">
-                        <v-tab v-for="tab in tabs" :key="tab" :id="tab.toLowerCase() + _uid">
+                        <v-tab v-for="tab in tabs" :key="tab">
                             <v-list-item-title>{{ tab }}</v-list-item-title>
                         </v-tab>
                     </v-tabs>
