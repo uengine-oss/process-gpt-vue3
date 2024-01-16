@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" >
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+  />
+  <title>
+  Spikeadmin Vuetify - Vue3 Typescript based Admin Dashboard Template
+  </title>
+
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/acebase-client@latest/dist/browser.min.js"></script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+    <script>
+      window.$acebase = new AceBaseClient({
+          host: "localhost",
+          port: 5757,
+          dbname: "mydb",
+          https: false,
+      });
+      window.$acebase.ready(() => {
+          console.log("Connected successfully");
+      });
+
+      const loaderColor = localStorage.getItem('Materio-initial-loader-bg') || '#FFFFFF'
+      const primaryColor = localStorage.getItem('Materio-initial-loader-color') || '#9155FD'
+
+      if (loaderColor) {
+          document.documentElement.style.setProperty('--initial-loader-bg', loaderColor)
+      }
+      if (primaryColor) {
+          document.documentElement.style.setProperty('--initial-loader-color', primaryColor)
+      }
+  </script>
+  </body>
+</html>
