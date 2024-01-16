@@ -30,8 +30,27 @@ const i18n = createI18n({
     silentTranslationWarn: true,
     silentFallbackWarn: true
 });
+// EventBus
+import mitt from 'mitt';
+const emitter = mitt();
+const OpenGraphEmitter = mitt();
+const ModelingEmitter = mitt();
 
 const app = createApp(App);
+app.config.globalProperties.EventBus = emitter;
+app.config.globalProperties.OGBus = OpenGraphEmitter;
+app.config.globalProperties.ModelingBus = ModelingEmitter;
+
+import ModelerImageGenerator from './components/designer/ModelerImageGenerator.vue'
+app.component('modeler-image-generator', ModelerImageGenerator)
+// modeler-image-generator
+// Use plugins
+import loadOpengraphComponents from './opengraph'
+import loadbpmnComponents from './components/designer/bpmnModeling/bpmn'
+
+loadOpengraphComponents(app)
+loadbpmnComponents(app)
+
 fakeBackend();
 app.use(router);
 app.component('EasyDataTable', Vue3EasyDataTable);

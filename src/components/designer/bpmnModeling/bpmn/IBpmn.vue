@@ -5,7 +5,7 @@
 <script>
     import BpmnVueFinder from './BpmnVueFinder.vue'
     import ModelElement from '../../modeling/ModelElement.vue'
-
+    import _ from 'lodash';
     export default {
         mixins: [BpmnVueFinder, ModelElement],
         name: 'bpmn-base',

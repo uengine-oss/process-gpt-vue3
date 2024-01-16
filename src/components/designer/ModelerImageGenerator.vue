@@ -3,6 +3,7 @@
 </template>
 <script>
   export default {
+    name: 'modeler-image-generator',
     data() {
       return {
         value: null
