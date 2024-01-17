@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import Logo from '@/layouts/full/logo/Logo.vue';
+import { useAuthStore } from '@/stores/auth';
+import { Form } from 'vee-validate';
+
 /*Social icons*/
 import google from '@/assets/images/svgs/google-icon.svg';
-import facebook from '@/assets/images/svgs/icon-facebook.svg';
 
-const checkbox = ref(false);
-const valid = ref(true);
-const show1 = ref(false);
 const password = ref('');
 const email = ref('');
 const passwordRules = ref([
@@ -15,24 +13,24 @@ const passwordRules = ref([
     (v: string) => (v && v.length <= 10) || 'Password must be less than 10 characters'
 ]);
 const emailRules = ref([(v: string) => !!v || 'E-mail is required', (v: string) => /.+@.+\..+/.test(v) || 'E-mail must be valid']);
-const fname = ref('');
-const fnameRules = ref([
+const username = ref('');
+const usernameRules = ref([
     (v: string) => !!v || 'Name is required',
     (v: string) => (v && v.length <= 10) || 'Name must be less than 10 characters'
 ]);
+
+function validate(values: any, { setErrors }: any) {
+    const authStore = useAuthStore();
+    return authStore.signUpAcebase(username.value, email.value, password.value).catch((error) => console.log(error));
+}
 </script>
 <template>
+    <!-- Social -->
     <v-row class="d-flex mb-3">
-        <v-col cols="6" sm="6">
+        <v-col cols="12" sm="12">
             <v-btn variant="outlined" size="large" class="border text-subtitle-1 text-gray200 font-weight-semibold" block>
                 <img :src="google" height="16" class="mr-2" alt="google" />
                 <span class="d-sm-flex d-none mr-1">Sign in with</span>Google
-            </v-btn>
-        </v-col>
-        <v-col cols="6" sm="6">
-            <v-btn variant="outlined" size="large" class="border text-subtitle-1 text-gray200 font-weight-semibold" block>
-                <img :src="facebook" width="25" height="25" class="mr-1" alt="facebook" />
-                <span class="d-sm-flex d-none mr-1">Sign in with</span>FB
             </v-btn>
         </v-col>
     </v-row>
@@ -41,11 +39,19 @@ const fnameRules = ref([
             <span class="bg-surface px-5 py-3 position-relative text-subtitle-1 text-grey100">or sign in with</span>
         </div>  
     </div>
-    <v-form ref="form" v-model="valid" lazy-validation action="/pages/boxedlogin" class="mt-5">
+    <Form @submit="validate" v-slot="{ errors, isSubmitting }" class="mt-5">
         <v-label class="text-subtitle-1 font-weight-medium pb-2">Name</v-label>
-        <VTextField v-model="fname" :rules="fnameRules" required ></VTextField>
+        <VTextField 
+            v-model="username" 
+            :rules="usernameRules" 
+            required 
+        ></VTextField>
         <v-label class="text-subtitle-1 font-weight-medium pb-2">Email Adddress</v-label>
-        <VTextField v-model="email" :rules="emailRules" required ></VTextField>
+        <VTextField 
+            v-model="email" 
+            :rules="emailRules" 
+            required 
+        ></VTextField>
         <v-label class="text-subtitle-1 font-weight-medium pb-2">Password</v-label>
         <VTextField
             v-model="password"
@@ -56,6 +62,14 @@ const fnameRules = ref([
             type="password"
             color="primary"
         ></VTextField>
-        <v-btn size="large" class="mt-2" color="primary" block submit rounded="pill">Sign Up</v-btn>
-    </v-form>
+        <v-btn 
+            size="large" 
+            class="mt-2" 
+            color="primary" 
+            block 
+            rounded="pill"
+            :loading="isSubmitting"
+            type="submit"
+        >Sign up</v-btn>
+    </Form>
 </template>

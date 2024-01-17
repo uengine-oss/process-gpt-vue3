@@ -1,33 +1,99 @@
 import { defineStore } from 'pinia';
 import { router } from '@/router';
-import { fetchWrapper } from '@/utils/helpers/fetch-wrapper';
-
-const baseUrl = `${import.meta.env.VITE_API_URL}/users`;
+import CommonStorageBase from "@/components/storage/CommonStorageBase";
 
 export const useAuthStore = defineStore({
     id: 'auth',
     state: () => ({
-        // initialize state from local storage to enable user to stay logged in
-        // @ts-ignore
-        user: JSON.parse(localStorage.getItem('user')),
-        returnUrl: null
+        storage: new CommonStorageBase(this),
     }),
     actions: {
-        async login(username: string, password: string) {
-            const user = await fetchWrapper.post(`${baseUrl}/authenticate`, { username, password });
-
-            // update pinia state
-            this.user = user;
-            // store user details and jwt in local storage to keep user logged in between page refreshes
-            localStorage.setItem('user', JSON.stringify(user));
-            // redirect to previous url or default to home page
-            // router.push(this.returnUrl || '/dashboard1');
-            router.push(this.returnUrl || '/dashboard1');
+        async logout() {
+            try {
+                await this.storage.logout();
+                router.push("/");
+            } catch (e) {
+                console.log(e);
+            }
         },
-        logout() {
-            this.user = null;
-            localStorage.removeItem('user');
-            router.push('/');
-        }
+        async signInAcebase(email: string, password: string) {
+            try {
+                if (email && password) {
+                    const userInfo: any = {
+                        email: email,
+                        password: password
+                    };
+                    var result: any = await this.storage.signIn('db://login', userInfo);
+
+                    if (result) {
+                        window.localStorage.setItem("author", result.user.email);
+                        window.localStorage.setItem("userName", result.user.username);
+                        window.localStorage.setItem("email", result.user.email);
+                        window.localStorage.setItem("picture", result.user.picture);
+                        window.localStorage.setItem("accessToken", result.accessToken);
+                        window.localStorage.setItem("uid", result.user.uid);
+
+                        await this.writeUserData(result.user.uid, result.user.username, result.user.email, result.user.picture);
+
+                        router.push('/dashboard2');
+                    }
+                }
+            } catch (e) {
+                console.log(e);
+            }
+        },
+        async signUpAcebase(username: string, email: string, password: string) {
+            try {
+                if (username && email && password) {
+                    const userInfo: any = {
+                        username: username,
+                        email: email,
+                        password: password
+                    }
+                    var result: any = await this.storage.signUp('db://login', userInfo);
+
+                    if (result) {
+                        window.localStorage.setItem("author", result.user.email);
+                        window.localStorage.setItem("userName", result.user.username);
+                        window.localStorage.setItem("email", result.user.email);
+                        window.localStorage.setItem("picture", result.user.picture);
+                        window.localStorage.setItem("accessToken", result.accessToken);
+                        window.localStorage.setItem("uid", result.user.uid);
+
+                        await this.writeUserData(result.user.uid, result.user.username, result.user.email, result.user.picture);
+
+                        router.push('/auth/login');
+
+                    }
+                }
+
+            } catch (e) {
+                console.log(e);
+            }
+        },
+        writeUserData(userId: string, name: string, email: string, imageUrl: string) {
+            var obj = {
+                username: name,
+                email: email,
+                profile_picture: imageUrl,
+                state: 'signIn',
+                loginDate: Date.now()
+            };
+
+            var eObj = {
+                uid: userId,
+                userName: name,
+                profile_picture: imageUrl,
+                email: email,
+            };
+
+            this.storage.putObject(`db://users/${userId}`, obj);
+            
+            //새로운 로그인 유저
+            if (email) {
+                var convertEmail = email.replace(/\./gi, '_');
+                this.storage.putObject(`db://enrolledUsers/${convertEmail}`, eObj);
+            }
+        },
     }
 });

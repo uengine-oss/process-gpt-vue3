@@ -3,6 +3,7 @@ import Logo from '@/layouts/full/logo/Logo.vue';
 /* Register form */
 import RegisterForm from '@/components/auth/RegisterForm.vue';
 </script>
+
 <template>
     <div class="authentication">
         <v-container fluid class="pa-3">
@@ -14,7 +15,6 @@ import RegisterForm from '@/components/auth/RegisterForm.vue';
                                 <div class="d-flex justify-center mb-5">
                                     <Logo />
                                 </div>
-                                <!-- <div class="text-h6 text-medium-emphasis text-center mb-6">Your Social Campaigns</div> -->
                                 <RegisterForm />
                                 <h6 class="text-subtitle-1  text-grey100 d-flex justify-center align-center mt-3">
                                     Already have an Account?
@@ -27,4 +27,5 @@ import RegisterForm from '@/components/auth/RegisterForm.vue';
                 </v-col>
             </v-row>
         </v-container>
-    </div></template>
+    </div>
+</template>
