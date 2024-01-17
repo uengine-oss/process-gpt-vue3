@@ -14,8 +14,13 @@ export default {
     methods: {
         async init() {
             var me = this
+            console.log(me.path)
             me.storage = new CommonStorageBase(this);
             me.userInfo = await me.storage.getUserInfo();
+        },
+
+        async getChatList(){
+            var me = this
             // this.storage.delete(`db://chats/1`)
             var option = {
                 sort: "desc",
@@ -40,7 +45,6 @@ export default {
                 me.isInitDone = true
             })
         },
-
         async getMoreChat(){
             var option = {
                 sort: "desc",
@@ -83,7 +87,6 @@ export default {
     
         async sendMessage(message) {
             if (message !== "") {
-                console.log("aaaa")
                 let messages = []
                 this.messages.forEach(function (msg){
                     messages.push({
@@ -157,7 +160,9 @@ export default {
             }
     
             this.afterGenerationFinished(putObj);
-            this.beforeSendMessage(response, 'system')
+            if(this.pushMessage){
+                this.pushMessage(response, 'system');
+            }
         },
     
         onError(error) {

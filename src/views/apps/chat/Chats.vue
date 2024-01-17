@@ -78,6 +78,7 @@ export default {
     async created() {
         this.init();
 
+        await this.getChatList()
         await this.loadData("organization");
 
         this.generator = new ChatGenerator(this, {
@@ -112,7 +113,7 @@ export default {
                 this.replyUser = null
             }
         },
-        async beforeSendMessage(newMessage, option) {
+        pushMessage(newMessage, role){
             let obj
 
             var currentDate = new Date();
@@ -121,9 +122,9 @@ export default {
 
             if(this.replyUser){
                 obj = {
-                    name: option ? option:this.userInfo.name,
-                    email: option ? option + '@uengine.org':this.userInfo.email,
-                    role: option ? option:'user',
+                    name: role ? role:this.userInfo.name,
+                    email: role ? role + '@uengine.org':this.userInfo.email,
+                    role: role ? role:'user',
                     timeStamp: timeStamp,
                     content: newMessage,
                     replyUserName: this.replyUser.name,
@@ -132,22 +133,22 @@ export default {
                 }
             } else {
                 obj = {
-                    name: option ? option:this.userInfo.name,
-                    email: option ? option + '@uengine.org':this.userInfo.email,
-                    role: option ? option:'user',
+                    name: role ? role:this.userInfo.name,
+                    email: role ? role + '@uengine.org':this.userInfo.email,
+                    role: role ? role:'user',
                     timeStamp: timeStamp,
                     content: newMessage
                 }
             }
             this.saveMessages(`chats/1/messages/${this.uuid()}`, obj);
-
-            if(option != 'system'){
-                if(!this.generator.contexts) {
-                    let contexts = await this.queryFromVectorDB(newMessage);
-                    this.generator.setContexts(contexts);
-                }
-                this.sendMessage(newMessage);
+        },
+        async beforeSendMessage(newMessage) {
+            this.pushMessage(newMessage);
+            if(!this.generator.contexts) {
+                let contexts = await this.queryFromVectorDB(newMessage);
+                this.generator.setContexts(contexts);
             }
+            this.sendMessage(newMessage);
         },
 
         async loadData(path) {

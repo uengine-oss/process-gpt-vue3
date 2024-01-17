@@ -94,13 +94,11 @@ export default {
                 }
             }
         },
-
         async beforeSendMessage(newMessage) {
             if(!this.generator.contexts) {
                 let contexts = await this.queryFromVectorDB(newMessage);
                 this.generator.setContexts(contexts);
             }
-
             this.sendMessage(newMessage);
         },
 

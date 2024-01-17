@@ -136,7 +136,6 @@ export default {
                 let contexts = await this.queryFromVectorDB(newMessage);
                 this.generator.setContexts(contexts);
             }
-
             this.sendMessage(newMessage);
         },
 
