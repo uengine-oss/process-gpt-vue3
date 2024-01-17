@@ -1,15 +1,8 @@
 <template>
     <div>
-        <!-- <process-definition
-                :bpmn="bpmn"
-                :processDefinition="processDefinition"
-        ></process-definition> -->
-
         <chat-button
-                :chatDialog="chatDialog"
                 :messages="messages"
                 :alertInfo="alertInfo"
-                @toggleChatDialog="toggleChatDialog"
                 @beforeSendMessage="beforeSendMessage"
                 @editSendMessage="editSendMessage"
         ></chat-button>
@@ -80,7 +73,8 @@ export default {
                     if (!this.processDefinition) {
                         this.processDefinition = []
                     } else {
-                        this.bpmn = this.createBpmnXml(this.processDefinition);
+                        this.createuEngine(this.processDefinition)
+                        // this.bpmn = this.createBpmnXml(this.processDefinition);
                     }
 
                 } else {
@@ -114,7 +108,7 @@ export default {
 
                 if (jsonProcess) {
                     this.processDefinition = partialParse(jsonProcess);
-                    this.bpmn = this.createBpmnXml(this.processDefinition);
+                    this.createuEngine(this.processDefinition)
                 }
                 
             } catch (error) {
@@ -147,7 +141,9 @@ export default {
                 category: definition.processDefinitionId
             });
         },
-
+        createuEngine(jsonProcess) {
+            console.log(jsonProcess)
+        },  
         createBpmnXml(jsonProcess) {
             // XML 문서 초기화
             const parser = new DOMParser();

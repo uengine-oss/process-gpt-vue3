@@ -1,12 +1,11 @@
 <template>
-    <div class="customHeight">
+    <div>
         <div>
             <div class="d-flex align-center gap-3 pa-4  justify-space-between">
                 <div class="d-flex gap-2 align-center">
                     <v-avatar>
                         <img :src="chatDetail.thumb" alt="pro" width="50" />
                     </v-avatar>
-
                     <v-badge
                         class="badg-dotDetail"
                         dot
@@ -26,7 +25,7 @@
                         <small class="textPrimary"> {{ chatDetail.status }} </small>
                     </div>
                 </div>
-                <div class="d-flex">
+                <!-- <div class="d-flex">
                     <v-btn icon variant="text" class="text-medium-emphasis">
                         <PhoneIcon size="24" />
                     </v-btn>
@@ -36,13 +35,13 @@
                     <v-btn icon variant="text" class="text-medium-emphasis">
                         <DotsVerticalIcon size="24" />
                     </v-btn>
-                </div>
+                </div> -->
             </div>
             <v-divider />
             <perfect-scrollbar class="rightpartHeight h-100">
                 <v-btn v-if="filteredMessages.length > 0" style="position: absolute; left: 45%;" @click="getMoreChat()">get more chat</v-btn>
                 <div class="d-flex">
-                    <div class="w-100" style="height: calc(100vh - 360px);">
+                    <div class="w-100" style="height: 410px;">
                         <div v-for="(message, index) in filteredMessages" :key="index" class="pa-5">
                             <div v-if="message.email == userInfo.email" class="justify-end d-flex text-end mb-1">
                                 <div>
@@ -257,51 +256,51 @@ export default {
 }
 </script>
 <style lang="scss">
-.rightpartHeight {
-    height: 530px;
-}
-.badg-dotDetail {
-    left: -9px;
-    position: relative;
-    bottom: -10px;
-}
+// .rightpartHeight {
+//     height: 530px;
+// }
+// .badg-dotDetail {
+//     left: -9px;
+//     position: relative;
+//     bottom: -10px;
+// }
 
-.toggleLeft {
-    position: absolute;
-    right: 15px;
-    top: 15px;
-}
-.right-sidebar {
-    width: 320px;
-    border-left: 1px solid rgb(var(--v-theme-borderColor));
-    transition: 0.1s ease-in;
-    flex-shrink: 0;
-}
+// .toggleLeft {
+//     position: absolute;
+//     right: 15px;
+//     top: 15px;
+// }
+// .right-sidebar {
+//     width: 320px;
+//     border-left: 1px solid rgb(var(--v-theme-borderColor));
+//     transition: 0.1s ease-in;
+//     flex-shrink: 0;
+// }
 
-.HideLeftPart {
-    display: none;
-}
+// .HideLeftPart {
+//     display: none;
+// }
 
-@media (max-width: 960px) {
-    .right-sidebar {
-        position: absolute;
-        right: -320px;
-        &.showLeftPart {
-            right: 0;
-            z-index: 2;
-            box-shadow: 2px 1px 20px rgba(0, 0, 0, 0.1);
-        }
-    }
-    .boxoverlay {
-        position: absolute;
-        height: 100%;
-        width: 100%;
-        z-index: 1;
-        background: rgba(0, 0, 0, 0.2);
-    }
-}
+// @media (max-width: 960px) {
+//     .right-sidebar {
+//         position: absolute;
+//         right: -320px;
+//         &.showLeftPart {
+//             right: 0;
+//             z-index: 2;
+//             box-shadow: 2px 1px 20px rgba(0, 0, 0, 0.1);
+//         }
+//     }
+//     .boxoverlay {
+//         position: absolute;
+//         height: 100%;
+//         width: 100%;
+//         z-index: 1;
+//         background: rgba(0, 0, 0, 0.2);
+//     }
+// }
 
-.shadow-none .v-field--no-label {
-    --v-field-padding-top: -7px;
-}
+// .shadow-none .v-field--no-label {
+//     --v-field-padding-top: -7px;
+// }
 </style>
