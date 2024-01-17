@@ -1,12 +1,26 @@
 <template>
     <div>
-        <chat-button
+        <Chat 
+            :messages="messages"
+            :userInfo="userInfo"
+            @sendMessage="beforeSendMessage"
+            @editSendMessage="editSendMessage"
+        >
+            <template v-slot:alert>
+                <v-alert
+                        icon="mdi-info"
+                        :title="alertInfo.title"
+                        :text="alertInfo.text"
+                ></v-alert>
+            </template>
+        </Chat>
+        <!-- <chat-button
                 :messages="messages"
                 :alertInfo="alertInfo"
                 :userInfo="userInfo"
                 @beforeSendMessage="beforeSendMessage"
                 @editSendMessage="editSendMessage"
-        ></chat-button>
+        ></chat-button> -->
     </div>
 </template>
 
@@ -16,8 +30,8 @@ import { VectorStorage } from "vector-storage";
 
 import ChatGenerator from "./ai/ProcessDefinitionGenerator";
 import ProcessDefinition from './ProcessDefinition.vue';
-import ChatButton from "./ui/ChatButton.vue";
-
+// import ChatButton from "./ui/ChatButton.vue";
+import Chat from "./ui/Chat.vue";
 import ChatModule from "./ChatModule.vue";
 
 export default {
@@ -25,7 +39,8 @@ export default {
     name: 'ProcessManagerChat',
     components: {
         ProcessDefinition,
-        ChatButton,
+        Chat,
+
     },
     data: () => ({
         processDefinition: null,
