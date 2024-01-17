@@ -12,7 +12,6 @@ import { defineComponent } from "vue";
 import { useAuthStore } from '@/stores/auth';
 
 const auth = useAuthStore();
-auth.storage.loginUser();
 
 export default defineComponent({
     data: () => ({
