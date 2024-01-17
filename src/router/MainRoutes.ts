@@ -9,7 +9,7 @@ const MainRoutes = {
         {
             name: 'Todolist',
             path: '/todolist',
-            component: () => import('@/views/tables/Todolist.vue'),
+            component: () => import('@/views/apps/todolist/Todolist.vue'),
         },
         {
             name: 'Calendar',
@@ -35,7 +35,7 @@ const MainRoutes = {
         {
             name: 'organization',
             path: '/organization',
-            component: () => import('@/views/dashboard/dashboard1.vue'),
+            component: () => import('@/views/apps/organization/Organization.vue'),
         },
         {
             name: 'Definition Chat',
@@ -48,6 +48,7 @@ const MainRoutes = {
             component: () => import('@/views/dashboard/dashboard1.vue'),
         },
         
+
         {
             name: 'dashboard 2',
             path: '/dashboard2',

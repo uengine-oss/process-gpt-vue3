@@ -17,7 +17,6 @@ import { Menu2Icon } from 'vue-tabler-icons';
 const appsdrawer = ref(false);
 const customizer = useCustomizerStore();
 const auth: any = useAuthStore();
-auth.storage.loginUser();
 </script>
 <template>
     <div>

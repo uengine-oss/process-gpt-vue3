@@ -4,7 +4,7 @@ import { profileDD } from '@/_mockApis/headerData';
 import { useAuthStore } from '@/stores/auth';
 import { Icon } from '@iconify/vue';
 
-const authStore = useAuthStore();
+const auth = useAuthStore();
 </script>
 
 <template>
@@ -20,7 +20,7 @@ const authStore = useAuthStore();
                         <img src="@/assets/images/profile/user6.jpg" width="50" alt="Mike Nielsen" />
                     </v-avatar>
                     <div class="ml-md-4 d-md-block d-none">
-                        <h6 class="text-h6 d-flex align-center text-black font-weight-semibold">Mike Nielsen</h6>
+                        <h6 class="text-h6 d-flex align-center text-black font-weight-semibold">{{ auth.storage.userInfo.name }}</h6>
                         <span class="text-subtitle-2 font-weight-medium text-grey100">Admin</span>
                     </div>
                 </div>
@@ -38,11 +38,11 @@ const authStore = useAuthStore();
                         <img src="@/assets/images/profile/user6.jpg" width="90" />
                     </v-avatar>
                     <div class="ml-5">
-                        <h6 class="text-h5 mb-n1">Mike Nielsen</h6>
+                        <h6 class="text-h5 mb-n1">{{ auth.storage.userInfo.name }}</h6>
                         <span class="text-subtitle-1 font-weight-regular text-grey100 font-weight-medium">Admin</span>
                         <div class="d-flex align-center mt-1">
                             <MailIcon size="18" stroke-width="1.5" class="text-grey100" />
-                            <span class="text-subtitle-1 text-grey100 font-weight-medium ml-2">info@spikeadmin.com</span>
+                            <span class="text-subtitle-1 text-grey100 font-weight-medium ml-2">{{ auth.storage.userInfo.email }}</span>
                         </div>
                     </div>
                 </div>
@@ -66,7 +66,7 @@ const authStore = useAuthStore();
                 </v-list>
             </perfect-scrollbar>
             <div class=" pb-6 px-8 text-center">
-                <v-btn color="primary" size="large" rounded="pill" block @click="authStore.logout()">Logout</v-btn>
+                <v-btn color="primary" size="large" rounded="pill" block @click="auth.logout()">Logout</v-btn>
             </div>
         </v-sheet>
     </v-menu>

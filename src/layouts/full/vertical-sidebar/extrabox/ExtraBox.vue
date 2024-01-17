@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth';
 import { Icon } from '@iconify/vue';
+
+const auth = useAuthStore();
 </script>
 
 <template>
@@ -9,11 +12,11 @@ import { Icon } from '@iconify/vue';
                 <img src="@/assets/images/profile/user6.jpg" width="50" alt="Mike Nielsen" />
             </v-avatar>
             <div>
-                <h6 class="text-h6 d-flex align-center font-weight-semibold">Mike Nielsen</h6>
+                <h6 class="text-h6 d-flex align-center font-weight-semibold">{{ auth.storage.userInfo.name }}</h6>
                 <span class="text-subtitle-2 font-weight-medium text-grey100">Admin</span>
             </div>
             <div>
-                <v-btn icon class="bg-lightprimary" flat  size="small">
+                <v-btn icon class="bg-lightprimary" flat  size="small" @click="auth.logout()">
                     <Icon icon="solar:logout-linear" class="text-primary" stroke-width="3" height="24" width="24" />
                 </v-btn>
             </div>
