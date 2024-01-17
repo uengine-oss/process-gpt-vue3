@@ -9,6 +9,7 @@
                 :chatDialog="chatDialog"
                 :messages="messages"
                 :alertInfo="alertInfo"
+                :userInfo="userInfo"
                 @toggleChatDialog="toggleChatDialog"
                 @beforeSendMessage="beforeSendMessage"
                 @editSendMessage="editSendMessage"

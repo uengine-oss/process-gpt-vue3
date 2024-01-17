@@ -83,7 +83,7 @@ export default {
     
         async sendMessage(message) {
             if (message !== "") {
-                
+                console.log("aaaa")
                 let messages = []
                 this.messages.forEach(function (msg){
                     messages.push({

@@ -3,6 +3,7 @@
         <chat-button
                 :messages="messages"
                 :alertInfo="alertInfo"
+                :userInfo="userInfo"
                 @beforeSendMessage="beforeSendMessage"
                 @editSendMessage="editSendMessage"
         ></chat-button>

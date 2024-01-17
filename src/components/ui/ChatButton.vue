@@ -1,12 +1,19 @@
 <template>
     <div>
-
-        <Chat :messages="messages"
-                @sendMessage="beforeSendMessage"
-                @editSendMessage="editSendMessage"
+        <Chat 
+            :messages="messages"
+            :userInfo="userInfo"
+            @sendMessage="beforeSendMessage"
+            @editSendMessage="editSendMessage"
         >
+            <template v-slot:alert>
+                <v-alert
+                        icon="mdi-info"
+                        :title="alertInfo.title"
+                        :text="alertInfo.text"
+                ></v-alert>
+            </template>
         </Chat>
-
     </div>
 </template>
 
@@ -17,6 +24,7 @@ export default {
     props: {
         messages: Array,
         alertInfo: Object,
+        userInfo: Object,
     },
     components: {
         Chat,
