@@ -138,12 +138,6 @@ const sidebarItem: menu[] = [
 //     to: '/apps/chats'
 //   },
 //   {
-//     title: 'Chats',
-//     icon: 'chat-round-unread-line-duotone',
-//     BgColor: 'primary',
-//     to: '/apps/chat-base'
-//   },
-//   {
 //     title: 'User Profile',
 //     icon: 'user-rounded-line-duotone',
 //     BgColor: 'error',
