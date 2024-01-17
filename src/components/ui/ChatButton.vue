@@ -9,9 +9,11 @@
         </v-btn>
 
         <v-card v-if="chatDialog" width="500" class="chat-dialog">
-            <Chat :messages="messages"
-                    @sendMessage="beforeSendMessage"
-                    @editSendMessage="editSendMessage"
+            <Chat 
+                :messages="messages"
+                :userInfo="userInfo"
+                @sendMessage="beforeSendMessage"
+                @editSendMessage="editSendMessage"
             >
                 <template v-slot:alert>
                     <v-alert
@@ -33,6 +35,7 @@ export default {
         chatDialog: Boolean,
         messages: Array,
         alertInfo: Object,
+        userInfo: Object,
     },
     components: {
         Chat,
