@@ -1,27 +1,19 @@
 <template>
     <div>
-        <v-btn @click="toggleChatDialog"
-                icon
-                class="chat-btn"
+        <Chat 
+            :messages="messages"
+            :userInfo="userInfo"
+            @sendMessage="beforeSendMessage"
+            @editSendMessage="editSendMessage"
         >
-            <v-icon v-if="chatDialog">mdi-close</v-icon>
-            <v-icon v-else>mdi-chat</v-icon>
-        </v-btn>
-
-        <v-card v-if="chatDialog" width="500" class="chat-dialog">
-            <Chat :messages="messages"
-                    @sendMessage="beforeSendMessage"
-                    @editSendMessage="editSendMessage"
-            >
-                <template v-slot:alert>
-                    <v-alert
-                            icon="mdi-info"
-                            :title="alertInfo.title"
-                            :text="alertInfo.text"
-                    ></v-alert>
-                </template>
-            </Chat>
-        </v-card>
+            <template v-slot:alert>
+                <v-alert
+                        icon="mdi-info"
+                        :title="alertInfo.title"
+                        :text="alertInfo.text"
+                ></v-alert>
+            </template>
+        </Chat>
     </div>
 </template>
 
@@ -30,17 +22,14 @@ import Chat from "../ui/Chat.vue";
 
 export default {
     props: {
-        chatDialog: Boolean,
         messages: Array,
         alertInfo: Object,
+        userInfo: Object,
     },
     components: {
         Chat,
     },
     methods: {
-        toggleChatDialog() {
-            this.$emit("toggleChatDialog");
-        },
         beforeSendMessage(message) {
             this.$emit("beforeSendMessage", message);
         },

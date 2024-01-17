@@ -10,7 +10,6 @@ export default {
         generator: null,
         messages: [],
         userInfo: {},
-        chatDialog: false,
     }),
     methods: {
         async init() {
@@ -84,7 +83,7 @@ export default {
     
         async sendMessage(message) {
             if (message !== "") {
-                
+                console.log("aaaa")
                 let messages = []
                 this.messages.forEach(function (msg){
                     messages.push({
@@ -174,11 +173,6 @@ export default {
                 messageWriting.content = error.message;
             }
         },
-
-        toggleChatDialog() {
-            this.chatDialog = !this.chatDialog;
-        },
-
         extractProcessJson(text) {            
             let textAndJson = text.split("--- json ---")
             if(textAndJson && textAndJson.length==2) return textAndJson[1]

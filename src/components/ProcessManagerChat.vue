@@ -1,18 +1,26 @@
 <template>
     <div>
-        <!-- <process-definition
-                :bpmn="bpmn"
-                :processDefinition="processDefinition"
-        ></process-definition> -->
-
-        <chat-button
-                :chatDialog="chatDialog"
+        <Chat 
+            :messages="messages"
+            :userInfo="userInfo"
+            @sendMessage="beforeSendMessage"
+            @editSendMessage="editSendMessage"
+        >
+            <template v-slot:alert>
+                <v-alert
+                        icon="mdi-info"
+                        :title="alertInfo.title"
+                        :text="alertInfo.text"
+                ></v-alert>
+            </template>
+        </Chat>
+        <!-- <chat-button
                 :messages="messages"
                 :alertInfo="alertInfo"
-                @toggleChatDialog="toggleChatDialog"
+                :userInfo="userInfo"
                 @beforeSendMessage="beforeSendMessage"
                 @editSendMessage="editSendMessage"
-        ></chat-button>
+        ></chat-button> -->
     </div>
 </template>
 
@@ -22,8 +30,8 @@ import { VectorStorage } from "vector-storage";
 
 import ChatGenerator from "./ai/ProcessDefinitionGenerator";
 import ProcessDefinition from './ProcessDefinition.vue';
-import ChatButton from "./ui/ChatButton.vue";
-
+// import ChatButton from "./ui/ChatButton.vue";
+import Chat from "./ui/Chat.vue";
 import ChatModule from "./ChatModule.vue";
 
 export default {
@@ -31,7 +39,8 @@ export default {
     name: 'ProcessManagerChat',
     components: {
         ProcessDefinition,
-        ChatButton,
+        Chat,
+
     },
     data: () => ({
         processDefinition: null,
@@ -80,7 +89,8 @@ export default {
                     if (!this.processDefinition) {
                         this.processDefinition = []
                     } else {
-                        this.bpmn = this.createBpmnXml(this.processDefinition);
+                        this.createuEngine(this.processDefinition)
+                        // this.bpmn = this.createBpmnXml(this.processDefinition);
                     }
 
                 } else {
@@ -114,7 +124,7 @@ export default {
 
                 if (jsonProcess) {
                     this.processDefinition = partialParse(jsonProcess);
-                    this.bpmn = this.createBpmnXml(this.processDefinition);
+                    this.createuEngine(this.processDefinition)
                 }
                 
             } catch (error) {
@@ -147,7 +157,9 @@ export default {
                 category: definition.processDefinitionId
             });
         },
-
+        createuEngine(jsonProcess) {
+            console.log(jsonProcess)
+        },  
         createBpmnXml(jsonProcess) {
             // XML 문서 초기화
             const parser = new DOMParser();

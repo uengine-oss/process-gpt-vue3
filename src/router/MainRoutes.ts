@@ -41,7 +41,7 @@ const MainRoutes = {
         {
             name: 'Definition Chat',
             path: '/definitions/chat',
-            component: () => import('@/views/dashboard/dashboard1.vue'),
+            component: () => import('@/views/apps/definition-list/DefinitionList.vue'),
         },
         {
             name: 'definitions',

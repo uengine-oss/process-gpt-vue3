@@ -1,22 +1,21 @@
 <template>
+    <!-- ---------------------------------------------------- -->
+    <!-- Table Basic -->
+    <!-- ---------------------------------------------------- -->
+    <!-- <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs"></BaseBreadcrumb> -->
+
     <v-card elevation="10">
         <AppBaseCard>
             <template v-slot:leftpart>
                 <div class="no-scrollbar">
-                <ChatProfile />
-                <ChatListing />
+                <process-manager-chat></process-manager-chat>
+                <!-- <ChatProfile />
+                <ChatListing /> -->
                 </div>
             </template>
             <template v-slot:rightpart>
-                <chat
-                    :messages="messages"
-                    :userInfo="userInfo"
-                    @sendMessage="beforeSendMessage"
-                    @beforeReply="beforeReply"
-                    @editSendMessage="editSendMessage"
-                    @getMoreChat="getMoreChat"
-                >
-                </chat>
+                <bpmn-modeling-canvas></bpmn-modeling-canvas>
+
             </template>
 
             <template v-slot:mobileLeftContent>
@@ -28,7 +27,14 @@
 </template>
 
 <script>
-
+import { ref } from 'vue';
+// common components
+import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
+import AppBaseCard from '@/components/shared/AppBaseCard.vue';
+import ChatListing from '@/components/apps/chats/ChatListing.vue';
+import ChatDetail from '@/components/apps/chats/ChatDetail.vue';
+import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
+import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue'
 const page = ref({ title: 'Chat app' });
 
 const breadcrumbs = ref([
@@ -39,41 +45,39 @@ const breadcrumbs = ref([
     }
 ]);
 
-import { ref } from 'vue';
-// common components
-import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
-import AppBaseCard from '@/components/shared/AppBaseCard.vue';
-import ChatListing from '@/components/apps/chats/ChatListing.vue';
-import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import partialParse from "partial-json-parser";
 import { VectorStorage } from "vector-storage";
+
 import ChatGenerator from "@/components/ai/ProcessInstanceGenerator.js";
 import Chat from "@/components/ui/Chat.vue";
-import ChatModule from "@/components/ChatModule.vue";
 
+import ChatModule from "@/components/ChatModule.vue";
+import ProcessManagerChat from '@/components/ProcessManagerChat.vue'
 
 export default {
     mixins: [ChatModule],
-    name: 'Chats',
+    name: 'DefinitionList',
     components: {
         Chat,
+        BpmnModelingCanvas,
+        ProcessManagerChat,
         BaseBreadcrumb,
         AppBaseCard,
         ChatListing,
+        ChatDetail,
         ChatProfile
     },
     data: () => ({
-        replyUser: null,
         definitions: [],
         processDefinition: null,
         processInstance: null,
         bpmn: null,
         path: "instances",
         organizationChart: [],
-        // alertInfo: {
-        //     title: "프로세스 실행",
-        //     text: "대화형으로 프로세스를 실행하십시오. 예를 들어, '휴가를 신청할게: 1. 사유: 개인사유 2. 휴가 시작일: 오늘 3. 휴가 복귀일: 금요일' 와 같은 명령을 할 수 있습니다."
-        // },
+        alertInfo: {
+            title: "프로세스 실행",
+            text: "대화형으로 프로세스를 실행하십시오. 예를 들어, '휴가를 신청할게: 1. 사유: 개인사유 2. 휴가 시작일: 오늘 3. 휴가 복귀일: 금요일' 와 같은 명령을 할 수 있습니다."
+        },
     }),
     async created() {
         this.init();
@@ -105,51 +109,6 @@ export default {
         }
     },
     methods: {
-        beforeReply(msg){
-            if(msg){
-                this.replyUser = msg
-            } else {
-                this.replyUser = null
-            }
-        },
-        async beforeSendMessage(newMessage, option) {
-            let obj
-
-            var currentDate = new Date();
-            var milliseconds = currentDate.getMilliseconds(); 
-            var timeStamp = currentDate.toTimeString().split(' ')[0] + '.' + milliseconds.toString().padStart(3, '0');
-
-            if(this.replyUser){
-                obj = {
-                    name: option ? option:this.userInfo.name,
-                    email: option ? option + '@uengine.org':this.userInfo.email,
-                    role: option ? option:'user',
-                    timeStamp: timeStamp,
-                    content: newMessage,
-                    replyUserName: this.replyUser.name,
-                    replyContent: this.replyUser.content,
-                    replyUserEmail: this.replyUser.email
-                }
-            } else {
-                obj = {
-                    name: option ? option:this.userInfo.name,
-                    email: option ? option + '@uengine.org':this.userInfo.email,
-                    role: option ? option:'user',
-                    timeStamp: timeStamp,
-                    content: newMessage
-                }
-            }
-            this.saveMessages(`chats/1/messages/${this.uuid()}`, obj);
-
-            if(option != 'system'){
-                if(!this.generator.contexts) {
-                    let contexts = await this.queryFromVectorDB(newMessage);
-                    this.generator.setContexts(contexts);
-                }
-                this.sendMessage(newMessage);
-            }
-        },
-
         async loadData(path) {
             const value = await this.getData(path);
 
@@ -172,6 +131,15 @@ export default {
             }
         },
 
+        async beforeSendMessage(newMessage) {
+            if(!this.generator.contexts) {
+                let contexts = await this.queryFromVectorDB(newMessage);
+                this.generator.setContexts(contexts);
+            }
+
+            this.sendMessage(newMessage);
+        },
+
         afterModelCreated(response) {
             let jsonInstance = this.extractProcessJson(response);
 
@@ -188,9 +156,8 @@ export default {
         async afterGenerationFinished(putObj) {
             let modelText = "";
             let path = "";
-
+    
             if (this.processInstance) {
-
                 if (typeof this.processInstance === "string") {
                     this.processInstance = partialParse(this.processInstance);
                 }
@@ -206,7 +173,8 @@ export default {
 
                 putObj.model = modelText;
 
-                // this.saveMessages(path, putObj);
+                this.saveMessages(path, putObj);
+
                 this.sendTodolist();
             }
         },
@@ -263,3 +231,13 @@ export default {
     }
 }
 </script>
+
+
+
+<style scoped lang="scss">
+@media (max-width: 1279px) {
+    .v-card {
+        position: unset;
+    }
+}
+</style>
