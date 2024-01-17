@@ -54,12 +54,6 @@ const MainRoutes = {
             path: '/dashboard2',
             component: () => import('@/views/dashboard/dashboard2.vue'),
         },
-        
-        {
-            name: 'ChatBase',
-            path: '/apps/chat-base',
-            component: () => import('@/views/apps/chat/ChatBase.vue')
-        },
         {
             name: 'Email',
             path: '/apps/email',
