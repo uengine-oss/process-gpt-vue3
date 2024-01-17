@@ -3,8 +3,6 @@ import MainRoutes from './MainRoutes';
 import AuthRoutes from './AuthRoutes';
 import { useAuthStore } from '@/stores/auth';
 
-import CommonStorageBase from "@/components/storage/CommonStorageBase";
-
 export const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
     routes: [
@@ -23,33 +21,16 @@ router.beforeEach(async (to, from, next) => {
     const authRequired = !publicPages.includes(to.path);
     const auth: any = useAuthStore();
 
-    const storage = new CommonStorageBase(this);
-    await storage.loginUser();   
+    await auth.storage.loginUser();
 
     if (to.matched.some((record) => record.meta.requiresAuth)) {
-        if (authRequired && !storage.isLogin) {
-            auth.returnUrl = to.fullPath;
-            // return next('/');
+        if (authRequired && !auth.storage.isLogin) {
             alert("로그인이 필요합니다.")
+            return next('/auth/login');
         } else next();
     } else {
         next();
     }
 });
-
-// router.beforeEach(async (to, from, next) => {
-//     const storage = new CommonStorageBase(this);
-//     await storage.loginUser();    
-    
-//     if (to.matched.some(record => record.meta.requiresAuth)) {
-//         if (storage.isLogin) {
-//             next();
-//         } else {
-//             next('/');
-//         }
-//     } else {
-//         next();
-//     }
-// });
 
 export default router;

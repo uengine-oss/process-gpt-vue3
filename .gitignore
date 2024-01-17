@@ -8,8 +8,9 @@ node_modules/
 dist/
 package-lock.json
 
-.db
-.idx
+acebase/package-lock.json
+*.db
+*.idx
 
 # Compiled Java class files
 *.class
