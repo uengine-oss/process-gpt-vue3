@@ -26,7 +26,7 @@ export default {
 
         async getChatList(){
             var me = this
-            // this.storage.delete(`db://chats/1`)
+            // auth.storage.delete(`db://chats/1`)
             var option = {
                 sort: "desc",
                 orderBy: null,
@@ -34,7 +34,7 @@ export default {
                 startAt: null,
                 endAt: null,
             }
-            me.storage.watch_added(`db://chats/1/messages`, option, function (item) {
+            auth.storage.watch_added(`db://chats/1/messages`, option, function (item) {
                 if(me.isInitDone){
                     if(item.role == 'system'){
                         if(me.messages[me.messages.length - 1].role == 'system'){
@@ -49,7 +49,7 @@ export default {
                     }
                 }
             });
-            await me.storage.list(`db://chats/1/messages`, option).then(function (messages){
+            await auth.storage.list(`db://chats/1/messages`, option).then(function (messages){
                 if(messages){
                     me.messages = messages.reverse();
                 }
@@ -64,7 +64,7 @@ export default {
                 startAt: null,
                 endAt: this.messages[0].timeStamp,
             }
-            let messages = await this.storage.list(`db://chats/1/messages`, option)
+            let messages = await auth.storage.list(`db://chats/1/messages`, option)
             if(messages){
                 messages.splice(0, 1)
                 this.messages = messages.reverse().concat(this.messages);
@@ -176,7 +176,7 @@ export default {
                     this.prompt = null
                 }
             }
-            await this.storage.putObject(`db://${path}`, obj);
+            await auth.storage.putObject(`db://${path}`, obj);
         },
         async putObject(path, obj) {
             await auth.storage.putObject(`db://${path}`, obj);
