@@ -125,6 +125,15 @@
                                         <pre class="text-body-1" v-if="message.replyContent">{{ message.replyContent }}</pre>   
                                         <v-divider v-if="message.replyContent"></v-divider>
                                         <p class="text-body-1">{{ message.content }}</p>
+                                        <p style="margin-top: 5px;" 
+                                            v-if="message.role == 'system' 
+                                            && message.content.includes('시작하시겠습니까') 
+                                            && index == filteredMessages.length - 1
+                                            && (message['prompt'] && userInfo.email == message['prompt'].requestUserEmail)"
+                                        >
+                                            <v-btn style="margin-right: 5px;" size="small" @click="processInstance(message['prompt'])">y</v-btn>
+                                            <v-btn size="small">n</v-btn>
+                                        </p>
                                         <v-btn v-if="replyIndex === index"
                                             style="position: absolute; left: 70px; background-color: aliceblue;"
                                             @click="beforeReply(message)"
@@ -219,6 +228,9 @@ export default {
         });
     },
     methods: {
+        processInstance(prompt){
+            console.log(prompt.content, prompt.requestUserEmail)
+        },
         getMoreChat(){
             this.$emit("getMoreChat")
         },

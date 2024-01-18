@@ -5,6 +5,7 @@ import CommonStorageBase from "@/components/storage/CommonStorageBase";
 
 export default {
     data: () => ({
+        prompt: null,
         isInitDone: false,
         storage: null,
         generator: null,
@@ -32,9 +33,15 @@ export default {
             me.storage.watch_added(`db://chats/1/messages`, option, function (item) {
                 if(me.isInitDone){
                     if(item.role == 'system'){
-                        me.messages[me.messages.length - 1] = item
+                        if(me.messages[me.messages.length - 1].role == 'system'){
+                            me.messages[me.messages.length - 1] = item
+                        } else {
+                            me.messages.push(item)
+                        }
                     } else {
-                        me.messages.push(item)
+                        if(item.email != me.userInfo.email){
+                            me.messages.push(item)
+                        }
                     }
                 }
             });
@@ -95,11 +102,19 @@ export default {
                     })
                 })
 
-                const chatObj = {
-                    role: "user",
-                    content: message
+                if(!this.pushMessage){
+                    const chatObj = {
+                        role: "user",
+                        content: message
+                    }
+                    messages.push(chatObj);
+                } else {
+                    this.prompt = {
+                        content: message,
+                        requestUserEmail: this.userInfo.email,
+                        requestUserName: this.userInfo.name,
+                    }
                 }
-                messages.push(chatObj);
 
                 this.generator.previousMessages = [
                     ...this.generator.previousMessages,
@@ -136,6 +151,12 @@ export default {
         },
     
         async saveMessages(path, obj) {
+            if(this.prompt && this.prompt.content){
+                if(obj.role == 'system' && obj.content.includes("시작하시겠습니까")){
+                    obj.prompt = this.prompt
+                    this.prompt = null
+                }
+            }
             await this.storage.putObject(`db://${path}`, obj);
         },
     
@@ -161,7 +182,11 @@ export default {
     
             this.afterGenerationFinished(putObj);
             if(this.pushMessage){
-                this.pushMessage(response, 'system');
+                if(response == '.'){
+                    this.messages.splice(this.messages.length - 1, 1)
+                } else {
+                    this.pushMessage(response, 'system');
+                }
             }
         },
     
