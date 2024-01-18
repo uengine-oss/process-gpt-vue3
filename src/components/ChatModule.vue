@@ -106,33 +106,34 @@ export default {
             }
             return value;
         },
-    
+        
         async sendMessage(message) {
             if (message !== "") {
+                let messages = []
+                this.messages.forEach(function (msg){
+                    messages.push({
+                        role: msg.role,
+                        content: msg.content
+                    })
+                })
+
                 if(!this.pushMessage){
                     const chatObj = {
                         role: "user",
                         content: message
                     }
-                    this.messages.push(chatObj);
+                    messages.push(chatObj);
                 } else {
-                    let messages = []
-                    this.messages.forEach(function (msg){
-                        messages.push({
-                            role: msg.role,
-                            content: msg.content
-                        })
-                    })
-
                     this.prompt = {
                         content: message,
                         requestUserEmail: this.userInfo.email,
                         requestUserName: this.userInfo.name,
                     }
                 }
+
                 this.generator.previousMessages = [
                     ...this.generator.previousMessages,
-                    ...this.messages
+                    ...messages
                 ];
     
                 await this.generator.generate();
