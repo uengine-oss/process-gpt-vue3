@@ -4,7 +4,26 @@
             :items="todolist" 
             item-value="name"
             class="border rounded-md"
-    ></v-data-table>
+    >
+        <template v-slot:item="{ item }">
+            <tr @click="goInstance(item.instanceId)" style="cursor: pointer;">
+                <td>{{ item.instanceId }}</td>
+                <td>{{ item.activityId }}</td>
+                <td>{{ item.definitionId }}</td>
+                <td>{{ item.startDate }}</td>
+                <td>{{ item.endDate }}</td>
+                <td>{{ item.userId }}</td>
+                <td>
+                    <v-chip v-if="item.status == 'Completed'" color="success" size="small">
+                        {{ item.status }}
+                    </v-chip>
+                    <v-chip v-else color="warning" size="small">
+                        {{ item.status }}
+                    </v-chip>
+                </td>
+            </tr>
+        </template>
+    </v-data-table>
 </template>
 
 <script>
@@ -30,24 +49,21 @@ export default defineComponent({
         ]
     }),
     async created() {
-        this.init();
+        await this.init();
     }, 
     methods:{
         async init() {
             if (this.path) {
                 this.userInfo = await auth.storage.getUserInfo();
-                this.getTodolist();
+                await auth.storage.watch(`db://${this.path}/${this.userInfo.email}`, (callback) => {
+                    if (callback) {
+                        this.todolist = Object.values(callback);
+                    }
+                });
             }
         },
-        async getTodolist() {
-            await auth.storage.watch(`db://${this.path}/${this.userInfo.email}`, (callback) => {
-                if (callback) {
-                    this.todolist = Object.values(callback);
-                }
-            });
-        },
         goInstance(id) {
-            this.$router.push(`/instances/${id}`);
+            // this.$router.push(`/instances/${id}`);
         },
         async deleteItem(id) {
             if (confirm("해당 Item 을 삭제 하시겠습니까?")) {

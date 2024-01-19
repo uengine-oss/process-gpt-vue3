@@ -62,20 +62,20 @@ const getCart = computed(() => {
                     <!-- ---------------------------------------------- -->
                     <!-- translate -->
                     <!-- ---------------------------------------------- -->
-                    <div class="hidden-sm-and-down mr-sm-6 mr-4">
+                    <!-- <div class="hidden-sm-and-down mr-sm-6 mr-4">
                         <LanguageDD />
-                    </div>
+                    </div> -->
 
                     <!-- ---------------------------------------------- -->
                     <!-- ShoppingCart -->
                     <!-- ---------------------------------------------- -->
-                    <div class="hidden-sm-and-down mr-sm-4 mr-4">
+                    <!-- <div class="hidden-sm-and-down mr-sm-4 mr-4">
                         <v-btn icon variant="text" class=" mr-sm-3 mr-2" to="/ecommerce/checkout" size="small">
                             <v-badge color="primary" :content="getCart?.length" offset-x="-4" offset-y="-6">
                                 <Icon icon="solar:cart-3-line-duotone" height="24" width="24" />
                             </v-badge>
                         </v-btn>
-                    </div>
+                    </div> -->
 
                     <!-- ---------------------------------------------- -->
                     <!-- Notification -->
@@ -102,12 +102,12 @@ const getCart = computed(() => {
                                 <div class="mr-sm-3 mr-2">
                                     <Searchbar />
                                 </div>
-                                <LanguageDD />
-                                <v-btn icon variant="text" class=" mr-sm-3 mr-2" to="/ecommerce/checkout" size="small">
+                                <!-- <LanguageDD /> -->
+                                <!-- <v-btn icon variant="text" class=" mr-sm-3 mr-2" to="/ecommerce/checkout" size="small">
                                     <v-badge color="primary" :content="getCart?.length" offset-x="-4" offset-y="-6">
                                         <Icon icon="solar:cart-3-line-duotone" height="24" width="24" />
                                     </v-badge>
-                                </v-btn>
+                                </v-btn> -->
                                 <NotificationDD />
                                 <ProfileDD />
                             </div>

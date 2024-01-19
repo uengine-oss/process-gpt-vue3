@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth';
 import { Icon } from '@iconify/vue';
 
 const auth = useAuthStore();
+const picture = localStorage.getItem("picture");
 </script>
 
 <template>
@@ -17,7 +18,7 @@ const auth = useAuthStore();
                 <div class="d-flex align-center">
                     <!-- user profile -->
                     <v-avatar size="50">
-                        <img src="@/assets/images/profile/user6.jpg" width="50" alt="Mike Nielsen" />
+                        <v-img :src="picture" width="50" />
                     </v-avatar>
                     <div class="ml-md-4 d-md-block d-none">
                         <h6 class="text-h6 d-flex align-center text-black font-weight-semibold">{{ auth.storage.userInfo.name }}</h6>
@@ -35,7 +36,7 @@ const auth = useAuthStore();
 
                 <div class="d-flex align-center mt-5 pb-6">
                     <v-avatar size="90">
-                        <img src="@/assets/images/profile/user6.jpg" width="90" />
+                        <v-img :src="picture" width="50" />
                     </v-avatar>
                     <div class="ml-5">
                         <h6 class="text-h5 mb-n1">{{ auth.storage.userInfo.name }}</h6>

@@ -74,7 +74,7 @@ export default {
             return this.$route.href.replace("#/", "");
         },
 
-        async loadData(path){
+        async loadData(path) {
         },
 
         runTest(){
@@ -195,7 +195,7 @@ export default {
 
         async getUid(email) {
             let uid = "";
-            const userList = await this.getData("users");
+            const userList = await this.getData("enrolledUsers");
             if (userList) {
                 const ids = Object.keys(userList);
                 ids.forEach(id => {
