@@ -47,7 +47,7 @@ import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import partialParse from "partial-json-parser";
 import { VectorStorage } from "vector-storage";
-import ChatGenerator from "@/components/ai/ProcessInstanceGenerator.js";
+import ChatGenerator from "@/components/ai/WorkAssistantGenerator.js";
 import Chat from "@/components/ui/Chat.vue";
 import ChatModule from "@/components/ChatModule.vue";
 
@@ -139,6 +139,9 @@ export default {
                     timeStamp: timeStamp,
                     content: newMessage
                 }
+            }
+            if(role != 'system'){
+                this.messages.push(obj)
             }
             this.saveMessages(`chats/1/messages/${this.uuid()}`, obj);
         },

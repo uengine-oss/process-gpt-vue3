@@ -5,6 +5,9 @@ const auth = useAuthStore();
 
 export default {
     data: () => ({
+        prompt: null,
+        isInitDone: false,
+        storage: null,
         generator: null,
         messages: [],
         userInfo: {},
@@ -23,7 +26,7 @@ export default {
 
         async getChatList(){
             var me = this
-            // this.storage.delete(`db://chats/1`)
+            // auth.storage.delete(`db://chats/1`)
             var option = {
                 sort: "desc",
                 orderBy: null,
@@ -31,16 +34,22 @@ export default {
                 startAt: null,
                 endAt: null,
             }
-            me.storage.watch_added(`db://chats/1/messages`, option, function (item) {
+            auth.storage.watch_added(`db://chats/1/messages`, option, function (item) {
                 if(me.isInitDone){
                     if(item.role == 'system'){
-                        me.messages[me.messages.length - 1] = item
+                        if(me.messages[me.messages.length - 1].role == 'system'){
+                            me.messages[me.messages.length - 1] = item
+                        } else {
+                            me.messages.push(item)
+                        }
                     } else {
-                        me.messages.push(item)
+                        if(item.email != me.userInfo.email){
+                            me.messages.push(item)
+                        }
                     }
                 }
             });
-            await me.storage.list(`db://chats/1/messages`, option).then(function (messages){
+            await auth.storage.list(`db://chats/1/messages`, option).then(function (messages){
                 if(messages){
                     me.messages = messages.reverse();
                 }
@@ -55,7 +64,7 @@ export default {
                 startAt: null,
                 endAt: this.messages[0].timeStamp,
             }
-            let messages = await this.storage.list(`db://chats/1/messages`, option)
+            let messages = await auth.storage.list(`db://chats/1/messages`, option)
             if(messages){
                 messages.splice(0, 1)
                 this.messages = messages.reverse().concat(this.messages);
@@ -97,18 +106,34 @@ export default {
             }
             return value;
         },
-    
+        
         async sendMessage(message) {
             if (message !== "") {
-                const chatObj = {
-                    role: "user",
-                    content: message
+                let messages = []
+                this.messages.forEach(function (msg){
+                    messages.push({
+                        role: msg.role,
+                        content: msg.content
+                    })
+                })
+
+                if(!this.pushMessage){
+                    const chatObj = {
+                        role: "user",
+                        content: message
+                    }
+                    messages.push(chatObj);
+                } else {
+                    this.prompt = {
+                        content: message,
+                        requestUserEmail: this.userInfo.email,
+                        requestUserName: this.userInfo.name,
+                    }
                 }
-                this.messages.push(chatObj);
 
                 this.generator.previousMessages = [
                     ...this.generator.previousMessages,
-                    ...this.messages
+                    ...messages
                 ];
     
                 await this.generator.generate();
@@ -144,7 +169,15 @@ export default {
             const path = `users/${uid}/notifications`;
             this.pushObject(path, obj);
         },
-    
+        async saveMessages(path, obj) {
+            if(this.prompt && this.prompt.content){
+                if(obj.role == 'system' && obj.content.includes("시작하시겠습니까")){
+                    obj.prompt = this.prompt
+                    this.prompt = null
+                }
+            }
+            await auth.storage.putObject(`db://${path}`, obj);
+        },
         async putObject(path, obj) {
             await auth.storage.putObject(`db://${path}`, obj);
         },
@@ -187,7 +220,23 @@ export default {
             let messageWriting = this.messages[this.messages.length -1];
             delete messageWriting.isLoading;
     
-            this.afterGenerationFinished();
+            var msgText = "";
+            if (this.messages) {
+                msgText = JSON.stringify(this.messages);
+            }
+    
+            var putObj =  {
+                messages: msgText,
+            }
+    
+            this.afterGenerationFinished(putObj);
+            if(this.pushMessage){
+                if(response == '.'){
+                    this.messages.splice(this.messages.length - 1, 1)
+                } else {
+                    this.pushMessage(response, 'system');
+                }
+            }
         },
     
         onError(error) {
