@@ -42,7 +42,7 @@
             <perfect-scrollbar class="rightpartHeight h-100">
                 <v-btn v-if="filteredMessages.length > 0" style="position: absolute; left: 45%;" @click="getMoreChat()">get more chat</v-btn>
                 <div class="d-flex">
-                    <div class="w-100" style="height: 640px;">
+                    <div class="w-100" style="height: 380px;">
                         <div v-for="(message, index) in filteredMessages" :key="index" class="pa-5">
                             <div v-if="message.email == userInfo.email" class="justify-end d-flex text-end mb-1">
                                 <div>

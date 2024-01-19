@@ -1,70 +1,306 @@
 <template>
     <div class="canvas-panel">
-        <!-- <v-layout right> -->
-            <opengraph
-                    focus-canvas-on-select
-                    wheelScalable
-                    :dragPageMovable="dragPageMovable"
-                    :enableContextmenu="false"
-                    :enableRootContextmenu="false"
-                    :enableHotkeyCtrlC="false"
-                    :enableHotkeyCtrlV="false"
-                    :enableHotkeyDelete="false"
-                    :slider="false"
-                    :movable="!monitor"
-                    :resizable="!monitor"
-                    :selectable="!monitor"
-                    :connectable="!monitor"
-                    :width="100000"
-                    :imageBase="imageBase"
-                    :height="100000"
-                    v-if="modelValue"
-                    ref="bpmnOpengraph"
-                    v-on:canvasReady="bindEvents"
-                    v-on:connectShape="onConnectShape"
-                    v-on:divideLane="onDivideLane"
-            >
-                <!--롤은 Lane 형식의 큰 틀-->
-                <div v-for="roleId in Object.keys(value.elements)" :key="'role'+roleId">
-                    <bpmn-role 
-                            v-if="roleId && value.elements[roleId] && value.elements[roleId]._type == 'org.uengine.kernel.Role'" 
-                            :value.sync="value.elements[roleId]"
-                            :ref="roleId"
-                    ></bpmn-role>
+        <v-container style="width: 500px; height: 100px; z-index: 1000;">
+            <v-row v-if="!monitor" no-gutters>
+                <v-col>
+                    <v-text-field
+                        style="margin-right: 10px; margin-top: 8px; max-width: 120px" 
+                        label="Process Name"
+                        v-model="projectName"
+                    ></v-text-field>
+                </v-col>
+                <v-col>
+                    <v-menu offset-y
+                                open-on-hover
+                                left>
+                            <template v-slot:activator="{ props }">
+                                <v-btn class="bpmn-btn"
+                                    text
+                                    style="margin-right: 15px; margin-top: 15px;"
+                                    color="primary"
+                                    dark
+                                    v-on="props"
+                                    @click="openDefinitionSettings"
+                                >
+                                    <v-icon>settings</v-icon>
+                                    <div class="bpmn-btn-text">Settings</div>
+                                </v-btn>
+                            </template>
+                        </v-menu>
+                </v-col>
+                <v-col>
+                    <v-menu offset-y
+                                open-on-hover
+                                left>
+                            <template v-slot:activator="{ props }">
+                                <v-btn class="bpmn-btn"
+                                    text
+                                    style="margin-right: 15px; margin-top: 15px;"
+                                    color="orange"
+                                    dark
+                                    v-on="props"
+                                    @click="openProcessVariables"
+                                >
+                                    <v-icon>sort_by_alpha</v-icon>
+                                    <div class="bpmn-btn-text">Vars</div>
+                                </v-btn>
+                            </template>
+                        </v-menu>
+                </v-col>
+                <v-col>
+                    <v-menu offset-y
+                            open-on-hover
+                            left>
+                        <template v-slot:activator="{ props }">
+                            <v-btn class="bpmn-btn"
+                                v-if="readOnly"
+                                style="margin-right: 5px; margin-top: 15px;"
+                                color="primary"
+                                @click="saveComposition('fork')"
+                                text
+                            >
+                                <v-icon>{{icon.fork}}</v-icon>
+                                <div class="bpmn-btn-text">FORK</div>
+                            </v-btn>
+                            <v-btn class="bpmn-btn"
+                                v-else
+                                style="margin-right: 5px; margin-top: 15px;"
+                                color="primary"
+                                @click="saveComposition('save')"
+                                v-on="props"
+                                text
+                            >
+                                <v-icon>{{icon.save}}</v-icon>
+                                <div class="bpmn-btn-text">SAVE</div>
+                            </v-btn>
+                        </template>
+                        <v-list v-if="!isClazzModeling">
+                            <v-list-item
+                                    v-for="item in saveItems" :key="item.title"
+                                    @click="functionSelect(item.title)">
+                                <v-list-item-title>{{ item.title }}</v-list-item-title>
+                            </v-list-item>
+                        </v-list>
+                    </v-menu>
+                </v-col>
+                <!-- 웹페이지 버튼들 -->
+                <!-- <v-row class="bpmn-web-btn">
+
+                    <div v-if="isOwnModel && isServerModel && !isReadOnlyModel">
+                        <v-btn text
+                                style="margin-right: 15px; margin-top: 15px;"
+                                color="primary"
+                                :disabled="!initLoad"
+                                @click="openInviteUsers()">
+                            <v-icon>{{icon.share}}</v-icon>
+                            <div class="bpmn-btn-text">SHARE</div>
+                            <v-avatar v-if="requestCount" 
+                                    size="25" color="red"
+                                    style="margin-left: 2px;"
+                            >{{ requestCount }}</v-avatar>
+                        </v-btn>
+                    </div>
+
+                    <div v-if="versions" style="margin-right: 10px;">
+                        <v-select v-for="version in versions.slice().reverse()" 
+                                :key="version"
+                                v-on="on"
+                                v-model="selectedVersion" 
+                                @change="changeVersion" 
+                                :value="version"
+                                style="margin-top: 10px; margin-right: 15px; max-width: 150px;">
+                            <v-chip v-if="productionVersionId == version.versionId">production</v-chip>
+                        </v-select>
+                    </div>
+
+                    <div v-if="value" style="margin-right: 10px;">
+                        <v-select class="bpmn-language-select"
+                            v-model="selectedLocale" 
+                            :items="languageItems" 
+                            item-value="value" 
+                            item-text="title"
+                            @change="changeLocale" 
+                            label="Language"
+                            style="margin-top: 10px; margin-right: 15px; max-width: 150px;"
+                        ></v-select>
+                    </div>
+
+                    <div>
+                        <v-menu offset-y
+                                open-on-hover
+                                left>
+                            <template v-slot:activator="{ props }">
+                                <v-btn style="margin-right: 15px; margin-top: 15px;"
+                                        color="primary"
+                                        dark fab small
+                                        v-on="props"
+                                        @click="initiateProcess">
+                                    <v-icon>play_arrow</v-icon>
+                                </v-btn>
+                            </template>
+                        </v-menu>
+                        <v-menu offset-y
+                                open-on-hover
+                                left>
+                            <template v-slot:activator="{ props }">
+                                <v-btn style="margin-right: 15px; margin-top: 15px;"
+                                        color="orange"
+                                        dark fab small
+                                        v-on="props"
+                                        @click="generatedefinition">
+                                    <v-icon v-if="id && id.indexOf('@') == -1">list</v-icon>
+                                    <v-icon v-else>history</v-icon>
+                                </v-btn>
+                            </template>
+                        </v-menu>
+                    </div>
+                </v-row> -->
+            </v-row>
+
+            <v-row v-else no-gutters justify="end" style="margin-right: 15px;">
+                <!--인스턴스 이름-->
+                <v-text-field style="margin-right: 10px; margin-top: 8px; max-width: 300px" 
+                        v-model="instanceName"
+                        label="Instance Name"
+                        type="text"
+                        readonly
+                ></v-text-field>
+                
+                <!-- 웹페이지 버튼들 -->
+                <div style="margin-right: 10px;">
+
+                    <!--프로세스 변수-->
+                    <v-menu offset-y
+                            open-on-hover
+                            left>
+                        <template v-slot:activator="{ props }">
+                            <v-btn text
+                                    style="margin-right: 15px; margin-top: 15px;"
+                                    id="instanceVariables" 
+                                    color="primary"
+                                    dark
+                                    v-on="props"
+                                    @click="openInstanceVariables">
+                                Variables
+                            </v-btn>
+                        </template>
+                    </v-menu>                        
+                    
+                    <!--담당자 변경-->
+                    <v-menu offset-y
+                            open-on-hover
+                            left>
+                        <template v-slot:activator="{ props }">
+                            <v-btn text
+                                    style="margin-right: 15px; margin-top: 15px;"
+                                    id="userPicker" 
+                                    color="orange"
+                                    dark
+                                    v-on="props"
+                                    @click="openUserPicker">
+                                Role Mappings
+                            </v-btn>
+                        </template>
+                    </v-menu>
+
+                </div>
+                <!-- 웹페이지 버튼들 끝 -->
+                <div v-if="versions" style="margin-right: 10px;">
+                    <v-select v-for="version in versions.slice().reverse()" 
+                            :key="version"
+                            v-on="on"
+                            v-model="selectedVersion" 
+                            @change="changeVersion" 
+                            :value="version"
+                            style="margin-top: 10px; margin-right: 15px; max-width: 150px;">
+                        <v-chip v-if="productionVersionId == version.versionId">production</v-chip>
+                    </v-select>
                 </div>
 
-                <!--액티비티는 각 활동 요소-->
-                <div v-for="elementId in Object.keys(value.elements)" :key="elementId">
-                    <!--component 로 지칭한 것은 뒤의 is 가 가르키는 컴포넌트 이름으로 뜸-->
+                <bpmn-instance-variables
+                        :id="instanceId"
+                        :definition="value"
+                        v-if="value"
+                        ref="instanceVariables"
+                ></bpmn-instance-variables>
+                
+                <!-- <user-picker
+                        :id="instanceId"
+                        ref="userPicker"
+                        :roles="roles"
+                        v-if="value"
+                        style="min-width: 70%;"
+                ></user-picker> -->
+            </v-row>
+        </v-container>
 
-                    <!--//TODO 여기의 status 를 http://localhost:8080/instance/1/variables 에서 얻어온 status 로 교체하여야 한다.-->
-                    <!--ex) :status="???"-->
-                    <!--그러기 위해서는 SvgGraph(데이터 불러오는 부분) 에서, definition 가져온 이후에, definition 안에 있는 childActivities 를 까서-->
-                    <!--그 안에 tracingTag 가 동일한 것들에 대해 status 를 매핑시켜주어야 한다.-->
-                    <component v-if="elementId && value.elements[elementId] != null" 
-                            :is="getComponentByClassName(value.elements[elementId]._type)"
-                            :value.sync="value.elements[elementId]" 
-                            :definition="value"
-                            :ref="elementId"
-                ></component>
-                </div>
+        <opengraph
+            focus-canvas-on-select
+            wheelScalable
+            :dragPageMovable="dragPageMovable"
+            :enableContextmenu="false"
+            :enableRootContextmenu="false"
+            :enableHotkeyCtrlC="false"
+            :enableHotkeyCtrlV="false"
+            :enableHotkeyDelete="false"
+            :slider="false"
+            :movable="!monitor"
+            :resizable="!monitor"
+            :selectable="!monitor"
+            :connectable="!monitor"
+            :width="100000"
+            :imageBase="imageBase"
+            :height="100000"
+            v-if="modelValue"
+            ref="bpmnOpengraph"
+            v-on:canvasReady="bindEvents"
+            v-on:connectShape="onConnectShape"
+            v-on:divideLane="onDivideLane"
+        >
+            <!--롤은 Lane 형식의 큰 틀-->
+            <div v-for="roleId in Object.keys(value.elements)" :key="'role'+roleId">
+                <bpmn-role 
+                        v-if="roleId && value.elements[roleId] && value.elements[roleId]._type == 'org.uengine.kernel.Role'" 
+                        :value="value.elements[roleId]"
+                        :ref="roleId"
+                ></bpmn-role>
+            </div>
 
-                <!--릴레이션은 액티비티간 연결선(흐름)-->
-                <div v-for="relationId in Object.keys(value.relations)" :key="relationId">
-                    <bpmn-message-flow 
-                            v-if="relationId && value.relations[relationId] != null && value.relations[relationId]._type == 'org.uengine.kernel.bpmn.MessageFlow'" 
-                            :value="value.relations[relationId]"
-                            :definition="value"
-                            :ref="relationId"
-                    ></bpmn-message-flow>
-                    <bpmn-relation 
-                            v-else-if="relationId && value.relations[relationId] != null" 
-                            :value="value.relations[relationId]"
-                            :definition="value"
-                            :ref="relationId"
-                    ></bpmn-relation>
-                </div>
-            </opengraph>
+            <!--액티비티는 각 활동 요소-->
+            <div v-for="elementId in Object.keys(value.elements)" :key="elementId">
+                <!--component 로 지칭한 것은 뒤의 is 가 가르키는 컴포넌트 이름으로 뜸-->
+
+                <!--//TODO 여기의 status 를 http://localhost:8080/instance/1/variables 에서 얻어온 status 로 교체하여야 한다.-->
+                <!--ex) :status="???"-->
+                <!--그러기 위해서는 SvgGraph(데이터 불러오는 부분) 에서, definition 가져온 이후에, definition 안에 있는 childActivities 를 까서-->
+                <!--그 안에 tracingTag 가 동일한 것들에 대해 status 를 매핑시켜주어야 한다.-->
+                <component v-if="elementId && value.elements[elementId] != null" 
+                        :is="getComponentByClassName(value.elements[elementId]._type)"
+                        :value="value.elements[elementId]" 
+                        :definition="value"
+                        :ref="elementId"
+            ></component>
+            </div>
+
+            <!--릴레이션은 액티비티간 연결선(흐름)-->
+            <div v-for="relationId in Object.keys(value.relations)" :key="relationId">
+                <bpmn-message-flow 
+                        v-if="relationId && value.relations[relationId] != null && value.relations[relationId]._type == 'org.uengine.kernel.bpmn.MessageFlow'" 
+                        :value="value.relations[relationId]"
+                        :definition="value"
+                        :ref="relationId"
+                ></bpmn-message-flow>
+                <bpmn-relation 
+                        v-else-if="relationId && value.relations[relationId] != null" 
+                        :value="value.relations[relationId]"
+                        :definition="value"
+                        :ref="relationId"
+                ></bpmn-relation>
+            </div>
+        </opengraph>
+
+        
+            
             
             <!-- <div class="bpmn-mobile-btn" style="position: fixed; bottom:20px; right:20px; z-index:999;">
                 <v-speed-dial
@@ -663,20 +899,22 @@
 
             //     this.$emit('update:loaded', true)
             // });
-            // this.value = JSON.parse("{\"elements\":{\"3e760451-44b4-1138-4b94-ba5d332163e3\":null,\"0cb07636-99bf-62e0-e88e-d8b4095f3b5d\":null,\"c9824ed8-c477-4869-f75f-7ed67c7f53e4\":null,\"c680c8a1-4262-6035-006b-079ca8bf6579\":null,\"bf4fb4d2-0697-ed4f-4df4-0ce914f5a151\":null,\"64bba49c-182a-043c-8996-d62ac98deda7\":{\"_type\":\"org.uengine.kernel.Role\",\"name\":\"initiator\",\"displayName\":\"initiator\",\"roleResolutionContext\":{\"endpoint\":\"sanghoon01@uengine.org\",\"_type\":\"org.uengine.kernel.DirectRoleResolutionContext\"},\"selected\":false,\"elementView\":{\"_type\":\"org.uengine.kernel.view.DefaultActivityView\",\"id\":\"64bba49c-182a-043c-8996-d62ac98deda7\",\"x\":791.5,\"y\":461,\"width\":561,\"height\":200,\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":\\\".5\\\",\\\"fill-cx\\\":\\\".5\\\",\\\"fill-cy\\\":\\\".5\\\",\\\"fill\\\":\\\"#ffffff\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"center\\\",\\\"label-direction\\\":\\\"vertical\\\",\\\"vertical-align\\\":\\\"top\\\",\\\"cursor\\\":\\\"move\\\"}\",\"parent\":null},\"_instanceInfo\":[],\"author\":\"lqang0r9000nemcfgfywyd89\",\"oldName\":\"initiator\"},\"39c1b259-936a-4e75-5a50-e61b208d934e\":{\"_type\":\"org.uengine.kernel.bpmn.StartEvent\",\"name\":\"\",\"tracingTag\":\"4\",\"selected\":false,\"elementView\":{\"_type\":\"org.uengine.kernel.view.DefaultActivityView\",\"id\":\"39c1b259-936a-4e75-5a50-e61b208d934e\",\"x\":576,\"y\":463,\"width\":30,\"height\":30,\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":\\\".5\\\",\\\"fill-cx\\\":\\\".5\\\",\\\"fill-cy\\\":\\\".5\\\",\\\"fill\\\":\\\"white\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"bottom\\\",\\\"label-width\\\":120,\\\"stroke-width\\\":1.5,\\\"cursor\\\":\\\"move\\\"}\",\"parent\":\"64bba49c-182a-043c-8996-d62ac98deda7\"},\"author\":\"lqang0r9000nemcfgfywyd89\"},\"c4bd049b-926d-9dd3-a63e-caef54c182d9\":{\"_type\":\"org.uengine.kernel.DefaultActivity\",\"name\":\"\",\"selected\":false,\"tracingTag\":\"5\",\"elementView\":{\"_type\":\"org.uengine.kernel.view.DefaultActivityView\",\"id\":\"c4bd049b-926d-9dd3-a63e-caef54c182d9\",\"x\":718,\"y\":462,\"width\":100,\"height\":70,\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":1,\\\"fill-cx\\\":0.1,\\\"fill-cy\\\":0.1,\\\"fill\\\":\\\"#FFFFFF\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"center\\\",\\\"stroke-width\\\":1.2,\\\"r\\\":\\\"10\\\",\\\"cursor\\\":\\\"move\\\"}\",\"parent\":\"64bba49c-182a-043c-8996-d62ac98deda7\"},\"author\":\"lqang0r9000nemcfgfywyd89\"},\"2c3c5adb-29bd-6058-67c2-4f1ac49b221c\":{\"_type\":\"org.uengine.kernel.HumanActivity\",\"name\":\"장애 처리\",\"role\":{\"_type\":\"org.uengine.kernel.Role\",\"name\":\"initiator\"},\"parameters\":[{\"_type\":\"org.uengine.kernel.ParameterContext\",\"direction\":\"IN-OUT\",\"variable\":{\"_type\":\"org.uengine.kernel.ProcessVariable\",\"name\":\"error\"},\"argument\":{\"_type\":\"org.uengine.contexts.TextContext\",\"text\":\"error\"}}],\"tracingTag\":\"5\",\"selected\":false,\"elementView\":{\"_type\":\"org.uengine.kernel.view.DefaultActivityView\",\"id\":\"2c3c5adb-29bd-6058-67c2-4f1ac49b221c\",\"x\":718,\"y\":462,\"width\":100,\"height\":70,\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":1,\\\"fill-cx\\\":0.1,\\\"fill-cy\\\":0.1,\\\"fill\\\":\\\"#FFFFFF\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"center\\\",\\\"stroke-width\\\":1.2,\\\"r\\\":\\\"10\\\"}\",\"parent\":\"64bba49c-182a-043c-8996-d62ac98deda7\"},\"author\":\"lqang0r9000nemcfgfywyd89\",\"oldName\":\"장애 처리\"},\"531c6e55-bfcd-073f-7bce-938363c84a8d\":{\"_type\":\"org.uengine.kernel.bpmn.EndEvent\",\"name\":\"\",\"tracingTag\":\"6\",\"selected\":false,\"elementView\":{\"_type\":\"org.uengine.kernel.view.DefaultActivityView\",\"id\":\"531c6e55-bfcd-073f-7bce-938363c84a8d\",\"x\":874,\"y\":465,\"width\":30,\"height\":30,\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":\\\".5\\\",\\\"fill-cx\\\":\\\".5\\\",\\\"fill-cy\\\":\\\".5\\\",\\\"fill\\\":\\\"white\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"bottom\\\",\\\"stroke-width\\\":3,\\\"label-width\\\":120,\\\"cursor\\\":\\\"move\\\"}\",\"parent\":\"64bba49c-182a-043c-8996-d62ac98deda7\"},\"author\":\"lqang0r9000nemcfgfywyd89\"}},\"relations\":{\"78a66a7e-d601-47c4-dea3-3331728e9e62\":null,\"1f0508d1-c102-5979-1e53-48f1cfbdca2d\":null,\"a2fdac89-4747-e84a-33b2-37a3f14d69d6\":{\"name\":\"\",\"_type\":\"org.uengine.kernel.bpmn.SequenceFlow\",\"selected\":false,\"sourceRef\":\"4\",\"targetRef\":\"5\",\"from\":\"39c1b259-936a-4e75-5a50-e61b208d934e\",\"to\":\"c4bd049b-926d-9dd3-a63e-caef54c182d9\",\"priority\":1,\"relationView\":{\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":\\\".5\\\",\\\"fill-cx\\\":\\\".5\\\",\\\"fill-cy\\\":\\\".5\\\",\\\"fill\\\":\\\"none\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"center\\\",\\\"stroke-width\\\":1.5,\\\"stroke-opacity\\\":1,\\\"edge-type\\\":\\\"plain\\\",\\\"arrow-start\\\":\\\"none\\\",\\\"arrow-end\\\":\\\"block\\\",\\\"stroke-dasharray\\\":\\\"\\\",\\\"stroke-linejoin\\\":\\\"round\\\",\\\"cursor\\\":\\\"pointer\\\"}\",\"value\":\"[[588,464],[644,464],[644,464],[668,464]]\",\"id\":\"a2fdac89-4747-e84a-33b2-37a3f14d69d6\"},\"condition\":{\"_type\":\"org.uengine.kernel.Evaluate\",\"pv\":{\"_type\":\"org.uengine.kernel.ProcessVariable\",\"name\":\"\"},\"condition\":\"==\",\"val\":\"\"},\"author\":\"lqang0r9000nemcfgfywyd89\"},\"51e96f3d-12d5-7e44-366e-84035abe3f65\":{\"name\":\"\",\"_type\":\"org.uengine.kernel.bpmn.SequenceFlow\",\"selected\":false,\"sourceRef\":\"5\",\"targetRef\":\"6\",\"from\":\"2c3c5adb-29bd-6058-67c2-4f1ac49b221c\",\"to\":\"531c6e55-bfcd-073f-7bce-938363c84a8d\",\"priority\":1,\"relationView\":{\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":\\\".5\\\",\\\"fill-cx\\\":\\\".5\\\",\\\"fill-cy\\\":\\\".5\\\",\\\"fill\\\":\\\"none\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"center\\\",\\\"stroke-width\\\":1.5,\\\"stroke-opacity\\\":1,\\\"edge-type\\\":\\\"plain\\\",\\\"arrow-start\\\":\\\"none\\\",\\\"arrow-end\\\":\\\"block\\\",\\\"stroke-dasharray\\\":\\\"\\\",\\\"stroke-linejoin\\\":\\\"round\\\",\\\"cursor\\\":\\\"pointer\\\"}\",\"value\":\"[[768,464],[807,464]]\",\"id\":\"51e96f3d-12d5-7e44-366e-84035abe3f65\"},\"condition\":{\"_type\":\"org.uengine.kernel.Evaluate\",\"pv\":{\"_type\":\"org.uengine.kernel.ProcessVariable\",\"name\":\"\"},\"condition\":\"==\",\"val\":\"\"},\"author\":\"lqang0r9000nemcfgfywyd89\"}},\"version\":3,\"scm\":{\"tag\":null,\"org\":null,\"repo\":null,\"forkedOrg\":null,\"forkedRepo\":null},\"processVariableDescriptors\":[{\"name\":\"error\",\"displayName\":{\"text\":\"error\",\"_type\":\"org.uengine.contexts.TextContext\"},\"defaultValueInString\":\"\",\"global\":false,\"persistOption\":\"BPMS\",\"typeClassName\":\"java.lang.String\",\"_type\":\"[Lorg.uengine.kernel.ProcessVariable\"}],\"_changedByLocaleSelector\":false,\"name\":{\"_type\":\"org.uengine.contexts.TextContext\",\"text\":\"error-input\"}}")
-            if(this.modelValue.elements.length > 0) {
-                this.value = this.modelValue
-            } else {
-                this.value= {
-                    'elements': {},
-                    'relations': {},
-                    'basePlatform': null,
-                    'basePlatformConf': {},
-                    'toppingPlatforms': null,
-                    'toppingPlatformsConf': {},
-                    'scm': {}
-                };
-            }
+            this.value = JSON.parse("{\"elements\":{\"3e760451-44b4-1138-4b94-ba5d332163e3\":null,\"0cb07636-99bf-62e0-e88e-d8b4095f3b5d\":null,\"c9824ed8-c477-4869-f75f-7ed67c7f53e4\":null,\"c680c8a1-4262-6035-006b-079ca8bf6579\":null,\"bf4fb4d2-0697-ed4f-4df4-0ce914f5a151\":null,\"64bba49c-182a-043c-8996-d62ac98deda7\":{\"_type\":\"org.uengine.kernel.Role\",\"name\":\"initiator\",\"displayName\":\"initiator\",\"roleResolutionContext\":{\"endpoint\":\"sanghoon01@uengine.org\",\"_type\":\"org.uengine.kernel.DirectRoleResolutionContext\"},\"selected\":false,\"elementView\":{\"_type\":\"org.uengine.kernel.view.DefaultActivityView\",\"id\":\"64bba49c-182a-043c-8996-d62ac98deda7\",\"x\":791.5,\"y\":461,\"width\":561,\"height\":200,\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":\\\".5\\\",\\\"fill-cx\\\":\\\".5\\\",\\\"fill-cy\\\":\\\".5\\\",\\\"fill\\\":\\\"#ffffff\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"center\\\",\\\"label-direction\\\":\\\"vertical\\\",\\\"vertical-align\\\":\\\"top\\\",\\\"cursor\\\":\\\"move\\\"}\",\"parent\":null},\"_instanceInfo\":[],\"author\":\"lqang0r9000nemcfgfywyd89\",\"oldName\":\"initiator\"},\"39c1b259-936a-4e75-5a50-e61b208d934e\":{\"_type\":\"org.uengine.kernel.bpmn.StartEvent\",\"name\":\"\",\"tracingTag\":\"4\",\"selected\":false,\"elementView\":{\"_type\":\"org.uengine.kernel.view.DefaultActivityView\",\"id\":\"39c1b259-936a-4e75-5a50-e61b208d934e\",\"x\":576,\"y\":463,\"width\":30,\"height\":30,\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":\\\".5\\\",\\\"fill-cx\\\":\\\".5\\\",\\\"fill-cy\\\":\\\".5\\\",\\\"fill\\\":\\\"white\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"bottom\\\",\\\"label-width\\\":120,\\\"stroke-width\\\":1.5,\\\"cursor\\\":\\\"move\\\"}\",\"parent\":\"64bba49c-182a-043c-8996-d62ac98deda7\"},\"author\":\"lqang0r9000nemcfgfywyd89\"},\"c4bd049b-926d-9dd3-a63e-caef54c182d9\":{\"_type\":\"org.uengine.kernel.DefaultActivity\",\"name\":\"\",\"selected\":false,\"tracingTag\":\"5\",\"elementView\":{\"_type\":\"org.uengine.kernel.view.DefaultActivityView\",\"id\":\"c4bd049b-926d-9dd3-a63e-caef54c182d9\",\"x\":718,\"y\":462,\"width\":100,\"height\":70,\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":1,\\\"fill-cx\\\":0.1,\\\"fill-cy\\\":0.1,\\\"fill\\\":\\\"#FFFFFF\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"center\\\",\\\"stroke-width\\\":1.2,\\\"r\\\":\\\"10\\\",\\\"cursor\\\":\\\"move\\\"}\",\"parent\":\"64bba49c-182a-043c-8996-d62ac98deda7\"},\"author\":\"lqang0r9000nemcfgfywyd89\"},\"2c3c5adb-29bd-6058-67c2-4f1ac49b221c\":{\"_type\":\"org.uengine.kernel.HumanActivity\",\"name\":\"장애 처리\",\"role\":{\"_type\":\"org.uengine.kernel.Role\",\"name\":\"initiator\"},\"parameters\":[{\"_type\":\"org.uengine.kernel.ParameterContext\",\"direction\":\"IN-OUT\",\"variable\":{\"_type\":\"org.uengine.kernel.ProcessVariable\",\"name\":\"error\"},\"argument\":{\"_type\":\"org.uengine.contexts.TextContext\",\"text\":\"error\"}}],\"tracingTag\":\"5\",\"selected\":false,\"elementView\":{\"_type\":\"org.uengine.kernel.view.DefaultActivityView\",\"id\":\"2c3c5adb-29bd-6058-67c2-4f1ac49b221c\",\"x\":718,\"y\":462,\"width\":100,\"height\":70,\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":1,\\\"fill-cx\\\":0.1,\\\"fill-cy\\\":0.1,\\\"fill\\\":\\\"#FFFFFF\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"center\\\",\\\"stroke-width\\\":1.2,\\\"r\\\":\\\"10\\\"}\",\"parent\":\"64bba49c-182a-043c-8996-d62ac98deda7\"},\"author\":\"lqang0r9000nemcfgfywyd89\",\"oldName\":\"장애 처리\"},\"531c6e55-bfcd-073f-7bce-938363c84a8d\":{\"_type\":\"org.uengine.kernel.bpmn.EndEvent\",\"name\":\"\",\"tracingTag\":\"6\",\"selected\":false,\"elementView\":{\"_type\":\"org.uengine.kernel.view.DefaultActivityView\",\"id\":\"531c6e55-bfcd-073f-7bce-938363c84a8d\",\"x\":874,\"y\":465,\"width\":30,\"height\":30,\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":\\\".5\\\",\\\"fill-cx\\\":\\\".5\\\",\\\"fill-cy\\\":\\\".5\\\",\\\"fill\\\":\\\"white\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"bottom\\\",\\\"stroke-width\\\":3,\\\"label-width\\\":120,\\\"cursor\\\":\\\"move\\\"}\",\"parent\":\"64bba49c-182a-043c-8996-d62ac98deda7\"},\"author\":\"lqang0r9000nemcfgfywyd89\"}},\"relations\":{\"78a66a7e-d601-47c4-dea3-3331728e9e62\":null,\"1f0508d1-c102-5979-1e53-48f1cfbdca2d\":null,\"a2fdac89-4747-e84a-33b2-37a3f14d69d6\":{\"name\":\"\",\"_type\":\"org.uengine.kernel.bpmn.SequenceFlow\",\"selected\":false,\"sourceRef\":\"4\",\"targetRef\":\"5\",\"from\":\"39c1b259-936a-4e75-5a50-e61b208d934e\",\"to\":\"c4bd049b-926d-9dd3-a63e-caef54c182d9\",\"priority\":1,\"relationView\":{\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":\\\".5\\\",\\\"fill-cx\\\":\\\".5\\\",\\\"fill-cy\\\":\\\".5\\\",\\\"fill\\\":\\\"none\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"center\\\",\\\"stroke-width\\\":1.5,\\\"stroke-opacity\\\":1,\\\"edge-type\\\":\\\"plain\\\",\\\"arrow-start\\\":\\\"none\\\",\\\"arrow-end\\\":\\\"block\\\",\\\"stroke-dasharray\\\":\\\"\\\",\\\"stroke-linejoin\\\":\\\"round\\\",\\\"cursor\\\":\\\"pointer\\\"}\",\"value\":\"[[588,464],[644,464],[644,464],[668,464]]\",\"id\":\"a2fdac89-4747-e84a-33b2-37a3f14d69d6\"},\"condition\":{\"_type\":\"org.uengine.kernel.Evaluate\",\"pv\":{\"_type\":\"org.uengine.kernel.ProcessVariable\",\"name\":\"\"},\"condition\":\"==\",\"val\":\"\"},\"author\":\"lqang0r9000nemcfgfywyd89\"},\"51e96f3d-12d5-7e44-366e-84035abe3f65\":{\"name\":\"\",\"_type\":\"org.uengine.kernel.bpmn.SequenceFlow\",\"selected\":false,\"sourceRef\":\"5\",\"targetRef\":\"6\",\"from\":\"2c3c5adb-29bd-6058-67c2-4f1ac49b221c\",\"to\":\"531c6e55-bfcd-073f-7bce-938363c84a8d\",\"priority\":1,\"relationView\":{\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":\\\".5\\\",\\\"fill-cx\\\":\\\".5\\\",\\\"fill-cy\\\":\\\".5\\\",\\\"fill\\\":\\\"none\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"center\\\",\\\"stroke-width\\\":1.5,\\\"stroke-opacity\\\":1,\\\"edge-type\\\":\\\"plain\\\",\\\"arrow-start\\\":\\\"none\\\",\\\"arrow-end\\\":\\\"block\\\",\\\"stroke-dasharray\\\":\\\"\\\",\\\"stroke-linejoin\\\":\\\"round\\\",\\\"cursor\\\":\\\"pointer\\\"}\",\"value\":\"[[768,464],[807,464]]\",\"id\":\"51e96f3d-12d5-7e44-366e-84035abe3f65\"},\"condition\":{\"_type\":\"org.uengine.kernel.Evaluate\",\"pv\":{\"_type\":\"org.uengine.kernel.ProcessVariable\",\"name\":\"\"},\"condition\":\"==\",\"val\":\"\"},\"author\":\"lqang0r9000nemcfgfywyd89\"}},\"version\":3,\"scm\":{\"tag\":null,\"org\":null,\"repo\":null,\"forkedOrg\":null,\"forkedRepo\":null},\"processVariableDescriptors\":[{\"name\":\"error\",\"displayName\":{\"text\":\"error\",\"_type\":\"org.uengine.contexts.TextContext\"},\"defaultValueInString\":\"\",\"global\":false,\"persistOption\":\"BPMS\",\"typeClassName\":\"java.lang.String\",\"_type\":\"[Lorg.uengine.kernel.ProcessVariable\"}],\"_changedByLocaleSelector\":false,\"name\":{\"_type\":\"org.uengine.contexts.TextContext\",\"text\":\"error-input\"}}")
+
+            // if(this.modelValue) {
+            //     // const modelValue = { "processDefinitionName": "휴가관리 프로세스", "processDefinitionId": "vacation_management_process", "description": "직원들의 휴가 신청과 승인을 처리하는 프로세스입니다.", "data": [ { "name": "사유", "description": "휴가를 신청하는 사유를 입력하는 데이터입니다.", "type": "Text" }, { "name": "휴가 시작일", "description": "휴가가 시작되는 날짜를 입력하는 데이터입니다.", "type": "Date" }, { "name": "휴가 복귀일", "description": "휴가가 종료되어 복귀하는 날짜를 입력하는 데이터입니다.", "type": "Date" } ], "roles": [ { "name": "직원", "resolutionRule": "직원의 실제 사용자 매핑 방법에 대한 규칙입니다." }, { "name": "팀장", "resolutionRule": "팀장의 실제 사용자 매핑 방법에 대한 규칙입니다." } ], "activities": [ { "name": "휴가 신청", "id": "vacation_request", "type": "UserActivity", "description": "직원이 휴가를 신청하는 단계입니다.", "instruction": "휴가 신청서를 작성하여 사유, 휴가 시작일, 휴가 복귀일을 입력하세요.", "role": "직원", "inputData": [ { "name": "사유" }, { "name": "휴가 시작일" }, { "name": "휴가 복귀일" } ], "outputData": [] }, { "name": "팀장 승인", "id": "manager_approval", "type": "UserActivity", "description": "팀장이 직원의 휴가 신청을 승인 또는 반려하는 단계입니다.", "instruction": "휴가 신청을 검토한 후 승인 또는 반려 여부를 결정하여 입력하세요.", "role": "팀장", "inputData": [ { "name": "휴가 신청서" } ], "outputData": [] }, { "name": "휴가 승인", "id": "vacation_approval", "type": "UserActivity", "description": "휴가 승인 단계입니다.", "instruction": "휴가 신청이 승인되었음을 알려주세요.", "role": "직원", "inputData": [], "outputData": [] } ], "sequences": [ { "source": "vacation_request", "target": "manager_approval" }, { "source": "manager_approval", "target": "vacation_approval" } ] }
+            //     this.value = this.modelValue
+            // } else {
+            //     this.value = {
+            //         'elements': {},
+            //         'relations': {},
+            //         'basePlatform': null,
+            //         'basePlatformConf': {},
+            //         'toppingPlatforms': null,
+            //         'toppingPlatformsConf': {},
+            //         'scm': {}
+            //     };
+            // }
         },
         watch: {
             projectName: function (val) {
@@ -803,6 +1041,9 @@
             },
         },
         methods: {
+            createUEngine(def) {
+
+            },
             changeMultiple: function () {
                 if (this.dragPageMovable == false && this.active == false) {
                     this.dragPageMovable = true;
@@ -841,6 +1082,7 @@
                 canvasEl.droppable({
                     drop: function (event, ui) {
                         var componentInfo = canvasEl.data('DRAG_SHAPE'), shape, element;
+                        console.log(componentInfo)
                         if (componentInfo) {
                             var dropX = event.pageX - canvasEl.offset().left + canvasEl[0].scrollLeft;
                             var dropY = event.pageY - canvasEl.offset().top + canvasEl[0].scrollTop;
@@ -2548,6 +2790,7 @@
     }
 
     .bpmn-web-btn {
+        position: fixed;
         margin-top:0px;
     }
 

@@ -24,7 +24,7 @@ const MainRoutes = {
         {
             name: 'Instance Chat',
             path: '/instances/chat',
-            component: () => import('@/views/apps/instance-list/InstanceList.vue')
+            component: () => import('@/views/apps/definition-list/DefinitionList.vue')
         },
         {
             name: 'instances',

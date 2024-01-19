@@ -8,13 +8,16 @@
         <AppBaseCard>
             <template v-slot:leftpart>
                 <div class="no-scrollbar">
-                <process-manager-chat></process-manager-chat>
+                <process-manager-chat @update:model="bpmn"></process-manager-chat>
                 <!-- <ChatProfile />
                 <ChatListing /> -->
                 </div>
             </template>
             <template v-slot:rightpart>
-                <bpmn-modeling-canvas></bpmn-modeling-canvas>
+                <bpmn-modeling-canvas
+                    :projectName="bpmn ? bpmn.projectName : ''"
+                    v-model="bpmn.model"
+                ></bpmn-modeling-canvas>
 
             </template>
 
@@ -71,7 +74,7 @@ export default {
         definitions: [],
         processDefinition: null,
         processInstance: null,
-        bpmn: null,
+        bpmn: {},
         path: "instances",
         organizationChart: [],
         alertInfo: {
@@ -136,6 +139,7 @@ export default {
                 let contexts = await this.queryFromVectorDB(newMessage);
                 this.generator.setContexts(contexts);
             }
+
             this.sendMessage(newMessage);
         },
 
@@ -153,29 +157,29 @@ export default {
         },
 
         async afterGenerationFinished(putObj) {
-            let modelText = "";
-            let path = "";
+            // let modelText = "";
+            // let path = "";
     
-            if (this.processInstance) {
-                if (typeof this.processInstance === "string") {
-                    this.processInstance = partialParse(this.processInstance);
-                }
-                path = `${this.path}/${this.processInstance.processInstanceId}`;
-                modelText = JSON.stringify(this.processInstance);
+            // if (this.processInstance) {
+            //     if (typeof this.processInstance === "string") {
+            //         this.processInstance = partialParse(this.processInstance);
+            //     }
+            //     path = `${this.path}/${this.processInstance.processInstanceId}`;
+            //     modelText = JSON.stringify(this.processInstance);
 
-                let contexts = await this.queryFromVectorDB(this.processInstance.processDefinitionId);
-                if (contexts && contexts.length > 0) {
-                    contexts.forEach(item => {
-                        this.processDefinition = partialParse(item);
-                    });
-                }
+            //     let contexts = await this.queryFromVectorDB(this.processInstance.processDefinitionId);
+            //     if (contexts && contexts.length > 0) {
+            //         contexts.forEach(item => {
+            //             this.processDefinition = partialParse(item);
+            //         });
+            //     }
 
-                putObj.model = modelText;
+            //     putObj.model = modelText;
 
-                this.saveMessages(path, putObj);
+            //     this.saveMessages(path, putObj);
 
-                this.sendTodolist();
-            }
+            //     this.sendTodolist();
+            // }
         },
 
         async sendTodolist() {

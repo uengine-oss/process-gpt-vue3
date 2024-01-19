@@ -20,7 +20,6 @@ export default {
             await this.loadData(this.getDataPath());
             await this.loadMessages(this.getDataPath());
         },
-
         async getChatList(){
             var me = this
             // this.storage.delete(`db://chats/1`)
@@ -215,8 +214,9 @@ export default {
         },
 
         extractProcessJson(text) {            
-            let textAndJson = text.split("--- json ---");
-            if(textAndJson && textAndJson.length==2) {
+            let textAndJson = text.split("\`\`\`");
+            console.log(text)
+            if(textAndJson) {
                 return textAndJson[1];
             }
         },
