@@ -164,14 +164,18 @@ export default {
             const elements = {};
             const relations = {};
             let tracingTag = 1;
-
-            // Add roles
-            process.roles.forEach(role => {
-                const roleId = uuidv4();
-                elements[roleId] = {
+            let currentY = 300; // 첫번째 role의 y 좌표
+            let maxX = 0; // 가장 큰 x 좌표를 추적하기 위한 변수
+            const roleIds = {}; // role 이름과 ID를 매핑하기 위한 객체
+            // Add swimlane if there are more than one role
+            let swimlaneId = null;
+            if (process.roles.length > 1) {
+                swimlaneId = uuidv4();
+                const swimlaneHeight = process.roles.length * 80; // role의 height 합
+                elements[swimlaneId] = {
                     _type: "org.uengine.kernel.Role",
-                    name: role.name,
-                    displayName: role.name,
+                    name: "Swimlane",
+                    displayName: "Swimlane",
                     roleResolutionContext: {
                         endpoint: "example@uengine.org",
                         _type: "org.uengine.kernel.DirectRoleResolutionContext"
@@ -179,11 +183,11 @@ export default {
                     selected: false,
                     elementView: {
                         _type: "org.uengine.kernel.view.DefaultActivityView",
-                        id: roleId,
-                        x: 791.5,
-                        y: 461,
-                        width: 561,
-                        height: 200,
+                        id: swimlaneId,
+                        x: 290, // role의 x보다 10 작음
+                        y: currentY,
+                        width: 400, // 예시 값
+                        height: swimlaneHeight,
                         style: JSON.stringify({
                             stroke: "black",
                             "fill-r": ".5",
@@ -199,57 +203,111 @@ export default {
                         parent: null
                     },
                     _instanceInfo: [],
+                    oldName: "Swimlane"
+                };
+                maxX = elements[swimlaneId].elementView.x + elements[swimlaneId].elementView.width / 2;
+            }
+
+            // Add roles and set their parent to swimlane if it exists
+            process.roles.forEach(role => {
+                const roleId = uuidv4();
+                roleIds[role.name] = roleId;
+                const roleHeight = 80; // 예시 값
+                elements[roleId] = {
+                    _type: "org.uengine.kernel.Role",
+                    name: role.name,
+                    displayName: role.name,
+                    roleResolutionContext: {
+                        endpoint: "example@uengine.org",
+                        _type: "org.uengine.kernel.DirectRoleResolutionContext"
+                    },
+                    selected: false,
+                    elementView: {
+                        _type: "org.uengine.kernel.view.DefaultActivityView",
+                        id: roleId,
+                        x: 300, // 예시 값
+                        y: currentY - 40,
+                        width: 380, // swimlane width - 20
+                        height: roleHeight,
+                        style: JSON.stringify({
+                            stroke: "black",
+                            "fill-r": ".5",
+                            "fill-cx": ".5",
+                            "fill-cy": ".5",
+                            fill: "#ffffff",
+                            "fill-opacity": 0,
+                            "label-position": "center",
+                            "label-direction": "vertical",
+                            "vertical-align": "top",
+                            cursor: "move"
+                        }),
+                        parent: swimlaneId
+                    },
+                    _instanceInfo: [],
                     oldName: role.name
                 };
+                currentY += roleHeight; // 다음 role의 y 좌표 업데이트
             });
 
             // Add start event
-            const startEventId = uuidv4();
-            elements[startEventId] = {
-                _type: "org.uengine.kernel.bpmn.StartEvent",
-                name: "start-event",
-                tracingTag: tracingTag.toString(),
-                selected: false,
-                elementView: {
-                    _type: "org.uengine.kernel.view.DefaultActivityView",
-                    id: startEventId,
-                    x: 576,
-                    y: 463,
-                    width: 30,
-                    height: 30,
-                    style: JSON.stringify({
-                        stroke: "black",
-                        "fill-r": ".5",
-                        "fill-cx": ".5",
-                        "fill-cy": ".5",
-                        fill: "white",
-                        "fill-opacity": 0,
-                        "label-position": "bottom",
-                        "label-width": 120,
-                        "stroke-width": 1.5,
-                        cursor: "move"
-                    }),
-                    parent: null
-                }
-            };
-            tracingTag++;
 
+            tracingTag++;
+            let startEventId = null;
+            let endEventId = null;
             // Add activities, connect them with sequence flows, and add end event
             process.activities.forEach((activity, index) => {
                 const activityId = uuidv4();
+                const activityType = activity.type === "UserActivity" ? "HumanActivity" : activity.type;
+                const isRole = activityType === "Role";
+                const role = roleIds[activity.role]; // Get the role ID
+                // Set the position and size for roles, otherwise use default values for other activities and events
+                const x = isRole ? 100 : 576; // 예시 값
+                const y = isRole ? currentY : 463; // 예시 값
+                const width = isRole ? 380 : 100; // 예시 값
+                const height = isRole ? 80 : 70; // 예시 값
+                if (index === 0) {
+                    elements[startEventId] = {
+                        _type: "org.uengine.kernel.bpmn.StartEvent",
+                        name: "start-event",
+                        role: role,
+                        tracingTag: tracingTag.toString(),
+                        selected: false,
+                        elementView: {
+                            _type: "org.uengine.kernel.view.DefaultActivityView",
+                            id: startEventId,
+                            x: 576, // 예시 값
+                            y: 463, // 예시 값
+                            width: 30,
+                            height: 30,
+                            style: JSON.stringify({
+                                stroke: "black",
+                                "fill-r": ".5",
+                                "fill-cx": ".5",
+                                "fill-cy": ".5",
+                                fill: "white",
+                                "fill-opacity": 0,
+                                "label-position": "bottom",
+                                "label-width": 120,
+                                "stroke-width": 1.5,
+                                cursor: "move"
+                            }),
+                        }
+                    };
+                    tracingTag++;
+                }
                 elements[activityId] = {
-                    _type: "org.uengine.kernel." + activity.type,
+                    _type: "org.uengine.kernel." + activityType,
                     name: activity.name,
-                    role: activity.role,
+                    role: roleIds[activity.role],
                     tracingTag: tracingTag.toString(),
                     selected: false,
                     elementView: {
                         _type: "org.uengine.kernel.view.DefaultActivityView",
                         id: activityId,
-                        x: 718,
-                        y: 462,
-                        width: 100,
-                        height: 70,
+                        x: x,
+                        y: y,
+                        width: width,
+                        height: height,
                         style: JSON.stringify({
                             stroke: "black",
                             "fill-r": 1,
@@ -262,49 +320,23 @@ export default {
                             r: "10",
                             cursor: "move"
                         }),
-                        parent: null
+                        parent: isRole ? swimlaneId : roleIds[activity.role]
                     }
                 };
                 tracingTag++;
-
-                // Connect previous activity to current activity with sequence flow
-                const sequenceId = uuidv4();
-                const sourceRef = index === 0 ? startEventId : process.activities[index - 1].id;
-                relations[sequenceId] = {
-                    name: "",
-                    _type: "org.uengine.kernel.bpmn.SequenceFlow",
-                    selected: false,
-                    sourceRef: sourceRef,
-                    targetRef: activityId,
-                    elementView: {
-                        _type: "org.uengine.kernel.view.DefaultSequenceFlowView",
-                        id: sequenceId,
-                        points: JSON.stringify([[768, 464], [807, 464]])
-                    },
-                    condition: {
-                        _type: "org.uengine.kernel.Evaluate",
-                        pv: {
-                            _type: "org.uengine.kernel.ProcessVariable",
-                            name: ""
-                        },
-                        condition: "==",
-                        val: ""
-                    }
-                };
-
-                // If it's the last activity, add an end event and connect it to the last activity
                 if (index === process.activities.length - 1) {
-                    const endEventId = uuidv4();
+                    endEventId = uuidv4();
                     elements[endEventId] = {
                         _type: "org.uengine.kernel.bpmn.EndEvent",
                         name: "end-event",
                         tracingTag: tracingTag.toString(),
                         selected: false,
+                        role: role,
                         elementView: {
                             _type: "org.uengine.kernel.view.DefaultActivityView",
                             id: endEventId,
-                            x: 874,
-                            y: 465,
+                            x: x + width + 20, // 예시 값
+                            y: y, // 예시 값
                             width: 30,
                             height: 30,
                             style: JSON.stringify({
@@ -323,7 +355,47 @@ export default {
                         }
                     };
                     tracingTag++;
+                }
+                if (isRole) {
+                    // Update currentY for the next role
+                    currentY += height;
+                }
 
+                // Connect previous activity to current activity with sequence flow
+                if (!isRole) {
+                    const sequenceId = uuidv4();
+                    const sourceRef = index === 0 ? startEventId : process.activities[index - 1].id;
+                    relations[sequenceId] = {
+                        name: "",
+                        _type: "org.uengine.kernel.bpmn.SequenceFlow",
+                        selected: false,
+                        sourceRef: sourceRef,
+                        targetRef: activityId,
+                        elementView: {
+                            _type: "org.uengine.kernel.view.DefaultSequenceFlowView",
+                            id: sequenceId,
+                            points: JSON.stringify([[x, y + height / 2], [x + width, y + height / 2]]) // 예시 값
+                        },
+                        condition: {
+                            _type: "org.uengine.kernel.Evaluate",
+                            pv: {
+                                _type: "org.uengine.kernel.ProcessVariable",
+                                name: ""
+                            },
+                            condition: "==",
+                            val: ""
+                        }
+                    };
+                }
+
+                // If it's the last activity and not a role, add an end event and connect it to the last activity
+                if (index === process.activities.length - 1 && !isRole) {
+                    const endEventId = uuidv4();
+
+                    const elementRightEdge = x + width / 2;
+                    if (elementRightEdge > maxX) {
+                        maxX = elementRightEdge;
+                    }
                     const endSequenceId = uuidv4();
                     relations[endSequenceId] = {
                         name: "",
@@ -334,7 +406,7 @@ export default {
                         elementView: {
                             _type: "org.uengine.kernel.view.DefaultSequenceFlowView",
                             id: endSequenceId,
-                            points: JSON.stringify([[768, 464], [807, 464]])
+                            points: JSON.stringify([[x + width, y + height / 2], [x + width + 20, y + height / 2]]) // 예시 값
                         },
                         condition: {
                             _type: "org.uengine.kernel.Evaluate",
@@ -349,7 +421,7 @@ export default {
                 }
             });
 
-            // Construct the final JSON structure
+            let result = {}
             const finalJson = {
                 elements: elements,
                 relations: relations,
@@ -379,7 +451,65 @@ export default {
                     text: process.processDefinitionName
                 }
             };
-            this.$emit("update:model", finalJson)
+            this.adjustElementsWithinRoles(process, elements, maxX);
+            result['model'] = finalJson
+            result['projectName'] = process.processDefinitionName
+            console.log(result)
+            this.$emit("update:model", result)
+        },
+        adjustElementsWithinRoles(process, elements) {
+            let maxRoleWidth = 0;
+            let maxRoleX = 0;
+
+            // Find the maximum width and x of the roles
+            Object.values(elements).forEach(element => {
+                if (element._type === "org.uengine.kernel.Role") {
+                    maxRoleWidth = Math.max(maxRoleWidth, element.elementView.width);
+                    maxRoleX = Math.max(maxRoleX, element.elementView.x);
+                }
+            });
+
+            // Adjust the width of all roles to the maximum width found
+            Object.values(elements).forEach(element => {
+                if (element._type === "org.uengine.kernel.Role") {
+                    element.elementView.width = maxRoleWidth;
+                }
+            });
+
+            // Adjust the width and x position of the swimlane
+            Object.values(elements).forEach(element => {
+                if (element.name === "Swimlane") {
+                    element.elementView.width = maxRoleWidth + 20;
+                    element.elementView.x = maxRoleX - 10; // Swimlane's x is 10 less than the largest role's x
+                }
+            });
+
+            // Adjust the x position of activities and events to be within the role boundaries
+            Object.values(elements).forEach(element => {
+                if (element._type !== "org.uengine.kernel.Role" && element._type !== "org.uengine.kernel.bpmn.StartEvent" && element._type !== "org.uengine.kernel.bpmn.EndEvent") {
+                    const role = elements[element.role];
+                    const roleBoundary = {
+                        minX: role.elementView.x - role.elementView.width / 2,
+                        maxX: role.elementView.x + role.elementView.width / 2
+                    };
+
+                    // Check if the element is outside the horizontal boundaries of the role
+                    if (element.elementView.x < roleBoundary.minX || element.elementView.x > roleBoundary.maxX) {
+                        // Increase the width of the role and adjust the x position
+                        Object.values(elements).filter(el => el._type === "org.uengine.kernel.Role" || el.name === "Swimlane").forEach(el => {
+                            el.elementView.width += 100;
+                            el.elementView.x += 50;
+                        });
+
+                        // Recalculate the role boundaries after adjustment
+                        roleBoundary.minX = role.elementView.x - role.elementView.width / 2;
+                        roleBoundary.maxX = role.elementView.x + role.elementView.width / 2;
+
+                        // Adjust the element's x position to be within the new role boundary
+                        element.elementView.x = Math.max(roleBoundary.minX, Math.min(element.elementView.x, roleBoundary.maxX));
+                    }
+                }
+            });
         },
         createBpmnXml(jsonProcess) {
             // XML 문서 초기화
