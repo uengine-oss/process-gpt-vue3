@@ -12,6 +12,8 @@
         "@balkangraph/orgchart.js": "^8.13.20",
         "@casl/ability": "^6.2.0",
         "@casl/vue": "^2.2.0",
+        "@dicebear/collection": "^5.3.5",
+        "@dicebear/core": "^5.3.5",
         "@floating-ui/dom": "1.0.0",
         "@fullcalendar/core": "6.1.8",
         "@fullcalendar/daygrid": "6.1.8",

@@ -3,13 +3,14 @@ import { useAuthStore } from '@/stores/auth';
 import { Icon } from '@iconify/vue';
 
 const auth = useAuthStore();
+const picture = localStorage.getItem("picture");
 </script>
 
 <template>
     <v-sheet rounded="md" color="lightprimary" class="pa-4  ExtraBox hide-menu">
         <div class="d-flex align-center justify-space-between">
             <v-avatar size="50">
-                <img src="@/assets/images/profile/user6.jpg" width="50" alt="Mike Nielsen" />
+                <v-img :src="picture" width="50" />
             </v-avatar>
             <div>
                 <h6 class="text-h6 d-flex align-center font-weight-semibold">{{ auth.storage.userInfo.name }}</h6>

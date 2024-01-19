@@ -29,7 +29,7 @@ const MainRoutes = {
         {
             name: 'instances',
             path: '/instances/:id',
-            component: () => import('@/views/apps/chat/Chats.vue')
+            component: () => import('@/views/apps/instance-list/InstanceList.vue')
         },
         
         {

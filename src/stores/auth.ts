@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia';
 import { router } from '@/router';
+import { createAvatar } from '@dicebear/core';
+import { initials } from '@dicebear/collection';
+
 import CommonStorageBase from "@/components/storage/CommonStorageBase";
 
 export const useAuthStore = defineStore({
@@ -26,14 +29,19 @@ export const useAuthStore = defineStore({
                     var result: any = await this.storage.signIn('db://login', userInfo);
 
                     if (result) {
+                        const avatar = createAvatar(initials, {
+                            seed: result.user.username
+                        });
+                        const picture = avatar.toDataUriSync();
+
                         window.localStorage.setItem("author", result.user.email);
                         window.localStorage.setItem("userName", result.user.username);
                         window.localStorage.setItem("email", result.user.email);
-                        window.localStorage.setItem("picture", result.user.picture);
+                        window.localStorage.setItem("picture", picture);
                         window.localStorage.setItem("accessToken", result.accessToken);
                         window.localStorage.setItem("uid", result.user.uid);
 
-                        await this.writeUserData(result.user.uid, result.user.username, result.user.email, result.user.picture);
+                        await this.writeUserData(result.user.uid, result.user.username, result.user.email, picture);
 
                         router.push('/dashboard2');
                     }
@@ -45,10 +53,15 @@ export const useAuthStore = defineStore({
         async signUpAcebase(username: string, email: string, password: string) {
             try {
                 if (username && email && password) {
+                    const avatar = createAvatar(initials, {
+                        seed: username
+                    });
+                    const picture = avatar.toDataUriSync();
+                    
                     const userInfo: any = {
                         username: username,
                         email: email,
-                        password: password
+                        password: password,
                     }
                     var result: any = await this.storage.signUp('db://login', userInfo);
 
@@ -56,11 +69,11 @@ export const useAuthStore = defineStore({
                         window.localStorage.setItem("author", result.user.email);
                         window.localStorage.setItem("userName", result.user.username);
                         window.localStorage.setItem("email", result.user.email);
-                        window.localStorage.setItem("picture", result.user.picture);
+                        window.localStorage.setItem("picture", picture);
                         window.localStorage.setItem("accessToken", result.accessToken);
                         window.localStorage.setItem("uid", result.user.uid);
 
-                        await this.writeUserData(result.user.uid, result.user.username, result.user.email, result.user.picture);
+                        await this.writeUserData(result.user.uid, result.user.username, result.user.email, picture);
 
                         router.push('/auth/login');
 
@@ -75,7 +88,7 @@ export const useAuthStore = defineStore({
             var obj = {
                 username: name,
                 email: email,
-                profile_picture: imageUrl,
+                profile: imageUrl,
                 state: 'signIn',
                 loginDate: Date.now()
             };
@@ -83,7 +96,7 @@ export const useAuthStore = defineStore({
             var eObj = {
                 uid: userId,
                 userName: name,
-                profile_picture: imageUrl,
+                profile: imageUrl,
                 email: email,
             };
 
