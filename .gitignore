@@ -54,3 +54,9 @@ Thumbs.db
 *.mov
 *.wmv
 
+acebase/mydb.acebase/__auth__~accounts-access_token.idx
+acebase/mydb.acebase/__auth__~accounts-email.idx
+acebase/mydb.acebase/__auth__~accounts-username.idx
+acebase/mydb.acebase/data.db
+package-lock.json
+acebase/package-lock.json
