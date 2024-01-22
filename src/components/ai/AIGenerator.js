@@ -221,12 +221,9 @@ export default class AIGenerator {
 
             if(me.client.onModelCreated){
                 if(responseCnt > 15){
-<<<<<<< HEAD
-=======
 
                     me.saveCacheSteps(messages, newUpdatesJoined.length)
 
->>>>>>> 1017986115e1af200f555467da801c74a9bebc74
                     me.client.onModelCreated(me.createModel(newUpdatesJoined));
                     responseCnt = 0;
                 } else {
