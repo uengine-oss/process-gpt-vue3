@@ -25,6 +25,7 @@ export default {
         },
         async getChatList(){
             var me = this
+            me.userInfo = auth.storage.userInfo;
             // auth.storage.delete(`db://chats/1`)
             var option = {
                 sort: "desc",
@@ -109,12 +110,14 @@ export default {
         async sendMessage(message) {
             if (message !== "") {
                 let messages = []
-                this.messages.forEach(function (msg){
-                    messages.push({
-                        role: msg.role,
-                        content: msg.content
+                if(this.messages && this.messages.length > 0){
+                    this.messages.forEach(function (msg){
+                        messages.push({
+                            role: msg.role,
+                            content: msg.content
+                        })
                     })
-                })
+                }
 
                 if(!this.pushMessage){
                     const chatObj = {
@@ -170,7 +173,7 @@ export default {
         },
         async saveMessages(path, obj) {
             if(this.prompt && this.prompt.content){
-                if(obj.role == 'system' && obj.content.includes("시작하시겠습니까")){
+                if(obj.role == 'system' && obj.content && obj.content.includes("시작하시겠습니까")){
                     obj.prompt = this.prompt
                     this.prompt = null
                 }
@@ -229,11 +232,11 @@ export default {
             }
     
             this.afterGenerationFinished(putObj);
-            if(this.pushMessage){
-                if(response == '.'){
+            if(this.pushMessage && responses){
+                if(responses == '.'){
                     this.messages.splice(this.messages.length - 1, 1)
                 } else {
-                    this.pushMessage(response, 'system');
+                    this.pushMessage(responses, 'system');
                 }
             }
         },

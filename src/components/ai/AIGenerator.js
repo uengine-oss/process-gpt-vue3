@@ -106,64 +106,64 @@ export default class AIGenerator {
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.setRequestHeader("Authorization", "Bearer " + me.openaiToken);
 
-        // xhr.onprogress = function(event) {
-        //     var currentResId
-        //     if(me.stopSignaled){
-        //         xhr.abort();
-        //         me.stopSignaled = false;
-        //         me.state = 'stopped'
-        //     }
-        //     // console.log("Received " + event.loaded + " bytes of data.");
-        //     // console.log("Data: " + xhr.responseText);
-        //     const newUpdates = xhr.responseText
-        //     .replace("data: [DONE]", "")
-        //     .trim()
-        //     .split('data: ')
-        //     .filter(Boolean)
+        xhr.onprogress = function(event) {
+            var currentResId
+            if(me.stopSignaled){
+                xhr.abort();
+                me.stopSignaled = false;
+                me.state = 'stopped'
+            }
+            // console.log("Received " + event.loaded + " bytes of data.");
+            // console.log("Data: " + xhr.responseText);
+            const newUpdates = xhr.responseText
+            .replace("data: [DONE]", "")
+            .trim()
+            .split('data: ')
+            .filter(Boolean)
 
-        //     const newUpdatesParsed = newUpdates.map((update) => {
-        //         const parsed = JSON.parse(update);
+            const newUpdatesParsed = newUpdates.map((update) => {
+                const parsed = JSON.parse(update);
 
-        //         if(parsed.error){
-        //             if(me.client.onError){
-        //                 me.client.onError(parsed.error);
-        //             }
-        //             throw new Error(parsed.error.message)
-        //         }
+                if(parsed.error){
+                    if(me.client.onError){
+                        me.client.onError(parsed.error);
+                    }
+                    throw new Error(parsed.error.message)
+                }
 
-        //         currentResId = parsed.id
-        //         if(!me.gptResponseId){
-        //             me.gptResponseId = parsed.id
-        //         } 
-        //         if(parsed.choices[0].finish_reason == 'length'){
-        //             me.finish_reason = 'length'
-        //         }
-        //         return parsed.choices[0].delta.content || '';
-        //     });
+                currentResId = parsed.id
+                if(!me.gptResponseId){
+                    me.gptResponseId = parsed.id
+                } 
+                if(parsed.choices[0].finish_reason == 'length'){
+                    me.finish_reason = 'length'
+                }
+                return parsed.choices[0].delta.content || '';
+            });
 
-        //     const newUpdatesJoined = newUpdatesParsed.join('')
-        //     if(newUpdatesJoined.includes(": null")){
-        //         newUpdatesJoined.replaceAll(": null", ": 'null'")
-        //     }
-        //     me.modelJson = newUpdatesJoined
+            const newUpdatesJoined = newUpdatesParsed.join('')
+            if(newUpdatesJoined.includes(": null")){
+                newUpdatesJoined.replaceAll(": null", ": 'null'")
+            }
+            me.modelJson = newUpdatesJoined
 
-        //     if(me.client.onReceived){
-        //         if(me.gptResponseId == currentResId){
-        //             me.client.onReceived(newUpdatesJoined);
-        //         }
-        //     }
+            if(me.client.onReceived){
+                if(me.gptResponseId == currentResId){
+                    me.client.onReceived(newUpdatesJoined);
+                }
+            }
 
-        //     if(me.client.onModelCreated){
-        //         if(responseCnt > 15){
-        //             me.client.onModelCreated(me.createModel(newUpdatesJoined));
-        //             responseCnt = 0;
-        //         } else {
-        //             responseCnt++;
-        //         }
-        //     }
+            if(me.client.onModelCreated){
+                if(responseCnt > 15){
+                    me.client.onModelCreated(me.createModel(newUpdatesJoined));
+                    responseCnt = 0;
+                } else {
+                    responseCnt++;
+                }
+            }
 
 
-        // };
+        };
 
         xhr.onloadend = function() {
             console.log("End to Success - onloadend", xhr);
