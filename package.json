@@ -37,6 +37,7 @@
         "date-fns": "^2.29.3",
         "eslint-import-resolver-alias": "^1.1.2",
         "file-saver": "^2.0.5",
+        "firebase": "^8.0.0",
         "json2yaml": "^1.1.0",
         "jsondiffpatch": "^0.6.0",
         "jwt-decode": "^3.1.2",
