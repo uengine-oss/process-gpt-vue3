@@ -4,30 +4,24 @@
             <v-row class="justify-center">
                 <v-col cols="12" md="9" class="text-center">
                     <h1 class="text-52 text-grey200 bannerTitle " data-aos="fade-up" data-aos-delay="400"
-                        data-aos-duration="1000">
-                        Revolutionize your development with Powerful VueJs dashboard</h1>
+                        data-aos-duration="1000"
+                    >AI를 기반한 프로세스 관리에서 실행까지를 손쉽게 시작하세요
+                    </h1>
                     <p class="my-6 font-weight-semibold text-grey100 text-h5 mb-12" data-aos="fade-up" data-aos-delay="600"
-                        data-aos-duration="1000">Spike comes with light & dark color skins, well designed dashboards,
-                        applications and pages</p>
+                        data-aos-duration="1000"
+                    >프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석
+                    </p>
                     <div class="mt-6 d-sm-flex gap-3 justify-center" data-aos="fade-up" data-aos-delay="800"
                         data-aos-duration="1000">
 
-                        <v-btn to="" v-scroll-to="'#demos'" color="primary" rounded="pill"
-                            class="mt-sm-0 mt-4 lp-btn-shadow m-btn-full btn-custom-lg mb-sm-0 mb-4" size="large">Live
-                            Preview</v-btn>
-                        <v-btn target="_blank" rounded="pill" variant="outlined" href="https://demos.wrappixel.com/premium-admin-templates/vuejs/spike-vue/docs/index.html" color="primary" size="large"
-                            class="m-btn-full btn-custom-lg">Documentation</v-btn>
-                    </div>
-                </v-col>
-                <v-col cols="12" class="text-center" data-aos="fade-up" data-aos-delay="1000" data-aos-duration="1000">
-                    <div class="mt-5 mb-5">
-                        <v-row class="justify-center">
-                            <v-col cols="12" sm="12" md="auto" lg="auto">
-                                <div class="bg-containerBg d-flex align-center px-6 rounded-pill">
-                                    <img src="@/assets/images/landingpage/background/frameworks.svg" />
-                                </div>
-                            </v-col>
-                        </v-row>
+                        <v-btn to="" color="primary" rounded="pill"
+                            class="mt-sm-0 mt-4 lp-btn-shadow m-btn-full btn-custom-lg mb-sm-0 mb-4" size="large"
+                        >Live Preview
+                        </v-btn>
+                        <v-btn target="_blank" rounded="pill" variant="outlined" href="" color="primary" size="large"
+                            class="m-btn-full btn-custom-lg"
+                        >Documentation
+                        </v-btn>
                     </div>
                 </v-col>
             </v-row>

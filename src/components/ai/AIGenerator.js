@@ -36,6 +36,8 @@ export default class AIGenerator {
             }
         }
 
+        this.cacheReplayDelay = this.options.cacheReplayDelay ? this.options.cacheReplayDelay: 100
+
     }
     
     createPrompt(){
@@ -60,13 +62,9 @@ export default class AIGenerator {
         return hash;
     }
 
+    returnCache(messages){
 
-    async generate(){
-
-        this.state = 'running'
-        let me = this;
-        let messages = this.createMessages();
-
+        let me = this
 
         if(localStorage.getItem("useCache")=="true"){
             let message = JSON.stringify(messages)
@@ -75,26 +73,94 @@ export default class AIGenerator {
             let existingResult = localStorage.getItem("cache-" + hashKey)
 
             if(existingResult){
-                setTimeout(()=>{
+                let localStorageKey = "cache-" + hashKey + "-steps"
+                let steps = localStorage.getItem("cache-" + hashKey + "-steps")
 
-                    me.state = 'end';
+                if(steps){
+                    steps = JSON.parse(steps)
 
-                    let model = me.createModel(existingResult)
-        
-                    if(me.client.onModelCreated){
-                        me.client.onModelCreated(model);
-                    } 
-                    
-                    if(me.client.onGenerationFinished)
-                        me.client.onGenerationFinished(model)
-        
+                    let i=0
 
-                }, 0)
+                    let loop = setInterval(()=>{
+    
+                        let model = me.createModel(existingResult.substring(0, steps[i++]))
+            
+                        if(me.client.onModelCreated){
+                            me.client.onModelCreated(model);
+                        } 
 
-                return
+                        if(steps.length -1 == i){ //last
+
+                            me.state = 'end';
+
+                            if(me.client.onGenerationFinished)
+                                me.client.onGenerationFinished(model)
+
+                            clearInterval(loop);
+                        }
+    
+                    }, me.cacheReplayDelay)
+                }else
+                
+                    setTimeout(()=>{
+
+                        me.state = 'end';
+
+                        let model = me.createModel(existingResult)
+            
+                        if(me.client.onModelCreated){
+                            me.client.onModelCreated(model);
+                        } 
+                        
+                        if(me.client.onGenerationFinished)
+                            me.client.onGenerationFinished(model)
+
+                    }, 0)
+
+                return true
             }
 
         }
+
+    }
+
+    saveCacheSteps(messages, step){
+        let me = this
+        let hashKey = me.generateHashKey(JSON.stringify(messages))
+
+        //save the result lengths of step-by-step
+        if(localStorage.getItem("useCache")=="true"){
+            let localStorageKey = "cache-" + hashKey + "-steps"
+            let steps = localStorage.getItem("cache-" + hashKey + "-steps")
+            if(steps){
+                steps = JSON.parse(steps)
+            }else  
+                steps = []
+
+            steps.push(step)
+
+            localStorage.setItem(localStorageKey, JSON.stringify(steps))    
+        }        
+    }
+
+    saveCache(messages){
+        let me = this
+
+        let hashKey = me.generateHashKey(JSON.stringify(messages))
+
+        if(localStorage.getItem("useCache")=="true"){
+            localStorage.setItem("cache-" + hashKey, me.modelJson)
+        }
+    }
+
+    async generate(){
+
+        this.state = 'running'
+        let me = this;
+        let messages = this.createMessages();
+
+        if(this.returnCache(messages))
+            return
 
         me.openaiToken = me.getToken();
         let responseCnt = 0;
@@ -155,6 +221,12 @@ export default class AIGenerator {
 
             if(me.client.onModelCreated){
                 if(responseCnt > 15){
+<<<<<<< HEAD
+=======
+
+                    me.saveCacheSteps(messages, newUpdatesJoined.length)
+
+>>>>>>> 1017986115e1af200f555467da801c74a9bebc74
                     me.client.onModelCreated(me.createModel(newUpdatesJoined));
                     responseCnt = 0;
                 } else {
@@ -183,10 +255,7 @@ export default class AIGenerator {
                 if(me.client.onGenerationFinished)
                     me.client.onGenerationFinished(model)
 
-                if(localStorage.getItem("useCache")=="true"){
-                    let hashKey = me.generateHashKey(JSON.stringify(messages))
-                    localStorage.setItem("cache-" + hashKey, me.modelJson)
-                }
+                me.saveCache(messages)
             
             }
 
