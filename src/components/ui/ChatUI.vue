@@ -6,6 +6,10 @@
                     <div>
                         <h5 class="text-h5 mb-n1">{{ alertInfo.title }}</h5>
                         <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
+                        <small class="textPrimary" v-if="isViewDetail">
+                            <br />
+                            {{ filteredAlert.detail }}
+                        </small>
                     </div>
                 </div>
                 <div class="d-flex">
