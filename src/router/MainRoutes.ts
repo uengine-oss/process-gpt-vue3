@@ -11,11 +11,11 @@ const MainRoutes = {
             path: '/todolist',
             component: () => import('@/views/apps/todolist/Todolist.vue'),
         },
-        {
-            name: 'Calendar',
-            path: '/calendar',
-            component: () => import('@/views/apps/calendar/Calendar.vue')
-        },
+        // {
+        //     name: 'Calendar',
+        //     path: '/calendar',
+        //     component: () => import('@/views/apps/calendar/Calendar.vue')
+        // },
         {
             name: 'Chats',
             path: '/chats',
@@ -24,7 +24,7 @@ const MainRoutes = {
         {
             name: 'Instance Chat',
             path: '/instances/chat',
-            component: () => import('@/views/apps/definition-list/DefinitionList.vue')
+            component: () => import('@/views/apps/instance-list/InstanceList.vue')
         },
         {
             name: 'instances',
