@@ -1,12 +1,11 @@
 <template>
-    <div id="tree" ref="tree" class="org-chart"></div>
+    <div id="tree" ref="tree"></div>
 </template>
 
 <script>
 import OrgChart from '@balkangraph/orgchart.js'
 
 export default {
-    name: 'tree',
     props: {
         nodes: {
             type: Array,
@@ -33,9 +32,3 @@ export default {
     },
 }
 </script>
-
-<style scoped>
-.org-chart {
-    height: calc(100vh - 112px);
-}
-</style>

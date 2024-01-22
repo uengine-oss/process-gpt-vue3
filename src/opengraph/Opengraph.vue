@@ -19,6 +19,9 @@
     import _ from "lodash"
     export default {
         name: 'opengraph',
+        mounted() {
+            console.log("opengraph")
+        },
         props: {
             slider: {
                 default: function () {

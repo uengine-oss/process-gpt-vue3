@@ -8,13 +8,14 @@
         <AppBaseCard>
             <template v-slot:leftpart>
                 <div class="no-scrollbar">
-                <process-manager-chat></process-manager-chat>
-                <!-- <ChatProfile />
+                    <process-manager-chat @update:model="model => bpmn = model"></process-manager-chat>
+                    <!-- <ChatProfile />
                 <ChatListing /> -->
                 </div>
             </template>
             <template v-slot:rightpart>
-                <bpmn-modeling-canvas></bpmn-modeling-canvas>
+                <bpmn-modeling-canvas :projectName="bpmn ? bpmn.projectName : ''"
+                    v-model="bpmn.model"></bpmn-modeling-canvas>
 
             </template>
 
@@ -71,7 +72,7 @@ export default {
         definitions: [],
         processDefinition: null,
         processInstance: null,
-        bpmn: null,
+        bpmn: {},
         path: "instances",
         organizationChart: [],
         alertInfo: {
@@ -95,6 +96,11 @@ export default {
         this.messages = await this.loadMessages(path);
     },
     watch: {
+        "bpmn": {
+            handler(newVal) {
+                console.log(newVal)
+            }
+        },
         "$route": {
             deep: true,
             async handler(newVal, oldVal) {
@@ -115,7 +121,7 @@ export default {
             if (value) {
                 if (value.organizationChart) {
                     this.organizationChart = JSON.parse(value.organizationChart);
-                    
+
                     if (!this.organizationChart) {
                         this.organizationChart = []
                     }
@@ -132,10 +138,11 @@ export default {
         },
 
         async beforeSendMessage(newMessage) {
-            if(!this.generator.contexts) {
+            if (!this.generator.contexts) {
                 let contexts = await this.queryFromVectorDB(newMessage);
                 this.generator.setContexts(contexts);
             }
+
             this.sendMessage(newMessage);
         },
 
@@ -153,29 +160,29 @@ export default {
         },
 
         async afterGenerationFinished(putObj) {
-            let modelText = "";
-            let path = "";
-    
-            if (this.processInstance) {
-                if (typeof this.processInstance === "string") {
-                    this.processInstance = partialParse(this.processInstance);
-                }
-                path = `${this.path}/${this.processInstance.processInstanceId}`;
-                modelText = JSON.stringify(this.processInstance);
+            // let modelText = "";
+            // let path = "";
 
-                let contexts = await this.queryFromVectorDB(this.processInstance.processDefinitionId);
-                if (contexts && contexts.length > 0) {
-                    contexts.forEach(item => {
-                        this.processDefinition = partialParse(item);
-                    });
-                }
+            // if (this.processInstance) {
+            //     if (typeof this.processInstance === "string") {
+            //         this.processInstance = partialParse(this.processInstance);
+            //     }
+            //     path = `${this.path}/${this.processInstance.processInstanceId}`;
+            //     modelText = JSON.stringify(this.processInstance);
 
-                putObj.model = modelText;
+            //     let contexts = await this.queryFromVectorDB(this.processInstance.processDefinitionId);
+            //     if (contexts && contexts.length > 0) {
+            //         contexts.forEach(item => {
+            //             this.processDefinition = partialParse(item);
+            //         });
+            //     }
 
-                this.saveMessages(path, putObj);
+            //     putObj.model = modelText;
 
-                this.sendTodolist();
-            }
+            //     this.saveMessages(path, putObj);
+
+            //     this.sendTodolist();
+            // }
         },
 
         async sendTodolist() {
@@ -199,7 +206,7 @@ export default {
 
                 this.processDefinition.activities.forEach(act => {
                     if (act.id == this.processInstance.currentActivityId) {
-                        putObj[uuid].activityName = act.name; 
+                        putObj[uuid].activityName = act.name;
                     }
                 });
             }
@@ -208,12 +215,12 @@ export default {
                 putObj[uuid].activityId = this.processInstance.currentActivityId;
                 putObj[uuid].processInstanceId = this.processInstance.processInstanceId;
                 path = `todolist/${this.processInstance.nextUserEmail}`;
-                
+
                 this.saveMessages(path, putObj);
             }
         },
 
-        async queryFromVectorDB(messsage){
+        async queryFromVectorDB(messsage) {
             const apiToken = this.generator.getToken();
             const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
 
