@@ -17,8 +17,8 @@ import { HelpIcon, ChevronDownIcon } from 'vue-tabler-icons';
             </v-btn>
         </template>
         <v-sheet max-width="100%" width="1150" height="100%" elevation="10" rounded="xl" class="pa-8 mx-auto">
-            <h5 class="text-h5">Different Demos</h5>
-            <h6 class="text-subtitle-1 mt-1">Included with the package</h6>
+            <h5 class="text-h5">Demos</h5>
+            <!-- <h6 class="text-subtitle-1 mt-1">Included with the package</h6>
             <div class="v-row mt-3">
                 <v-col v-for="demo in demosMegamenu" :key="demo.img">
                     <v-sheet class="text-center position-relative">
@@ -55,10 +55,10 @@ import { HelpIcon, ChevronDownIcon } from 'vue-tabler-icons';
                         <p class="text-body-1 font-weight-semibold text-grey200 text-center mt-1">{{ demo.name }}</p>
                     </v-col>
                 </div>
-            </div>
+            </div> -->
         </v-sheet>
     </v-menu>
-    <v-menu open-on-hover open-delay=1  :close-on-content-click="false" class="lp_wrapper position-relative">
+    <!-- <v-menu open-on-hover open-delay=1  :close-on-content-click="false" class="lp_wrapper position-relative">
         <template v-slot:activator="{ props }">
             <v-btn class="hidden-sm-and-down custom-hover-primary nav-links" :ripple="false" rounded="sm" variant="text" color="primary" v-bind="props"
                 >Pages<ChevronDownIcon size="18" class="mt-1 ml-1" />
@@ -82,8 +82,9 @@ import { HelpIcon, ChevronDownIcon } from 'vue-tabler-icons';
                 </v-row>
             </div>
         </v-sheet>
-    </v-menu>
-    <v-btn variant="text" color="primary" class="custom-hover-primary nav-links" :ripple="false" href="https://demos.wrappixel.com/premium-admin-templates/vuejs/spike-vue/docs/index.html" target="_blank">Documentation</v-btn>
-    <v-btn variant="text" color="primary" class="custom-hover-primary nav-links" :ripple="false" href="https://wrappixel.com/support/" target="_blank">Support</v-btn>
+    </v-menu> -->
+    <v-btn variant="text" color="primary" class="custom-hover-primary nav-links" :ripple="false" href="" disabled target="_blank">Pricing</v-btn>
+    <v-btn variant="text" color="primary" class="custom-hover-primary nav-links" :ripple="false" href="" to="/instances/chat" target="_blank">Documentation</v-btn>
+    <v-btn variant="text" color="primary" class="custom-hover-primary nav-links" :ripple="false" href="https://uengine.org/" target="_blank">Support</v-btn>
     
 </template>
