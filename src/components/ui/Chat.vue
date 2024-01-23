@@ -207,6 +207,7 @@ export default {
         Icon
     },
     props: {
+        name: String,
         messages: Array,
         userInfo: Object,
         alertInfo: Object,
