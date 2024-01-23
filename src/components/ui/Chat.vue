@@ -28,14 +28,14 @@
                 </div>
                 <div class="d-flex">
                     <v-btn icon variant="text" class="text-medium-emphasis">
-                        <PhoneIcon size="24" />
+                        <DeviceFloppyIcon size="24" @click="$emit('save')"/>
                     </v-btn>
-                    <v-btn icon variant="text" class="text-medium-emphasis">
+                    <!-- <v-btn icon variant="text" class="text-medium-emphasis">
                         <VideoPlusIcon size="24" />
                     </v-btn>
                     <v-btn icon variant="text" class="text-medium-emphasis">
                         <DotsVerticalIcon size="24" />
-                    </v-btn>
+                    </v-btn> -->
                 </div>
             </div>
             <v-divider />
