@@ -96,18 +96,7 @@ export default {
             if (json) {
                 let unknown = partialParse(json);
 
-                if(unknown.modifications) {
-                    unknown.modifications.forEach(modification => {
-                        if (modification.action == "replace") {
-                            this.jsonPathReplace(this.organizationChart, modification.targetJsonPath, modification.value)
-                        } else if (modification.action == "add") {
-                            this.jsonPathAdd(this.organizationChart, modification.targetJsonPath, modification.value)
-                        } else if (modification.action == "delete") {
-                            this.jsonPathDelete(this.organizationChart, modification.targetJsonPath)
-                        }
-                    });
-
-                } else {
+                if(!unknown.modifications) {
                     this.drawChart(unknown);
                 }
             }
@@ -119,7 +108,25 @@ export default {
             }
         },
 
-        afterGenerationFinished() {
+        afterGenerationFinished(response) {
+            let json = this.extractJSON(response);
+
+            if (json) {
+                let unknown = partialParse(json);
+
+                if(unknown.modifications) {
+                    unknown.modifications.forEach(modification => {
+                        if (modification.action == "replace") {
+                            this.jsonPathReplace(this, modification.targetJsonPath, modification.value)
+                        } else if (modification.action == "add") {
+                            this.jsonPathAdd(this, modification.targetJsonPath, modification.value)
+                        } else if (modification.action == "delete") {
+                            this.jsonPathDelete(this, modification.targetJsonPath)
+                        }
+                    });
+                }
+            }
+
             let chartText = "";
             let putObj =  {
                 messages: this.messages,
