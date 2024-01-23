@@ -28,9 +28,9 @@
 
 <script>
 import { defineComponent } from "vue";
-import { useAuthStore } from '@/stores/auth';
+import { getGlobalContext } from '@/stores/auth';
 
-const auth = useAuthStore();
+const globalContext = getGlobalContext();
 
 export default defineComponent({
     data: () => ({
@@ -54,8 +54,8 @@ export default defineComponent({
     methods:{
         async init() {
             if (this.path) {
-                this.userInfo = await auth.storage.getUserInfo();
-                await auth.storage.watch(`db://${this.path}/${this.userInfo.email}`, (callback) => {
+                this.userInfo = await globalContext.storage.getUserInfo();
+                await globalContext.storage.watch(`db://${this.path}/${this.userInfo.email}`, (callback) => {
                     if (callback) {
                         this.todolist = Object.values(callback);
                     }
@@ -69,7 +69,7 @@ export default defineComponent({
             if (confirm("해당 Item 을 삭제 하시겠습니까?")) {
                 const path = `db://${this.path}/${this.userInfo.email}`;
                 if (id) {
-                    await auth.storage.delete(`${path}/${id}`);
+                    await globalContext.storage.delete(`${path}/${id}`);
                     await this.init();
                 }
             }

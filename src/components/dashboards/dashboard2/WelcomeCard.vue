@@ -1,9 +1,13 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { getGlobalContext } from '@/stores/auth';
+
+const globalContext = getGlobalContext();
+</script>
 <template>
   <v-card elevation="10" class="overflow-visible">
     <v-card-text class="position-relative pb-5">
       <h5 class="text-h5 mb-1 font-weight-semibold">
-        Welcome Jonathan Deo
+        Welcome {{ globalContext.storage.userInfo.name }}
       </h5>
       <div class="text-subtitle-1 text-grey100 pb-1">Check all the statastics</div>
       <v-btn color="primary" class="mt-4 mb-2 px-7" rounded="pill" size="large"> visit now </v-btn>

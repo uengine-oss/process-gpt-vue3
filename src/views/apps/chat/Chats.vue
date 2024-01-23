@@ -66,44 +66,41 @@ export default {
         replyUser: null,
         definitions: [],
         processDefinition: null,
-        processInstance: null,
+        // processInstance: {},
         bpmn: null,
         path: "instances",
         organizationChart: [],
-        // alertInfo: {
-        //     title: "프로세스 실행",
-        //     text: "대화형으로 프로세스를 실행하십시오. 예를 들어, '휴가를 신청할게: 1. 사유: 개인사유 2. 휴가 시작일: 오늘 3. 휴가 복귀일: 금요일' 와 같은 명령을 할 수 있습니다."
-        // },
     }),
     async created() {
-        this.init();
-
-        await this.getChatList()
-        await this.loadData("organization");
+        // this.init();
 
         this.generator = new ChatGenerator(this, {
             isStream: true,
             preferredLanguage: "Korean"
         });
 
-        var path = this.$route.href.replace("#/", "");
-        this.loadData(path);
+        await this.getChatList()
+        // await this.loadData("organization");
+        // await this.loadData("definitions");
 
-        this.messages = await this.loadMessages(path);
+        // var path = this.$route.href.replace("#/", "");
+        // this.loadData(path);
+
+        // this.messages = await this.loadMessages(path);
     },
     watch: {
-        "$route": {
-            deep: true,
-            async handler(newVal, oldVal) {
-                if (newVal.path !== oldVal.path) {
-                    this.bpmn = null;
-                    var path = this.$route.href.replace("#/", "");
-                    this.loadData(path);
+        // "$route": {
+        //     deep: true,
+        //     async handler(newVal, oldVal) {
+        //         if (newVal.path !== oldVal.path) {
+        //             this.bpmn = null;
+        //             var path = this.$route.href.replace("#/", "");
+        //             this.loadData(path);
 
-                    this.messages = await this.loadMessages(path);
-                }
-            }
-        }
+        //             this.messages = await this.loadMessages(path);
+        //         }
+        //     }
+        // }
     },
     methods: {
         beforeReply(msg){
@@ -155,6 +152,7 @@ export default {
         },
 
         async loadData(path) {
+            var me = this
             const value = await this.getData(path);
 
             if (value) {
@@ -165,54 +163,53 @@ export default {
                         this.organizationChart = []
                     }
                 } else {
-                    if (this.$route.params && this.$route.params.id) {
-                        var jsonInstance = partialParse(value.model);
-                        if (jsonInstance) {
-                            this.processInstance = jsonInstance;
-                        }
+                    // if (this.$route.params && this.$route.params.id) {
+                        // Object.keys(value).forEach(function (key){
+                        //     me.processInstance[key] = partialParse(value[key].model);
+                        // })
 
                     }
-                }
+                // }
             }
         },
 
         afterModelCreated(response) {
             let jsonInstance = this.extractJSON(response);
 
-            if (jsonInstance) {
-                try {
-                    this.processInstance = partialParse(jsonInstance);
-                } catch (error) {
-                    this.processInstance = jsonInstance;
-                    console.log(error);
-                }
-            }
+            // if (jsonInstance) {
+            //     try {
+            //         this.processInstance = partialParse(jsonInstance);
+            //     } catch (error) {
+            //         this.processInstance = jsonInstance;
+            //         console.log(error);
+            //     }
+            // }
         },
 
         async afterGenerationFinished(putObj) {
-            let modelText = "";
-            let path = "";
+            // let modelText = "";
+            // let path = "";
 
-            if (this.processInstance) {
+            // if (this.processInstance) {
 
-                if (typeof this.processInstance === "string") {
-                    this.processInstance = partialParse(this.processInstance);
-                }
-                path = `${this.path}/${this.processInstance.processInstanceId}`;
-                modelText = JSON.stringify(this.processInstance);
+            //     if (typeof this.processInstance === "string") {
+            //         this.processInstance = partialParse(this.processInstance);
+            //     }
+            //     path = `${this.path}/${this.processInstance.processInstanceId}`;
+            //     modelText = JSON.stringify(this.processInstance);
 
-                let contexts = await this.queryFromVectorDB(this.processInstance.processDefinitionId);
-                if (contexts && contexts.length > 0) {
-                    contexts.forEach(item => {
-                        this.processDefinition = partialParse(item);
-                    });
-                }
+            //     let contexts = await this.queryFromVectorDB(this.processInstance.processDefinitionId);
+            //     if (contexts && contexts.length > 0) {
+            //         contexts.forEach(item => {
+            //             this.processDefinition = partialParse(item);
+            //         });
+            //     }
 
-                putObj.model = modelText;
+            //     putObj.model = modelText;
 
-                // this.saveMessages(path, putObj);
-                this.sendTodolist();
-            }
+            //     // this.saveMessages(path, putObj);
+            //     this.sendTodolist();
+            // }
         },
 
         async sendTodolist() {

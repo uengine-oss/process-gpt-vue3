@@ -82,9 +82,9 @@
 </template>
 
 <script>
-import { useAuthStore } from '@/stores/auth';
+import { getGlobalContext } from '@/stores/auth';
 
-const auth = useAuthStore();
+const globalContext = getGlobalContext();
 
 export default {
     data: () => ({
@@ -103,7 +103,7 @@ export default {
     methods: {
         async init(path) {
             const callPath = path ? path : this.path;
-            await auth.storage.watch(`db://${callPath}`, (callback) => {
+            await globalContext.storage.watch(`db://${callPath}`, (callback) => {
                 if (callback) {
                     const keys = Object.keys(callback);
                     this.instanceChats = [];

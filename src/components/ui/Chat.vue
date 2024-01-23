@@ -127,6 +127,7 @@
                                         <p class="text-body-1">{{ message.content }}</p>
                                         <p style="margin-top: 5px;" 
                                             v-if="message.role == 'system' 
+                                            && message.content
                                             && message.content.includes('시작하시겠습니까') 
                                             && index == filteredMessages.length - 1
                                             && (message['prompt'] && userInfo.email == message['prompt'].requestUserEmail)"

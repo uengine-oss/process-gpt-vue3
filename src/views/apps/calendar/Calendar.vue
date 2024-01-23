@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import 'v-calendar/dist/style.css';
 import { ref } from 'vue';
+import '@fullcalendar/core/vdom'
 import UiParentCard from '@/components/shared/UiParentCard.vue';
 import FullCalendar from './FullCalender.vue';
 
@@ -11,10 +12,10 @@ import FullCalendar from './FullCalender.vue';
 const date = ref(new Date());
 const timezone = ref('');
 
-const range = ref({
-    start: new Date(2020, 0, 1),
-    end: new Date(2020, 0, 5)
-});
+// const range = ref({
+//     start: new Date(2020, 0, 1),
+//     end: new Date(2020, 0, 5)
+// });
 </script>
 <template>
     <v-row>
@@ -56,7 +57,7 @@ const range = ref({
         </v-col>
         <v-col cols="12" lg="6" sm="12">
             <UiParentCard title="Calendar Date Range">
-                <v-date-picker v-model="range" is-range class="bg-surface" />
+                <!-- <v-date-picker v-model="range" is-range class="bg-surface" /> -->
             </UiParentCard>
         </v-col>
         <v-col cols="12" lg="12" sm="12">
