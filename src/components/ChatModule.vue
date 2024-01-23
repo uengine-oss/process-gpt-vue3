@@ -25,6 +25,7 @@ export default {
         },
         async getChatList(){
             var me = this
+            me.userInfo = globalContext.storage.userInfo;
             // globalContext.storage.delete(`db://chats/1`)
             var option = {
                 sort: "desc",
@@ -114,12 +115,14 @@ export default {
                 var milliseconds = currentDate.getMilliseconds(); 
                 var timeStamp = currentDate.toTimeString().split(' ')[0] + '.' + milliseconds.toString().padStart(3, '0');
 
-                this.messages.forEach((msg) => {
-                    chatMsgs.push({
-                        role: msg.role,
-                        content: msg.content
-                    })
-                });
+                if(this.messages && this.messages.length > 0) {
+                    this.messages.forEach((msg) => {
+                        chatMsgs.push({
+                            role: msg.role,
+                            content: msg.content
+                        })
+                    });
+                }
 
                 if(!this.pushMessage) {
                     let chatObj = {
@@ -186,7 +189,7 @@ export default {
 
         async saveMessages(path, obj) {
             if(this.prompt && this.prompt.content){
-                if(obj.role == 'system' && obj.content.includes("시작하시겠습니까")){
+                if(obj.role == 'system' && obj.content && obj.content.includes("시작하시겠습니까")){
                     obj.prompt = this.prompt
                     this.prompt = null
                 }
@@ -318,12 +321,12 @@ export default {
             }
     
             this.afterGenerationFinished(putObj);
-
-            if(this.pushMessage){
-                if(response == '.'){
+            
+            if(this.pushMessage && responses) {
+                if(responses == '.') {
                     this.messages.splice(this.messages.length - 1, 1)
                 } else {
-                    this.pushMessage(response, 'system');
+                    this.pushMessage(responses, 'system');
                 }
             }
         },
