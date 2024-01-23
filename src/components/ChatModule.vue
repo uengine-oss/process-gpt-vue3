@@ -93,6 +93,8 @@ export default {
                     } else {
                         this.messages = [];
                     }
+                } else {
+                    this.messages = [];
                 }
             });
         },
@@ -167,9 +169,19 @@ export default {
             if (index) {
                 this.messages.splice(index);
 
+                let chatMsgs = [];
+                if(this.messages && this.messages.length > 0) {
+                    this.messages.forEach((msg) => {
+                        chatMsgs.push({
+                            role: msg.role,
+                            content: msg.content
+                        })
+                    });
+                }
+
                 this.generator.previousMessages = [
                     ...this.generator.previousMessages,
-                    ...this.messages
+                    ...chatMsgs
                 ];
 
                 await this.generator.generate();
@@ -302,7 +314,6 @@ export default {
         },
     
         onGenerationFinished(responses) {
-            // console.log(responses);
             var currentDate = new Date();
             var milliseconds = currentDate.getMilliseconds(); 
             var timeStamp = currentDate.toTimeString().split(' ')[0] + '.' + milliseconds.toString().padStart(3, '0');
@@ -311,16 +322,7 @@ export default {
             delete messageWriting.isLoading;
             messageWriting.timeStamp = timeStamp;
     
-            var msgText = "";
-            if (this.messages) {
-                msgText = JSON.stringify(this.messages);
-            }
-    
-            var putObj =  {
-                messages: msgText,
-            }
-    
-            this.afterGenerationFinished(putObj);
+            this.afterGenerationFinished();
             
             if(this.pushMessage && responses) {
                 if(responses == '.') {

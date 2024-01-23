@@ -2,24 +2,21 @@
     <AppBaseCard>
         <template v-slot:leftpart>
             <div class="no-scrollbar">
-                <ProcessInstanceList
-                    @seletChatId="seletChatId"
-                ></ProcessInstanceList>
+                <ProcessInstanceList></ProcessInstanceList>
             </div>
         </template>
         <template v-slot:rightpart>
-            <ChatUI :messages="messages"
+            <Chat :messages="messages"
                 :alertInfo="alertInfo"
+                :userInfo="userInfo" 
                 :disableChat="disableChat"
                 @sendMessage="beforeSendMessage"
                 @sendEditedMessage="sendEditedMessage"
-            ></ChatUI>
+            ></Chat>
         </template>
 
         <template v-slot:mobileLeftContent>
-            <ProcessInstanceList
-                @seletChatId="seletChatId"
-            ></ProcessInstanceList>
+            <ProcessInstanceList></ProcessInstanceList>
         </template>
     </AppBaseCard>
 </template>
@@ -33,14 +30,14 @@ import ChatModule from "@/components/ChatModule.vue";
 
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 
-import ChatUI from "@/components/ui/ChatUI.vue";
+import Chat from "@/components/ui/Chat.vue";
 import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 
 export default {
     mixins: [ChatModule],
     components: {
-        ChatUI,
         AppBaseCard,
+        Chat,
         ProcessInstanceList,
     },
     data: () => ({
@@ -61,6 +58,16 @@ export default {
             preferredLanguage: "Korean"
         });
     },
+    watch: {
+        "$route": {
+            deep: true,
+            async handler(newVal, oldVal) {
+                if (newVal.path !== oldVal.path) {
+                    await this.init();
+                }
+            }
+        }
+    },
     methods: {
         async loadData(path) {
             let value = await this.getData(path);
@@ -68,10 +75,10 @@ export default {
                 this.checkDisableChat(value);
             }
 
-            let org = await this.getData("organization");
+            value = await this.getData("organization");
             
-            if (org.organizationChart) {
-                this.organizationChart = JSON.parse(org.organizationChart);
+            if (value && value.organizationChart) {
+                this.organizationChart = JSON.parse(value.organizationChart);
                 
                 if (!this.organizationChart) {
                     this.organizationChart = []
@@ -87,12 +94,6 @@ export default {
             if (value.nextUserId && value.nextUserId !== this.userInfo.email) {
                 this.disableChat = true;
             }
-        },
-
-        async seletChatId(id) {
-            const path = `/${this.path}/${id}`;
-            await this.loadData(path);
-            await this.loadMessages(path);
         },
 
         async beforeSendMessage(newMessage) {
@@ -111,15 +112,8 @@ export default {
 
         afterModelCreated(response) {
             let jsonInstance = this.extractJSON(response);
-
             if (jsonInstance) {
-                try {
-                    this.processInstance = partialParse(jsonInstance);
-                } catch (error) {
-                    this.processInstance = jsonInstance;
-
-                    console.log(error);
-                }
+                this.processInstance = partialParse(jsonInstance);
             }
         },
 
@@ -199,6 +193,7 @@ export default {
                     const path = `todolist/${this.processInstance.currentUserEmail}`;
                     const pushObj = {
                         definitionId: this.processDefinition.processDefinitionId,
+                        definitionName: this.processDefinition.processDefinitionName,
                         instanceId: this.processInstance.processInstanceId,
                         activityId: this.processInstance.currentActivityId,
                         userId: this.processInstance.currentUserEmail,
@@ -220,6 +215,10 @@ export default {
                         localStorage.setItem("useCache", true);
                     }
 
+                    if (actIdx != -1) {
+                        pushObj.activityName = this.processDefinition.activities[actIdx].name;
+                    }
+
                     await this.pushObject(path, pushObj);
                     await this.saveUserInstance(pushObj.userId, pushObj.instanceId);
                 }
@@ -231,6 +230,7 @@ export default {
                     const path = `todolist/${this.processInstance.nextUserEmail}`;
                     const pushObj = {
                         definitionId: this.processDefinition.processDefinitionId,
+                        definitionName: this.processDefinition.processDefinitionName,
                         instanceId: this.processInstance.processInstanceId,
                         activityId: this.processInstance.nextActivityId,
                         userId: this.processInstance.nextUserEmail,
@@ -238,9 +238,16 @@ export default {
                         startDate: new Date().toISOString().substr(0, 10),
                     };
 
+                    const actIdx = this.processDefinition.activities.findIndex(activity => 
+                        activity.id == pushObj.activityId
+                    );
+                    if (actIdx != -1) {
+                        pushObj.activityName = this.processDefinition.activities[actIdx].name;
+                    }
+
                     await this.pushObject(path, pushObj);
-                    await this.saveUserInstance(pushObj.userId, pushObj.instanceId);
-                    await this.beforeSendNotification(pushObj.userId, pushObj.instanceId);
+                    await this.saveUserInstance(pushObj);
+                    await this.beforeSendNotification(pushObj);
 
                 } else {
                     //NOTE: 이런 메시지를 주고 적절한 조치를 유도해야 합니다. "절대로" 그냥 먹으면 안됩니다.
@@ -281,19 +288,18 @@ export default {
             return workItem;
         },
 
-        //NOTE: 조직도에 다음 담당자가 없으면 진행오류를 내야 합니다. 그냥 먹으면 안됩니다.
         checkUserEmail(email) {
             const checked = this.organizationChart.some(user => user.email == email);
             return checked;
         },
 
-        async saveUserInstance(email, instanceId) {
-            if (this.checkUserEmail(email)) {
-                const uid = await this.getUid(email);
+        async saveUserInstance(item) {
+            if (this.checkUserEmail(item.userId)) {
+                const uid = await this.getUid(item.userId);
 
                 if (uid !== "") {
                     const path = `users/${uid}/instances`;
-                    let putObj = [instanceId];
+                    let putObj = [item.instanceId];
 
                     let instanceList = await this.getData(path);
                     if (instanceList) {
@@ -310,15 +316,18 @@ export default {
             }
         },
 
-        async beforeSendNotification(email, instanceId) {
-            const uid = await this.getUid(email);
+        async beforeSendNotification(item) {
+            const uid = await this.getUid(item.userId);
             if (uid) {
-                const notiObj = {
+                const notiInfo = {
                     noti_type: "todolist",
                     isChecked: false,
-                    link: `instances/${instanceId}`
+                    chatId: item.instanceId,
+                    title: item.activityName,
+                    subtitle: item.definitionName,
+                    participants: item.participants
                 };
-                this.sendNotification(uid, notiObj);
+                this.sendNotification(uid, notiInfo);
             }
         },
 
