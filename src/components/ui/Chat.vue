@@ -1,13 +1,9 @@
 <template>
     <div class="customHeight">
-        <div>
+        <div style="height: calc(100vh - 240px);">
             <div class="d-flex align-center gap-3 pa-4  justify-space-between">
                 <div class="d-flex gap-2 align-center">
-                    <div v-if="name">
-                        <h5 class="text-h5 mb-n1">{{ name ? name : chatDetail.name }}</h5>
-                        <small class="textPrimary"> {{ chatDetail.status }} </small>
-                    </div>
-                    <div v-else-if="alertInfo">
+                    <div v-if="alertInfo">
                         <h5 class="text-h5 mb-n1">{{ alertInfo.title }}</h5>
                         <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
                         <small class="textPrimary" v-if="isViewDetail">
@@ -15,13 +11,17 @@
                             {{ filteredAlert.detail }}
                         </small>
                     </div>
+                    <div v-else-if="name">
+                        <h5 class="text-h5 mb-n1">{{ name ? name : chatDetail.name }}</h5>
+                        <small class="textPrimary"> {{ chatDetail.status }} </small>
+                    </div>
                 </div>
                 <div class="d-flex">
-                    <v-btn icon variant="text" class="text-medium-emphasis">
-                        <DeviceFloppyIcon size="24" @click="$emit('save')"/>
-                    </v-btn>
                     <v-btn v-if="alertInfo" icon variant="text" class="text-medium-emphasis" @click="moreDetail">
                         <DotsVerticalIcon size="24" />
+                    </v-btn>
+                    <v-btn v-else icon variant="text" class="text-medium-emphasis">
+                        <DeviceFloppyIcon size="24" @click="$emit('save')"/>
                     </v-btn>
                 </div>
             </div>
@@ -350,12 +350,12 @@ pre {
     right: 15px;
     top: 15px;
 }
-.right-sidebar {
-    width: 320px;
-    border-left: 1px solid rgb(var(--v-theme-borderColor));
-    transition: 0.1s ease-in;
-    flex-shrink: 0;
-}
+// .right-sidebar {
+//     width: 320px;
+//     border-left: 1px solid rgb(var(--v-theme-borderColor));
+//     transition: 0.1s ease-in;
+//     flex-shrink: 0;
+// }
 
 .HideLeftPart {
     display: none;

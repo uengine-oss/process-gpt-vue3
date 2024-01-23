@@ -1,12 +1,13 @@
 <template>
     <AppBaseCard>
         <template v-slot:leftpart>
-            <ChatUI :messages="messages"
+            <Chat :messages="messages"
                     :alertInfo="alertInfo"
+                    :userInfo="userInfo" 
                     :disableChat="disableChat"
                     @sendMessage="beforeSendMessage"
                     @sendEditedMessage="sendEditedMessage"
-            ></ChatUI>
+            ></Chat>
         </template>
 
         <template v-slot:rightpart>
@@ -17,30 +18,33 @@
         </template>
 
         <template v-slot:mobileLeftContent>
-            <ChatUI :messages="messages"
+            <Chat :messages="messages"
                     :alertInfo="alertInfo"
+                    :userInfo="userInfo" 
                     :disableChat="disableChat"
                     @sendMessage="beforeSendMessage"
                     @sendEditedMessage="sendEditedMessage"
-            ></ChatUI>
+            ></Chat>
         </template>
     </AppBaseCard>
 </template>
 
 <script>
+import partialParse from "partial-json-parser";
+
 import ChatGenerator from "@/components/ai/OrganizationChartGenerator";
 import ChatModule from "@/components/ChatModule.vue";
 
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 
-import ChatUI from "@/components/ui/ChatUI.vue";
+import Chat from "@/components/ui/Chat.vue";
 import OrganizationChart from "@/components/ui/OrganizationChart.vue";
 
 export default {
     mixins: [ChatModule],
     components: {
         AppBaseCard,
-        ChatUI,
+        Chat,
         OrganizationChart,
     },
     data: () => ({
@@ -59,6 +63,7 @@ export default {
             isStream: true,
             preferredLanguage: "Korean"
         });
+
     },
     methods: {
         async loadData(path) {
@@ -86,25 +91,31 @@ export default {
         },
 
         afterModelCreated(response) {
-            this.drawChart(response);
-        },
+            let json = this.extractJSON(response);
 
-        drawChart(textData) {
-            let json = this.extractJSON(textData)
+            if (json) {
+                let unknown = partialParse(json);
 
-            try {
-                let obj = JSON.parse(json);
-
-                if(obj && obj.organizationChart) {
-                    this.organizationChart = obj.organizationChart;
-
-                    this.organizationChart.forEach(node => {
-                        console.log(node)
+                if(unknown.modifications) {
+                    unknown.modifications.forEach(modification => {
+                        if (modification.action == "replace") {
+                            this.jsonPathReplace(this.organizationChart, modification.targetJsonPath, modification.value)
+                        } else if (modification.action == "add") {
+                            this.jsonPathAdd(this.organizationChart, modification.targetJsonPath, modification.value)
+                        } else if (modification.action == "delete") {
+                            this.jsonPathDelete(this.organizationChart, modification.targetJsonPath)
+                        }
                     });
 
+                } else {
+                    this.drawChart(unknown);
                 }
-            } catch (error) {
-                console.log(error);
+            }
+        },
+
+        drawChart(obj) {
+            if(obj && obj.organizationChart) {
+                this.organizationChart = obj.organizationChart;
             }
         },
 

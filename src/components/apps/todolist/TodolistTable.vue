@@ -63,7 +63,7 @@ export default defineComponent({
             }
         },
         goInstance(id) {
-            // this.$router.push(`/instances/${id}`);
+            this.$router.push(`/instances/${id}`);
         },
         async deleteItem(id) {
             if (confirm("해당 Item 을 삭제 하시겠습니까?")) {
