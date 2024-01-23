@@ -15,8 +15,6 @@
                             <v-alert icon="mdi-info" :title="alertInfo.title" :text="alertInfo.text"></v-alert>
                         </template>
                     </Chat>
-                    <!-- <ChatProfile />
-                <ChatListing /> -->
                 </div>
             </template>
             <template v-slot:rightpart>

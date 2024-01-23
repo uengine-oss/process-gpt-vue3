@@ -28,7 +28,7 @@
                 >get more chat</v-btn> -->
 
                 <div class="d-flex">
-                    <div class="w-100" style="height: calc(100vh - 320px);">
+                    <div class="w-100 chat-output-box">
                         <div v-for="(message, index) in filteredMessages" :key="index" class="pa-5 w-100">
                             <div v-if="message.role == 'user'" class="justify-end d-flex text-end mb-1">
                                 <div>
@@ -266,6 +266,9 @@ export default {
 </script>
 
 <style lang="scss">
+.chat-output-box {
+    height: calc(100vh - 320px);
+}
 .w-90 {
     width: 90% !important;
 }
@@ -304,6 +307,12 @@ pre {
 
 .HideLeftPart {
     display: none;
+}
+
+@media (max-width: 1279px) {
+    .chat-output-box {
+        height: calc(100vh - 360px);
+    }    
 }
 
 @media (max-width: 960px) {
