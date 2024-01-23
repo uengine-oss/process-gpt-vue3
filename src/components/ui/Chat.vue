@@ -1,6 +1,6 @@
 <template>
     <div class="customHeight">
-        <div>
+        <div style="height: calc(100vh - 240px);">
             <div class="d-flex align-center gap-3 pa-4  justify-space-between">
                 <div class="d-flex gap-2 align-center">
                     <div v-if="alertInfo">
