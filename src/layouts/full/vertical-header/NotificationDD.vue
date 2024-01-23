@@ -1,7 +1,3 @@
-<script setup lang="ts">
-import { notifications } from '@/_mockApis/headerData';
-import { Icon } from '@iconify/vue';
-</script>
 <template>
     <!-- ---------------------------------------------- -->
     <!-- notifications DD -->
@@ -24,17 +20,25 @@ import { Icon } from '@iconify/vue';
             <div class="px-8 pb-4 pt-6">
                 <div class="d-flex align-center">
                     <h6 class="text-h5 font-weight-semibold">Notifications</h6>
-                    <v-chip color="primary" variant="flat" size="x-small" class="text-white ml-4" rounded="xl">5
-                        New</v-chip>
+                    <v-chip color="primary" 
+                            variant="flat" 
+                            size="x-small" 
+                            class="text-white ml-4" 
+                            rounded="xl">
+                        {{ notiCount }} New
+                    </v-chip>
                 </div>
             </div>
             <perfect-scrollbar style="height:300px">
                 <v-list class="py-0 theme-list" lines="two">
-                    <v-list-item v-for="item in notifications" :key="item.title" :value="item" color="primary"
-                        class="py-4 px-8">
+                    <v-list-item v-for="item in notifications" 
+                            :key="item.key" 
+                            :value="item.chatId" 
+                            color="primary" 
+                            class="py-4 px-8">
                         <template v-slot:prepend>
-                            <v-avatar size="48" class="mr-3">
-                                <v-img :src="item.avatar" width="48" :alt="item.avatar" />
+                            <v-avatar v-for="user in item.participants" size="48" class="mr-3">
+                                <v-img :src="user" width="48" :alt="user" />
                             </v-avatar>
                         </template>
                         <div>
@@ -51,3 +55,51 @@ import { Icon } from '@iconify/vue';
         </v-sheet>
     </v-menu>
 </template>
+
+<script>
+import { Icon } from '@iconify/vue';
+
+import { getGlobalContext } from '@/stores/auth';
+
+const globalContext = getGlobalContext();
+
+export default {
+    components: {
+        Icon,
+    },
+    data: () => ({
+        notiCount: 0,
+        notifications: [],
+    }),
+    async created() {
+        await globalContext.storage.loginUser();
+
+        if (globalContext.storage.userInfo && globalContext.storage.userInfo.name) {
+            this.getNotifications();
+        }
+    },
+    methods: {
+        async getNotifications() {
+            const uid = globalContext.storage.userInfo.uid;
+            await globalContext.storage.watch(`db://users/${uid}`, callback => {
+                if (callback) {
+                    if (callback.notifications) {
+                        let notiList = Object.values(callback.notifications);
+                        this.notifications = notiList;
+
+                        notiList = notiList.filter(noti => !noti.isChecked);
+                        this.notiCount = notiList.length;
+                    }
+                }
+            });
+        },
+        async getUserProfile(uid) {
+            await globalContext.storage.getString(`db://users/${uid}/profile`, callback => {
+                if (callback) {
+                    return callback;
+                }
+            });
+        }
+    }
+}
+</script>

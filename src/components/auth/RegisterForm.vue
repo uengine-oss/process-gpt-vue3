@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useAuthStore } from '@/stores/auth';
+import { getGlobalContext } from '@/stores/auth';
 import { Form } from 'vee-validate';
 
 /*Social icons*/
@@ -20,8 +20,8 @@ const usernameRules = ref([
 ]);
 
 function validate(values: any, { setErrors }: any) {
-    const authStore = useAuthStore();
-    return authStore.signUpAcebase(username.value, email.value, password.value).catch((error) => console.log(error));
+    const globalContext = getGlobalContext();
+    return globalContext.signUp(username.value, email.value, password.value).catch((error) => console.log(error));
 }
 </script>
 <template>

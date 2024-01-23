@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useAuthStore } from '@/stores/auth';
+import { getGlobalContext } from '@/stores/auth';
 import { Form } from 'vee-validate';
 
 /*Social icons*/
@@ -16,8 +16,8 @@ const passwordRules = ref([
 const emailRules = ref([(v: string) => !!v || 'E-mail is required', (v: string) => /.+@.+\..+/.test(v) || 'E-mail must be valid']);
 
 function validate(values: any, { setErrors }: any) {
-    const authStore = useAuthStore();
-    return authStore.signInAcebase(username.value, password.value).catch((error) => setErrors({ apiError: error }));
+    const globalContext = getGlobalContext();
+    return globalContext.signIn(username.value, password.value).catch((error) => setErrors({ apiError: error }));
 }
 </script>
 

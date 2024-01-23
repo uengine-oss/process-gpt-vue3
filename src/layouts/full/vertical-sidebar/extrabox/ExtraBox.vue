@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { useAuthStore } from '@/stores/auth';
+import { getGlobalContext } from '@/stores/auth';
 import { Icon } from '@iconify/vue';
 
-const auth = useAuthStore();
+const globalContext = getGlobalContext();
 const picture = localStorage.getItem("picture");
 </script>
 
@@ -13,11 +13,11 @@ const picture = localStorage.getItem("picture");
                 <v-img :src="picture" width="50" />
             </v-avatar>
             <div>
-                <h6 class="text-h6 d-flex align-center font-weight-semibold">{{ auth.storage.userInfo.name }}</h6>
+                <h6 class="text-h6 d-flex align-center font-weight-semibold">{{ globalContext.storage.userInfo.name }}</h6>
                 <span class="text-subtitle-2 font-weight-medium text-grey100">Admin</span>
             </div>
             <div>
-                <v-btn icon class="bg-lightprimary" flat  size="small" @click="auth.logout()">
+                <v-btn icon class="bg-lightprimary" flat  size="small" @click="globalContext.logout()">
                     <Icon icon="solar:logout-linear" class="text-primary" stroke-width="3" height="24" width="24" />
                 </v-btn>
             </div>

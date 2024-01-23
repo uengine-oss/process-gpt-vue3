@@ -5,7 +5,7 @@ import { initials } from '@dicebear/collection';
 
 import CommonStorageBase from "@/components/storage/CommonStorageBase";
 
-export const useAuthStore = defineStore({
+export const getGlobalContext = defineStore({
     id: 'auth',
     state: () => ({
         storage: new CommonStorageBase(this),
@@ -19,7 +19,7 @@ export const useAuthStore = defineStore({
                 console.log(e);
             }
         },
-        async signInAcebase(email: string, password: string) {
+        async signIn(email: string, password: string) {
             try {
                 if (email && password) {
                     const userInfo: any = {
@@ -50,7 +50,7 @@ export const useAuthStore = defineStore({
                 console.log(e);
             }
         },
-        async signUpAcebase(username: string, email: string, password: string) {
+        async signUp(username: string, email: string, password: string) {
             try {
                 if (username && email && password) {
                     const avatar = createAvatar(initials, {
