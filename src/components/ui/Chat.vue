@@ -22,7 +22,7 @@
                     >
                     </v-badge>
                     <div>
-                        <h5 class="text-h5 mb-n1">{{ chatDetail.name }}</h5>
+                        <h5 class="text-h5 mb-n1">{{ name ? name : chatDetail.name }}</h5>
                         <small class="textPrimary"> {{ chatDetail.status }} </small>
                     </div>
                 </div>
@@ -189,6 +189,7 @@
 <script>
 export default {
     props: {
+        name: String,
         messages: Array,
         userInfo: Object
     },

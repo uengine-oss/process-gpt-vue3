@@ -177,7 +177,7 @@ export default {
         },
 
         afterModelCreated(response) {
-            let jsonInstance = this.extractProcessJson(response);
+            let jsonInstance = this.extractJSON(response);
 
             if (jsonInstance) {
                 try {
