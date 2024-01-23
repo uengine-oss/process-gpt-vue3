@@ -875,23 +875,17 @@ export default {
                 this.onChangedValue(oldVal, newVal)
             }
         },
-        "modelValue": {
-            deep: true,
-            handler: function (newVal) {
-                // 기존 Model 초기화
-                this.value = {
-                    'elements': {},
-                    'relations': {},
-                    'basePlatform': null,
-                    'basePlatformConf': {},
-                    'toppingPlatforms': null,
-                    'toppingPlatformsConf': {},
-                    'scm': {}
-                };
-                // 재 생성
-                this.value = newVal
-            }
-        }
+        // "modelValue": {
+        //     deep: true,
+        //     handler: function (newVal) {
+        //         console.log(newVal)
+        //         if(newVal.elements)
+        //             this.value.elements = newVal.elements
+        //         if(newVal.relations)
+        //             this.value.relations = newVal.relations
+        //         // this.value = newVal
+        //     }
+        // }
         // "mirrorValue.elements": {
         //     deep: true,
         //     handler(newVal, oldVal){

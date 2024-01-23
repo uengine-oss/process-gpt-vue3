@@ -40,7 +40,7 @@ const MainRoutes = {
         {
             name: 'Definition Chat',
             path: '/definitions/chat',
-            component: () => import('@/components/ProcessManagerChat.vue'),
+            component: () => import('@/components/ProcessDefinitionChat.vue'),
         },
         {
             name: 'definitions',

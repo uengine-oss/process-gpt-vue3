@@ -1,9 +1,13 @@
 <template>
     <div class="customHeight">
         <div>
-            <div v-if="alertInfo" class="d-flex align-center gap-3 pa-4  justify-space-between">
+            <div class="d-flex align-center gap-3 pa-4  justify-space-between">
                 <div class="d-flex gap-2 align-center">
-                    <div>
+                    <div v-if="name">
+                        <h5 class="text-h5 mb-n1">{{ name ? name : chatDetail.name }}</h5>
+                        <small class="textPrimary"> {{ chatDetail.status }} </small>
+                    </div>
+                    <div v-else-if="alertInfo">
                         <h5 class="text-h5 mb-n1">{{ alertInfo.title }}</h5>
                         <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
                         <small class="textPrimary" v-if="isViewDetail">
@@ -13,7 +17,10 @@
                     </div>
                 </div>
                 <div class="d-flex">
-                    <v-btn icon variant="text" class="text-medium-emphasis" @click="moreDetail">
+                    <v-btn icon variant="text" class="text-medium-emphasis">
+                        <DeviceFloppyIcon size="24" @click="$emit('save')"/>
+                    </v-btn>
+                    <v-btn v-if="alertInfo" icon variant="text" class="text-medium-emphasis" @click="moreDetail">
                         <DotsVerticalIcon size="24" />
                     </v-btn>
                 </div>
@@ -207,7 +214,6 @@ export default {
         Icon
     },
     props: {
-        name: String,
         messages: Array,
         userInfo: Object,
         alertInfo: Object,
