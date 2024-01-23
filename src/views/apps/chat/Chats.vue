@@ -162,16 +162,14 @@ export default {
             // }
         },
 
-        afterGenerationFinished(responses) {
-            if(responses == '.') {
+        afterGenerationFinished(response) {
+            if(response == '.') {
                 this.messages.splice(this.messages.length - 1, 1)
             } else {
-                let obj = this.createMessageObj(responses, 'system')
+                let obj = this.createMessageObj(response, 'system')
                 if(this.prompt && this.prompt.content){
-                    if(obj.content && obj.content.includes("시작하시겠습니까")){
-                        obj.prompt = this.prompt
-                        this.prompt = null
-                    }
+                    obj.prompt = this.prompt
+                    this.prompt = null
                 }
                 this.saveMessages(`chats/1/messages/${this.uuid()}`, obj);
             }
