@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 import {ref} from 'vue';
-import ProcessParticipantChat from '@/components/ProcessParticipantChat.vue';
+import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
 </script>
 
 <template>
     <v-card elevation="10">
-        <ProcessParticipantChat />
+        <ProcessInstanceChat />
     </v-card>
 </template>
