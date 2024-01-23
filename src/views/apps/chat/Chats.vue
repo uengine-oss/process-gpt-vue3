@@ -63,7 +63,7 @@ export default {
         ChatProfile
     },
     data: () => ({
-        replyUser: null,
+        prompt: null,
         definitions: [],
         processDefinition: null,
         // processInstance: {},
@@ -110,71 +110,47 @@ export default {
                 this.replyUser = null
             }
         },
-        pushMessage(newMessage, role){
-            let obj
-
-            var currentDate = new Date();
-            var milliseconds = currentDate.getMilliseconds(); 
-            var timeStamp = currentDate.toTimeString().split(' ')[0] + '.' + milliseconds.toString().padStart(3, '0');
-
-            if(this.replyUser){
-                obj = {
-                    name: role ? role:this.userInfo.name,
-                    email: role ? role + '@uengine.org':this.userInfo.email,
-                    role: role ? role:'user',
-                    timeStamp: timeStamp,
-                    content: newMessage,
-                    replyUserName: this.replyUser.name,
-                    replyContent: this.replyUser.content,
-                    replyUserEmail: this.replyUser.email
-                }
-            } else {
-                obj = {
-                    name: role ? role:this.userInfo.name,
-                    email: role ? role + '@uengine.org':this.userInfo.email,
-                    role: role ? role:'user',
-                    timeStamp: timeStamp,
-                    content: newMessage
-                }
-            }
-            if(role != 'system'){
-                this.messages.push(obj)
-            }
-            this.saveMessages(`chats/1/messages/${this.uuid()}`, obj);
-        },
         async beforeSendMessage(newMessage) {
-            this.pushMessage(newMessage);
+            this.saveMessages(`chats/1/messages/${this.uuid()}`, this.createMessageObj(newMessage));
+
             if(!this.generator.contexts) {
                 let contexts = await this.queryFromVectorDB(newMessage);
                 this.generator.setContexts(contexts);
             }
-            this.sendMessage(newMessage);
-        },
-
-        async loadData(path) {
-            var me = this
-            const value = await this.getData(path);
-
-            if (value) {
-                if (value.organizationChart) {
-                    this.organizationChart = JSON.parse(value.organizationChart);
-                    
-                    if (!this.organizationChart) {
-                        this.organizationChart = []
-                    }
-                } else {
-                    // if (this.$route.params && this.$route.params.id) {
-                        // Object.keys(value).forEach(function (key){
-                        //     me.processInstance[key] = partialParse(value[key].model);
-                        // })
-
-                    }
-                // }
+            
+            this.prompt = {
+                content: newMessage,
+                requestUserEmail: this.userInfo.email,
+                requestUserName: this.userInfo.name,
             }
+            this.sendMessage(newMessage);
+
         },
+
+        // async loadData(path) {
+            // var me = this
+            // const value = await this.getData(path);
+
+            // if (value) {
+            //     if (value.organizationChart) {
+            //         this.organizationChart = JSON.parse(value.organizationChart);
+                    
+            //         if (!this.organizationChart) {
+            //             this.organizationChart = []
+            //         }
+            //     } else {
+            //         // if (this.$route.params && this.$route.params.id) {
+            //             // Object.keys(value).forEach(function (key){
+            //             //     me.processInstance[key] = partialParse(value[key].model);
+            //             // })
+
+            //         }
+            //     // }
+            // }
+        // },
 
         afterModelCreated(response) {
-            let jsonInstance = this.extractJSON(response);
+            // let jsonInstance = this.extractJSON(response);
 
             // if (jsonInstance) {
             //     try {
@@ -186,30 +162,19 @@ export default {
             // }
         },
 
-        async afterGenerationFinished(putObj) {
-            // let modelText = "";
-            // let path = "";
-
-            // if (this.processInstance) {
-
-            //     if (typeof this.processInstance === "string") {
-            //         this.processInstance = partialParse(this.processInstance);
-            //     }
-            //     path = `${this.path}/${this.processInstance.processInstanceId}`;
-            //     modelText = JSON.stringify(this.processInstance);
-
-            //     let contexts = await this.queryFromVectorDB(this.processInstance.processDefinitionId);
-            //     if (contexts && contexts.length > 0) {
-            //         contexts.forEach(item => {
-            //             this.processDefinition = partialParse(item);
-            //         });
-            //     }
-
-            //     putObj.model = modelText;
-
-            //     // this.saveMessages(path, putObj);
-            //     this.sendTodolist();
-            // }
+        afterGenerationFinished(responses) {
+            if(responses == '.') {
+                this.messages.splice(this.messages.length - 1, 1)
+            } else {
+                let obj = this.createMessageObj(responses, 'system')
+                if(this.prompt && this.prompt.content){
+                    if(obj.content && obj.content.includes("시작하시겠습니까")){
+                        obj.prompt = this.prompt
+                        this.prompt = null
+                    }
+                }
+                this.saveMessages(`chats/1/messages/${this.uuid()}`, obj);
+            }
         },
 
         async sendTodolist() {
