@@ -1,4 +1,6 @@
 <script>
+import jp from "jsonpath";
+
 import { getGlobalContext } from '@/stores/auth';
 
 const globalContext = getGlobalContext();
