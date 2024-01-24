@@ -66,9 +66,9 @@ export default defineComponent({
     // }
     // await globalContext.storage.putObject(`db://${path}`, obj);
     const data = await globalContext.storage.getObject(`db://${path}`);
-    console.log(data);
+    // console.log(data);
     this.calendarOptions.initialEvents = Object.values(data);
-    console.log(this.calendarOptions)
+    // console.log(this.calendarOptions)
     this.render++;
   },
   methods: {
