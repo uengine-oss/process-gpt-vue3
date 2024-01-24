@@ -38,7 +38,7 @@
                             <div v-if="message.email == userInfo.email" class="justify-end d-flex text-end mb-1">
                                 <div>
                                     <small class="text-medium-emphasis text-subtitle-2" v-if="message.timeStamp">
-                                        {{ message.timeStamp.split(':')[0] + ':' + message.timeStamp.split(':')[1] }}
+                                        {{ formatTime(message.timeStamp) }}
                                     </small>
 
                                     <v-sheet v-if="message.type == 'img'" class="mb-1">
@@ -103,7 +103,7 @@
                                 <div class="w-90">
                                     <small class="text-medium-emphasis text-subtitle-2" v-if="message.timeStamp">
                                         {{ message.role == 'system' ? 'System,' : message.name + ',' }}
-                                        {{ message.timeStamp.split(':')[0] + ':' + message.timeStamp.split(':')[1] }}
+                                        {{ formatTime(message.timeStamp) }}
                                     </small> 
 
                                     <v-sheet v-if="message.type == 'img'" class="mb-1">
@@ -267,6 +267,12 @@ export default {
         },
     },
     methods: {
+        formatTime(timeStamp){
+            var date = new Date(timeStamp);
+            var dateString = date.toString();
+            var timeString = dateString.split(' ')[4].substring(0, 5);
+            return timeString
+        },
         processInstance(prompt){
             console.log(prompt.content, prompt.requestUserEmail)
         },

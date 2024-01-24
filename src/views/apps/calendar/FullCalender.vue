@@ -5,77 +5,8 @@ import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 
-let eventGuid = 0
-let todayStr = new Date().toISOString().replace(/T.*$/, '') // YYYY-MM-DD of today
-
-const today = new Date();
-const y = today.getFullYear();
-const m = today.getMonth();
-const d = today.getDate();
-
-export const INITIAL_EVENTS = [
-
-  {
-    id: createEventId(),
-    title: 'Twice event For two Days',
-    allDay: true,
-    start: new Date(y, m, 3),
-    end: new Date(y, m, 5),
-    color: '#615dff',
-  },
-  {
-    id: createEventId(),
-    title: 'Learn ReactJs',
-    start: new Date(y, m, d + 3, 10, 30),
-    end: new Date(y, m, d + 3, 11, 30),
-    allDay: true,
-    color: '#39b69a',
-  },
-  {
-    id: createEventId(),
-    title: 'Launching MaterialArt Angular',
-    start: new Date(y, m, d + 7, 12, 0),
-    end: new Date(y, m, d + 7, 14, 0),
-    allDay: true,
-    color: '#fc4b6c',
-  },
-  {
-    id: createEventId(),
-    title: 'Lunch with Mr.Raw',
-    start: new Date(y, m, d - 2),
-    end: new Date(y, m, d - 2),
-    allDay: true,
-    color: '#1a97f5',
-  },
-  {
-    id: createEventId(),
-    title: 'Going For Party of Sahs',
-    start: new Date(y, m, d + 1, 19, 0),
-    end: new Date(y, m, d + 1, 22, 30),
-    allDay: true,
-    color: '#1a97f5',
-  },
-  {
-    id: createEventId(),
-    title: 'Learn Ionic',
-    start: new Date(y, m, 23),
-    end: new Date(y, m, 25),
-    color: '#fdd43f',
-  },
-  {
-    id: createEventId(),
-    title: 'Research of making own Browser',
-    start: new Date(y, m, 19),
-    end: new Date(y, m, 22),
-    color: '615dff',
-  },
-]
-
-export function createEventId() {
-  return String(eventGuid++)
-}
-
-
+import { getGlobalContext } from '@/stores/auth';
+const globalContext = getGlobalContext();
 
 export default defineComponent({
   components: {
@@ -97,7 +28,7 @@ export default defineComponent({
           right: 'dayGridMonth,timeGridWeek,timeGridDay'
         },
         initialView: 'dayGridMonth',
-        initialEvents: INITIAL_EVENTS, // alternatively, use the `events` setting to fetch from a feed
+        initialEvents: [], // alternatively, use the `events` setting to fetch from a feed
         editable: true,
         selectable: true,
         selectMirror: true,
@@ -114,9 +45,43 @@ export default defineComponent({
         */
       },
       currentEvents: [],
+      render: 0,
     }
   },
+  async created() {
+    var date = new Date();
+    var year = date.getFullYear(); 
+    var month = date.getMonth() + 1; 
+    if(month < 10){
+      month = `0${month}`
+    }
+    let path = `users/${localStorage.getItem('uid')}/calender/${year}/${month}`
+    // let obj = {
+    //   id: this.uuid(),
+    //   title: 'test',
+    //   allDay: true,
+    //   start: new Date(y, m, 10),
+    //   end: new Date(y, m, 11),
+    //   color: '#615dff',
+    // }
+    // await globalContext.storage.putObject(`db://${path}`, obj);
+    const data = await globalContext.storage.getObject(`db://${path}`);
+    console.log(data);
+    this.calendarOptions.initialEvents = Object.values(data);
+    console.log(this.calendarOptions)
+    this.render++;
+  },
   methods: {
+    uuid() {
+        function s4() {
+            return Math.floor((1 + Math.random()) * 0x10000)
+                .toString(16)
+                .substring(1);
+        }
+
+        return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+            s4() + '-' + s4() + s4() + s4();
+    },
     handleWeekendsToggle() {
       this.calendarOptions.weekends = !this.calendarOptions.weekends // update a property
     },
@@ -150,7 +115,7 @@ export default defineComponent({
 
 <template>
   <div class='demo-app'>
-    <div class='demo-app-main '>
+    <div :key="render" class='demo-app-main '>
       <FullCalendar class='demo-app-calendar rounded-md' :options='calendarOptions' >
         <template v-slot:eventContent='arg'>
           <div class="text-subtitle-1 pa-1 text-truncate">{{ arg.event.title }}</div>
