@@ -1,61 +1,103 @@
 <template>
     <AppBaseCard>
+        <!-- Process Designer Dialog -->
         <template v-slot:leftpart>
             <div class="no-scrollbar">
-                <ProcessInstanceList></ProcessInstanceList>
+                <ProcessInstanceList @selectedChatId="selectedChatId"></ProcessInstanceList>
             </div>
         </template>
         <template v-slot:rightpart>
-            <Chat :messages="messages"
+            <v-dialog v-model="isViewProcess" max-width="1000">
+                <v-card>
+                    <v-card-text style="height: 1000px; width: 1000px">
+                        <bpmn-modeling-canvas
+                            v-if="onLoad"
+                            :monitor="true"
+                            :readOnly="false"
+                            :projectName="projectName"
+                            v-model="model"
+                            :movable="false"
+                            :resizable="false"
+                            :connectable="false"
+                            :selectable="true"
+                        ></bpmn-modeling-canvas>
+                        <div v-else style="height: 100%; text-align: center">
+                            <v-progress-circular style="top: 50%" indeterminate color="primary"></v-progress-circular>
+                        </div>
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-btn color="secondary" class="px-4 rounded-pill mx-auto" @click="isViewProcess = false" variant="tonal"
+                            >Close Dialog</v-btn
+                        >
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
+            <Chat
+                :messages="messages"
                 :alertInfo="alertInfo"
                 :userInfo="userInfo" 
                 :disableChat="disableChat"
                 @sendMessage="beforeSendMessage"
                 @sendEditedMessage="sendEditedMessage"
+                @viewProcess="viewProcess"
             ></Chat>
         </template>
 
         <template v-slot:mobileLeftContent>
-            <ProcessInstanceList></ProcessInstanceList>
+            <ProcessInstanceList @selectedChatId="selectedChatId"></ProcessInstanceList>
         </template>
     </AppBaseCard>
 </template>
 
 <script>
-import partialParse from "partial-json-parser";
-import { VectorStorage } from "vector-storage";
+import partialParse from 'partial-json-parser';
+import { VectorStorage } from 'vector-storage';
 
-import ChatGenerator from "./ai/ProcessInstanceGenerator.js";
-import ChatModule from "@/components/ChatModule.vue";
+import ChatGenerator from './ai/ProcessInstanceGenerator.js';
+import ChatModule from '@/components/ChatModule.vue';
 
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 
 import Chat from "@/components/ui/Chat.vue";
 import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
-
+import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
 export default {
     mixins: [ChatModule],
     components: {
         AppBaseCard,
         Chat,
         ProcessInstanceList,
+        BpmnModelingCanvas
     },
     data: () => ({
         processDefinition: null,
         processInstance: null,
-        path: "instances",
+        path: 'instances',
         organizationChart: [],
         alertInfo: {
-            title: "프로세스 실행",
+            title: '프로세스 실행',
             text: "대화형으로 프로세스를 실행하십시오. \n 예를 들어, '휴가를 신청할게: 1. 사유: 개인사유 2. 휴가 시작일: 오늘 3. 휴가 복귀일: 금요일' 와 같은 명령을 할 수 있습니다."
         },
+        isViewProcess: false,
+        chatId: null,
+        onLoad: false,
+        model: {
+            elements: {},
+            relations: {},
+            basePlatform: null,
+            basePlatformConf: {},
+            toppingPlatforms: null,
+            toppingPlatformsConf: {},
+            processVariableDescriptors: [],
+            scm: {}
+        },
+        projectName: ''
     }),
     async created() {
         await this.init();
-
         this.generator = new ChatGenerator(this, {
             isStream: true,
-            preferredLanguage: "Korean"
+            preferredLanguage: 'Korean'
         });
     },
     watch: {
@@ -69,6 +111,22 @@ export default {
         }
     },
     methods: {
+        async viewProcess() {
+            this.onLoad = false;
+            this.isViewProcess = !this.isViewProcess;
+            console.log(this.processInstance);
+            let definitionInfo = null;
+            const processInfo = await this.getData(`instances/${this.chatId}`);
+            if (processInfo) definitionInfo = await this.getData(`definitions/${processInfo.definitionId}`);
+            if (definitionInfo) {
+                let definition = partialParse(definitionInfo.model);
+                definition.activities.forEach(function (activity) {
+                    if (activity.id == processInfo.nextActivityId) activity.status = 'Running';
+                });
+                this.model = this.createUEngine(definition);
+                this.onLoad = true;
+            }
+        },
         async loadData(path) {
             let value = await this.getData(path);
             if (value) {
@@ -81,13 +139,12 @@ export default {
                 this.organizationChart = JSON.parse(value.organizationChart);
                 
                 if (!this.organizationChart) {
-                    this.organizationChart = []
+                    this.organizationChart = [];
                 }
             }
         },
-
         checkDisableChat(value) {
-            if (value.status && value.status == "Completed") {
+            if (value.status && value.status == 'Completed') {
                 this.disableChat = true;
             }
 
@@ -95,39 +152,40 @@ export default {
                 this.disableChat = true;
             }
         },
-
+        async selectedChatId(id) {
+            this.chatId = id;
+            const path = `/${this.path}/${id}`;
+            await this.loadData(path);
+            await this.loadMessages(path);
+        },
         async beforeSendMessage(newMessage) {
             try {
-                if(!this.generator.contexts) {
+                if (!this.generator.contexts) {
                     let contexts = await this.queryFromVectorDB(newMessage);
                     this.generator.setContexts(contexts);
                 }
-
                 this.sendMessage(newMessage);
-
             } catch (error) {
                 console.log(error);
             }
         },
-
         afterModelCreated(response) {
             let jsonInstance = this.extractJSON(response);
             if (jsonInstance) {
                 this.processInstance = partialParse(jsonInstance);
             }
         },
-
         async afterGenerationFinished() {
             if (this.processInstance) {
-                if (typeof this.processInstance === "string") {
+                if (typeof this.processInstance === 'string') {
                     this.processInstance = partialParse(this.processInstance);
                 }
 
                 let contexts = await this.queryFromVectorDB(this.processInstance.processDefinitionId);
                 if (contexts && contexts.length > 0) {
-                    const jsonText = contexts.find(context => {
+                    const jsonText = contexts.find((context) => {
                         const definition = partialParse(context);
-                        return definition.processDefinitionId == this.processInstance.processDefinitionId
+                        return definition.processDefinitionId == this.processInstance.processDefinitionId;
                     });
 
                     this.processDefinition = partialParse(jsonText);
@@ -139,7 +197,6 @@ export default {
 
             await this.loadData(this.getDataPath());
         },
-
         async saveInstance(status) {
             if (this.processInstance && this.processDefinition) {
                 let path = `${this.path}/${this.processInstance.processInstanceId}`;
@@ -152,18 +209,14 @@ export default {
                     putObj.nextUserId = this.processInstance.nextUserEmail;
                     putObj.nextActivityId = this.processInstance.nextActivityId;
 
-                    let newParticipants = [ this.processInstance.currentUserEmail, this.processInstance.nextUserEmail ];
-                    newParticipants = [
-                        ...putObj.participants,
-                        ...newParticipants
-                    ];
+                    let newParticipants = [this.processInstance.currentUserEmail, this.processInstance.nextUserEmail];
+                    newParticipants = [...putObj.participants, ...newParticipants];
                     const set = new Set(newParticipants);
                     putObj.participants = [...set];
 
                     if (status) {
                         putObj.status = status;
                     }
-
                 } else {
                     putObj = {
                         messages: this.messages,
@@ -172,22 +225,18 @@ export default {
                         currentActivityId: this.processInstance.currentActivityId,
                         nextUserId: this.processInstance.nextUserEmail,
                         nextActivityId: this.processInstance.nextActivityId,
-                        participants: [
-                            this.processInstance.currentUserEmail, 
-                            this.processInstance.nextUserEmail
-                        ],
-                        status: "Running",
+                        participants: [this.processInstance.currentUserEmail, this.processInstance.nextUserEmail],
+                        status: 'Running'
                     };
-
                 }
-                
+
                 await this.putObject(path, putObj);
             }
         },
-
         async sendTodolist() {
             if (this.processInstance && this.processDefinition) {
-                if (this.processInstance.currentUserEmail !== "" 
+                if (
+                    this.processInstance.currentUserEmail !== ''
                     //&& this.checkUserEmail(this.processInstance.currentUserEmail)
                 ) {
                     const path = `todolist/${this.processInstance.currentUserEmail}`;
@@ -197,22 +246,20 @@ export default {
                         instanceId: this.processInstance.processInstanceId,
                         activityId: this.processInstance.currentActivityId,
                         userId: this.processInstance.currentUserEmail,
-                        status: "Completed",
-                        endDate: new Date().toISOString().substr(0, 10),
+                        status: 'Completed',
+                        endDate: new Date().toISOString().substr(0, 10)
                     };
-                    
+
                     const workItem = await this.checkTodolist(path, pushObj);
                     if (workItem) {
                         pushObj.startDate = workItem.startDate;
                         await this.delete(`${path}/${workItem.key}`);
                     }
-                    
-                    const actIdx = this.processDefinition.activities.findIndex(activity => 
-                        activity.id == pushObj.activityId
-                    );
+
+                    const actIdx = this.processDefinition.activities.findIndex((activity) => activity.id == pushObj.activityId);
                     if (actIdx < 1) {
                         pushObj.startDate = new Date().toISOString().substr(0, 10);
-                        localStorage.setItem("useCache", true);
+                        localStorage.setItem('useCache', true);
                     }
 
                     if (actIdx != -1) {
@@ -222,11 +269,8 @@ export default {
                     await this.pushObject(path, pushObj);
                     await this.saveUserInstance(pushObj.userId, pushObj.instanceId);
                 }
-                
 
-                if (this.processInstance.nextUserEmail !== "" 
-                    && this.checkUserEmail(this.processInstance.nextUserEmail)
-                ) {
+                if (this.processInstance.nextUserEmail !== '' && this.checkUserEmail(this.processInstance.nextUserEmail)) {
                     const path = `todolist/${this.processInstance.nextUserEmail}`;
                     const pushObj = {
                         definitionId: this.processDefinition.processDefinitionId,
@@ -234,8 +278,8 @@ export default {
                         instanceId: this.processInstance.processInstanceId,
                         activityId: this.processInstance.nextActivityId,
                         userId: this.processInstance.nextUserEmail,
-                        status: "Running",
-                        startDate: new Date().toISOString().substr(0, 10),
+                        status: 'Running',
+                        startDate: new Date().toISOString().substr(0, 10)
                     };
 
                     const actIdx = this.processDefinition.activities.findIndex(activity => 
@@ -252,15 +296,15 @@ export default {
                 } else {
                     //NOTE: 이런 메시지를 주고 적절한 조치를 유도해야 합니다. "절대로" 그냥 먹으면 안됩니다.
                     if (this.processInstance.nextActivityId) {
-                        alert("다음 담당자가 조직도상에 없습니다. 담당자를 다시 지정해주시거나 담당자를 등록해주세요");
+                        alert('다음 담당자가 조직도상에 없습니다. 담당자를 다시 지정해주시거나 담당자를 등록해주세요');
                     } else {
-                        this.saveInstance("Completed");
+                        this.saveInstance('Completed');
                     }
                 }
             }
         },
 
-        async queryFromVectorDB(messsage){
+        async queryFromVectorDB(messsage) {
             const apiToken = this.generator.getToken();
             const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
 
@@ -270,7 +314,7 @@ export default {
             });
 
             if (results.similarItems) {
-                return results.similarItems.map(item => item.text);
+                return results.similarItems.map((item) => item.text);
             }
         },
 
@@ -279,17 +323,17 @@ export default {
             let todolist = await this.getData(path);
             if (todolist) {
                 todolist = Object.values(todolist);
-                todolist.forEach(item => {
+                todolist.forEach((item) => {
                     if (item.instanceId == obj.instanceId && item.activityId == obj.activityId) {
                         workItem = item;
                     }
-                })
+                });
             }
             return workItem;
         },
 
         checkUserEmail(email) {
-            const checked = this.organizationChart.some(user => user.email == email);
+            const checked = this.organizationChart.some((user) => user.email == email);
             return checked;
         },
 
@@ -297,16 +341,13 @@ export default {
             if (this.checkUserEmail(item.userId)) {
                 const uid = await this.getUid(item.userId);
 
-                if (uid !== "") {
+                if (uid !== '') {
                     const path = `users/${uid}/instances`;
                     let putObj = [item.instanceId];
 
                     let instanceList = await this.getData(path);
                     if (instanceList) {
-                        instanceList  = [
-                            ...instanceList,
-                            ...putObj
-                        ];
+                        instanceList = [...instanceList, ...putObj];
                         const set = new Set(instanceList);
                         putObj = [...set];
                     }
@@ -331,26 +372,23 @@ export default {
             }
         },
 
-        createTests(){
+        createTests() {
             return {
                 // function(me){
                 //     let lastReply = me.messages[me.messages.length - 1].content
                 //     let json = me.extractJSON(lastReply, (message)=>{
                 //             try{
-                //                 JSON.parse(message); 
+                //                 JSON.parse(message);
                 //                 return true
                 //             }catch(e){
                 //                 return false
                 //             }
                 //         }
                 //     )
-
                 //     if(json.processDefinitionId) alert("success")
-
                 // }
-            }
-
+            };
         }
     }
-}
+};
 </script>
