@@ -1,6 +1,6 @@
 <template>
     <div class="customHeight">
-        <div style="height: calc(100vh - 240px)">
+        <div>
             <div class="d-flex align-center gap-3 pa-4 justify-space-between">
                 <div class="d-flex gap-2 align-center">
                     <div v-if="alertInfo">
@@ -12,8 +12,7 @@
                         </small>
                     </div>
                     <div v-else-if="name">
-                        <h5 class="text-h5 mb-n1">{{ name ? name : chatDetail.name }}</h5>
-                        <small class="textPrimary"> {{ chatDetail.status }} </small>
+                        <h5 class="text-h5 mb-n1">{{ name  }}</h5>
                     </div>
                 </div>
                 <div class="d-flex">
@@ -129,7 +128,7 @@
                                                 userInfo.email == message['prompt'].requestUserEmail
                                             "
                                         >
-                                            <v-btn style="margin-right: 5px" size="small" @click="processInstance(message['prompt'])"
+                                            <v-btn style="margin-right: 5px" size="small" @click="processInstance(message)"
                                                 >y</v-btn
                                             >
                                             <v-btn size="small">n</v-btn>
@@ -275,8 +274,9 @@ export default {
             var timeString = dateString.split(' ')[4].substring(0, 5);
             return timeString;
         },
-        processInstance(prompt) {
-            console.log(prompt.content, prompt.requestUserEmail);
+        processInstance(messageObj) {
+            this.$emit('sendMessage', JSON.parse(messageObj.content).content.replace('시작하시겠습니까 ?', '시작하겠습니다.'));
+            this.$router.push({ path: '/instances/chat', query: { prompt: JSON.stringify(messageObj.prompt) } });
         },
         getMoreChat() {
             this.$emit('getMoreChat');
