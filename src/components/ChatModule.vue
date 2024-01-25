@@ -1,5 +1,6 @@
 <script>
 import jp from "jsonpath";
+import partialParse from "partial-json-parser";
 
 import { getGlobalContext } from '@/stores/auth';
 
@@ -91,7 +92,11 @@ export default {
             await globalContext.storage.watch(`db://${callPath}`, (callback) => {
                 if (callback) {
                     if (callback.messages) {
-                        this.messages = callback.messages;
+                        if (typeof callback.messages == 'string') {
+                            this.messages = partialParse(callback.messages);
+                        } else {
+                            this.messages = callback.messages;
+                        }
                     } else {
                         this.messages = [];
                     }
@@ -301,20 +306,6 @@ export default {
             await globalContext.storage.delete(`db://${path}`);
         },
 
-        async getUid(email) {
-            let uid = "";
-            const userList = await this.getData("users");
-            if (userList) {
-                const ids = Object.keys(userList);
-                ids.forEach(id => {
-                    if (userList[id].email == email) {
-                        uid = id;
-                    }
-                });
-            }
-            return uid;
-        },
-    
         onModelCreated(response) {
             let messageWriting = this.messages[this.messages.length -1];
             messageWriting.content = response;

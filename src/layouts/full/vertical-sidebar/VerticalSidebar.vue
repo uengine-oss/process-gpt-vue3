@@ -1,23 +1,16 @@
-<script setup lang="ts">
-import { ref, shallowRef } from 'vue';
+<script setup>
 import { useCustomizerStore } from '@/stores/customizer';
-import sidebarItems from './sidebarItem';
 
 import NavGroup from './NavGroup/index.vue';
 import NavItem from './NavItem/index.vue';
 import NavCollapse from './NavCollapse/NavCollapse.vue';
 import ExtraBox from './extrabox/ExtraBox.vue';
-import Moreoption from './MoreOption/Moreoption.vue';
 import Logo from '../logo/Logo.vue';
-import { Icon } from '@iconify/vue';
-
 
 const customizer = useCustomizerStore();
-const sidebarMenu = shallowRef(sidebarItems);
 </script>
 
 <template>
-   
     <v-navigation-drawer left v-model="customizer.Sidebar_drawer" rail-width="70" 
         :mobile-breakpoint="960" app
         class="leftSidebar ml-sm-5 mt-sm-5 bg-containerBg" elevation="10" 
@@ -33,7 +26,7 @@ const sidebarMenu = shallowRef(sidebarItems);
 
             <v-list class="py-4 px-4 bg-containerBg">
                 <!---Menu Loop -->
-                <template v-for="(item, i) in sidebarMenu">
+                <template v-for="item in sidebarItem">
                     <!---Item Sub Header -->
                     <NavGroup :item="item" v-if="item.header" :key="item.title" />
                     <!---If Has Child -->
@@ -42,6 +35,10 @@ const sidebarMenu = shallowRef(sidebarItems);
                     <NavItem :item="item" v-else class="leftPadding" />
                     <!---End Single Item-->
                 </template>
+                <!-- Process Definition List -->
+                <template v-if="definitions">
+                    <NavCollapse class="leftPadding" :item="definitions" :level="0" />
+                </template>
                 <!-- <Moreoption/> -->
             </v-list>
             <div class="pa-6 px-4 userbottom bg-containerBg mt-10">
@@ -49,5 +46,96 @@ const sidebarMenu = shallowRef(sidebarItems);
             </div>
         </perfect-scrollbar>
     </v-navigation-drawer>
-        
 </template>
+
+<script>
+import partialParse from "partial-json-parser";
+
+import { getGlobalContext } from '@/stores/auth';
+
+const globalContext = getGlobalContext();
+
+export default {
+    data: () => ({
+        sidebarItem: [
+            {
+                title: "TodoList",
+                icon: 'solar:widget-4-linear',
+                BgColor: 'primary',
+                to: "/todolist",
+            },
+            {
+                title: 'Calendar',
+                icon: 'solar:calendar-line-duotone',
+                BgColor: 'primary',
+                to: '/apps/calendar'
+            },
+            {
+                title: "Chats",
+                icon: 'solar:chat-round-unread-line-duotone',
+                BgColor: 'primary',
+                to: "/chats",
+            },
+            {
+                header: '인스턴스'
+            },
+            {
+                title: "프로세스 실행",
+                icon: 'solar:chat-dots-linear',
+                BgColor: 'primary',
+                to: '/instances/chat',
+            },
+            {
+                header: '정의 관리'
+            },
+            {
+                title: "조직도 정의",
+                icon: 'solar:users-group-rounded-line-duotone',
+                BgColor: 'primary',
+                to: "/organization",
+            },
+            {
+                title: "프로세스 정의",
+                icon: 'carbon:flow-connection',
+                BgColor: 'primary',
+                to: "/definitions/chat",
+            },
+        ],
+        definitions: null,
+    }),
+    async created() {
+        await this.getDefinitionList();
+    },
+    methods: {
+        async getDefinitionList() {
+            await globalContext.storage.watch(`db://definitions`, (callback) => {
+                if (callback) {
+                    var menu = {
+                        title: '프로세스 목록',
+                        icon: 'solar:list-bold',
+                        BgColor: 'primary',
+                        to: `/`,
+                        children: []
+                    };
+                    var list = Object.values(callback);
+                    if (list.length > 0) {
+                        list.forEach(item => {
+                            if (item.model) {
+                                var jsonProcess = partialParse(item.model);
+                                var obj = {
+                                    title: jsonProcess.processDefinitionName,
+                                    to: `/definitions/${jsonProcess.processDefinitionId}`
+                                }
+                                menu.children.push(obj);
+                            }
+                        });
+                    }
+                    this.definitions = menu;
+                } else {
+                    this.definitions = null;
+                }
+            });
+        },
+    }
+}
+</script>
