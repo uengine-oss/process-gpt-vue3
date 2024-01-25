@@ -163,9 +163,13 @@ export default {
             }
         },
 
-        afterGenerationFinished(putObj) {
+        afterGenerationFinished(response) {
             let modelText = '';
             let path = this.path;
+            let putObj = {
+                messages: JSON.stringify(this.messages),
+                model: null,
+            };
 
             if (this.processDefinition) {
                 path = `${this.path}/${this.processDefinition.processDefinitionId}`;
