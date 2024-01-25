@@ -36,7 +36,7 @@ export default class AIGenerator {
             }
         }
 
-        this.cacheReplayDelay = this.options.cacheReplayDelay ? this.options.cacheReplayDelay: 100
+        this.cacheReplayDelay = this.options.cacheReplayDelay ? this.options.cacheReplayDelay: 3000
 
     }
     
