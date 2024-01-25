@@ -197,25 +197,23 @@ export default {
         convertToProcessDefinition(jsonInput) {
             const processDefinition = {
                 processDefinitionName: jsonInput.name,
-                processDefinitionId: jsonInput.name.replace(/\s+/g, '-').toLowerCase(),
-                description: '장애 처리 프로세스', // Assuming a generic description; update as needed
+                processDefinitionId: jsonInput.definitionId,
+                description: '', // Assuming a generic description; update as needed
                 data: jsonInput.processVariableDescriptors.map((variable) => ({
                     name: variable.name,
                     description: variable.displayName.text,
                     type: 'Text' // Assuming all variables are of type Text; update logic as needed for different types
                 })),
                 roles: Object.values(jsonInput.elements)
-                    .filter((element) => {
-                        if (element) element._type === 'org.uengine.kernel.Role';
-                    })
+                    .filter((element) => element != null)
+                    .filter((element) => element._type == 'org.uengine.kernel.Role')
                     .map((role) => ({
                         name: role.name,
                         resolutionRule: role.roleResolutionContext.endpoint
                     })),
                 activities: Object.values(jsonInput.elements)
-                    .filter((element) => {
-                        if (element) element._type === 'org.uengine.kernel.HumanActivity';
-                    })
+                    .filter((element) => element != null)
+                    .filter((element) => element._type == 'org.uengine.kernel.HumanActivity')
                     .map((activity) => ({
                         name: activity.name || activity.oldName,
                         id: activity.elementView.id,
@@ -223,18 +221,17 @@ export default {
                         description: activity.name + ' 활동', // Assuming a generic description; update as needed
                         instruction: '장애 정보를 기반으로 문제를 해결하세요.', // Assuming a generic instruction; update as needed
                         role: activity.role.name,
-                        inputData: activity.parameters.map((param) => ({
+                        inputData: activity.parameters?.map((param) => ({
                             name: param.variable.name
                         })),
-                        outputData: activity.parameters.map((param) => ({
+                        outputData: activity.parameters?.map((param) => ({
                             name: param.variable.name
                         })),
                         checkpoints: [] // Assuming no checkpoints; update as needed
                     })),
                 sequences: Object.values(jsonInput.relations)
-                    .filter((relation) => {
-                        if (relation) relation._type === 'org.uengine.kernel.bpmn.SequenceFlow';
-                    })
+                    .filter((relation) => relation != null)
+                    .filter((relation) => relation._type == 'org.uengine.kernel.bpmn.SequenceFlow')
                     .map((sequence) => ({
                         source: sequence.from,
                         target: sequence.to
@@ -255,15 +252,18 @@ export default {
                 k: 1
             });
             if (vectorId) {
+                console.log(vectorId);
+                let path = `definition/${this.changedModel.definitionId}/model`;
+                this.pushObject(path, JSON.stringify(definition));
                 this.deleteVectorStorage(vectorId.similarItems[0].id);
                 this.saveDefinition(definition);
             }
         },
-        parseDefinition(model) {
-            let definition = {};
-            // 변형 로직 Model to Def
-            return definition;
-        },
+        // parseDefinition(model) {
+        //     let definition = {};
+        //     // 변형 로직 Model to Def
+        //     return definition;
+        // },
         async saveDefinition(definition) {
             // Create an instance of VectorStorage
             const apiToken = this.generator.getToken();

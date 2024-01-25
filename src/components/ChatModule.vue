@@ -714,6 +714,7 @@ export default {
                 elements: elements,
                 relations: relations,
                 version: 3,
+                definitionId: process.processDefinitionId,
                 scm: {
                     tag: null,
                     org: null,
