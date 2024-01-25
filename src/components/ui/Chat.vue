@@ -276,7 +276,8 @@ export default {
         },
         processInstance(messageObj) {
             this.$emit('sendMessage', JSON.parse(messageObj.content).content.replace('시작하시겠습니까 ?', '시작하겠습니다.'));
-            this.$router.push({ path: '/instances/chat', query: { prompt: JSON.stringify(messageObj.prompt) } });
+            localStorage.setItem('instancePrompt', JSON.stringify(messageObj.prompt))
+            this.$router.push('/instances/chat')
         },
         getMoreChat() {
             this.$emit('getMoreChat');
