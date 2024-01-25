@@ -117,16 +117,16 @@ export default {
         },
         createMessageObj(message, role){
             let obj
-            var currentDate = new Date();
-            var milliseconds = currentDate.getMilliseconds(); 
-            var timeStamp = currentDate.toTimeString().split(' ')[0] + '.' + milliseconds.toString().padStart(3, '0');
+            // var currentDate = new Date();
+            // var milliseconds = currentDate.getMilliseconds(); 
+            // var timeStamp = currentDate.toTimeString().split(' ')[0] + '.' + milliseconds.toString().padStart(3, '0');
 
             if(this.replyUser){
                 obj = {
                     name: role ? role:this.userInfo.name,
                     email: role ? role + '@uengine.org':this.userInfo.email,
                     role: role ? role:'user',
-                    timeStamp: timeStamp,
+                    timeStamp: Date.now(),
                     content: message,
                     replyUserName: this.replyUser.name,
                     replyContent: this.replyUser.content,
@@ -137,7 +137,7 @@ export default {
                     name: role ? role:this.userInfo.name,
                     email: role ? role + '@uengine.org':this.userInfo.email,
                     role: role ? role:'user',
-                    timeStamp: timeStamp,
+                    timeStamp: Date.now(),
                     content: message
                 }
             }
@@ -314,13 +314,13 @@ export default {
         },
     
         onGenerationFinished(responses) {
-            var currentDate = new Date();
-            var milliseconds = currentDate.getMilliseconds(); 
-            var timeStamp = currentDate.toTimeString().split(' ')[0] + '.' + milliseconds.toString().padStart(3, '0');
+            // var currentDate = new Date();
+            // var milliseconds = currentDate.getMilliseconds(); 
+            // var timeStamp = currentDate.toTimeString().split(' ')[0] + '.' + milliseconds.toString().padStart(3, '0');
 
             let messageWriting = this.messages[this.messages.length -1];
             delete messageWriting.isLoading;
-            messageWriting.timeStamp = timeStamp;
+            messageWriting.timeStamp = Date.now();
     
             this.afterGenerationFinished(responses);
         },
