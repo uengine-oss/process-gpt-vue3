@@ -7,9 +7,9 @@
     >
         <template v-slot:item="{ item }">
             <tr @click="goInstance(item.instanceId)" style="cursor: pointer;">
-                <td>{{ item.instanceId }}</td>
+                <td>{{ item.instanceName }}</td>
                 <td>{{ item.activityName }}</td>
-                <td>{{ item.definitionId }}</td>
+                <td>{{ item.definitionName }}</td>
                 <td>{{ item.startDate }}</td>
                 <td>{{ item.endDate }}</td>
                 <td>{{ item.userId }}</td>
@@ -43,7 +43,6 @@ export default defineComponent({
             { title: '프로세스', align: 'start', key: 'definitionId' },
             { title: '시작일', align: 'start', key: 'startDate' },
             { title: '완료일', align: 'start', key: 'endDate' },
-            // { title: '마감일', align: 'start', key: 'dueDate' },
             { title: '담당자', align: 'start', key: 'userId' },
             { title: '상태', align: 'start', key: 'status' },
         ]

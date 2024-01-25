@@ -34,10 +34,10 @@ const customizer = useCustomizerStore();
                     <div class="">
                         <div :class="customizer.boxed ? 'maxWidth' : ''">
                             <RouterView />
-                            <v-btn class="customizer-btn" size="large" icon variant="flat" color="primary"
+                            <!-- <v-btn class="customizer-btn" size="large" icon variant="flat" color="primary"
                                 @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
                                 <SettingsIcon />
-                            </v-btn>
+                            </v-btn> -->
                         </div>
                     </div>
                 </v-container>
@@ -69,10 +69,10 @@ const customizer = useCustomizerStore();
                     <div class="">
                         <div :class="customizer.boxed ? 'maxWidth' : ''">
                             <RouterView />
-                            <v-btn class="customizer-btn" size="large" icon variant="flat" color="primary"
+                            <!-- <v-btn class="customizer-btn" size="large" icon variant="flat" color="primary"
                                 @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
                                 <SettingsIcon />
-                            </v-btn>
+                            </v-btn> -->
                         </div>
                     </div>
                 </v-container>
