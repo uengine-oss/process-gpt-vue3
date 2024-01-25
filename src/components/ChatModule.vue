@@ -14,8 +14,6 @@ export default {
         messages: [],
         userInfo: {},
         disableChat: false,
-        // tests: {},
-        // testEnabled: false
     }),
     methods: {
         async init() {

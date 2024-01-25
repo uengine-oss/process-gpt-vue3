@@ -108,7 +108,7 @@ export default {
     methods: {
         save() {
             this.$emit('save');
-            me.EventBus.emit('saveModel');
+            this.EventBus.emit('saveModel');
         },
         async loadData(path) {
             const value = await this.getData(path);
