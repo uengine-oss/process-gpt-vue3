@@ -131,7 +131,7 @@
                                                 userInfo.email == message['prompt'].requestUserEmail
                                             "
                                         >
-                                            <v-btn style="margin-right: 5px" size="small" @click="processInstance(message['prompt'])"
+                                            <v-btn style="margin-right: 5px" size="small" @click="processInstance(message)"
                                                 >y</v-btn
                                             >
                                             <v-btn size="small">n</v-btn>
@@ -278,8 +278,10 @@ export default {
             var timeString = dateString.split(' ')[4].substring(0, 5);
             return timeString;
         },
-        processInstance(prompt) {
-            console.log(prompt.content, prompt.requestUserEmail);
+        processInstance(messageObj) {
+            this.$emit('sendMessage', JSON.parse(messageObj.content).content.replace('시작하시겠습니까 ?', '시작하겠습니다.'));
+            localStorage.setItem('instancePrompt', JSON.stringify(messageObj.prompt))
+            this.$router.push('/instances/chat')
         },
         getMoreChat() {
             this.$emit('getMoreChat');
