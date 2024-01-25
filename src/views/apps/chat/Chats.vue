@@ -171,86 +171,88 @@ export default {
                 this.messages.splice(this.messages.length - 1, 1)
             } else {
                 let obj = this.createMessageObj(response, 'system')
-                let responseObj = partialParse(response)
-                if(responseObj.work == 'ScheduleRegistration'){
-                    let start = responseObj.startDateTime.split('/')
-                    let startDate = start[0].split("-")
-                    let startTime = start[1].split("-")
-                    
-                    let end = responseObj.endDateTime.split('/')
-                    let endDate = end[0].split("-")
-                    let endTime = end[1].split("-")
-
-                    // endDateTime: "2024-02-24/15:00"
-                    // location: "온라인"
-                    // startDateTime: "2024-01-25/09:00"
-                    // title: "온라인 강의 진행"
-                    // work: "스케줄 등록"
-                    // 참석자: "50명"
-
-                   
-                    // {
-                    //     id: createEventId(),
-                    //     title: 'Learn ReactJs',
-                    //     start: new Date(y, m, d + 3, 10, 30),
-                    //     end: new Date(y, m, d + 3, 11, 30),
-                    //     allDay: true,
-                    //     color: '#39b69a',
-                    // },
-                    // {
-                    //     id: createEventId(),
-                    //     title: 'Launching MaterialArt Angular',
-                    //     start: new Date(y, m, d + 7, 12, 0),
-                    //     end: new Date(y, m, d + 7, 14, 0),
-                    //     allDay: true,
-                    //     color: '#fc4b6c',
-                    // },
-                    // {
-                    //     id: createEventId(),
-                    //     title: 'Lunch with Mr.Raw',
-                    //     start: new Date(y, m, d - 2),
-                    //     end: new Date(y, m, d - 2),
-                    //     allDay: true,
-                    //     color: '#1a97f5',
-                    // },
-                    // {
-                    //     id: createEventId(),
-                    //     title: 'Going For Party of Sahs',
-                    //     start: new Date(y, m, d + 1, 19, 0),
-                    //     end: new Date(y, m, d + 1, 22, 30),
-                    //     allDay: true,
-                    //     color: '#1a97f5',
-                    // },
-                    
-
-                    let uuid = this.uuid()
-                    let path = `users/${localStorage.getItem('uid')}/calender/${startDate[0]}/${startDate[1]}/${uuid}`
-                    let calenderObj = {
-                        id: uuid,
-                        title: responseObj.title,
-                        allDay: true,
-                        start: new Date(startDate[0], startDate[1] - 1, startDate[2]),
-                        end: new Date(endDate[0], endDate[1] - 1, endDate[2]),
-                        color: '#615dff',
-                    }
-                    this.putObject(path, calenderObj);
-
-                    let todoObj = {
-                        definitionId: null,
-                        definitionName: null,
-                        instanceId: null,
-                        activityName: responseObj.title,
-                        userId: this.userInfo.email,
-                        status: 'Running',
-                        startDate: new Date().toISOString().substr(0, 10)
-                    };
-
-                    this.pushObject(`todolist/${this.userInfo.email}`, todoObj);
-
-                } else {
-                    if(this.prompt && this.prompt.content){
-                        obj.prompt = this.prompt
-                        this.prompt = null
+                if(response && response.includes("{")){
+                    let responseObj = partialParse(response)
+                    if(responseObj.work == 'ScheduleRegistration'){
+                        let start = responseObj.startDateTime.split('/')
+                        let startDate = start[0].split("-")
+                        let startTime = start[1].split("-")
+                        
+                        let end = responseObj.endDateTime.split('/')
+                        let endDate = end[0].split("-")
+                        let endTime = end[1].split("-")
+    
+                        // endDateTime: "2024-02-24/15:00"
+                        // location: "온라인"
+                        // startDateTime: "2024-01-25/09:00"
+                        // title: "온라인 강의 진행"
+                        // work: "스케줄 등록"
+                        // 참석자: "50명"
+    
+                       
+                        // {
+                        //     id: createEventId(),
+                        //     title: 'Learn ReactJs',
+                        //     start: new Date(y, m, d + 3, 10, 30),
+                        //     end: new Date(y, m, d + 3, 11, 30),
+                        //     allDay: true,
+                        //     color: '#39b69a',
+                        // },
+                        // {
+                        //     id: createEventId(),
+                        //     title: 'Launching MaterialArt Angular',
+                        //     start: new Date(y, m, d + 7, 12, 0),
+                        //     end: new Date(y, m, d + 7, 14, 0),
+                        //     allDay: true,
+                        //     color: '#fc4b6c',
+                        // },
+                        // {
+                        //     id: createEventId(),
+                        //     title: 'Lunch with Mr.Raw',
+                        //     start: new Date(y, m, d - 2),
+                        //     end: new Date(y, m, d - 2),
+                        //     allDay: true,
+                        //     color: '#1a97f5',
+                        // },
+                        // {
+                        //     id: createEventId(),
+                        //     title: 'Going For Party of Sahs',
+                        //     start: new Date(y, m, d + 1, 19, 0),
+                        //     end: new Date(y, m, d + 1, 22, 30),
+                        //     allDay: true,
+                        //     color: '#1a97f5',
+                        // },
+                        
+    
+                        let uuid = this.uuid()
+                        let path = `users/${localStorage.getItem('uid')}/calender/${startDate[0]}/${startDate[1]}/${uuid}`
+                        let calenderObj = {
+                            id: uuid,
+                            title: responseObj.title,
+                            allDay: true,
+                            start: new Date(startDate[0], startDate[1] - 1, startDate[2]),
+                            end: new Date(endDate[0], endDate[1] - 1, endDate[2]),
+                            color: '#615dff',
+                        }
+                        this.putObject(path, calenderObj);
+    
+                        let todoObj = {
+                            definitionId: null,
+                            definitionName: null,
+                            instanceId: null,
+                            activityName: responseObj.title,
+                            userId: this.userInfo.email,
+                            status: 'Running',
+                            startDate: new Date().toISOString().substr(0, 10)
+                        };
+    
+                        this.pushObject(`todolist/${this.userInfo.email}`, todoObj);
+    
+                    } else {
+                        if(this.prompt && this.prompt.content){
+                            obj.prompt = this.prompt
+                            this.prompt = null
+                        }
                     }
                 }
 
