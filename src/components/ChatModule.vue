@@ -12,7 +12,7 @@ export default {
         generator: null,
         messages: [],
         userInfo: {},
-        disableChat: false,
+        disableChat: false
     }),
     methods: {
         async init() {
@@ -145,10 +145,11 @@ export default {
 
                 if (this.messages && this.messages.length > 0) {
                     this.messages.forEach((msg) => {
-                        chatMsgs.push({
-                            role: msg.role,
-                            content: msg.content
-                        });
+                        if (msg.content)
+                            chatMsgs.push({
+                                role: msg.role,
+                                content: msg.content
+                            });
                     });
                 }
 
@@ -307,6 +308,7 @@ export default {
                 console.error("Why didn't you allow my web app to use IndexedDB?!");
             };
             request.onsuccess = (event) => {
+                const db = event.target.result;
                 db.transaction(['documents'], 'readwrite').objectStore('documents').delete(id);
 
                 db.close();

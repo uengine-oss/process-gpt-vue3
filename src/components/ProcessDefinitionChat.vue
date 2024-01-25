@@ -10,7 +10,14 @@
         <AppBaseCard>
             <template v-slot:leftpart>
                 <div class="no-scrollbar">
-                    <Chat :name="projectName" :messages="messages" :userInfo="userInfo" @sendMessage="beforeSendMessage">
+                    <Chat
+                        :name="projectName"
+                        :messages="messages"
+                        :isChanged="isChanged"
+                        :userInfo="userInfo"
+                        @sendMessage="beforeSendMessage"
+                        @save="saveModel"
+                    >
                         <template v-slot:alert>
                             <v-alert icon="mdi-info" :title="alertInfo.title" :text="alertInfo.text"></v-alert>
                         </template>
@@ -22,7 +29,7 @@
                     :key="definitionChangeCount"
                     :projectName="projectName"
                     v-model="model"
-                    @saveModel="saveModel"
+                    @input="(val) => (changedModel = val)"
                 ></bpmn-modeling-canvas>
             </template>
 
@@ -61,6 +68,12 @@ export default {
         BpmnModelingCanvas,
         ChatGenerator
     },
+    computed: {
+        isChanged() {
+            if (this.changedModel) return true;
+            else return false;
+        }
+    },
     data: () => ({
         processDefinition: null,
         model: {
@@ -79,7 +92,8 @@ export default {
         alertInfo: {
             title: '프로세스 정의 관리',
             text: "대화형으로 프로세스를 관리하십시오. 예를 들어, '영업관리 프로세스를 다음과 같이 등록해줘: 1. 영업기회등 고객명, 예상사업규모, 키맨, 요구사항 2. 제안 작성: 제안 내용, 가격 3. 수주 혹은 실주 4. 수주한 경우, 계약진행' 와 같은 명령을 할 수 있습니다."
-        }
+        },
+        changedModel: null
     }),
     async created() {
         await this.init();
@@ -139,7 +153,6 @@ export default {
                     let unknown = partialParse(jsonProcess);
                     if (unknown.modifications) {
                         //means process modification
-
                         unknown.modifications.forEach((modification) => {
                             if (modification.action == 'replace') {
                                 this.jsonPathReplace(this.processDefinition, modification.targetJsonPath, modification.value);
@@ -168,7 +181,7 @@ export default {
             let path = this.path;
             let putObj = {
                 messages: JSON.stringify(this.messages),
-                model: null,
+                model: null
             };
 
             if (this.processDefinition) {
@@ -192,13 +205,17 @@ export default {
                     type: 'Text' // Assuming all variables are of type Text; update logic as needed for different types
                 })),
                 roles: Object.values(jsonInput.elements)
-                    .filter((element) => element._type === 'org.uengine.kernel.Role')
+                    .filter((element) => {
+                        if (element) element._type === 'org.uengine.kernel.Role';
+                    })
                     .map((role) => ({
                         name: role.name,
                         resolutionRule: role.roleResolutionContext.endpoint
                     })),
                 activities: Object.values(jsonInput.elements)
-                    .filter((element) => element._type === 'org.uengine.kernel.HumanActivity')
+                    .filter((element) => {
+                        if (element) element._type === 'org.uengine.kernel.HumanActivity';
+                    })
                     .map((activity) => ({
                         name: activity.name || activity.oldName,
                         id: activity.elementView.id,
@@ -215,7 +232,9 @@ export default {
                         checkpoints: [] // Assuming no checkpoints; update as needed
                     })),
                 sequences: Object.values(jsonInput.relations)
-                    .filter((relation) => relation._type === 'org.uengine.kernel.bpmn.SequenceFlow')
+                    .filter((relation) => {
+                        if (relation) relation._type === 'org.uengine.kernel.bpmn.SequenceFlow';
+                    })
                     .map((sequence) => ({
                         source: sequence.from,
                         target: sequence.to
@@ -224,15 +243,21 @@ export default {
 
             return processDefinition;
         },
-        saveModel(model) {
+        async saveModel() {
             // alert(model);
-            model.name = this.projectName;
+            console.log(this.changedModel);
+            this.projectName = this.projectName;
             const apiToken = this.generator.getToken();
-            let definition = this.convertToProcessDefinition(model);
+            let definition = this.convertToProcessDefinition(this.changedModel);
             const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
-            let vectorId = vectorStore.similaritySearch(this.projectName);
-            this.deleteVectorStorage(vectorId);
-            this.saveDefinition(definition);
+            let vectorId = await vectorStore.similaritySearch({
+                query: this.projectName,
+                k: 1
+            });
+            if (vectorId) {
+                this.deleteVectorStorage(vectorId.similarItems[0].id);
+                this.saveDefinition(definition);
+            }
         },
         parseDefinition(model) {
             let definition = {};
@@ -269,7 +294,7 @@ export default {
                 }
             });
             return componentByName;
-        },
+        }
         // absY(y, height) {
         //     return element.elementView.y - (element.elementView.height / 2)
         // }

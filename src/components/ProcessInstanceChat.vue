@@ -99,9 +99,11 @@ export default {
             isStream: true,
             preferredLanguage: 'Korean'
         });
-        let prompt = JSON.parse(this.$route.query.prompt)
-        this.beforeSendMessage(prompt.content)
-        delete this.$route.query.prompt;
+        if(localStorage.getItem('instancePrompt')){
+            let prompt = JSON.parse(localStorage.getItem('instancePrompt'))
+            this.beforeSendMessage(prompt.content)
+            localStorage.removeItem('instancePrompt')
+        }
     },
     watch: {
         "$route": {

@@ -239,7 +239,7 @@
             </div> -->
 
         <div class="tools">
-            <v-card v-if="!monitor" variant="outlined" style="background-color:white;">
+            <v-card v-if="!monitor" variant="outlined" style="background-color: white">
                 <v-tooltip location="top">
                     <template v-slot:activator="{ props }">
                         <span
@@ -592,7 +592,6 @@ export default {
 
         var me = this;
         me.setMode();
-        me.EventBus.on(`saveModel`, me.emitModel);
         // If the menu element is clicked //TODO - vue js 방식으로 전환, IE - 9
         $('.custom-menu li').click(function () {
             // This is the triggered action name
@@ -607,12 +606,8 @@ export default {
         });
 
         // BpmnVue.vue mounted
-        //timer start
         var startTime = Date.now();
-
         this.id = this.uuid();
-        // this.value = this.validateDefinition(this.value);
-
         // 프로세스 정의 초기화
         var shortDescription = this.defintionSettings.shortDescription;
         if (!shortDescription) {
@@ -664,19 +659,7 @@ export default {
         // this.value = JSON.parse("{\"elements\":{\"3e760451-44b4-1138-4b94-ba5d332163e3\":null,\"0cb07636-99bf-62e0-e88e-d8b4095f3b5d\":null,\"c9824ed8-c477-4869-f75f-7ed67c7f53e4\":null,\"c680c8a1-4262-6035-006b-079ca8bf6579\":null,\"bf4fb4d2-0697-ed4f-4df4-0ce914f5a151\":null,\"64bba49c-182a-043c-8996-d62ac98deda7\":{\"_type\":\"org.uengine.kernel.Role\",\"name\":\"initiator\",\"displayName\":\"initiator\",\"roleResolutionContext\":{\"endpoint\":\"sanghoon01@uengine.org\",\"_type\":\"org.uengine.kernel.DirectRoleResolutionContext\"},\"selected\":false,\"elementView\":{\"_type\":\"org.uengine.kernel.view.DefaultActivityView\",\"id\":\"64bba49c-182a-043c-8996-d62ac98deda7\",\"x\":791.5,\"y\":461,\"width\":561,\"height\":200,\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":\\\".5\\\",\\\"fill-cx\\\":\\\".5\\\",\\\"fill-cy\\\":\\\".5\\\",\\\"fill\\\":\\\"#ffffff\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"center\\\",\\\"label-direction\\\":\\\"vertical\\\",\\\"vertical-align\\\":\\\"top\\\",\\\"cursor\\\":\\\"move\\\"}\",\"parent\":null},\"_instanceInfo\":[],\"author\":\"lqang0r9000nemcfgfywyd89\",\"oldName\":\"initiator\"},\"39c1b259-936a-4e75-5a50-e61b208d934e\":{\"_type\":\"org.uengine.kernel.bpmn.StartEvent\",\"name\":\"\",\"tracingTag\":\"4\",\"selected\":false,\"elementView\":{\"_type\":\"org.uengine.kernel.view.DefaultActivityView\",\"id\":\"39c1b259-936a-4e75-5a50-e61b208d934e\",\"x\":576,\"y\":463,\"width\":30,\"height\":30,\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":\\\".5\\\",\\\"fill-cx\\\":\\\".5\\\",\\\"fill-cy\\\":\\\".5\\\",\\\"fill\\\":\\\"white\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"bottom\\\",\\\"label-width\\\":120,\\\"stroke-width\\\":1.5,\\\"cursor\\\":\\\"move\\\"}\",\"parent\":\"64bba49c-182a-043c-8996-d62ac98deda7\"},\"author\":\"lqang0r9000nemcfgfywyd89\"},\"c4bd049b-926d-9dd3-a63e-caef54c182d9\":{\"_type\":\"org.uengine.kernel.DefaultActivity\",\"name\":\"\",\"selected\":false,\"tracingTag\":\"5\",\"elementView\":{\"_type\":\"org.uengine.kernel.view.DefaultActivityView\",\"id\":\"c4bd049b-926d-9dd3-a63e-caef54c182d9\",\"x\":718,\"y\":462,\"width\":100,\"height\":70,\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":1,\\\"fill-cx\\\":0.1,\\\"fill-cy\\\":0.1,\\\"fill\\\":\\\"#FFFFFF\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"center\\\",\\\"stroke-width\\\":1.2,\\\"r\\\":\\\"10\\\",\\\"cursor\\\":\\\"move\\\"}\",\"parent\":\"64bba49c-182a-043c-8996-d62ac98deda7\"},\"author\":\"lqang0r9000nemcfgfywyd89\"},\"2c3c5adb-29bd-6058-67c2-4f1ac49b221c\":{\"_type\":\"org.uengine.kernel.HumanActivity\",\"name\":\"장애 처리\",\"role\":{\"_type\":\"org.uengine.kernel.Role\",\"name\":\"initiator\"},\"parameters\":[{\"_type\":\"org.uengine.kernel.ParameterContext\",\"direction\":\"IN-OUT\",\"variable\":{\"_type\":\"org.uengine.kernel.ProcessVariable\",\"name\":\"error\"},\"argument\":{\"_type\":\"org.uengine.contexts.TextContext\",\"text\":\"error\"}}],\"tracingTag\":\"5\",\"selected\":false,\"elementView\":{\"_type\":\"org.uengine.kernel.view.DefaultActivityView\",\"id\":\"2c3c5adb-29bd-6058-67c2-4f1ac49b221c\",\"x\":718,\"y\":462,\"width\":100,\"height\":70,\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":1,\\\"fill-cx\\\":0.1,\\\"fill-cy\\\":0.1,\\\"fill\\\":\\\"#FFFFFF\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"center\\\",\\\"stroke-width\\\":1.2,\\\"r\\\":\\\"10\\\"}\",\"parent\":\"64bba49c-182a-043c-8996-d62ac98deda7\"},\"author\":\"lqang0r9000nemcfgfywyd89\",\"oldName\":\"장애 처리\"},\"531c6e55-bfcd-073f-7bce-938363c84a8d\":{\"_type\":\"org.uengine.kernel.bpmn.EndEvent\",\"name\":\"\",\"tracingTag\":\"6\",\"selected\":false,\"elementView\":{\"_type\":\"org.uengine.kernel.view.DefaultActivityView\",\"id\":\"531c6e55-bfcd-073f-7bce-938363c84a8d\",\"x\":874,\"y\":465,\"width\":30,\"height\":30,\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":\\\".5\\\",\\\"fill-cx\\\":\\\".5\\\",\\\"fill-cy\\\":\\\".5\\\",\\\"fill\\\":\\\"white\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"bottom\\\",\\\"stroke-width\\\":3,\\\"label-width\\\":120,\\\"cursor\\\":\\\"move\\\"}\",\"parent\":\"64bba49c-182a-043c-8996-d62ac98deda7\"},\"author\":\"lqang0r9000nemcfgfywyd89\"}},\"relations\":{\"78a66a7e-d601-47c4-dea3-3331728e9e62\":null,\"1f0508d1-c102-5979-1e53-48f1cfbdca2d\":null,\"a2fdac89-4747-e84a-33b2-37a3f14d69d6\":{\"name\":\"\",\"_type\":\"org.uengine.kernel.bpmn.SequenceFlow\",\"selected\":false,\"sourceRef\":\"4\",\"targetRef\":\"5\",\"from\":\"39c1b259-936a-4e75-5a50-e61b208d934e\",\"to\":\"c4bd049b-926d-9dd3-a63e-caef54c182d9\",\"priority\":1,\"relationView\":{\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":\\\".5\\\",\\\"fill-cx\\\":\\\".5\\\",\\\"fill-cy\\\":\\\".5\\\",\\\"fill\\\":\\\"none\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"center\\\",\\\"stroke-width\\\":1.5,\\\"stroke-opacity\\\":1,\\\"edge-type\\\":\\\"plain\\\",\\\"arrow-start\\\":\\\"none\\\",\\\"arrow-end\\\":\\\"block\\\",\\\"stroke-dasharray\\\":\\\"\\\",\\\"stroke-linejoin\\\":\\\"round\\\",\\\"cursor\\\":\\\"pointer\\\"}\",\"value\":\"[[588,464],[644,464],[644,464],[668,464]]\",\"id\":\"a2fdac89-4747-e84a-33b2-37a3f14d69d6\"},\"condition\":{\"_type\":\"org.uengine.kernel.Evaluate\",\"pv\":{\"_type\":\"org.uengine.kernel.ProcessVariable\",\"name\":\"\"},\"condition\":\"==\",\"val\":\"\"},\"author\":\"lqang0r9000nemcfgfywyd89\"},\"51e96f3d-12d5-7e44-366e-84035abe3f65\":{\"name\":\"\",\"_type\":\"org.uengine.kernel.bpmn.SequenceFlow\",\"selected\":false,\"sourceRef\":\"5\",\"targetRef\":\"6\",\"from\":\"2c3c5adb-29bd-6058-67c2-4f1ac49b221c\",\"to\":\"531c6e55-bfcd-073f-7bce-938363c84a8d\",\"priority\":1,\"relationView\":{\"style\":\"{\\\"stroke\\\":\\\"black\\\",\\\"fill-r\\\":\\\".5\\\",\\\"fill-cx\\\":\\\".5\\\",\\\"fill-cy\\\":\\\".5\\\",\\\"fill\\\":\\\"none\\\",\\\"fill-opacity\\\":0,\\\"label-position\\\":\\\"center\\\",\\\"stroke-width\\\":1.5,\\\"stroke-opacity\\\":1,\\\"edge-type\\\":\\\"plain\\\",\\\"arrow-start\\\":\\\"none\\\",\\\"arrow-end\\\":\\\"block\\\",\\\"stroke-dasharray\\\":\\\"\\\",\\\"stroke-linejoin\\\":\\\"round\\\",\\\"cursor\\\":\\\"pointer\\\"}\",\"value\":\"[[768,464],[807,464]]\",\"id\":\"51e96f3d-12d5-7e44-366e-84035abe3f65\"},\"condition\":{\"_type\":\"org.uengine.kernel.Evaluate\",\"pv\":{\"_type\":\"org.uengine.kernel.ProcessVariable\",\"name\":\"\"},\"condition\":\"==\",\"val\":\"\"},\"author\":\"lqang0r9000nemcfgfywyd89\"}},\"version\":3,\"scm\":{\"tag\":null,\"org\":null,\"repo\":null,\"forkedOrg\":null,\"forkedRepo\":null},\"processVariableDescriptors\":[{\"name\":\"error\",\"displayName\":{\"text\":\"error\",\"_type\":\"org.uengine.contexts.TextContext\"},\"defaultValueInString\":\"\",\"global\":false,\"persistOption\":\"BPMS\",\"typeClassName\":\"java.lang.String\",\"_type\":\"[Lorg.uengine.kernel.ProcessVariable\"}],\"_changedByLocaleSelector\":false,\"name\":{\"_type\":\"org.uengine.contexts.TextContext\",\"text\":\"error-input\"}}")
 
         if (this.modelValue) {
-            // const modelValue = { "processDefinitionName": "휴가관리 프로세스", "processDefinitionId": "vacation_management_process", "description": "직원들의 휴가 신청과 승인을 처리하는 프로세스입니다.", "data": [ { "name": "사유", "description": "휴가를 신청하는 사유를 입력하는 데이터입니다.", "type": "Text" }, { "name": "휴가 시작일", "description": "휴가가 시작되는 날짜를 입력하는 데이터입니다.", "type": "Date" }, { "name": "휴가 복귀일", "description": "휴가가 종료되어 복귀하는 날짜를 입력하는 데이터입니다.", "type": "Date" } ], "roles": [ { "name": "직원", "resolutionRule": "직원의 실제 사용자 매핑 방법에 대한 규칙입니다." }, { "name": "팀장", "resolutionRule": "팀장의 실제 사용자 매핑 방법에 대한 규칙입니다." } ], "activities": [ { "name": "휴가 신청", "id": "vacation_request", "type": "UserActivity", "description": "직원이 휴가를 신청하는 단계입니다.", "instruction": "휴가 신청서를 작성하여 사유, 휴가 시작일, 휴가 복귀일을 입력하세요.", "role": "직원", "inputData": [ { "name": "사유" }, { "name": "휴가 시작일" }, { "name": "휴가 복귀일" } ], "outputData": [] }, { "name": "팀장 승인", "id": "manager_approval", "type": "UserActivity", "description": "팀장이 직원의 휴가 신청을 승인 또는 반려하는 단계입니다.", "instruction": "휴가 신청을 검토한 후 승인 또는 반려 여부를 결정하여 입력하세요.", "role": "팀장", "inputData": [ { "name": "휴가 신청서" } ], "outputData": [] }, { "name": "휴가 승인", "id": "vacation_approval", "type": "UserActivity", "description": "휴가 승인 단계입니다.", "instruction": "휴가 신청이 승인되었음을 알려주세요.", "role": "직원", "inputData": [], "outputData": [] } ], "sequences": [ { "source": "vacation_request", "target": "manager_approval" }, { "source": "manager_approval", "target": "vacation_approval" } ] }
             this.value = this.modelValue;
-        } else {
-            this.value = {
-                elements: {},
-                relations: {},
-                basePlatform: null,
-                basePlatformConf: {},
-                toppingPlatforms: null,
-                toppingPlatformsConf: {},
-                processVariableDescriptors: [],
-                scm: {}
-            };
         }
     },
     watch: {
@@ -754,7 +737,10 @@ export default {
                 var me = this;
                 if (newVal) {
                     me.$emit('input', newVal);
-                    // me.$emit("change", newVal, this.projectName);
+                    console.log('aa');
+                    // var diff = jsondiffpatch.diff(oldVal, newVal);
+                    // console.log(diff);
+                    // me.$emit("change", newVal);
 
                     if (me.propertyEditing) {
                         me.enableHistoryAdd = false;
@@ -805,10 +791,6 @@ export default {
         }
     },
     methods: {
-        emitModel() {
-            console.log(this.modelValue);
-            this.$emit('saveModel', this.value);
-        },
         changeMultiple: function () {
             if (this.dragPageMovable == false && this.active == false) {
                 this.dragPageMovable = true;
@@ -2478,8 +2460,9 @@ export default {
         position: absolute;
         top: 20px;
         overflow: hidden;
-        min-width:440px;
-        left: 50%; transform: translate(-50%, 0%);
+        min-width: 440px;
+        left: 50%;
+        transform: translate(-50%, 0%);
 
         .icons {
             margin-top: 5px;
