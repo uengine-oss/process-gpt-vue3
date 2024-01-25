@@ -86,6 +86,7 @@ export default {
             // 문제 있음 확인 필요
             const callPath = path ? path : this.path;
             await globalContext.storage.watch(`db://${callPath}`, (callback) => {
+                this.messages = [];
                 if (callback) {
                     if (callback.messages) {
                         if (typeof callback.messages == 'string') {
@@ -96,8 +97,6 @@ export default {
                     } else {
                         this.messages = [];
                     }
-                } else {
-                    this.messages = [];
                 }
             });
         },

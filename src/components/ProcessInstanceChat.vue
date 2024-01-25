@@ -52,6 +52,7 @@
 <script>
 import partialParse from 'partial-json-parser';
 import { VectorStorage } from 'vector-storage';
+import { format } from 'date-fns';
 
 import ChatGenerator from './ai/ProcessInstanceGenerator.js';
 import ChatModule from '@/components/ChatModule.vue';
@@ -79,7 +80,6 @@ export default {
             text: "대화형으로 프로세스를 실행하십시오. \n 예를 들어, '휴가를 신청할게: 1. 사유: 개인사유 2. 휴가 시작일: 오늘 3. 휴가 복귀일: 금요일' 와 같은 명령을 할 수 있습니다."
         },
         isViewProcess: false,
-        chatId: null,
         onLoad: false,
         model: {
             elements: {},
@@ -91,7 +91,7 @@ export default {
             processVariableDescriptors: [],
             scm: {}
         },
-        projectName: ''
+        projectName: '',
     }),
     async created() {
         await this.init();
@@ -106,22 +106,37 @@ export default {
             async handler(newVal, oldVal) {
                 if (newVal.path !== oldVal.path) {
                     await this.init();
+                    this.generator = new ChatGenerator(this, {
+                        isStream: true,
+                        preferredLanguage: 'Korean'
+                    });
                 }
             }
-        }
+        },
     },
     methods: {
         async viewProcess() {
             this.onLoad = false;
-            this.isViewProcess = !this.isViewProcess;
-            console.log(this.processInstance);
             let definitionInfo = null;
-            const processInfo = await this.getData(`instances/${this.chatId}`);
-            if (processInfo) definitionInfo = await this.getData(`definitions/${processInfo.definitionId}`);
+            let instanceId = "";
+            if (this.$route.params && this.$route.params.id) {
+                instanceId = this.$route.params.id;
+                this.isViewProcess = !this.isViewProcess;
+            } else if (this.processInstance && this.processInstance.processInstanceId) {
+                instanceId = this.processInstance.processInstanceId;
+                this.isViewProcess = !this.isViewProcess;
+            } else {
+                alert("실행 중인 프로세스 인스턴스를 선택하세요.");
+                return;
+            }
+            const instanceInfo = await this.getData(`instances/${instanceId}`);
+            if (instanceInfo) {
+                definitionInfo = await this.getData(`definitions/${instanceInfo.definitionId}`);
+            }
             if (definitionInfo) {
                 let definition = partialParse(definitionInfo.model);
                 definition.activities.forEach(function (activity) {
-                    if (activity.id == processInfo.nextActivityId) activity.status = 'Running';
+                    if (activity.id == instanceInfo.nextActivityId) activity.status = 'Running';
                 });
                 this.model = this.createUEngine(definition);
                 this.onLoad = true;
@@ -171,7 +186,7 @@ export default {
                 this.processInstance = partialParse(jsonInstance);
             }
         },
-        async afterGenerationFinished() {
+        async afterGenerationFinished(response) {
             if (this.processInstance) {
                 if (typeof this.processInstance === 'string') {
                     this.processInstance = partialParse(this.processInstance);
@@ -180,8 +195,6 @@ export default {
                 await this.saveInstance();
                 await this.sendTodolist();
             }
-
-            await this.loadData(this.getDataPath());
         },
         async saveInstance(status) {
             if (this.processInstance) {
@@ -192,8 +205,10 @@ export default {
                     putObj.messages = this.messages;
                     putObj.currentUserId = this.processInstance.currentUserEmail;
                     putObj.currentActivityId = this.processInstance.currentActivityId;
+                    putObj.currentActivityName = this.processInstance.currentActivityName;
                     putObj.nextUserId = this.processInstance.nextUserEmail;
                     putObj.nextActivityId = this.processInstance.nextActivityId;
+                    putObj.nextActivityName = this.processInstance.nextActivityName;
 
                     let newParticipants = [this.processInstance.currentUserEmail, this.processInstance.nextUserEmail];
                     newParticipants = [...putObj.participants, ...newParticipants];
@@ -207,10 +222,13 @@ export default {
                     putObj = {
                         messages: this.messages,
                         definitionId: this.processInstance.processDefinitionId,
+                        instanceName: this.processInstance.processInstanceName,
                         currentUserId: this.processInstance.currentUserEmail,
                         currentActivityId: this.processInstance.currentActivityId,
+                        currentActivityName: this.processInstance.currentActivityName,
                         nextUserId: this.processInstance.nextUserEmail,
                         nextActivityId: this.processInstance.nextActivityId,
+                        nextActivityName: this.processInstance.nextActivityName,
                         participants: [this.processInstance.currentUserEmail, this.processInstance.nextUserEmail],
                         status: 'Running'
                     };
@@ -227,11 +245,12 @@ export default {
                         definitionId: this.processInstance.processDefinitionId,
                         definitionName: this.processInstance.processDefinitionName,
                         instanceId: this.processInstance.processInstanceId,
+                        instanceName: this.processInstance.processInstanceName,
                         activityId: this.processInstance.currentActivityId,
                         activityName: this.processInstance.currentActivityName,
                         userId: this.processInstance.currentUserEmail,
                         status: 'Completed',
-                        endDate: new Date().toISOString().substr(0, 10)
+                        endDate: format(new Date(), 'yyyy-MM-dd')
                     };
 
                     const workItem = await this.checkTodolist(path, pushObj);
@@ -245,8 +264,7 @@ export default {
                             activity.id == pushObj.activityId
                         );
                         if (actIdx < 1) {
-                            pushObj.startDate = new Date().toISOString().substr(0, 10);
-                            localStorage.setItem("useCache", true);
+                            pushObj.startDate = format(new Date(), 'yyyy-MM-dd');
                         }
                     }
 
@@ -260,11 +278,13 @@ export default {
                         definitionId: this.processInstance.processDefinitionId,
                         definitionName: this.processInstance.processDefinitionName,
                         instanceId: this.processInstance.processInstanceId,
+                        instanceName: this.processInstance.processInstanceName,
                         activityId: this.processInstance.nextActivityId,
+                        activityName: this.processInstance.nextActivityName,
                         activityName: this.processInstance.nextActivityName,
                         userId: this.processInstance.nextUserEmail,
                         status: 'Running',
-                        startDate: new Date().toISOString().substr(0, 10)
+                        startDate: format(new Date(), 'yyyy-MM-dd')
                     };
 
                     await this.pushObject(path, pushObj);
