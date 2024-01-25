@@ -165,11 +165,11 @@ export default {
                                 this.model = this.createUEngine(this.processDefinition);
                             }
                         });
-                        this.definitionChangeCount++;
                     } else if (unknown.processDefinitionId) {
                         this.processDefinition = unknown;
                         this.model = this.createUEngine(this.processDefinition);
                     }
+                    this.definitionChangeCount++;
                 }
             } catch (error) {
                 console.log(error);
@@ -181,7 +181,7 @@ export default {
             let path = this.path;
             let putObj = {
                 messages: JSON.stringify(this.messages),
-                model: null,
+                model: null
             };
 
             if (this.processDefinition) {
@@ -205,13 +205,17 @@ export default {
                     type: 'Text' // Assuming all variables are of type Text; update logic as needed for different types
                 })),
                 roles: Object.values(jsonInput.elements)
-                    .filter((element) => element._type === 'org.uengine.kernel.Role')
+                    .filter((element) => {
+                        if (element) element._type === 'org.uengine.kernel.Role';
+                    })
                     .map((role) => ({
                         name: role.name,
                         resolutionRule: role.roleResolutionContext.endpoint
                     })),
                 activities: Object.values(jsonInput.elements)
-                    .filter((element) => element._type === 'org.uengine.kernel.HumanActivity')
+                    .filter((element) => {
+                        if (element) element._type === 'org.uengine.kernel.HumanActivity';
+                    })
                     .map((activity) => ({
                         name: activity.name || activity.oldName,
                         id: activity.elementView.id,
@@ -228,7 +232,9 @@ export default {
                         checkpoints: [] // Assuming no checkpoints; update as needed
                     })),
                 sequences: Object.values(jsonInput.relations)
-                    .filter((relation) => relation._type === 'org.uengine.kernel.bpmn.SequenceFlow')
+                    .filter((relation) => {
+                        if (relation) relation._type === 'org.uengine.kernel.bpmn.SequenceFlow';
+                    })
                     .map((sequence) => ({
                         source: sequence.from,
                         target: sequence.to
@@ -237,16 +243,21 @@ export default {
 
             return processDefinition;
         },
-        saveModel(model) {
+        async saveModel() {
             // alert(model);
             console.log(this.changedModel);
-            model.name = this.projectName;
+            this.projectName = this.projectName;
             const apiToken = this.generator.getToken();
-            let definition = this.convertToProcessDefinition(model);
+            let definition = this.convertToProcessDefinition(this.changedModel);
             const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
-            let vectorId = vectorStore.similaritySearch(this.projectName);
-            this.deleteVectorStorage(vectorId);
-            this.saveDefinition(definition);
+            let vectorId = await vectorStore.similaritySearch({
+                query: this.projectName,
+                k: 1
+            });
+            if (vectorId) {
+                this.deleteVectorStorage(vectorId.similarItems[0].id);
+                this.saveDefinition(definition);
+            }
         },
         parseDefinition(model) {
             let definition = {};
