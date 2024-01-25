@@ -63,7 +63,7 @@ export default {
         ChatProfile
     },
     data: () => ({
-        replyUser: null,
+        prompt: null,
         definitions: [],
         processDefinition: null,
         // processInstance: {},
@@ -110,71 +110,47 @@ export default {
                 this.replyUser = null
             }
         },
-        pushMessage(newMessage, role){
-            let obj
-
-            var currentDate = new Date();
-            var milliseconds = currentDate.getMilliseconds(); 
-            var timeStamp = currentDate.toTimeString().split(' ')[0] + '.' + milliseconds.toString().padStart(3, '0');
-
-            if(this.replyUser){
-                obj = {
-                    name: role ? role:this.userInfo.name,
-                    email: role ? role + '@uengine.org':this.userInfo.email,
-                    role: role ? role:'user',
-                    timeStamp: timeStamp,
-                    content: newMessage,
-                    replyUserName: this.replyUser.name,
-                    replyContent: this.replyUser.content,
-                    replyUserEmail: this.replyUser.email
-                }
-            } else {
-                obj = {
-                    name: role ? role:this.userInfo.name,
-                    email: role ? role + '@uengine.org':this.userInfo.email,
-                    role: role ? role:'user',
-                    timeStamp: timeStamp,
-                    content: newMessage
-                }
-            }
-            if(role != 'system'){
-                this.messages.push(obj)
-            }
-            this.saveMessages(`chats/1/messages/${this.uuid()}`, obj);
-        },
         async beforeSendMessage(newMessage) {
-            this.pushMessage(newMessage);
+            this.saveMessages(`chats/1/messages/${this.uuid()}`, this.createMessageObj(newMessage));
+
             if(!this.generator.contexts) {
                 let contexts = await this.queryFromVectorDB(newMessage);
                 this.generator.setContexts(contexts);
             }
-            this.sendMessage(newMessage);
-        },
-
-        async loadData(path) {
-            var me = this
-            const value = await this.getData(path);
-
-            if (value) {
-                if (value.organizationChart) {
-                    this.organizationChart = JSON.parse(value.organizationChart);
-                    
-                    if (!this.organizationChart) {
-                        this.organizationChart = []
-                    }
-                } else {
-                    // if (this.$route.params && this.$route.params.id) {
-                        // Object.keys(value).forEach(function (key){
-                        //     me.processInstance[key] = partialParse(value[key].model);
-                        // })
-
-                    }
-                // }
+            
+            this.prompt = {
+                content: newMessage,
+                requestUserEmail: this.userInfo.email,
+                requestUserName: this.userInfo.name,
             }
+            this.sendMessage(newMessage);
+
         },
+
+        // async loadData(path) {
+            // var me = this
+            // const value = await this.getData(path);
+
+            // if (value) {
+            //     if (value.organizationChart) {
+            //         this.organizationChart = JSON.parse(value.organizationChart);
+                    
+            //         if (!this.organizationChart) {
+            //             this.organizationChart = []
+            //         }
+            //     } else {
+            //         // if (this.$route.params && this.$route.params.id) {
+            //             // Object.keys(value).forEach(function (key){
+            //             //     me.processInstance[key] = partialParse(value[key].model);
+            //             // })
+
+            //         }
+            //     // }
+            // }
+        // },
 
         afterModelCreated(response) {
-            let jsonInstance = this.extractJSON(response);
+            // let jsonInstance = this.extractJSON(response);
 
             // if (jsonInstance) {
             //     try {
@@ -186,30 +162,83 @@ export default {
             // }
         },
 
-        async afterGenerationFinished(putObj) {
-            // let modelText = "";
-            // let path = "";
+        afterGenerationFinished(response) {
+            if(response == '.') {
+                this.messages.splice(this.messages.length - 1, 1)
+            } else {
+                let responseObj = partialParse(response)
+                if(responseObj.work == 'ScheduleRegistration'){
+                    let start = responseObj.startDateTime.split('/')
+                    let startDate = start[0].split("-")
+                    let startTime = start[1].split("-")
+                    
+                    let end = responseObj.endDateTime.split('/')
+                    let endDate = end[0].split("-")
+                    let endTime = end[1].split("-")
 
-            // if (this.processInstance) {
+                    // endDateTime: "2024-02-24/15:00"
+                    // location: "온라인"
+                    // startDateTime: "2024-01-25/09:00"
+                    // title: "온라인 강의 진행"
+                    // work: "스케줄 등록"
+                    // 참석자: "50명"
 
-            //     if (typeof this.processInstance === "string") {
-            //         this.processInstance = partialParse(this.processInstance);
-            //     }
-            //     path = `${this.path}/${this.processInstance.processInstanceId}`;
-            //     modelText = JSON.stringify(this.processInstance);
+                   
+                    // {
+                    //     id: createEventId(),
+                    //     title: 'Learn ReactJs',
+                    //     start: new Date(y, m, d + 3, 10, 30),
+                    //     end: new Date(y, m, d + 3, 11, 30),
+                    //     allDay: true,
+                    //     color: '#39b69a',
+                    // },
+                    // {
+                    //     id: createEventId(),
+                    //     title: 'Launching MaterialArt Angular',
+                    //     start: new Date(y, m, d + 7, 12, 0),
+                    //     end: new Date(y, m, d + 7, 14, 0),
+                    //     allDay: true,
+                    //     color: '#fc4b6c',
+                    // },
+                    // {
+                    //     id: createEventId(),
+                    //     title: 'Lunch with Mr.Raw',
+                    //     start: new Date(y, m, d - 2),
+                    //     end: new Date(y, m, d - 2),
+                    //     allDay: true,
+                    //     color: '#1a97f5',
+                    // },
+                    // {
+                    //     id: createEventId(),
+                    //     title: 'Going For Party of Sahs',
+                    //     start: new Date(y, m, d + 1, 19, 0),
+                    //     end: new Date(y, m, d + 1, 22, 30),
+                    //     allDay: true,
+                    //     color: '#1a97f5',
+                    // },
+                    
 
-            //     let contexts = await this.queryFromVectorDB(this.processInstance.processDefinitionId);
-            //     if (contexts && contexts.length > 0) {
-            //         contexts.forEach(item => {
-            //             this.processDefinition = partialParse(item);
-            //         });
-            //     }
+                    let uuid = this.uuid()
+                    let path = `users/${localStorage.getItem('uid')}/calender/${startDate[0]}/${startDate[1]}/${uuid}`
+                    let obj = {
+                        id: uuid,
+                        title: responseObj.title,
+                        allDay: true,
+                        start: new Date(startDate[0], startDate[1] - 1, startDate[2]),
+                        end: new Date(endDate[0], endDate[1] - 1, endDate[2]),
+                        color: '#615dff',
+                    }
+                    this.saveMessages(path, obj);
+                } else {
+                    if(this.prompt && this.prompt.content){
+                        obj.prompt = this.prompt
+                        this.prompt = null
+                    }
+                }
 
-            //     putObj.model = modelText;
-
-            //     // this.saveMessages(path, putObj);
-            //     this.sendTodolist();
-            // }
+                let obj = this.createMessageObj(response, 'system')
+                this.saveMessages(`chats/1/messages/${this.uuid()}`, obj);
+            }
         },
 
         async sendTodolist() {

@@ -14,7 +14,7 @@ const props = defineProps({ item: Object, level: Number });
             <template v-slot:prepend>
                 <div :class="'navbox  bg-hover-' + item.BgColor" :color="item.BgColor">
                     <span class="icon-box">
-                        <Icon :icon="'solar:' + item.icon" height="24" width="24" :level="level" :class="'position-relative z-index-2 texthover-' + item.BgColor" />
+                        <Icon :icon="item.icon" height="24" width="24" :level="level" :class="'position-relative z-index-2 texthover-' + item.BgColor" />
                     </span>
                 </div>
             </template>

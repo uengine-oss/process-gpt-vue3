@@ -9,6 +9,7 @@
                 hide-details
                 density="compact"
             ></v-text-field>
+<<<<<<< HEAD
             <v-menu>
                 <template v-slot:activator="{ props }">
                     <v-btn color="white" variant="flat" class="mt-4 text-medium-emphasis" v-bind="props">
@@ -22,20 +23,43 @@
                     </v-list-item>
                 </v-list>
             </v-menu>
+=======
+
+            <div class="d-flex">
+                <v-menu>
+                    <template v-slot:activator="{ props }">
+                        <v-btn color="white" variant="flat" class="mt-4 text-medium-emphasis" v-bind="props">
+                            Recent Chats 
+                            <ChevronDownIcon size="18" class="ml-2" />
+                        </v-btn>
+                    </template>
+                    <v-list class="elevation-10">
+                        <v-list-item v-for="(item, index) in menuItems" :key="index" :value="index">
+                            <v-list-item-title>{{ item.title }}</v-list-item-title>
+                        </v-list-item>
+                    </v-list>
+                </v-menu>
+
+                <v-btn color="primary" variant="flat" class="mt-4 ml-auto text-medium-emphasis" @click="newInstanceChat">
+                    New Chat
+                </v-btn>
+            </div>
+>>>>>>> a40f61991b236427f844c1ebd1caafd3b3ae031d
         </div>
     </v-sheet>
+
     <perfect-scrollbar class="lgScroll h-100">
         <v-list>
             <!---Single Item-->
             <v-list-item
-                v-for="item in instanceChats"
+                v-for="item in instanceList"
                 :key="item.instanceId"
                 :value="item.instanceId"
                 color="secondary"
                 class="text-no-wrap chatItem"
                 lines="two"
                 :active="currentChatId === item.instanceId"
-                @click="select(item.instanceId)"
+                @click="selectChat(item.instanceId)"
             >
                 <!---Avatar-->
                 <!-- <template v-slot:prepend>
@@ -87,12 +111,26 @@ import { getGlobalContext } from '@/stores/auth';
 const globalContext = getGlobalContext();
 
 export default {
+    props: {
+        instanceChatId: String,
+    },
     data: () => ({
+<<<<<<< HEAD
         path: 'instances',
         instanceChats: [],
         currentChatId: '',
         searchValue: '',
         menuItems: [{ title: 'Sort by Time' }, { title: 'Sort by Completed' }]
+=======
+        path: "instances",
+        instanceList: [],
+        searchValue: "",
+        currentChatId: "",
+        menuItems: [
+            { title: 'Sort by Time' }, 
+            { title: 'Sort by Completed' }
+        ],
+>>>>>>> a40f61991b236427f844c1ebd1caafd3b3ae031d
     }),
     async created() {
         await this.init();
@@ -103,19 +141,40 @@ export default {
             await globalContext.storage.watch(`db://${callPath}`, (callback) => {
                 if (callback) {
                     const keys = Object.keys(callback);
+<<<<<<< HEAD
                     this.instanceChats = [];
                     keys.forEach((key) => {
                         const item = callback[key];
                         item.instanceId = key;
                         this.instanceChats.push(item);
+=======
+                    this.instanceList = [];
+                    keys.forEach(key => {
+                        const item = callback[key];
+                        item.instanceId = key;
+                        this.instanceList.push(item)
+>>>>>>> a40f61991b236427f844c1ebd1caafd3b3ae031d
                     });
                 }
             });
+
+            if (this.$route.params && this.$route.params.id) {
+                this.currentChatId = this.$route.params.id;
+            }
         },
-        select(id) {
+        selectChat(id) {
             this.currentChatId = id;
+<<<<<<< HEAD
             this.$emit('selectedChatId', id);
         }
+=======
+            this.$router.push(`/${this.path}/${id}`);
+        },
+        newInstanceChat() {
+            this.currentChatId = "";
+            this.$router.push(`/${this.path}/chat`);
+        },
+>>>>>>> a40f61991b236427f844c1ebd1caafd3b3ae031d
     }
 };
 </script>

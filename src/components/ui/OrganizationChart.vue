@@ -1,5 +1,5 @@
 <template>
-    <div id="tree" ref="tree"></div>
+    <div id="tree" ref="tree" class="h-100"></div>
 </template>
 
 <script>
@@ -14,6 +14,11 @@ export default {
     },
     data: () => ({
     }),
+    watch: {
+        nodes(newVal) {
+            this.mytree(this.$refs.tree, newVal);
+        },
+    },
     mounted() {
         this.mytree(this.$refs.tree, this.nodes);
     },
@@ -32,3 +37,11 @@ export default {
     },
 }
 </script>
+
+<style scoped>
+@media screen and (max-width: 1080px) {
+    #tree {
+        height: calc(100vh - 200px) !important;
+    }
+}
+</style>

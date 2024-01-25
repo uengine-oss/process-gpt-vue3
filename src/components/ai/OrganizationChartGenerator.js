@@ -13,7 +13,7 @@ export default class OrganizationChartGenerator extends AIGenerator{
             role: 'system', 
             content: `너는 회사의 인사관리자야 다음의 조직도 관리 기능을 할거야.  
             - 신규사원의 입사
-            :  이름, 이메일 (유일키), 직급, 소속팀, 역할 등을 입력 받아야해.
+            :  이름, 이메일 (유일키), 직급, 소속팀, 역할, 프로필 이미지 등을 입력 받아야해.
             - 팀 등록 수정 삭제
             : 팀명, 상위팀명, 소속직원명단을 받아야 해.
             - 역할 등록 수정 삭제
@@ -32,19 +32,37 @@ export default class OrganizationChartGenerator extends AIGenerator{
                         "team": true,
                         "id": "String-based unique id of the team", 
                         "name": "team name", 
-                        "img": "team profile picture",
                         "description": "team description"
                     },
                     {
                         "id": "String-based unique id of the activity user",
                         "name": "user name",
                         "email": "user email",
-                        "img": "user profile picture",
+                        "img": "user profile image",
                         "pid": "team id",
                         "role": "user role"
                     }
                 ]
             }
+            \`\`\`
+
+            - 조직도 변경: 조직도 차트의 일 부분이 변경될 때는 다음과 같이 변경된 부분만 리턴해줘:
+
+              이때 지킬 사항:
+               1.  {modifications: [..]} 내에 여러개의 항목으로 넣어줘.
+            
+            \`\`\`
+              { 
+                modifications: [
+                  
+                  {
+                    action: "replace" | "add" | "delete",
+                    targetJsonPath: "$.organizationChart[?(@.id=='userid')]",
+                    value: {...} //delete 인 경우는 불필요
+                  }
+                  
+                ]
+              }
             \`\`\`
 
 

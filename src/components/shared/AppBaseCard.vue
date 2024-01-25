@@ -17,7 +17,7 @@ const sDrawer = ref(false);
         <!---right chat conversation -->
         <div class="right-part">
             <!---Toggle Button For mobile-->
-            <v-btn block @click="sDrawer = !sDrawer" variant="text" class="d-lg-none d-md-flex d-sm-flex">
+            <v-btn block @click="sDrawer = !sDrawer" variant="text" class="d-lg-none d-md-flex d-sm-flex" style="z-index:1; background-color:white;">
                 <Menu2Icon size="20" class="mr-2" /> Menu
             </v-btn>
             <v-divider class="d-lg-none d-block" />
@@ -27,7 +27,7 @@ const sDrawer = ref(false);
         <!---right chat conversation -->
     </div>
 
-    <v-navigation-drawer temporary v-model="sDrawer" width="320" top v-if="!lgAndUp">
+    <v-navigation-drawer temporary v-model="sDrawer" width="320" top v-if="!lgAndUp" style="top:123px;">
         <v-card-text class="pa-0">
             <slot name="mobileLeftContent"></slot>
         </v-card-text>
@@ -38,6 +38,7 @@ const sDrawer = ref(false);
 .mainbox {
     position: relative;
     overflow: hidden;
+    height: calc(100vh - 155px);
 }
 .left-part {
     width: 320px;

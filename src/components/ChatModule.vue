@@ -1,11 +1,14 @@
 <script>
+import jp from "jsonpath";
+import partialParse from "partial-json-parser";
+
 import { getGlobalContext } from '@/stores/auth';
 import partialParse from 'partial-json-parser';
 const globalContext = getGlobalContext();
 
 export default {
     data: () => ({
-        prompt: null,
+        replyUser: null,
         isInitDone: false,
         storage: null,
         generator: null,
@@ -97,6 +100,8 @@ export default {
                     } else {
                         this.messages = [];
                     }
+                } else {
+                    this.messages = [];
                 }
             });
         },
@@ -110,14 +115,39 @@ export default {
             }
             return value;
         },
+        createMessageObj(message, role){
+            let obj
+            // var currentDate = new Date();
+            // var milliseconds = currentDate.getMilliseconds(); 
+            // var timeStamp = currentDate.toTimeString().split(' ')[0] + '.' + milliseconds.toString().padStart(3, '0');
 
+            if(this.replyUser){
+                obj = {
+                    name: role ? role:this.userInfo.name,
+                    email: role ? role + '@uengine.org':this.userInfo.email,
+                    role: role ? role:'user',
+                    timeStamp: Date.now(),
+                    content: message,
+                    replyUserName: this.replyUser.name,
+                    replyContent: this.replyUser.content,
+                    replyUserEmail: this.replyUser.email
+                }
+            } else {
+                obj = {
+                    name: role ? role:this.userInfo.name,
+                    email: role ? role + '@uengine.org':this.userInfo.email,
+                    role: role ? role:'user',
+                    timeStamp: Date.now(),
+                    content: message
+                }
+            }
+
+            return obj
+        },
         async sendMessage(message) {
             if (message !== '') {
                 let chatMsgs = [];
-
-                var currentDate = new Date();
-                var milliseconds = currentDate.getMilliseconds();
-                var timeStamp = currentDate.toTimeString().split(' ')[0] + '.' + milliseconds.toString().padStart(3, '0');
+                
 
                 if (this.messages && this.messages.length > 0) {
                     this.messages.forEach((msg) => {
@@ -128,28 +158,15 @@ export default {
                     });
                 }
 
-                if (!this.pushMessage) {
-                    let chatObj = {
-                        role: 'user',
-                        content: message
-                    };
-                    chatMsgs.push(chatObj);
-
-                    chatObj = {
-                        name: this.userInfo.name,
-                        email: this.userInfo.email,
-                        role: 'user',
-                        timeStamp: timeStamp,
-                        content: message
-                    };
-                    this.messages.push(chatObj);
-                } else {
-                    this.prompt = {
-                        content: message,
-                        requestUserEmail: this.userInfo.email,
-                        requestUserName: this.userInfo.name
-                    };
+                let chatObj = {
+                    role: "user",
+                    content: message
                 }
+                chatMsgs.push(chatObj);
+                
+                chatObj = this.createMessageObj(message)
+
+                this.messages.push(chatObj);
 
                 this.generator.previousMessages = [...this.generator.previousMessages, ...chatMsgs];
 
@@ -160,6 +177,8 @@ export default {
                     content: '...',
                     isLoading: true
                 });
+                
+                this.replyUser = null
             }
         },
 
@@ -167,7 +186,20 @@ export default {
             if (index) {
                 this.messages.splice(index);
 
-                this.generator.previousMessages = [...this.generator.previousMessages, ...this.messages];
+                let chatMsgs = [];
+                if(this.messages && this.messages.length > 0) {
+                    this.messages.forEach((msg) => {
+                        chatMsgs.push({
+                            role: msg.role,
+                            content: msg.content
+                        })
+                    });
+                }
+
+                this.generator.previousMessages = [
+                    ...this.generator.previousMessages,
+                    ...chatMsgs
+                ];
 
                 await this.generator.generate();
 
@@ -185,12 +217,6 @@ export default {
         },
 
         async saveMessages(path, obj) {
-            if (this.prompt && this.prompt.content) {
-                if (obj.role == 'system' && obj.content && obj.content.includes('시작하시겠습니까')) {
-                    obj.prompt = this.prompt;
-                    this.prompt = null;
-                }
-            }
             await globalContext.storage.putObject(`db://${path}`, obj);
         },
 
@@ -277,20 +303,6 @@ export default {
             await globalContext.storage.delete(`db://${path}`);
         },
 
-        async getUid(email) {
-            let uid = '';
-            const userList = await this.getData('users');
-            if (userList) {
-                const ids = Object.keys(userList);
-                ids.forEach((id) => {
-                    if (userList[id].email == email) {
-                        uid = id;
-                    }
-                });
-            }
-            return uid;
-        },
-
         onModelCreated(response) {
             let messageWriting = this.messages[this.messages.length - 1];
             messageWriting.content = response;
@@ -310,33 +322,15 @@ export default {
             };
         },
         onGenerationFinished(responses) {
-            // console.log(responses);
-            var currentDate = new Date();
-            var milliseconds = currentDate.getMilliseconds();
-            var timeStamp = currentDate.toTimeString().split(' ')[0] + '.' + milliseconds.toString().padStart(3, '0');
+            // var currentDate = new Date();
+            // var milliseconds = currentDate.getMilliseconds(); 
+            // var timeStamp = currentDate.toTimeString().split(' ')[0] + '.' + milliseconds.toString().padStart(3, '0');
 
             let messageWriting = this.messages[this.messages.length - 1];
             delete messageWriting.isLoading;
-            messageWriting.timeStamp = timeStamp;
-
-            var msgText = '';
-            if (this.messages) {
-                msgText = JSON.stringify(this.messages);
-            }
-
-            var putObj = {
-                messages: msgText
-            };
-
-            this.afterGenerationFinished(putObj);
-
-            if (this.pushMessage && responses) {
-                if (responses == '.') {
-                    this.messages.splice(this.messages.length - 1, 1);
-                } else {
-                    this.pushMessage(responses, 'system');
-                }
-            }
+            messageWriting.timeStamp = Date.now();
+    
+            this.afterGenerationFinished(responses);
         },
 
         onError(error) {

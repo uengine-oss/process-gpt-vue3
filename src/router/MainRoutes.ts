@@ -45,7 +45,7 @@ const MainRoutes = {
         {
             name: 'definitions',
             path: '/definitions/:id',
-            component: () => import('@/views/dashboard/dashboard1.vue'),
+            component: () => import('@/components/ProcessDefinitionChat.vue'),
         },
         
 

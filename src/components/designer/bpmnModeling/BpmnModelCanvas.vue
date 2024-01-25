@@ -238,8 +238,8 @@
                 </v-speed-dial>
             </div> -->
 
-        <div class="tools" style="top: 100px">
-            <v-card v-if="!monitor">
+        <div class="tools">
+            <v-card v-if="!monitor" variant="outlined" style="background-color:white;">
                 <v-tooltip location="top">
                     <template v-slot:activator="{ props }">
                         <span
@@ -2476,11 +2476,10 @@ export default {
 
     .tools {
         position: absolute;
-        width: 48px;
-        left: 30px;
         top: 20px;
-        padding: 4px;
         overflow: hidden;
+        min-width:440px;
+        left: 50%; transform: translate(-50%, 0%);
 
         .icons {
             margin-top: 5px;
@@ -2607,6 +2606,11 @@ export default {
 
     .bpmn-language-select {
         margin-left: 20px;
+    }
+}
+@media only screen and (max-width: 1279px) {
+    .canvas-panel {
+        top: 37px !important;
     }
 }
 
