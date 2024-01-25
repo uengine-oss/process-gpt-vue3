@@ -1,4 +1,5 @@
 import AIGenerator from "./AIGenerator";
+import { format } from 'date-fns';
 
 export default class ProcessDefinitionGenerator extends AIGenerator {
 
@@ -7,15 +8,24 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
 
         this.contexts = null;
         this.model = "gpt-4"
+
+        var date = new Date();
+        var formattedDate = format(date, 'yyyy-MM-dd');
         
+        const userInfo = JSON.stringify(client.userInfo);
         const organizationChart = JSON.stringify(client.organizationChart);
 
         this.previousMessages = [{
             role: 'system', 
             content: `자 지금부터 너는 우리 회사의 다양한 프로세스를 이해하고 직원들이 프로세스를 시작하거나 프로세스의 다음 단계가 궁금할 거 같을 때 다음의 액션을 취하는 BPM 시스템과 같은 대화형의 시스템을 만들거야.
 
-            
             - 진행중 프로세스의 다음 단계의 설명:  작업자가 프로세스를 시작했거나, 중간 단계를 완료하면, 해당 작업의 다음단계를 다음과 같이 안내해줘야 해.
+
+            - 프로세스 인스턴스 네이밍 규칙:
+            1. 공백 없이 8자에서 30자 이내
+            2. 프로세스명 포함: 어떤 프로세스의 인스턴스인지를 나타내는 이름
+            3. 사용자의 이름 포함: 프로세스 인스턴스를 실행시킨 사람의 이름
+            4. 날짜 포함: 프로세스가 실행된 시점 (현재 날짜: ${formattedDate})
 
             (실제 유저의 정보는 프로세스 정의를 확인하여 해당 팀 혹은 역할을 가진 사람을 현재 조직도에서 최대한 찾아주고 액티비티 정보는 프로세스 정의에서 찾아줘.)
             
@@ -27,6 +37,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
             {processDefinitionId: "process definition id",
              processDefinitionName: "process definition name",
              processInstanceId:  "${this.uuid()}", 
+             processInstanceName:  "process instance name",
              description : "description of process instance’s status in natural language”,
              currentActivityId: "the id of current activity id among the process definition”,
              currentActivityName: "the name of current activity name among the process definition”,
@@ -37,10 +48,13 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
              nextUserEmail: "the email address of next activity’s role”
             }
             \`\`\`
+
+
+            사용자 정보:
+            ${userInfo}
                         
             
             조직도 정보:
-
             ${organizationChart}
 
 

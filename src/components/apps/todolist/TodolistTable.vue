@@ -53,9 +53,10 @@ export default defineComponent({
     }, 
     methods:{
         async init() {
-            if (this.path) {
-                this.userInfo = await globalContext.storage.getUserInfo();
-                await globalContext.storage.watch(`db://${this.path}/${this.userInfo.email}`, (callback) => {
+            this.userInfo = await globalContext.storage.getUserInfo();
+            if (this.userInfo && this.userInfo.email) {
+                var callPath = this.path + '/' + this.userInfo.email;
+                await globalContext.storage.watch(`db://${callPath}`, callback => {
                     if (callback) {
                         this.todolist = Object.values(callback);
                     }

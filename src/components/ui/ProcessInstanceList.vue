@@ -54,11 +54,11 @@
                 <!---Name-->
                 <v-list-item-title class="text-subtitle-1 textPrimary w-100 font-weight-semibold">
                     <!-- {{ item.currentUserId }} -->
-                    {{ item.currentActivityId }}
+                    {{ item.instanceName }}
                 </v-list-item-title>
                 <!---Subtitle-->
                 <div class="text-subtitle-2 textPrimary mt-1 text-truncate w-100">
-                    {{ item.definitionId }}
+                    {{ item.currentActivityName }}
                 </div>
                 <!---Last seen--->
                 <template v-slot:append>
@@ -113,9 +113,9 @@ export default {
 
             const callPath = path ? path : this.path;
             await globalContext.storage.watch(`db://${callPath}`, (callback) => {
+                this.instanceList = [];
                 if (callback) {
                     const keys = Object.keys(callback);
-                    this.instanceList = [];
                     keys.forEach(async key => {
                         const item = callback[key];
                         if (item && item.participants) {
