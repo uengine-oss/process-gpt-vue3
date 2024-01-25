@@ -1,7 +1,7 @@
 <template>
     <div>
         <div>
-            <div class="d-flex align-center gap-3 pa-4  justify-space-between">
+            <div class="d-flex align-center gap-3 pa-4 justify-space-between">
                 <div class="d-flex gap-2 align-center">
                     <div>
                         <h5 class="text-h5 mb-n1">{{ alertInfo.title }}</h5>
@@ -13,6 +13,9 @@
                     </div>
                 </div>
                 <div class="d-flex">
+                    <v-btn icon variant="text" class="text-medium-emphasis" @click="viewProcess">
+                        <Icon icon="fluent:flowchart-16-regular" :style="{ fontSize: '28px' }" />
+                    </v-btn>
                     <v-btn icon variant="text" class="text-medium-emphasis" @click="moreDetail">
                         <DotsVerticalIcon size="24" />
                     </v-btn>
@@ -20,7 +23,7 @@
             </div>
 
             <v-divider />
-            
+
             <perfect-scrollbar class="rightpartHeight h-100">
                 <!-- <v-btn v-if="filteredMessages.length > 0" 
                     style="position: absolute; left: 45%;" 
@@ -28,7 +31,7 @@
                 >get more chat</v-btn> -->
 
                 <div class="d-flex">
-                    <div class="w-100" style="height: calc(100vh - 320px);">
+                    <div class="w-100" style="height: calc(100vh - 320px)">
                         <div v-for="(message, index) in filteredMessages" :key="index" class="pa-5 w-100">
                             <div v-if="message.role == 'user'" class="justify-end d-flex text-end mb-1">
                                 <div>
@@ -36,7 +39,8 @@
                                         {{ message.timeStamp.split(':')[0] + ':' + message.timeStamp.split(':')[1] }}
                                     </small>
 
-                                    <v-textarea v-if="editIndex === index"
+                                    <v-textarea
+                                        v-if="editIndex === index"
                                         v-model="messages[index].content"
                                         variant="solo"
                                         hide-details
@@ -47,24 +51,24 @@
                                         rows="1"
                                     >
                                         <template v-slot:append-inner>
-                                            <v-btn icon variant="text"
-                                                class="text-medium-emphasis"
-                                                @click="send">
+                                            <v-btn icon variant="text" class="text-medium-emphasis" @click="send">
                                                 <SendIcon size="20" />
                                             </v-btn>
-                                            <v-btn icon variant="text"
-                                                class="text-medium-emphasis" 
-                                                @click="cancel">
+                                            <v-btn icon variant="text" class="text-medium-emphasis" @click="cancel">
                                                 <Icon icon="solar:backspace-bold" height="20" width="20" />
                                             </v-btn>
                                         </template>
                                     </v-textarea>
 
                                     <div v-else class="d-flex" @mouseover="hoverIndex = index" @mouseleave="hoverIndex = -1">
-                                        <v-btn v-if="hoverIndex === index"
+                                        <v-btn
+                                            v-if="hoverIndex === index"
                                             @click="editMessage(index)"
-                                            icon variant="text" size="x-small"
-                                            class="bg-lightprimary float-left edit-btn">
+                                            icon
+                                            variant="text"
+                                            size="x-small"
+                                            class="bg-lightprimary float-left edit-btn"
+                                        >
                                             <Icon icon="solar:pen-bold" height="20" width="20" />
                                         </v-btn>
 
@@ -93,22 +97,23 @@
                                         {{ message.role }},
                                         {{ message.timeStamp.split(':')[0] + ':' + message.timeStamp.split(':')[1] }}
                                     </small>
-                                    
+
                                     <!-- <v-sheet v-if="message.type == 'img'" class="mb-1">
                                         <img :src="message.content" class="rounded-md" alt="pro" width="250" />
                                     </v-sheet> -->
 
-                                    <v-sheet class="bg-lightsecondary rounded-md px-3 py-2 mb-1" 
+                                    <v-sheet
+                                        class="bg-lightsecondary rounded-md px-3 py-2 mb-1"
                                         @mouseover="replyIndex = index"
                                         @mouseleave="replyIndex = -1"
                                     >
                                         <!-- <pre class="text-body-1" v-if="message.replyUserName">{{ message.replyUserName }}</pre>                                                    
                                         <pre class="text-body-1" v-if="message.replyContent">{{ message.replyContent }}</pre>   
                                         <v-divider v-if="message.replyContent"></v-divider> -->
-                                        
+
                                         <pre class="text-body-1">{{ message.content }}</pre>
                                         <!-- <p class="text-body-1">{{ message.content }}</p> -->
-                                        
+
                                         <!-- <v-btn v-if="replyIndex === index"
                                             style="position: absolute; left: 70px; background-color: aliceblue;"
                                             @click="beforeReply(message)"
@@ -134,7 +139,7 @@
         </div>
         <v-divider />
 
-        <div class="text-body-1" v-if="isReply" style="margin-left: 10px;">
+        <div class="text-body-1" v-if="isReply" style="margin-left: 10px">
             {{ replyUser.name }}님에게 답장
             <v-icon @click="cancelReply()">mdi-close</v-icon>
             <pre>{{ replyUser.content }}</pre>
@@ -159,10 +164,7 @@
                     </v-btn>
                 </template> -->
                 <template v-slot:append-inner>
-                    <v-btn icon variant="text" type="submit" 
-                        class="text-medium-emphasis" 
-                        :disabled="!newMessage"
-                    >
+                    <v-btn icon variant="text" type="submit" class="text-medium-emphasis" :disabled="!newMessage">
                         <SendIcon size="20" />
                     </v-btn>
                     <!-- <v-btn icon variant="text" class="text-medium-emphasis">
@@ -179,36 +181,36 @@
 
 <script>
 import { Icon } from '@iconify/vue';
-
 export default {
     components: {
         Icon
     },
+    emits: ['viewProcess'],
     props: {
         messages: Array,
         userInfo: Object,
         alertInfo: Object,
-        disableChat: Boolean,
+        disableChat: Boolean
     },
     data() {
         return {
             isReply: false,
-            newMessage: "",
+            newMessage: '',
             hoverIndex: -1,
             editIndex: -1,
             replyIndex: -1,
             replyUser: null,
             isViewDetail: false,
-        }
+        };
     },
     computed: {
         filteredAlert() {
             const textObj = {
-                subtitle: "",
-                detail: ""
+                subtitle: '',
+                detail: ''
             };
-            if (this.alertInfo.text.includes("\n")) {
-                const arr = this.alertInfo.text.split("\n");
+            if (this.alertInfo.text.includes('\n')) {
+                const arr = this.alertInfo.text.split('\n');
                 textObj.subtitle = arr[0];
                 textObj.detail = arr[1];
             }
@@ -216,36 +218,39 @@ export default {
         },
         filteredMessages() {
             var list = [];
-            this.messages.forEach(item => {
+            this.messages.forEach((item) => {
                 const data = JSON.parse(JSON.stringify(item));
                 list.push(data);
             });
-            return list
-        },
+            return list;
+        }
     },
     methods: {
-        getMoreChat(){
-            this.$emit("getMoreChat")
+        viewProcess() {
+            this.$emit('viewProcess');
         },
-        cancelReply(){
-            this.isReply = false
-            this.replyUser = null
+        getMoreChat() {
+            this.$emit('getMoreChat');
+        },
+        cancelReply() {
+            this.isReply = false;
+            this.replyUser = null;
             this.$emit('beforeReply', false);
         },
-        beforeReply(message){
+        beforeReply(message) {
             this.$emit('beforeReply', message);
-            this.isReply = true
-            this.replyUser = message
+            this.isReply = true;
+            this.replyUser = message;
         },
         send() {
             if (this.editIndex >= 0) {
-                this.$emit('editSendMessage', this.editIndex+1);
+                this.$emit('editSendMessage', this.editIndex + 1);
                 this.editIndex = -1;
             } else {
                 this.$emit('sendMessage', this.newMessage);
-                this.newMessage = "";
+                this.newMessage = '';
             }
-            if(this.isReply) this.isReply = false
+            if (this.isReply) this.isReply = false;
         },
         cancel() {
             this.editIndex = -1;
@@ -260,9 +265,9 @@ export default {
         },
         moreDetail() {
             this.isViewDetail = !this.isViewDetail;
-        },
+        }
     }
-}
+};
 </script>
 
 <style lang="scss">

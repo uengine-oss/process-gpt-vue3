@@ -2,17 +2,17 @@
     <v-sheet>
         <div class="px-6 pt-3">
             <v-text-field
-                    variant="outlined"
-                    v-model="searchValue"
-                    append-inner-icon="mdi-magnify"
-                    placeholder="Search Contact"
-                    hide-details
-                    density="compact"
+                variant="outlined"
+                v-model="searchValue"
+                append-inner-icon="mdi-magnify"
+                placeholder="Search Contact"
+                hide-details
+                density="compact"
             ></v-text-field>
             <v-menu>
                 <template v-slot:activator="{ props }">
                     <v-btn color="white" variant="flat" class="mt-4 text-medium-emphasis" v-bind="props">
-                        Recent Chats 
+                        Recent Chats
                         <ChevronDownIcon size="18" class="ml-2" />
                     </v-btn>
                 </template>
@@ -88,14 +88,11 @@ const globalContext = getGlobalContext();
 
 export default {
     data: () => ({
-        path: "instances",
+        path: 'instances',
         instanceChats: [],
-        currentChatId: "",
-        searchValue: "",
-        menuItems: [
-            { title: 'Sort by Time' }, 
-            { title: 'Sort by Completed' }
-        ],
+        currentChatId: '',
+        searchValue: '',
+        menuItems: [{ title: 'Sort by Time' }, { title: 'Sort by Completed' }]
     }),
     async created() {
         await this.init();
@@ -107,20 +104,20 @@ export default {
                 if (callback) {
                     const keys = Object.keys(callback);
                     this.instanceChats = [];
-                    keys.forEach(key => {
+                    keys.forEach((key) => {
                         const item = callback[key];
                         item.instanceId = key;
-                        this.instanceChats.push(item)
+                        this.instanceChats.push(item);
                     });
                 }
             });
         },
         select(id) {
             this.currentChatId = id;
-            this.$emit("seletChatId", id);
-        },
+            this.$emit('selectedChatId', id);
+        }
     }
-}
+};
 </script>
 
 <style>
