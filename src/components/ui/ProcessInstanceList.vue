@@ -2,12 +2,12 @@
     <v-sheet>
         <div class="px-6 pt-3">
             <v-text-field
-                    variant="outlined"
-                    v-model="searchValue"
-                    append-inner-icon="mdi-magnify"
-                    placeholder="Search Contact"
-                    hide-details
-                    density="compact"
+                variant="outlined"
+                v-model="searchValue"
+                append-inner-icon="mdi-magnify"
+                placeholder="Search Contact"
+                hide-details
+                density="compact"
             ></v-text-field>
 
             <div class="d-flex">
@@ -130,6 +130,7 @@ export default {
         },
         selectChat(id) {
             this.currentChatId = id;
+            this.$emit('selectedChatId', id);
             this.$router.push(`/${this.path}/${id}`);
         },
         newInstanceChat() {
@@ -137,7 +138,7 @@ export default {
             this.$router.push(`/${this.path}/chat`);
         },
     }
-}
+};
 </script>
 
 <style>

@@ -41,7 +41,7 @@ app.config.globalProperties.EventBus = emitter;
 app.config.globalProperties.OGBus = OpenGraphEmitter;
 app.config.globalProperties.ModelingBus = ModelingEmitter;
 
-import ModelerImageGenerator from './components/designer/ModelerImageGenerator.vue'
+import ModelerImageGenerator from '@/components/designer/ModelerImageGenerator.vue'
 app.component('modeler-image-generator', ModelerImageGenerator)
 // modeler-image-generator
 // Use plugins

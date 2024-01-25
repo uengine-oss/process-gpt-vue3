@@ -56,15 +56,6 @@ export default defineComponent({
       month = `0${month}`
     }
     let path = `users/${localStorage.getItem('uid')}/calender/${year}/${month}`
-    // let obj = {
-    //   id: this.uuid(),
-    //   title: 'test',
-    //   allDay: true,
-    //   start: new Date(y, m, 10),
-    //   end: new Date(y, m, 11),
-    //   color: '#615dff',
-    // }
-    // await globalContext.storage.putObject(`db://${path}`, obj);
     const data = await globalContext.storage.getObject(`db://${path}`);
     // console.log(data);
     this.calendarOptions.initialEvents = Object.values(data);

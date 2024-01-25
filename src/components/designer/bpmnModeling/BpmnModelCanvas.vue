@@ -46,6 +46,7 @@
                     :value="value.elements[elementId]"
                     :definition="value"
                     :ref="elementId"
+                    :status="value.elements[elementId].status ? value.elements[elementId].status : null"
                 ></component>
             </div>
 
@@ -549,7 +550,9 @@ export default {
             return 'bpmn-vue';
         }
     },
-
+    beforeDestory() {
+        me.EventBus.off(`saveModel`, me.emitModel);
+    },
     created() {
         var me = this;
         try {
@@ -589,9 +592,7 @@ export default {
 
         var me = this;
         me.setMode();
-        me.EventBus.on(`saveModel`, function () {
-            me.emitModel();
-        });
+        me.EventBus.on(`saveModel`, me.emitModel);
         // If the menu element is clicked //TODO - vue js 방식으로 전환, IE - 9
         $('.custom-menu li').click(function () {
             // This is the triggered action name
@@ -673,6 +674,7 @@ export default {
                 basePlatformConf: {},
                 toppingPlatforms: null,
                 toppingPlatformsConf: {},
+                processVariableDescriptors: [],
                 scm: {}
             };
         }
@@ -804,6 +806,7 @@ export default {
     },
     methods: {
         emitModel() {
+            console.log(this.modelValue);
             this.$emit('saveModel', this.value);
         },
         changeMultiple: function () {
