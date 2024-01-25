@@ -35,10 +35,12 @@
                             :key="item.key" 
                             :value="item.chatId" 
                             color="primary" 
-                            class="py-4 px-8">
+                            class="py-4 px-8"
+                            @click="checkNotification(item)"
+                    >
                         <template v-slot:prepend>
-                            <v-avatar v-for="user in item.participants" size="48" class="mr-3">
-                                <v-img :src="user" width="48" :alt="user" />
+                            <v-avatar v-for="img in item.participantImgs" size="48" class="mr-3">
+                                <v-img :src="img" width="48" />
                             </v-avatar>
                         </template>
                         <div>
@@ -68,6 +70,7 @@ export default {
         Icon,
     },
     data: () => ({
+        uid: "",
         notiCount: 0,
         notifications: [],
     }),
@@ -80,26 +83,28 @@ export default {
     },
     methods: {
         async getNotifications() {
-            const uid = globalContext.storage.userInfo.uid;
-            await globalContext.storage.watch(`db://users/${uid}`, callback => {
+            this.uid = globalContext.storage.userInfo.uid;
+            await globalContext.storage.watch(`db://users/${this.uid}`, callback => {
                 if (callback) {
                     if (callback.notifications) {
                         let notiList = Object.values(callback.notifications);
-                        this.notifications = notiList;
-
                         notiList = notiList.filter(noti => !noti.isChecked);
+                        this.notifications = notiList;
                         this.notiCount = notiList.length;
                     }
                 }
             });
         },
-        async getUserProfile(uid) {
-            await globalContext.storage.getString(`db://users/${uid}/profile`, callback => {
-                if (callback) {
-                    return callback;
-                }
-            });
-        }
+        checkNotification(item) {
+            this.$router.push(`/${item.noti_type}/${item.chatId}`);
+            item.isChecked = true;
+            globalContext.storage.putObject(`db://users/${this.uid}/notifications/${item.key}`, item);
+        },
+        async getUserImage(email) {
+            var convertEmail = email.replace(/\./gi, '_');
+            var image = await globalContext.storage.getString(`db://enrolledUsers/${convertEmail}/profile`)
+            return image;
+        },
     }
 }
 </script>

@@ -240,6 +240,7 @@ export default {
                 }
 
                 await this.putObject(path, putObj);
+                this.checkDisableChat(putObj);
             }
         },
         async sendTodolist() {

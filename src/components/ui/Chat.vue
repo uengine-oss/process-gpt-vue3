@@ -190,7 +190,10 @@
                     </v-btn>
                 </template> -->
                 <template v-slot:append-inner>
-                    <v-btn icon variant="text" type="submit" class="text-medium-emphasis" :disabled="!newMessage">
+                    <v-btn icon variant="text" type="submit" 
+                        @click="send"
+                        class="text-medium-emphasis" 
+                        :disabled="!newMessage">
                         <SendIcon size="20" />
                     </v-btn>
                     <!-- <v-btn icon variant="text" class="text-medium-emphasis">

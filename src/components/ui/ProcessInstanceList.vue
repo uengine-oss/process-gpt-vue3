@@ -58,7 +58,7 @@
                 </v-list-item-title>
                 <!---Subtitle-->
                 <div class="text-subtitle-2 textPrimary mt-1 text-truncate w-100">
-                    {{ item.currentActivityName }}
+                    {{ item.nextActivityName }}
                 </div>
                 <!---Last seen--->
                 <template v-slot:append>
@@ -103,7 +103,9 @@ export default {
     },
     async created() {
         this.userInfo = globalContext.storage.userInfo;
-        await this.init();
+        if (this.userInfo && this.userInfo.email) {
+            await this.init();
+        }
     },
     methods: {
         async init(path) {
@@ -130,7 +132,6 @@ export default {
         },
         selectChat(id) {
             this.currentChatId = id;
-            this.$emit('selectedChatId', id);
             this.$router.push(`/${this.path}/${id}`);
         },
         newInstanceChat() {
