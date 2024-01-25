@@ -12,8 +12,7 @@
                         </small>
                     </div>
                     <div v-else-if="name">
-                        <h5 class="text-h5 mb-n1">{{ name ? name : chatDetail.name }}</h5>
-                        <small class="textPrimary"> {{ chatDetail.status }} </small>
+                        <h5 class="text-h5 mb-n1">{{ name }}</h5>
                     </div>
                 </div>
                 <div class="d-flex">
@@ -23,7 +22,10 @@
                     <v-btn v-if="alertInfo" icon variant="text" class="text-medium-emphasis" @click="moreDetail">
                         <DotsVerticalIcon size="24" />
                     </v-btn>
-                    <v-btn v-else icon variant="text" class="text-medium-emphasis">
+                    <v-btn v-else-if="isChanged" icon variant="text" class="text-medium-emphasis">
+                        <DeviceFloppyIcon size="24" @click="$emit('save')" />
+                    </v-btn>
+                    <v-btn v-else disabled icon variant="text" class="text-medium-emphasis">
                         <DeviceFloppyIcon size="24" @click="$emit('save')" />
                     </v-btn>
                 </div>
@@ -215,7 +217,8 @@ export default {
         messages: Array,
         userInfo: Object,
         alertInfo: Object,
-        disableChat: Boolean
+        disableChat: Boolean,
+        isChanged: Boolean
     },
     data() {
         return {

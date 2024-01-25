@@ -10,7 +10,14 @@
         <AppBaseCard>
             <template v-slot:leftpart>
                 <div class="no-scrollbar">
-                    <Chat :name="projectName" :messages="messages" :userInfo="userInfo" @sendMessage="beforeSendMessage">
+                    <Chat
+                        :name="projectName"
+                        :messages="messages"
+                        :isChanged="isChanged"
+                        :userInfo="userInfo"
+                        @sendMessage="beforeSendMessage"
+                        @save="saveModel"
+                    >
                         <template v-slot:alert>
                             <v-alert icon="mdi-info" :title="alertInfo.title" :text="alertInfo.text"></v-alert>
                         </template>
@@ -22,7 +29,7 @@
                     :key="definitionChangeCount"
                     :projectName="projectName"
                     v-model="model"
-                    @saveModel="saveModel"
+                    @input="(val) => (changedModel = val)"
                 ></bpmn-modeling-canvas>
             </template>
 
@@ -61,6 +68,12 @@ export default {
         BpmnModelingCanvas,
         ChatGenerator
     },
+    computed: {
+        isChanged() {
+            if (this.changedModel) return true;
+            else return false;
+        }
+    },
     data: () => ({
         processDefinition: null,
         model: {
@@ -79,7 +92,8 @@ export default {
         alertInfo: {
             title: '프로세스 정의 관리',
             text: "대화형으로 프로세스를 관리하십시오. 예를 들어, '영업관리 프로세스를 다음과 같이 등록해줘: 1. 영업기회등 고객명, 예상사업규모, 키맨, 요구사항 2. 제안 작성: 제안 내용, 가격 3. 수주 혹은 실주 4. 수주한 경우, 계약진행' 와 같은 명령을 할 수 있습니다."
-        }
+        },
+        changedModel: null
     }),
     async created() {
         await this.init();
@@ -139,7 +153,6 @@ export default {
                     let unknown = partialParse(jsonProcess);
                     if (unknown.modifications) {
                         //means process modification
-
                         unknown.modifications.forEach((modification) => {
                             if (modification.action == 'replace') {
                                 this.jsonPathReplace(this.processDefinition, modification.targetJsonPath, modification.value);
@@ -152,11 +165,11 @@ export default {
                                 this.model = this.createUEngine(this.processDefinition);
                             }
                         });
+                        this.definitionChangeCount++;
                     } else if (unknown.processDefinitionId) {
                         this.processDefinition = unknown;
                         this.model = this.createUEngine(this.processDefinition);
                     }
-                    this.definitionChangeCount++;
                 }
             } catch (error) {
                 console.log(error);
@@ -222,6 +235,7 @@ export default {
         },
         saveModel(model) {
             // alert(model);
+            console.log(this.changedModel);
             model.name = this.projectName;
             const apiToken = this.generator.getToken();
             let definition = this.convertToProcessDefinition(model);
@@ -265,7 +279,7 @@ export default {
                 }
             });
             return componentByName;
-        },
+        }
         // absY(y, height) {
         //     return element.elementView.y - (element.elementView.height / 2)
         // }

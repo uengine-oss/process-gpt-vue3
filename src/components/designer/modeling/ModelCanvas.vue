@@ -2,13 +2,12 @@
     <v-dialog v-model="showLoginCard"></v-dialog>
 </template>
 
-
 <script>
-import StorageBase from "./ModelStorageBase.vue";
-import TenantAware from "../../labs/TenantAware.vue"
-import GitAPI from "../../../utils/GitAPI";
+import StorageBase from './ModelStorageBase.vue';
+import TenantAware from '../../labs/TenantAware.vue';
+import GitAPI from '../../../utils/GitAPI';
 
-import * as io from 'socket.io-client'
+import * as io from 'socket.io-client';
 
 function Queue() {
     this.elements = [];
@@ -36,25 +35,25 @@ Queue.prototype.clear = function () {
 
 Queue.prototype.removeByIndex = function (index) {
     this.elements.splice(index, 1);
-}
+};
 
 Queue.prototype.findIndexByChildKey = function (key) {
-    return this.elements.findIndex(element => element.childKey == key)
-}
+    return this.elements.findIndex((element) => element.childKey == key);
+};
 
 Queue.prototype.length = function () {
     return this.elements.length;
-}
+};
 
 var queueFifo = new Queue();
-import _ from 'lodash'
-import FileSaver from 'file-saver'
-import * as jsondiff from 'jsondiffpatch'
+import _ from 'lodash';
+import FileSaver from 'file-saver';
+import * as jsondiff from 'jsondiffpatch';
 
 var jsondiffpatch = jsondiff.create({
     objectHash: function (obj, index) {
         return '$$index:' + index;
-    },
+    }
     // arrays: {
     //     // useHash: true
     //     // default true, detect items moved inside the array (otherwise they will be registered as remove+add)
@@ -85,14 +84,14 @@ export default {
             type: Object,
             default: function () {
                 return {
-                    'elements': {},
-                    'relations': {},
-                    'basePlatform': null,
-                    'basePlatformConf': {},
-                    'toppingPlatforms': null,
-                    'toppingPlatformsConf': {},
-                    'scm': {}
-                }
+                    elements: {},
+                    relations: {},
+                    basePlatform: null,
+                    basePlatformConf: {},
+                    toppingPlatforms: null,
+                    toppingPlatformsConf: {},
+                    scm: {}
+                };
             }
         },
         fork: {
@@ -116,13 +115,13 @@ export default {
         projectTitle: {
             type: String,
             default: function () {
-                return ''
+                return '';
             }
         },
         projectName: {
             type: String,
             default: function () {
-                return ''
+                return '';
             }
         },
         dragPageMovable: {
@@ -205,21 +204,19 @@ export default {
             default: function () {
                 return false;
             }
-        },
-
-
+        }
     },
     data() {
         return {
             //schedule
             value: {
-                'elements': {},
-                'relations': {},
-                'basePlatform': null,
-                'basePlatformConf': {},
-                'toppingPlatforms': null,
-                'toppingPlatformsConf': {},
-                'scm': {}
+                elements: {},
+                relations: {},
+                basePlatform: null,
+                basePlatformConf: {},
+                toppingPlatforms: null,
+                toppingPlatformsConf: {},
+                scm: {}
             },
             sortScheduleId: null,
             queueScheduleId: null,
@@ -227,13 +224,13 @@ export default {
             isLoadedMirrorQueue: false,
             projectInformation: null,
             mirrorValue: {
-                'elements': {},
-                'relations': {},
-                'basePlatform': null,
-                'basePlatformConf': {},
-                'toppingPlatforms': null,
-                'toppingPlatformsConf': {},
-                'scm': {}
+                elements: {},
+                relations: {},
+                basePlatform: null,
+                basePlatformConf: {},
+                toppingPlatforms: null,
+                toppingPlatformsConf: {},
+                scm: {}
             },
             git: null,
             mirrorQueueCount: 0,
@@ -325,7 +322,7 @@ export default {
             */
             forkInformation: {
                 forkOrigin: null,
-                forkLatest: null,
+                forkLatest: null
             },
             purchaseItemDialog: false,
             purchaseItemDialogInfo: {
@@ -340,7 +337,7 @@ export default {
                 labName: null,
                 period: 90,
                 count: 0,
-                amount: 0,
+                amount: 0
             },
 
             //undo,Redo
@@ -387,7 +384,7 @@ export default {
                 top: true,
                 bottom: false,
                 centered: false,
-                closeBtn: true,
+                closeBtn: true
             },
             alertInfo: {
                 show: false,
@@ -412,11 +409,11 @@ export default {
 
             searchForFile: {
                 onOff: false,
-                search: null,
+                search: null
             },
             searchForContent: {
                 onOff: false,
-                search: '',
+                search: ''
             },
             // mouseEvents: {
             //     moves:[],
@@ -429,16 +426,15 @@ export default {
             mouseEventHandlers: {},
             mouseEventCnt: 0,
             valueChangedTimer: null,
-            modelCanvasChannel: null,
-
-        }
+            modelCanvasChannel: null
+        };
     },
     beforeDestroy: function () {
         this.executeBeforeDestroy();
     },
     computed: {
         projectSendable() {
-            return false
+            return false;
         },
         scmTag() {
             if (this.value && this.value.scm && this.value.scm.tag) {
@@ -479,42 +475,42 @@ export default {
                 }
                 return objs;
             } catch (e) {
-                return this.mouseEventHandlers
+                return this.mouseEventHandlers;
             }
         },
         filteredCanvasValidationResults() {
-            var me = this
-            var levelSort = ['error', 'warning', 'info']
+            var me = this;
+            var levelSort = ['error', 'warning', 'info'];
             try {
                 return me.canvasValidationResults.sort(function compare(a, b) {
-                    var aIdx = levelSort.findIndex(x => x == a.level)
-                    var bIdx = levelSort.findIndex(x => x == b.level)
+                    var aIdx = levelSort.findIndex((x) => x == a.level);
+                    var bIdx = levelSort.findIndex((x) => x == b.level);
                     return aIdx - bIdx;
                 });
             } catch (e) {
-                return me.canvasValidationResults
+                return me.canvasValidationResults;
             }
         },
         isInitRender() {
             if (this.renderCount == 0) {
-                return true
+                return true;
             }
-            return false
+            return false;
         },
         getScale: {
             getter: function () {
-                console.log("aa")
-                return this.sliderLocationScale
+                console.log('aa');
+                return this.sliderLocationScale;
             }
         },
         isForeign() {
             if (window.countryCode == 'ko') {
-                return true
+                return true;
             }
-            return true
+            return true;
         },
         isCustomMoveExist() {
-            return this.isServerModel && this.isQueueModel
+            return this.isServerModel && this.isQueueModel;
         },
         isReadOnlyModel() {
             // default: false (편집 가능)
@@ -526,137 +522,134 @@ export default {
         },
         isClazzModeling() {
             if (this.paramKeys && this.paramKeys.includes('classId')) {
-                return true
+                return true;
             }
-            return false
+            return false;
         },
         filteredVersionLists() {
             if (this.versionLists) {
                 let versionListsCopy = this.versionLists.slice();
-                versionListsCopy.push({ version: "latest" })
+                versionListsCopy.push({ version: 'latest' });
                 return versionListsCopy;
             } else {
-                return []
+                return [];
             }
         },
         isForkedModeling() {
             // fork 했던 모델.
             if (this.forkInformation && this.forkInformation.forkOrigin) {
-                return true
+                return true;
             }
-            return false
+            return false;
         },
         joinRequestedText() {
             var obj = {
                 show: true,
-                text: 'Join',
-            }
+                text: 'Join'
+            };
 
             if (this.joinRequested) {
-                obj.show = false
-                obj.text = 'Join Requested'
-                return obj
+                obj.show = false;
+                obj.text = 'Join Requested';
+                return obj;
             }
-            return obj
+            return obj;
         },
         requestCount() {
-
             if (this.information && this.information.permissions) {
-                var array = Object.values(this.information.permissions)
+                var array = Object.values(this.information.permissions);
                 return array.filter((word) => {
-                    if (word)
-                        return word.request == true
-                }).length
+                    if (word) return word.request == true;
+                }).length;
             }
 
-            return null
+            return null;
         },
         isClosedTemplateCode() {
             if (this.mainSeparatePanel.current > 98) {
-                return true
+                return true;
             }
-            return false
+            return false;
         },
         isMobile: function () {
-            if (this.mainSeparatePanel.current < 96)
-                return true
-            return this.windowWidth <= 1093
+            if (this.mainSeparatePanel.current < 96) return true;
+            return this.windowWidth <= 1093;
         },
         showOverlay() {
-            return this.overlayText
+            return this.overlayText;
         },
         storage() {
-            var me = this
+            var me = this;
             if (me.isServerModel) {
-                return 'db'
+                return 'db';
             } else {
-                return 'localstorage'
+                return 'localstorage';
             }
         },
         fixedDefalutStroage() {
-            return 'db'
+            return 'db';
         },
         checkUndo() {
-            var me = this
+            var me = this;
             if (!me.isServerModel) {
                 if (me.undoRedoIndex == 0) {
-                    return true
+                    return true;
                 } else {
-                    return false
+                    return false;
                 }
             } else {
-                return me.undoDisable
+                return me.undoDisable;
             }
         },
         checkRedo() {
-            var me = this
+            var me = this;
             if (!me.isServerModel) {
                 if (me.undoRedoIndex == me.undoRedoArray.length) {
-                    return true
+                    return true;
                 } else {
-                    return false
+                    return false;
                 }
             } else {
-                return me.redoDisable
+                return me.redoDisable;
             }
         },
         copyValue() {
-            return _.cloneDeep(this.value)
+            return _.cloneDeep(this.value);
         },
         inviteLists() {
-            return this.invitationLists
+            return this.invitationLists;
         },
         showStorageDialog() {
-            return this.storageDialog
-        },
+            return this.storageDialog;
+        }
     },
     created: async function () {
-        var me = this
-        console.log("created");
+        var me = this;
+        console.log('created');
         if (me.embedded) {
-            return
+            return;
         }
         // URL
-        me.fullPath = me.$route.fullPath.split('/')
-        me.params = me.$route.params
-        me.paramKeys = Object.keys(me.params)
-        me.modelCanvasChannel = new BroadcastChannel('model-canvas')
+        me.fullPath = me.$route.fullPath.split('/');
+        me.params = me.$route.params;
+        me.paramKeys = Object.keys(me.params);
+        me.modelCanvasChannel = new BroadcastChannel('model-canvas');
 
-        me.EventBus.emit('showNewButton', false)
+        me.EventBus.emit('showNewButton', false);
         //set userInfol
         // await me.loginUser()
-        window.io = io
-        me.app = this.getComponent('App')
+        window.io = io;
+        me.app = this.getComponent('App');
         let git;
 
         this.git = new GitAPI();
         if (me.isMobile) {
-            me.sliderLocationScale = 0.7
+            me.sliderLocationScale = 0.7;
         }
         //initialize if never initialized before
         if (!me.value || !me.value.relations) {
-            me.value = {}
-            me.value.relations = {}
+            me.value = {};
+            me.value.relations = {};
         }
         if (!me.value || !me.value.elements) {
             me.value.elements = {};
@@ -676,83 +669,81 @@ export default {
         if (me.isServerModel) {
             if (me.isQueueModel) {
                 if (me.isDisable || me.projectVersion) {
-                    me.initLoad = true
-                    me.EventBus.emit('progressValue', false)
+                    me.initLoad = true;
+                    me.EventBus.emit('progressValue', false);
                 } else {
-                    me.receiveQueue()
+                    me.receiveQueue();
                 }
             } else {
-                me.receiveValue()
-                me.initLoad = true
-                me.EventBus.emit('progressValue', false)
+                me.receiveValue();
+                me.initLoad = true;
+                me.EventBus.emit('progressValue', false);
             }
         }
     },
     mounted: function () {
-        var me = this
-        me.EventBus.emit('isMounted-ModelCanvas', 'true')
+        var me = this;
+        me.EventBus.emit('isMounted-ModelCanvas', 'true');
         if (!me.value.relations) {
-            me.value.relations = {}
+            me.value.relations = {};
         }
         if (!me.value.elements) {
             me.value.elements = {};
         }
 
-        me.debounceTime = 1000
+        me.debounceTime = 1000;
 
         me.EventBus.on('participantPanel', function (newVal) {
-            me.showParticipantPanel = newVal
-        })
+            me.showParticipantPanel = newVal;
+        });
 
         me.EventBus.on('snackbar', function (newVal) {
-            me.snackbar.color = newVal.color ? newVal.color : '#000000'
-            me.snackbar.mode = newVal.mode ? newVal.mode : 'multi-line'
-            me.snackbar.timeout = newVal.timeout ? newVal.timeout : 2000
-            me.snackbar.text = newVal.text ? newVal.text : ''
-            me.snackbar.top = newVal.top ? newVal.top : false
-            me.snackbar.bottom = newVal.bottom ? newVal.bottom : false
-            me.snackbar.show = newVal.show ? newVal.show : false
-            me.snackbar.centered = newVal.centered ? newVal.centered : false
-            me.snackbar.closeBtn = newVal.closeBtn ? newVal.closeBtn : false
-        })
+            me.snackbar.color = newVal.color ? newVal.color : '#000000';
+            me.snackbar.mode = newVal.mode ? newVal.mode : 'multi-line';
+            me.snackbar.timeout = newVal.timeout ? newVal.timeout : 2000;
+            me.snackbar.text = newVal.text ? newVal.text : '';
+            me.snackbar.top = newVal.top ? newVal.top : false;
+            me.snackbar.bottom = newVal.bottom ? newVal.bottom : false;
+            me.snackbar.show = newVal.show ? newVal.show : false;
+            me.snackbar.centered = newVal.centered ? newVal.centered : false;
+            me.snackbar.closeBtn = newVal.closeBtn ? newVal.closeBtn : false;
+        });
 
         me.$nextTick(() => {
             window.addEventListener('resize', this.onResize);
-        })
+        });
 
         //새로고침 감지 && 탭 닫기
         window.onbeforeunload = function (e) {
-            console.log('reload')
-            me.exitUser()
+            console.log('reload');
+            me.exitUser();
             me.releaseMoveEvents();
-        }
+        };
 
         try {
             me.isConnection('db://', function (connection) {
                 if (!connection && me.isServerModel) {
-                    me.disconnect = true
-                    alert("현재 네트워크에 연결되어 있지 않습니다. \n" +
-                        "현재 동시편집 기능을 이용중 이라시면 동시편집의 전체적인 데이터 손실이 될수 있습니다.\n" +
-                        "네트워크 연결 후에 작업 해주시길 바랍니다. ");
+                    me.disconnect = true;
+                    alert(
+                        '현재 네트워크에 연결되어 있지 않습니다. \n' +
+                            '현재 동시편집 기능을 이용중 이라시면 동시편집의 전체적인 데이터 손실이 될수 있습니다.\n' +
+                            '네트워크 연결 후에 작업 해주시길 바랍니다. '
+                    );
                 }
-            })
+            });
         } catch (e) {
-            console.log("failed to connect to db")
+            console.log('failed to connect to db');
         }
-
 
         me.EventBus.on('login', async function (newVal) {
             if (newVal) {
-                await me.setUserInfo()
-                if (me.information && me.isServerModel)
-                    me.settingPermission(me.information)
+                await me.setUserInfo();
+                if (me.information && me.isServerModel) me.settingPermission(me.information);
             }
-        })
-
+        });
 
         this.$nextTick(function () {
-
-            let startTime = Date.now()
+            let startTime = Date.now();
 
             if (this.canvas) this.canvas._CONFIG.FAST_LOADING = false;
 
@@ -769,7 +760,6 @@ export default {
                     me.copy();
                 } else if (evt.keyCode == VkeyCode && (evt.ctrlKey || evt.metaKey)) {
                     me.paste();
-
                 } else if (evt.keyCode == ZkeyCode && (evt.metaKey || evt.ctrlKey)) {
                     if (evt.shiftKey) {
                         if (me.isEditable) {
@@ -779,7 +769,6 @@ export default {
                         if (me.isEditable) {
                             // me.undo();
                         }
-
                     }
                 }
                 // else if (evt.keyCode == PkeyCode && (evt.metaKey || evt.ctrlKey)) {
@@ -793,26 +782,24 @@ export default {
                 //         return result == true ? true : false;
                 //     }
                 // }
-
             });
-
         });
     },
     watch: {
-        "initLoad": function (newVal) {
+        initLoad: function (newVal) {
             if (newVal) {
                 this.afterLoad();
                 this.syncMirrorElements();
             }
         },
-        "isLoadedInitMirror": function (newVal) {
+        isLoadedInitMirror: function (newVal) {
             var me = this;
             if (newVal && me.initLoad) {
                 // changed MirrorValue and init definition load
                 me.syncMirrorElements();
             }
         },
-        "isLoadedMirrorQueue": function (newVal) {
+        isLoadedMirrorQueue: function (newVal) {
             var me = this;
             if (newVal && me.isLoadedInitMirror) {
                 // changed MirrorValue and init definition load
@@ -833,18 +820,18 @@ export default {
         //         }
         //     }, 300)
         // },
-        "sliderLocationScale": function (newVal) {
+        sliderLocationScale: function (newVal) {
             // console.log(newVal)
         },
-        "projectName": {
+        projectName: {
             handler: _.debounce(function (newVal, oldVal) {
-                var me = this
+                var me = this;
                 if (me.initLoad) {
-                    me.modelChanged = true
+                    me.modelChanged = true;
                     if (me.information && me.information.projectName != newVal) {
                         var informationObj = {
                             projectName: me.projectName
-                        }
+                        };
                         me.updateInformation(informationObj);
                     }
                 }
@@ -852,29 +839,36 @@ export default {
         },
         webRtcDialog: function (newVal, oldVal) {
             if (newVal == false) {
-                this.onLeave()
+                this.onLeave();
             }
         },
         participantLists: {
             deep: true,
             handler: _.debounce(function (newVal, oldVal) {
-                this.EventBus.emit('participant', newVal)
+                this.EventBus.emit('participant', newVal);
             }, 1000)
         },
-        "value.scm": {
+        'value.scm': {
             deep: true,
             handler: function (newVal, oldVal) {
                 if (this.initLoad == true) {
-                    this.changedByMe = true
+                    this.changedByMe = true;
                 }
             }
         },
-        "copyValue": {
+        copyValue: {
             deep: true,
             handler: function (newVal, oldVal) {
-                this.onChangedValue(oldVal, newVal)
+                this.onChangedValue(oldVal, newVal);
             }
         },
+        // value: {
+        //     deep: true,
+        //     handler: function (newVal, oldVal) {
+        //         var diff = jsondiffpatch.diff(oldVal, newVal);
+        //         console.log(diff);
+        //     }
+        // }
         // "modelValue": {
         //     deep: true,
         //     handler: function (newVal) {
@@ -890,18 +884,17 @@ export default {
         //     deep: true,
         //     handler(newVal, oldVal){
         //         Object.keys(newVal).forEach(key => {
-        //             if(!newVal[key]) 
+        //             if(!newVal[key])
         //                 throw new Error("gotcha!")
         //         }
         //         )
         //     }
         // }
-
     },
     methods: {
         overrideElements(elementValues) {
             // use code core.
-            return elementValues
+            return elementValues;
         },
         afterSnapshotLoad() {
             // Loading initial snapshot
@@ -910,11 +903,11 @@ export default {
             // Loading initial snapshot + init queue;
         },
         alertReLogin() {
-            alert("You need to re-login because session is expired")
-            this.showLoginCard = true
+            alert('You need to re-login because session is expired');
+            this.showLoginCard = true;
         },
         publishScreenShot() {
-            var me = this
+            var me = this;
             if (!me.isServerModel) {
                 clearTimeout(me.valueChangedTimer);
                 me.valueChangedTimer = setTimeout(async function () {
@@ -922,29 +915,29 @@ export default {
                     await me.putString(`localstorage://image_${me.projectId}`, image);
 
                     me.modelCanvasChannel.postMessage({
-                        event: "ScreenShot",
+                        event: 'ScreenShot',
                         model: me.projectId,
-                        image: image,
+                        image: image
                     });
-                }, 1000)
+                }, 1000);
             }
         },
         onChangedValue(oldVal, newVal) {
-            var me = this
+            var me = this;
             var diff = jsondiffpatch.diff(oldVal, newVal);
             if (me.initLoad && diff) {
                 me.changeValueAction(diff);
             }
         },
         async executeBeforeDestroy() {
-            var me = this
+            var me = this;
 
             //embedded
             if (me.embedded) {
-                return
+                return;
             }
-            if (window && window.document) window.document.title = 'MSA Easy'
-            localStorage.removeItem('projectId')
+            if (window && window.document) window.document.title = 'MSA Easy';
+            localStorage.removeItem('projectId');
 
             me.EventBus.emit('isMounted-ModelCanvas', 'false');
             me.EventBus.emit('participant', []);
@@ -954,20 +947,20 @@ export default {
             }
 
             if (me.rtcLogin) {
-                me.onLeave()
+                me.onLeave();
             }
 
             if (me.sortScheduleId) {
-                clearTimeout(me.sortScheduleId)
+                clearTimeout(me.sortScheduleId);
             }
 
             window.removeEventListener('resize', this.onResize);
 
             if (me.initLoad) {
                 let base64Img = await me.screenshot();
-                console.log("****************")
-                console.log(me.projectId)
-                console.log("****************")
+                console.log('****************');
+                console.log(me.projectId);
+                console.log('****************');
                 if (me.isServerModel) {
                     // save image in cloud storage
                     await me.putString(`storage://definitions/${me.projectId}/information/image`, base64Img);
@@ -983,9 +976,8 @@ export default {
                 }
             }
 
-            await me.exitUser()
+            await me.exitUser();
             await me.releaseMoveEvents();
-
 
             if (me.isServerModel && !me.isReadOnlyModel) {
                 // server && permission O
@@ -994,18 +986,17 @@ export default {
                         lastModifiedTimeStamp: Date.now(),
                         lastModifiedUser: me.userInfo.uid,
                         lastModifiedEmail: me.userInfo.email,
-                        projectName: me.projectName,
-                    }
-                    await me.putObject(`db://definitions/${me.projectId}/information`, putObj)
+                        projectName: me.projectName
+                    };
+                    await me.putObject(`db://definitions/${me.projectId}/information`, putObj);
                 }
-
             } else if (!me.isServerModel) {
                 // local
                 if (me.initLoad && me.modelChanged) {
-                    var lists = localStorage.getItem('localLists')
+                    var lists = localStorage.getItem('localLists');
                     if (lists) {
-                        lists = JSON.parse(lists)
-                        var index = lists.findIndex(list => list.projectId == me.projectId)
+                        lists = JSON.parse(lists);
+                        var index = lists.findIndex((list) => list.projectId == me.projectId);
                         if (index != -1) {
                             if (localStorage.getItem(me.projectId)) {
                                 lists[index].projectName = me.projectName;
@@ -1013,29 +1004,39 @@ export default {
                             } else {
                                 lists.splice(index, 1);
                             }
-                            await me.putObject(`localstorage://localLists`, lists)
+                            await me.putObject(`localstorage://localLists`, lists);
                         }
                     }
                 }
             }
         },
         async screenshot(canvasInfo) {
-            var me = this
+            var me = this;
             if (me.$refs['modeler-image-generator']) {
-                let canvas = canvasInfo ? canvasInfo : me.canvas
+                let canvas = canvasInfo ? canvasInfo : me.canvas;
                 let base64Img = await me.$refs['modeler-image-generator'].save(me.projectName, canvas);
-                return base64Img
+                return base64Img;
             }
             return null;
         },
         convertTimeStampToDate(timeStamp) {
             if (timeStamp) {
-                if (typeof timeStamp == 'string')
-                    timeStamp = Number(timeStamp)
+                if (typeof timeStamp == 'string') timeStamp = Number(timeStamp);
                 var date = new Date(timeStamp);
-                return date.getFullYear() + "년 " + (date.getMonth() + 1) + "월 " + date.getDate() + "일 " + date.getHours() + "시 " + date.getMinutes() + "분"
+                return (
+                    date.getFullYear() +
+                    '년 ' +
+                    (date.getMonth() + 1) +
+                    '월 ' +
+                    date.getDate() +
+                    '일 ' +
+                    date.getHours() +
+                    '시 ' +
+                    date.getMinutes() +
+                    '분'
+                );
             } else {
-                return null
+                return null;
             }
         },
         moveToView(item) {
@@ -1046,15 +1047,15 @@ export default {
         },
         moveToVersion(item) {
             if (item) {
-                let lastIndex = this.filteredVersionLists.findIndex(x => x.version == 'latest')
-                let lateVersion = this.filteredVersionLists[lastIndex - 1]
-                let version = item.version == 'latest' ? lateVersion.version : item.version
+                let lastIndex = this.filteredVersionLists.findIndex((x) => x.version == 'latest');
+                let lateVersion = this.filteredVersionLists[lastIndex - 1];
+                let version = item.version == 'latest' ? lateVersion.version : item.version;
                 let route = this.$router.resolve(`${this.projectId}:${version}`);
                 window.open(route.href, '_blank');
             }
         },
         async onCreateGitTagName(storageCondition) {
-            var me = this
+            var me = this;
             // TODO: Gitlab Github 분리 필요함
             try {
                 var gitToken = localStorage.getItem('gitToken');
@@ -1065,14 +1066,14 @@ export default {
                     var gitHeaders = {
                         Authorization: 'token ' + gitToken,
                         Accept: 'application/vnd.github+json'
-                    }
+                    };
                     var obj = {
                         owner: me.scmOrg,
                         repo: me.scmRepo,
                         tag_name: me.scmTag,
-                        body: storageCondition && storageCondition.comment ? storageCondition.comment : '',
-                    }
-                    let createRelease = me.git.createRelease(obj)
+                        body: storageCondition && storageCondition.comment ? storageCondition.comment : ''
+                    };
+                    let createRelease = me.git.createRelease(obj);
                     // await axios.post(`https://api.github.com/repos/${me.scmOrg}/${me.scmRepo}/releases`, obj, { headers: gitHeaders }).then(function(){})
                     // .catch(function (error) {
                     //     if(error.response.status === 401){
@@ -1086,121 +1087,117 @@ export default {
             }
         },
         settingChangedByMe(value) {
-            this.changedByMe = value
+            this.changedByMe = value;
         },
         openSeparatePanel() {
-            var me = this
-            var separatePanel = localStorage.getItem("separatePanel")
+            var me = this;
+            var separatePanel = localStorage.getItem('separatePanel');
             if (separatePanel) {
-                var separatePanelInfo = JSON.parse(separatePanel)
-                me.mainSeparatePanel.current = me.mainSeparatePanel.max < separatePanelInfo.mainSeparatePanel ? 50 : separatePanelInfo.mainSeparatePanel
+                var separatePanelInfo = JSON.parse(separatePanel);
+                me.mainSeparatePanel.current =
+                    me.mainSeparatePanel.max < separatePanelInfo.mainSeparatePanel ? 50 : separatePanelInfo.mainSeparatePanel;
             } else {
-                me.mainSeparatePanel.current = 30
+                me.mainSeparatePanel.current = 30;
             }
         },
         closeSeparatePanel() {
-            var me = this
+            var me = this;
 
-            var separatePanel = localStorage.getItem("separatePanel")
-            var separatePanelInfo = {}
+            var separatePanel = localStorage.getItem('separatePanel');
+            var separatePanelInfo = {};
             if (separatePanel) {
                 separatePanelInfo = JSON.parse(separatePanel);
-                separatePanelInfo.mainSeparatePanel = me.mainSeparatePanel.current
+                separatePanelInfo.mainSeparatePanel = me.mainSeparatePanel.current;
             } else {
-                separatePanelInfo['mainSeparatePanel'] = me.mainSeparatePanel.current
+                separatePanelInfo['mainSeparatePanel'] = me.mainSeparatePanel.current;
             }
-            var objString = JSON.stringify(separatePanelInfo)
-            me.putObject(`localstorage://separatePanel`, objString)
+            var objString = JSON.stringify(separatePanelInfo);
+            me.putObject(`localstorage://separatePanel`, objString);
 
-            me.mainSeparatePanel.current = 100
+            me.mainSeparatePanel.current = 100;
         },
         filteredProjectName(projectName) {
-            var me = this
+            var me = this;
 
-            var getProjectName = projectName ? projectName : me.projectName
-            var filteredName = JSON.parse(JSON.stringify(getProjectName))
+            var getProjectName = projectName ? projectName : me.projectName;
+            var filteredName = JSON.parse(JSON.stringify(getProjectName));
             var pattern1 = /[\{\}\[\]\/?.,;:|\)*~`!^+<>@\#$%&\\\=\(\'\"]/gi; //특수문자 제거
             var pattern2 = /[0-9ㄱ-ㅎ|ㅏ-ㅣ|가-힣~!@#$%^&*()_+|-|<>?:{}]/gi; // 한글 제거
 
-
             if (filteredName) {
-
                 if (pattern1.test(filteredName)) {
                     filteredName = filteredName.replace(pattern1, '');
                 }
                 if (pattern2.test(filteredName)) {
                     filteredName = filteredName.replace(pattern2, '');
                 }
-                filteredName = filteredName.toLowerCase()
+                filteredName = filteredName.toLowerCase();
             } else {
                 return 'untitled';
             }
             return filteredName == '' ? 'untitled' : filteredName;
         },
         updateInformation(informationObj) {
-            var me = this
+            var me = this;
             try {
                 if (me.projectId && me.isServerModel && !me.isReadOnlyModel) {
-                    me.putObject(`db://definitions/${me.projectId}/information`, informationObj)
+                    me.putObject(`db://definitions/${me.projectId}/information`, informationObj);
                 }
             } catch (e) {
                 console.error(`Update information Exception: ${e}`);
             }
-
         },
         exceptionError(message, options) {
-            var me = this
-            var msg = message ? message : '[Model] Exception Error.'
-            var showSnackbar = options && (options.show == false) ? false : true
+            var me = this;
+            var msg = message ? message : '[Model] Exception Error.';
+            var showSnackbar = options && options.show == false ? false : true;
 
             if (showSnackbar) {
-                me.snackbar.show = true
-                me.snackbar.text = msg
-                me.snackbar.color = options && options.color ? options.color : 'primary'
-                me.snackbar.mode = options && options.mode ? options.mode : 'multi-line'
-                me.snackbar.timeout = options && options.timeout ? options.timeout : 2000
-                me.snackbar.bottom = options && options.bottom ? options.bottom : false
-                me.snackbar.top = !me.snackbar.bottom
-                me.snackbar.centered = options && options.centered ? options.centered : false
-                me.snackbar.closeBtn = options && options.closeBtn ? options.closeBtn : false
+                me.snackbar.show = true;
+                me.snackbar.text = msg;
+                me.snackbar.color = options && options.color ? options.color : 'primary';
+                me.snackbar.mode = options && options.mode ? options.mode : 'multi-line';
+                me.snackbar.timeout = options && options.timeout ? options.timeout : 2000;
+                me.snackbar.bottom = options && options.bottom ? options.bottom : false;
+                me.snackbar.top = !me.snackbar.bottom;
+                me.snackbar.centered = options && options.centered ? options.centered : false;
+                me.snackbar.closeBtn = options && options.closeBtn ? options.closeBtn : false;
             }
 
             console.error(`Model Exception: ${msg}`);
         },
         clearChangedPathListsBucket() {
-            this.changedPathListsBucket = []
-            this.showChangedPathLists = false
+            this.changedPathListsBucket = [];
+            this.showChangedPathLists = false;
         },
 
         autoForkModel() {
-            var me = this
+            var me = this;
 
             // labs 모델 파악.
             if (me.isServerModel) {
                 if (
-                    me.information &&
-                    (me.information.author == me.userInfo.uid)
-                    || (me.information.permissions && me.information.permissions['everyone'])
+                    (me.information && me.information.author == me.userInfo.uid) ||
+                    (me.information.permissions && me.information.permissions['everyone'])
                 ) {
                     //server - everyone공유된거만.
                     if (me.isLogin) {
-                        me.checkedForkModel()
+                        me.checkedForkModel();
                     } else {
-                        me.EventBus.emit('showLoginDialog')
+                        me.EventBus.emit('showLoginDialog');
                     }
                 } else {
-                    alert('권한이 없는 모델입니다.( Public에 존재하는 모델만 가능 합니다.) ')
+                    alert('권한이 없는 모델입니다.( Public에 존재하는 모델만 가능 합니다.) ');
                 }
-
             } else {
                 //local
-                alert('로컬 모델로 해당기능 준비중 입니다.')
+                alert('로컬 모델로 해당기능 준비중 입니다.');
             }
         },
         onEventHandler() {
-            var me = this
+            var me = this;
             try {
-                let opengraph = me.$refs['opengraph']
+                let opengraph = me.$refs['opengraph'];
 
                 if (opengraph && me.isLogin && me.isServerModel && !me.isClazzModeling && !me.isReadOnlyModel) {
                     let canvasEl = $(opengraph.container);
@@ -1213,58 +1210,56 @@ export default {
                                 if (me.userInfo.email && me.userInfo.email.replace(/\./gi, '_') != email) {
                                     const point = document.getElementById(email);
                                     if (point) {
-                                        let scale = opengraph.canvas._CONFIG.SLIDER[0].innerText / 100
-                                        let offsetX = (callback[email].clientX * scale) - canvasEl[0].scrollLeft + canvasEl.offset().left
-                                        let offsetY = (callback[email].clientY * scale) - canvasEl[0].scrollTop + canvasEl.offset().top
+                                        let scale = opengraph.canvas._CONFIG.SLIDER[0].innerText / 100;
+                                        let offsetX = callback[email].clientX * scale - canvasEl[0].scrollLeft + canvasEl.offset().left;
+                                        let offsetY = callback[email].clientY * scale - canvasEl[0].scrollTop + canvasEl.offset().top;
                                         point.style.left = `${offsetX}px`;
                                         point.style.top = `${offsetY}px`;
                                         point.style['background-color'] = callback[email].color;
                                     }
                                 }
-                            };
+                            }
                         }
                     });
                 }
             } catch (e) {
-                console.log(`Error] onMoveMouse : ${e}`)
+                console.log(`Error] onMoveMouse : ${e}`);
             }
         },
         sendMoveEvents(x, y) {
-            var me = this
+            var me = this;
             try {
                 if (me.isLogin && me.isServerModel && !me.isClazzModeling && !me.isReadOnlyModel) {
                     let myEmail = me.userInfo && me.userInfo.email ? me.userInfo.email.replace(/\./gi, '_') : null;
                     if (myEmail) {
-
                         if (!me.mouseEventHandlers[myEmail] || Object.keys(me.mouseEventHandlers).length > 1) {
                             let obj = {
                                 clientX: x,
-                                clientY: y,
-                            }
+                                clientY: y
+                            };
 
                             if (!me.mouseEventHandlers[myEmail]) {
                                 obj.color = '#' + Math.round(Math.random() * 0xffffff).toString(16);
-                                obj.name = me.userInfo.name
+                                obj.name = me.userInfo.name;
                             }
 
-
-                            me.putObject(`db://definitions/${me.projectId}/eventHandler/${me.userInfo.email.replace(/\./gi, '_')}`, obj)
+                            me.putObject(`db://definitions/${me.projectId}/eventHandler/${me.userInfo.email.replace(/\./gi, '_')}`, obj);
                         }
                     }
                 }
             } catch (e) {
-                console.log(`Error] Send MoveEvents : ${e}`)
+                console.log(`Error] Send MoveEvents : ${e}`);
             }
         },
         releaseMoveEvents() {
-            var me = this
+            var me = this;
             try {
                 if (me.isLogin && me.isServerModel && !me.isClazzModeling && !me.isReadOnlyModel) {
                     me.watch_off(`db://definitions/${me.projectId}/eventHandler`);
-                    me.delete(`db://definitions/${me.projectId}/eventHandler/${me.userInfo.email.replace(/\./gi, '_')}`)
+                    me.delete(`db://definitions/${me.projectId}/eventHandler/${me.userInfo.email.replace(/\./gi, '_')}`);
                 }
             } catch (e) {
-                console.log(`Error] Release MoveEvents : ${e}`)
+                console.log(`Error] Release MoveEvents : ${e}`);
             }
         },
         onMoveElementById(id, newValueStr) {
@@ -1272,17 +1267,17 @@ export default {
                  !!!  REMOVE !!!!
                  changedMethod: moveElement
             */
-            var me = this
+            var me = this;
 
             if (me.value && me.value.elements && me.value.elements[id]) {
-                var newValueObj = JSON.parse(newValueStr)
+                var newValueObj = JSON.parse(newValueStr);
                 // minus element
-                newValueObj.x = newValueObj.x < 0 ? Math.abs(newValueObj.x) : newValueObj.x
-                newValueObj.y = newValueObj.y < 0 ? Math.abs(newValueObj.y) : newValueObj.y
-                me.value.elements[id].elementView.x = newValueObj.x
-                me.value.elements[id].elementView.y = newValueObj.y
-                me.value.elements[id].elementView.width = newValueObj.width
-                me.value.elements[id].elementView.height = newValueObj.height
+                newValueObj.x = newValueObj.x < 0 ? Math.abs(newValueObj.x) : newValueObj.x;
+                newValueObj.y = newValueObj.y < 0 ? Math.abs(newValueObj.y) : newValueObj.y;
+                me.value.elements[id].elementView.x = newValueObj.x;
+                me.value.elements[id].elementView.y = newValueObj.y;
+                me.value.elements[id].elementView.width = newValueObj.width;
+                me.value.elements[id].elementView.height = newValueObj.height;
             }
         },
         onMoveRelationById(id, newValueObj) {
@@ -1290,25 +1285,25 @@ export default {
                 !!!  REMOVE !!!!
                 changedMethod: moveElement
            */
-            var me = this
+            var me = this;
 
             if (me.value && me.value.relations && me.value.relations[id]) {
                 // minus relation
-                me.value.relations[id].relationView.value = newValueObj.includes('-') ? newValueObj.replaceAll('-', '') : newValueObj
+                me.value.relations[id].relationView.value = newValueObj.includes('-') ? newValueObj.replaceAll('-', '') : newValueObj;
             }
         },
         functionCluster(title) {
-            var me = this
+            var me = this;
             if (title == 'Terminal') {
                 me.loadTerminal = true;
                 me.EventBus.once('loadTerminal', function () {
-                    me.loadTerminal = false
-                })
-                me.terminal()
+                    me.loadTerminal = false;
+                });
+                me.terminal();
             } else if (title == 'Sync') {
-                me.deployDialog = true
+                me.deployDialog = true;
             } else if (title == 'Cluster') {
-                me.clusterDialog = true
+                me.clusterDialog = true;
             } else if (title == 'Workflow Dashboard') {
                 me.openArgoDashboard();
             } else if (title == 'ArgoCD Dashboard') {
@@ -1316,34 +1311,28 @@ export default {
             }
         },
         track() {
-            this.$gtag.pageview(
-                {
-                    page_title: `${this.canvasType} 모델링`,
-                    page_path: this.$route.path
-                }
-            )
+            this.$gtag.pageview({
+                page_title: `${this.canvasType} 모델링`,
+                page_path: this.$route.path
+            });
         },
         onJoin() {
-            this.webRtcDialog = true
-            this.rtcLogin = true
-            if (this.$refs)
-                this.$refs.webrtc.join();
+            this.webRtcDialog = true;
+            this.rtcLogin = true;
+            if (this.$refs) this.$refs.webrtc.join();
         },
         onLeave() {
-            this.rtcLogin = false
-            if (this.$refs)
-                this.$refs.webrtc.leave();
+            this.rtcLogin = false;
+            if (this.$refs) this.$refs.webrtc.leave();
         },
         onCapture() {
-            if (this.$refs)
-                this.img = this.$refs.webrtc.capture();
+            if (this.$refs) this.img = this.$refs.webrtc.capture();
         },
         onShareScreen() {
-            if (this.$refs)
-                this.img = this.$refs.webrtc.shareScreen();
+            if (this.$refs) this.img = this.$refs.webrtc.shareScreen();
         },
         enterUser() {
-            var me = this
+            var me = this;
             if (me.isServerModel && me.isQueueModel && me.isInitRender && !me.isReadOnlyModel && !me.isClazzModeling) {
                 var postObj = {
                     action: 'userEntrance',
@@ -1351,33 +1340,33 @@ export default {
                     editUid: me.userInfo.uid,
                     email: me.userInfo.email,
                     userName: me.userInfo.name,
-                    timeStamp: Date.now(),
-                }
-                me.pushObject(`db://definitions/${me.projectId}/queue`, postObj)
+                    timeStamp: Date.now()
+                };
+                me.pushObject(`db://definitions/${me.projectId}/queue`, postObj);
             }
         },
         exitUser() {
-            var me = this
+            var me = this;
             if (me.isServerModel && me.isQueueModel && me.isInitRender && !me.isReadOnlyModel && !me.isClazzModeling) {
                 var pushObj = {
                     action: 'userExit',
                     editUid: me.userInfo.uid,
                     email: me.userInfo.email,
                     userName: me.userInfo.name,
-                    timeStamp: Date.now(),
-                }
-                me.pushObject(`db://definitions/${me.projectId}/queue`, pushObj)
+                    timeStamp: Date.now()
+                };
+                me.pushObject(`db://definitions/${me.projectId}/queue`, pushObj);
             }
         },
         settingPermission(information, init) {
-            var me = this
+            var me = this;
             // Only Save Server Model
-            me.isOwnModel = false
-            me.information = information ? information : me.information
+            me.isOwnModel = false;
+            me.information = information ? information : me.information;
 
             if (!me.projectVersion) {
-                me.projectName = me.information && me.information.projectName ? me.information.projectName : 'untitled'
-                me.isAutoForkModel = me.isClazzModeling ? false : Object.keys(this.$route.query).includes('fork')
+                me.projectName = me.information && me.information.projectName ? me.information.projectName : 'untitled';
+                me.isAutoForkModel = me.isClazzModeling ? false : Object.keys(this.$route.query).includes('fork');
             }
 
             // console.log('project Author:', me.information.author,' Login Id: ', me.userInfo.uid)
@@ -1386,102 +1375,102 @@ export default {
                 // clazz Modeling
                 if (me.information) {
                     if (me.information.author == me.userInfo.uid) {
-                        me.isOwnModel = true
-                        me.isEditable = true
+                        me.isOwnModel = true;
+                        me.isEditable = true;
                     } else if (me.information.permissions && me.information.permissions['everyone']) {
-                        me.isEditable = false
+                        me.isEditable = false;
                     } else {
-                        me.isEditable = false
-                        me.alertInfo.show = true
-                        me.alertInfo.text = 'This is a non-authorized or non-shared model.'
-                        me.alertInfo.fnNum = 1
-                        me.alertInfo.submit = 'Request'
+                        me.isEditable = false;
+                        me.alertInfo.show = true;
+                        me.alertInfo.text = 'This is a non-authorized or non-shared model.';
+                        me.alertInfo.fnNum = 1;
+                        me.alertInfo.submit = 'Request';
                     }
                 } else {
-                    me.isEditable = false
-                    me.alertInfo.show = true
-                    me.alertInfo.text = 'Failed to load model. Try again.'
-                    me.alertInfo.fnNum = 1
-                    me.alertInfo.submit = 'Close'
+                    me.isEditable = false;
+                    me.alertInfo.show = true;
+                    me.alertInfo.text = 'Failed to load model. Try again.';
+                    me.alertInfo.fnNum = 1;
+                    me.alertInfo.submit = 'Close';
                 }
             } else {
                 // Base Modeling
                 if (me.information.author == me.userInfo.uid) {
                     //my project
-                    me.isOwnModel = true
-                    me.isEditable = true
+                    me.isOwnModel = true;
+                    me.isEditable = true;
                 } else {
                     if (me.isLogin) {
                         if (me.information.permissions) {
-                            var isPublic = false
+                            var isPublic = false;
                             if (me.information.permissions['everyone']) {
-                                isPublic = true
+                                isPublic = true;
                             }
                             if (me.information.permissions[me.userInfo.uid]) {
                                 if (Object.keys(me.information.permissions[me.userInfo.uid]).includes('request')) {
-                                    me.isEditable = false
+                                    me.isEditable = false;
 
                                     if (me.information.permissions[me.userInfo.uid].request == false) {
-                                        me.alertInfo.show = true
-                                        me.alertInfo.text = 'After requesting access permission, it was not accepted.'
-                                        me.alertInfo.type = 'info'
+                                        me.alertInfo.show = true;
+                                        me.alertInfo.text = 'After requesting access permission, it was not accepted.';
+                                        me.alertInfo.type = 'info';
                                         if (isPublic) {
-                                            me.isEditable = false
-                                            me.alertInfo.fnNum = 0
+                                            me.isEditable = false;
+                                            me.alertInfo.fnNum = 0;
                                         } else {
-                                            me.isDisable = true
-                                            me.alertInfo.fnNum = 1
-                                            me.alertInfo.submit = 'Request again'
+                                            me.isDisable = true;
+                                            me.alertInfo.fnNum = 1;
+                                            me.alertInfo.submit = 'Request again';
                                         }
                                     } else if (me.information.permissions[me.userInfo.uid].request == true) {
-                                        me.joinRequested = true
-                                        me.alertInfo.show = true
-                                        me.alertInfo.text = 'After the request, the authority is unconfirmed.'
-                                        me.alertInfo.type = 'info'
+                                        me.joinRequested = true;
+                                        me.alertInfo.show = true;
+                                        me.alertInfo.text = 'After the request, the authority is unconfirmed.';
+                                        me.alertInfo.type = 'info';
 
                                         if (isPublic) {
-                                            me.isEditable = false
-                                            me.alertInfo.fnNum = 0
+                                            me.isEditable = false;
+                                            me.alertInfo.fnNum = 0;
                                         } else {
-                                            me.isDisable = true
-                                            me.alertInfo.fnNum = 1
-                                            me.alertInfo.submit = 'Request again'
+                                            me.isDisable = true;
+                                            me.alertInfo.fnNum = 1;
+                                            me.alertInfo.submit = 'Request again';
                                         }
                                     }
                                 } else if (me.information.permissions[me.userInfo.uid].write) {
-                                    me.isEditable = true
+                                    me.isEditable = true;
                                 } else {
-                                    me.isEditable = false
+                                    me.isEditable = false;
                                 }
                             } else {
                                 if (isPublic) {
-                                    me.isEditable = false
+                                    me.isEditable = false;
                                 } else {
-                                    me.isDisable = true
+                                    me.isDisable = true;
 
-                                    me.alertInfo.show = true
-                                    me.alertInfo.text = 'This is an unauthorized model.(Permission list does not exist)'
-                                    me.alertInfo.type = 'info'
-                                    me.alertInfo.fnNum = 1
-                                    me.alertInfo.submit = 'Request'
+                                    me.alertInfo.show = true;
+                                    me.alertInfo.text = 'This is an unauthorized model.(Permission list does not exist)';
+                                    me.alertInfo.type = 'info';
+                                    me.alertInfo.fnNum = 1;
+                                    me.alertInfo.submit = 'Request';
                                 }
                             }
                         } else {
-                            me.isDisable = true
+                            me.isDisable = true;
 
-                            me.alertInfo.show = true
-                            me.alertInfo.text = 'This is an unauthorized model.(personal model)'
-                            me.alertInfo.type = 'info'
-                            me.alertInfo.fnNum = 1
-                            me.alertInfo.submit = 'Request'
+                            me.alertInfo.show = true;
+                            me.alertInfo.text = 'This is an unauthorized model.(personal model)';
+                            me.alertInfo.type = 'info';
+                            me.alertInfo.fnNum = 1;
+                            me.alertInfo.submit = 'Request';
                         }
                     } else {
-                        me.isDisable = true
+                        me.isDisable = true;
 
-                        me.alertInfo.show = true
-                        me.alertInfo.text = 'This is an unauthorized model.(No login)'
-                        me.alertInfo.fnNum = 1
-                        me.alertInfo.submit = 'Request'
+                        me.alertInfo.show = true;
+                        me.alertInfo.text = 'This is an unauthorized model.(No login)';
+                        me.alertInfo.fnNum = 1;
+                        me.alertInfo.submit = 'Request';
 
                         // if (me.information && me.information.permissions && me.information.permissions['everyone']) {
                         //     me.readOnly = true
@@ -1492,163 +1481,150 @@ export default {
                         //     me.alertInfo.fnNum = 1
                         //     me.alertInfo.submit = 'Request'
                         // }
-
                     }
                 }
             }
         },
         alertClose(fnNum) {
-            var me = this
+            var me = this;
 
             if (fnNum == -1) {
-                me.$router.push('/')
+                me.$router.push('/');
             }
 
             if (fnNum == 1) {
                 // me.$router.push('/')
             }
 
-            me.alertInfo.show = false
-            me.alertInfo.text = ''
+            me.alertInfo.show = false;
+            me.alertInfo.text = '';
         },
         alertSubmit(fnNum) {
-            var me = this
+            var me = this;
 
             if (fnNum == 0) {
                 // just close
-                me.alertClose()
+                me.alertClose();
             } else if (fnNum == 1) {
-                me.requestInviteUser()
-                me.alertClose(fnNum)
+                me.requestInviteUser();
+                me.alertClose(fnNum);
             } else if (fnNum == 2) {
-                me.EventBus.emit('showLoginDialog')
-                me.alertClose()
+                me.EventBus.emit('showLoginDialog');
+                me.alertClose();
             }
         },
         purchaseItemDialogSubmit(itemName) {
-            console.log('root : purchaseItemDialogSubmit', itemName)
+            console.log('root : purchaseItemDialogSubmit', itemName);
         },
         async purchaseItemDialogOpen(id) {
-            var me = this
-            var getItemId = id
+            var me = this;
+            var getItemId = id;
 
             if (me.isLogin) {
-                var filteredProjectName = me.filteredProjectName(me.projectName)
-                if (filteredProjectName.replace(/\s/gi, "") == '') {
-                    me.projectName = window.prompt("Please input your ProjectName(English Only)")
+                var filteredProjectName = me.filteredProjectName(me.projectName);
+                if (filteredProjectName.replace(/\s/gi, '') == '') {
+                    me.projectName = window.prompt('Please input your ProjectName(English Only)');
                 } else {
-                    me.purchaseItemDialogInfo.mainTitle = ''
-                    me.purchaseItemDialogInfo.title = '소스코드 다운'
-                    me.purchaseItemDialogInfo.resourceType = 'downloadCode'
-                    me.purchaseItemDialogInfo.period = 10 / (24 * 60)
-                    me.purchaseItemDialogInfo.itemId = `${getItemId}`
-                    me.purchaseItemDialogInfo.relatedTo = `${me.userInfo.uid}_${getItemId}`
-                    me.purchaseItemDialogInfo.amount = 100
-                    me.purchaseItemDialog = true
+                    me.purchaseItemDialogInfo.mainTitle = '';
+                    me.purchaseItemDialogInfo.title = '소스코드 다운';
+                    me.purchaseItemDialogInfo.resourceType = 'downloadCode';
+                    me.purchaseItemDialogInfo.period = 10 / (24 * 60);
+                    me.purchaseItemDialogInfo.itemId = `${getItemId}`;
+                    me.purchaseItemDialogInfo.relatedTo = `${me.userInfo.uid}_${getItemId}`;
+                    me.purchaseItemDialogInfo.amount = 100;
+                    me.purchaseItemDialog = true;
                 }
             } else {
-                me.alertInfo.show = true
-                me.alertInfo.text = '해당 기능은 로그인후 사용이 가능합니다.'
-                me.alertInfo.fnNum = 2
-                me.alertInfo.submit = 'Login'
+                me.alertInfo.show = true;
+                me.alertInfo.text = '해당 기능은 로그인후 사용이 가능합니다.';
+                me.alertInfo.fnNum = 2;
+                me.alertInfo.submit = 'Login';
             }
 
-            me.generateZipDialog = false
+            me.generateZipDialog = false;
         },
         purchaseItemDialogInfoInit() {
-            this.purchaseItemDialogInfo.mainTitle = null
-            this.purchaseItemDialogInfo.title = null
-            this.purchaseItemDialogInfo.subTitle = null
-            this.purchaseItemDialogInfo.thumbnailText = null
-            this.purchaseItemDialogInfo.resourceType = null
-            this.purchaseItemDialogInfo.thumbnailImg = null
-            this.purchaseItemDialogInfo.relatedTo = null
-            this.purchaseItemDialogInfo.period = 90
-            this.purchaseItemDialogInfo.count = false
-            this.purchaseItemDialogInfo.itemId = null
-            this.purchaseItemDialogInfo.amount = null
-            this.purchaseItemDialogInfo.className = null
-            this.purchaseItemDialogInfo.labName = null
+            this.purchaseItemDialogInfo.mainTitle = null;
+            this.purchaseItemDialogInfo.title = null;
+            this.purchaseItemDialogInfo.subTitle = null;
+            this.purchaseItemDialogInfo.thumbnailText = null;
+            this.purchaseItemDialogInfo.resourceType = null;
+            this.purchaseItemDialogInfo.thumbnailImg = null;
+            this.purchaseItemDialogInfo.relatedTo = null;
+            this.purchaseItemDialogInfo.period = 90;
+            this.purchaseItemDialogInfo.count = false;
+            this.purchaseItemDialogInfo.itemId = null;
+            this.purchaseItemDialogInfo.amount = null;
+            this.purchaseItemDialogInfo.className = null;
+            this.purchaseItemDialogInfo.labName = null;
         },
         purchaseItemDialogClose(result) {
             if (result != false) {
-                this.purchaseItemDialogInfoInit()
+                this.purchaseItemDialogInfoInit();
             }
-            this.purchaseItemDialog = false
-            this.generateZipDialog = false
+            this.purchaseItemDialog = false;
+            this.generateZipDialog = false;
         },
         onResize() {
-            this.windowWidth = window.innerWidth
+            this.windowWidth = window.innerWidth;
         },
         _isAttached(outer, inner) {
             if (
                 //왼쪽 상단 모서리에 걸린 경우
-                (outer.x < inner.x + inner.width &&
-                    outer.y < inner.y + inner.height)
-
-                &&
-
+                outer.x < inner.x + inner.width &&
+                outer.y < inner.y + inner.height &&
                 //우측 하단 모서리에 걸린 경우
-                (inner.x < outer.x + outer.width &&
-                    inner.y < outer.y + outer.height)
-
-                &&
-
+                inner.x < outer.x + outer.width &&
+                inner.y < outer.y + outer.height &&
                 //오른쪽 상단 모서리에 걸린 경우
-                (inner.x < outer.x + outer.width &&
-                    outer.y < inner.y + inner.height)
-
-                &&
-
+                inner.x < outer.x + outer.width &&
+                outer.y < inner.y + inner.height &&
                 //왼쪽 하단 모서리에 걸린 경우
-                (outer.x < inner.x + inner.width &&
-                    inner.y < outer.y + outer.height)
-            ) return true;
+                outer.x < inner.x + inner.width &&
+                inner.y < outer.y + outer.height
+            )
+                return true;
 
             return false;
         },
         closeOverlay() {
-            this.overlayText = null
+            this.overlayText = null;
         },
         downloadModelToJson() {
             var me = this;
 
             if (me.projectName.length < 1) {
-                me.projectName = window.prompt("Please input your ProjectName")
-
+                me.projectName = window.prompt('Please input your ProjectName');
             } else {
                 me.$refs['modeler-image-generator'].save(me.projectName, me.canvas).then(function (img) {
-
-                    var cpValue = JSON.parse(JSON.stringify(me.value))
-                    cpValue.type = me.information ? me.information.type : me.canvasType
-                    cpValue.img = img
-                    cpValue.date = Date.now()
-                    cpValue.projectName = me.projectName ? me.projectName : 'undefined'
+                    var cpValue = JSON.parse(JSON.stringify(me.value));
+                    cpValue.type = me.information ? me.information.type : me.canvasType;
+                    cpValue.img = img;
+                    cpValue.date = Date.now();
+                    cpValue.projectName = me.projectName ? me.projectName : 'undefined';
 
                     var filename = me.projectName + '.json';
 
                     var modelForJsonToTextFile = new File([JSON.stringify(cpValue)], filename, {
-                        type: "text/json;charset=utf-8"
+                        type: 'text/json;charset=utf-8'
                     });
                     FileSaver.saveAs(modelForJsonToTextFile);
-                    alert('Successfully Saved', me.projectName, '.')
-
-                })
+                    alert('Successfully Saved', me.projectName, '.');
+                });
             }
-
         },
         saveComposition(state) {
-            var me = this
-            me.storageDialogReady(state)
+            var me = this;
+            me.storageDialogReady(state);
         },
         async storageDialogReady(state) {
-            var me = this
+            var me = this;
             if (me.isLogin) {
-                var obj = {}
-                var proName = me.projectName ? me.projectName : 'untitled'
+                var obj = {};
+                var proName = me.projectName ? me.projectName : 'untitled';
                 proName = JSON.parse(JSON.stringify(proName));
-                var convertProjectId = proName ? me.filteredProjectName(proName) : me.dbuid()
-                convertProjectId = convertProjectId.replaceAll(' ', '-')
+                var convertProjectId = proName ? me.filteredProjectName(proName) : me.dbuid();
+                convertProjectId = convertProjectId.replaceAll(' ', '-');
 
                 obj = {
                     action: 'save',
@@ -1659,25 +1635,24 @@ export default {
                     projectId: convertProjectId,
                     version: me.defaultVersion,
                     error: null,
-                    loading: false,
-                }
-
+                    loading: false
+                };
 
                 if (state == 'save') {
                     if (window.opener && me.canvasType == 'k8s') {
                         obj = null;
                         me.postParentWindow();
                     } else if (me.isServerModel) {
-                        obj.action = 'backup'
-                        obj.title = 'Save New Version'
+                        obj.action = 'backup';
+                        obj.title = 'Save New Version';
 
                         let nextVer = me.information.lastVersionName ? me.information.lastVersionName : me.defaultVersion;
                         if (me.information.lastVersionName) {
                             let nextVersion = nextVer.substr(-1);
-                            nextVersion = !isNaN(Number(nextVersion)) ? Number(nextVersion) + 1 : ''
-                            nextVer = `${nextVer.substr(0, nextVer.length - 1)}${nextVersion}`
+                            nextVersion = !isNaN(Number(nextVersion)) ? Number(nextVersion) + 1 : '';
+                            nextVer = `${nextVer.substr(0, nextVer.length - 1)}${nextVersion}`;
                         }
-                        obj.version = nextVer
+                        obj.version = nextVer;
                     } else {
                         // SAVE
                     }
@@ -1685,84 +1660,80 @@ export default {
                     var forkBy = {
                         org: me.scmOrg,
                         repo: me.scmRepo
-                    }
+                    };
 
-                    obj.action = 'fork'
-                    obj.title = 'FORK'
-                    obj.userId = me.forkInformation.forkLatest ? me.userInfo.uid : null
-                    obj.isForkModel = me.forkInformation.forkLatest
-                    obj.forkedModelInfo = JSON.stringify(forkBy)
-
+                    obj.action = 'fork';
+                    obj.title = 'FORK';
+                    obj.userId = me.forkInformation.forkLatest ? me.userInfo.uid : null;
+                    obj.isForkModel = me.forkInformation.forkLatest;
+                    obj.forkedModelInfo = JSON.stringify(forkBy);
                 } else if (state == 'duplicate') {
-                    obj.action = 'fork'
-                    obj.title = 'Duplicate'
-                    obj.userId = me.forkInformation.forkLatest ? me.userInfo.uid : null
-                    obj.isForkModel = me.forkInformation.forkLatest
-
+                    obj.action = 'fork';
+                    obj.title = 'Duplicate';
+                    obj.userId = me.forkInformation.forkLatest ? me.userInfo.uid : null;
+                    obj.isForkModel = me.forkInformation.forkLatest;
                 } else {
                     obj = null;
                 }
 
-                this.storageCondition = obj
-                this.storageDialog = true
+                this.storageCondition = obj;
+                this.storageDialog = true;
             } else {
-                me.EventBus.emit('showLoginDialog')
-                alert("로그인 후에 이용이 가능합니다. 로그인 해주세요.")
+                me.EventBus.emit('showLoginDialog');
+                alert('로그인 후에 이용이 가능합니다. 로그인 해주세요.');
             }
-
         },
         storageDialogCancel() {
-            this.storageCondition.loading = false
-            this.storageDialog = false
+            this.storageCondition.loading = false;
+            this.storageDialog = false;
             this.EventBus.emit('progressValue', false);
         },
         async validateStorageCondition(item, action) {
-            var me = this
+            var me = this;
 
-            var originProjectId = me.projectId
+            var originProjectId = me.projectId;
             if (action == 'fork') {
                 var convertProjectId = item.projectId ? item.projectId : me.dbuid();
             } else {
-                var convertProjectId = item.projectId ? item.projectId : originProjectId
+                var convertProjectId = item.projectId ? item.projectId : originProjectId;
             }
             // 빈칸 -> - 변경
             convertProjectId = convertProjectId.replaceAll(' ', '-');
 
             if (convertProjectId.includes('/')) {
-                var otherMsg = 'ProjectId must be non-empty strings and can\'t contain  "/"'
+                var otherMsg = 'ProjectId must be non-empty strings and can\'t contain  "/"';
                 var obj = {
-                    'projectId': otherMsg
-                }
-                me.storageCondition.error = obj
+                    projectId: otherMsg
+                };
+                me.storageCondition.error = obj;
                 return false;
             }
 
             if (item.version == 'latest') {
                 var obj = {
-                    'version': 'The version name cannot be specified as "latest".'
-                }
-                item.error = obj
-                return false
+                    version: 'The version name cannot be specified as "latest".'
+                };
+                item.error = obj;
+                return false;
             }
 
             // checked duplicate projectId
             if (!action.includes('backup')) {
-
                 var validateInfo = await me.isValidatePath(`db://definitions/${convertProjectId}/information`);
                 if (!validateInfo.status) {
                     var obj = {
-                        'projectId': validateInfo.msg,
-                    }
-                    me.storageCondition.error = obj
+                        projectId: validateInfo.msg
+                    };
+                    me.storageCondition.error = obj;
                     return false;
                 }
 
-                var information = await me.list(`db://definitions/${convertProjectId}/information`)
+                var information = await me.list(`db://definitions/${convertProjectId}/information`);
                 if (information) {
                     var obj = {
-                        'projectId': 'This project id already exists.'
-                    }
-                    me.storageCondition.error = obj
+                        projectId: 'This project id already exists.'
+                    };
+                    me.storageCondition.error = obj;
                     return false;
                 }
             }
@@ -1775,31 +1746,42 @@ export default {
                 }
 
                 // validate Path
-                var validate = await me.isValidatePath(`db://definitions/${originProjectId}/versionLists/${item.version.replaceAll('.', '-')}`)
-                if (!(validate.status && !item.version.replaceAll('.', '-').includes('/') && !item.version.replaceAll('.', '-').includes(':'))) {
-                    var otherMsg = 'Paths must be non-empty strings and can\'t contain  "/" or ":"'
+                var validate = await me.isValidatePath(
+                    `db://definitions/${originProjectId}/versionLists/${item.version.replaceAll('.', '-')}`
+                );
+                if (
+                    !(
+                        validate.status &&
+                        !item.version.replaceAll('.', '-').includes('/') &&
+                        !item.version.replaceAll('.', '-').includes(':')
+                    )
+                ) {
+                    var otherMsg = 'Paths must be non-empty strings and can\'t contain  "/" or ":"';
                     var obj = {
-                        'version': item.version.replaceAll('.', '-').includes('/') || item.version.replaceAll('.', '-').includes(':') ? otherMsg : validate.msg,
-                    }
-                    item.error = obj
-                    return false
+                        version:
+                            item.version.replaceAll('.', '-').includes('/') || item.version.replaceAll('.', '-').includes(':')
+                                ? otherMsg
+                                : validate.msg
+                    };
+                    item.error = obj;
+                    return false;
                 }
 
-                var existVersion = await me.list(`db://definitions/${originProjectId}/versionLists/${item.version.replaceAll('.', '-')}`)
+                var existVersion = await me.list(`db://definitions/${originProjectId}/versionLists/${item.version.replaceAll('.', '-')}`);
                 if (existVersion) {
-                    var otherMsg = 'This version already exists.'
+                    var otherMsg = 'This version already exists.';
                     var obj = {
-                        'version': otherMsg,
-                    }
-                    item.error = obj
-                    return false
+                        version: otherMsg
+                    };
+                    item.error = obj;
+                    return false;
                 }
             }
 
-            return true
+            return true;
         },
         async addView() {
-            var me = this
+            var me = this;
 
             try {
                 let validation = await me.validateStorageCondition(me.storageCondition, 'addView');
@@ -1809,20 +1791,19 @@ export default {
 
                     var viewObj = {
                         owner: me.userInfo.uid,
-                        ownerEmail: me.userInfo.email,
-                    }
+                        ownerEmail: me.userInfo.email
+                    };
                     me.putObject(`db://definitions/${me.projectId}/viewLists/${me.storageCondition.viewId}`, viewObj);
                     me.storageDialogCancel();
                 } else {
-                    me.storageCondition.loading = false
+                    me.storageCondition.loading = false;
                 }
-
             } catch (e) {
-                me.storageCondition.loading = false
+                me.storageCondition.loading = false;
             }
         },
         async backupModel() {
-            var me = this
+            var me = this;
             try {
                 var check = await me.validateStorageCondition(me.storageCondition, 'backup');
                 if (check) {
@@ -1842,10 +1823,13 @@ export default {
                     var putInformation = {
                         lastVersionName: projectVersion,
                         projectName: me.storageCondition.editProjectName,
-                        comment: me.storageCondition.comment,
-                    }
+                        comment: me.storageCondition.comment
+                    };
 
-                    let valueUrl = await me.putString(`storage://definitions/${originProjectId}/versionLists/${projectVersion}/versionValue`, JSON.stringify(me.value));
+                    let valueUrl = await me.putString(
+                        `storage://definitions/${originProjectId}/versionLists/${projectVersion}/versionValue`,
+                        JSON.stringify(me.value)
+                    );
                     let imagURL = await me.putString(`storage://definitions/${originProjectId}/versionLists/${projectVersion}/image`, img);
                     // console.log(settingProjectId, originProjectId)
                     var versionInfoObj = {
@@ -1858,39 +1842,37 @@ export default {
                         timeStamp: Date.now(),
                         comment: me.storageCondition.comment,
                         valueUrl: valueUrl
-                    }
+                    };
 
-                    me.projectName = putInformation.projectName
+                    me.projectName = putInformation.projectName;
                     me.onCreateGitTagName(me.storageCondition);
-                    await me.putObject(`db://definitions/${originProjectId}/versionLists/${projectVersion}`, versionInfoObj)
+                    await me.putObject(`db://definitions/${originProjectId}/versionLists/${projectVersion}`, versionInfoObj);
                     // await me.putObject(`db://definitions/${originProjectId}/versionLists/${projectVersion}/versionValue`, versionValueObj)
 
-                    await me.putObject(`db://definitions/${originProjectId}/information`, putInformation)
+                    await me.putObject(`db://definitions/${originProjectId}/information`, putInformation);
                     // console.log(settingProjectId, originProjectId)
-                    me.storageDialogCancel()
+                    me.storageDialogCancel();
                     //alert('Success: Saved model.')
-
                 } else {
-                    this.storageCondition.loading = false
+                    this.storageCondition.loading = false;
                 }
-
             } catch (e) {
-                me.alertInfo.text = 'BACKUP-ERROR' + e
-                me.alertInfo.show = true
+                me.alertInfo.text = 'BACKUP-ERROR' + e;
+                me.alertInfo.show = true;
             }
         },
         async saveModel() {
-            var me = this
+            var me = this;
             me.EventBus.emit('progressValue', true);
-            await me.loadDefinitionLocal()
+            await me.loadDefinitionLocal();
             try {
                 var check = await me.validateStorageCondition(me.storageCondition, 'save');
                 if (check) {
-                    var originProjectId = me.projectId
+                    var originProjectId = me.projectId;
                     var settingProjectId = me.storageCondition.projectId.replaceAll(' ', '-').trim();
                     var projectVersion = me.storageCondition.version.replaceAll('.', '-').trim();
 
-                    me.projectName = me.storageCondition.projectName
+                    me.projectName = me.storageCondition.projectName;
 
                     if (me.value.scm.org && me.value.scm.repo) {
                         me.value.scm.tag = me.storageCondition.version;
@@ -1899,7 +1881,7 @@ export default {
                     let img = await me.$refs['modeler-image-generator'].save(me.projectName, me.canvas);
 
                     // input image storage.
-                    /** 
+                    /**
                      * TODO: 분기 처리 필요
                      * Issue: storage 자체는 설치형에서 사용 할 수 없음 (Cloud Storage)
                      * 따라서 이미지 저장 / 호출 부분을 Acebase쪽으로 이관
@@ -1911,7 +1893,7 @@ export default {
                         uid: me.userInfo.uid,
                         name: me.userInfo.name,
                         picture: me.userInfo.profile
-                    }
+                    };
                     var informationObj = {
                         author: me.userInfo.uid,
                         authorEmail: me.userInfo.email,
@@ -1928,11 +1910,14 @@ export default {
                         // gitRepoName: me.information && me.information.gitRepoName ? me.information.gitRepoName:null,
                         firstCommit: me.information && me.information.firstCommit ? me.information.firstCommit : null,
                         associatedProject: me.information.associatedProject
-                    }
+                    };
 
-                    let valueUrl = await me.putString(`storage://definitions/${settingProjectId}/versionLists/${projectVersion}/versionValue`, JSON.stringify(me.value));
+                    let valueUrl = await me.putString(
+                        `storage://definitions/${settingProjectId}/versionLists/${projectVersion}/versionValue`,
+                        JSON.stringify(me.value)
+                    );
                     let imagURL = await me.putString(`storage://definitions/${originProjectId}/versionLists/${projectVersion}/image`, img);
-                    console.log(settingProjectId, originProjectId)
+                    console.log(settingProjectId, originProjectId);
                     var versionInfoObj = {
                         saveUser: me.userInfo.uid,
                         saveUserEmail: me.userInfo.email,
@@ -1942,16 +1927,14 @@ export default {
                         timeStamp: Date.now(),
                         comment: me.storageCondition.comment,
                         valueUrl: valueUrl
-                    }
-
+                    };
 
                     var snapshotObj = {
                         lastSnapshotKey: '',
                         snapshot: JSON.stringify(me.value),
                         snapshotImg: imagURL,
                         timeStamp: Date.now()
-                    }
-
+                    };
 
                     if (me.projectSendable) {
                         // Sync connected associatedProject.
@@ -1966,43 +1949,41 @@ export default {
                         // });
                     }
 
-
                     if (me.isQueueModel) {
-                        me.pushObject(`db://definitions/${settingProjectId}/snapshotLists`, snapshotObj)
+                        me.pushObject(`db://definitions/${settingProjectId}/snapshotLists`, snapshotObj);
                         // me.putObject(`db://definitions/${settingProjectId}`, snapshotSpecObj)
                         // me.specVersion = '3.0'
                     }
 
                     me.onCreateGitTagName(me.storageCondition);
-                    await me.putObject(`db://definitions/${settingProjectId}/information`, informationObj)
-                    me.putObject(`db://userLists/${me.userInfo.uid}`, userInfoObj)
-
+                    await me.putObject(`db://definitions/${settingProjectId}/information`, informationObj);
+                    me.putObject(`db://userLists/${me.userInfo.uid}`, userInfoObj);
 
                     /* 백업용 사용자의 local에서 마지막 모델링 정보 */
-                    me.putObject(`db://definitions/${settingProjectId}/versionLists/${projectVersion}`, versionInfoObj)
+                    me.putObject(`db://definitions/${settingProjectId}/versionLists/${projectVersion}`, versionInfoObj);
                     // me.putObject(`db://definitions/${settingProjectId}/versionLists/${projectVersion}/versionValue`, versionValueObj)
 
-                    console.log(settingProjectId, originProjectId)
-                    var lists = await me.getObject(`localstorage://localLists`)
-                    var index = lists.findIndex(list => list.projectId == originProjectId)
-                    var location = 'storming'
+                    console.log(settingProjectId, originProjectId);
+                    var lists = await me.getObject(`localstorage://localLists`);
+                    var index = lists.findIndex((list) => list.projectId == originProjectId);
+                    var location = 'storming';
 
                     if (index != -1) {
-                        await me.delete(`localstorage://${originProjectId}`)
+                        await me.delete(`localstorage://${originProjectId}`);
                         if (me.canvasType == 'es') {
-                            location = 'storming'
+                            location = 'storming';
                         } else if (me.canvasType == 'k8s') {
-                            location = 'kubernetes'
+                            location = 'kubernetes';
                         } else if (me.canvasType == 'bm') {
-                            location = 'business-model-canvas'
+                            location = 'business-model-canvas';
                         } else if (me.canvasType == 'bpmn') {
-                            location = 'bpmn'
+                            location = 'bpmn';
                         } else {
-                            location = me.canvasType
+                            location = me.canvasType;
                         }
 
-                        lists.splice(index, 1)
-                        await me.putObject(`localstorage://localLists`, lists)
+                        lists.splice(index, 1);
+                        await me.putObject(`localstorage://localLists`, lists);
                     }
 
                     if (me.isClazzModeling) {
@@ -2010,59 +1991,55 @@ export default {
                     } else {
                         // me.moveModelUrl(settingProjectId);
                         me.$router.push({ path: `/${location}/${settingProjectId}` });
-                        me.$emit('forceUpdateKey')
+                        me.$emit('forceUpdateKey');
                     }
 
-                    me.watchInformation()
+                    me.watchInformation();
                     if (me.isQueueModel) {
-                        me.receiveQueue()
+                        me.receiveQueue();
                     } else {
-                        me.receiveValue()
-                        me.initLoad = true
-                        me.EventBus.emit('progressValue', false)
+                        me.receiveValue();
+                        me.initLoad = true;
+                        me.EventBus.emit('progressValue', false);
                     }
 
-
-
-                    me.storageDialogCancel()
-
+                    me.storageDialogCancel();
                 } else {
-                    this.storageCondition.loading = false
+                    this.storageCondition.loading = false;
                     me.EventBus.emit('progressValue', false);
                 }
             } catch (e) {
-                me.alertInfo.text = 'SAVE-ERROR' + e
-                me.alertInfo.show = true
+                me.alertInfo.text = 'SAVE-ERROR' + e;
+                me.alertInfo.show = true;
             }
-
         },
         moveModelUrl(modelId) {
             this.$router.push({ path: `/${this.canvasType}/${modelId}` });
         },
-        synchronizeAssociatedProject(oldId, newId) { },
+        synchronizeAssociatedProject(oldId, newId) {},
         async checkedForkModel() {
-            var me = this
+            var me = this;
             if (me.isServerModel) {
                 if (me.forkInformation.forkLatest || me.isClazzModeling) {
-                    me.saveComposition('fork')
+                    me.saveComposition('fork');
                 } else {
-                    me.forkModel()
+                    me.forkModel();
                 }
             } else {
-                me.forkModel()
+                me.forkModel();
             }
         },
         updateClassModelingId(newProjectId) {
             this.$emit('newProjectId', newProjectId);
         },
         async forkModel() {
-            var me = this
+            var me = this;
 
             try {
                 me.EventBus.emit('progressValue', true);
                 var check = await me.validateStorageCondition(me.storageCondition, 'fork');
                 if (check) {
-                    var originProjectId = me.projectId
+                    var originProjectId = me.projectId;
                     if (!me.storageCondition.projectId) me.storageCondition.projectId = me.dbuid();
                     var settingProjectId = me.storageCondition.projectId.replaceAll(' ', '-').trim();
                     var projectVersion = me.storageCondition.version.replaceAll('.', '-').trim();
@@ -2079,8 +2056,8 @@ export default {
                     let img = await me.$refs['modeler-image-generator'].save(me.projectName, me.canvas);
 
                     if (!me.isServerModel) {
-                        me.storageDialogCancel()
-                        alert('준비중 입니다.')
+                        me.storageDialogCancel();
+                        alert('준비중 입니다.');
                     } else {
                         await me.putString(`storage://definitions/${settingProjectId}/information/image`, img);
 
@@ -2088,7 +2065,7 @@ export default {
                             uid: me.userInfo.uid,
                             name: me.userInfo.name,
                             picture: me.userInfo.profile
-                        }
+                        };
 
                         var informationObj = {
                             author: me.userInfo.uid,
@@ -2102,17 +2079,22 @@ export default {
                             lastModifiedUser: null,
                             lastModifiedEmail: null,
                             projectName: me.storageCondition ? me.storageCondition.editProjectName : me.projectName,
-                            type: me.information.type,
-                        }
-
+                            type: me.information.type
+                        };
 
                         // var versionValueObj ={
                         //     value: JSON.stringify(copyValue),
                         // }
-                        let valueUrl = await me.putString(`storage://definitions/${settingProjectId}/versionLists/${projectVersion}/versionValue`, JSON.stringify(copyValue));
-                        let imagURL = await me.putString(`storage://definitions/${originProjectId}/versionLists/${projectVersion}/image`, img);
+                        let valueUrl = await me.putString(
+                            `storage://definitions/${settingProjectId}/versionLists/${projectVersion}/versionValue`,
+                            JSON.stringify(copyValue)
+                        );
+                        let imagURL = await me.putString(
+                            `storage://definitions/${originProjectId}/versionLists/${projectVersion}/image`,
+                            img
+                        );
 
-                        console.log(settingProjectId, originProjectId)
+                        console.log(settingProjectId, originProjectId);
                         var versionInfoObj = {
                             saveUser: me.userInfo.uid,
                             saveUserEmail: me.userInfo.email,
@@ -2122,78 +2104,85 @@ export default {
                             timeStamp: Date.now(),
                             comment: me.storageCondition.comment,
                             valueUrl: valueUrl
-                        }
+                        };
                         var snapshotObj = {
                             lastSnapshotKey: '',
                             snapshot: JSON.stringify(copyValue),
                             snapshotImg: imagURL,
                             timeStamp: Date.now()
-                        }
-
+                        };
 
                         var putProjectObj = {
                             projectId: settingProjectId,
-                            forkOrigin: originProjectId,
-                        }
-                        let forked = await me.setForkData(settingProjectId, snapshotObj, informationObj, userInfoObj, putProjectObj, projectVersion, versionInfoObj)
+                            forkOrigin: originProjectId
+                        };
+                        let forked = await me
+                            .setForkData(
+                                settingProjectId,
+                                snapshotObj,
+                                informationObj,
+                                userInfoObj,
+                                putProjectObj,
+                                projectVersion,
+                                versionInfoObj
+                            )
                             .then(function () {
                                 if (me.isClazzModeling) {
                                     me.updateClassModelingId(settingProjectId);
                                 } else {
                                     var location = null;
                                     if (me.canvasType == 'es') {
-                                        location = 'storming'
+                                        location = 'storming';
                                     } else if (me.canvasType == 'k8s') {
-                                        location = 'kubernetes'
+                                        location = 'kubernetes';
                                     } else if (me.canvasType == 'bm') {
-                                        location = 'business-model-canvas'
+                                        location = 'business-model-canvas';
                                     } else {
-                                        location = me.canvasType
+                                        location = me.canvasType;
                                     }
 
                                     // me.moveModelUrl(settingProjectId);
                                     me.$router.push({ path: `/${location}/${settingProjectId}` });
-                                    me.$emit('forceUpdateKey')
+                                    me.$emit('forceUpdateKey');
                                 }
-                                me.storageDialogCancel()
-                            })
+                                me.storageDialogCancel();
+                            });
                     }
-
                 } else {
-                    this.storageCondition.loading = false
+                    this.storageCondition.loading = false;
                 }
             } catch (e) {
-                me.alertInfo.text = 'FORK-ERROR' + e
-                me.alertInfo.show = true
+                me.alertInfo.text = 'FORK-ERROR' + e;
+                me.alertInfo.show = true;
             }
         },
         watchInformation() {
-            var me = this
+            var me = this;
             me.watch(`db://definitions/${me.projectId}/information`, function (information) {
                 if (information) {
-                    me.isServerModel = true
-                    me.settingPermission(information)
+                    me.isServerModel = true;
+                    me.settingPermission(information);
                 }
-            })
+            });
         },
         setForkData(settingProjectId, snapshotObj, informationObj, userInfoObj, putProjectObj, projectVersion, versionInfoObj) {
-            let me = this
+            let me = this;
             return new Promise(function (resolve, reject) {
                 if (me.isQueueModel) {
-                    me.pushObject(`db://definitions/${settingProjectId}/snapshotLists`, snapshotObj)
+                    me.pushObject(`db://definitions/${settingProjectId}/snapshotLists`, snapshotObj);
                     // me.putObject(`db://definitions/${settingProjectId}`, snapshotSpecObj)
                 }
-                me.putObject(`db://definitions/${settingProjectId}/information`, informationObj)
-                me.putObject(`db://userLists/${me.userInfo.uid}`, userInfoObj)
-                me.putObject(`db://userLists/${me.userInfo.uid}/mine/${settingProjectId}`, putProjectObj)
+                me.putObject(`db://definitions/${settingProjectId}/information`, informationObj);
+                me.putObject(`db://userLists/${me.userInfo.uid}`, userInfoObj);
+                me.putObject(`db://userLists/${me.userInfo.uid}/mine/${settingProjectId}`, putProjectObj);
                 // Origin Model Setting
-                me.setString(`db://definitions/${putProjectObj.forkOrigin}/forkUserLists/${me.userInfo.uid}`, settingProjectId)
+                me.setString(`db://definitions/${putProjectObj.forkOrigin}/forkUserLists/${me.userInfo.uid}`, settingProjectId);
 
                 /* 백업용 사용자의 local에서 마지막 모델링 정보 */
-                me.putObject(`db://definitions/${settingProjectId}/versionLists/${projectVersion}`, versionInfoObj)
+                me.putObject(`db://definitions/${settingProjectId}/versionLists/${projectVersion}`, versionInfoObj);
                 // me.putObject(`db://definitions/${settingProjectId}/versionLists/${projectVersion}/versionValue`, versionValueObj)
-                resolve()
-            })
+                resolve();
+            });
         },
         // async getSpecVersion() {
         //     var me = this
@@ -2207,14 +2196,14 @@ export default {
         //     })
         // },
         async loadViewes() {
-            var me = this
-            let result = []
+            var me = this;
+            let result = [];
 
             if (!me.viewLists || me.viewLists.length == 0) {
                 var viewes = await me.list(`db://definitions/${me.projectId}/viewLists`);
                 if (viewes) {
                     result = Object.keys(viewes).map(function (version) {
-                        var rObj = viewes[version] ? viewes[version] : {}
+                        var rObj = viewes[version] ? viewes[version] : {};
                         rObj['viewId'] = version.replaceAll('-', '.');
                         return rObj;
                     });
@@ -2222,18 +2211,17 @@ export default {
                     me.viewLists = result;
                 }
             }
-
         },
         async loadVersions() {
-            var me = this
-            let result = []
+            var me = this;
+            let result = [];
 
             if (!me.versionLists || me.versionLists.length == 0) {
                 var versions = await me.list(`db://definitions/${me.projectId}/versionLists`);
                 if (versions) {
                     await me.migrateVersions(me.projectId, versions);
                     result = Object.keys(versions).map(function (version) {
-                        var rObj = versions[version] ? versions[version] : {}
+                        var rObj = versions[version] ? versions[version] : {};
                         rObj['version'] = version.replaceAll('-', '.');
                         return rObj;
                     });
@@ -2243,17 +2231,23 @@ export default {
             }
         },
         async migrateVersions(projectId, versions) {
-            var me = this
+            var me = this;
 
             for (let version in versions) {
                 if (projectId && !versions[version].valueUrl) {
-                    let versionInfo = versions[version].versionInfo
-                    let versionValue = versions[version].versionValue && versions[version].versionValue.value ? versions[version].versionValue.value : versions[version].versionValue;
+                    let versionInfo = versions[version].versionInfo;
+                    let versionValue =
+                        versions[version].versionValue && versions[version].versionValue.value
+                            ? versions[version].versionValue.value
+                            : versions[version].versionValue;
                     if (!versionInfo) {
-                        versionInfo = {}
+                        versionInfo = {};
                     }
 
-                    let valueUrl = await me.putString(`storage://definitions/${projectId}/versionLists/${version}/versionValue`, versionValue);
+                    let valueUrl = await me.putString(
+                        `storage://definitions/${projectId}/versionLists/${version}/versionValue`,
+                        versionValue
+                    );
                     versionInfo.valueUrl = valueUrl;
 
                     // date -> timeStamp
@@ -2265,32 +2259,31 @@ export default {
                     me.delete(`db://definitions/${projectId}/versionLists/${version}/versionInfo`);
                 }
             }
-
         },
         async loadDefinition() {
-            var me = this
-            var loadedDefinition = null
+            var me = this;
+            var loadedDefinition = null;
 
-            var modelUrl = me.isClazzModeling ? me.projectId : me.params.projectId
+            var modelUrl = me.isClazzModeling ? me.projectId : me.params.projectId;
 
             if (modelUrl.includes(':')) {
-                me.projectId = modelUrl.split(':')[0]
-                me.projectVersion = modelUrl.split(':')[1]
-                me.projectVersion = me.projectVersion.replaceAll('.', '-')
+                me.projectId = modelUrl.split(':')[0];
+                me.projectVersion = modelUrl.split(':')[1];
+                me.projectVersion = me.projectVersion.replaceAll('.', '-');
             } else {
-                me.projectId = modelUrl
+                me.projectId = modelUrl;
             }
 
-            if (window && window.document) window.document.title = me.projectId
+            if (window && window.document) window.document.title = me.projectId;
 
             // rtc
-            me.rtcRoomId = `modelRtc_${me.projectId}`
-            localStorage.setItem('projectId', me.projectId)
+            me.rtcRoomId = `modelRtc_${me.projectId}`;
+            localStorage.setItem('projectId', me.projectId);
 
             if (me.projectId) {
                 var information = await me.list(`db://definitions/${me.projectId}/information`);
 
-                me.EventBus.emit('progressValue', true)
+                me.EventBus.emit('progressValue', true);
 
                 if (information && Object.keys(information).length < 4) {
                     // local model && wrong date
@@ -2299,20 +2292,20 @@ export default {
                 }
 
                 if (information) {
-                    me.isServerModel = true
+                    me.isServerModel = true;
                 } else {
                     // 로컬 일때는 로딩바 해제
-                    me.EventBus.emit('progressValue', false)
+                    me.EventBus.emit('progressValue', false);
                 }
 
                 if (me.isServerModel) {
                     if (information.type != me.canvasType) {
-                        me.isDisable = true
+                        me.isDisable = true;
 
-                        me.alertInfo.text = 'The wrong approach. Please check the url.'
-                        me.alertInfo.fnNum = 1
-                        me.alertInfo.submit = 'Close'
-                        me.alertInfo.show = true
+                        me.alertInfo.text = 'The wrong approach. Please check the url.';
+                        me.alertInfo.fnNum = 1;
+                        me.alertInfo.submit = 'Close';
+                        me.alertInfo.show = true;
                         return;
                     }
 
@@ -2320,17 +2313,17 @@ export default {
 
                     if (!me.isDisable) {
                         // Authorization
-                        var forkLatest = await me.list(`db://definitions/${me.projectId}/forkUserLists/${me.userInfo.uid}`)
-                        me.forkInformation.forkLatest = forkLatest ? forkLatest : null
-                        me.forkInformation.forkOrigin = information.forkOrigin ? information.forkOrigin : null
+                        var forkLatest = await me.list(`db://definitions/${me.projectId}/forkUserLists/${me.userInfo.uid}`);
+                        me.forkInformation.forkLatest = forkLatest ? forkLatest : null;
+                        me.forkInformation.forkOrigin = information.forkOrigin ? information.forkOrigin : null;
 
-                        await me.enterUser()
+                        await me.enterUser();
                         // me.specVersion = await me.getSpecVersion()
 
                         if (me.alertInfo.fnNum == 1) {
                             // permission denied
                         } else {
-                            loadedDefinition = await me.loadDefinitionVersion3orAbove()
+                            loadedDefinition = await me.loadDefinitionVersion3orAbove();
 
                             // if (me.specVersion == '1.0') {
                             //     loadedDefinition = await me.loadDefinitionVersion1()
@@ -2343,108 +2336,100 @@ export default {
                         }
                     }
                 } else {
-                    me.isOwnModel = true
-                    loadedDefinition = await me.loadDefinitionLocal()
+                    me.isOwnModel = true;
+                    loadedDefinition = await me.loadDefinitionLocal();
                 }
 
                 if (loadedDefinition) {
-                    me.value = me.migrate(loadedDefinition)
+                    me.value = me.migrate(loadedDefinition);
                 } else if (!me.value) {
-                    me.value = { 'elements': {}, 'relations': {} }
-                    me.initLoad = true
+                    me.value = { elements: {}, relations: {} };
+                    me.initLoad = true;
                 }
 
                 me.afterSnapshotLoad();
             } else {
-                me.isOwnModel = true
+                me.isOwnModel = true;
 
-                if (!me.value)
-                    me.value = { 'elements': {}, 'relations': {} }
+                if (!me.value) me.value = { elements: {}, relations: {} };
             }
 
             if (!me.isServerModel) {
                 me.$nextTick(function () {
-                    me.EventBus.emit('progressValue', false)
-                    me.initLoad = true
-                    console.log('# Done init load')
-                })
+                    me.EventBus.emit('progressValue', false);
+                    me.initLoad = true;
+                    console.log('# Done init load');
+                });
             }
-
         },
         loadDefinitionLocal() {
-            var me = this
+            var me = this;
 
             return new Promise(async function (resolve, reject) {
-                let lists = await me.getObject(`localstorage://localLists`)
-                let value = await me.getObject(`localstorage://${me.projectId}`)
+                let lists = await me.getObject(`localstorage://localLists`);
+                let value = await me.getObject(`localstorage://${me.projectId}`);
 
                 lists = lists ? lists : [];
-                let index = lists.findIndex(list => list.projectId == me.projectId)
+                let index = lists.findIndex((list) => list.projectId == me.projectId);
                 let basicInformation = {
                     author: me.userInfo.uid,
                     authorEmail: me.userInfo.email,
-                    comment: "",
+                    comment: '',
                     createdTimeStamp: Date.now(),
                     lastModifiedTimeStamp: Date.now(),
                     projectName: me.projectName,
                     projectId: me.projectId,
-                    type: me.canvasType,
-                }
+                    type: me.canvasType
+                };
 
                 if (index > 0) {
                     // 기존 정보.
                     me.information = Object.assign(basicInformation, lists[index]);
                 } else {
                     me.information = basicInformation;
-                    lists.push(me.information)
+                    lists.push(me.information);
                     me.putObject(`localstorage://localLists`, lists);
                 }
-                me.isEditable = true
-                me.projectName = me.information.projectName ? me.information.projectName : 'untitled'
+                me.isEditable = true;
+                me.projectName = me.information.projectName ? me.information.projectName : 'untitled';
 
-
-                resolve(value ? value : { 'elements': {}, 'relations': {} })
-            })
+                resolve(value ? value : { elements: {}, relations: {} });
+            });
         },
         loadDefinitionVersion1() {
-            var me = this
+            var me = this;
             return new Promise(async function (resolve, reject) {
-
-                var getValue = await me.getString(`db://definitions/${me.projectId}/versionLists/${me.information.lastVersionName}`)
+                var getValue = await me.getString(`db://definitions/${me.projectId}/versionLists/${me.information.lastVersionName}`);
 
                 if (getValue && getValue.versionValue) {
-                    resolve(JSON.parse(getValue.versionValue.value))
+                    resolve(JSON.parse(getValue.versionValue.value));
                 } else {
-                    resolve({ 'elements': {}, 'relations': {} })
+                    resolve({ elements: {}, relations: {} });
                 }
-
-
-            })
+            });
         },
         loadDefinitionVersion2() {
-            var me = this
+            var me = this;
 
             return new Promise(async function (resolve, reject) {
-
                 var option = {
-                    sort: "desc",
+                    sort: 'desc',
                     orderBy: null,
                     size: 1,
                     startAt: null,
-                    endAt: null,
-                }
+                    endAt: null
+                };
 
-
-                var snapshots = await me.list(`db://definitions/${me.projectId}/snapshotLists`, option)
+                var snapshots = await me.list(`db://definitions/${me.projectId}/snapshotLists`, option);
 
                 if (snapshots) {
-                    var snapshotObj = snapshots[0]
-                    me.lastSnapshotKey = snapshotObj.key
-                    me.lastSnapQueueKey = snapshotObj.lastSnapshotKey ? snapshotObj.lastSnapshotKey : ''
-                    me.value = JSON.parse(snapshotObj.snapshot)
+                    var snapshotObj = snapshots[0];
+                    me.lastSnapshotKey = snapshotObj.key;
+                    me.lastSnapQueueKey = snapshotObj.lastSnapshotKey ? snapshotObj.lastSnapshotKey : '';
+                    me.value = JSON.parse(snapshotObj.snapshot);
                 } else {
-                    me.lastSnapQueueKey = ''
-                    me.value = { definition: [], relation: [] }
+                    me.lastSnapQueueKey = '';
+                    me.value = { definition: [], relation: [] };
                 }
 
                 var queueOption = {
@@ -2452,143 +2437,132 @@ export default {
                     orderBy: null,
                     size: null,
                     startAt: me.lastSnapQueueKey,
-                    endAt: null,
-                }
+                    endAt: null
+                };
 
-                var queueLists = await me.list(`db://definitions/${me.projectId}/queue`, queueOption)
+                var queueLists = await me.list(`db://definitions/${me.projectId}/queue`, queueOption);
 
                 if (queueLists) {
-
                     Object.keys(queueLists).forEach(function (key) {
-                        me.latestQueueKey = key
-                        var snapValue = queueLists[key]
+                        me.latestQueueKey = key;
+                        var snapValue = queueLists[key];
 
-                        var action = snapValue.action ? snapValue.action : snapValue.state
+                        var action = snapValue.action ? snapValue.action : snapValue.state;
 
                         if (!action.includes('user')) {
                             var obj = {
                                 childKey: key,
                                 childValue: snapValue
-                            }
+                            };
 
-                            me.receivedQueueDrawElement(obj)
+                            me.receivedQueueDrawElement(obj);
                         }
-                    })
+                    });
 
-                    resolve(me.value)
+                    resolve(me.value);
                 } else {
-                    resolve(me.value)
+                    resolve(me.value);
                 }
-            })
+            });
         },
         loadDefinitionVersion3orAbove() {
-            var me = this
+            var me = this;
             return new Promise(async function (resolve, reject) {
-
                 if (me.projectVersion) {
-
                     if (me.projectVersion == 'latest') {
                         await me.loadVersions();
 
                         if (me.versionLists && me.versionLists.length > 0) {
                             me.projectVersion = me.versionLists[me.versionLists.length - 1].version.replaceAll('.', '-').trim();
                         } else {
-                            me.snackbar.show = true
-                            me.snackbar.text = "This model does not have versions."
-                            me.snackbar.color = '#E57373'
-                            resolve({ 'elements': {}, 'relations': {} })
+                            me.snackbar.show = true;
+                            me.snackbar.text = 'This model does not have versions.';
+                            me.snackbar.color = '#E57373';
+                            resolve({ elements: {}, relations: {} });
                             return;
                         }
                     }
 
-                    let snapshots = await me.list(`db://definitions/${me.projectId}/versionLists/${me.projectVersion}`)
+                    let snapshots = await me.list(`db://definitions/${me.projectId}/versionLists/${me.projectVersion}`);
                     if (snapshots) {
-                        var versionInfo = snapshots.versionInfo ? snapshots.versionInfo : snapshots
-                        let versionValue = { 'elements': {}, 'relations': {} };
+                        var versionInfo = snapshots.versionInfo ? snapshots.versionInfo : snapshots;
+                        let versionValue = { elements: {}, relations: {} };
                         if (snapshots.versionInfo) {
                             versionValue = JSON.parse(snapshots.versionValue.value);
                         } else {
                             versionValue = await me.getObject(`storage://${snapshots.valueUrl}`);
                         }
 
-                        me.projectName = versionInfo && versionInfo.projectName ? versionInfo.projectName : 'untitled'
-                        resolve(versionValue)
+                        me.projectName = versionInfo && versionInfo.projectName ? versionInfo.projectName : 'untitled';
+                        resolve(versionValue);
                     } else {
-                        resolve({ 'elements': {}, 'relations': {} })
+                        resolve({ elements: {}, relations: {} });
                     }
-
-
                 } else {
                     var option = {
-                        sort: "desc",
+                        sort: 'desc',
                         orderBy: null,
                         size: 1,
                         startAt: null,
-                        endAt: null,
-
-                    }
-                    var snapshots = await me.list(`db://definitions/${me.projectId}/snapshotLists`, option)
+                        endAt: null
+                    };
+                    var snapshots = await me.list(`db://definitions/${me.projectId}/snapshotLists`, option);
 
                     if (snapshots) {
-                        var snapshotObj = snapshots[0]
-                        me.lastSnapshotKey = snapshotObj.key
-                        me.lastSnapQueueKey = snapshotObj.lastSnapshotKey ? snapshotObj.lastSnapshotKey : ''
-                        var tmp = JSON.parse(snapshotObj.snapshot)
-                        resolve(tmp)
+                        var snapshotObj = snapshots[0];
+                        me.lastSnapshotKey = snapshotObj.key;
+                        me.lastSnapQueueKey = snapshotObj.lastSnapshotKey ? snapshotObj.lastSnapshotKey : '';
+                        var tmp = JSON.parse(snapshotObj.snapshot);
+                        resolve(tmp);
                     } else {
-                        me.lastSnapQueueKey = ''
-                        resolve({ 'elements': {}, 'relations': {} })
+                        me.lastSnapQueueKey = '';
+                        resolve({ elements: {}, relations: {} });
                     }
                 }
-            })
+            });
         },
         migrateQueue(action, item) {
             return item;
         },
         migrate(value) {
-            var me = this
+            var me = this;
 
-            value = me.migrate1To3(value)
-            value = me.migratePublic(value)
-            value = me.migrateModel(value)
+            value = me.migrate1To3(value);
+            value = me.migratePublic(value);
+            value = me.migrateModel(value);
 
-            return value
-
+            return value;
         },
         migrate1To3(value) {
-            var me = this
+            var me = this;
 
             // if (me.specVersion != '3.0' && !value.version) {
             if (!value.version) {
-                if (!value.relations) value.relations = {}
-                if (!value.elements) value.elements = {}
+                if (!value.relations) value.relations = {};
+                if (!value.elements) value.elements = {};
 
                 Object.keys(value).forEach(function (key, index) {
                     if (Array.isArray(value[key])) {
                         if (key.includes('relation')) {
                             Object.values(value[key]).forEach(function (relation, index) {
-                                if (relation)
-                                    value.relations[relation.relationView.id] = relation
+                                if (relation) value.relations[relation.relationView.id] = relation;
                                 // me.$set(value.relations, relation.relationView.id, relation)
-                            })
+                            });
                         } else if (key.includes('definition')) {
                             Object.values(value[key]).forEach(function (element, index) {
-                                if (element)
-                                    value.elements[element.elementView.id] = element
+                                if (element) value.elements[element.elementView.id] = element;
                                 // me.$set(value.elements, element.elementView.id, element)
-                            })
+                            });
                         }
                     }
-                })
-                value.version = 3
-                console.log('load 1 to3')
+                });
+                value.version = 3;
+                console.log('load 1 to3');
             }
             delete value['definition'];
             delete value['relation'];
 
-
-            return value
-
+            return value;
         },
         // migrate2To3(value) {
         //     var me = this
@@ -2622,7 +2596,7 @@ export default {
         //     return value
         // },
         migratePublic(value) {
-            var me = this
+            var me = this;
             if (!value.scm || Object.keys(value.scm).length == 0) {
                 value.scm = {
                     tag: null,
@@ -2630,7 +2604,7 @@ export default {
                     repo: null,
                     forkedOrg: null,
                     forkedRepo: null
-                }
+                };
             }
 
             if (me.information) {
@@ -2651,48 +2625,47 @@ export default {
                 }
             }
 
-            return value
+            return value;
         },
         migrateModel(value) {
-            return value
+            return value;
         },
         requestInviteUser() {
-            var me = this
+            var me = this;
             //login check
             try {
-                me.setUserInfo()
+                me.setUserInfo();
                 if (me.isLogin) {
-                    if (me.information.permissions &&
+                    if (
+                        me.information.permissions &&
                         me.information.permissions[me.userInfo.uid] &&
-                        me.information.permissions[me.userInfo.uid].request) {
-                        alert('권한 요청된 상태입니다.')
+                        me.information.permissions[me.userInfo.uid].request
+                    ) {
+                        alert('권한 요청된 상태입니다.');
                     } else {
                         var obj = {
                             email: me.userInfo.email,
-                            permission: "Write",
-                            request: true,
-                        }
-                        me.applyInviteUsers(obj, true)
+                            permission: 'Write',
+                            request: true
+                        };
+                        me.applyInviteUsers(obj, true);
                     }
-
                 } else {
-                    me.EventBus.emit('showLoginDialog')
+                    me.EventBus.emit('showLoginDialog');
                 }
-
             } catch (e) {
-                alert('Error: request - inviteUser :', e)
+                alert('Error: request - inviteUser :', e);
             }
-
         },
         async openInviteUsers() {
-            var me = this
-            var getPermission = await me._get(`db://definitions/${me.projectId}/information/permissions`)
-            me.invitationLists = getPermission
+            var me = this;
+            var getPermission = await me._get(`db://definitions/${me.projectId}/information/permissions`);
+            me.invitationLists = getPermission;
             if (me.invitationLists) {
-                me.showPublicModel = Object.keys(me.invitationLists).indexOf('everyone') == -1 ? false : true
+                me.showPublicModel = Object.keys(me.invitationLists).indexOf('everyone') == -1 ? false : true;
             }
 
-            me.inviteDialog = true
+            me.inviteDialog = true;
         },
         async addPublicModel(projectId) {
             let isExist = await this.isExistServerModel(projectId);
@@ -2700,21 +2673,21 @@ export default {
                 this.putObject(`db://definitions/${projectId}/information/permissions/everyone`, {
                     uid: 'everyone',
                     userName: 'Everyone',
-                    write: false,
-                })
+                    write: false
+                });
                 return true;
             }
             return false;
         },
         async isExistPermission(projectId, uid) {
             if (projectId) {
-                let information = await this.list(`db://definitions/${projectId}/information`)
+                let information = await this.list(`db://definitions/${projectId}/information`);
                 if (information) {
                     if (uid) {
                         if (uid == information.author) {
-                            return { uid: information.author, userName: information.email, write: true, isAuthor: true }
+                            return { uid: information.author, userName: information.email, write: true, isAuthor: true };
                         } else if (information.permissions) {
-                            return information.permissions[uid]
+                            return information.permissions[uid];
                         }
                     } else {
                         return information.permissions;
@@ -2725,7 +2698,7 @@ export default {
         },
         async isExistServerModel(projectId) {
             if (projectId) {
-                let information = await this.list(`db://definitions/${projectId}/information`)
+                let information = await this.list(`db://definitions/${projectId}/information`);
                 if (information) {
                     return true;
                 }
@@ -2733,24 +2706,23 @@ export default {
             return false;
         },
         invitePublic(show) {
-            var me = this
-            if (!me.invitationLists) me.invitationLists = {}
+            var me = this;
+            if (!me.invitationLists) me.invitationLists = {};
 
             if (show) {
                 me.invitationLists['everyone'] = {
                     uid: 'everyone',
                     userName: 'Everyone',
-                    write: false,
-                }
-                me.showPublicModel = true
+                    write: false
+                };
+                me.showPublicModel = true;
             } else {
-                me.invitationLists['everyone'] = null
-                me.showPublicModel = false
+                me.invitationLists['everyone'] = null;
+                me.showPublicModel = false;
             }
-
         },
         getPodStatus(userName, userGroup, projectName) {
-            var me = this
+            var me = this;
             return new Promise(function (resolve, reject) {
                 var hashName;
                 if (me.$route.params.labId) {
@@ -2759,23 +2731,26 @@ export default {
                     } else {
                         var hashPath = me.getClassPath(me.$route.params.userId);
                     }
-                    hashName = "labs-" + me.hashCode(hashPath);
+                    hashName = 'labs-' + me.hashCode(hashPath);
                 } else {
-                    hashName = `ide-${me.hashCode(userGroup + "-" + userName)}`
+                    hashName = `ide-${me.hashCode(userGroup + '-' + userName)}`;
                 }
-                me.$http.get(`${me.getProtocol()}//api.${me.getTenantId()}/api/v1/namespaces/default/pods/${hashName}`).then(function (result) {
-                    if (result.data.status.phase == "Running") {
-                        resolve(true)
-                    } else {
-                        resolve(false)
-                    }
-                }).catch(function (e) {
-                    resolve(false)
-                })
-            })
+                me.$http
+                    .get(`${me.getProtocol()}//api.${me.getTenantId()}/api/v1/namespaces/default/pods/${hashName}`)
+                    .then(function (result) {
+                        if (result.data.status.phase == 'Running') {
+                            resolve(true);
+                        } else {
+                            resolve(false);
+                        }
+                    })
+                    .catch(function (e) {
+                        resolve(false);
+                    });
+            });
         },
         checkIdeOperator(hashName) {
-            var me = this
+            var me = this;
             if (me.$parent.classInfo) {
                 var serverToken = me.$parent.classInfo.token;
                 var serverUrl = me.$parent.classInfo.serverUrl;
@@ -2783,108 +2758,128 @@ export default {
 
             if (!serverUrl || !serverToken) {
                 return new Promise(function (resolve) {
-                    me.$http.get(`${me.getProtocol()}//api.${me.getTenantId()}/apis/uengine.org/v1alpha1/namespaces/default/ides/${hashName}/status`).then(function (result) {
-                        console.log(result.data.status.conditions)
-                        result.data.status.conditions.forEach(function (item) {
-                            if (item.reason == "InstallSuccessful" && item.type == "Deployed") {
-                                resolve(true)
-                            }
+                    me.$http
+                        .get(
+                            `${me.getProtocol()}//api.${me.getTenantId()}/apis/uengine.org/v1alpha1/namespaces/default/ides/${hashName}/status`
+                        )
+                        .then(function (result) {
+                            console.log(result.data.status.conditions);
+                            result.data.status.conditions.forEach(function (item) {
+                                if (item.reason == 'InstallSuccessful' && item.type == 'Deployed') {
+                                    resolve(true);
+                                }
+                            });
                         })
-                    }).catch(function (e) {
-                        resolve(false)
-                    })
-                })
+                        .catch(function (e) {
+                            resolve(false);
+                        });
+                });
             } else {
                 return new Promise(function (resolve) {
-                    me.$http.get(`http://api.${me.getTenantId()}/apis/uengine.org/v1alpha1/namespaces/default/ides/${hashName}/status?serverUrl=${serverUrl}&token=${serverToken}`).then(function (result) {
-                        console.log(result.data.status.conditions)
-                        result.data.status.conditions.forEach(function (item) {
-                            if (item.reason == "InstallSuccessful" && item.type == "Deployed") {
-                                resolve(true)
-                            }
+                    me.$http
+                        .get(
+                            `http://api.${me.getTenantId()}/apis/uengine.org/v1alpha1/namespaces/default/ides/${hashName}/status?serverUrl=${serverUrl}&token=${serverToken}`
+                        )
+                        .then(function (result) {
+                            console.log(result.data.status.conditions);
+                            result.data.status.conditions.forEach(function (item) {
+                                if (item.reason == 'InstallSuccessful' && item.type == 'Deployed') {
+                                    resolve(true);
+                                }
+                            });
                         })
-                    }).catch(function (e) {
-                        resolve(false)
-                    })
-                })
+                        .catch(function (e) {
+                            resolve(false);
+                        });
+                });
             }
         },
         deleteConfig(hashName, obj) {
-            var me = this
+            var me = this;
             return new Promise(async function (resolve, reject) {
                 var tenant;
                 if (me.$parent.classInfo) {
-                    tenant = me.$parent.classInfo.ideUrl
+                    tenant = me.$parent.classInfo.ideUrl;
                 } else {
-                    tenant = window.MODE == "onprem" ? me.getTenantId() : 'kuberez.io'
+                    tenant = window.MODE == 'onprem' ? me.getTenantId() : 'kuberez.io';
                 }
-                me.$http.delete(`${me.getProtocol()}//file.${tenant}/api/deleteConfig`, {
-                    data: {
-                        "tenant": "eventstorming",
-                        "course": obj.course,
-                        "clazz": "users",
-                        "userId": obj.userId,
-                        "status": "running",
-                        "hashName": hashName
-                    }
-                }, {
-                    headers: {
-                        "Content-Type": "application/json; charset=UTF-8"
-                    }
-                }).then(function () {
-                    resolve()
-                }).catch(error => alert(error))
+                me.$http
+                    .delete(
+                        `${me.getProtocol()}//file.${tenant}/api/deleteConfig`,
+                        {
+                            data: {
+                                tenant: 'eventstorming',
+                                course: obj.course,
+                                clazz: 'users',
+                                userId: obj.userId,
+                                status: 'running',
+                                hashName: hashName
+                            }
+                        },
+                        {
+                            headers: {
+                                'Content-Type': 'application/json; charset=UTF-8'
+                            }
+                        }
+                    )
+                    .then(function () {
+                        resolve();
+                    })
+                    .catch((error) => alert(error));
                 // await me.putObject(configPath + '/config', configJson)
                 // resolve()
-            })
+            });
         },
         makeDir(path) {
             var me = this;
             return new Promise(function (resolve, reject) {
                 var tenant;
                 if (me.$parent.classInfo) {
-                    tenant = me.$parent.classInfo.ideUrl
+                    tenant = me.$parent.classInfo.ideUrl;
                 } else {
-                    tenant = window.MODE == "onprem" ? me.getTenantId() : 'kuberez.io'
+                    tenant = window.MODE == 'onprem' ? me.getTenantId() : 'kuberez.io';
                 }
-                me.$http.post(`${me.getProtocol()}//file.${tenant}/api/makeDir`, {
-                    "path": path
-                }).then(function () {
-                    return resolve();
-                }).catch(function (e) {
-                    alert(e);
-                    reject();
-                });
-            })
+                me.$http
+                    .post(`${me.getProtocol()}//file.${tenant}/api/makeDir`, {
+                        path: path
+                    })
+                    .then(function () {
+                        return resolve();
+                    })
+                    .catch(function (e) {
+                        alert(e);
+                        reject();
+                    });
+            });
         },
         makeConfig(hashName, obj) {
-            var me = this
+            var me = this;
             return new Promise(async function (resolve, reject) {
                 var serverUrl, serverToken, ideUrl;
                 if (me.$parent.classInfo) {
                     serverUrl = me.$parent.classInfo.serverUrl;
                     serverToken = me.$parent.classInfo.token;
                 } else {
-                    serverUrl = window.MODE == "onprem" ? window.CLUSTER_ADDRESS : 'https://218.236.22.12:6443';
+                    serverUrl = window.MODE == 'onprem' ? window.CLUSTER_ADDRESS : 'https://218.236.22.12:6443';
                 }
 
                 var serviceAccount = await me.existServiceAccountCheck(hashName);
 
                 function sleep(ms) {
-                    return new Promise(resolve => setTimeout(resolve, ms))
+                    return new Promise((resolve) => setTimeout(resolve, ms));
                 }
 
                 while (!serviceAccount) {
                     serviceAccount = await me.existServiceAccountCheck(hashName);
-                    await sleep(3000)
+                    await sleep(3000);
                 }
 
-                var secretName = serviceAccount.data.secrets[0].name
+                var secretName = serviceAccount.data.secrets[0].name;
                 var secret = await me.getSecret(hashName, secretName);
 
                 while (!secret) {
-                    secret = await me.getSecret(hashName, secretName)
-                    await sleep(3000)
+                    secret = await me.getSecret(hashName, secretName);
+                    await sleep(3000);
                 }
 
                 var decodedToken = atob(secret);
@@ -2893,281 +2888,285 @@ export default {
                 // 클러스터명, 서버ip 바꿔줄 것!
 
                 var configJson = {
-                    "apiVersion": "v1",
-                    "clusters": [
+                    apiVersion: 'v1',
+                    clusters: [
                         {
-                            "cluster": {
-                                "insecure-skip-tls-verify": true,
-                                "server": serverUrl
+                            cluster: {
+                                'insecure-skip-tls-verify': true,
+                                server: serverUrl
                             },
-                            "name": "kcb-test2.k8s.local"
+                            name: 'kcb-test2.k8s.local'
                         }
                     ],
-                    "contexts": [
+                    contexts: [
                         {
-                            "context": {
-                                "cluster": "kcb-test2.k8s.local",
-                                "namespace": hashName,
-                                "user": hashName
+                            context: {
+                                cluster: 'kcb-test2.k8s.local',
+                                namespace: hashName,
+                                user: hashName
                             },
-                            "name": "kcb-test2.k8s.local"
+                            name: 'kcb-test2.k8s.local'
                         }
                     ],
-                    "current-context": "kcb-test2.k8s.local",
-                    "kind": "Config",
-                    "preferences": {},
-                    "users": [
+                    'current-context': 'kcb-test2.k8s.local',
+                    kind: 'Config',
+                    preferences: {},
+                    users: [
                         {
-                            "name": hashName,
-                            "user": {
-                                "token": decodedToken
+                            name: hashName,
+                            user: {
+                                token: decodedToken
                             }
                         }
                     ]
-                }
+                };
                 var tenant;
                 if (me.$parent.classInfo) {
-                    tenant = me.$parent.classInfo.ideUrl
+                    tenant = me.$parent.classInfo.ideUrl;
                 } else {
-                    tenant = window.MODE == "onprem" ? me.getTenantId() : 'kuberez.io'
+                    tenant = window.MODE == 'onprem' ? me.getTenantId() : 'kuberez.io';
                 }
-                me.$http.post(`${me.getProtocol()}//file.${tenant}/api/uploadConfig`, {
-                    "config": JSON.stringify(configJson),
-                    "tenant": me.$route.params.labId ? me.getTenantId() : "eventstorming",
-                    "course": obj.course,
-                    "clazz": me.$route.params.labId ? obj.clazz : `users`,
-                    "userId": obj.userId,
-                    "status": "running",
-                    "hashName": hashName
-                }, {
-                    headers: {
-                        "Content-Type": "application/json; charset=UTF-8"
-                    }
-                }).then(function () {
-                    me.EventBus.emit("nextStep")
-                    resolve()
-                }).catch(error => alert(error))
+                me.$http
+                    .post(
+                        `${me.getProtocol()}//file.${tenant}/api/uploadConfig`,
+                        {
+                            config: JSON.stringify(configJson),
+                            tenant: me.$route.params.labId ? me.getTenantId() : 'eventstorming',
+                            course: obj.course,
+                            clazz: me.$route.params.labId ? obj.clazz : `users`,
+                            userId: obj.userId,
+                            status: 'running',
+                            hashName: hashName
+                        },
+                        {
+                            headers: {
+                                'Content-Type': 'application/json; charset=UTF-8'
+                            }
+                        }
+                    )
+                    .then(function () {
+                        me.EventBus.emit('nextStep');
+                        resolve();
+                    })
+                    .catch((error) => alert(error));
                 // await me.putObject(configPath + '/config', configJson)
                 // resolve()
-            })
+            });
         },
         async addInviteUser(user, myself) {
-            var me = this
-            var write = false
-            var success = false
+            var me = this;
+            var write = false;
+            var success = false;
             if (user.email) {
                 return new Promise(async function (resolve, reject) {
                     if (user.permission == 'Write') {
-                        write = true
+                        write = true;
                     }
 
                     var options = {
-                        sort: "desc",
+                        sort: 'desc',
                         orderBy: 'email',
                         size: null,
                         startAt: `${user.email}`,
-                        endAt: `${user.email}`,
-                    }
+                        endAt: `${user.email}`
+                    };
 
-                    var snapshots = await me.list('db://users', options)
+                    var snapshots = await me.list('db://users', options);
                     if (snapshots) {
-                        if (!me.invitationLists) me.invitationLists = {}
+                        if (!me.invitationLists) me.invitationLists = {};
                         snapshots.forEach(function (snapshot) {
-                            var uid = snapshot.key
+                            var uid = snapshot.key;
                             if ((myself && me.userInfo.uid == uid) || (!myself && me.userInfo.uid != uid)) {
-                                var item = snapshot
-                                me.invitationLists[uid] =
-                                {
+                                var item = snapshot;
+                                me.invitationLists[uid] = {
                                     uid: uid,
-                                    userName: item.userName ? item.userName : (item.username ? item.username : 'anyone'),
+                                    userName: item.userName ? item.userName : item.username ? item.username : 'anyone',
                                     userPic: item.profile_picture ? item.profile_picture : '',
                                     email: item.email ? item.email : user.email,
                                     write: write,
                                     request: user.request ? user.request : null
-                                }
+                                };
                             }
-                        })
-                        me.invitationLists.__ob__.dep.notify()
+                        });
+                        me.invitationLists.__ob__.dep.notify();
                         if (!me.invitationLists) {
                             var obj = {
                                 msg: "공유실패: Can't find user. check email."
-                            }
-                            me.EventBus.emit('inviteCallBack', obj)
+                            };
+                            me.EventBus.emit('inviteCallBack', obj);
                             // me.snackbar.show = true
                             // me.snackbar.text = "공유실패: Can't find user. check email."
                             // me.snackbar.color = '#E57373'
-                            resolve(false)
+                            resolve(false);
                         }
-                        resolve(true)
+                        resolve(true);
                     } else {
                         var obj = {
-                            msg: "공유실패: 초대하려는 유저가 구글 로그인을 안했을 가능성이 높습니다."
-                        }
-                        me.EventBus.emit('inviteCallBack', obj)
+                            msg: '공유실패: 초대하려는 유저가 구글 로그인을 안했을 가능성이 높습니다.'
+                        };
+                        me.EventBus.emit('inviteCallBack', obj);
                         // me.snackbar.show = true
                         // me.snackbar.text = '공유실패: 초대하려는 유저가 구글 로그인을 안했을 가능성이 높습니다.'
                         // me.snackbar.color = '#E57373'
-                        resolve(false)
+                        resolve(false);
                     }
-                })
+                });
             } else {
                 var obj = {
-                    msg: "공유실패: 이메일형식에 맞춰서 넣어주세요."
-                }
-                me.EventBus.emit('inviteCallBack', obj)
+                    msg: '공유실패: 이메일형식에 맞춰서 넣어주세요.'
+                };
+                me.EventBus.emit('inviteCallBack', obj);
                 // me.snackbar.show = true
                 // me.snackbar.text = '공유실패: 이메일형식에 맞춰서 넣어주세요.'
                 // me.snackbar.color = '#E57373'
-                resolve(false)
+                resolve(false);
             }
         },
         removeInviteUser(user) {
-            var me = this
-            me.invitationLists[user.uid] = null
+            var me = this;
+            me.invitationLists[user.uid] = null;
             if (user.uid == 'everyone') {
-                me.showPublicModel = false
+                me.showPublicModel = false;
             }
             me.invitationLists.__ob__.dep.notify();
         },
         async applyInviteUsers(inputUser, request) {
-            var me = this
-            var result = true
+            var me = this;
+            var result = true;
             if (inputUser) {
-                result = await me.addInviteUser(inputUser, true)
+                result = await me.addInviteUser(inputUser, true);
             }
-            console.log(me.invitationLists)
+            console.log(me.invitationLists);
 
             if (me.invitationLists) {
                 if (!request) {
                     Object.keys(me.invitationLists).forEach(function (invitation) {
                         if (me.invitationLists[invitation] && me.invitationLists[invitation].request) {
-                            me.invitationLists[invitation].request = false
+                            me.invitationLists[invitation].request = false;
                         }
-                    })
+                    });
                 }
 
-                me.putObject(`db://definitions/${me.projectId}/information/permissions`, me.invitationLists)
-                me.information.permissions = me.invitationLists
-                me.modelChanged = true
+                me.putObject(`db://definitions/${me.projectId}/information/permissions`, me.invitationLists);
+                me.information.permissions = me.invitationLists;
+                me.modelChanged = true;
                 if (request) {
-                    me.joinRequested = true
+                    me.joinRequested = true;
                 }
             }
 
             if (result) {
                 var obj = {
                     msg: null
-                }
-                me.EventBus.emit('inviteCallBack', obj)
-                me.inviteDialog = false
+                };
+                me.EventBus.emit('inviteCallBack', obj);
+                me.inviteDialog = false;
             }
-
         },
         closeInviteUsers(beforeInvitationLists) {
-            var me = this
-            console.log(beforeInvitationLists)
+            var me = this;
+            console.log(beforeInvitationLists);
             if (beforeInvitationLists) {
                 Object.keys(beforeInvitationLists).forEach(function (invitation) {
                     if (beforeInvitationLists[invitation] && beforeInvitationLists[invitation].request) {
-                        beforeInvitationLists[invitation].request = false
+                        beforeInvitationLists[invitation].request = false;
                     }
-                })
-                me.putObject(`db://definitions/${me.projectId}/information/permissions`, beforeInvitationLists)
-                me.information.permissions = beforeInvitationLists
-                me.modelChanged = false
+                });
+                me.putObject(`db://definitions/${me.projectId}/information/permissions`, beforeInvitationLists);
+                me.information.permissions = beforeInvitationLists;
+                me.modelChanged = false;
             }
-            me.inviteDialog = false
+            me.inviteDialog = false;
         },
         getLastQueue() {
-            var me = this
+            var me = this;
             return new Promise(async function (resolve, reject) {
                 var option = {
                     sort: 'desc',
                     orderBy: null,
                     size: 2,
                     startAt: null,
-                    endAt: null,
-                }
+                    endAt: null
+                };
 
-                var result = await me.list(`db://definitions/${me.projectId}/queue`, option)
-                resolve(result)
-            })
+                var result = await me.list(`db://definitions/${me.projectId}/queue`, option);
+                resolve(result);
+            });
         },
         getUndoRedoQueue(endAt) {
-            var me = this
+            var me = this;
             return new Promise(async function (resolve) {
                 var option = {
                     sort: 'desc',
                     orderBy: null,
                     size: 2,
                     startAt: null,
-                    endAt: endAt,
-                }
-                var keyValue = await me.list(`db://definitions/${me.projectId}/queue`, option)
+                    endAt: endAt
+                };
+                var keyValue = await me.list(`db://definitions/${me.projectId}/queue`, option);
 
                 if (keyValue) {
-                    var prevVal = keyValue[0]
-                    var prevKey = prevVal.key
-                    var nextVal = keyValue[1]
-                    var nextKey = nextVal ? nextVal.key : null
+                    var prevVal = keyValue[0];
+                    var prevKey = prevVal.key;
+                    var nextVal = keyValue[1];
+                    var nextKey = nextVal ? nextVal.key : null;
 
                     if (prevKey && prevVal.action.includes('user')) {
-                        resolve(me.getUndoRedoQueue(nextKey))
+                        resolve(me.getUndoRedoQueue(nextKey));
                     } else {
-                        resolve(keyValue)
+                        resolve(keyValue);
                     }
                 } else {
-                    resolve(null)
+                    resolve(null);
                 }
-            })
+            });
         },
         sort(lastChild, lastChildIndex) {
-            var me = this
-            var currentChild = null
+            var me = this;
+            var currentChild = null;
 
             if (me.sortScheduleId) return;
             try {
-
                 if (lastChild == null) {
                     lastChildIndex = queueFifo.elements.length - 1;
                     lastChild = queueFifo.elements[lastChildIndex];
                 }
                 var timePassed = Date.now() - lastChild.childValue.receivedTime;
                 if (timePassed < 200 || me.changedByMe) {
-
                     if (!me.sortScheduleId) {
                         me.sortScheduleId = setTimeout(function () {
-                            me.sortScheduleId = null
+                            me.sortScheduleId = null;
                             me.sort(lastChild, lastChildIndex);
                         }, 300);
                     }
                 } else {
                     /* receivedQueue Start */
-                    me.EventBus.emit('progressValue', true)
+                    me.EventBus.emit('progressValue', true);
 
                     var countOrdered = lastChildIndex + 1;
 
-                    queueFifo.elements.sort(function (a, b) { // 오름순
+                    queueFifo.elements.sort(function (a, b) {
+                        // 오름순
                         return a.childKey < b.childKey ? -1 : a.childKey > b.childKey ? 1 : 0;
                     });
 
                     for (var i = 0; i < countOrdered; i++) {
-                        currentChild = queueFifo.elements[i]
-                        me.receivedQueueItemCountAfterLastSnapshot = me.receivedQueueItemCountAfterLastSnapshot + 1
-                        me.receivedQueueDrawElement(queueFifo.elements[i])
-
+                        currentChild = queueFifo.elements[i];
+                        me.receivedQueueItemCountAfterLastSnapshot = me.receivedQueueItemCountAfterLastSnapshot + 1;
+                        me.receivedQueueDrawElement(queueFifo.elements[i]);
                     }
                     for (var i = 0; i < countOrdered; i++) {
-                        var firstQueue = queueFifo.dequeue()
-                        currentChild = null
+                        var firstQueue = queueFifo.dequeue();
+                        currentChild = null;
 
-                        if (firstQueue &&
+                        if (
+                            firstQueue &&
                             firstQueue.childValue.editUid == me.userInfo.uid &&
                             me.receivedQueueItemCountAfterLastSnapshot >= me.snapshotFrequency &&
-                            me.receivedQueueItemCountAfterLastSnapshot % me.snapshotFrequency == 0) {
-                            me.checkLeaderExist(firstQueue)
+                            me.receivedQueueItemCountAfterLastSnapshot % me.snapshotFrequency == 0
+                        ) {
+                            me.checkLeaderExist(firstQueue);
                         }
-
                     }
 
                     if (queueFifo.isEmpty()) {
@@ -3175,119 +3174,119 @@ export default {
                         clearTimeout(me.queueScheduleId);
 
                         me.queueScheduleId = setTimeout(function () {
-                            console.log('#---------  End received Queue ----------------#')
-                            me.EventBus.emit('progressValue', false)
-                            me.overlayText = null
-                            me.initLoad = true
-                            if (me.isAutoForkModel) me.autoForkModel()
-                        }, 500)
-
+                            console.log('#---------  End received Queue ----------------#');
+                            me.EventBus.emit('progressValue', false);
+                            me.overlayText = null;
+                            me.initLoad = true;
+                            if (me.isAutoForkModel) me.autoForkModel();
+                        }, 500);
                     }
 
                     lastChildIndex = queueFifo.elements.length - 1;
                     lastChild = queueFifo.elements[lastChildIndex];
                     if (lastChildIndex > -1) {
-                        me.sortScheduleId =
-                            setTimeout(function () {
-                                me.sortScheduleId = null
-                                me.sort(lastChild, lastChildIndex);
-                            },
-                                300
-                            );
+                        me.sortScheduleId = setTimeout(function () {
+                            me.sortScheduleId = null;
+                            me.sort(lastChild, lastChildIndex);
+                        }, 300);
                     }
                 }
             } catch (e) {
-                console.log('sortError: ', e, 'lastChild:', lastChild, 'key:', lastChild.childKey, 'action:', lastChild.childValue.action, currentChild)
+                console.log(
+                    'sortError: ',
+                    e,
+                    'lastChild:',
+                    lastChild,
+                    'key:',
+                    lastChild.childKey,
+                    'action:',
+                    lastChild.childValue.action,
+                    currentChild
+                );
 
-                me.watch_off(`db://definitions/${me.projectId}/queue`)
+                me.watch_off(`db://definitions/${me.projectId}/queue`);
                 if (currentChild && currentChild.childKey) {
-                    me.delete(`db://definitions/${me.projectId}/queue/${currentChild.childKey}`)
+                    me.delete(`db://definitions/${me.projectId}/queue/${currentChild.childKey}`);
                 }
-                var queueIds = queueFifo.findIndexByChildKey(currentChild.childKey)
+                var queueIds = queueFifo.findIndexByChildKey(currentChild.childKey);
                 if (queueIds != -1) {
-                    queueFifo.removeByIndex(queueIds)
+                    queueFifo.removeByIndex(queueIds);
                 }
-                me.$emit('forceUpdateKey')
+                me.$emit('forceUpdateKey');
             }
-
-
         },
         async checkLeaderExist(child) {
-            var me = this
-            var lastKey
+            var me = this;
+            var lastKey;
 
             var option = {
                 sort: 'desc',
                 orderBy: null,
                 size: 1,
                 startAt: null,
-                endAt: null,
-            }
+                endAt: null
+            };
 
-            var snapshot = await me.list(`db://definitions/${me.projectId}/snapshotLists`, option)
+            var snapshot = await me.list(`db://definitions/${me.projectId}/snapshotLists`, option);
 
             if (snapshot) {
-                var snapshotObj = snapshot[0]
-                lastKey = snapshotObj.lastSnapshotKey ? snapshotObj.lastSnapshotKey : ''
+                var snapshotObj = snapshot[0];
+                lastKey = snapshotObj.lastSnapshotKey ? snapshotObj.lastSnapshotKey : '';
             }
 
             if (!snapshot || lastKey < child.childKey) {
                 me.$refs['modeler-image-generator'].save(me.id, me.canvas).then(function (resolve) {
-
                     var obj = {
                         snapshot: JSON.stringify(me.value),
                         timeStamp: Date.now(),
                         snapshotImg: resolve,
-                        lastSnapshotKey: child.childKey,
-                    }
-                    me.pushObject(`db://definitions/${me.projectId}/snapshotLists`, obj)
-                })
+                        lastSnapshotKey: child.childKey
+                    };
+                    me.pushObject(`db://definitions/${me.projectId}/snapshotLists`, obj);
+                });
             }
 
-            me.receivedQueueItemCountAfterLastSnapshot = 0
-
+            me.receivedQueueItemCountAfterLastSnapshot = 0;
         },
         undoRedoDraw(child, state) {
-            var me = this
+            var me = this;
 
-            var action = child.childValue.action ? child.childValue.action : child.childValue.state
+            var action = child.childValue.action ? child.childValue.action : child.childValue.state;
 
             if (state == 'undo') {
                 if (action == 'redo') {
-                    child = JSON.parse(child.childValue.item)
-                    action = child.childValue.action
+                    child = JSON.parse(child.childValue.item);
+                    action = child.childValue.action;
                 }
 
                 if (action.includes('Move')) {
-                    var orgin = JSON.parse(JSON.stringify(child.childValue.after))
-                    child.childValue.after = child.childValue.before
-                    child.childValue.before = orgin
+                    var orgin = JSON.parse(JSON.stringify(child.childValue.after));
+                    child.childValue.after = child.childValue.before;
+                    child.childValue.before = orgin;
                 } else if (action.includes('Modify')) {
-                    child.childValue.item = JSON.stringify(jsondiffpatch.reverse(JSON.parse(child.childValue.item)))
+                    child.childValue.item = JSON.stringify(jsondiffpatch.reverse(JSON.parse(child.childValue.item)));
                 } else if (action.includes('Push')) {
-                    child.childValue.action = child.childValue.action.replace('Push', 'Delete')
+                    child.childValue.action = child.childValue.action.replace('Push', 'Delete');
                 } else if (action.includes('Delete')) {
-                    child.childValue.action = child.childValue.action.replace('Delete', 'Push')
+                    child.childValue.action = child.childValue.action.replace('Delete', 'Push');
                 }
-
             } else if (state == 'redo') {
-                child = JSON.parse(child.childValue.item)
+                child = JSON.parse(child.childValue.item);
 
                 if (action == 'undo') {
-                    action = child.childValue.action
+                    action = child.childValue.action;
                     if (action.includes('Move')) {
-                        var orgin = JSON.parse(JSON.stringify(child.childValue.after))
-                        child.childValue.after = child.childValue.before
-                        child.childValue.before = orgin
+                        var orgin = JSON.parse(JSON.stringify(child.childValue.after));
+                        child.childValue.after = child.childValue.before;
+                        child.childValue.before = orgin;
                     } else if (action.includes('Modify')) {
-                        child.childValue.item = JSON.stringify(jsondiffpatch.reverse(JSON.parse(child.childValue.item)))
+                        child.childValue.item = JSON.stringify(jsondiffpatch.reverse(JSON.parse(child.childValue.item)));
                     } else if (action.includes('Push')) {
-                        child.childValue.action = child.childValue.action.replace('Push', 'Delete')
+                        child.childValue.action = child.childValue.action.replace('Push', 'Delete');
                     } else if (action.includes('Delete')) {
-                        child.childValue.action = child.childValue.action.replace('Delete', 'Push')
+                        child.childValue.action = child.childValue.action.replace('Delete', 'Push');
                     }
                 }
-
             }
 
             var obj = {
@@ -3295,113 +3294,111 @@ export default {
                 editUid: me.userInfo.uid,
                 timeStamp: Date.now(),
                 item: JSON.stringify(child)
-            }
-            me.pushObject(`db://definitions/${me.projectId}/queue`, obj)
-
+            };
+            me.pushObject(`db://definitions/${me.projectId}/queue`, obj);
         },
         receivedQueueDrawElement(child, ignore) {
-            var me = this
-            ignore = ignore ? ignore : false
+            var me = this;
+            ignore = ignore ? ignore : false;
 
             if (child != undefined) {
-                var item = null
-                var afterMove = null
-                var action = child.childValue.action ? child.childValue.action : child.childValue.state
+                var item = null;
+                var afterMove = null;
+                var action = child.childValue.action ? child.childValue.action : child.childValue.state;
 
                 if (action == 'undo' || action == 'redo') {
                     // changedByMe
-                    ignore = true
+                    ignore = true;
                     var undoRedoKey = child.childKey;
                     child = JSON.parse(child.childValue.item);
                     child.undoRedoKey = undoRedoKey;
-                    action = child.childValue.action
+                    action = child.childValue.action;
                 }
 
                 if (action.includes('Move')) {
-                    afterMove = child.childValue.after
+                    afterMove = child.childValue.after;
                 } else {
-                    item = child.childValue.item ? JSON.parse(child.childValue.item) : null
+                    item = child.childValue.item ? JSON.parse(child.childValue.item) : null;
                 }
 
                 //origin
                 if (action == 'elementPush') {
                     if (!ignore && child.childKey < me.prevKey) {
-                        me.receiveErrorQueue('Wrong queue key.', child)
+                        me.receiveErrorQueue('Wrong queue key.', child);
                     }
 
                     // Excute Element Push
                     if (ignore || child.childKey != me.prevKey) {
-                        if (!child.isMirrorQueue) me.prevKey = child.childKey
-                        item.author = child.childValue.editUid
+                        if (!child.isMirrorQueue) me.prevKey = child.childKey;
+                        item.author = child.childValue.editUid;
 
                         //Setting added Entity ( By Queue migrate)
                         item = me.migrateQueue(action, item);
 
                         //add Element
-                        me.receiveAppendedQueue(item, child)
-                        if (me.initLoad) me.changedTemplateCode = true
+                        me.receiveAppendedQueue(item, child);
+                        if (me.initLoad) me.changedTemplateCode = true;
                     } else {
-                        console.log('reduplication Element Push')
+                        console.log('reduplication Element Push');
                     }
                 } else if (action == 'elementDelete') {
                     try {
-                        me.receiveRemovedQueue(item, child)
+                        me.receiveRemovedQueue(item, child);
 
-                        if (me.initLoad) me.changedTemplateCode = true
+                        if (me.initLoad) me.changedTemplateCode = true;
                     } catch (e) {
-                        me.receiveErrorQueue(e, child)
+                        me.receiveErrorQueue(e, child);
                     }
                 } else if (action == 'elementMove') {
                     try {
-                        me.receiveMovedQueue(child.childValue.elementId, afterMove, child)
+                        me.receiveMovedQueue(child.childValue.elementId, afterMove, child);
                     } catch (e) {
-                        me.receiveErrorQueue(e, child)
+                        me.receiveErrorQueue(e, child);
                     }
                 } else if (action == 'valueModify') {
                     try {
                         //changedByMe
                         if (!ignore && me.changedByMeKeys.includes(child.childKey)) {
-                            me.changedByMeKeys.splice(me.changedByMeKeys.indexOf(child.childKey), 1)
+                            me.changedByMeKeys.splice(me.changedByMeKeys.indexOf(child.childKey), 1);
                         } else {
                             me.receiveChangedValueQueue(item, child);
                         }
-                        if (me.initLoad) me.changedTemplateCode = true
+                        if (me.initLoad) me.changedTemplateCode = true;
                     } catch (e) {
-                        me.receiveErrorQueue(e, child)
+                        me.receiveErrorQueue(e, child);
                     }
                 } else if (action == 'relationPush') {
                     if (!ignore && child.childKey < me.prevKey) {
-                        me.receiveErrorQueue('Wrong queue key.', child)
+                        me.receiveErrorQueue('Wrong queue key.', child);
                     }
 
                     if (ignore || child.childKey != me.prevKey) {
-                        if (!child.isMirrorQueue) me.prevKey = child.childKey
+                        if (!child.isMirrorQueue) me.prevKey = child.childKey;
 
                         if (me.validateRelation(item.from, item.to)) {
-
                             if (!item._type.endsWith('Relation')) {
-                                item.author = child.childValue.editUid
+                                item.author = child.childValue.editUid;
                             }
-                            me.receiveAppendedQueue(item, child)
+                            me.receiveAppendedQueue(item, child);
 
-                            if (me.initLoad) me.changedTemplateCode = true
+                            if (me.initLoad) me.changedTemplateCode = true;
                         }
                     } else {
-                        console.log('reduplication Relation Push')
+                        console.log('reduplication Relation Push');
                     }
                 } else if (action == 'relationDelete') {
                     try {
-                        me.receiveRemovedQueue(item, child)
+                        me.receiveRemovedQueue(item, child);
 
-                        if (me.initLoad) me.changedTemplateCode = true
+                        if (me.initLoad) me.changedTemplateCode = true;
                     } catch (e) {
-                        me.receiveErrorQueue(e, child)
+                        me.receiveErrorQueue(e, child);
                     }
                 } else if (action == 'relationMove') {
                     try {
-                        me.receiveMovedQueue(child.childValue.relationId, afterMove, child)
+                        me.receiveMovedQueue(child.childValue.relationId, afterMove, child);
                     } catch (e) {
-                        me.receiveErrorQueue(e, child)
+                        me.receiveErrorQueue(e, child);
                     }
                 }
             }
@@ -3411,15 +3408,15 @@ export default {
              !!!  REMOVE !!!!
              changedMethod: appendElement
             */
-            var me = this
-            me.value.elements[element.elementView.id] = element
+            var me = this;
+            me.value.elements[element.elementView.id] = element;
             // me.$set(me.value.elements, element.elementView.id, element);
 
             me.$nextTick(function () {
                 me.EventBus.emit(`${element.elementView.id}`, {
                     action: 'elementPush',
                     STATUS_COMPLETE: true
-                })
+                });
             });
         },
         deleteElements(element, child) {
@@ -3427,7 +3424,7 @@ export default {
                !!!  REMOVE !!!!
                changedMethod: removeElement
            */
-            var me = this
+            var me = this;
             me.value.elements[element.elementView.id] = null;
             // delete me.value.elements[element.elementView.id];
 
@@ -3435,7 +3432,7 @@ export default {
                 me.EventBus.emit(`${element.elementView.id}`, {
                     action: 'elementDelete',
                     STATUS_COMPLETE: true
-                })
+                });
             });
         },
         addRelations(relation, child) {
@@ -3443,15 +3440,15 @@ export default {
                !!!  REMOVE !!!!
                changedMethod: appendElement
            */
-            var me = this
-            me.value.relations[relation.relationView.id] = relation
+            var me = this;
+            me.value.relations[relation.relationView.id] = relation;
             // me.$set(me.value.relations, relation.relationView.id, relation);
 
             me.$nextTick(function () {
                 me.EventBus.emit(`${relation.relationView.id}`, {
                     action: 'relationPush',
                     STATUS_COMPLETE: true
-                })
+                });
             });
         },
         deleteRelations(relation, child) {
@@ -3459,45 +3456,45 @@ export default {
               !!!  REMOVE !!!!
               changedMethod: removeElement
           */
-            var me = this
+            var me = this;
             me.value.relations[relation.relationView.id] = null;
 
             me.$nextTick(function () {
                 me.EventBus.emit(`${relation.relationView.id}`, {
                     action: 'relationDelete',
                     STATUS_COMPLETE: true
-                })
+                });
             });
         },
         async receiveValue() {
-            var me = this
+            var me = this;
             await me.watch(`db://definitions/${me.projectId}/value`, function (callback) {
                 // me.changedByMe = false
-                if (callback) me.value = JSON.parse(callback)
-            })
+                if (callback) me.value = JSON.parse(callback);
+            });
         },
         releaseQueue(projectId) {
-            var me = this
+            var me = this;
 
             if (!projectId) return;
 
-            me.watch_off(`db://definitions/${projectId}/queue`)
+            me.watch_off(`db://definitions/${projectId}/queue`);
         },
         watchProjectInformation(associatedProjectId) {
-            var me = this
-            if (!associatedProjectId) return
+            var me = this;
+            if (!associatedProjectId) return;
 
             me.watch(`db://definitions/${associatedProjectId}/information`, function (information) {
                 let old = JSON.parse(JSON.stringify(me.projectInformation));
-                me.projectInformation = information ? information : null
+                me.projectInformation = information ? information : null;
                 me.detectDeletedModel(old);
-            })
+            });
         },
         detectDeletedModel(info) {
             // reload condition.
         },
         async receiveAssociatedProject(associatedProjectId) {
-            var me = this
+            var me = this;
             let startKey = '';
 
             me.isLoadedInitMirror = false;
@@ -3508,91 +3505,90 @@ export default {
             // server
             // TODO: Snapshot Logic.
             let snapshots = await me.list(`db://definitions/${associatedProjectId}/snapshotLists`, {
-                sort: "desc",
+                sort: 'desc',
                 orderBy: null,
                 size: 1,
                 startAt: null,
-                endAt: null,
-
-            })
+                endAt: null
+            });
 
             if (snapshots) {
-                startKey = snapshots[0].lastSnapshotKey ? snapshots[0].lastSnapshotKey : ''
+                startKey = snapshots[0].lastSnapshotKey ? snapshots[0].lastSnapshotKey : '';
                 me.mirrorValue = JSON.parse(snapshots[0].snapshot);
             } else {
-                startKey = ''
-                me.mirrorValue =
-                {
-                    'elements': {},
-                    'relations': {},
-                    'basePlatform': null,
-                    'basePlatformConf': {},
-                    'toppingPlatforms': null,
-                    'toppingPlatformsConf': {},
-                    'scm': {}
-                }
+                startKey = '';
+                me.mirrorValue = {
+                    elements: {},
+                    relations: {},
+                    basePlatform: null,
+                    basePlatformConf: {},
+                    toppingPlatforms: null,
+                    toppingPlatformsConf: {},
+                    scm: {}
+                };
             }
 
-
-            let isWaitingQueue = null
-            let waitingTime = startKey ? 10000 : 3000
+            let isWaitingQueue = null;
+            let waitingTime = startKey ? 10000 : 3000;
             isWaitingQueue = setTimeout(function () {
                 /* receivedSnapshot End */
                 me.isLoadedInitMirror = true;
-                me.watchProjectInformation(associatedProjectId)
-            }, waitingTime)
-
+                me.watchProjectInformation(associatedProjectId);
+            }, waitingTime);
 
             // TODO: Qeuue Logic.
-            me.watch_added(`db://definitions/${associatedProjectId}/queue`, {
-                sort: null,
-                orderBy: null,
-                size: null,
-                startAt: startKey,
-                endAt: null,
-            }, async function (queue) {
-
-                if (queue.action.includes('user')) {
-                    return;
-                }
-                me.isLoadedMirrorQueue = true
-                clearTimeout(isWaitingQueue);
-
-                var obj = {
-                    _ordered: false,
-                    childKey: queue.key,
-                    childValue: queue,
-                    isMirrorQueue: true,
-                }
-                obj.childValue.key = queue.key;
-                obj.childValue.receivedTime = Date.now();
-
-                me.receivedQueueDrawElement(obj, true);
-                me.mirrorQueueCount++;
-
-                me.saveAssociatedModelSnapshot(associatedProjectId, queue)
-
-                isWaitingQueue = setTimeout(function () {
-                    /* receivedSnapshot End */
-                    if (!me.isLoadedInitMirror) {
-                        me.isLoadedInitMirror = true;
-                        me.watchProjectInformation(associatedProjectId)
+            me.watch_added(
+                `db://definitions/${associatedProjectId}/queue`,
+                {
+                    sort: null,
+                    orderBy: null,
+                    size: null,
+                    startAt: startKey,
+                    endAt: null
+                },
+                async function (queue) {
+                    if (queue.action.includes('user')) {
+                        return;
                     }
-                    me.isLoadedMirrorQueue = false;
-                }, 1000)
-            });
+                    me.isLoadedMirrorQueue = true;
+                    clearTimeout(isWaitingQueue);
+
+                    var obj = {
+                        _ordered: false,
+                        childKey: queue.key,
+                        childValue: queue,
+                        isMirrorQueue: true
+                    };
+                    obj.childValue.key = queue.key;
+                    obj.childValue.receivedTime = Date.now();
+
+                    me.receivedQueueDrawElement(obj, true);
+                    me.mirrorQueueCount++;
+
+                    me.saveAssociatedModelSnapshot(associatedProjectId, queue);
+
+                    isWaitingQueue = setTimeout(function () {
+                        /* receivedSnapshot End */
+                        if (!me.isLoadedInitMirror) {
+                            me.isLoadedInitMirror = true;
+                            me.watchProjectInformation(associatedProjectId);
+                        }
+                        me.isLoadedMirrorQueue = false;
+                    }, 1000);
+                }
+            );
         },
         getProjectDefinitionLists() {
-            return []
+            return [];
         },
         syncMirrorElements() {
             var me = this;
-            let modelLists = me.getProjectDefinitionLists()
-            let disconnectDiff = { 'elements': {} }
+            let modelLists = me.getProjectDefinitionLists();
+            let disconnectDiff = { elements: {} };
             Object.values(me.value.elements)
                 .filter((ele) => ele && ele.mirrorElement)
                 .forEach(function (mirror) {
-                    let origin = me.mirrorValue.elements[mirror.mirrorElement]
+                    let origin = me.mirrorValue.elements[mirror.mirrorElement];
 
                     /*
                      CONDITION1: Not includes "definitionId" of Attribute
@@ -3603,16 +3599,12 @@ export default {
                     // if(origin /*&& modelLists.includes(origin.definitionId)*/ ) {
                     if (origin && (!Object.keys(origin).includes('definitionId') || modelLists.includes(origin.definitionId))) {
                         // connection -> Sync
-                        if (mirror.elementView)
-                            me.value.elements[mirror.elementView.id] = me.overrideMirrorValue(mirror, origin);
-                        else if (mirror.id)
-                            me.value.elements[mirror.id] = me.overrideMirrorValue(mirror, origin);
-                        else
-                            console.log("mirror element is corrupt: doesn't have elementView")
-
+                        if (mirror.elementView) me.value.elements[mirror.elementView.id] = me.overrideMirrorValue(mirror, origin);
+                        else if (mirror.id) me.value.elements[mirror.id] = me.overrideMirrorValue(mirror, origin);
+                        else console.log("mirror element is corrupt: doesn't have elementView");
                     } else if (origin && !modelLists.includes(origin.definitionId)) {
                         // disconnect -> origin definition remove.
-                        disconnectDiff.elements[origin.id] = origin.id
+                        disconnectDiff.elements[origin.id] = origin.id;
                         // me.$set(disconnectDiff.elements, origin.id, [origin,null])
                     } else if (!origin && mirror.definitionId && modelLists.includes(mirror.definitionId)) {
                         // connection -> user remove.
@@ -3621,17 +3613,17 @@ export default {
                         me.value.elements[mirror.id] = null;
                     } else if (!origin && mirror.mirrorElement) {
                         // reConnection -> relink
-                        let reOrigin = Object.values(me.mirrorValue.elements)
-                            .find(ele =>
-                                me.validateElementFormat(ele)
-                                && ele._type == mirror._type  // equals type.
-                                && ele.name
-                                && ele.name.toLowerCase() == mirror.name.toLowerCase() // equals name
-                                && ele.elementView.id != mirror.id // myself x
-                                && !ele.mirrorElement // connected element x
-                            )
+                        let reOrigin = Object.values(me.mirrorValue.elements).find(
+                            (ele) =>
+                                me.validateElementFormat(ele) &&
+                                ele._type == mirror._type && // equals type.
+                                ele.name &&
+                                ele.name.toLowerCase() == mirror.name.toLowerCase() && // equals name
+                                ele.elementView.id != mirror.id && // myself x
+                                !ele.mirrorElement // connected element x
+                        );
                         if (reOrigin) {
-                            mirror.mirrorElement = reOrigin.elementView.id
+                            mirror.mirrorElement = reOrigin.elementView.id;
                             me.changedByMe = true;
                         }
                     }
@@ -3639,7 +3631,7 @@ export default {
 
             if (Object.keys(disconnectDiff.elements).length > 0) {
                 // disconnect -> definition remove.
-                me.pushChangedValueQueue(disconnectDiff, { definitionId: me.information.associatedProject })
+                me.pushChangedValueQueue(disconnectDiff, { definitionId: me.information.associatedProject });
             }
         },
         overrideMirrorValue(mirror, origin) {
@@ -3647,7 +3639,7 @@ export default {
 
             let result = Object.assign({}, origin);
             Object.keys(mirror).forEach(function (itemKey) {
-                if (itemKey == "elementView" || itemKey == "relationView" || itemKey == "id" || itemKey == "mirrorElement") {
+                if (itemKey == 'elementView' || itemKey == 'relationView' || itemKey == 'id' || itemKey == 'mirrorElement') {
                     // 원본 값에 mirror Element 정보 override.
                     result[itemKey] = mirror[itemKey];
                 }
@@ -3659,7 +3651,7 @@ export default {
             return result;
         },
         async saveAssociatedModelSnapshot(id, queue) {
-            var me = this
+            var me = this;
 
             if (!me.isLogin) return;
             if (me.isDisable) return;
@@ -3671,105 +3663,99 @@ export default {
                         snapshot: JSON.stringify(me.mirrorValue),
                         timeStamp: Date.now(),
                         snapshotImg: null,
-                        lastSnapshotKey: queue.key,
-                    })
+                        lastSnapshotKey: queue.key
+                    });
                 }
                 // other user and set Snap user.
                 me.mirrorQueueCount = 0;
             }
         },
         receiveQueue() {
-            var me = this
-            var isWaitingQueue = null
-            let waitingTime = me.lastSnapQueueKey ? 10000 : 3000
+            var me = this;
+            var isWaitingQueue = null;
+            let waitingTime = me.lastSnapQueueKey ? 10000 : 3000;
             isWaitingQueue = setTimeout(function () {
                 /* receivedQeue End */
-                me.initLoad = true
-                me.EventBus.emit('progressValue', false)
+                me.initLoad = true;
+                me.EventBus.emit('progressValue', false);
                 if (me.isAutoForkModel) {
-                    me.autoForkModel()
+                    me.autoForkModel();
                 }
-            }, waitingTime)
-
+            }, waitingTime);
 
             var options = {
                 sort: null,
                 orderBy: null,
                 size: null,
                 startAt: me.lastSnapQueueKey,
-                endAt: null,
-            }
+                endAt: null
+            };
 
             me.watch_added(`db://definitions/${me.projectId}/queue`, options, async function (queue) {
                 // console.log('watch_added:: ', queue)
                 // console.log('receiveQueue: ', queue.key, me.lastSanpQueueKey, queue.key > me.lastSnapQueueKey)
 
                 if (queue) {
-                    me.latestQueueKey = queue.key
+                    me.latestQueueKey = queue.key;
                 }
                 if (queue && (me.lastSnapQueueKey ? queue.key > me.lastSnapQueueKey : true)) {
                     // if (me.specVersion != '1.0' && queue && (me.lastSnapQueueKey ? queue.key > me.lastSnapQueueKey : true)) {
                     if (queue.action == 'userEntrance') {
-
                         var obj = {
                             uid: queue.editUid,
                             email: queue.email,
                             userName: queue.userName,
                             picture: queue.picture
+                        };
+                        if (me.participantLists.findIndex((user) => user.uid == obj.uid) == -1) {
+                            me.participantLists.push(obj);
                         }
-                        if (me.participantLists.findIndex(user => user.uid == obj.uid) == -1) {
-                            me.participantLists.push(obj)
-                        }
-
                     } else if (queue.action == 'userExit') {
                         var obj = {
                             uid: queue.editUid,
                             email: queue.email,
-                            userName: queue.userName,
-                        }
-                        var findIndex = me.participantLists.findIndex(user => user.uid == obj.uid)
+                            userName: queue.userName
+                        };
+                        var findIndex = me.participantLists.findIndex((user) => user.uid == obj.uid);
                         if (findIndex != -1) {
-                            me.participantLists.splice(findIndex, 1)
+                            me.participantLists.splice(findIndex, 1);
                         }
-
-                    } else if (queue.action == 'userPanelOpen' ||
+                    } else if (
+                        queue.action == 'userPanelOpen' ||
                         queue.action == 'userPanelClose' ||
                         queue.action == 'userSelectedOn' ||
                         queue.action == 'userSelectedOff' ||
                         queue.action == 'userMovedOn' ||
-                        queue.action == 'userMovedOff') {
-
+                        queue.action == 'userMovedOff'
+                    ) {
                         var obj = {
                             action: queue.action,
                             uid: queue.editUid,
                             picture: queue.picture,
                             name: queue.name
-                        }
+                        };
 
-                        me.EventBus.emit(`${queue.editElement}`, obj)
-
+                        me.EventBus.emit(`${queue.editElement}`, obj);
                     } else {
-                        clearTimeout(isWaitingQueue)
+                        clearTimeout(isWaitingQueue);
 
                         if (!me.receivedQueueExistValue) {
-                            me.receivedQueueExistValue = true
+                            me.receivedQueueExistValue = true;
                         }
 
                         var obj = {
                             _ordered: false,
                             childKey: queue.key,
                             childValue: queue
-                        }
+                        };
                         obj.childValue.key = queue.key;
                         obj.childValue.receivedTime = Date.now();
 
-                        queueFifo.enqueue(obj)
+                        queueFifo.enqueue(obj);
                         me.sort();
                     }
                 }
-
-
-            })
+            });
         },
         removeMoveDiff(diff) {
             if (diff.elements) {
@@ -3777,12 +3763,12 @@ export default {
                     delete diff.elements[id]['elementView'];
 
                     if (JSON.stringify(diff.elements[id]) == '{}') {
-                        delete diff.elements[id]
+                        delete diff.elements[id];
                     }
                 });
 
                 if (JSON.stringify(diff.elements) == '{}') {
-                    delete diff.elements
+                    delete diff.elements;
                 }
             }
 
@@ -3790,11 +3776,11 @@ export default {
                 Object.keys(diff.relations).forEach(function (id) {
                     delete diff.relations[id]['relationView'];
                     if (JSON.stringify(diff.relations[id]) == '{}') {
-                        delete diff.relations[id]
+                        delete diff.relations[id];
                     }
                 });
                 if (JSON.stringify(diff.relations) == '{}') {
-                    delete diff.relations
+                    delete diff.relations;
                 }
             }
 
@@ -3802,16 +3788,16 @@ export default {
                 return null;
             }
 
-            return diff
+            return diff;
         },
         async modifiedElement(diff, options) {
             /*
                 !!!  REMOVE !!!!
                 changedMethod: changeValueAction
             */
-            var me = this
-            if (!options) options = {}
-            let forcePush = options.forcePush
+            var me = this;
+            if (!options) options = {};
+            let forcePush = options.forcePush;
             // console.log("수정");
             // if (me.storageExist) {
 
@@ -3830,18 +3816,18 @@ export default {
                             editUid: me.userInfo.uid,
                             timeStamp: Date.now(),
                             item: JSON.stringify(diff)
-                        }
-                        var key = await me.pushObject(`db://definitions/${me.projectId}/queue`, postObj)
-                        me.changedByMeKeys.push(key)
+                        };
+                        var key = await me.pushObject(`db://definitions/${me.projectId}/queue`, postObj);
+                        me.changedByMeKeys.push(key);
 
                         // COMMON QUEUE
                         if (me.projectSendable) {
-                            me.pushObject(`db://definitions/${me.information.associatedProject}/queue`, postObj)
+                            me.pushObject(`db://definitions/${me.information.associatedProject}/queue`, postObj);
                         }
                     }
-                    me.changedByMe = false
-                    me.modelChanged = true
-                    console.log('=== Push ModifiedElement ===')
+                    me.changedByMe = false;
+                    me.modelChanged = true;
+                    console.log('=== Push ModifiedElement ===');
                 } else if (!me.isQueueModel && !me.isReadOnlyModel) {
                     // 서버o, 랩 x, 큐 x
                     // var putValue = {
@@ -3849,34 +3835,32 @@ export default {
                     // }
                     // me.putObject(`db://definitions/${me.projectId}/versionLists/${versionName}/versionValue`, putValue)
                     await me.putString(`storage://definitions/${me.projectId}/value`, JSON.stringify(me.value));
-                    me.localUndoRedoStorage(diff)
+                    me.localUndoRedoStorage(diff);
                 } else if (me.$isElectron) {
                     // var putValue = {
                     //     value: JSON.stringify(me.value)
                     // }
                     // me.putObject(`db://definitions/${me.projectId}/versionLists/${versionName}/versionValue`, putValue)
                     await me.putString(`storage://definitions/${me.projectId}/value`, JSON.stringify(me.value));
-                    me.localUndoRedoStorage(diff)
+                    me.localUndoRedoStorage(diff);
                 }
-
             } else {
                 // 서버x, 랩x, 큐x
-                var proId = me.projectId
-                var lists = await me.getObject(`localstorage://localLists`)
+                var proId = me.projectId;
+                var lists = await me.getObject(`localstorage://localLists`);
                 if (lists) {
-                    var index = lists.findIndex(list => list.projectId == me.projectId)
+                    var index = lists.findIndex((list) => list.projectId == me.projectId);
 
                     if (index != -1) {
-                        lists[index].lastModifiedTimeStamp = Date.now()
-                        if (me.initLoad) me.changedTemplateCode = true
+                        lists[index].lastModifiedTimeStamp = Date.now();
+                        if (me.initLoad) me.changedTemplateCode = true;
                     }
                 }
-                me.putObject(`localstorage://localLists`, lists)
-                // local 저장 
-                me.putObject(`localstorage://${proId}`, me.value)
-                me.localUndoRedoStorage(diff)
+                me.putObject(`localstorage://localLists`, lists);
+                // local 저장
+                me.putObject(`localstorage://${proId}`, me.value);
+                me.localUndoRedoStorage(diff);
             }
-
         },
 
         bindEvents: function (opengraph) {
@@ -3893,7 +3877,7 @@ export default {
                 // Event 발생 30회 마다 1회 push.
                 if (me.mouseEventCnt % 30 == 1) {
                     me.mouseEventCnt = 1;
-                    let scale = opengraph.canvas._CONFIG.SLIDER[0].innerText / 100
+                    let scale = opengraph.canvas._CONFIG.SLIDER[0].innerText / 100;
                     let offsetX = (e.clientX - canvasEl.offset().left + canvasEl[0].scrollLeft) / scale;
                     let offsetY = (e.clientY - canvasEl.offset().top + canvasEl[0].scrollTop) / scale;
                     me.sendMoveEvents(offsetX, offsetY);
@@ -3901,28 +3885,31 @@ export default {
             });
 
             //아이콘 드래그 드랍 이벤트 등록
-            $(el).find('.draggable').draggable({
-                start: function () {
-                    canvasEl.data('DRAG_SHAPE', {
-                        'component': $(this).attr('_component'),
-                        'width': $(this).attr('_width'),
-                        'height': $(this).attr('_height'),
-                        'description': $(this).attr('_description'),
-                        'label': $(this).attr('_label')
-                    });
-                },
-                helper: 'clone',
-                appendTo: canvasEl
-            });
+            $(el)
+                .find('.draggable')
+                .draggable({
+                    start: function () {
+                        canvasEl.data('DRAG_SHAPE', {
+                            component: $(this).attr('_component'),
+                            width: $(this).attr('_width'),
+                            height: $(this).attr('_height'),
+                            description: $(this).attr('_description'),
+                            label: $(this).attr('_label')
+                        });
+                    },
+                    helper: 'clone',
+                    appendTo: canvasEl
+                });
 
             canvasEl.droppable({
                 drop: function (event, ui) {
                     var componentInfo = canvasEl.data('DRAG_SHAPE'),
-                        shape, element;
+                        shape,
+                        element;
                     if (componentInfo) {
                         var dropX = event.pageX - canvasEl.offset().left + canvasEl[0].scrollLeft;
                         var dropY = event.pageY - canvasEl.offset().top + canvasEl[0].scrollTop;
-                        var scale = opengraph.canvas._CONFIG.SLIDER[0].innerText / 100
+                        var scale = opengraph.canvas._CONFIG.SLIDER[0].innerText / 100;
 
                         dropX = dropX / scale;
                         dropY = dropY / scale;
@@ -3935,8 +3922,7 @@ export default {
                             height: parseInt(componentInfo.height, 10),
                             label: componentInfo.label ? componentInfo.label : '',
                             description: componentInfo.description ? componentInfo.description : ''
-                        }
-
+                        };
 
                         me.addElement(componentInfo);
                     }
@@ -3959,55 +3945,53 @@ export default {
             this.automaticGuidance = !this.automaticGuidance;
         },
         undo() {
-            var me = this
+            var me = this;
 
             if (me.isQueueModel) {
                 if (me.isServerModel) {
-                    me.firebaseUndo()
+                    me.firebaseUndo();
                 } else {
-                    me.localUndo()
+                    me.localUndo();
                 }
             } else {
-                me.localUndo()
+                me.localUndo();
             }
-
         },
         redo() {
-            var me = this
+            var me = this;
             if (me.isQueueModel) {
                 if (me.isServerModel) {
-                    me.firebaseRedo()
+                    me.firebaseRedo();
                 } else {
-                    me.localRedo()
+                    me.localRedo();
                 }
             } else {
-                me.localRedo()
+                me.localRedo();
             }
         },
         localUndo() {
-            var me = this
-            var undoElement
+            var me = this;
+            var undoElement;
             if (me.undoRedoArray.length > 0) {
-                me.undoRedoIndex = me.undoRedoIndex - 1
-                undoElement = me.undoRedoArray[me.undoRedoIndex] ? JSON.parse(me.undoRedoArray[me.undoRedoIndex]) : null
+                me.undoRedoIndex = me.undoRedoIndex - 1;
+                undoElement = me.undoRedoArray[me.undoRedoIndex] ? JSON.parse(me.undoRedoArray[me.undoRedoIndex]) : null;
 
                 if (!undoElement) {
-                    me.undoRedoIndex = 0
-                    return
+                    me.undoRedoIndex = 0;
+                    return;
                 }
 
-                var type = Object.keys(undoElement)[0]
-                var diff = undoElement[type]
-                var id = Object.keys(undoElement[type])[0]
-                var value = Object.values(diff)
-                me.changedByUndoRedo = true
-
+                var type = Object.keys(undoElement)[0];
+                var diff = undoElement[type];
+                var id = Object.keys(undoElement[type])[0];
+                var value = Object.values(diff);
+                me.changedByUndoRedo = true;
 
                 if (Array.isArray(value[0])) {
                     if (value[0].length == 1) {
-                        me.value[type][id] = null
+                        me.value[type][id] = null;
                     } else if (value[0].length == 2) {
-                        me.value[type][id] = value[0][0]
+                        me.value[type][id] = value[0][0];
                         // me.$set(me.value[type], id, value[0][0])
                     }
                 } else if (typeof value == 'object') {
@@ -4016,83 +4000,78 @@ export default {
             }
         },
         localRedo() {
-            var me = this
-            var redoElement
+            var me = this;
+            var redoElement;
             if (me.undoRedoArray.length > 0) {
-
-                redoElement = me.undoRedoArray[me.undoRedoIndex] ? JSON.parse(me.undoRedoArray[me.undoRedoIndex]) : null
-                me.undoRedoIndex = me.undoRedoIndex + 1
+                redoElement = me.undoRedoArray[me.undoRedoIndex] ? JSON.parse(me.undoRedoArray[me.undoRedoIndex]) : null;
+                me.undoRedoIndex = me.undoRedoIndex + 1;
 
                 if (!redoElement) {
-                    me.undoRedoIndex = me.undoRedoArray.length
-                    return
+                    me.undoRedoIndex = me.undoRedoArray.length;
+                    return;
                 }
 
-                var type = Object.keys(redoElement)[0]
-                var diff = redoElement[type]
-                var id = Object.keys(redoElement[type])[0]
-                var value = Object.values(diff)
-                me.changedByUndoRedo = true
+                var type = Object.keys(redoElement)[0];
+                var diff = redoElement[type];
+                var id = Object.keys(redoElement[type])[0];
+                var value = Object.values(diff);
+                me.changedByUndoRedo = true;
 
                 if (Array.isArray(value[0])) {
                     if (value[0].length == 1) {
-                        me.value[type][id] = value[0][0]
+                        me.value[type][id] = value[0][0];
                         // me.$set(me.value[type], id, value[0][0])
                     } else if (value[0].length == 2) {
-                        me.value[type][id] = null
+                        me.value[type][id] = null;
                     }
                 } else if (typeof value == 'object') {
                     jsondiffpatch.patch(me.value[type], diff);
                 }
-
             }
-
         },
         localUndoRedoStorage(diff) {
-            var me = this
+            var me = this;
             if (me.changedByUndoRedo) {
-                me.changedByUndoRedo = false
+                me.changedByUndoRedo = false;
             } else {
-
-                var lastIndex = me.undoRedoArray.length
+                var lastIndex = me.undoRedoArray.length;
                 if (lastIndex != me.undoRedoIndex) {
-                    me.undoRedoArray.splice(me.undoRedoIndex, lastIndex - me.undoRedoIndex)
+                    me.undoRedoArray.splice(me.undoRedoIndex, lastIndex - me.undoRedoIndex);
                 }
-                me.undoRedoArray.push(JSON.stringify(diff))
-                me.undoRedoIndex = me.undoRedoIndex + 1
-
+                me.undoRedoArray.push(JSON.stringify(diff));
+                me.undoRedoIndex = me.undoRedoIndex + 1;
             }
         },
         async firebaseUndo() {
-            var me = this
-            me.overlayText = 'Undoing'
-            me.undoDisable = true
-            var keySnap = await me.getLastQueue()
+            var me = this;
+            me.overlayText = 'Undoing';
+            me.undoDisable = true;
+            var keySnap = await me.getLastQueue();
             if (keySnap) {
-                var currentKey = keySnap[0].key
-                var prevValue = await me.getUndoTarget(currentKey)
+                var currentKey = keySnap[0].key;
+                var prevValue = await me.getUndoTarget(currentKey);
                 if (prevValue) {
-                    me.undoRedoDraw(prevValue, 'undo')
+                    me.undoRedoDraw(prevValue, 'undo');
                 }
             }
-            me.overlayText = null
+            me.overlayText = null;
         },
         getUndoTarget(currentKey) {
-            var me = this
+            var me = this;
 
             return new Promise(async function (resolve, reject) {
                 var backCount = 0;
-                var nextKey = null
-                var nextValue = null
-                var drawQueue = null
+                var nextKey = null;
+                var nextValue = null;
+                var drawQueue = null;
 
                 while (currentKey) {
-                    var keyValue = await me.getUndoRedoQueue(currentKey)
+                    var keyValue = await me.getUndoRedoQueue(currentKey);
                     // 0 - 다음
                     // 1 - 현재
-                    nextValue = keyValue[0]
-                    nextKey = nextValue.key
-                    currentKey = keyValue[1] ? keyValue[1].key : null
+                    nextValue = keyValue[0];
+                    nextKey = nextValue.key;
+                    currentKey = keyValue[1] ? keyValue[1].key : null;
                     if (!nextValue) break; // last
 
                     if (nextValue.editUid != me.userInfo.uid) continue; //다른사람 큐 는 건너 뛰기
@@ -4101,55 +4080,54 @@ export default {
                     else if (nextValue.action == 'redo') backCount = backCount - 1;
                     else backCount = backCount - 1;
 
-                    if (backCount == -1) break;   //undo시 사용
+                    if (backCount == -1) break; //undo시 사용
                 }
                 // 마지막 큐
                 if (keyValue.length == 1) {
-                    me.undoDisable = true
+                    me.undoDisable = true;
                 } else {
-                    me.undoDisable = false
-                    if (me.redoDisable) me.redoDisable = false //redo 활성화
+                    me.undoDisable = false;
+                    if (me.redoDisable) me.redoDisable = false; //redo 활성화
                 }
 
                 if (nextKey && backCount == -1) {
                     drawQueue = {
                         childKey: nextKey,
                         childValue: nextValue
-                    }
+                    };
                 }
-                resolve(drawQueue)
-            })
-
+                resolve(drawQueue);
+            });
         },
         async firebaseRedo() {
-            var me = this
-            me.overlayText = 'Redoing'
-            me.redoDisable = true
-            var keySnap = await me.getLastQueue()
+            var me = this;
+            me.overlayText = 'Redoing';
+            me.redoDisable = true;
+            var keySnap = await me.getLastQueue();
             if (keySnap) {
-                var currentKey = keySnap[0].key
-                var prevValue = await me.getRedoTarget(currentKey)
+                var currentKey = keySnap[0].key;
+                var prevValue = await me.getRedoTarget(currentKey);
                 if (prevValue) {
-                    me.undoRedoDraw(prevValue, 'redo')
+                    me.undoRedoDraw(prevValue, 'redo');
                 }
             }
-            me.overlayText = null
+            me.overlayText = null;
         },
         async getRedoTarget(nextKey) {
-            var me = this
+            var me = this;
             return new Promise(async function (resolve, reject) {
                 var backCount = 0;
-                var currentKey = null
-                var currentValue = null
-                var drawQueue = null
+                var currentKey = null;
+                var currentValue = null;
+                var drawQueue = null;
 
                 while (nextKey) {
-                    var keyValue = await me.getUndoRedoQueue(nextKey)
+                    var keyValue = await me.getUndoRedoQueue(nextKey);
                     // 0 - 현재
                     // 1 - 다음
-                    currentValue = keyValue[0]
-                    currentKey = currentValue.key
-                    nextKey = keyValue[1] ? keyValue[1].key : null
+                    currentValue = keyValue[0];
+                    currentKey = currentValue.key;
+                    nextKey = keyValue[1] ? keyValue[1].key : null;
                     if (!currentValue) break; // last
 
                     if (currentValue.editUid != me.userInfo.uid) continue; //다른사람 큐 는 건너 뛰기
@@ -4158,57 +4136,55 @@ export default {
                     else if (currentValue.action == 'redo') backCount = backCount + 1;
                     else backCount = backCount - 1;
 
-                    if (backCount == -1) break;   //undo시 사용
+                    if (backCount == -1) break; //undo시 사용
                 }
 
                 if (currentKey && currentValue.action == 'undo') {
-                    me.redoDisable = false
-                    if (me.undoDisable) me.undoDisable = false //undo 활성화
+                    me.redoDisable = false;
+                    if (me.undoDisable) me.undoDisable = false; //undo 활성화
                     drawQueue = {
                         childKey: currentKey,
                         childValue: currentValue
-                    }
+                    };
                 } else {
-                    me.redoDisable = true
+                    me.redoDisable = true;
                 }
-                resolve(drawQueue)
-
-            })
+                resolve(drawQueue);
+            });
         },
-        copy: function () {
-        },
-        paste: function () {
-        },
+        copy: function () {},
+        paste: function () {},
         unselectedAll: function (newVal) {
-            var me = this
+            var me = this;
             Object.values(me.value.elements).forEach(function (definition) {
                 if (definition != null) {
-                    definition.selected = false
+                    definition.selected = false;
                 }
-            })
+            });
             Object.values(me.value.relations).forEach(function (relation) {
                 if (relation != null) {
-                    relation.selected = false
+                    relation.selected = false;
                 }
-            })
+            });
         },
         validateRelation(fromId, toId) {
-            var me = this
+            var me = this;
             try {
-                var relations = me.value.relations
+                var relations = me.value.relations;
                 if (relations) {
-                    var index = Object.values(relations).findIndex(relation => relation && relation.from == fromId && relation.to == toId)
+                    var index = Object.values(relations).findIndex(
+                        (relation) => relation && relation.from == fromId && relation.to == toId
+                    );
                     if (index == -1) {
-                        return true
+                        return true;
                     }
                 }
-                return false
+                return false;
             } catch (e) {
-                return true
+                return true;
             }
         },
         onConnectShape: function (edge, from, to) {
-
             var me = this;
             //존재하는 릴레이션인 경우 (뷰 ��포넌트), 데이터 매핑에 의해 자동으로 from, to 가 변경되어있기 때문에 따로 로직은 필요없음.
             //=> 바뀌어야 함.
@@ -4234,9 +4210,9 @@ export default {
                     isRelation: true,
                     relationView: {
                         style: JSON.stringify({}),
-                        value: vertices,
+                        value: vertices
                     }
-                }
+                };
 
                 from.$parent.value.elementView.id = from.id;
                 to.$parent.value.elementView.id = to.id;
@@ -4256,7 +4232,6 @@ export default {
                 if (me.validateRelation(from.id, to.id)) {
                     me.addElement(componentInfo);
                 }
-
             }
         },
         addElement: function (componentInfo, bounded) {
@@ -4272,9 +4247,8 @@ export default {
                     this.uuid(),
                     componentInfo.sourceElement.value,
                     componentInfo.targetElement.value,
-                    componentInfo.vertices,
+                    componentInfo.vertices
                 );
-
             } else {
                 /* make Element */
                 element = vueComponent.computed.createNew(
@@ -4288,7 +4262,7 @@ export default {
                 );
             }
 
-            me.addElementAction(element)
+            me.addElementAction(element);
         },
 
         uuid: function () {
@@ -4298,8 +4272,7 @@ export default {
                     .substring(1);
             }
 
-            return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-                s4() + '-' + s4() + s4() + s4();
+            return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
         },
         dbuid: function () {
             function s4() {
@@ -4311,15 +4284,15 @@ export default {
             return s4() + s4() + s4() + s4() + s4() + s4() + s4() + s4();
         },
         getComponent(componentName) {
-            let component = null
-            let parent = this.$parent
+            let component = null;
+            let parent = this.$parent;
             while (parent && !component) {
                 if (parent.$options.name === componentName) {
-                    component = parent
+                    component = parent;
                 }
-                parent = parent.$parent
+                parent = parent.$parent;
             }
-            return component
+            return component;
         },
         getComponentByName: function (name) {
             var componentByName;
@@ -4331,20 +4304,20 @@ export default {
             return componentByName;
         },
         validateRelationFormat(relation) {
-            if (!relation) return false
-            if (Array.isArray(relation)) return false
-            if (!relation.relationView) return false
-            if (!relation._type) return false
+            if (!relation) return false;
+            if (Array.isArray(relation)) return false;
+            if (!relation.relationView) return false;
+            if (!relation._type) return false;
             if (Object.keys(relation).indexOf('name') == -1) return false;
 
             return true;
         },
         validateElementFormat(element) {
-            if (!element) return false
+            if (!element) return false;
             if (Array.isArray(element)) return false;
             if (element == {}) return false;
-            if (!element.elementView) return false
-            if (!element._type) return false
+            if (!element.elementView) return false;
+            if (!element._type) return false;
             if (Object.keys(element).indexOf('name') == -1) return false;
 
             return true;
@@ -4355,7 +4328,7 @@ export default {
             function addLeadingZeros(number, length) {
                 var numberString = String(number);
                 while (numberString.length < length) {
-                    numberString = "0" + numberString;
+                    numberString = '0' + numberString;
                 }
                 return numberString;
             }
@@ -4376,7 +4349,7 @@ export default {
             sec = addLeadingZeros(sec, 2);
 
             var currentDateNumber = year + month + day + hours + min + sec + ms;
-            console.log("Current date number: " + currentDateNumber, ms);
+            console.log('Current date number: ' + currentDateNumber, ms);
 
             return currentDateNumber;
         },
@@ -4393,18 +4366,18 @@ export default {
                         relations: JSON.parse(JSON.stringify(me.value.relations))
                     }
                 }
-            ]
+            ];
             const generator = new PowerPointGenerator(me.projectName);
             generator.createPowerPoint(modelData);
         },
 
         ///////// ACTION ////////
         addElementAction(element, value, options) {
-            var me = this
-            if (!options) options = {}
-            if (!value) value = me.value
-            let valueObj = element.relationView ? value.relations : value.elements
-            let id = element.relationView ? element.relationView.id : element.elementView.id
+            var me = this;
+            if (!options) options = {};
+            if (!value) value = me.value;
+            let valueObj = element.relationView ? value.relations : value.elements;
+            let id = element.relationView ? element.relationView.id : element.elementView.id;
 
             // duplication
             if (Object.keys(valueObj).includes(id)) return;
@@ -4412,54 +4385,54 @@ export default {
             me.EventBus.emit(id, {
                 action: element.relationView ? 'relationPush' : 'elementPush',
                 STATUS_COMPLETE: false
-            })
+            });
 
             // First append
-            me.appendElement(element, value, options)
+            me.appendElement(element, value, options);
 
             if (me.isServerModel && me.isQueueModel) {
                 // server
-                me.pushAppendedQueue(element, options)
+                me.pushAppendedQueue(element, options);
             }
         },
         removeElementAction(element, value, options) {
-            var me = this
-            if (!options) options = {}
-            let id = element.relationView ? element.relationView.id : element.elementView.id
+            var me = this;
+            if (!options) options = {};
+            let id = element.relationView ? element.relationView.id : element.elementView.id;
 
             me.EventBus.emit(id, {
                 action: element.relationView ? 'relationDelete' : 'elementDelete',
                 STATUS_COMPLETE: false
-            })
+            });
 
             if (me.isServerModel && me.isQueueModel) {
-                me.pushRemovedQueue(element, options)
+                me.pushRemovedQueue(element, options);
             } else {
-                me.removeElement(element, me.value, options)
+                me.removeElement(element, me.value, options);
             }
         },
         moveElementAction(element, oldVal, newVal, value, options) {
-            var me = this
-            if (!options) options = {}
-            let id = element.relationView ? element.relationView.id : element.elementView.id
+            var me = this;
+            if (!options) options = {};
+            let id = element.relationView ? element.relationView.id : element.elementView.id;
 
             me.EventBus.emit(id, {
                 action: element.relationView ? 'relationMove' : 'elementMove',
                 STATUS_COMPLETE: false,
                 movingElement: true
-            })
+            });
 
             // First Move
-            me.moveElement(element, newVal, me.value, options)
+            me.moveElement(element, newVal, me.value, options);
 
             if (me.isServerModel && me.isQueueModel) {
-                me.pushMovedQueue(element, oldVal, newVal, options)
+                me.pushMovedQueue(element, oldVal, newVal, options);
             }
         },
         async changeValueAction(diff, value, options) {
-            var me = this
-            if (!options) options = {}
-            let forcePush = options.forcePush
+            var me = this;
+            if (!options) options = {};
+            let forcePush = options.forcePush;
 
             if (me.isServerModel) {
                 // server
@@ -4469,129 +4442,127 @@ export default {
                         diff = me.removeMoveDiff(diff);
                     }
                     if (!me.isReadOnlyModel && diff) {
-                        let queueKey = await me.pushChangedValueQueue(diff, options)
-                        me.changedByMeKeys.push(queueKey)
+                        let queueKey = await me.pushChangedValueQueue(diff, options);
+                        me.changedByMeKeys.push(queueKey);
 
                         // COMMON QUEUE
                         if (me.projectSendable) {
-                            options.definitionId = me.information.associatedProject
-                            await me.pushChangedValueQueue(diff, options)
+                            options.definitionId = me.information.associatedProject;
+                            await me.pushChangedValueQueue(diff, options);
                         }
                     }
-                    me.changedByMe = false
-                    me.modelChanged = true
+                    me.changedByMe = false;
+                    me.modelChanged = true;
                 } else if (!me.isQueueModel && !me.isReadOnlyModel) {
                     // 서버o, 랩 x, 큐 x
                     await me.putString(`db://definitions/${me.projectId}/value`, JSON.stringify(me.value));
-                    me.localUndoRedoStorage(diff)
+                    me.localUndoRedoStorage(diff);
                 } else if (me.$isElectron) {
                     await me.putString(`db://definitions/${me.projectId}/value`, JSON.stringify(me.value));
-                    me.localUndoRedoStorage(diff)
+                    me.localUndoRedoStorage(diff);
                 }
-
             } else {
                 // 서버x, 랩x, 큐x
-                var lists = await me.getObject(`localstorage://localLists`)
+                var lists = await me.getObject(`localstorage://localLists`);
                 if (lists) {
-                    var index = lists.findIndex(list => list.projectId == me.projectId)
+                    var index = lists.findIndex((list) => list.projectId == me.projectId);
 
                     if (index != -1) {
-                        lists[index].lastModifiedTimeStamp = Date.now()
-                        if (me.initLoad) me.changedTemplateCode = true
+                        lists[index].lastModifiedTimeStamp = Date.now();
+                        if (me.initLoad) me.changedTemplateCode = true;
                     }
                 }
-                me.putObject(`localstorage://localLists`, lists)
+                me.putObject(`localstorage://localLists`, lists);
                 // local 저장
-                me.putObject(`localstorage://${me.projectId}`, me.value)
-                me.localUndoRedoStorage(diff)
+                me.putObject(`localstorage://${me.projectId}`, me.value);
+                me.localUndoRedoStorage(diff);
             }
-
         },
         //////// Execute ////////
         appendElement(element, value, options) {
-            var me = this
-            if (!value) value = me.value
+            var me = this;
+            if (!value) value = me.value;
 
-            let id = element.relationView ? element.relationView.id : element.elementView.id
-            let valueObj = element.relationView ? value.relations : value.elements
+            let id = element.relationView ? element.relationView.id : element.elementView.id;
+            let valueObj = element.relationView ? value.relations : value.elements;
             if (valueObj[id]) return;
-            valueObj[id] = element
+            valueObj[id] = element;
             // me.$set(valueObj, id, element)
 
             me.EventBus.emit(id, {
                 action: element.relationView ? 'relationPush' : 'elementPush',
                 STATUS_COMPLETE: true
-            })
+            });
         },
         removeElement(element, value, options) {
-            var me = this
-            if (!value) value = me.value
+            var me = this;
+            if (!value) value = me.value;
 
-            let id = element.relationView ? element.relationView.id : element.elementView.id
-            let valueObj = element.relationView ? value.relations : value.elements
+            let id = element.relationView ? element.relationView.id : element.elementView.id;
+            let valueObj = element.relationView ? value.relations : value.elements;
             if (!valueObj[id]) return;
 
-            valueObj[id] = null
+            valueObj[id] = null;
 
             me.EventBus.emit(id, {
                 action: element.relationView ? 'relationDelete' : 'elementDelete',
                 STATUS_COMPLETE: true
-            })
+            });
         },
         moveElement(element, newVal, value, options) {
-            var me = this
+            var me = this;
             if (!element) return;
-            if (!value) value = me.value
+            if (!value) value = me.value;
 
-            let id = element.relationView ? element.relationView.id : element.elementView.id
-            let valueObj = element.relationView ? value.relations : value.elements
+            let id = element.relationView ? element.relationView.id : element.elementView.id;
+            let valueObj = element.relationView ? value.relations : value.elements;
             if (!valueObj[id]) return;
 
             if (element.relationView) {
-                valueObj[id].relationView.value = newVal.replaceAll('-', '')
+                valueObj[id].relationView.value = newVal.replaceAll('-', '');
             } else {
                 // null || minus
-                if (!newVal.x || newVal.x < 0) newVal.x = 100
-                if (!newVal.y || newVal.y < 0) newVal.y = 100
+                if (!newVal.x || newVal.x < 0) newVal.x = 100;
+                if (!newVal.y || newVal.y < 0) newVal.y = 100;
 
-                valueObj[id].elementView.x = newVal.x
-                valueObj[id].elementView.y = newVal.y
-                valueObj[id].elementView.width = newVal.width
-                valueObj[id].elementView.height = newVal.height
+                valueObj[id].elementView.x = newVal.x;
+                valueObj[id].elementView.y = newVal.y;
+                valueObj[id].elementView.width = newVal.width;
+                valueObj[id].elementView.height = newVal.height;
             }
 
             me.EventBus.emit(id, {
                 action: element.relationView ? 'relationMove' : 'elementMove',
                 STATUS_COMPLETE: true,
                 movingElement: false
-            })
+            });
         },
         patchValue(diff, value, options) {
-            var me = this
-            if (!value) value = me.value
+            var me = this;
+            if (!value) value = me.value;
 
-            jsondiffpatch.patch(value, diff)
+            jsondiffpatch.patch(value, diff);
         },
         //////// Push QUEUE ////////
         pushAppendedQueue(element, options) {
-            var me = this
-            let definitionId = me.projectId
-            if (!options) options = {}
-            if (options.definitionId) definitionId = options.definitionId
+            var me = this;
+            let definitionId = me.projectId;
+            if (!options) options = {};
+            if (options.definitionId) definitionId = options.definitionId;
 
             // console.log('Sever Queue] ADD')
             return me.pushObject(`db://definitions/${definitionId}/queue`, {
                 action: element.relationView ? 'relationPush' : 'elementPush',
                 editUid: me.userInfo.uid,
                 timeStamp: Date.now(),
-                item: JSON.stringify(element),
-            })
+                item: JSON.stringify(element)
+            });
         },
         pushRemovedQueue(element, options) {
-            var me = this
-            let definitionId = me.projectId
-            if (!options) options = {}
-            if (options.definitionId) definitionId = options.definitionId
+            var me = this;
+            let definitionId = me.projectId;
+            if (!options) options = {};
+            if (options.definitionId) definitionId = options.definitionId;
 
             // console.log('Sever Queue] Remove')
             return me.pushObject(`db://definitions/${definitionId}/queue`, {
@@ -4599,13 +4570,13 @@ export default {
                 editUid: me.userInfo.uid,
                 timeStamp: Date.now(),
                 item: JSON.stringify(element)
-            })
+            });
         },
         pushMovedQueue(element, oldVal, newVal, options) {
-            var me = this
-            let definitionId = me.projectId
-            if (!options) options = {}
-            if (options.definitionId) definitionId = options.definitionId
+            var me = this;
+            let definitionId = me.projectId;
+            if (!options) options = {};
+            if (options.definitionId) definitionId = options.definitionId;
 
             let obj = {
                 action: element.relationView ? 'relationMove' : 'elementMove',
@@ -4613,24 +4584,24 @@ export default {
                 before: element.relationView ? oldVal : JSON.stringify(oldVal),
                 after: element.relationView ? newVal : JSON.stringify(newVal),
                 timeStamp: Date.now()
-            }
+            };
 
             if (element.relationView) {
-                obj.relationId = element.relationView.id
+                obj.relationId = element.relationView.id;
             } else {
-                var types = element._type.split('.')
-                obj.elementType = types[types.length - 1]
-                obj.elementId = element.elementView.id
-                obj.elementName = element.name
+                var types = element._type.split('.');
+                obj.elementType = types[types.length - 1];
+                obj.elementId = element.elementView.id;
+                obj.elementName = element.name;
             }
             // console.log('Sever Queue] Move')
-            return me.pushObject(`db://definitions/${definitionId}/queue`, obj)
+            return me.pushObject(`db://definitions/${definitionId}/queue`, obj);
         },
         async pushChangedValueQueue(diff, options) {
-            var me = this
-            let definitionId = me.projectId
-            if (!options) options = {}
-            if (options.definitionId) definitionId = options.definitionId
+            var me = this;
+            let definitionId = me.projectId;
+            if (!options) options = {};
+            if (options.definitionId) definitionId = options.definitionId;
 
             // console.log('Sever Queue] Change')
             return await me.pushObject(`db://definitions/${definitionId}/queue`, {
@@ -4638,96 +4609,99 @@ export default {
                 editUid: me.userInfo.uid,
                 timeStamp: Date.now(),
                 item: JSON.stringify(diff)
-            })
+            });
         },
         //////// Receive QUEUE ////////
         receiveAppendedQueue(element, queue, options) {
-            if (!options) options = {}
-            this.appendElement(element, this.value, options)
+            if (!options) options = {};
+            this.appendElement(element, this.value, options);
         },
         receiveRemovedQueue(element, queue, options) {
-            if (!options) options = {}
-            this.removeElement(element, this.value, options)
+            if (!options) options = {};
+            this.removeElement(element, this.value, options);
         },
         receiveMovedQueue(id, newVal, queue, options) {
-            var me = this
-            if (!options) options = {}
-            let element = queue.childValue.action == 'relationMove' ? me.value.relations[id] : me.value.elements[id]
-            let newValue = queue.childValue.action == 'relationMove' ? newVal : JSON.parse(newVal)
+            var me = this;
+            if (!options) options = {};
+            let element = queue.childValue.action == 'relationMove' ? me.value.relations[id] : me.value.elements[id];
+            let newValue = queue.childValue.action == 'relationMove' ? newVal : JSON.parse(newVal);
 
-            me.moveElement(element, newValue, me.value, options)
+            me.moveElement(element, newValue, me.value, options);
         },
         receiveChangedValueQueue(diff, queue, options) {
-            if (!options) options = {}
-            this.patchValue(diff, this.value, options)
+            if (!options) options = {};
+            this.patchValue(diff, this.value, options);
         },
         receiveErrorQueue(error, queue) {
-            var me = this
-            let associatedProjectId = queue.isMirrorQueue ? me.information.associatedProject : me.projectId
-            let associatedValue = queue.isMirrorQueue ? me.mirrorValue : me.value
+            var me = this;
+            let associatedProjectId = queue.isMirrorQueue ? me.information.associatedProject : me.projectId;
+            let associatedValue = queue.isMirrorQueue ? me.mirrorValue : me.value;
 
-            console.log(`Error when to '${queue.childValue.action}'\n - model is '${associatedProjectId}'\n - modelValue is `, associatedValue.elements, associatedValue.relations, `\n - queueKey is '${queue.childKey}'\n - queueValue is `, JSON.parse(queue.childValue.item), `\n - Reason is "${error}"`)
+            console.log(
+                `Error when to '${queue.childValue.action}'\n - model is '${associatedProjectId}'\n - modelValue is `,
+                associatedValue.elements,
+                associatedValue.relations,
+                `\n - queueKey is '${queue.childKey}'\n - queueValue is `,
+                JSON.parse(queue.childValue.item),
+                `\n - Reason is "${error}"`
+            );
 
-            me.watch_off(`db://definitions/${associatedProjectId}/queue`)
+            me.watch_off(`db://definitions/${associatedProjectId}/queue`);
             if (queue && queue.childKey) {
-                me.delete(`db://definitions/${associatedProjectId}/queue/${queue.childKey}`)
+                me.delete(`db://definitions/${associatedProjectId}/queue/${queue.childKey}`);
                 if (queue.undoRedoKey) {
-                    me.delete(`db://definitions/${associatedProjectId}/queue/${queue.undoRedoKey}`)
+                    me.delete(`db://definitions/${associatedProjectId}/queue/${queue.undoRedoKey}`);
                 }
             }
-            var queueIds = queueFifo.findIndexByChildKey(queue.childKey)
+            var queueIds = queueFifo.findIndexByChildKey(queue.childKey);
             if (queueIds != -1) {
-                queueFifo.removeByIndex(queueIds)
+                queueFifo.removeByIndex(queueIds);
             }
-            me.$emit('forceUpdateKey')
+            me.$emit('forceUpdateKey');
         },
         addElementPush(values, element) {
             /*
               !!!  REMOVE !!!!
               changedMethod: addElementAction(element, value)
             */
-            var me = this
-            var value = values ? values : me.value
-            var location = element.elementView ? value.elements : value.relations
-            var eleId = element.elementView ? element.elementView.id : element.relationView.id
+            var me = this;
+            var value = values ? values : me.value;
+            var location = element.elementView ? value.elements : value.relations;
+            var eleId = element.elementView ? element.elementView.id : element.relationView.id;
 
             // if (me.storageExist) {
             if (me.isServerModel && me.isQueueModel) {
                 //server
-                me.modelChanged = true
-                var action = element.relationView ? 'relationPush' : 'elementPush'
+                me.modelChanged = true;
+                var action = element.relationView ? 'relationPush' : 'elementPush';
                 if (!Object.keys(location).includes(eleId)) {
-                    location[eleId] = element
+                    location[eleId] = element;
                     //STATUS_COMPLETE
                     // me.$set(location, eleId, element)
                     me.$nextTick(function () {
-                        me.EventBus.emit(`${eleId}`, { action: action, STATUS_COMPLETE: false })
-                    })
+                        me.EventBus.emit(`${eleId}`, { action: action, STATUS_COMPLETE: false });
+                    });
                     var postObj = {
                         action: action,
                         editUid: me.userInfo.uid,
                         timeStamp: Date.now(),
                         item: JSON.stringify(element)
-                    }
-                    me.pushObject(`db://definitions/${me.projectId}/queue`, postObj)
-                    console.log('added:server')
+                    };
+                    me.pushObject(`db://definitions/${me.projectId}/queue`, postObj);
+                    console.log('added:server');
                 }
-
             } else {
                 if (!Object.keys(location).includes(eleId)) {
-                    location[eleId] = element
+                    location[eleId] = element;
                     // me.$set(location, eleId, element)
-                    if (me.initLoad) me.changedTemplateCode = true
+                    if (me.initLoad) me.changedTemplateCode = true;
 
-                    console.log('added:localstorage,kubernetes')
+                    console.log('added:localstorage,kubernetes');
                 }
             }
-
-        },
-
+        }
     }
-}
-
+};
 </script>
 
 <style scoped lang="scss" rel="stylesheet/scss">
@@ -4869,7 +4843,7 @@ export default {
     }
 }
 
-.text-reader input[type="file"] {
+.text-reader input[type='file'] {
     /* 파일 필드 숨기기 */
     position: absolute;
     width: 1px;
@@ -4887,10 +4861,10 @@ export default {
     z-index: 1000;
     position: absolute;
     overflow: hidden;
-    border: 1px solid #CCC;
+    border: 1px solid #ccc;
     white-space: nowrap;
     font-family: sans-serif;
-    background: #FFF;
+    background: #fff;
     color: #333;
     border-radius: 5px;
     padding: 0;
@@ -4906,7 +4880,7 @@ export default {
 }
 
 .custom-menu li:hover {
-    background-color: #DEF;
+    background-color: #def;
 }
 
 /*.moveable-line.moveable-rotation-line {*/
@@ -4927,7 +4901,6 @@ export default {
 /*    letter-spacing: 1px;*/
 /*    background: white;*/
 /*}*/
-
 
 .video-list {
     height: 160px;
@@ -4951,11 +4924,11 @@ export default {
     }
 
     .buttonHover {
-        background-Color: white;
+        background-color: white;
     }
 
     .content {
-        background-Color: white;
+        background-color: white;
     }
 
     .titlebar {
@@ -4963,3 +4936,4 @@ export default {
     }
 }
 </style>
+\
