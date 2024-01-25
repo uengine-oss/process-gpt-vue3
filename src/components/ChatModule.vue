@@ -1,7 +1,5 @@
 <script>
-import jp from "jsonpath";
-import partialParse from "partial-json-parser";
-
+import jp from 'jsonpath';
 import { getGlobalContext } from '@/stores/auth';
 import partialParse from 'partial-json-parser';
 const globalContext = getGlobalContext();
@@ -115,39 +113,38 @@ export default {
             }
             return value;
         },
-        createMessageObj(message, role){
-            let obj
+        createMessageObj(message, role) {
+            let obj;
             // var currentDate = new Date();
-            // var milliseconds = currentDate.getMilliseconds(); 
+            // var milliseconds = currentDate.getMilliseconds();
             // var timeStamp = currentDate.toTimeString().split(' ')[0] + '.' + milliseconds.toString().padStart(3, '0');
 
-            if(this.replyUser){
+            if (this.replyUser) {
                 obj = {
-                    name: role ? role:this.userInfo.name,
-                    email: role ? role + '@uengine.org':this.userInfo.email,
-                    role: role ? role:'user',
+                    name: role ? role : this.userInfo.name,
+                    email: role ? role + '@uengine.org' : this.userInfo.email,
+                    role: role ? role : 'user',
                     timeStamp: Date.now(),
                     content: message,
                     replyUserName: this.replyUser.name,
                     replyContent: this.replyUser.content,
                     replyUserEmail: this.replyUser.email
-                }
+                };
             } else {
                 obj = {
-                    name: role ? role:this.userInfo.name,
-                    email: role ? role + '@uengine.org':this.userInfo.email,
-                    role: role ? role:'user',
+                    name: role ? role : this.userInfo.name,
+                    email: role ? role + '@uengine.org' : this.userInfo.email,
+                    role: role ? role : 'user',
                     timeStamp: Date.now(),
                     content: message
-                }
+                };
             }
 
-            return obj
+            return obj;
         },
         async sendMessage(message) {
             if (message !== '') {
                 let chatMsgs = [];
-                
 
                 if (this.messages && this.messages.length > 0) {
                     this.messages.forEach((msg) => {
@@ -159,12 +156,12 @@ export default {
                 }
 
                 let chatObj = {
-                    role: "user",
+                    role: 'user',
                     content: message
-                }
+                };
                 chatMsgs.push(chatObj);
-                
-                chatObj = this.createMessageObj(message)
+
+                chatObj = this.createMessageObj(message);
 
                 this.messages.push(chatObj);
 
@@ -177,8 +174,8 @@ export default {
                     content: '...',
                     isLoading: true
                 });
-                
-                this.replyUser = null
+
+                this.replyUser = null;
             }
         },
 
@@ -187,19 +184,16 @@ export default {
                 this.messages.splice(index);
 
                 let chatMsgs = [];
-                if(this.messages && this.messages.length > 0) {
+                if (this.messages && this.messages.length > 0) {
                     this.messages.forEach((msg) => {
                         chatMsgs.push({
                             role: msg.role,
                             content: msg.content
-                        })
+                        });
                     });
                 }
 
-                this.generator.previousMessages = [
-                    ...this.generator.previousMessages,
-                    ...chatMsgs
-                ];
+                this.generator.previousMessages = [...this.generator.previousMessages, ...chatMsgs];
 
                 await this.generator.generate();
 
@@ -323,13 +317,13 @@ export default {
         },
         onGenerationFinished(responses) {
             // var currentDate = new Date();
-            // var milliseconds = currentDate.getMilliseconds(); 
+            // var milliseconds = currentDate.getMilliseconds();
             // var timeStamp = currentDate.toTimeString().split(' ')[0] + '.' + milliseconds.toString().padStart(3, '0');
 
             let messageWriting = this.messages[this.messages.length - 1];
             delete messageWriting.isLoading;
             messageWriting.timeStamp = Date.now();
-    
+
             this.afterGenerationFinished(responses);
         },
 
