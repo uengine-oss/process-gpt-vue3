@@ -861,7 +861,7 @@ export default {
             handler: function (newVal, oldVal) {
                 this.onChangedValue(oldVal, newVal);
             }
-        },
+        }
         // value: {
         //     deep: true,
         //     handler: function (newVal, oldVal) {
@@ -4408,6 +4408,7 @@ export default {
             if (me.isServerModel && me.isQueueModel) {
                 me.pushRemovedQueue(element, options);
             } else {
+                console.log('remove');
                 me.removeElement(element, me.value, options);
             }
         },

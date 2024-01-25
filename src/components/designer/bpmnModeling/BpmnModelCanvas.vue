@@ -18,7 +18,6 @@
             :imageBase="imageBase"
             :height="100000"
             v-if="modelValue"
-            ref="bpmnOpengraph"
             v-on:canvasReady="bindEvents"
             v-on:connectShape="onConnectShape"
             v-on:divideLane="onDivideLane"

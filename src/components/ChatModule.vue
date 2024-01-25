@@ -643,13 +643,10 @@ export default {
                             to: activityId,
                             sourceRef: sourceRef,
                             targetRef: activityId,
-                            elementView: {
-                                _type: 'org.uengine.kernel.view.DefaultSequenceFlowView',
+                            relationView: {
+                                style: '{}',
                                 id: sequenceId,
-                                points: JSON.stringify([
-                                    [x, y + height / 2],
-                                    [x + width, y + height / 2]
-                                ]) // 예시 값
+                                value: '' // 예시 값
                             },
                             condition: {
                                 _type: 'org.uengine.kernel.Evaluate',
@@ -673,13 +670,10 @@ export default {
                             to: endEventId,
                             sourceRef: activityId,
                             targetRef: endEventId,
-                            elementView: {
-                                _type: 'org.uengine.kernel.view.DefaultSequenceFlowView',
+                            relationView: {
+                                style: '{}',
                                 id: endSequenceId,
-                                points: JSON.stringify([
-                                    [x, y + height / 2],
-                                    [x + width, y + height / 2]
-                                ]) // 예시 값
+                                value: '' // 예시 값
                             },
                             condition: {
                                 _type: 'org.uengine.kernel.Evaluate',

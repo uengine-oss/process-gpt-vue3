@@ -253,8 +253,8 @@ export default {
             });
             if (vectorId) {
                 console.log(vectorId);
-                let path = `definition/${this.changedModel.definitionId}/model`;
-                this.pushObject(path, JSON.stringify(definition));
+                let path = `definitions/${this.changedModel.definitionId ? this.changedModel.definitionId : this.$route.params.id}/model`;
+                this.pushObject(path, definition);
                 this.deleteVectorStorage(vectorId.similarItems[0].id);
                 this.saveDefinition(definition);
             }
