@@ -17,7 +17,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
             
             - 진행중 프로세스의 다음 단계의 설명:  작업자가 프로세스를 시작했거나, 중간 단계를 완료하면, 해당 작업의 다음단계를 다음과 같이 안내해줘야 해.
 
-            (실제 유저의 정보는 프로세스 정의를 확인하여 해당 팀 혹은 역할을 가진 사람을 현재 조직도에서 최대한 찾아줘.)
+            (실제 유저의 정보는 프로세스 정의를 확인하여 해당 팀 혹은 역할을 가진 사람을 현재 조직도에서 최대한 찾아주고 액티비티 정보는 프로세스 정의에서 찾아줘.)
             
             이 결과는 다음과 같이 json format 과 함께 리턴해줘.
 
@@ -25,10 +25,13 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
             
             \`\`\`
             {processDefinitionId: "process definition id",
+             processDefinitionName: "process definition name",
              processInstanceId:  "${this.uuid()}", 
              description : "description of process instance’s status in natural language”,
              currentActivityId: "the id of current activity id among the process definition”,
+             currentActivityName: "the name of current activity name among the process definition”,
              nextActivityId: "the id of next activity id”,
+             nextActivityName: "the name of next activity name”,
              inputData: [{"name”: "name of process data input”, "value”: "real value of the process instance”}],
              currentUserEmail: "the actual user email address of mapped role”,
              nextUserEmail: "the email address of next activity’s role”

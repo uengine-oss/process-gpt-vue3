@@ -45,43 +45,27 @@
                 :active="currentChatId === item.instanceId"
                 @click="selectChat(item.instanceId)"
             >
-                <!---Avatar-->
+                <!-- Participants User  -->
                 <!-- <template v-slot:prepend>
-                    <v-avatar>
-                        <img :src="chat.thumb" alt="pro" width="50" />
+                    <v-avatar size="32">
+                        <v-img src="" width="32" height="32" />
                     </v-avatar>
-                    <v-badge
-                        dot
-                        :color="
-                            chat.status === 'away'
-                                ? 'warning'
-                                : chat.status === 'busy'
-                                ? 'error'
-                                : chat.status === 'online'
-                                ? 'success'
-                                : 'containerBg'
-                        "
-                    >
-                    </v-badge>
                 </template> -->
                 <!---Name-->
                 <v-list-item-title class="text-subtitle-1 textPrimary w-100 font-weight-semibold">
-                    {{ item.currentUserId }}
+                    <!-- {{ item.currentUserId }} -->
+                    {{ item.currentActivityId }}
                 </v-list-item-title>
                 <!---Subtitle-->
                 <div class="text-subtitle-2 textPrimary mt-1 text-truncate w-100">
-                    {{ item.currentActivityId }}
+                    {{ item.definitionId }}
                 </div>
                 <!---Last seen--->
                 <template v-slot:append>
                     <div class="d-flex flex-column text-right w-25">
-                        <!-- <small class="textPrimary text-subtitle-2">
-                            {{
-                                formatDistanceToNowStrict(new Date(lastActivity(chat)), {
-                                    addSuffix: false
-                                })
-                            }}
-                        </small> -->
+                        <small class="textPrimary text-subtitle-2">
+                            {{ item.timeStamp }}
+                        </small>
                     </div>
                 </template>
             </v-list-item>
@@ -90,14 +74,12 @@
 </template>
 
 <script>
+
 import { getGlobalContext } from '@/stores/auth';
 
 const globalContext = getGlobalContext();
 
 export default {
-    props: {
-        instanceChatId: String,
-    },
     data: () => ({
         path: "instances",
         instanceList: [],
@@ -107,28 +89,44 @@ export default {
             { title: 'Sort by Time' }, 
             { title: 'Sort by Completed' }
         ],
+        userInfo: null,
     }),
+    watch: {
+        "$route": {
+            deep: true,
+            async handler(newVal, oldVal) {
+                if (newVal.path !== oldVal.path) {
+                    await this.init();
+                }
+            }
+        },
+    },
     async created() {
+        this.userInfo = globalContext.storage.userInfo;
         await this.init();
     },
     methods: {
         async init(path) {
+            if (this.$route.params && this.$route.params.id) {
+                this.currentChatId = this.$route.params.id;
+            }
+
             const callPath = path ? path : this.path;
             await globalContext.storage.watch(`db://${callPath}`, (callback) => {
                 if (callback) {
                     const keys = Object.keys(callback);
                     this.instanceList = [];
-                    keys.forEach(key => {
+                    keys.forEach(async key => {
                         const item = callback[key];
-                        item.instanceId = key;
-                        this.instanceList.push(item)
+                        if (item && item.participants) {
+                            if (item.participants.includes(this.userInfo.email)) {
+                                item.instanceId = key;
+                                this.instanceList.push(item);
+                            }
+                        }
                     });
                 }
             });
-
-            if (this.$route.params && this.$route.params.id) {
-                this.currentChatId = this.$route.params.id;
-            }
         },
         selectChat(id) {
             this.currentChatId = id;
