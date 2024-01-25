@@ -111,19 +111,23 @@ export default {
             }
         },
         async beforeSendMessage(newMessage) {
-            this.saveMessages(`chats/1/messages/${this.uuid()}`, this.createMessageObj(newMessage));
+            if(newMessage && newMessage.includes("시작하겠습니다.")){
+                this.saveMessages(`chats/1/messages/${this.uuid()}`, this.createMessageObj(newMessage, 'system'));
+            } else {
+                this.saveMessages(`chats/1/messages/${this.uuid()}`, this.createMessageObj(newMessage));
+                if(!this.generator.contexts) {
+                    let contexts = await this.queryFromVectorDB(newMessage);
+                    this.generator.setContexts(contexts);
+                }
+                
+                this.prompt = {
+                    content: newMessage,
+                    requestUserEmail: this.userInfo.email,
+                    requestUserName: this.userInfo.name,
+                }
+                this.sendMessage(newMessage);
+            }
 
-            if(!this.generator.contexts) {
-                let contexts = await this.queryFromVectorDB(newMessage);
-                this.generator.setContexts(contexts);
-            }
-            
-            this.prompt = {
-                content: newMessage,
-                requestUserEmail: this.userInfo.email,
-                requestUserName: this.userInfo.name,
-            }
-            this.sendMessage(newMessage);
 
         },
 
@@ -166,6 +170,7 @@ export default {
             if(response == '.') {
                 this.messages.splice(this.messages.length - 1, 1)
             } else {
+                let obj = this.createMessageObj(response, 'system')
                 let responseObj = partialParse(response)
                 if(responseObj.work == 'ScheduleRegistration'){
                     let start = responseObj.startDateTime.split('/')
@@ -220,7 +225,7 @@ export default {
 
                     let uuid = this.uuid()
                     let path = `users/${localStorage.getItem('uid')}/calender/${startDate[0]}/${startDate[1]}/${uuid}`
-                    let obj = {
+                    let calenderObj = {
                         id: uuid,
                         title: responseObj.title,
                         allDay: true,
@@ -228,7 +233,20 @@ export default {
                         end: new Date(endDate[0], endDate[1] - 1, endDate[2]),
                         color: '#615dff',
                     }
-                    this.saveMessages(path, obj);
+                    this.putObject(path, calenderObj);
+
+                    let todoObj = {
+                        definitionId: null,
+                        definitionName: null,
+                        instanceId: null,
+                        activityName: responseObj.title,
+                        userId: this.userInfo.email,
+                        status: 'Running',
+                        startDate: new Date().toISOString().substr(0, 10)
+                    };
+
+                    this.pushObject(`todolist/${this.userInfo.email}`, todoObj);
+
                 } else {
                     if(this.prompt && this.prompt.content){
                         obj.prompt = this.prompt
@@ -236,7 +254,6 @@ export default {
                     }
                 }
 
-                let obj = this.createMessageObj(response, 'system')
                 this.saveMessages(`chats/1/messages/${this.uuid()}`, obj);
             }
         },

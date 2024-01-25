@@ -99,6 +99,9 @@ export default {
             isStream: true,
             preferredLanguage: 'Korean'
         });
+        let prompt = JSON.parse(this.$route.query.prompt)
+        this.beforeSendMessage(prompt.content)
+        delete this.$route.query.prompt;
     },
     watch: {
         "$route": {

@@ -8,7 +8,7 @@
         <template v-slot:item="{ item }">
             <tr @click="goInstance(item.instanceId)" style="cursor: pointer;">
                 <td>{{ item.instanceId }}</td>
-                <td>{{ item.activityId }}</td>
+                <td>{{ item.activityName }}</td>
                 <td>{{ item.definitionId }}</td>
                 <td>{{ item.startDate }}</td>
                 <td>{{ item.endDate }}</td>
