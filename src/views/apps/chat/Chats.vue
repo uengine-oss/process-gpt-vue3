@@ -11,6 +11,7 @@
                 <Chat
                     :messages="messages"
                     :userInfo="userInfo"
+                    :type="path"
                     @beforeReply="beforeReply"
                     @sendMessage="beforeSendMessage"
                     @sendEditedMessage="sendEditedMessage"
@@ -28,20 +29,6 @@
 </template>
 
 <script>
-
-const page = ref({ title: 'Chat app' });
-
-const breadcrumbs = ref([
-    {
-        text: 'Messenger',
-        disabled: true,
-        href: '#'
-    }
-]);
-
-import { ref } from 'vue';
-// common components
-import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
@@ -57,7 +44,6 @@ export default {
     name: 'Chats',
     components: {
         Chat,
-        BaseBreadcrumb,
         AppBaseCard,
         ChatListing,
         ChatProfile
@@ -67,8 +53,7 @@ export default {
         definitions: [],
         processDefinition: null,
         // processInstance: {},
-        bpmn: null,
-        path: "instances",
+        path: "chats",
         organizationChart: [],
     }),
     async created() {
@@ -80,27 +65,6 @@ export default {
         });
 
         await this.getChatList()
-        // await this.loadData("organization");
-        // await this.loadData("definitions");
-
-        // var path = this.$route.href.replace("#/", "");
-        // this.loadData(path);
-
-        // this.messages = await this.loadMessages(path);
-    },
-    watch: {
-        // "$route": {
-        //     deep: true,
-        //     async handler(newVal, oldVal) {
-        //         if (newVal.path !== oldVal.path) {
-        //             this.bpmn = null;
-        //             var path = this.$route.href.replace("#/", "");
-        //             this.loadData(path);
-
-        //             this.messages = await this.loadMessages(path);
-        //         }
-        //     }
-        // }
     },
     methods: {
         beforeReply(msg){

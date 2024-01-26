@@ -2,12 +2,13 @@
     <AppBaseCard>
         <template v-slot:leftpart>
             <Chat :messages="messages"
-                    :alertInfo="alertInfo"
-                    :userInfo="userInfo" 
-                    :disableChat="disableChat"
-                    @sendMessage="beforeSendMessage"
-                    @sendEditedMessage="sendEditedMessage"
-                    @stopMessage="stopMessage"
+                :chatInfo="chatInfo"
+                :userInfo="userInfo" 
+                :disableChat="disableChat"
+                @sendMessage="beforeSendMessage"
+                @sendEditedMessage="sendEditedMessage"
+                @stopMessage="stopMessage"
+                @getMoreChat="getMoreChat"
             ></Chat>
         </template>
 
@@ -20,12 +21,13 @@
 
         <template v-slot:mobileLeftContent>
             <Chat :messages="messages"
-                    :alertInfo="alertInfo"
-                    :userInfo="userInfo" 
-                    :disableChat="disableChat"
-                    @sendMessage="beforeSendMessage"
-                    @sendEditedMessage="sendEditedMessage"
-                    @stopMessage="stopMessage"
+                :chatInfo="chatInfo"
+                :userInfo="userInfo" 
+                :disableChat="disableChat"
+                @sendMessage="beforeSendMessage"
+                @sendEditedMessage="sendEditedMessage"
+                @stopMessage="stopMessage"
+                @getMoreChat="getMoreChat"
             ></Chat>
         </template>
     </AppBaseCard>
@@ -53,7 +55,7 @@ export default {
         path: "organization",
         organizationChart: [],
         userList: [],
-        alertInfo: {
+        chatInfo: {
             title: "조직도 관리",
             text: "대화형으로 조직도를 관리하십시오.\n 팀(부서) 롤(역할), 직원들을 등록 수정 삭제할 수 있습니다. 예를 들어, '개발팀, 관리팀을 등록하고, 홍길동님을 신입사원으로 관리팀에 등록해줘. 이메일 주소는 new@company.com 이야. 역할은 개발자로 들어오셨어. 관리팀의 팀장은 아무개 팀장님이야.' 와 같은 명령을 할 수 있습니다.",
         },

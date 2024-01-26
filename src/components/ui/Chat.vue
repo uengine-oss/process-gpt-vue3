@@ -2,31 +2,35 @@
     <div class="customHeight">
         <div>
             <div class="d-flex align-center gap-3 pa-4 justify-space-between">
-                <div class="d-flex gap-2 align-center">
-                    <div v-if="alertInfo">
-                        <h5 class="text-h5 mb-n1">{{ alertInfo.title }}</h5>
+                <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
+                    <div>
+                        <h5 class="text-h5 mb-n1">{{ name }}</h5>
+                    </div>
+                </div>
+                <div v-else-if="chatInfo" class="d-flex gap-2 align-center">
+                    <v-avatar v-if="chatInfo.img">
+                        <img :src="chatInfo.img" width="50" />
+                    </v-avatar>
+                    <div>
+                        <h5 class="text-h5 mb-n1">{{ chatInfo.title }}</h5>
                         <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
                         <small class="textPrimary" v-if="isViewDetail">
                             <br />
                             {{ filteredAlert.detail }}
                         </small>
                     </div>
-                    <div v-else-if="name">
-                        <h5 class="text-h5 mb-n1">{{ name }}</h5>
-                    </div>
                 </div>
+
+                <!-- 프로세스 정의 & 실행 -->
                 <div class="d-flex">
-                    <v-btn icon variant="text" class="text-medium-emphasis" @click="viewProcess">
+                    <v-btn v-if="type == 'instances'" icon variant="text" class="text-medium-emphasis" @click="viewProcess">
                         <Icon icon="fluent:flowchart-16-regular" :style="{ fontSize: '28px' }" />
                     </v-btn>
-                    <v-btn v-if="alertInfo" icon variant="text" class="text-medium-emphasis" @click="moreDetail">
+                    <v-btn v-if="type == 'definitions'" :disabled="!isChanged" icon variant="text" class="text-medium-emphasis">
+                        <DeviceFloppyIcon size="24" @click="$emit('save')" />
+                    </v-btn>
+                    <v-btn v-if="chatInfo" icon variant="text" class="text-medium-emphasis" @click="moreDetail">
                         <DotsVerticalIcon size="24" />
-                    </v-btn>
-                    <v-btn v-else-if="isChanged" icon variant="text" class="text-medium-emphasis">
-                        <DeviceFloppyIcon size="24" @click="$emit('save')" />
-                    </v-btn>
-                    <v-btn v-else disabled icon variant="text" class="text-medium-emphasis">
-                        <DeviceFloppyIcon size="24" @click="$emit('save')" />
                     </v-btn>
                 </div>
             </div>
@@ -34,11 +38,14 @@
             <v-divider />
 
             <perfect-scrollbar class="rightpartHeight h-100">
-                <v-btn v-if="filteredMessages.length > 0" style="position: absolute; left: 45%" @click="getMoreChat()">get more chat</v-btn>
+                <v-btn v-if="type == 'chats' && filteredMessages.length > 0" 
+                    style="position: absolute; left: 45%" 
+                    @click="getMoreChat()"
+                >get more chat</v-btn>
 
                 <div class="d-flex">
                     <div class="w-100" style="height: calc(100vh - 320px)">
-                        <div v-for="(message, index) in filteredMessages" :key="index" class="pa-5">
+                        <div v-for="(message, index) in filteredMessages" :key="index" class="px-5 py-1">
                             <div v-if="message.email == userInfo.email" class="justify-end d-flex text-end mb-1">
                                 <div>
                                     <small class="text-medium-emphasis text-subtitle-2" v-if="message.timeStamp">
@@ -146,14 +153,12 @@
                                             >
                                             <v-btn size="small">n</v-btn>
                                         </p>
-                                        <v-btn
-                                            v-if="replyIndex === index"
-                                            style="position: absolute; left: 70px; background-color: aliceblue"
+                                        <v-btn v-if="replyIndex === index"
                                             @click="beforeReply(message)"
                                             icon="mdi-reply"
+                                            variant="text"
                                             size="x-small"
-                                            elevation="0"
-                                            class="float-right ml-2"
+                                            class="bg-lightsecondary float-right"
                                         ></v-btn>
 
                                         <v-btn v-if="message.jsonText" class="mt-2" elevation="0" @click="viewJSON(index)">View JSON</v-btn>
@@ -167,10 +172,11 @@
             </perfect-scrollbar>
         </div>
         <v-divider />
+
         <div class="text-body-1" v-if="isReply" style="margin-left: 10px">
             {{ replyUser.name }}님에게 답장
             <v-icon @click="cancelReply()">mdi-close</v-icon>
-            <pre>{{ replyUser.content }}</pre>
+            <p>{{ replyUser.content }}</p>
             <v-divider />
         </div>
 
@@ -234,9 +240,10 @@ export default {
         name: String,
         messages: Array,
         userInfo: Object,
-        alertInfo: Object,
+        chatInfo: Object,
         disableChat: Boolean,
         isChanged: Boolean,
+        type: String,
     },
     data() {
         return {
@@ -256,8 +263,8 @@ export default {
                 subtitle: '',
                 detail: ''
             };
-            if (this.alertInfo.text.includes('\n')) {
-                const arr = this.alertInfo.text.split('\n');
+            if (this.chatInfo.text.includes('\n')) {
+                const arr = this.chatInfo.text.split('\n');
                 textObj.subtitle = arr[0];
                 textObj.detail = arr[1];
             }
@@ -300,7 +307,7 @@ export default {
                     this.$emit("stopMessage");
                 }
             }
-        }
+        },
     },
     methods: {
         viewProcess() {
@@ -396,12 +403,6 @@ pre {
     right: 15px;
     top: 15px;
 }
-// .right-sidebar {
-//     width: 320px;
-//     border-left: 1px solid rgb(var(--v-theme-borderColor));
-//     transition: 0.1s ease-in;
-//     flex-shrink: 0;
-// }
 
 .HideLeftPart {
     display: none;

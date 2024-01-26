@@ -58,7 +58,10 @@
                 </v-list-item-title>
                 <!---Subtitle-->
                 <div class="text-subtitle-2 textPrimary mt-1 text-truncate w-100">
-                    {{ item.nextActivityName }}
+                    {{
+                        item.nextActivityName && item.nextActivityName !== '' && item.nextActivityName !== 'null' ? 
+                            item.nextActivityName : item.status
+                    }}
                 </div>
                 <!---Last seen--->
                 <template v-slot:append>

@@ -1,22 +1,18 @@
 <template>
-    <!-- <div>
-        <Chat :messages="messages" :userInfo="userInfo" @sendMessage="beforeSendMessage">
-            <template v-slot:alert>
-                <v-alert icon="mdi-info" :title="alertInfo.title" :text="alertInfo.text"></v-alert>
-            </template>
-        </Chat>
-    </div> -->
     <v-card elevation="10">
         <AppBaseCard>
             <template v-slot:leftpart>
                 <div class="no-scrollbar">
                     <Chat :name="projectName"
                         :messages="messages"
+                        :chatInfo="chatInfo"
                         :isChanged="isChanged"
                         :userInfo="userInfo"
+                        :type="path"
                         @sendMessage="beforeSendMessage"
                         @sendEditedMessage="sendEditedMessage"
                         @stopMessage="stopMessage"
+                        @getMoreChat="getMoreChat"
                         @save="saveModel"
                     ></Chat>
                 </div>
@@ -33,11 +29,14 @@
             <template v-slot:mobileLeftContent>
                 <Chat :name="projectName"
                     :messages="messages"
+                    :chatInfo="chatInfo"
                     :isChanged="isChanged"
                     :userInfo="userInfo"
+                    :type="path"
                     @sendMessage="beforeSendMessage"
                     @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage"
+                    @getMoreChat="getMoreChat"
                     @save="saveModel"
                 ></Chat>
             </template>
@@ -48,27 +47,19 @@
 <script>
 import partialParse from 'partial-json-parser';
 import { VectorStorage } from 'vector-storage';
+
 import ChatGenerator from './ai/ProcessDefinitionGenerator';
 import Chat from './ui/Chat.vue';
 import ChatModule from './ChatModule.vue';
-import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
-import ChatListing from '@/components/apps/chats/ChatListing.vue';
-import ChatDetail from '@/components/apps/chats/ChatDetail.vue';
-import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
-import { ref } from 'vue';
 
 export default {
     mixins: [ChatModule],
     name: 'ProcessDefinitionChat',
     components: {
         Chat,
-        BaseBreadcrumb,
         AppBaseCard,
-        ChatListing,
-        ChatDetail,
-        ChatProfile,
         BpmnModelingCanvas,
         ChatGenerator
     },
@@ -93,9 +84,9 @@ export default {
         projectName: '',
         path: 'definitions',
         definitionChangeCount: 0,
-        alertInfo: {
+        chatInfo: {
             title: '프로세스 정의 관리',
-            text: "대화형으로 프로세스를 관리하십시오. 예를 들어, '영업관리 프로세스를 다음과 같이 등록해줘: 1. 영업기회등 고객명, 예상사업규모, 키맨, 요구사항 2. 제안 작성: 제안 내용, 가격 3. 수주 혹은 실주 4. 수주한 경우, 계약진행' 와 같은 명령을 할 수 있습니다."
+            text: "대화형으로 프로세스를 관리하십시오. \n 예를 들어, '영업관리 프로세스를 다음과 같이 등록해줘: 1. 영업기회등 고객명, 예상사업규모, 키맨, 요구사항 2. 제안 작성: 제안 내용, 가격 3. 수주 혹은 실주 4. 수주한 경우, 계약진행' 와 같은 명령을 할 수 있습니다."
         },
         changedModel: null
     }),

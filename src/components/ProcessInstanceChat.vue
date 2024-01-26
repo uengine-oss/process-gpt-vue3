@@ -32,14 +32,15 @@
                     </v-card-actions>
                 </v-card>
             </v-dialog>
-            <Chat
-                :messages="messages"
-                :alertInfo="alertInfo"
+            <Chat :messages="messages"
+                :chatInfo="chatInfo"
                 :userInfo="userInfo" 
                 :disableChat="disableChat"
+                :type="path"
                 @sendMessage="beforeSendMessage"
                 @sendEditedMessage="sendEditedMessage"
                 @stopMessage="stopMessage"
+                @getMoreChat="getMoreChat"
                 @viewProcess="viewProcess"
             ></Chat>
         </template>
@@ -76,7 +77,7 @@ export default {
         processInstance: null,
         path: 'instances',
         organizationChart: [],
-        alertInfo: {
+        chatInfo: {
             title: '프로세스 실행',
             text: "대화형으로 프로세스를 실행하십시오. \n 예를 들어, '휴가를 신청할게: 1. 사유: 개인사유 2. 휴가 시작일: 오늘 3. 휴가 복귀일: 금요일' 와 같은 명령을 할 수 있습니다."
         },
