@@ -96,10 +96,20 @@
                             </div>
 
                             <div v-else class="d-flex align-items-start gap-3 mb-1 w-90">
-                                <v-avatar>
-                                    <Icon v-if="message.role == 'system'" icon="solar:dialog-linear" height="48" width="48" />
-                                    <v-img v-else :src="userInfo.profile" :alt="userInfo.name" height="48" width="48" />
-                                </v-avatar>
+                                <div style="max-width: 40px;">
+                                    <v-avatar>
+                                        <Icon v-if="message.role == 'system'" icon="solar:dialog-linear" height="48" width="48" />
+                                        <v-img v-else :src="userInfo.profile" :alt="message.name" height="48" width="48" />
+                                    </v-avatar>
+                                    
+                                    <v-progress-circular
+                                        v-if="message.isLoading"
+                                        indeterminate
+                                        color="grey"
+                                        class="mt-5"
+                                    ></v-progress-circular>
+                                </div>
+
                                 <div class="w-90">
                                     <small class="text-medium-emphasis text-subtitle-2" v-if="message.timeStamp">
                                         {{ message.role == 'system' ? 'System,' : message.name + ',' }}
@@ -149,13 +159,6 @@
                                         <v-btn v-if="message.jsonText" class="mt-2" elevation="0" @click="viewJSON(index)">View JSON</v-btn>
                                         <pre v-if="isViewJSON.includes(index)" class="text-body-1">{{ message.jsonText }}</pre>
                                     </v-sheet>
-
-                                    <v-progress-circular
-                                        v-if="message.isLoading"
-                                        indeterminate
-                                        color="grey"
-                                        class="ml-2 mt-2"
-                                    ></v-progress-circular>
                                 </div>
                             </div>
                         </div>
@@ -190,11 +193,23 @@
                     </v-btn>
                 </template> -->
                 <template v-slot:append-inner>
-                    <v-btn icon variant="text" type="submit" 
+                    <v-btn v-if="!isLoading"
+                        icon 
+                        variant="text" 
+                        type="submit" 
                         @click="send"
                         class="text-medium-emphasis" 
-                        :disabled="!newMessage">
-                        <SendIcon size="20" />
+                        :disabled="!newMessage"
+                    >
+                        <SendIcon size="24" />
+                    </v-btn>
+                    <v-btn v-else
+                        icon 
+                        variant="text" 
+                        @click="isLoading = !isLoading"
+                        class="text-medium-emphasis"
+                    >
+                        <Icon icon="ic:outline-stop-circle" width="30" height="30" />
                     </v-btn>
                     <!-- <v-btn icon variant="text" class="text-medium-emphasis">
                         <PhotoIcon size="20" />
@@ -221,7 +236,7 @@ export default {
         userInfo: Object,
         alertInfo: Object,
         disableChat: Boolean,
-        isChanged: Boolean
+        isChanged: Boolean,
     },
     data() {
         return {
@@ -269,6 +284,22 @@ export default {
                 }
             });
             return list;
+        },
+        isLoading: {
+            get() {
+                var res = false;
+                this.messages.forEach(item => {
+                    if (item.isLoading) {
+                        res = item.isLoading;
+                    }
+                });
+                return res;
+            },
+            set(val) {
+                if (!val) {
+                    this.$emit("stopMessage");
+                }
+            }
         }
     },
     methods: {

@@ -7,6 +7,7 @@
                     :disableChat="disableChat"
                     @sendMessage="beforeSendMessage"
                     @sendEditedMessage="sendEditedMessage"
+                    @stopMessage="stopMessage"
             ></Chat>
         </template>
 
@@ -24,6 +25,7 @@
                     :disableChat="disableChat"
                     @sendMessage="beforeSendMessage"
                     @sendEditedMessage="sendEditedMessage"
+                    @stopMessage="stopMessage"
             ></Chat>
         </template>
     </AppBaseCard>

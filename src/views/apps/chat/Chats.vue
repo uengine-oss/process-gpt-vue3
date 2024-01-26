@@ -8,15 +8,15 @@
                 </div>
             </template>
             <template v-slot:rightpart>
-                <chat
+                <Chat
                     :messages="messages"
                     :userInfo="userInfo"
-                    @sendMessage="beforeSendMessage"
                     @beforeReply="beforeReply"
-                    @editSendMessage="editSendMessage"
+                    @sendMessage="beforeSendMessage"
+                    @sendEditedMessage="sendEditedMessage"
+                    @stopMessage="stopMessage"
                     @getMoreChat="getMoreChat"
-                >
-                </chat>
+                ></Chat>
             </template>
 
             <template v-slot:mobileLeftContent>

@@ -10,18 +10,15 @@
         <AppBaseCard>
             <template v-slot:leftpart>
                 <div class="no-scrollbar">
-                    <Chat
-                        :name="projectName"
+                    <Chat :name="projectName"
                         :messages="messages"
                         :isChanged="isChanged"
                         :userInfo="userInfo"
                         @sendMessage="beforeSendMessage"
+                        @sendEditedMessage="sendEditedMessage"
+                        @stopMessage="stopMessage"
                         @save="saveModel"
-                    >
-                        <template v-slot:alert>
-                            <v-alert icon="mdi-info" :title="alertInfo.title" :text="alertInfo.text"></v-alert>
-                        </template>
-                    </Chat>
+                    ></Chat>
                 </div>
             </template>
             <template v-slot:rightpart>
@@ -34,8 +31,15 @@
             </template>
 
             <template v-slot:mobileLeftContent>
-                <ChatProfile />
-                <ChatListing />
+                <Chat :name="projectName"
+                    :messages="messages"
+                    :isChanged="isChanged"
+                    :userInfo="userInfo"
+                    @sendMessage="beforeSendMessage"
+                    @sendEditedMessage="sendEditedMessage"
+                    @stopMessage="stopMessage"
+                    @save="saveModel"
+                ></Chat>
             </template>
         </AppBaseCard>
     </v-card>

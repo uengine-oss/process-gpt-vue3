@@ -177,6 +177,10 @@ export default {
             }
         },
 
+        stopMessage() {
+            this.generator.stop();
+        },
+
         async sendEditedMessage(index) {
             if (index) {
                 this.messages.splice(index);
@@ -314,16 +318,20 @@ export default {
                 db.close();
             };
         },
-        onGenerationFinished(responses) {
-            // var currentDate = new Date();
-            // var milliseconds = currentDate.getMilliseconds();
-            // var timeStamp = currentDate.toTimeString().split(' ')[0] + '.' + milliseconds.toString().padStart(3, '0');
-
+        onGenerationFinished(response) {
             let messageWriting = this.messages[this.messages.length - 1];
             delete messageWriting.isLoading;
             messageWriting.timeStamp = Date.now();
 
-            this.afterGenerationFinished(responses);
+            this.afterGenerationFinished(response);
+        },
+
+        onModelStopped(response) {
+            let messageWriting = this.messages[this.messages.length - 1];
+            delete messageWriting.isLoading;
+            messageWriting.timeStamp = Date.now();
+
+            this.afterModelStopped(response);
         },
 
         onError(error) {

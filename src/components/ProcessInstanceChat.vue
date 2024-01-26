@@ -39,6 +39,7 @@
                 :disableChat="disableChat"
                 @sendMessage="beforeSendMessage"
                 @sendEditedMessage="sendEditedMessage"
+                @stopMessage="stopMessage"
                 @viewProcess="viewProcess"
             ></Chat>
         </template>
@@ -150,6 +151,9 @@ export default {
         async loadData(path) {
             let value = await this.getData(path);
             if (value) {
+                this.processInstance = value;
+                this.processInstance.processInstanceId = this.$route.params.id;
+
                 this.checkDisableChat(value);
             }
 
@@ -200,6 +204,20 @@ export default {
                 await this.saveInstance();
                 await this.sendTodolist();
             }
+        },
+        afterModelStopped(response) {
+            let path = `${this.path}/`
+            if (this.$route.params && this.$route.params.id) {
+                path += this.$route.params.id;
+            } else if (this.processInstance && this.processInstance.processInstanceId) {
+                path += this.processInstance.processInstanceId;
+            }
+            
+            let putObj = {
+                messages: this.messages
+            }
+
+            this.saveMessages(path, putObj);
         },
         async saveInstance(status) {
             if (this.processInstance) {
