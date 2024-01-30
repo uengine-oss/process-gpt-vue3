@@ -53,7 +53,6 @@
                 </template> -->
                 <!---Name-->
                 <v-list-item-title class="text-subtitle-1 textPrimary w-100 font-weight-semibold">
-                    <!-- {{ item.currentUserId }} -->
                     {{ item.instanceName }}
                 </v-list-item-title>
                 <!---Subtitle-->
@@ -66,9 +65,16 @@
                 <!---Last seen--->
                 <template v-slot:append>
                     <div class="d-flex flex-column text-right w-25">
-                        <small class="textPrimary text-subtitle-2">
-                            {{ item.timeStamp }}
-                        </small>
+                        <DotsVerticalIcon size="15" />
+                        <v-menu activator="parent">
+                            <v-list density="compact">
+                                <v-list-item value="Delete">
+                                    <v-list-item-title @click="deleteInstance(item.instanceId)">
+                                        Delete
+                                    </v-list-item-title>
+                                </v-list-item>
+                            </v-list>
+                        </v-menu>
                     </div>
                 </template>
             </v-list-item>
@@ -77,7 +83,6 @@
 </template>
 
 <script>
-
 import { getGlobalContext } from '@/stores/auth';
 
 const globalContext = getGlobalContext();
@@ -130,6 +135,7 @@ export default {
                             }
                         }
                     });
+                    this.instanceList.sort((a, b) => b.timeStamp - a.timeStamp);
                 }
             });
         },
@@ -141,6 +147,10 @@ export default {
             this.currentChatId = "";
             this.$router.push(`/${this.path}/chat`);
         },
+        async deleteInstance(id) {
+            await globalContext.storage.delete(`db://${this.path}/${id}`);
+            await this.init();
+        }
     }
 };
 </script>
