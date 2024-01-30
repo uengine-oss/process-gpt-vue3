@@ -61,5 +61,6 @@ const sDrawer = ref(false);
     width: 100%;
     // min-height: 500px;
     position: relative;
+    overflow:auto;
 }
 </style>
