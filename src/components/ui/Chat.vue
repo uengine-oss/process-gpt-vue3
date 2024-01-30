@@ -105,7 +105,7 @@
                             <div v-else class="d-flex align-items-start gap-3 mb-1 w-90">
                                 <div style="max-width: 40px;">
                                     <v-avatar>
-                                        <Icon v-if="message.role == 'system'" icon="solar:dialog-linear" height="48" width="48" />
+                                        <img v-if="message.role == 'system'" src="@/assets/images/chat/chat-icon.png" max-height="48" max-width="48" />
                                         <v-img v-else :src="userInfo.profile" :alt="message.name" height="48" width="48" />
                                     </v-avatar>
                                     
