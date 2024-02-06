@@ -48,8 +48,14 @@ export default {
             this.options
         );
         this.bpmnViewer = new BpmnModeler(_options); //new BpmnJS(_options);  //
-
-        this.bpmnViewer.on('import.done', async function (event) {
+        var eventBus = this.bpmnViewer.get('eventBus');
+        // eventBus.on('import.render.start', function (e) {
+        //     // self.openPanel = true;
+        //     console.log("render  complete")
+        //     self.$emit('openPanel', e.element.id);
+        // });
+        eventBus.on('import.render.complete', async function (event) {
+            console.log("complete?")
             var error = event.error;
             var warnings = event.warnings;
             console.log(self.bpmnViewer.getDefinitions());
@@ -89,7 +95,6 @@ export default {
             }
 
             self.bpmnViewer.get('canvas').zoom('fit-viewport');
-            var eventBus = self.bpmnViewer.get('eventBus');
             // you may hook into any of the following events
             eventBus.on('element.dblclick', function (e) {
                 // self.openPanel = true;
@@ -99,7 +104,9 @@ export default {
             // events.forEach(function (event) {
 
             // });
+
         });
+
 
         if (this.url) {
             this.fetchDiagram(this.url);
