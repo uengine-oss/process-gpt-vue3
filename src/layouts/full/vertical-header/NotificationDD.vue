@@ -59,50 +59,29 @@
 
 <script>
 import { Icon } from '@iconify/vue';
-
-import { getGlobalContext } from '@/stores/auth';
-
-const globalContext = getGlobalContext();
+import StorageBase from '@/utils/StorageBase';
 
 export default {
     components: {
         Icon,
     },
     data: () => ({
+        storage: null,
         uid: "",
         notiCount: 0,
         notifications: [],
     }),
     async created() {
-        await globalContext.storage.loginUser();
-
-        if (globalContext.storage.userInfo && globalContext.storage.userInfo.name) {
-            this.getNotifications();
-        }
+        this.storage = StorageBase.getStorage("supabase");
+        this.getNotifications();
     },
     methods: {
         async getNotifications() {
-            this.uid = globalContext.storage.userInfo.uid;
-            await globalContext.storage.watch(`db://users/${this.uid}`, callback => {
-                if (callback) {
-                    if (callback.notifications) {
-                        let notiList = Object.values(callback.notifications);
-                        notiList = notiList.filter(noti => !noti.isChecked);
-                        this.notifications = notiList;
-                        this.notiCount = notiList.length;
-                    }
-                }
-            });
+            this.uid = localStorage.getItem('uid');
         },
         checkNotification(item) {
             this.$router.push(`/${item.noti_type}/${item.chatId}`);
             item.isChecked = true;
-            globalContext.storage.putObject(`db://users/${this.uid}/notifications/${item.key}`, item);
-        },
-        async getUserImage(email) {
-            var convertEmail = email.replace(/\./gi, '_');
-            var image = await globalContext.storage.getString(`db://enrolledUsers/${convertEmail}/profile`)
-            return image;
         },
     }
 }

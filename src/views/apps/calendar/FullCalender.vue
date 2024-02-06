@@ -4,9 +4,7 @@ import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
-
-import { getGlobalContext } from '@/stores/auth';
-const globalContext = getGlobalContext();
+import StorageBase from '@/utils/StorageBase';
 
 export default defineComponent({
   components: {
@@ -49,6 +47,7 @@ export default defineComponent({
     }
   },
   async created() {
+    this.storage = StorageBase.getStorage("supabase");
     var date = new Date();
     var year = date.getFullYear(); 
     var month = date.getMonth() + 1; 
@@ -56,7 +55,7 @@ export default defineComponent({
       month = `0${month}`
     }
     let path = `users/${localStorage.getItem('uid')}/calender/${year}/${month}`
-    const data = await globalContext.storage.getObject(`db://${path}`);
+    const data = await this.storage.getObject(`db://${path}`);
     // console.log(data);
     this.calendarOptions.initialEvents = Object.values(data);
     // console.log(this.calendarOptions)

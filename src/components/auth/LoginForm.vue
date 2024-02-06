@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { getGlobalContext } from '@/stores/auth';
 import { Form } from 'vee-validate';
+
+import { useAuthStore } from '@/stores/auth';
+const authStore = useAuthStore();
 
 /*Social icons*/
 import google from '@/assets/images/svgs/google-icon.svg';
@@ -16,8 +18,7 @@ const passwordRules = ref([
 const emailRules = ref([(v: string) => !!v || 'E-mail is required', (v: string) => /.+@.+\..+/.test(v) || 'E-mail must be valid']);
 
 function validate(values: any, { setErrors }: any) {
-    const globalContext = getGlobalContext();
-    return globalContext.signIn(username.value, password.value).catch((error) => setErrors({ apiError: error }));
+    return authStore.signIn(username.value, password.value);
 }
 </script>
 

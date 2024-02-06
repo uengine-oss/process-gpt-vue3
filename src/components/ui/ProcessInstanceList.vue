@@ -83,11 +83,10 @@
 </template>
 
 <script>
-import { getGlobalContext } from '@/stores/auth';
-
-const globalContext = getGlobalContext();
+import ChatModule from "../ChatModule.vue"
 
 export default {
+    mixins: [ChatModule],
     data: () => ({
         path: "instances",
         instanceList: [],
@@ -97,7 +96,6 @@ export default {
             { title: 'Sort by Time' }, 
             { title: 'Sort by Completed' }
         ],
-        userInfo: null,
     }),
     watch: {
         "$route": {
@@ -110,7 +108,6 @@ export default {
         },
     },
     async created() {
-        this.userInfo = globalContext.storage.userInfo;
         if (this.userInfo && this.userInfo.email) {
             await this.init();
         }
@@ -122,7 +119,7 @@ export default {
             }
 
             const callPath = path ? path : this.path;
-            await globalContext.storage.watch(`db://${callPath}`, (callback) => {
+            await this.storage.watch(`db://${callPath}`, (callback) => {
                 this.instanceList = [];
                 if (callback) {
                     const keys = Object.keys(callback);
@@ -148,7 +145,7 @@ export default {
             this.$router.push(`/${this.path}/chat`);
         },
         async deleteInstance(id) {
-            await globalContext.storage.delete(`db://${this.path}/${id}`);
+            await this.delete(`${this.path}/${id}`);
             await this.init();
         }
     }

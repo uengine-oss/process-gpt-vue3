@@ -218,7 +218,7 @@ export default {
                 messages: this.messages
             }
 
-            this.saveMessages(path, putObj);
+            this.putObject(path, putObj);
         },
         async saveInstance(status) {
             if (this.processInstance) {
@@ -247,6 +247,7 @@ export default {
                     putObj = {
                         messages: this.messages,
                         definitionId: this.processInstance.processDefinitionId,
+                        instanceId: this.processInstance.processInstanceId,
                         instanceName: this.processInstance.processInstanceName,
                         currentUserId: this.processInstance.currentUserEmail,
                         currentActivityId: this.processInstance.currentActivityId,
