@@ -51,7 +51,9 @@ export default class StorageBaseSupabase {
                 name: result.data.user.user_metadata.name,
                 profile: result.data.user.user_metadata.profile,
                 uid: result.data.user.id,
-                accessToken: result.data.session.access_token
+                role: result.data.user.role,
+                phone: result.data.user.phone,
+                last_sign_in_at: result.data.user.last_sign_in_at
             }
             return userInfo;
         } else {
@@ -62,7 +64,13 @@ export default class StorageBaseSupabase {
     async getString(path) {
         try {
             var obj = this.setDataPath(path);
-            var result = await window.$supabase.from(obj.table).select();
+            var result = null;
+            if (obj.searchVal) {
+                result = await window.$supabase.from(obj.table).select().eq(obj.searchKey, obj.searchVal);
+            } else {
+                result = await window.$supabase.from(obj.table).select();
+            }
+
             if (result.count && result.data) {
                 return result.data;
             } else {
@@ -76,7 +84,13 @@ export default class StorageBaseSupabase {
     async getObject(path) {
         try {
             var obj = this.setDataPath(path);
-            var result = await window.$supabase.from(obj.table).select();
+            var result = null;
+            if (obj.searchVal) {
+                return await window.$supabase.from(obj.table).select().eq(obj.searchKey, obj.searchVal);
+            } else {
+                result = await window.$supabase.from(obj.table).select();
+            }
+
             if (result.count && result.data) {
                 return result.data;
             } else {
@@ -90,7 +104,11 @@ export default class StorageBaseSupabase {
     async putString(path, value, options) {
         try {
             var obj = this.setDataPath(path);
-            return await window.$supabase.from(obj.table).upsert(value);
+            if (obj.searchVal) {
+                return await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
+            } else {
+                return await window.$supabase.from(obj.table).upsert(value);
+            }
         } catch(error) {
             return { Error: error }
         }
@@ -99,7 +117,11 @@ export default class StorageBaseSupabase {
     async putObject(path, value, options) {
         try {
             var obj = this.setDataPath(path);
-            return await window.$supabase.from(obj.table).upsert(value);
+            if (obj.searchVal) {
+                return await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
+            } else {
+                return await window.$supabase.from(obj.table).upsert(value);
+            }
         } catch(error) {
             return { Error: error }
         }
@@ -108,7 +130,11 @@ export default class StorageBaseSupabase {
     async pushString(path, value, options) {
         try {
             var obj = this.setDataPath(path);
-            return await window.$supabase.from(obj.table).upsert(value);
+            if (obj.searchVal) {
+                return await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
+            } else {
+                return await window.$supabase.from(obj.table).upsert(value);
+            }
         } catch(error) {
             return { Error: error }
         }
@@ -117,7 +143,11 @@ export default class StorageBaseSupabase {
     async pushObject(path, value, options) {
         try {
             var obj = this.setDataPath(path);
-            return await window.$supabase.from(obj.table).upsert(value);
+            if (obj.searchVal) {
+                return await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
+            } else {
+                return await window.$supabase.from(obj.table).upsert(value);
+            }
         } catch(error) {
             return { Error: error }
         }
@@ -126,7 +156,9 @@ export default class StorageBaseSupabase {
     async delete(path) {
         try {
             var obj = this.setDataPath(path);
-            return await window.$supabase.from(obj.table).delete().eq('id', 1);
+            if (obj.searchVal) {
+                return await window.$supabase.from(obj.table).delete().eq(obj.searchKey, obj.searchVal);
+            }
         } catch(error) {
             return { Error: error }
         }
@@ -160,17 +192,15 @@ export default class StorageBaseSupabase {
     }
 
     setDataPath(path) {
+        path = path.includes('://') ? path.split('://')[1] : path;
         var obj = {
             table: "",
-            searchKey: "",
-            searchVal: "",
         };
-
-        path = path.includes('://') ? path.split('://')[1] : path;
 
         if (path.includes('/')) {
             obj.table = path.split('/')[0];
-            obj.searchVal = path.split('/')[0];
+            // obj.searchKey = "";
+            // obj.searchVal = path.split('/')[1];
         } else {
             obj.table = path;
         }
