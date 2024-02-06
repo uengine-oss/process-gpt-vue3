@@ -10,6 +10,7 @@
     },
     "dependencies": {
         "@balkangraph/orgchart.js": "^8.13.20",
+        "@bpmn-io/properties-panel": "^3.16.0",
         "@casl/ability": "^6.2.0",
         "@casl/vue": "^2.2.0",
         "@dicebear/collection": "^5.3.5",
@@ -32,7 +33,9 @@
         "apexcharts-clevision": "^3.28.5",
         "axios": "^1.6.5",
         "axios-mock-adapter": "^1.21.2",
-        "bpmn-js": "^16.3.1",
+        "bpmn-js": "^16.4.0",
+        "bpmn-js-properties-panel": "^5.8.0",
+        "bpmn-moddle": "^8.1.0",
         "chance": "^1.1.8",
         "chart.js": "^3.9.1",
         "circular-json": "^0.5.9",

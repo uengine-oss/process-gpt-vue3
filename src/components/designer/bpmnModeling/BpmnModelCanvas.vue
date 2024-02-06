@@ -51,7 +51,14 @@
 
             <!--릴레이션은 액티비티간 연결선(흐름)-->
             <div v-for="relationId in Object.keys(value.relations)" :key="relationId">
-                <bpmn-message-flow
+                <component
+                    v-if="relationId && value.relations[relationId] != null"
+                    :is="getComponentByClassName(value.relations[relationId]._type)"
+                    :value="value.relations[relationId]"
+                    :definition="value"
+                    :ref="relationId"
+                ></component>
+                <!-- <bpmn-message-flow
                     v-if="
                         relationId &&
                         value.relations[relationId] != null &&
@@ -66,7 +73,7 @@
                     :value="value.relations[relationId]"
                     :definition="value"
                     :ref="relationId"
-                ></bpmn-relation>
+                ></bpmn-relation> -->
             </div>
         </opengraph>
 
