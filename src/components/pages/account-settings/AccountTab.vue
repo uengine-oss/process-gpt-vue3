@@ -21,11 +21,11 @@ const storephone = ref('+91 12345 65478');
 const storeaddress = ref('814 Howard Street, 120065, India');
 
 // 유저 정보 관련
-import { getGlobalContext } from '@/stores/auth';
-const globalContext = getGlobalContext();
+import StorageBase from '@/utils/StorageBase';
+const storage = StorageBase.getStorage("supabase");
 
 // 유저 이름 변경
-const userInfo = globalContext.storage.userInfo
+const userInfo = storage?.getUser();
  
 // 프로필 이미지 변경 관련
 import { profileImages } from '@/components/pages/account-settings/profileImage';
@@ -51,9 +51,6 @@ function saveUserProfile() {
 const showCurrentPwd = ref(false);
 const showNewPwd = ref(false);
 const showConfirmPwd = ref(false);
-
-
-console.log("globalContext : ", globalContext.storage.userInfo);
 
 </script>
 
@@ -236,4 +233,4 @@ console.log("globalContext : ", globalContext.storage.userInfo);
         cursor: pointer;
         opacity: 0.8;
     }
-</style>@/components/apps/user-profile/profileImage@/components/pages/account-settings/profileImage
+</style>

@@ -46,7 +46,16 @@ export default class StorageBaseSupabase {
     async getUser(path, value) {
         const result = await window.$supabase.auth.getUser();
         if (result && result.data && result.data.user) {
-            return result.data.user;
+            const userInfo = {
+                email: result.data.user.email,
+                name: result.data.user.user_metadata.name,
+                profile: result.data.user.user_metadata.profile,
+                uid: result.data.user.id,
+                accessToken: result.data.session.access_token
+            }
+            return userInfo;
+        } else {
+            return null;
         }
     }
 
