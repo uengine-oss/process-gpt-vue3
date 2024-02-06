@@ -51,12 +51,11 @@ const customizer = useCustomizerStore();
 <script>
 import partialParse from "partial-json-parser";
 
-import { getGlobalContext } from '@/stores/auth';
-
-const globalContext = getGlobalContext();
+import StorageBase from "@/utils/StorageBase";
 
 export default {
     data: () => ({
+        storage: null,
         sidebarItem: [
             {
                 title: "TodoList",
@@ -95,6 +94,12 @@ export default {
                 to: "/organization",
             },
             {
+                title: "프로세스 정의 체계도",
+                icon: 'carbon:flow-connection',
+                BgColor: 'primary',
+                to: "/definition-map",
+            },
+            {
                 title: "프로세스 정의",
                 icon: 'carbon:flow-connection',
                 BgColor: 'primary',
@@ -103,12 +108,14 @@ export default {
         ],
         definitions: null,
     }),
-    async created() {
-        await this.getDefinitionList();
+    created() {
+        this.storage = StorageBase.getStorage("supabase");
+
+        this.getDefinitionList();
     },
     methods: {
         async getDefinitionList() {
-            await globalContext.storage.watch(`db://definitions`, (callback) => {
+            await this.storage.watch(`definitions`, (callback) => {
                 if (callback) {
                     var menu = {
                         title: '프로세스 목록',

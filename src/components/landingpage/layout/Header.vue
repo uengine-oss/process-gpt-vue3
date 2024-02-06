@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useCustomizerStore } from '@/stores/customizer';
-import { getGlobalContext } from '@/stores/auth';
+import { useAuthStore } from '@/stores/auth';
 
 import Logo from '@/layouts/full/logo/Logo.vue';
 // import RtlLogo from '@/layouts/full/logo/RtlLogo.vue';
@@ -16,7 +16,9 @@ import { Menu2Icon } from 'vue-tabler-icons';
 
 const appsdrawer = ref(false);
 const customizer = useCustomizerStore();
-const globalContext: any = getGlobalContext();
+const authStore: any = useAuthStore();
+
+const isLogin: boolean = localStorage.getItem("accessToken") ? true : false;
 </script>
 <template>
     <div>
@@ -37,13 +39,13 @@ const globalContext: any = getGlobalContext();
                         <!-- Login  -->
                         <v-btn class="custom-hover-primary bg-primary d-lg-flex d-none rounded-pill px-8 align-center login-shadow" 
                             to="/auth/login"
-                            v-if="!globalContext.storage.isLogin"
+                            v-if="!isLogin"
                         >
                             <span class="text-white">Login</span>
                         </v-btn>
                         <v-btn class="custom-hover-primary bg-primary d-lg-flex d-none rounded-pill px-8 align-center login-shadow" 
-                            v-else="globalContext.storage.isLogin"
-                            @click="globalContext.logout()"
+                            v-else="isLogin"
+                            @click="authStore.logout()"
                         >
                             <span class="text-white">Logout</span>
                         </v-btn>

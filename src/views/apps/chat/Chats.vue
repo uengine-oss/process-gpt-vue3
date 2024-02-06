@@ -76,9 +76,9 @@ export default {
         },
         async beforeSendMessage(newMessage) {
             if(newMessage && newMessage.includes("시작하겠습니다.")){
-                this.saveMessages(`chats/1/messages/${this.uuid()}`, this.createMessageObj(newMessage, 'system'));
+                this.putObject(`chats/1/messages/${this.uuid()}`, this.createMessageObj(newMessage, 'system'));
             } else {
-                this.saveMessages(`chats/1/messages/${this.uuid()}`, this.createMessageObj(newMessage));
+                this.putObject(`chats/1/messages/${this.uuid()}`, this.createMessageObj(newMessage));
                 if(!this.generator.contexts) {
                     let contexts = await this.queryFromVectorDB(newMessage);
                     this.generator.setContexts(contexts);
@@ -220,7 +220,7 @@ export default {
                     }
                 }
 
-                this.saveMessages(`chats/1/messages/${this.uuid()}`, obj);
+                this.putObject(`chats/1/messages/${this.uuid()}`, obj);
             }
         },
 
@@ -255,7 +255,7 @@ export default {
                 putObj[uuid].processInstanceId = this.processInstance.processInstanceId;
                 path = `todolist/${this.processInstance.nextUserEmail}`;
                 
-                this.saveMessages(path, putObj);
+                this.putObject(path, putObj);
             }
         },
 

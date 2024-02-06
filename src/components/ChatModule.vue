@@ -1,8 +1,8 @@
 <script>
 import jp from 'jsonpath';
-import { getGlobalContext } from '@/stores/auth';
 import partialParse from 'partial-json-parser';
-const globalContext = getGlobalContext();
+
+import StorageBase from '@/utils/StorageBase';
 
 export default {
     data: () => ({
@@ -19,19 +19,20 @@ export default {
         if (!me.$app.try) {
             me.$app = me.$app._component.methods;
         }
+        this.storage = StorageBase.getStorage("supabase");
     },
     methods: {
         async init() {
             this.disableChat = false;
-            this.userInfo = globalContext.storage.userInfo;
+            this.userInfo = await this.storage.getUser();
 
             await this.loadData(this.getDataPath());
             await this.loadMessages(this.getDataPath());
         },
         async getChatList() {
             var me = this;
-            me.userInfo = globalContext.storage.userInfo;
-            // globalContext.storage.delete(`db://chats/1`)
+            me.userInfo = this.storage.getUser();
+            // this.storage.delete(`db://chats/1`)
             var option = {
                 sort: 'desc',
                 orderBy: null,
@@ -39,7 +40,7 @@ export default {
                 startAt: null,
                 endAt: null
             };
-            globalContext.storage.watch_added(`db://chats/1/messages`, option, function (item) {
+            this.storage.watch_added(`db://chats/1/messages`, option, function (item) {
                 if (me.isInitDone) {
                     if (item.role == 'system') {
                         if (me.messages[me.messages.length - 1].role == 'system') {
@@ -54,7 +55,7 @@ export default {
                     }
                 }
             });
-            await globalContext.storage.list(`db://chats/1/messages`, option).then(function (messages) {
+            await this.storage.list(`db://chats/1/messages`, option).then(function (messages) {
                 if (messages) {
                     me.messages = messages.reverse();
                 }
@@ -69,7 +70,7 @@ export default {
                 startAt: null,
                 endAt: this.messages[0].timeStamp
             };
-            let messages = await globalContext.storage.list(`db://chats/1/messages`, option);
+            let messages = await this.storage.list(`db://chats/1/messages`, option);
             if (messages) {
                 messages.splice(0, 1);
                 this.messages = messages.reverse().concat(this.messages);
@@ -77,7 +78,7 @@ export default {
         },
 
         getDataPath() {
-            return this.$route.href.replace('#/', '');
+            return this.$route.href.replace('/', '');
         },
 
         async loadData(path) {},
@@ -91,7 +92,7 @@ export default {
         async loadMessages(path) {
             // 문제 있음 확인 필요
             const callPath = path ? path : this.path;
-            await globalContext.storage.watch(`db://${callPath}`, (callback) => {
+            await this.storage.watch(`db://${callPath}`, (callback) => {
                 this.messages = [];
                 if (callback) {
                     if (callback.messages) {
@@ -110,9 +111,9 @@ export default {
         async getData(path) {
             let value;
             if (path) {
-                value = await globalContext.storage.getObject(`db://${path}`);
+                value = await this.storage.getObject(`db://${path}`);
             } else {
-                value = await globalContext.storage.getObject(`db://${this.path}`);
+                value = await this.storage.getObject(`db://${this.path}`);
             }
             return value;
         },
@@ -215,10 +216,6 @@ export default {
             this.pushObject(path, obj);
         },
 
-        async saveMessages(path, obj) {
-            await globalContext.storage.putObject(`db://${path}`, obj);
-        },
-
         jsonPathReplace(src, jsonPath, newData) {
             // JSONPath를 사용하여 경로의 노드들을 찾음
             const nodes = jp.nodes(src, jsonPath);
@@ -287,19 +284,19 @@ export default {
         },
 
         async putObject(path, obj) {
-            await globalContext.storage.putObject(`db://${path}`, obj);
+            await this.storage.putObject(`db://${path}`, obj);
         },
 
         async pushObject(path, obj) {
-            await globalContext.storage.pushObject(`db://${path}`, obj);
+            await this.storage.pushObject(`db://${path}`, obj);
         },
 
         async setObject(path, obj) {
-            await globalContext.storage.setObject(`db://${path}`, obj);
+            await this.storage.setObject(`db://${path}`, obj);
         },
 
         async delete(path) {
-            await globalContext.storage.delete(`db://${path}`);
+            await this.storage.delete(`db://${path}`);
         },
 
         onModelCreated(response) {

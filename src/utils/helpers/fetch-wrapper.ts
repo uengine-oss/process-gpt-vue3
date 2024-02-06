@@ -1,4 +1,4 @@
-import { getGlobalContext } from '@/stores/auth';
+import { useAuthStore } from '@/stores/auth';
 
 export const fetchWrapper = {
     get: request('GET'),
@@ -25,7 +25,7 @@ function request(method: string) {
 
 function authHeader(url: any) {
     // return auth header with jwt if user is logged in and request is to the api url
-    // const { user } = getGlobalContext();
+    // const { user } = useAuthStore();
     // const isLoggedIn = !!user?.token;
     // const isApiUrl = url.startsWith(import.meta.env.VITE_API_URL);
     // if (isLoggedIn && isApiUrl) {
@@ -40,7 +40,7 @@ function handleResponse(response: any) {
         const data = text && JSON.parse(text);
 
         if (!response.ok) {
-            const { logout } = getGlobalContext();
+            const { logout } = useAuthStore();
             if ([401, 403].includes(response.status)) {
                 // auto logout if 401 Unauthorized or 403 Forbidden response returned from api
                 logout();
