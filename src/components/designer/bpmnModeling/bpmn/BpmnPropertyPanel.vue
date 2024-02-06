@@ -1,4 +1,36 @@
 <template>
+    <div style="height: 100%" v-click-outside="onClickOutside">
+        <v-text-field v-model="copyElement.name"></v-text-field>
+    </div>
+</template>
+<script>
+export default {
+    name: 'bpmn-property-panel',
+    props: {
+        element: Object
+    },
+    data() {
+        return {
+            copyElement: this.element
+        };
+    },
+    watch: {
+        copyElement: {
+            deep: true,
+            handler(val) {
+                console.log(val);
+            }
+        }
+    },
+    methods: {
+        onClickOutside() {
+            this.$emit('close');
+        }
+    }
+};
+</script>
+<!-- 이하 패널 기존 코드
+<template>
 
 </template>
 
@@ -128,4 +160,4 @@
     }
 
 </style>
-
+ -->

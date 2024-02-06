@@ -15,7 +15,7 @@ import { Icon } from '@iconify/vue';
                     <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5 ">
                         <Icon icon="solar:magnifer-linear" height="22" width="22" />
                         <v-text-field variant="plain" density="compact"
-                            class="position-relative pt-0 ml-3 custom-placeholer-color" placeholder="Try to searching ..."
+                            class="position-relative pt-0 ml-3 custom-placeholer-color" placeholder="검색"
                             single-line hide-details>
                         </v-text-field>
                     </div>

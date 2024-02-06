@@ -323,6 +323,7 @@ export default {
             request.onsuccess = (event) => {
                 const db = event.target.result;
                 db.transaction(['documents'], 'readwrite').objectStore('documents').delete(id);
+                
 
                 db.close();
             };
@@ -438,365 +439,367 @@ export default {
         createTest() {
             return null;
         },
-        createUEngine(process) {
-            const elements = {};
-            const relations = {};
-            // let tracingTag = 1;
-            let currentY = 250; // 첫번째 role의 y 좌표
-            let absY = 250;
-            const roleIds = {}; // role 이름과 ID를 매핑하기 위한 객체
-            // Add swimlane if there are more than one role
-            let swimlaneId = null;
-            if (process.roles) {
-                if (process.roles.length > 1) {
-                    swimlaneId = this.uuid();
-                    const swimlaneHeight = process.roles.length * 120; // role의 height 합
-                    elements[swimlaneId] = {
-                        _type: 'org.uengine.kernel.Role',
-                        name: 'Pool',
-                        displayName: 'Pool',
-                        roleResolutionContext: {
-                            endpoint: 'example@uengine.org',
-                            _type: 'org.uengine.kernel.DirectRoleResolutionContext'
-                        },
-                        selected: false,
-                        elementView: {
-                            _type: 'org.uengine.kernel.view.DefaultActivityView',
-                            id: swimlaneId,
-                            x: 290, // role의 x보다 10 작음
-                            y: currentY,
-                            width: 400, // 예시 값
-                            height: swimlaneHeight,
-                            style: JSON.stringify({
-                                stroke: 'black',
-                                'fill-r': '.5',
-                                'fill-cx': '.5',
-                                'fill-cy': '.5',
-                                fill: '#ffffff',
-                                'fill-opacity': 0,
-                                'label-position': 'center',
-                                'label-direction': 'vertical',
-                                'vertical-align': 'top',
-                                cursor: 'move'
-                            }),
-                            parent: null
-                        },
-                        _instanceInfo: [],
-                        oldName: 'Swimlane'
-                    };
-                    absY = currentY - swimlaneHeight / 2;
-                }
+        // createUEngine(process) {
+        //     const elements = {};
+        //     const relations = {};
+        //     // let tracingTag = 1;
+        //     let currentY = 250; // 첫번째 role의 y 좌표
+        //     let absY = 250;
+        //     const roleIds = {}; // role 이름과 ID를 매핑하기 위한 객체
+        //     // Add swimlane if there are more than one role
+        //     let swimlaneId = null;
+        //     if (process.roles) {
+        //         if (process.roles.length > 1) {
+        //             swimlaneId = this.uuid();
+        //             const swimlaneHeight = process.roles.length * 120; // role의 height 합
+        //             elements[swimlaneId] = {
+        //                 _type: 'org.uengine.kernel.Role',
+        //                 name: 'Pool',
+        //                 displayName: 'Pool',
+        //                 roleResolutionContext: {
+        //                     endpoint: 'example@uengine.org',
+        //                     _type: 'org.uengine.kernel.DirectRoleResolutionContext'
+        //                 },
+        //                 selected: false,
+        //                 elementView: {
+        //                     _type: 'org.uengine.kernel.view.DefaultActivityView',
+        //                     id: swimlaneId,
+        //                     x: 290, // role의 x보다 10 작음
+        //                     y: currentY,
+        //                     width: 400, // 예시 값
+        //                     height: swimlaneHeight,
+        //                     style: JSON.stringify({
+        //                         stroke: 'black',
+        //                         'fill-r': '.5',
+        //                         'fill-cx': '.5',
+        //                         'fill-cy': '.5',
+        //                         fill: '#ffffff',
+        //                         'fill-opacity': 0,
+        //                         'label-position': 'center',
+        //                         'label-direction': 'vertical',
+        //                         'vertical-align': 'top',
+        //                         cursor: 'move'
+        //                     }),
+        //                     parent: null
+        //                 },
+        //                 _instanceInfo: [],
+        //                 oldName: 'Swimlane'
+        //             };
+        //             absY = currentY - swimlaneHeight / 2;
+        //         }
 
-                // Add roles and set their parent to swimlane if it exists
-                process.roles.forEach((role, idx) => {
-                    const roleId = this.uuid();
-                    roleIds[role.name] = roleId;
-                    const roleHeight = 120; // 예시 값
-                    elements[roleId] = {
-                        _type: 'org.uengine.kernel.Role',
-                        name: role.name,
-                        displayName: role.name,
-                        roleResolutionContext: {
-                            endpoint: 'example@uengine.org',
-                            _type: 'org.uengine.kernel.DirectRoleResolutionContext'
-                        },
-                        selected: false,
-                        elementView: {
-                            _type: 'org.uengine.kernel.view.DefaultActivityView',
-                            id: roleId,
-                            x: 300, // 예시 값
-                            y: absY + roleHeight / 2,
-                            width: 380, // swimlane width - 20
-                            height: roleHeight,
-                            style: JSON.stringify({
-                                stroke: 'black',
-                                'fill-r': '.5',
-                                'fill-cx': '.5',
-                                'fill-cy': '.5',
-                                fill: '#ffffff',
-                                'fill-opacity': 0,
-                                'label-position': 'center',
-                                'label-direction': 'vertical',
-                                'vertical-align': 'top',
-                                cursor: 'move'
-                            }),
-                            parent: swimlaneId
-                        },
-                        _instanceInfo: [],
-                        oldName: role.name
-                    };
-                    absY += roleHeight; // 다음 role의 y 좌표 업데이트
-                });
-            }
+        //         // Add roles and set their parent to swimlane if it exists
+        //         process.roles.forEach((role, idx) => {
+        //             const roleId = this.uuid();
+        //             roleIds[role.name] = roleId;
+        //             const roleHeight = 120; // 예시 값
+        //             elements[roleId] = {
+        //                 _type: 'org.uengine.kernel.Role',
+        //                 name: role.name,
+        //                 displayName: role.name,
+        //                 roleResolutionContext: {
+        //                     endpoint: 'example@uengine.org',
+        //                     _type: 'org.uengine.kernel.DirectRoleResolutionContext'
+        //                 },
+        //                 selected: false,
+        //                 elementView: {
+        //                     _type: 'org.uengine.kernel.view.DefaultActivityView',
+        //                     id: roleId,
+        //                     x: 300, // 예시 값
+        //                     y: absY + roleHeight / 2,
+        //                     width: 380, // swimlane width - 20
+        //                     height: roleHeight,
+        //                     style: JSON.stringify({
+        //                         stroke: 'black',
+        //                         'fill-r': '.5',
+        //                         'fill-cx': '.5',
+        //                         'fill-cy': '.5',
+        //                         fill: '#ffffff',
+        //                         'fill-opacity': 0,
+        //                         'label-position': 'center',
+        //                         'label-direction': 'vertical',
+        //                         'vertical-align': 'top',
+        //                         cursor: 'move'
+        //                     }),
+        //                     parent: swimlaneId
+        //                 },
+        //                 _instanceInfo: [],
+        //                 oldName: role.name
+        //             };
+        //             absY += roleHeight; // 다음 role의 y 좌표 업데이트
+        //         });
+        //     }
 
-            // Add start event
+        //     // Add start event
 
-            // tracingTag++;
-            let startEventId = null;
-            let endEventId = null;
-            let beforeActivity = null;
-            // Add activities, connect them with sequence flows, and add end event
-            if (process.activities) {
-                process.activities.forEach((activity, index) => {
-                    const activityId = activity.id;
-                    const activityType = activity.type === 'UserActivity' ? 'HumanActivity' : activity.type;
-                    const isRole = activityType === 'Role';
-                    // const role = roleIds[activity.role]; // Get the role ID
-                    // Set the position and size for roles, otherwise use default values for other activities and events
-                    const x = isRole ? 100 : 576; // 예시 값
-                    const y = isRole ? currentY : 463; // 예시 값
-                    const width = isRole ? 380 : 100; // 예시 값
-                    const height = isRole ? 80 : 70; // 예시 값
-                    if (index === 0) {
-                        startEventId = 'start-event';
-                        elements[startEventId] = {
-                            _type: 'org.uengine.kernel.bpmn.StartEvent',
-                            name: 'start-event',
-                            role: roleIds[activity.role],
-                            tracingTag: startEventId,
-                            selected: false,
-                            status: null,
-                            elementView: {
-                                _type: 'org.uengine.kernel.view.DefaultActivityView',
-                                id: startEventId,
-                                x: 500, // 예시 값
-                                y: 400, // 예시 값
-                                width: 30,
-                                height: 30,
-                                style: JSON.stringify({
-                                    stroke: 'black',
-                                    'fill-r': '.5',
-                                    'fill-cx': '.5',
-                                    'fill-cy': '.5',
-                                    fill: 'white',
-                                    'fill-opacity': 0,
-                                    'label-position': 'bottom',
-                                    'label-width': 120,
-                                    'stroke-width': 1.5,
-                                    cursor: 'move'
-                                })
-                            }
-                        };
-                        // tracingTag++;
-                    }
-                    elements[activityId] = {
-                        _type: 'org.uengine.kernel.' + activityType,
-                        name: activity.name,
-                        role: roleIds[activity.role],
-                        tracingTag: activityId,
-                        selected: false,
-                        status: activity.status,
-                        elementView: {
-                            _type: 'org.uengine.kernel.view.DefaultActivityView',
-                            id: activityId,
-                            x: x,
-                            y: y,
-                            width: width,
-                            height: height,
-                            style: JSON.stringify({
-                                stroke: 'black',
-                                'fill-r': 1,
-                                'fill-cx': 0.1,
-                                'fill-cy': 0.1,
-                                fill: '#FFFFFF',
-                                'fill-opacity': 0,
-                                'label-position': 'center',
-                                'stroke-width': 1.2,
-                                r: '10',
-                                cursor: 'move'
-                            }),
-                            parent: isRole ? swimlaneId : roleIds[activity.role]
-                        }
-                    };
-                    // tracingTag++;
-                    if (index === process.activities.length - 1) {
-                        endEventId = 'end-event';
-                        elements[endEventId] = {
-                            _type: 'org.uengine.kernel.bpmn.EndEvent',
-                            name: 'end-event',
-                            status: null,
-                            tracingTag: endEventId,
-                            selected: false,
-                            role: roleIds[activity.role],
-                            elementView: {
-                                _type: 'org.uengine.kernel.view.DefaultActivityView',
-                                id: endEventId,
-                                x: x + width + 20, // 예시 값
-                                y: y, // 예시 값
-                                width: 30,
-                                height: 30,
-                                style: JSON.stringify({
-                                    stroke: 'black',
-                                    'fill-r': '.5',
-                                    'fill-cx': '.5',
-                                    'fill-cy': '.5',
-                                    fill: 'white',
-                                    'fill-opacity': 0,
-                                    'label-position': 'bottom',
-                                    'stroke-width': 3,
-                                    'label-width': 120,
-                                    cursor: 'move'
-                                }),
-                                parent: null
-                            }
-                        };
-                        // tracingTag++;
-                    }
-                    if (isRole) {
-                        // Update currentY for the next role
-                        currentY += height;
-                    }
+        //     // tracingTag++;
+        //     let startEventId = null;
+        //     let endEventId = null;
+        //     let beforeActivity = null;
+        //     // Add activities, connect them with sequence flows, and add end event
+        //     if (process.activities) {
+        //         process.activities.forEach((activity, index) => {
+        //             const activityId = activity.id;
+        //             const activityType = activity.type === 'UserActivity' ? 'HumanActivity' : activity.type;
+        //             const isRole = activityType === 'Role';
+        //             // const role = roleIds[activity.role]; // Get the role ID
+        //             // Set the position and size for roles, otherwise use default values for other activities and events
+        //             const x = isRole ? 100 : 576; // 예시 값
+        //             const y = isRole ? currentY : 463; // 예시 값
+        //             const width = isRole ? 380 : 100; // 예시 값
+        //             const height = isRole ? 80 : 70; // 예시 값
+        //             if (index === 0) {
+        //                 startEventId = 'start-event';
+        //                 elements[startEventId] = {
+        //                     _type: 'org.uengine.kernel.bpmn.StartEvent',
+        //                     name: 'start-event',
+        //                     role: roleIds[activity.role],
+        //                     tracingTag: startEventId,
+        //                     selected: false,
+        //                     status: null,
+        //                     elementView: {
+        //                         _type: 'org.uengine.kernel.view.DefaultActivityView',
+        //                         id: startEventId,
+        //                         x: 500, // 예시 값
+        //                         y: 400, // 예시 값
+        //                         width: 30,
+        //                         height: 30,
+        //                         style: JSON.stringify({
+        //                             stroke: 'black',
+        //                             'fill-r': '.5',
+        //                             'fill-cx': '.5',
+        //                             'fill-cy': '.5',
+        //                             fill: 'white',
+        //                             'fill-opacity': 0,
+        //                             'label-position': 'bottom',
+        //                             'label-width': 120,
+        //                             'stroke-width': 1.5,
+        //                             cursor: 'move'
+        //                         })
+        //                     }
+        //                 };
+        //                 // tracingTag++;
+        //             }
+        //             elements[activityId] = {
+        //                 _type: 'org.uengine.kernel.' + activityType,
+        //                 name: activity.name,
+        //                 role: roleIds[activity.role],
+        //                 tracingTag: activityId,
+        //                 selected: false,
+        //                 status: activity.status,
+        //                 elementView: {
+        //                     _type: 'org.uengine.kernel.view.DefaultActivityView',
+        //                     id: activityId,
+        //                     x: x,
+        //                     y: y,
+        //                     width: width,
+        //                     height: height,
+        //                     style: JSON.stringify({
+        //                         stroke: 'black',
+        //                         'fill-r': 1,
+        //                         'fill-cx': 0.1,
+        //                         'fill-cy': 0.1,
+        //                         fill: '#FFFFFF',
+        //                         'fill-opacity': 0,
+        //                         'label-position': 'center',
+        //                         'stroke-width': 1.2,
+        //                         r: '10',
+        //                         cursor: 'move'
+        //                     }),
+        //                     parent: isRole ? swimlaneId : roleIds[activity.role]
+        //                 }
+        //             };
+        //             // tracingTag++;
+        //             if (index === process.activities.length - 1) {
+        //                 endEventId = 'end-event';
+        //                 elements[endEventId] = {
+        //                     _type: 'org.uengine.kernel.bpmn.EndEvent',
+        //                     name: 'end-event',
+        //                     status: null,
+        //                     tracingTag: endEventId,
+        //                     selected: false,
+        //                     role: roleIds[activity.role],
+        //                     elementView: {
+        //                         _type: 'org.uengine.kernel.view.DefaultActivityView',
+        //                         id: endEventId,
+        //                         x: x + width + 20, // 예시 값
+        //                         y: y, // 예시 값
+        //                         width: 30,
+        //                         height: 30,
+        //                         style: JSON.stringify({
+        //                             stroke: 'black',
+        //                             'fill-r': '.5',
+        //                             'fill-cx': '.5',
+        //                             'fill-cy': '.5',
+        //                             fill: 'white',
+        //                             'fill-opacity': 0,
+        //                             'label-position': 'bottom',
+        //                             'stroke-width': 3,
+        //                             'label-width': 120,
+        //                             cursor: 'move'
+        //                         }),
+        //                         parent: null
+        //                     }
+        //                 };
+        //                 // tracingTag++;
+        //             }
+        //             if (isRole) {
+        //                 // Update currentY for the next role
+        //                 currentY += height;
+        //             }
 
-                    // Connect previous activity to current activity with sequence flow
-                    if (!isRole) {
-                        const sequenceId = this.uuid();
-                        const sourceRef = index === 0 ? startEventId : beforeActivity;
-                        // const targetRef = index === process.activities.length - 1 ? endEventId : activityId;
-                        relations[sequenceId] = {
-                            name: '',
-                            _type: 'org.uengine.kernel.bpmn.SequenceFlow',
-                            selected: false,
-                            from: sourceRef,
-                            to: activityId,
-                            sourceRef: sourceRef,
-                            targetRef: activityId,
-                            relationView: {
-                                style: '{}',
-                                id: sequenceId,
-                                value: '' // 예시 값
-                            },
-                            condition: {
-                                _type: 'org.uengine.kernel.Evaluate',
-                                pv: {
-                                    _type: 'org.uengine.kernel.ProcessVariable',
-                                    name: ''
-                                },
-                                condition: '==',
-                                val: ''
-                            }
-                        };
-                        beforeActivity = activityId;
-                    }
-                    if (index === process.activities.length - 1) {
-                        const endSequenceId = this.uuid();
-                        relations[endSequenceId] = {
-                            name: '',
-                            _type: 'org.uengine.kernel.bpmn.SequenceFlow',
-                            selected: false,
-                            from: activityId,
-                            to: endEventId,
-                            sourceRef: activityId,
-                            targetRef: endEventId,
-                            relationView: {
-                                style: '{}',
-                                id: endSequenceId,
-                                value: '' // 예시 값
-                            },
-                            condition: {
-                                _type: 'org.uengine.kernel.Evaluate',
-                                pv: {
-                                    _type: 'org.uengine.kernel.ProcessVariable',
-                                    name: ''
-                                },
-                                condition: '==',
-                                val: ''
-                            }
-                        };
-                    }
-                });
-            }
-            let processVariables;
-            if (process.data) {
-                processVariables = process.data.map((data) => ({
-                    name: data.name,
-                    displayName: {
-                        text: data.name,
-                        _type: 'org.uengine.contexts.TextContext'
-                    },
-                    defaultValueInString: '',
-                    global: false,
-                    persistOption: 'BPMS',
-                    typeClassName: 'java.lang.String',
-                    _type: 'org.uengine.kernel.ProcessVariable'
-                }));
-            }
+        //             // Connect previous activity to current activity with sequence flow
+        //             if (!isRole) {
+        //                 const sequenceId = this.uuid();
+        //                 const sourceRef = index === 0 ? startEventId : beforeActivity;
+        //                 // const targetRef = index === process.activities.length - 1 ? endEventId : activityId;
+        //                 relations[sequenceId] = {
+        //                     name: '',
+        //                     _type: 'org.uengine.kernel.bpmn.SequenceFlow',
+        //                     selected: false,
+        //                     from: sourceRef,
+        //                     to: activityId,
+        //                     sourceRef: sourceRef,
+        //                     targetRef: activityId,
+        //                     priority: 1,
+        //                     relationView: {
+        //                         style: '{}',
+        //                         id: sequenceId,
+        //                         value: '' // 예시 값
+        //                     },
+        //                     condition: {
+        //                         _type: 'org.uengine.kernel.Evaluate',
+        //                         pv: {
+        //                             _type: 'org.uengine.kernel.ProcessVariable',
+        //                             name: ''
+        //                         },
+        //                         condition: '==',
+        //                         val: ''
+        //                     }
+        //                 };
+        //                 beforeActivity = activityId;
+        //             }
+        //             if (index === process.activities.length - 1) {
+        //                 const endSequenceId = this.uuid();
+        //                 relations[endSequenceId] = {
+        //                     name: '',
+        //                     _type: 'org.uengine.kernel.bpmn.SequenceFlow',
+        //                     selected: false,
+        //                     from: activityId,
+        //                     to: endEventId,
+        //                     priority: 1,
+        //                     sourceRef: activityId,
+        //                     targetRef: endEventId,
+        //                     relationView: {
+        //                         style: '{}',
+        //                         id: endSequenceId,
+        //                         value: '' // 예시 값
+        //                     },
+        //                     condition: {
+        //                         _type: 'org.uengine.kernel.Evaluate',
+        //                         pv: {
+        //                             _type: 'org.uengine.kernel.ProcessVariable',
+        //                             name: ''
+        //                         },
+        //                         condition: '==',
+        //                         val: ''
+        //                     }
+        //                 };
+        //             }
+        //         });
+        //     }
+        //     let processVariables;
+        //     if (process.data) {
+        //         processVariables = process.data.map((data) => ({
+        //             name: data.name,
+        //             displayName: {
+        //                 text: data.name,
+        //                 _type: 'org.uengine.contexts.TextContext'
+        //             },
+        //             defaultValueInString: '',
+        //             global: false,
+        //             persistOption: 'BPMS',
+        //             typeClassName: 'java.lang.String',
+        //             _type: 'org.uengine.kernel.ProcessVariable'
+        //         }));
+        //     }
 
-            const finalJson = {
-                elements: elements,
-                relations: relations,
-                version: 3,
-                definitionId: process.processDefinitionId,
-                scm: {
-                    tag: null,
-                    org: null,
-                    repo: null,
-                    forkedOrg: null,
-                    forkedRepo: null
-                },
-                processVariableDescriptors: processVariables,
-                _changedByLocaleSelector: false,
-                name: process.processDefinitionName
-            };
-            if (Object.keys(elements).length > 0) {
-                this.adjustElementsWithinRoles(process, elements);
-            }
+        //     const finalJson = {
+        //         elements: elements,
+        //         relations: relations,
+        //         version: 3,
+        //         definitionId: process.processDefinitionId,
+        //         scm: {
+        //             tag: null,
+        //             org: null,
+        //             repo: null,
+        //             forkedOrg: null,
+        //             forkedRepo: null
+        //         },
+        //         processVariableDescriptors: processVariables,
+        //         _changedByLocaleSelector: false,
+        //         name: process.processDefinitionName
+        //     };
+        //     if (Object.keys(elements).length > 0) {
+        //         this.adjustElementsWithinRoles(process, elements);
+        //     }
 
-            this.projectName = process.processDefinitionName;
-            return finalJson;
-            // this.$emit("update:model", result)
-        },
-        adjustElementsWithinRoles(process, elements) {
-            let maxRoleWidth = 0;
-            let maxRoleX = 0;
-            let beforeX = 0;
-            let poolId;
-            let activityLength = 0;
-            if (process.activities) activityLength = Object.keys(process.activities).length;
-            // Adjust the x position of activities and events to be within the role boundaries
-            Object.values(elements).forEach((element) => {
-                if (element._type === 'org.uengine.kernel.Role') {
-                    // Set Start Event Position --> 우선 첫 위치부터
-                    // absX 를 무조건 120에 두도록 설정
-                    poolId = element.elementView.parent;
-                    if (element.name !== 'Pool') {
-                        maxRoleWidth = activityLength <= 0 ? element.elementView.width : 250 * activityLength;
-                        if (maxRoleWidth - element.elementView.width > 0) {
-                            // 현재 abs
-                            let abs = this.absPos(element);
-                            maxRoleX = 110 + maxRoleWidth / 2;
-                            if (abs.absX !== 120) {
-                                element.elementView.x = maxRoleX;
-                            }
-                        }
-                        element.elementView.width = maxRoleWidth;
-                    }
-                } else if (element.role) {
-                    if (element._type === 'org.uengine.kernel.bpmn.StartEvent') {
-                        const role = elements[element.role];
-                        const absRolePos = this.absPos(role);
-                        beforeX = absRolePos.absX + element.elementView.width / 2 + 50;
-                        element.elementView.x = beforeX;
-                        element.elementView.y = role.elementView.y;
-                    } else {
-                        const role = elements[element.role];
-                        beforeX = beforeX + element.elementView.width / 2 + 100;
-                        element.elementView.x = beforeX;
-                        element.elementView.y = role ? role.elementView.y : 300;
-                    }
-                }
-            });
-            if (poolId) {
-                elements[poolId].elementView.width = maxRoleWidth + 20;
-                elements[poolId].elementView.x = 90 + elements[poolId].elementView.width / 2;
-            }
-        },
-        absPos(element) {
-            let result = {
-                absX: element.elementView.x - element.elementView.width / 2,
-                absY: element.elementView.y - element.elementView.height / 2
-            };
-            return result;
-        }
+        //     this.projectName = process.processDefinitionName;
+        //     return finalJson;
+        //     // this.$emit("update:model", result)
+        // },
+        // adjustElementsWithinRoles(process, elements) {
+        //     let maxRoleWidth = 0;
+        //     let maxRoleX = 0;
+        //     let beforeX = 0;
+        //     let poolId;
+        //     let activityLength = 0;
+        //     if (process.activities) activityLength = Object.keys(process.activities).length;
+        //     // Adjust the x position of activities and events to be within the role boundaries
+        //     Object.values(elements).forEach((element) => {
+        //         if (element._type === 'org.uengine.kernel.Role') {
+        //             // Set Start Event Position --> 우선 첫 위치부터
+        //             // absX 를 무조건 120에 두도록 설정
+        //             poolId = element.elementView.parent;
+        //             if (element.name !== 'Pool') {
+        //                 maxRoleWidth = activityLength <= 0 ? element.elementView.width : 250 * activityLength;
+        //                 if (maxRoleWidth - element.elementView.width > 0) {
+        //                     // 현재 abs
+        //                     let abs = this.absPos(element);
+        //                     maxRoleX = 110 + maxRoleWidth / 2;
+        //                     if (abs.absX !== 120) {
+        //                         element.elementView.x = maxRoleX;
+        //                     }
+        //                 }
+        //                 element.elementView.width = maxRoleWidth;
+        //             }
+        //         } else if (element.role) {
+        //             if (element._type === 'org.uengine.kernel.bpmn.StartEvent') {
+        //                 const role = elements[element.role];
+        //                 const absRolePos = this.absPos(role);
+        //                 beforeX = absRolePos.absX + element.elementView.width / 2 + 50;
+        //                 element.elementView.x = beforeX;
+        //                 element.elementView.y = role.elementView.y;
+        //             } else {
+        //                 const role = elements[element.role];
+        //                 beforeX = beforeX + element.elementView.width / 2 + 100;
+        //                 element.elementView.x = beforeX;
+        //                 element.elementView.y = role ? role.elementView.y : 300;
+        //             }
+        //         }
+        //     });
+        //     if (poolId) {
+        //         elements[poolId].elementView.width = maxRoleWidth + 20;
+        //         elements[poolId].elementView.x = 90 + elements[poolId].elementView.width / 2;
+        //     }
+        // },
+        // absPos(element) {
+        //     let result = {
+        //         absX: element.elementView.x - element.elementView.width / 2,
+        //         absY: element.elementView.y - element.elementView.height / 2
+        //     };
+        //     return result;
+        // }
     }
 };
 </script>
