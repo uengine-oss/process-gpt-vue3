@@ -22,14 +22,15 @@ import 'vue3-easy-data-table/dist/style.css';
 //i18
 import { createI18n } from 'vue-i18n';
 import messages from '@/utils/locales/messages';
+import setLocale from './plugins/setLocale';
+
 //ScrollTop
 import VueScrollTo from 'vue-scrollto';
 const i18n = createI18n({
-    locale: 'en',
-    messages: messages,
-    silentTranslationWarn: true,
-    silentFallbackWarn: true
-});
+    locale: 'ko',
+    fallbackLocale: 'en',
+    messages,
+  });
 // EventBus
 import mitt from 'mitt';
 const emitter = mitt();
@@ -68,6 +69,8 @@ app.use(i18n);
 app.use(Maska);
 app.use(VueApexCharts);
 app.use(vuetify).mount('#app');
+app.use(setLocale);
+
 //ScrollTop Use
 // app.use(VueScrollTo);
 app.use(VueScrollTo, {

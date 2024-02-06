@@ -16,7 +16,6 @@ export default class StorageBaseAbstract extends TenantAware {
             authorized: null,
         };
         this.userImage = null;
-
         this.isLogin = false;
         this.isGuestLogin = false;
     }
