@@ -88,7 +88,8 @@ export default {
             title: '프로세스 정의 관리',
             text: "대화형으로 프로세스를 관리하십시오. \n 예를 들어, '영업관리 프로세스를 다음과 같이 등록해줘: 1. 영업기회등 고객명, 예상사업규모, 키맨, 요구사항 2. 제안 작성: 제안 내용, 가격 3. 수주 혹은 실주 4. 수주한 경우, 계약진행' 와 같은 명령을 할 수 있습니다."
         },
-        changedModel: null
+        changedModel: null,
+        processDefinitionMap: null,
     }),
     async created() {
         await this.init();
@@ -97,6 +98,8 @@ export default {
             isStream: true,
             preferredLanguage: 'Korean'
         });
+
+        this.saveDefinitionMap({messages: JSON.stringify(this.messages)})
     },
     watch: {
         $route: {
@@ -134,6 +137,8 @@ export default {
                     }
                 }
             }
+
+            this.processDefinitionMap = await this.getData("definition");
         },
 
         beforeSendMessage(newMessage) {
@@ -186,7 +191,39 @@ export default {
                 this.saveDefinition(this.processDefinition);
                 putObj.model = modelText;
                 this.putObject(`models/${this.processDefinition.processDefinitionId}`, { name: this.projectName, model: this.model });
-                this.saveMessages(path, putObj);
+                this.putObject(path, putObj);
+                this.saveDefinitionMap(putObj);
+            }
+        },
+        async saveDefinitionMap(obj) {
+            var path = 'definition';
+            if (this.processDefinition) {
+                var megaProcessId = this.processDefinition.megaProcessId;
+                var majorProcessId = this.processDefinition.majorProcessId;
+
+                this.processDefinitionMap = await this.getData(path);
+                if (this.processDefinitionMap && this.processDefinitionMap.megaProcess) {
+                    const megaProcesses = Object.values(this.processDefinitionMap.megaProcess);
+                    console.log(megaProcesses)
+                    path += "/megaProcess/"
+                    megaProcesses.forEach((mega, megaIdx) => {
+                        if (mega.id == megaProcessId && mega.majorProcess) {
+                            path += `${megaIdx}/majorProcess/`;
+                            mega.majorProcess.forEach((major, majorIdx) => {
+                                if (major.id == majorProcessId) {
+                                    path += `${majorIdx}/subProcess`;
+                                }
+                            })
+                        }
+                    });
+                }
+                
+                if (path.includes('subProcess')) {
+                    console.log(path)
+                    obj.id = this.processDefinition.processDefinitionId;
+                    obj.name = this.processDefinition.processDefinitionName;
+                    this.pushObject(path, obj);
+                }
             }
         },
         convertToProcessDefinition(jsonInput) {
