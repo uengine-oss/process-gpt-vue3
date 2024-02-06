@@ -52,10 +52,32 @@ export default {
         this.bpmnViewer.on('import.done', async function (event) {
             var error = event.error;
             var warnings = event.warnings;
-            // console.log(self.bpmnViewer.getDefinitions());
             console.log(self.bpmnViewer.getDefinitions());
+            let def = self.bpmnViewer.getDefinitions();
             let xml = await self.bpmnViewer.saveXML({ format: true, preamble: true });
-
+            let replacer = function (key, value) {
+                // 만약 값이 객체이고 bpmnElement 속성을 가지고 있다면
+                if (value && typeof value === 'object' && !Array.isArray(value)) {
+                    let replacement = { ...value };
+                    if (value.bpmnElement) {
+                        replacement.bpmnElement = value.bpmnElement.id;
+                    }
+                    if (value.$parent) {
+                        replacement.$parent = value.$parent.id;
+                    }
+                    if (value.sourceRef) {
+                        replacement.sourceRef = value.sourceRef.id;
+                    }
+                    if (value.targetRef) {
+                        replacement.targetRef = value.targetRef.id;
+                    }
+                    return replacement;
+                }
+                // 다른 경우에는 값을 그대로 반환
+                return value;
+            };
+            let str = JSON.stringify(def, replacer);
+            console.log(str);
             if (xml) console.log(xml);
             // var elementRegistry = self.bpmnViewer.get('elementRegistry');
             // console.log(elementRegistry);
@@ -94,108 +116,149 @@ export default {
             this.fetchDiagram(val);
         },
         diagramXML(val) {
-            // let me = this
-            // let obj = this.parseJsonAndAssignProperties(val);
-            // console.log(obj);
-            // let bpmnModdle = this.bpmnViewer.get('moddle');
-            // const rootElements = obj.rootElements.map((element) => bpmnModdle.create(element.$type, element));
-            // const diagrams = obj.diagrams.map((element) => bpmnModdle.create(element.$type, element));
-            // const definitions = bpmnModdle.create('bpmn:Definitions', {
-            //     ...obj,
-            //     diagrams: diagrams,
-            //     rootElements: rootElements
-            // });
-            // console.log(bpmnModdle);
-            // console.log(definitions);
-            // // let bpmnModdleObj = bpmnModdle.create(obj.$type);
-            // // let obj = new BpmnModdle(val);
-            this.bpmnViewer.importXML(val);
-            // this.bpmnViewer.importDefinitions(obj)
-        }
+            let me = this;
+            let obj = this.parseJsonToModdle(val);
+            // const parsedData = JSON.parse(val);
+            function assignParents(element, parent) {
+                if (Array.isArray(element)) {
+                    element.forEach((child) => assignParents(child, parent));
+                } else if (element && typeof element === 'object') {
+                    element.$parent = parent;
+                    Object.keys(element).forEach((prop) => {
+                        if (prop === '$type' || prop === '$parent') return;
+                        const value = element[prop];
+                        if (Array.isArray(value) || (value && typeof value === 'object')) {
+                            assignParents(value, element); // 재귀적으로 자식 요소에 대해 부모를 설정합니다.
+                        }
+                    });
+                }
+            }
+            assignParents(obj, null);
+            // flowElements 맵 생성
+            const flowElementsMap = new Map();
+            obj.rootElements.forEach((rootElement) => {
+                if (rootElement.participants) {
+                    flowElementsMap.set(rootElement.id, rootElement);
+                    rootElement.participants.forEach((part) => {
+                        flowElementsMap.set(part.id, part);
+                    });
+                }
+                if (rootElement.flowElements) {
+                    rootElement.flowElements.forEach((fe) => {
+                        flowElementsMap.set(fe.id, fe);
+                    });
+                }
+                if (rootElement.laneSets) {
+                    rootElement.laneSets.forEach((lanes) => {
+                        flowElementsMap.set(lanes.id, lanes);
+                        lanes.lanes.forEach((fe) => {
+                            flowElementsMap.set(fe.id, fe);
+                        });
+                    });
+                }
+            });
 
+            // planeElements 내의 bpmnElement 속성 업데이트
+            obj.diagrams.forEach((diagram) => {
+                const diagramElementObject = flowElementsMap.get(diagram.plane.bpmnElement);
+                if (diagramElementObject) {
+                    diagram.plane.bpmnElement = diagramElementObject;
+                }
+                if (diagram.plane && diagram.plane.planeElement) {
+                    diagram.plane.planeElement.forEach((pe) => {
+                        if (typeof pe.bpmnElement === 'string') {
+                            const bpmnElementObject = flowElementsMap.get(pe.bpmnElement);
+                            if (bpmnElementObject) {
+                                pe.bpmnElement = bpmnElementObject;
+                            }
+                        }
+                        if (pe.bpmnElement.sourceRef && pe.bpmnElement.targetRef) {
+                            const sourceRef = flowElementsMap.get(pe.bpmnElement.sourceRef);
+                            const targetRef = flowElementsMap.get(pe.bpmnElement.targetRef);
+                            pe.bpmnElement.sourceRef = sourceRef;
+                            pe.bpmnElement.targetRef = targetRef;
+                        }
+                        // if (typeof pe.sourceRef === 'string') {
+                        //     const bpmnElementObject = flowElementsMap.get(pe.sourceRef);
+                        //     if (bpmnElementObject) {
+                        //         bpmnElementObject.sourceRef
+                        //         pe.sourceRef = bpmnElementObject;
+
+                        //     }
+                        // }
+                        // if (typeof pe.targetRef === 'string') {
+                        //     const bpmnElementObject = flowElementsMap.get(pe.targetRef);
+                        //     if (bpmnElementObject) {
+                        //         pe.targetRef = bpmnElementObject;
+                        //     }
+                        // }
+                    });
+                }
+            });
+
+            console.log(obj);
+            // this.bpmnViewer.importXML(val);
+            this.bpmnViewer.importDefinitions(obj);
+        }
     },
     methods: {
-        createModdleElements(json) {
-            let bpmnModdle = this.bpmnViewer.get('moddle');
-            return JSON.parse(json, function reviver(key, value) {
+        parseJsonToModdle(jsonString) {
+            const bpmnModdle = new BpmnModdle();
+            // let bpmnModdle = this.bpmnViewer.get('moddle');
+            return JSON.parse(jsonString, function reviver(key, value) {
+                // $type 속성이 있는 객체만 moddle element로 변환합니다.
                 if (value && typeof value === 'object' && value.$type) {
                     return bpmnModdle.create(value.$type, value);
                 }
+                // $type 속성이 없는 객체나 다른 값들은 변경하지 않고 그대로 반환합니다.
                 return value;
             });
         },
-        // moddle elements에 대해 $parent 속성을 설정하는 함수
-        assignParents(element, parent) {
-            let self = this;
-            if (Array.isArray(element)) {
-                element.forEach((child) => self.assignParents(child, parent));
-            } else if (element && typeof element === 'object') {
-                element.$parent = parent;
-                Object.keys(element).forEach((prop) => {
-                    if (prop === '$type' || prop === '$parent') return;
-                    const value = element[prop];
-                    if (Array.isArray(value) || (value && typeof value === 'object')) {
-                        self.assignParents(value, element); // 재귀적으로 자식 요소에 대해 부모를 설정합니다.
-                    }
-                });
-            }
+        createModdleElement(element) {
+            let bpmnModdle = this.bpmnViewer.get('moddle');
+            const { $type, ...properties } = element;
+            return bpmnModdle.create($type, properties);
         },
+        convertToModdleElements(json) {
+            const { rootElements, diagrams, ...definitionsProps } = json;
 
-        // moddle elements에 대해 bpmnElement 속성을 설정하는 함수
-        assignBpmnElementProperty(diagramElements, modelElementsById) {
-            let self = this;
-            if (Array.isArray(diagramElements))
-                diagramElements.forEach((diagramElement) => {
-                    // bpmnElement 속성이 ID 문자열로 제공되면, 해당 ID를 가진 모델 요소로 대체합니다.
-                    const referencedModelElement = modelElementsById[diagramElement.bpmnElement];
-                    if (referencedModelElement) {
-                        diagramElement.bpmnElement = referencedModelElement;
-                    }
-
-
-                    // 재귀적으로 모든 하위 다이어그램 요소에 대해서도 동일한 작업을 수행합니다.
-                    Object.values(diagramElement).forEach((value) => {
-                        if (Array.isArray(value) || (value && typeof value === 'object')) {
-                            self.assignBpmnElementProperty(value, modelElementsById);
-                        }
-                    });
+            const convertedRootElements = rootElements.map((rootElement) => {
+                const { flowElements, laneSets, ...rootProps } = rootElement;
+                const convertedFlowElements = flowElements.map(createModdleElement);
+                const convertedLaneSets = laneSets.map((laneSet) => {
+                    const { lanes, ...laneSetProps } = laneSet;
+                    const convertedLanes = lanes.map(createModdleElement);
+                    return createModdleElement({ ...laneSetProps, lanes: convertedLanes });
                 });
-        },
 
-        // JSON 문자열을 파싱하고 모든 객체 값을 moddle element로 변환하며, $parent 및 bpmnElement 속성을 설정합니다.
-        parseJsonAndAssignProperties(jsonString) {
-            let self = this;
-            const elements = self.createModdleElements(jsonString);
-            const modelElementsById = {};
-
-            // 모델 요소의 ID를 키로 사용하여 사전을 생성합니다.
-            function indexModelElements(element) {
-                if (element.id) {
-                    modelElementsById[element.id] = element;
-                }
-                Object.values(element).forEach((value) => {
-                    if (Array.isArray(value) || (value && typeof value === 'object')) {
-                        indexModelElements(value);
-                    }
+                return createModdleElement({
+                    ...rootProps,
+                    flowElements: convertedFlowElements,
+                    laneSets: convertedLaneSets
                 });
-            }
+            });
 
-            // 모든 모델 요소를 인덱싱합니다.
-            indexModelElements(elements);
+            const convertedDiagrams = diagrams.map((diagram) => {
+                const { plane, ...diagramProps } = diagram;
+                const { planeElement, ...planeProps } = plane;
+                const convertedPlaneElements = planeElement.map(createModdleElement);
 
-            // $parent 속성을 설정합니다.
-            self.assignParents(elements, null);
-
-            // 다이어그램 요소에 대한 bpmnElement 속성을 설정합니다.
-            if (elements.diagrams) {
-                elements.diagrams.forEach((diagram) => {
-                    if (diagram.plane && diagram.plane.planeElement) {
-                        self.assignBpmnElementProperty(diagram.plane.planeElement, modelElementsById);
-                    }
+                const convertedPlane = createModdleElement({
+                    ...planeProps,
+                    planeElement: convertedPlaneElements
                 });
-            }
 
-            return elements;
+                return createModdleElement({
+                    ...diagramProps,
+                    plane: convertedPlane
+                });
+            });
+
+            return createModdleElement({
+                ...definitionsProps,
+                rootElements: convertedRootElements,
+                diagrams: convertedDiagrams
+            });
         },
         fetchDiagram(url) {
             var self = this;
