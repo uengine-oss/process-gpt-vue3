@@ -9,7 +9,7 @@ const MainRoutes = {
         {
             name: 'Todolist',
             path: '/todolist',
-            component: () => import('@/views/apps/todolist/Todolist.vue'),
+            component: () => import('@/components/apps/todolist/TodolistCard.vue'),
         },
         // {
         //     name: 'Calendar',

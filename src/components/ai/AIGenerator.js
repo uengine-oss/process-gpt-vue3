@@ -46,6 +46,9 @@ export default class AIGenerator {
 
     stop(){
         this.stopSignaled = true;
+        if (this.client.onModelStopped) {
+            this.client.onModelStopped();
+        }
     }
 
     getToken() {
@@ -245,13 +248,15 @@ export default class AIGenerator {
                 me.state = 'end';
                 let model = me.createModel(me.modelJson)
 
-                if(me.client.onModelCreated){
-                    me.client.onModelCreated(model);
-                } 
-                
-                if(me.client.onGenerationFinished)
-                    me.client.onGenerationFinished(model)
-
+                if (!me.stopSignaled) {
+                    if(me.client.onModelCreated){
+                        me.client.onModelCreated(model);
+                    } 
+                    if(me.client.onGenerationFinished){
+                        me.client.onGenerationFinished(model)
+                    }
+                }
+    
                 me.saveCache(messages)
             
             }

@@ -14,7 +14,7 @@ import LoginForm from '@/components/auth/LoginForm.vue';
                         <Logo />
                         <v-row class="justify-md-space-around align-center py-md-8">
                             <v-col cols="12" lg="5" md="6" class="d-md-flex d-none">
-                                <img src="@/assets/images/backgrounds/login-security.png" class="w-100"
+                                <img src="@/assets/images/backgrounds/login-security1.png" class="w-100"
                                     alt="login-background" />
                             </v-col>
                             <v-col cols="12" lg="5" md="6">

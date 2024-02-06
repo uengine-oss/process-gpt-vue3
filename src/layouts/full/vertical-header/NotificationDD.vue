@@ -2,20 +2,19 @@
     <!-- ---------------------------------------------- -->
     <!-- notifications DD -->
     <!-- ---------------------------------------------- -->
-    <v-menu :close-on-content-click="false" class="notification_popup">
+    <v-menu :close-on-content-click="true" class="notification_popup">
         <template v-slot:activator="{ props }">
-
             <v-btn icon flat v-bind="props" size="small">
-
                 <div class="position-realtive">
-                    <div class="notify">
-                        <span class="heartbit"></span> <span class="point"></span>
+                    <div class="notify" v-if="notiCount > 0">
+                        <span class="heartbit"></span>
+                        <span class="point"></span>
                     </div>
                     <Icon icon="solar:bell-bing-line-duotone" height="24" width="24" />
                 </div>
             </v-btn>
-
         </template>
+
         <v-sheet rounded="lg" width="385" elevation="10" class="mt-5 dropdown-box">
             <div class="px-8 pb-4 pt-6">
                 <div class="d-flex align-center">

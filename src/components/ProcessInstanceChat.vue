@@ -32,13 +32,15 @@
                     </v-card-actions>
                 </v-card>
             </v-dialog>
-            <Chat
-                :messages="messages"
-                :alertInfo="alertInfo"
+            <Chat :messages="messages"
+                :chatInfo="chatInfo"
                 :userInfo="userInfo" 
                 :disableChat="disableChat"
+                :type="path"
                 @sendMessage="beforeSendMessage"
                 @sendEditedMessage="sendEditedMessage"
+                @stopMessage="stopMessage"
+                @getMoreChat="getMoreChat"
                 @viewProcess="viewProcess"
             ></Chat>
         </template>
@@ -52,7 +54,6 @@
 <script>
 import partialParse from 'partial-json-parser';
 import { VectorStorage } from 'vector-storage';
-import { format } from 'date-fns';
 
 import ChatGenerator from './ai/ProcessInstanceGenerator.js';
 import ChatModule from '@/components/ChatModule.vue';
@@ -62,20 +63,21 @@ import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import Chat from "@/components/ui/Chat.vue";
 import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
+
 export default {
     mixins: [ChatModule],
     components: {
         AppBaseCard,
         Chat,
         ProcessInstanceList,
-        BpmnModelingCanvas
+        BpmnModelingCanvas,
     },
     data: () => ({
         processDefinition: null,
         processInstance: null,
         path: 'instances',
         organizationChart: [],
-        alertInfo: {
+        chatInfo: {
             title: '프로세스 실행',
             text: "대화형으로 프로세스를 실행하십시오. \n 예를 들어, '휴가를 신청할게: 1. 사유: 개인사유 2. 휴가 시작일: 오늘 3. 휴가 복귀일: 금요일' 와 같은 명령을 할 수 있습니다."
         },
@@ -150,6 +152,9 @@ export default {
         async loadData(path) {
             let value = await this.getData(path);
             if (value) {
+                this.processInstance = value;
+                this.processInstance.processInstanceId = this.$route.params.id;
+
                 this.checkDisableChat(value);
             }
 
@@ -201,6 +206,20 @@ export default {
                 await this.sendTodolist();
             }
         },
+        afterModelStopped(response) {
+            let path = `${this.path}/`
+            if (this.$route.params && this.$route.params.id) {
+                path += this.$route.params.id;
+            } else if (this.processInstance && this.processInstance.processInstanceId) {
+                path += this.processInstance.processInstanceId;
+            }
+            
+            let putObj = {
+                messages: this.messages
+            }
+
+            this.saveMessages(path, putObj);
+        },
         async saveInstance(status) {
             if (this.processInstance) {
                 let path = `${this.path}/${this.processInstance.processInstanceId}`;
@@ -214,6 +233,7 @@ export default {
                     putObj.nextUserId = this.processInstance.nextUserEmail;
                     putObj.nextActivityId = this.processInstance.nextActivityId;
                     putObj.nextActivityName = this.processInstance.nextActivityName;
+                    putObj.timeStamp = this.messages[this.messages.length-1].timeStamp;
 
                     let newParticipants = [this.processInstance.currentUserEmail, this.processInstance.nextUserEmail];
                     newParticipants = [...putObj.participants, ...newParticipants];
@@ -235,7 +255,8 @@ export default {
                         nextActivityId: this.processInstance.nextActivityId,
                         nextActivityName: this.processInstance.nextActivityName,
                         participants: [this.processInstance.currentUserEmail, this.processInstance.nextUserEmail],
-                        status: 'Running'
+                        status: 'Running',
+                        timeStamp: this.messages[this.messages.length-1].timeStamp,
                     };
                 }
 
@@ -245,6 +266,7 @@ export default {
         },
         async sendTodolist() {
             if (this.processInstance) {
+                const checkedNextAct = await this.checkNextActivity(this.processInstance.currentActivityId, this.processInstance.nextActivityId);
                 if (this.processInstance.currentUserEmail !== "") {
                     const path = `todolist/${this.processInstance.currentUserEmail}`;
                     const pushObj = {
@@ -255,25 +277,23 @@ export default {
                         activityId: this.processInstance.currentActivityId,
                         activityName: this.processInstance.currentActivityName,
                         userId: this.processInstance.currentUserEmail,
-                        status: 'Completed',
-                        endDate: format(new Date(), 'yyyy-MM-dd')
+                        endDate: Date.now(),
                     };
+
+                    if (checkedNextAct) {
+                        pushObj.status = 'done';
+                    } else {
+                        pushObj.status = 'pending';
+                    }
 
                     const workItem = await this.checkTodolist(path, pushObj);
                     if (workItem) {
                         pushObj.startDate = workItem.startDate;
                         await this.delete(`${path}/${workItem.key}`);
+                    } else {
+                        pushObj.startDate = Date.now();
                     }
                     
-                    if (this.processDefinition && this.processDefinition.activities) {
-                        const actIdx = this.processDefinition.activities.findIndex(activity => 
-                            activity.id == pushObj.activityId
-                        );
-                        if (actIdx < 1) {
-                            pushObj.startDate = format(new Date(), 'yyyy-MM-dd');
-                        }
-                    }
-
                     await this.pushObject(path, pushObj);
                     await this.saveUserInstance(pushObj);
                 }
@@ -289,9 +309,24 @@ export default {
                         activityName: this.processInstance.nextActivityName,
                         activityName: this.processInstance.nextActivityName,
                         userId: this.processInstance.nextUserEmail,
-                        status: 'Running',
-                        startDate: format(new Date(), 'yyyy-MM-dd')
+                        startDate: Date.now(),
                     };
+
+                    if (checkedNextAct) {
+                        pushObj.status = 'in_progress';
+                    } else {
+                        pushObj.status = 'todo';
+                    }
+
+                    if (this.processInstance.nextActivityId == "end_process") {
+                        pushObj.activityId = "";
+                        pushObj.activityName = "";
+                    }
+
+                    const workItem = await this.checkTodolist(path, pushObj);
+                    if (workItem) {
+                        await this.delete(`${path}/${workItem.key}`);
+                    }
 
                     await this.pushObject(path, pushObj);
                     await this.saveUserInstance(pushObj);
@@ -341,6 +376,28 @@ export default {
             if (results.similarItems) {
                 return results.similarItems.map((item) => item.text);
             }
+        },
+
+        async checkNextActivity(prevId, nextId) {
+            var res = false;
+            if (nextId) {
+                if (nextId == "end_process") {
+                    res = true;
+                } else {
+                    var contexts = await this.queryFromVectorDB(prevId);
+                    if (!contexts || contexts.length < 1) {
+                        await this.saveDefinitionToVectorDB();
+                        contexts = await this.queryFromVectorDB(prevId);
+                    }
+                    var definition = JSON.parse(contexts[0]);
+                    var prevIdx = definition.activities.findIndex(act => act.id == prevId);
+                    var nextIdx = definition.activities.findIndex(act => act.id == nextId);
+                    if (prevIdx < nextIdx) {
+                        res = true;
+                    }
+                }
+            }
+            return res;
         },
 
         async checkTodolist(path, obj) {
