@@ -39,9 +39,6 @@
 
 <script>
 import { formatDistanceToNowStrict } from 'date-fns';
-import { getGlobalContext } from '@/stores/auth';
-
-const globalContext = getGlobalContext();
 
 export default {
     props: {
@@ -69,11 +66,6 @@ export default {
     methods: {
         goChat() {
             this.$router.push(`/instances/${this.task.instanceId}`);
-        },
-        async deleteTask(id) {
-            if (this.userInfo && id) {
-                await globalContext.storage.delete(`db://${this.path}/${this.userInfo.email}/${id}`);
-            }
         },
     },
 }

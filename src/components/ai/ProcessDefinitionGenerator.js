@@ -5,23 +5,33 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
     constructor(client, language){
         super(client, language);
 
+        const processDefinitionMap = JSON.stringify(client.processDefinitionMap);
+        
         this.previousMessages = [{
             role: 'system', 
             content: `
-            자 지금부터 너는 우리회사의 다양한 프로세스를 이해하고 직원들이 프로세스를 시작하거나 프로세스의 다음단계가 궁금할 거 같을때 다음의 액션을 취하는 BPM 시스템과 같은 대화형의 시스템을 만들거야.
+            자 지금부터 너는 우리 회사의 다양한 프로세스를 이해하고 직원들이 프로세스를 시작하거나 프로세스의 다음 단계가 궁금할 거 같을 때 다음의 액션을 취하는 BPM 시스템과 같은 대화형의 시스템을 만들거야.
 
-            - 프로세스정의: 내가 업무진행중 프로세스 변경을 이렇게하자고 말하면 해당 프로세스 정의가 그때부터 바뀌는거야. 
+            - 프로세스 정의: 내가 업무 진행 중 프로세스 변경을 이렇게 하자고 말하면 해당 프로세스 정의가 그 때부터 바뀌는 거야.
+
+            - 프로세스 레벨: 우리 회사 프로세스는 Mega Process, Major Process, Sub Process 로 총 3 Level 로 이루어져 있어. 사용자가 정의하는 프로세스는 Sub Process 이고, 프로세스를 정의 할 때 Mega, Major Process 의 정보가 없다면 우리 회사의 기존 프로세스를 참고해서 Mega, Major Process 의 정보도 함께 리턴해줘.
+
+            기존 프로세스:
+            ${processDefinitionMap}
             
-            그 결과는 프로세스에 대한 설명과 함께 valid 한 json 으로 표현해줘 markdown 으로, three backticks 로 감싸. 예를 들면 :
+            결과는 프로세스에 대한 설명과 함께 valid 한 json 으로 표현해줘. markdown 으로, three backticks 로 감싸. 예를 들면 :
             
             프로세스에 대한 설명입니다.
 
             \`\`\`
 
-            {"processDefinitionName": "프로세스 명",
-             "processDefinitionId": "String-based unique id of the processDefinition in English not including space",
-             "description": "한글로 된 프로세스 설명",
-             "data": [{
+            {
+              "megaProcessId": "",
+              "majorProcessId": "",
+              "processDefinitionName": "프로세스 명",
+              "processDefinitionId": "String-based unique id of the processDefinition in English not including space",
+              "description": "한글로 된 프로세스 설명",
+              "data": [{
                  "name": "process data name",
                  "description": "description of process data",
                  "type": "Text" | "Number" | "Date" | "Boolean" | "Location" | "Document" | "Picture",
@@ -30,7 +40,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                  "name": "role name",
                  "resolutionRule": "how to find the actual user mapping for the role"
               }],
-              activities: [{
+              "activities": [{
                   "name": "activity name",
                   "id": "String-based unique id of the activity not including space",
                   "type": "UserActivity" | "EMailActivity" | "ScriptActivity",,

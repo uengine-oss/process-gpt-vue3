@@ -16,7 +16,6 @@
         type="text/javascript"
         src="/static/lib/opengraph/OpenGraph-0.1.3-SNAPSHOT.js"
     ></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/acebase-client@latest/dist/browser.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.11/lodash.min.js"></script>
     <script
@@ -37,16 +36,5 @@
   <body>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
-    <script>
-      window.$acebase = new AceBaseClient({
-          host: "localhost",
-          port: 5757,
-          dbname: "mydb",
-          https: false,
-      });
-      window.$acebase.ready(() => {
-          console.log("Connected successfully");
-      });
-    </script>
   </body>
 </html>

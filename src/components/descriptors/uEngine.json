@@ -1,0 +1,40 @@
+{
+    "name": "uengine",
+    "prefix": "uengine",
+    "uri": "http://uengine",
+    "xml": {
+        "tagAlias": "lowerCase"
+    },
+    "associations": [],
+    "types": [
+        {
+            "name": "uengine-role",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "role",
+                    "type": "String"
+                },
+                {
+                    "name": "parameters",
+                    "isMany": true,
+                    "type": "Parameter"
+                }
+            ]
+        },
+        {
+            "name": "Parameter",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "key",
+                    "type": "String"
+                },
+                {
+                    "name": "value",
+                    "type": "String"
+                }
+            ]
+        }
+    ]
+}

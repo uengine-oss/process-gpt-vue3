@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { getGlobalContext } from '@/stores/auth';
 import { Form } from 'vee-validate';
+
+import { useAuthStore } from '@/stores/auth';
+const authStore = useAuthStore();
 
 /*Social icons*/
 import google from '@/assets/images/svgs/google-icon.svg';
@@ -20,8 +22,7 @@ const usernameRules = ref([
 ]);
 
 function validate(values: any, { setErrors }: any) {
-    const globalContext = getGlobalContext();
-    return globalContext.signUp(username.value, email.value, password.value).catch((error) => console.log(error));
+    return authStore.signUp(username.value, email.value, password.value);
 }
 </script>
 <template>

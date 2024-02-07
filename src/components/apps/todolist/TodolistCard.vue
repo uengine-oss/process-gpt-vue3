@@ -18,30 +18,29 @@
 </template>
 
 <script>
+import StorageBase from '@/utils/StorageBase';
 import TodoTaskColumn from './TodoTaskColumn.vue';
-import { getGlobalContext } from '@/stores/auth';
-
-const globalContext = getGlobalContext();
 
 export default {
     components: {
         TodoTaskColumn,
     },
     data: () => ({
+        storage: null,
         todolist: [],
         userInfo: {},
         path: 'todolist',
     }),
     async created() {
+        this.storage = StorageBase.getStorage("supabase");
+
         await this.init();
     }, 
     methods:{
         async init() {
-            this.userInfo = await globalContext.storage.getUserInfo();
-
             if (this.userInfo && this.userInfo.email) {
                 var callPath = this.path + '/' + this.userInfo.email;
-                await globalContext.storage.watch(`db://${callPath}`, callback => {
+                await this.storage.watch(`${callPath}`, callback => {
                     this.todolist =  [
                         {
                             id: 'todo',
