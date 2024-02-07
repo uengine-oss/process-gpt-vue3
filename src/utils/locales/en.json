@@ -32,6 +32,9 @@
     "organizationChartDefinition" : {
         "title" : "Org Chart Setup"
     },
+    "processDefinitionMap" : {
+        "title" : "Process Definition Map"
+    },
     "processDefinition" : {
         "title" : "Process Definition"
     }

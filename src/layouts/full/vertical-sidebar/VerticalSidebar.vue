@@ -95,7 +95,7 @@ export default {
                 to: "/organization",
             },
             {
-                title: "프로세스 정의 체계도",
+                title: "processDefinitionMap.title",
                 icon: 'carbon:flow-connection',
                 BgColor: 'primary',
                 to: "/definition-map",

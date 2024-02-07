@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { profileImages } from '@/components/pages/account-settings/profileImage';
-import { getGlobalContext } from '@/stores/auth';
+import StorageBase from '@/utils/StorageBase';
 
 /*Location Select*/
 const select = ref('United States');
@@ -23,8 +23,9 @@ const storephone = ref('+91 12345 65478');
 const storeaddress = ref('814 Howard Street, 120065, India');
 
 // 유저 정보 관련
-import StorageBase from '@/utils/StorageBase';
 const storage = StorageBase.getStorage("supabase");
+const name = localStorage.getItem("userName");
+const email = localStorage.getItem("email");
 
 // 유저 이름 변경
 const userInfo = storage?.getUser();
@@ -62,7 +63,6 @@ const showConfirmPwd = ref(false);
                 <v-card elevation="10">
                     <v-card-item>
                         <h5 class="text-h5">프로필 이미지 변경</h5>
-                        <div class="text-subtitle-1 text-grey100 mt-2">{{ $t('test123.test') }}</div>
                         <div class="text-center mt-6 mb-6">
                             <v-avatar size="120">
                                 <img :src="selectedProfileImage || picture || ''" height="120" alt="image" />
@@ -150,7 +150,7 @@ const showConfirmPwd = ref(false);
                                             color="primary"
                                             variant="outlined"
                                             type="text"
-                                            v-model="userInfo.name"
+                                            v-model="name"
                                             hide-details
                                         />
                                 </v-col>
@@ -188,7 +188,7 @@ const showConfirmPwd = ref(false);
                                             color="primary"
                                             variant="outlined"
                                             type="email"
-                                            v-model="userInfo.email"
+                                            v-model="email"
                                             hide-details
                                         ></v-text-field>
                                 </v-col>

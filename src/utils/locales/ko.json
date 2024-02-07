@@ -32,6 +32,9 @@
     "organizationChartDefinition" : {
         "title" : "조직도 정의"
     },
+    "processDefinitionMap" : {
+        "title" : "프로세스 정의 체계도"
+    },
     "processDefinition" : {
         "title" : "프로세스 정의"
     }
