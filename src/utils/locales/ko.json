@@ -37,5 +37,23 @@
     },
     "processDefinition" : {
         "title" : "프로세스 정의"
+    },
+    "accountTab" : {
+        "accountSetting" : "계정 설정",
+        "profileImageChange" : "프로필 이미지 변경",
+        "imageSlect" : "프로필 이미지 선택",
+        "slectImageExplanation" : "JPG, GIF 또는 PNG가 허용됩니다. 최대 크기 800K",
+        "changePassword" : "비밀번호 변경",
+        "changePasswordExplanation" : "비밀번호를 변경하려면 여기에서 확인하세요.",
+        "currentPassword" : "현재 비밀번호",
+        "newPassword" : "새 비밀번호",
+        "confirmPassword" : "비밀번호 확인",
+        "personalDetails" : "개인정보",
+        "personalDetailsExplanation" : "개인 세부정보를 변경하려면 여기에서 수정하고 저장하세요.",
+        "name" : "이름",
+        "email" : "이메일",
+        "phone" : "전화번호",
+        "address" : "주소",
+        "save" : "저장"
     }
 }

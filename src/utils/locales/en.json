@@ -37,5 +37,23 @@
     },
     "processDefinition" : {
         "title" : "Process Definition"
+    },
+    "accountTab" : {
+        "accountSetting" : "Account Settings",
+        "profileImageChange" : "Profile Image Change",
+        "imageSelect" : "Select Profile Image",
+        "selectImageExplanation" : "JPG, GIF, or PNG allowed. Max size 800K",
+        "changePassword" : "Change Password",
+        "changePasswordExplanation" : "To change your password, confirm here.",
+        "currentPassword" : "Current Password",
+        "newPassword" : "New Password",
+        "confirmPassword" : "Confirm Password",
+        "personalDetails" : "Personal Details",
+        "personalDetailsExplanation" : "To modify and save your personal details, edit here.",
+        "name" : "Name",
+        "email" : "Email",
+        "phone" : "Phone",
+        "address" : "Address",
+        "save" : "Save"
     }
 }
