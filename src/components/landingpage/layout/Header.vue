@@ -39,13 +39,13 @@ const globalContext: any = getGlobalContext();
                             to="/auth/login"
                             v-if="!globalContext.storage.isLogin"
                         >
-                            <span class="text-white">Login</span>
+                            <span class="text-white">{{ $t('mainPage.login') }}</span>
                         </v-btn>
                         <v-btn class="custom-hover-primary bg-primary d-lg-flex d-none rounded-pill px-8 align-center login-shadow" 
                             v-else="globalContext.storage.isLogin"
                             @click="globalContext.logout()"
                         >
-                            <span class="text-white">Logout</span>
+                            <span class="text-white">{{ $t('mainPage.logout') }}</span>
                         </v-btn>
                         <!-- Mobile Toggle Button -->
                         <v-btn variant="text" class="hidden-lg-and-up " icon @click.stop="appsdrawer = !appsdrawer">

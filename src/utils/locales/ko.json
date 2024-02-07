@@ -1,6 +1,38 @@
 {
     "message": "ko",
-    "test123": {
-        "test": "테스트"
+    "mainPage": {
+        "login" : "로그인",
+        "logout": "로그아웃",
+        "demo" : "데모",
+        "pricing" : "가격",
+        "documentation" : "사용 설명서",
+        "support" : "고객 지원",
+        "preview" : "미리보기",
+        "title" : "AI를 기반한 프로세스 관리에서 실행까지를 손쉽게 시작하세요",
+        "subTitle" : "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
+    },
+    "todoList" : {
+        "title" : "할 일 목록"
+    },
+    "calendar" : {
+        "title" : "달력"
+    },
+    "chats" : {
+        "title" : "채팅"
+    },
+    "instance" : {
+        "title" : "인스턴스"
+    },
+    "processExecution" : {
+        "title" : "프로세스 실행"
+    },
+    "definitionManagement" : {
+        "title" : "정의 관리"
+    },
+    "organizationChartDefinition" : {
+        "title" : "조직도 정의"
+    },
+    "processDefinition" : {
+        "title" : "프로세스 정의"
     }
 }

@@ -93,7 +93,7 @@ const customizer = useCustomizerStore();
                 </v-btn>
             </v-list-item>
             <v-list-item class="mt-2" rounded="md">
-                <v-btn class="custom-hover-primary bg-primary" block flat href="/auth/login" target="_blank">Login</v-btn>
+                <v-btn class="custom-hover-primary bg-primary" block flat href="/auth/login" target="_blank">{{ $t('mainPage.login') }}</v-btn>
             </v-list-item>
         </v-list>
     </div>

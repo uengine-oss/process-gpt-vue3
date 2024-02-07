@@ -3,7 +3,7 @@
         <v-tabs v-model="tab"
                 align-tabs="center"
         >
-            <v-tab value="main">LOGIN</v-tab>
+            <v-tab value="main">{{ $t('mainPage.login') }}</v-tab>
             <v-tab value="signUp">Sign Up</v-tab>
         </v-tabs>
 

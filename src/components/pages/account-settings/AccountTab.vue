@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { profileImages } from '@/components/pages/account-settings/profileImage';
+import { getGlobalContext } from '@/stores/auth';
 
 /*Location Select*/
 const select = ref('United States');
@@ -21,14 +23,12 @@ const storephone = ref('+91 12345 65478');
 const storeaddress = ref('814 Howard Street, 120065, India');
 
 // 유저 정보 관련
-import { getGlobalContext } from '@/stores/auth';
 const globalContext = getGlobalContext();
 
 // 유저 이름 변경
 const userInfo = globalContext.storage.userInfo
  
 // 프로필 이미지 변경 관련
-import { profileImages } from '@/components/pages/account-settings/profileImage';
 
 const picture = localStorage.getItem("picture");
 const imageChangeDialog = ref(false);
@@ -67,7 +67,7 @@ console.log("globalContext : ", globalContext.storage.userInfo);
                         <div class="text-subtitle-1 text-grey100 mt-2">{{ $t('test123.test') }}</div>
                         <div class="text-center mt-6 mb-6">
                             <v-avatar size="120">
-                                <img :src="selectedProfileImage ? selectedProfileImage : picture" height="120" alt="image" />
+                                <img :src="selectedProfileImage || picture || ''" height="120" alt="image" />
                             </v-avatar>
                         </div>
                         <div class="d-flex justify-center">

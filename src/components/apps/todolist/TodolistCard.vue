@@ -1,7 +1,7 @@
 <template>
     <v-card elevation="10">
         <div class="pa-5">
-            <h5 class="text-h5 font-weight-semibold mb-7">Todolist</h5>
+            <h5 class="text-h5 font-weight-semibold mb-7">{{ ($t('todoList.title')) }}</h5>
             <v-row>
                 <v-col v-for="column in todolist" 
                     :key="column.id"
