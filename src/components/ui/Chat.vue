@@ -1,7 +1,7 @@
 <template>
     <div class="customHeight">
         <div>
-            <div style="position: sticky; top:0px">
+            <div style="position: sticky; top:0px; z-index:1;">
                 <div class="d-flex align-right gap-3 pa-4 justify-space-between">
                     <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
                         <div>
