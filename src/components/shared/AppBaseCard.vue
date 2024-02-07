@@ -8,7 +8,7 @@ const sDrawer = ref(false);
 <template>
     <!---/Left chat list -->
     <div class="d-flex mainbox" >
-        <div class="left-part" v-if="lgAndUp">
+        <div class="left-part" v-if="lgAndUp" style="overflow:auto">
             <!-- <perfect-scrollbar style="height: calc(100vh - 290px)"> -->
             <slot name="leftpart"></slot>
             <!-- </perfect-scrollbar> -->

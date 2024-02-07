@@ -19,18 +19,18 @@ const page = ref({ title: 'Account Setting' });
 </script>
 
 <template>
-    <BaseBreadcrumb :title="page.title"></BaseBreadcrumb>
+    <BaseBreadcrumb :title="$t('accountTab.accountSetting')"></BaseBreadcrumb>
     <v-row class="justify-center">
         <!--Account Settings tabs-->
         <v-col cols="12" md="12">
             <v-card elevation="10" class=" " >
-                <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="primary">
+                <!-- <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="primary">
                     <v-tab value="Account" class="" ><UserCircleIcon class="mr-2" size="20"/> Account</v-tab>
-                    <!-- <v-tab value="Notification"  class=""><BellIcon class="mr-2" size="20"/>Notification</v-tab>
+                    <v-tab value="Notification"  class=""><BellIcon class="mr-2" size="20"/>Notification</v-tab>
                     <v-tab value="Bills"  class=""><ArticleIcon class="mr-2" size="20"/>Bills</v-tab>
-                    <v-tab value="Security"  class=""><LockIcon class="mr-2" size="20"/>Security</v-tab> -->
+                    <v-tab value="Security"  class=""><LockIcon class="mr-2" size="20"/>Security</v-tab>
                 </v-tabs>
-                <v-divider></v-divider>
+                <v-divider></v-divider> -->
                 <v-card-text class="pa-sm-6 pa-3 pb-sm-6 pb-6">
                     <v-window v-model="tab">
                         <v-window-item value="Account">

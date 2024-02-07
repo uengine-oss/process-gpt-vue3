@@ -1,7 +1,7 @@
 <template>
     <v-card elevation="10">
         <div class="pt-5 pl-6 pr-6 d-flex align-center">
-            <h5 class="text-h5 font-weight-semibold">프로세스 정의 체계도</h5>
+            <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
             <div class="ml-auto">
                 <ProcessMenu :size="24" :type="'Mega'" @add="addMegaProcess" />
             </div>

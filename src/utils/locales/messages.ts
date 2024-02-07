@@ -1,13 +1,9 @@
 import en from './en.json';
-import fr from './fr.json';
-import ar from './ar.json';
-import zh from './zh.json';
+import ko from './ko.json'
 
 const messages = {
     en: en,
-    fr: fr,
-    ro: ar,
-    zh: zh
+    ko: ko,
 };
 
 export default messages;

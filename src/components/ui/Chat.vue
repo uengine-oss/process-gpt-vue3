@@ -1,41 +1,43 @@
 <template>
     <div class="customHeight">
         <div>
-            <div class="d-flex align-center gap-3 pa-4 justify-space-between">
-                <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
-                    <div>
-                        <h5 class="text-h5 mb-n1">{{ name }}</h5>
+            <div style="position: sticky; top:0px; z-index:1;">
+                <div class="d-flex align-right gap-3 pa-4 justify-space-between">
+                    <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
+                        <div>
+                            <h5 class="text-h5 mb-n1">{{ name }}</h5>
+                        </div>
                     </div>
-                </div>
-                <div v-else-if="chatInfo" class="d-flex gap-2 align-center">
-                    <v-avatar v-if="chatInfo.img">
-                        <img :src="chatInfo.img" width="50" />
-                    </v-avatar>
-                    <div>
-                        <h5 class="text-h5 mb-n1">{{ chatInfo.title }}</h5>
-                        <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
-                        <small class="textPrimary" v-if="isViewDetail">
-                            <br />
-                            {{ filteredAlert.detail }}
-                        </small>
+                    <div v-else-if="chatInfo" class="d-flex gap-2 align-center">
+                        <v-avatar v-if="chatInfo.img">
+                            <img :src="chatInfo.img" width="50" />
+                        </v-avatar>
+                        <div>
+                            <h5 class="text-h5 mb-n1">{{ $t(chatInfo.title) }}</h5>
+                            <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
+                            <v-card v-if="isViewDetail" class="elevation-10 pa-4" style="position:absolute; width:90%; top:60px;">
+                                <small class="textPrimary" style="white-space: pre-line;">
+                                    {{ filteredAlert.detail }}
+                                </small>
+                            </v-card>
+                        </div>
                     </div>
-                </div>
 
-                <!-- 프로세스 정의 & 실행 -->
-                <div class="d-flex">
-                    <v-btn v-if="type == 'instances'" icon variant="text" class="text-medium-emphasis" @click="viewProcess">
-                        <Icon icon="fluent:flowchart-16-regular" :style="{ fontSize: '28px' }" />
-                    </v-btn>
-                    <v-btn v-if="type == 'definitions'" :disabled="!isChanged" icon variant="text" class="text-medium-emphasis">
-                        <DeviceFloppyIcon size="24" @click="$emit('save')" />
-                    </v-btn>
-                    <v-btn v-if="chatInfo" icon variant="text" class="text-medium-emphasis" @click="moreDetail">
-                        <DotsVerticalIcon size="24" />
-                    </v-btn>
+                    <!-- 프로세스 정의 & 실행 -->
+                    <div class="d-flex">
+                        <v-btn v-if="type == 'instances'" icon variant="text" class="text-medium-emphasis" @click="viewProcess">
+                            <Icon icon="fluent:flowchart-16-regular" :style="{ fontSize: '28px' }" />
+                        </v-btn>
+                        <v-btn v-if="type == 'definitions'" :disabled="!isChanged" icon variant="text" class="text-medium-emphasis">
+                            <DeviceFloppyIcon size="24" @click="$emit('save')" />
+                        </v-btn>
+                        <v-btn v-if="chatInfo" icon variant="text" class="text-medium-emphasis" @click="moreDetail">
+                            <DotsVerticalIcon size="24" />
+                        </v-btn>
+                    </div>
                 </div>
+                <v-divider/>
             </div>
-
-            <v-divider />
 
             <perfect-scrollbar class="rightpartHeight h-100">
                 <v-btn v-if="type == 'chats' && filteredMessages.length > 0" 
@@ -180,7 +182,7 @@
             <v-divider />
         </div>
 
-        <form class="d-flex align-center pa-4" @submit.prevent="send">
+        <form class="d-flex align-center pa-0" @submit.prevent="send">
             <v-textarea
                 variant="solo"
                 hide-details
@@ -188,7 +190,7 @@
                 color="primary"
                 class="shadow-none"
                 density="compact"
-                placeholder="Type a Message"
+                :placeholder="$t('chat.placeholder')"
                 auto-grow
                 rows="1"
                 :disabled="disableChat"
@@ -263,10 +265,12 @@ export default {
                 subtitle: '',
                 detail: ''
             };
-            if (this.chatInfo.text.includes('\n')) {
-                const arr = this.chatInfo.text.split('\n');
+            // 국제화된 문자열을 가져옵니다.
+            const translatedText = this.$t(this.chatInfo.text);
+            if (translatedText.includes('\n')) {
+                const arr = translatedText.split('\n');
                 textObj.subtitle = arr[0];
-                textObj.detail = arr[1];
+                textObj.detail = arr.slice(1).join('\n'); // 첫 번째 이후의 모든 텍스트를 detail로 결합
             }
             return textObj;
         },
