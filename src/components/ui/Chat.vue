@@ -1,8 +1,8 @@
 <template>
     <div class="customHeight">
         <div>
-            <div>
-                <div class="d-flex align-right gap-3 pa-4 justify-space-between" style="position: sticky; top:0px">
+            <div style="position: sticky; top:0px">
+                <div class="d-flex align-right gap-3 pa-4 justify-space-between">
                     <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
                         <div>
                             <h5 class="text-h5 mb-n1">{{ name }}</h5>
