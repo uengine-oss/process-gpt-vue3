@@ -96,7 +96,7 @@
 
                                             <pre class="text-body-1">{{ message.content }}</pre>
 
-                                            <pre v-if="message.jsonText" class="text-body-1">{{ message.jsonText }}</pre>
+                                            <pre v-if="message.jsonContent" class="text-body-1">{{ message.jsonContent }}</pre>
                                         </v-sheet>
                                     </div>
                                 </div>
@@ -275,18 +275,18 @@ export default {
             this.messages.forEach((item) => {
                 let data = JSON.parse(JSON.stringify(item));
                 if (data.content) {
-                    let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
-                    const match = data.content.match(regex);
-                    if (match) {
-                        data.content = data.content.replace(match[1], '');
-                        regex = /`{3}(?:json|markdown)?\s?\n/g;
-                        data.content = data.content.replace(regex, '');
-                        data.content = data.content.replace(/\s?\n?`{3}?\s?\n/g, '');
-                        data.content = data.content.replace(/`{3}/g, '');
-                        data.jsonText = match[1];
-                    } else {
-                        data.jsonText = null;
-                    }
+                    // let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
+                    // const match = data.content.match(regex);
+                    // if (match) {
+                    //     data.content = data.content.replace(match[1], '');
+                    //     regex = /`{3}(?:json|markdown)?\s?\n/g;
+                    //     data.content = data.content.replace(regex, '');
+                    //     data.content = data.content.replace(/\s?\n?`{3}?\s?\n/g, '');
+                    //     data.content = data.content.replace(/`{3}/g, '');
+                    //     data.jsonText = match[1];
+                    // } else {
+                    //     data.jsonText = null;
+                    // }
                     list.push(data);
                 }
             });

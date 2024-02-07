@@ -150,7 +150,7 @@ export default {
             }
         },
         async loadData(path) {
-            let value = await this.getData(path);
+            let value = await this.getData(path, {key: "instanceid"});
             if (value) {
                 this.processInstance = value;
                 this.processInstance.processInstanceId = this.$route.params.id;
@@ -178,20 +178,21 @@ export default {
             }
         },
         async beforeSendMessage(newMessage) {
-            if(!this.generator.contexts) {
-                this.processDefinition = null;
-                let contexts = await this.queryFromVectorDB(newMessage);
-                if (!contexts || contexts.length < 1) {
-                    await this.saveDefinitionToVectorDB();
-                    contexts = await this.queryFromVectorDB(newMessage);
-                }
-                this.processDefinition = contexts[0];
-                this.generator.setContexts(contexts);
-            }
+            // if(!this.generator.contexts) {
+            //     this.processDefinition = null;
+            //     let contexts = await this.queryFromVectorDB(newMessage);
+            //     if (!contexts || contexts.length < 1) {
+            //         await this.saveDefinitionToVectorDB();
+            //         contexts = await this.queryFromVectorDB(newMessage);
+            //     }
+            //     this.processDefinition = contexts[0];
+            //     this.generator.setContexts(contexts);
+            // }
             this.sendMessage(newMessage);
         },
         afterModelCreated(response) {
             let jsonInstance = this.extractJSON(response);
+
             if (jsonInstance) {
                 this.processInstance = partialParse(jsonInstance);
             }
@@ -201,9 +202,9 @@ export default {
                 if (typeof this.processInstance === 'string') {
                     this.processInstance = partialParse(this.processInstance);
                 }
-
+                
                 await this.saveInstance();
-                await this.sendTodolist();
+                // await this.sendTodolist();
             }
         },
         afterModelStopped(response) {
@@ -223,7 +224,7 @@ export default {
         async saveInstance(status) {
             if (this.processInstance) {
                 let path = `${this.path}/${this.processInstance.processInstanceId}`;
-                let putObj = await this.getData(path);
+                let putObj = null //await this.getData(path);
 
                 if (putObj) {
                     putObj.messages = this.messages;

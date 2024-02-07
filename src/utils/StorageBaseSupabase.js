@@ -61,151 +61,217 @@ export default class StorageBaseSupabase {
         }
     }
 
-    async getString(path) {
+    async getString(path, options) {
         try {
-            var obj = this.setDataPath(path);
-            var result = null;
+            let obj = this.formatDataPath(path, options);
             if (obj.searchVal) {
-                result = await window.$supabase.from(obj.table).select().eq(obj.searchKey, obj.searchVal);
+                const { data, error } = await window.$supabase.from(obj.table).select()
+                    .eq(obj.searchKey, obj.searchVal);
+                if (error) {
+                    return error;
+                } else {
+                    if (data.length > 0) return data;
+                    return null;
+                }
             } else {
-                result = await window.$supabase.from(obj.table).select();
-            }
-
-            if (result.count && result.data) {
-                return result.data;
-            } else {
-                return null;
+                const { data, error } = await window.$supabase.from(obj.table).select();
+                if (error) {
+                    return error;
+                } else {
+                    if (data.length > 0) return data;
+                    return null;
+                }
             }
         } catch(error) {
+            console.log(`GET STRING: ${e}`);
             return { Error: error }
         }
     }
 
-    async getObject(path) {
+    async getObject(path, options) {
         try {
-            var obj = this.setDataPath(path);
-            var result = null;
+            let obj = this.formatDataPath(path, options);
             if (obj.searchVal) {
-                return await window.$supabase.from(obj.table).select().eq(obj.searchKey, obj.searchVal);
+                const { data, error } = await window.$supabase.from(obj.table).select()
+                    .eq(obj.searchKey, obj.searchVal);
+                if (error) {
+                    return error;
+                } else {
+                    if (data.length > 0) return data;
+                    return null;
+                }
             } else {
-                result = await window.$supabase.from(obj.table).select();
-            }
-
-            if (result.count && result.data) {
-                return result.data;
-            } else {
-                return null;
+                const { data, error } = await window.$supabase.from(obj.table).select();
+                if (error) {
+                    return error;
+                } else {
+                    if (data.length > 0) return data;
+                    return null;
+                }
             }
         } catch(error) {
+            console.log(`GET OBJECT: ${e}`);
             return { Error: error }
         }
     }
 
+    // PUT
     async putString(path, value, options) {
         try {
-            var obj = this.setDataPath(path);
+            let obj = this.formatDataPath(path, options);
             if (obj.searchVal) {
-                return await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
+                const { error } = await window.$supabase.from(obj.table).upsert(value)
+                    .eq(obj.searchKey, obj.searchVal);
+                if (!error) {
+                    return true;
+                } else {
+                    return error;
+                }
             } else {
-                return await window.$supabase.from(obj.table).upsert(value);
+                const { error } = await window.$supabase.from(obj.table).upsert(value);
+                if (!error) {
+                    return true;
+                } else {
+                    return error;
+                }
             }
         } catch(error) {
+            console.log(`PUT STRING: ${e}`);
             return { Error: error }
         }
     }
 
     async putObject(path, value, options) {
         try {
-            var obj = this.setDataPath(path);
+            let obj = this.formatDataPath(path, options);
+            value = this.formatDataValue(value);
             if (obj.searchVal) {
-                return await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
+                const { error } = await window.$supabase.from(obj.table).upsert(value)
+                    .eq(obj.searchKey, obj.searchVal);
+                if (!error) {
+                    return true;
+                } else {
+                    return error;
+                }
             } else {
-                return await window.$supabase.from(obj.table).upsert(value);
+                const { error } = await window.$supabase.from(obj.table).upsert(value);
+                if (!error) {
+                    return true;
+                } else {
+                    return error;
+                }
             }
         } catch(error) {
+            console.log(`PUT OBJECT: ${e}`);
             return { Error: error }
         }
     }
 
+    // PUSH
     async pushString(path, value, options) {
         try {
-            var obj = this.setDataPath(path);
+            let obj = this.formatDataPath(path, options);
             if (obj.searchVal) {
-                return await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
+                const { error } = await window.$supabase.from(obj.table).upsert(value)
+                    .eq(obj.searchKey, obj.searchVal);
+                if (!error) {
+                    return true;
+                } else {
+                    return error;
+                }
             } else {
-                return await window.$supabase.from(obj.table).upsert(value);
+                const { error } = await window.$supabase.from(obj.table).upsert(value);
+                if (!error) {
+                    return true;
+                } else {
+                    return error;
+                }
             }
         } catch(error) {
+            console.log(`PUSH STRING: ${e}`);
             return { Error: error }
         }
     }
 
     async pushObject(path, value, options) {
         try {
-            var obj = this.setDataPath(path);
+            let obj = this.formatDataPath(path, options);
             if (obj.searchVal) {
-                return await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
+                const { error } = await window.$supabase.from(obj.table).upsert(value)
+                    .eq(obj.searchKey, obj.searchVal);
+                if (!error) {
+                    return true;
+                } else {
+                    return error;
+                }
             } else {
-                return await window.$supabase.from(obj.table).upsert(value);
+                const { error } = await window.$supabase.from(obj.table).upsert(value);
+                if (!error) {
+                    return true;
+                } else {
+                    return error;
+                }
             }
         } catch(error) {
+            console.log(`PUSH OBJECT: ${e}`);
             return { Error: error }
         }
     }
 
-    async delete(path) {
+    // DELETE
+    async delete(path, options) {
         try {
-            var obj = this.setDataPath(path);
+            let obj = this.formatDataPath(path, options);
             if (obj.searchVal) {
-                return await window.$supabase.from(obj.table).delete().eq(obj.searchKey, obj.searchVal);
+                const { error } = await window.$supabase.from(obj.table).delete()
+                    .eq(obj.searchKey, obj.searchVal);
+                if (!error) {
+                    return true;
+                } else {
+                    return error;
+                }
             }
+
+            return false;
         } catch(error) {
+            console.log(`DELETE: ${e}`);
             return { Error: error }
         }
     }
 
-    async watch(path) {
+    async watch(path, options) {
         try {
-            var obj = this.setDataPath(path);
+            let obj = this.formatDataPath(path, options);
+            await window.$supabase.channel('channel').on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: obj.table,
+            }, (payload) => {
+                console.log('received!', payload)
+                callback(payload);
+            });
+        } catch(error) {
+            console.log(`WATCH: ${e}`);
+            return { Error: error }
+        }
+    }
+
+    async watch_added(path, options) {
+        try {
+            let obj = this.formatDataPath(path, options);
             return await window.$supabase.from(obj.table).select();
         } catch(error) {
             return { Error: error }
         }
     }
 
-    async watch_added(path) {
+    async list(path, options) {
         try {
-            var obj = this.setDataPath(path);
+            let obj = this.formatDataPath(path, options);
             return await window.$supabase.from(obj.table).select();
         } catch(error) {
             return { Error: error }
         }
-    }
-
-    async list(path) {
-        try {
-            var obj = this.setDataPath(path);
-            return await window.$supabase.from(obj.table).select();
-        } catch(error) {
-            return { Error: error }
-        }
-    }
-
-    setDataPath(path) {
-        path = path.includes('://') ? path.split('://')[1] : path;
-        var obj = {
-            table: "",
-        };
-
-        if (path.includes('/')) {
-            obj.table = path.split('/')[0];
-            // obj.searchKey = "";
-            // obj.searchVal = path.split('/')[1];
-        } else {
-            obj.table = path;
-        }
-        
-        return obj;
     }
 
     writeUserData(value) {
@@ -219,5 +285,35 @@ export default class StorageBaseSupabase {
             window.localStorage.setItem("picture", value.user.profile);
             window.localStorage.setItem("uid", value.user.id);
         }
+    }
+
+    formatDataPath(path, options) {
+        path = path.includes('://') ? path.split('://')[1] : path;
+        let obj = {
+            table: "",
+        };
+
+        if (path.includes('/')) {
+            obj.table = path.split('/')[0];
+            if (options && options.key) {
+                obj.searchKey = options.key;
+                obj.searchVal = path.split('/')[1];
+            }
+        } else {
+            obj.table = path;
+        }
+        
+        return obj;
+    }
+
+    formatDataValue(value) {
+        let obj = {};
+        let keyArr = Object.keys(value);
+        keyArr.forEach(key => {
+            var newKey = key.toLocaleLowerCase();
+            obj[newKey] = value[key];
+        });
+        obj = [obj];
+        return obj;
     }
 }
