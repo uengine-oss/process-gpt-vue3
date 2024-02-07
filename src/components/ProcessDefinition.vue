@@ -1,8 +1,8 @@
 <template>
-    <div style="height: 100%">
-        <v-row style="height: 103%">
-            <v-col class="d-flex">
-                <v-card elevation="1">
+    <div>
+        <v-row style="height: 100%" class="ma-0">
+            <v-col class="d-flex ma-0 pa-0">
+                <v-card elevation="1" style="border-radius: 0px !important;">
                     <vue-bpmn
                         :bpmn="bpmn"
                         :options="options"

@@ -1,7 +1,7 @@
 <template>
     <div class="customHeight">
         <div>
-            <div class="d-flex align-right gap-3 pa-4 justify-space-between" style="position: relative;">
+            <div class="d-flex align-right gap-3 pa-4 justify-space-between" style="position: sticky; top:0px">
                 <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
                     <div>
                         <h5 class="text-h5 mb-n1">{{ name }}</h5>
@@ -36,7 +36,7 @@
                 </div>
             </div>
 
-            <v-divider />
+            <v-divider style="position: sticky; top:101.5px;"/>
 
             <perfect-scrollbar class="rightpartHeight h-100">
                 <v-btn v-if="type == 'chats' && filteredMessages.length > 0" 
@@ -181,7 +181,7 @@
             <v-divider />
         </div>
 
-        <form class="d-flex align-center pa-4" @submit.prevent="send">
+        <form class="d-flex align-center pa-0" @submit.prevent="send">
             <v-textarea
                 variant="solo"
                 hide-details
