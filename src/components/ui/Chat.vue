@@ -1,7 +1,7 @@
 <template>
     <div class="customHeight">
         <div>
-            <div class="d-flex align-center gap-3 pa-4 justify-space-between">
+            <div class="d-flex align-right gap-3 pa-4 justify-space-between" style="position: relative;">
                 <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
                     <div>
                         <h5 class="text-h5 mb-n1">{{ name }}</h5>
@@ -12,12 +12,13 @@
                         <img :src="chatInfo.img" width="50" />
                     </v-avatar>
                     <div>
-                        <h5 class="text-h5 mb-n1">{{ chatInfo.title }}</h5>
+                        <h5 class="text-h5 mb-n1">{{ $t(chatInfo.title) }}</h5>
                         <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
-                        <small class="textPrimary" v-if="isViewDetail">
-                            <br />
-                            {{ filteredAlert.detail }}
-                        </small>
+                        <v-card v-if="isViewDetail" class="elevation-10 pa-4" style="position:absolute; width:90%; top:60px;">
+                            <small class="textPrimary" style="white-space: pre-line;">
+                                {{ filteredAlert.detail }}
+                            </small>
+                        </v-card>
                     </div>
                 </div>
 
@@ -188,7 +189,7 @@
                 color="primary"
                 class="shadow-none"
                 density="compact"
-                placeholder="Type a Message"
+                :placeholder="$t('chat.placeholder')"
                 auto-grow
                 rows="1"
                 :disabled="disableChat"
@@ -263,10 +264,12 @@ export default {
                 subtitle: '',
                 detail: ''
             };
-            if (this.chatInfo.text.includes('\n')) {
-                const arr = this.chatInfo.text.split('\n');
+            // 국제화된 문자열을 가져옵니다.
+            const translatedText = this.$t(this.chatInfo.text);
+            if (translatedText.includes('\n')) {
+                const arr = translatedText.split('\n');
                 textObj.subtitle = arr[0];
-                textObj.detail = arr[1];
+                textObj.detail = arr.slice(1).join('\n'); // 첫 번째 이후의 모든 텍스트를 detail로 결합
             }
             return textObj;
         },
