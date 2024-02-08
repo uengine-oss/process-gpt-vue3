@@ -11,11 +11,9 @@ const customizer = useCustomizerStore();
 </script>
 
 <template>
-    <v-navigation-drawer left v-model="customizer.Sidebar_drawer" rail-width="70" 
-        :mobile-breakpoint="960" app
-        class="leftSidebar ml-sm-5 mt-sm-5 bg-containerBg" elevation="10" 
-        :rail="customizer.mini_sidebar"
-        expand-on-hover width="270">
+    <v-navigation-drawer left v-model="customizer.Sidebar_drawer" rail-width="70" :mobile-breakpoint="960" app
+        class="leftSidebar ml-sm-5 mt-sm-5 bg-containerBg" elevation="10" :rail="customizer.mini_sidebar" expand-on-hover
+        width="270">
         <div class="pa-5 pl-4 ">
             <Logo />
         </div>
@@ -115,34 +113,35 @@ export default {
     },
     methods: {
         async getDefinitionList() {
-            await this.storage.watch(`definitions`, (callback) => {
-                if (callback) {
-                    var menu = {
-                        title: '프로세스 목록',
-                        icon: 'solar:list-bold',
-                        BgColor: 'primary',
-                        to: `/`,
-                        children: []
-                    };
-                    var list = Object.values(callback);
-                    if (list.length > 0) {
-                        list.forEach(item => {
-                            if (item.model) {
-                                var jsonProcess = partialParse(item.model);
-                                var obj = {
-                                    title: jsonProcess.processDefinitionName,
-                                    to: `/definitions/${jsonProcess.processDefinitionId}`
-                                }
-                                menu.children.push(obj);
-                            }
-                        });
-                    }
-                    this.definitions = menu;
-                } else {
-                    this.definitions = null;
-                }
-            });
-        },
+            await this.storage.getObject(`definitions`)
+                .then((definitions) => {
+                    console.log(definitions)
+                })
+            // console.log(def)
+            // if (def) {
+            //     var menu = {
+            //         title: '프로세스 목록',
+            //         icon: 'solar:list-bold',
+            //         BgColor: 'primary',
+            //         to: `/`,
+            //         children: []
+            //     };
+            //     var list = Object.values(def);
+            //     if (list.length > 0) {
+            //         list.forEach(item => {
+            //             if (item.model) {
+            //                 var jsonProcess = partialParse(item.model);
+            //                 var obj = {
+            //                     title: jsonProcess.processDefinitionName,
+            //                     to: `/definitions/${jsonProcess.processDefinitionId}`
+            //                 }
+            //                 menu.children.push(obj);
+            //             }
+            //         });
+            //     }
+            //     this.definitions = menu;
+            // }
+        }
     }
 }
 </script>

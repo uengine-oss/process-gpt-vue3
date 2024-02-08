@@ -7,7 +7,7 @@ const sDrawer = ref(false);
 
 <template>
     <!---/Left chat list -->
-    <div class="d-flex mainbox" >
+    <div class="d-flex mainbox">
         <div class="left-part" v-if="lgAndUp">
             <!-- <perfect-scrollbar style="height: calc(100vh - 290px)"> -->
             <slot name="leftpart"></slot>
@@ -17,7 +17,8 @@ const sDrawer = ref(false);
         <!---right chat conversation -->
         <div class="right-part">
             <!---Toggle Button For mobile-->
-            <v-btn block @click="sDrawer = !sDrawer" variant="text" class="d-lg-none d-md-flex d-sm-flex" style="z-index:1; background-color:white;">
+            <v-btn block @click="sDrawer = !sDrawer" variant="text" class="d-lg-none d-md-flex d-sm-flex"
+                style="z-index:1; background-color:white;">
                 <Menu2Icon size="20" class="mr-2" /> Menu
             </v-btn>
             <v-divider class="d-lg-none d-block" />
@@ -40,6 +41,7 @@ const sDrawer = ref(false);
     overflow: hidden;
     height: calc(100vh - 155px);
 }
+
 .left-part {
     width: 320px;
     border-right: 1px solid rgb(var(--v-theme-borderColor));
@@ -47,20 +49,22 @@ const sDrawer = ref(false);
     transition: 0.1s ease-in;
     flex-shrink: 0;
 }
+
 .v-theme--light {
     .left-part {
         background: white;
     }
 }
+
 .v-theme--dark {
     .left-part {
         background: #2b2b2b;
     }
 }
+
 .right-part {
     width: 100%;
     // min-height: 500px;
     position: relative;
-    overflow:auto;
-}
-</style>
+    overflow: auto;
+}</style>

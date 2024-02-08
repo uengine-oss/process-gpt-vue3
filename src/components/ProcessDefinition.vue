@@ -1,26 +1,17 @@
 <template>
-    <div style="height: 100%">
-        <v-row style="height: 103%">
+    <div style="height: 100%;">
+        <v-row style="height: 103%;">
             <v-col class="d-flex">
                 <v-card elevation="1">
-                    <vue-bpmn
-                        :bpmn="bpmn"
-                        :options="options"
-                        v-on:error="handleError"
-                        v-on:shown="handleShown"
-                        v-on:loading="handleLoading"
-                        v-on:openPanel="(id) => openPanel(id)"
-                        v-on:definition="(def) => (definitions = def)"
-                    ></vue-bpmn>
+                    <vue-bpmn :bpmn="bpmn" :options="options" v-on:error="handleError" v-on:shown="handleShown"
+                        v-on:loading="handleLoading" v-on:openPanel="(id) => openPanel(id)"
+                        v-on:definition="(def) => (definitions = def)"></vue-bpmn>
                 </v-card>
             </v-col>
             <v-col v-if="panel" cols="12" sm="12" lg="4" md="6" class="d-flex">
                 <v-card elevation="1">
-                    <bpmn-property-panel
-                        :element="element"
-                        @close="closePanel"
-                        v-on:updateElement="(val) => updateElement(val)"
-                    ></bpmn-property-panel>
+                    <bpmn-property-panel :element="element" @close="closePanel"
+                        v-on:updateElement="(val) => updateElement(val)"></bpmn-property-panel>
                     <!-- {{ definition }} -->
                 </v-card>
             </v-col>
@@ -62,7 +53,7 @@ export default {
         //     this.bpmn
         // }
     },
-    created() {},
+    created() { },
     methods: {
         findElement(obj, key, id) {
             if (obj.hasOwnProperty(key) && obj[key] === id) {
@@ -80,14 +71,13 @@ export default {
 
             return null;
         },
-        updateElement(element) {},
+        updateElement(element) { },
         openPanel(id) {
             this.panel = true;
             console.log(this.definitions);
             console.log(this.findElement(this.definitions, 'id', id));
             // console.log(JSON.stringify(this.findElement('id', id)));
             this.element = this.findElement(this.definitions, 'id', id);
-            this.element['script'] = "console.log('hello world')";
         },
         closePanel() {
             this.element = null;

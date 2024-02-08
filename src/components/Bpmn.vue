@@ -122,8 +122,21 @@ export default {
             this.$emit('loading');
             this.fetchDiagram(val);
         },
+        sortByIdWithParticipantFirst(array) {
+            return array.sort((a, b) => {
+                const aIsParticipant = a.id.toLowerCase().startsWith('participant');
+                const bIsParticipant = b.id.toLowerCase().startsWith('participant');
+
+                if (aIsParticipant && !bIsParticipant) {
+                    return -1;
+                } else if (!aIsParticipant && bIsParticipant) {
+                    return 1;
+                } else {
+                    return a.id.localeCompare(b.id);
+                }
+            });
+        },
         diagramXML(val) {
-            let me = this;
             let obj = this.parseJsonToModdle(val);
             // const parsedData = JSON.parse(val);
             function assignParents(element, parent) {
@@ -185,30 +198,33 @@ export default {
                             pe.bpmnElement.sourceRef = sourceRef;
                             pe.bpmnElement.targetRef = targetRef;
                         }
-                        // if (typeof pe.sourceRef === 'string') {
-                        //     const bpmnElementObject = flowElementsMap.get(pe.sourceRef);
-                        //     if (bpmnElementObject) {
-                        //         bpmnElementObject.sourceRef
-                        //         pe.sourceRef = bpmnElementObject;
-
-                        //     }
-                        // }
-                        // if (typeof pe.targetRef === 'string') {
-                        //     const bpmnElementObject = flowElementsMap.get(pe.targetRef);
-                        //     if (bpmnElementObject) {
-                        //         pe.targetRef = bpmnElementObject;
-                        //     }
-                        // }
                     });
                 }
+
+                // diagram.plane.planeElement = sortArray
             });
 
-            console.log(obj);
-            // this.bpmnViewer.importXML(val);
+            obj.diagrams[0].plane.planeElement = this.sortByIdWithParticipantFirst(obj.diagrams[0].plane.planeElement)
+            console.log(obj)
             this.bpmnViewer.importDefinitions(obj);
+            // this.bpmnViewer.importXML(val);
         }
     },
     methods: {
+        sortByIdWithParticipantFirst(array) {
+            return array.sort((a, b) => {
+                const aIsParticipant = a.id.toLowerCase().startsWith('participant');
+                const bIsParticipant = b.id.toLowerCase().startsWith('participant');
+
+                if (aIsParticipant && !bIsParticipant) {
+                    return -1;
+                } else if (!aIsParticipant && bIsParticipant) {
+                    return 1;
+                } else {
+                    return a.id.localeCompare(b.id);
+                }
+            });
+        },
         parseJsonToModdle(jsonString) {
             const bpmnModdle = new BpmnModdle();
             // let bpmnModdle = this.bpmnViewer.get('moddle');

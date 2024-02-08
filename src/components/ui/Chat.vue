@@ -1,5 +1,5 @@
 <template>
-    <div class="customHeight">
+    <div class="customHeight" style="background-color: rgba( 255, 255, 255, 1 );">
         <div>
             <div class="d-flex align-center gap-3 pa-4 justify-space-between">
                 <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
@@ -26,7 +26,8 @@
                     <v-btn v-if="type == 'instances'" icon variant="text" class="text-medium-emphasis" @click="viewProcess">
                         <Icon icon="fluent:flowchart-16-regular" :style="{ fontSize: '28px' }" />
                     </v-btn>
-                    <v-btn v-if="type == 'definitions'" :disabled="!isChanged" icon variant="text" class="text-medium-emphasis">
+                    <v-btn v-if="type == 'definitions'" :disabled="!isChanged" icon variant="text"
+                        class="text-medium-emphasis">
                         <DeviceFloppyIcon size="24" @click="$emit('save')" />
                     </v-btn>
                     <v-btn v-if="chatInfo" icon variant="text" class="text-medium-emphasis" @click="moreDetail">
@@ -38,10 +39,8 @@
             <v-divider />
 
             <perfect-scrollbar class="rightpartHeight h-100">
-                <v-btn v-if="type == 'chats' && filteredMessages.length > 0" 
-                    style="position: absolute; left: 45%" 
-                    @click="getMoreChat()"
-                >get more chat</v-btn>
+                <v-btn v-if="type == 'chats' && filteredMessages.length > 0" style="position: absolute; left: 45%"
+                    @click="getMoreChat()">get more chat</v-btn>
 
                 <div class="d-flex">
                     <div class="w-100" style="height: calc(100vh - 320px)">
@@ -56,17 +55,9 @@
                                         <img :src="message.content" class="rounded-md" alt="pro" width="250" />
                                     </v-sheet>
 
-                                    <v-textarea
-                                        v-if="editIndex === index"
-                                        v-model="messages[index].content"
-                                        variant="solo"
-                                        hide-details
-                                        bg-color="lightprimary"
-                                        class="shadow-none"
-                                        density="compact"
-                                        auto-grow
-                                        rows="1"
-                                    >
+                                    <v-textarea v-if="editIndex === index" v-model="messages[index].content" variant="solo"
+                                        hide-details bg-color="lightprimary" class="shadow-none" density="compact" auto-grow
+                                        rows="1">
                                         <template v-slot:append-inner>
                                             <v-btn icon variant="text" class="text-medium-emphasis" @click="send">
                                                 <SendIcon size="20" />
@@ -77,21 +68,18 @@
                                         </template>
                                     </v-textarea>
 
-                                    <div v-else class="d-flex" @mouseover="hoverIndex = index" @mouseleave="hoverIndex = -1">
-                                        <v-btn
-                                            v-if="hoverIndex === index && !disableChat"
-                                            @click="editMessage(index)"
-                                            icon
-                                            variant="text"
-                                            size="x-small"
-                                            class="bg-lightprimary float-left edit-btn"
-                                        >
+                                    <div v-else class="d-flex" @mouseover="hoverIndex = index"
+                                        @mouseleave="hoverIndex = -1">
+                                        <v-btn v-if="hoverIndex === index && !disableChat" @click="editMessage(index)" icon
+                                            variant="text" size="x-small" class="bg-lightprimary float-left edit-btn">
                                             <Icon icon="solar:pen-bold" height="20" width="20" />
                                         </v-btn>
 
                                         <v-sheet class="bg-lightprimary rounded-md px-3 py-2 mb-1 w-100">
-                                            <pre class="text-body-1" v-if="message.replyUserName">{{ message.replyUserName }}</pre>
-                                            <pre class="text-body-1" v-if="message.replyContent">{{ message.replyContent }}</pre>
+                                            <pre class="text-body-1"
+                                                v-if="message.replyUserName">{{ message.replyUserName }}</pre>
+                                            <pre class="text-body-1"
+                                                v-if="message.replyContent">{{ message.replyContent }}</pre>
                                             <v-divider v-if="message.replyContent"></v-divider>
 
                                             <pre class="text-body-1">{{ message.content }}</pre>
@@ -105,16 +93,13 @@
                             <div v-else class="d-flex align-items-start gap-3 mb-1 w-90">
                                 <div style="max-width: 40px;">
                                     <v-avatar>
-                                        <img v-if="message.role == 'system'" src="@/assets/images/chat/chat-icon.png" max-height="48" max-width="48" />
+                                        <img v-if="message.role == 'system'" src="@/assets/images/chat/chat-icon.png"
+                                            max-height="48" max-width="48" />
                                         <v-img v-else :src="userInfo.profile" :alt="message.name" height="48" width="48" />
                                     </v-avatar>
-                                    
-                                    <v-progress-circular
-                                        v-if="message.isLoading"
-                                        indeterminate
-                                        color="grey"
-                                        class="mt-5"
-                                    ></v-progress-circular>
+
+                                    <v-progress-circular v-if="message.isLoading" indeterminate color="grey"
+                                        class="mt-5"></v-progress-circular>
                                 </div>
 
                                 <div class="w-90">
@@ -127,42 +112,32 @@
                                         <img :src="message.content" class="rounded-md" alt="pro" width="250" />
                                     </v-sheet>
 
-                                    <v-sheet
-                                        v-else
-                                        class="bg-lightsecondary rounded-md px-3 py-2 mb-1"
-                                        @mouseover="replyIndex = index"
-                                        @mouseleave="replyIndex = -1"
-                                    >
-                                        <pre class="text-body-1" v-if="message.replyUserName">{{ message.replyUserName }}</pre>
-                                        <pre class="text-body-1" v-if="message.replyContent">{{ message.replyContent }}</pre>
+                                    <v-sheet v-else class="bg-lightsecondary rounded-md px-3 py-2 mb-1"
+                                        @mouseover="replyIndex = index" @mouseleave="replyIndex = -1">
+                                        <pre class="text-body-1"
+                                            v-if="message.replyUserName">{{ message.replyUserName }}</pre>
+                                        <pre class="text-body-1"
+                                            v-if="message.replyContent">{{ message.replyContent }}</pre>
                                         <v-divider v-if="message.replyContent"></v-divider>
 
                                         <pre class="text-body-1">{{ message.content }}</pre>
 
-                                        <p
-                                            style="margin-top: 5px"
-                                            v-if="
-                                                message.role == 'system' &&
-                                                index == filteredMessages.length - 1 &&
-                                                message['prompt'] &&
-                                                userInfo.email == message['prompt'].requestUserEmail
-                                            "
-                                        >
-                                            <v-btn style="margin-right: 5px" size="small" @click="processInstance(message)"
-                                                >y</v-btn
-                                            >
+                                        <p style="margin-top: 5px" v-if="message.role == 'system' &&
+                                            index == filteredMessages.length - 1 &&
+                                            message['prompt'] &&
+                                            userInfo.email == message['prompt'].requestUserEmail
+                                            ">
+                                            <v-btn style="margin-right: 5px" size="small"
+                                                @click="processInstance(message)">y</v-btn>
                                             <v-btn size="small">n</v-btn>
                                         </p>
-                                        <v-btn v-if="replyIndex === index"
-                                            @click="beforeReply(message)"
-                                            icon="mdi-reply"
-                                            variant="text"
-                                            size="x-small"
-                                            class="bg-lightsecondary float-right"
-                                        ></v-btn>
+                                        <v-btn v-if="replyIndex === index" @click="beforeReply(message)" icon="mdi-reply"
+                                            variant="text" size="x-small" class="bg-lightsecondary float-right"></v-btn>
 
-                                        <v-btn v-if="message.jsonText" class="mt-2" elevation="0" @click="viewJSON(index)">View JSON</v-btn>
-                                        <pre v-if="isViewJSON.includes(index)" class="text-body-1">{{ message.jsonText }}</pre>
+                                        <v-btn v-if="message.jsonText" class="mt-2" elevation="0"
+                                            @click="viewJSON(index)">View JSON</v-btn>
+                                        <pre v-if="isViewJSON.includes(index)"
+                                            class="text-body-1">{{ message.jsonText }}</pre>
                                     </v-sheet>
                                 </div>
                             </div>
@@ -181,40 +156,19 @@
         </div>
 
         <form class="d-flex align-center pa-4" @submit.prevent="send">
-            <v-textarea
-                variant="solo"
-                hide-details
-                v-model="newMessage"
-                color="primary"
-                class="shadow-none"
-                density="compact"
-                placeholder="Type a Message"
-                auto-grow
-                rows="1"
-                :disabled="disableChat"
-            >
+            <v-textarea variant="solo" hide-details v-model="newMessage" color="primary" class="shadow-none"
+                density="compact" placeholder="Type a Message" auto-grow rows="1" :disabled="disableChat">
                 <!-- <template v-slot:prepend-inner>
                     <v-btn icon variant="text" class="text-medium-emphasis">
                         <MoodSmileIcon size="24" />
                     </v-btn>
                 </template> -->
                 <template v-slot:append-inner>
-                    <v-btn v-if="!isLoading"
-                        icon 
-                        variant="text" 
-                        type="submit" 
-                        @click="send"
-                        class="text-medium-emphasis" 
-                        :disabled="!newMessage"
-                    >
+                    <v-btn v-if="!isLoading" icon variant="text" type="submit" @click="send" class="text-medium-emphasis"
+                        :disabled="!newMessage">
                         <SendIcon size="24" />
                     </v-btn>
-                    <v-btn v-else
-                        icon 
-                        variant="text" 
-                        @click="isLoading = !isLoading"
-                        class="text-medium-emphasis"
-                    >
+                    <v-btn v-else icon variant="text" @click="isLoading = !isLoading" class="text-medium-emphasis">
                         <Icon icon="ic:outline-stop-circle" width="30" height="30" />
                     </v-btn>
                     <!-- <v-btn icon variant="text" class="text-medium-emphasis">
@@ -412,12 +366,14 @@ pre {
     .right-sidebar {
         position: absolute;
         right: -320px;
+
         &.showLeftPart {
             right: 0;
             z-index: 2;
             box-shadow: 2px 1px 20px rgba(0, 0, 0, 0.1);
         }
     }
+
     .boxoverlay {
         position: absolute;
         height: 100%;

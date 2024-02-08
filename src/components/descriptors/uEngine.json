@@ -8,7 +8,7 @@
     "associations": [],
     "types": [
         {
-            "name": "uengine-role",
+            "name": "uengine-params",
             "superClass": ["Element"],
             "properties": [
                 {
