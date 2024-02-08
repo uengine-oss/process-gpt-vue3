@@ -20,8 +20,8 @@ export default class StorageBase {
     signOut(value) {
         throw new Error('signOut() must be implement')
     }
-    getUser(path, value) {
-        throw new Error('getUser() must be implement')
+    getUserInfo() {
+        throw new Error('getUserInfo() must be implement')
     }
     getString(path, options) {
         throw new Error('getString() must be implement')

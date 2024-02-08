@@ -97,7 +97,7 @@ export default {
             // this.bpmn = `{"$type":"bpmn:Definitions","id":"sample-diagram","targetNamespace":"http://bpmn.io/schema/bpmn","rootElements":[{"$type":"bpmn:Collaboration","id":"Collaboration_1tj7ei2","participants":[{"$type":"bpmn:Participant","id":"Participant_1eqhejj","$parent":"Collaboration_1tj7ei2"}],"$parent":"sample-diagram"},{"$type":"bpmn:Process","id":"Process_1","isExecutable":false,"laneSets":[{"$type":"bpmn:LaneSet","id":"LaneSet_1g2nbpc","lanes":[{"$type":"bpmn:Lane","id":"Lane_0wneims","name":"Woker","$parent":"LaneSet_1g2nbpc"},{"$type":"bpmn:Lane","id":"Lane_1lf58ly","name":"HR","$parent":"LaneSet_1g2nbpc"}],"$parent":"Process_1"}],"flowElements":[{"$type":"bpmn:StartEvent","id":"StartEvent_1","name":"시작","eventDefinitions":[],"$parent":"Process_1"},{"$type":"bpmn:SequenceFlow","id":"Flow_0sp25wg","$parent":"Process_1","sourceRef":"StartEvent_1","targetRef":"Activity_1ta8n6y"},{"$type":"bpmn:SequenceFlow","id":"Flow_03dbjwz","$parent":"Process_1","sourceRef":"Activity_1ta8n6y","targetRef":"Activity_0ji9jev"},{"$type":"bpmn:EndEvent","id":"Event_0h4j724","name":"종료","eventDefinitions":[],"$parent":"Process_1"},{"$type":"bpmn:SequenceFlow","id":"Flow_182335x","$parent":"Process_1","sourceRef":"Activity_0ji9jev","targetRef":"Event_0h4j724"},{"$type":"bpmn:UserTask","id":"Activity_1ta8n6y","name":"휴가 신청","documentation":[{"$type":"bpmn:Documentation","text":"Vacation","$parent":"Activity_1ta8n6y"}],"uengine-params":{"script": "System.out.println('hello world')"},"$parent":"Process_1"},{"$type":"bpmn:UserTask","id":"Activity_0ji9jev","name":"승인","documentation":[{"$type":"bpmn:Documentation","text":"confirm","$parent":"Activity_0ji9jev"}],"$parent":"Process_1"}],"$parent":"sample-diagram"}],"diagrams":[{"$type":"bpmndi:BPMNDiagram","id":"BPMNDiagram_1","plane":{"$type":"bpmndi:BPMNPlane","id":"BPMNPlane_1","planeElement":[{"$type":"bpmndi:BPMNShape","id":"Lane_1lf58ly_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":300,"y":275,"width":570,"height":125,"$parent":"Lane_1lf58ly_di"},"label":{"$type":"bpmndi:BPMNLabel","$parent":"Lane_1lf58ly_di"},"bpmnElement":"Lane_1lf58ly","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Lane_0wneims_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":300,"y":150,"width":570,"height":125,"$parent":"Lane_0wneims_di"},"label":{"$type":"bpmndi:BPMNLabel","$parent":"Lane_0wneims_di"},"bpmnElement":"Lane_0wneims","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Participant_1eqhejj_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":270,"y":150,"width":600,"height":250,"$parent":"Participant_1eqhejj_di"},"bpmnElement":"Participant_1eqhejj","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"_BPMNShape_StartEvent_2","bounds":{"$type":"dc:Bounds","x":352,"y":192,"width":36,"height":36,"$parent":"_BPMNShape_StartEvent_2"},"label":{"$type":"bpmndi:BPMNLabel","bounds":{"$type":"dc:Bounds","x":361,"y":235,"width":20,"height":14},"$parent":"_BPMNShape_StartEvent_2"},"bpmnElement":"StartEvent_1","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Event_0h4j724_di","bounds":{"$type":"dc:Bounds","x":762,"y":322,"width":36,"height":36,"$parent":"Event_0h4j724_di"},"label":{"$type":"bpmndi:BPMNLabel","bounds":{"$type":"dc:Bounds","x":770,"y":365,"width":20,"height":14},"$parent":"Event_0h4j724_di"},"bpmnElement":"Event_0h4j724","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Activity_18762mc_di","bounds":{"$type":"dc:Bounds","x":440,"y":170,"width":100,"height":80,"$parent":"Activity_18762mc_di"},"bpmnElement":"Activity_1ta8n6y","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Activity_1omaje8_di","bounds":{"$type":"dc:Bounds","x":600,"y":300,"width":100,"height":80,"$parent":"Activity_1omaje8_di"},"bpmnElement":"Activity_0ji9jev","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_0sp25wg_di","waypoint":[{"$type":"dc:Point","x":388,"y":210,"$parent":"Flow_0sp25wg_di"},{"$type":"dc:Point","x":440,"y":210,"$parent":"Flow_0sp25wg_di"}],"bpmnElement":"Flow_0sp25wg","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_03dbjwz_di","waypoint":[{"$type":"dc:Point","x":540,"y":210,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":570,"y":210,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":570,"y":340,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":600,"y":340,"$parent":"Flow_03dbjwz_di"}],"bpmnElement":"Flow_03dbjwz","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_182335x_di","waypoint":[{"$type":"dc:Point","x":700,"y":340,"$parent":"Flow_182335x_di"},{"$type":"dc:Point","x":762,"y":340,"$parent":"Flow_182335x_di"}],"bpmnElement":"Flow_182335x","$parent":"BPMNPlane_1"}],"bpmnElement":"Collaboration_1tj7ei2","$parent":"BPMNDiagram_1"},"$parent":"sample-diagram"}]}`;
             // this.projectName = this.processDefinition.name;
             // this.definitionChangeCount++;
-            const value = await this.getData(path);
+            const value = await this.getData(path, {key: "id"});
             if (value) {
                 if (this.$route.params && this.$route.params.id) {
                     this.processDefinition = partialParse(value[0].model);
@@ -111,8 +111,6 @@ export default {
                     }
                 }
             }
-
-            this.processDefinitionMap = await this.getData('definition');
         },
 
         beforeSendMessage(newMessage) {
@@ -171,22 +169,18 @@ export default {
             }
         },
         async saveDefinitionMap(obj) {
-            var path = 'definition';
             if (this.processDefinition) {
                 var megaProcessId = this.processDefinition.megaProcessId;
                 var majorProcessId = this.processDefinition.majorProcessId;
 
-                this.processDefinitionMap = await this.getData(path);
+                this.processDefinitionMap = await this.getData(this.path);
                 if (this.processDefinitionMap && this.processDefinitionMap.megaProcess) {
                     const megaProcesses = Object.values(this.processDefinitionMap.megaProcess);
                     console.log(megaProcesses);
-                    path += '/megaProcess/';
                     megaProcesses.forEach((mega, megaIdx) => {
                         if (mega.id == megaProcessId && mega.majorProcess) {
-                            path += `${megaIdx}/majorProcess/`;
                             mega.majorProcess.forEach((major, majorIdx) => {
                                 if (major.id == majorProcessId) {
-                                    path += `${majorIdx}/subProcess`;
                                 }
                             });
                         }
@@ -194,7 +188,6 @@ export default {
                 }
 
                 if (path.includes('subProcess')) {
-                    console.log(path);
                     obj.id = this.processDefinition.processDefinitionId;
                     obj.name = this.processDefinition.processDefinitionName;
                     this.pushObject(path, obj);

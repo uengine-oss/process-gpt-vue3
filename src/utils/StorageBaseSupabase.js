@@ -43,7 +43,7 @@ export default class StorageBaseSupabase {
         return await window.$supabase.auth.signOut();
     }
 
-    async getUser(path, value) {
+    async getUserInfo() {
         const result = await window.$supabase.auth.getUser();
         if (result && result.data && result.data.user) {
             const userInfo = {
@@ -70,7 +70,9 @@ export default class StorageBaseSupabase {
                 if (error) {
                     return error;
                 } else {
-                    if (data.length > 0) return data;
+                    if (data.length > 0) {
+                        return data[0];
+                    }
                     return null;
                 }
             } else {
@@ -97,7 +99,9 @@ export default class StorageBaseSupabase {
                 if (error) {
                     return error;
                 } else {
-                    if (data.length > 0) return data;
+                    if (data.length > 0) {
+                        return data[0];
+                    }
                     return null;
                 }
             } else {

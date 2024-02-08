@@ -114,11 +114,7 @@ export default {
     },
     methods: {
         async getDefinitionList() {
-            let def = await this.storage.getObject(`definitions`)
-            // .then((definitions) => {
-            //     console.log(definitions)
-            // })
-            // console.log(def)
+            let def = await this.storage.getObject(`definitions`);
             if (def) {
                 var menu = {
                     title: '프로세스 목록',

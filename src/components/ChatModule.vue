@@ -24,14 +24,14 @@ export default {
     methods: {
         async init() {
             this.disableChat = false;
-            this.userInfo = await this.storage.getUser();
+            this.userInfo = await this.storage.getUserInfo();
 
             await this.loadData(this.getDataPath());
             await this.loadMessages(this.getDataPath());
         },
         async getChatList() {
             var me = this;
-            me.userInfo = this.storage.getUser();
+            me.userInfo = this.storage.getUserInfo();
             // this.storage.delete(`db://chats/1`)
             var option = {
                 sort: 'desc',
