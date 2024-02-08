@@ -37,13 +37,13 @@
             <!---Single Item-->
             <v-list-item
                 v-for="item in instanceList"
-                :key="item.instanceId"
-                :value="item.instanceId"
+                :key="item.instanceid"
+                :value="item.instanceid"
                 color="secondary"
                 class="text-no-wrap chatItem"
                 lines="two"
-                :active="currentChatId === item.instanceId"
-                @click="selectChat(item.instanceId)"
+                :active="currentChatId === item.instanceid"
+                @click="selectChat(item.instanceid)"
             >
                 <!-- Participants User  -->
                 <!-- <template v-slot:prepend>
@@ -53,13 +53,13 @@
                 </template> -->
                 <!---Name-->
                 <v-list-item-title class="text-subtitle-1 textPrimary w-100 font-weight-semibold">
-                    {{ item.instanceName }}
+                    {{ item.instancename }}
                 </v-list-item-title>
                 <!---Subtitle-->
                 <div class="text-subtitle-2 textPrimary mt-1 text-truncate w-100">
                     {{
-                        item.nextActivityName && item.nextActivityName !== '' && item.nextActivityName !== 'null' ? 
-                            item.nextActivityName : item.status
+                        item.nextactivityname && item.nextactivityname !== '' && item.nextactivityname !== 'null' ? 
+                            item.nextactivityname : item.status
                     }}
                 </div>
                 <!---Last seen--->
@@ -69,7 +69,7 @@
                         <v-menu activator="parent">
                             <v-list density="compact">
                                 <v-list-item value="Delete">
-                                    <v-list-item-title @click="deleteInstance(item.instanceId)">
+                                    <v-list-item-title @click="deleteInstance(item.instanceid)">
                                         Delete
                                     </v-list-item-title>
                                 </v-list-item>
@@ -96,6 +96,7 @@ export default {
             { title: 'Sort by Time' }, 
             { title: 'Sort by Completed' }
         ],
+        email: "",
     }),
     watch: {
         "$route": {
@@ -108,9 +109,8 @@ export default {
         },
     },
     async created() {
-        if (this.userInfo && this.userInfo.email) {
-            await this.init();
-        }
+        this.email = localStorage.getItem("email")
+        await this.init();
     },
     methods: {
         async init(path) {
@@ -118,23 +118,23 @@ export default {
                 this.currentChatId = this.$route.params.id;
             }
 
-            const callPath = path ? path : this.path;
-            await this.storage.watch(`db://${callPath}`, (callback) => {
-                this.instanceList = [];
-                if (callback) {
-                    const keys = Object.keys(callback);
-                    keys.forEach(async key => {
-                        const item = callback[key];
-                        if (item && item.participants) {
-                            if (item.participants.includes(this.userInfo.email)) {
-                                item.instanceId = key;
-                                this.instanceList.push(item);
-                            }
-                        }
-                    });
-                    this.instanceList.sort((a, b) => b.timeStamp - a.timeStamp);
-                }
-            });
+            this.instanceList = await this.getData(this.path);
+            // await this.storage.watch(`db://${callPath}`, (callback) => {
+            //     this.instanceList = [];
+            //     if (callback) {
+            //         const keys = Object.keys(callback);
+            //         keys.forEach(async key => {
+            //             const item = callback[key];
+            //             if (item && item.participants) {
+            //                 if (item.participants.includes(this.email)) {
+            //                     item.instanceId = key;
+            //                     this.instanceList.push(item);
+            //                 }
+            //             }
+            //         });
+            //         this.instanceList.sort((a, b) => b.timeStamp - a.timeStamp);
+            //     }
+            // });
         },
         selectChat(id) {
             this.currentChatId = id;
@@ -145,7 +145,7 @@ export default {
             this.$router.push(`/${this.path}/chat`);
         },
         async deleteInstance(id) {
-            await this.delete(`${this.path}/${id}`);
+            await this.delete(`${this.path}/${id}`, {key: "instanceid"});
             await this.init();
         }
     }

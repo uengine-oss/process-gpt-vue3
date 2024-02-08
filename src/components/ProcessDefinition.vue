@@ -1,11 +1,17 @@
 <template>
-    <div style="height: 100%;">
-        <v-row style="height: 103%;">
-            <v-col class="d-flex">
-                <v-card elevation="1">
-                    <vue-bpmn :bpmn="bpmn" :options="options" v-on:error="handleError" v-on:shown="handleShown"
-                        v-on:loading="handleLoading" v-on:openPanel="(id) => openPanel(id)"
-                        v-on:definition="(def) => (definitions = def)"></vue-bpmn>
+    <div>
+        <v-row style="height: 100%" class="ma-0">
+            <v-col class="d-flex ma-0 pa-0">
+                <v-card elevation="1" style="border-radius: 0px !important;">
+                    <vue-bpmn
+                        :bpmn="bpmn"
+                        :options="options"
+                        v-on:error="handleError"
+                        v-on:shown="handleShown"
+                        v-on:loading="handleLoading"
+                        v-on:openPanel="(id) => openPanel(id)"
+                        v-on:definition="(def) => (definitions = def)"
+                    ></vue-bpmn>
                 </v-card>
             </v-col>
             <v-col v-if="panel" cols="12" sm="12" lg="4" md="6" class="d-flex">

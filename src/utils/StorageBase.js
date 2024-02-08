@@ -23,10 +23,10 @@ export default class StorageBase {
     getUser(path, value) {
         throw new Error('getUser() must be implement')
     }
-    getString(path) {
+    getString(path, options) {
         throw new Error('getString() must be implement')
     }
-    getObject(path) {
+    getObject(path, options) {
         throw new Error('getObject() must be implement')
     }
     putString(path, value, options) {
@@ -41,7 +41,7 @@ export default class StorageBase {
     pushObject(path, value, options) {
         throw new Error('pushObject() must be implement')
     }
-    delete(path) {
+    delete(path, options) {
         throw new Error('delete() must be implement')
     }
 

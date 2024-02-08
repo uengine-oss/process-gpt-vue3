@@ -24,7 +24,8 @@ const customizer = useCustomizerStore();
 
             <v-list class="py-4 px-4 bg-containerBg">
                 <!---Menu Loop -->
-                <template v-for="item in sidebarItem">
+                <template v-for="item in sidebarItem" :key="item.title">
+
                     <!---Item Sub Header -->
                     <NavGroup :item="item" v-if="item.header" :key="item.title" />
                     <!---If Has Child -->
@@ -56,49 +57,49 @@ export default {
         storage: null,
         sidebarItem: [
             {
-                title: "TodoList",
+                title: "todoList.title",
                 icon: 'solar:widget-4-linear',
                 BgColor: 'primary',
                 to: "/todolist",
             },
             {
-                title: 'Calendar',
+                title: 'calendar.title',
                 icon: 'solar:calendar-line-duotone',
                 BgColor: 'primary',
                 to: '/apps/calendar'
             },
             {
-                title: "Chats",
+                title: "chats.title",
                 icon: 'solar:chat-round-unread-line-duotone',
                 BgColor: 'primary',
                 to: "/chats",
             },
             {
-                header: '인스턴스'
+                header: 'instance.title'
             },
             {
-                title: "프로세스 실행",
+                title: "processExecution.title",
                 icon: 'solar:chat-dots-linear',
                 BgColor: 'primary',
                 to: '/instances/chat',
             },
             {
-                header: '정의 관리'
+                header: 'definitionManagement.title'
             },
             {
-                title: "조직도 정의",
+                title: "organizationChartDefinition.title",
                 icon: 'solar:users-group-rounded-line-duotone',
                 BgColor: 'primary',
                 to: "/organization",
             },
             {
-                title: "프로세스 정의 체계도",
+                title: "processDefinitionMap.title",
                 icon: 'carbon:flow-connection',
                 BgColor: 'primary',
                 to: "/definition-map",
             },
             {
-                title: "프로세스 정의",
+                title: "processDefinition.title",
                 icon: 'carbon:flow-connection',
                 BgColor: 'primary',
                 to: "/definitions/chat",

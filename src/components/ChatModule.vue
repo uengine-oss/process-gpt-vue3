@@ -108,12 +108,12 @@ export default {
             });
         },
 
-        async getData(path) {
+        async getData(path, options) {
             let value;
             if (path) {
-                value = await this.storage.getObject(`db://${path}`);
+                value = await this.storage.getObject(`db://${path}`, options);
             } else {
-                value = await this.storage.getObject(`db://${this.path}`);
+                value = await this.storage.getObject(`db://${this.path}`, options);
             }
             return value;
         },
@@ -283,20 +283,20 @@ export default {
             return src;
         },
 
-        async putObject(path, obj) {
-            await this.storage.putObject(`db://${path}`, obj);
+        async putObject(path, obj, options) {
+            await this.storage.putObject(`db://${path}`, obj, options);
         },
 
-        async pushObject(path, obj) {
-            await this.storage.pushObject(`db://${path}`, obj);
+        async pushObject(path, obj, options) {
+            await this.storage.pushObject(`db://${path}`, obj, options);
         },
 
-        async setObject(path, obj) {
-            await this.storage.setObject(`db://${path}`, obj);
+        async setObject(path, obj, options) {
+            await this.storage.setObject(`db://${path}`, obj, options);
         },
 
-        async delete(path) {
-            await this.storage.delete(`db://${path}`);
+        async delete(path, options) {
+            await this.storage.delete(`db://${path}`, options);
         },
 
         onModelCreated(response) {
@@ -306,6 +306,17 @@ export default {
                 async action(me) {
                     let messageWriting = me.messages[me.messages.length - 1];
                     messageWriting.content = response;
+                    messageWriting.jsonContent = me.extractJSON(response);
+
+                    let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
+                    const match = messageWriting.content.match(regex);
+                    if (match) {
+                        messageWriting.content = messageWriting.content.replace(match[1], '');
+                        regex = /`{3}(?:json|markdown)?\s?\n/g;
+                        messageWriting.content = messageWriting.content.replace(regex, '');
+                        messageWriting.content = messageWriting.content.replace(/\s?\n?`{3}?\s?\n/g, '');
+                        messageWriting.content = messageWriting.content.replace(/`{3}/g, '');
+                    }
 
                     me.afterModelCreated(response);
                 },

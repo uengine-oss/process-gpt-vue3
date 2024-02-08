@@ -13,11 +13,11 @@ import { HelpIcon, ChevronDownIcon } from 'vue-tabler-icons';
     <v-menu open-on-hover open-delay=1  :close-on-content-click="false" class="lp_wrapper position-relative">
         <template v-slot:activator="{ props }">
             <v-btn class="hidden-sm-and-down nav-links custom-hover-primary" :ripple="false"  rounded="sm" variant="text"  v-bind="props"
-                >Demos<ChevronDownIcon size="18" class="mt-1 ml-1" />
+                >{{ $t('mainPage.demo') }}<ChevronDownIcon size="18" class="mt-1 ml-1" />
             </v-btn>
         </template>
         <v-sheet max-width="100%" width="1150" height="100%" elevation="10" rounded="xl" class="pa-8 mx-auto">
-            <h5 class="text-h5">Demos</h5>
+            <h5 class="text-h5">{{ $t('mainPage.demo') }}</h5>
             <!-- <h6 class="text-subtitle-1 mt-1">Included with the package</h6>
             <div class="v-row mt-3">
                 <v-col v-for="demo in demosMegamenu" :key="demo.img">
@@ -83,8 +83,8 @@ import { HelpIcon, ChevronDownIcon } from 'vue-tabler-icons';
             </div>
         </v-sheet>
     </v-menu> -->
-    <v-btn variant="text" color="primary" class="custom-hover-primary nav-links" :ripple="false" href="" disabled target="_blank">Pricing</v-btn>
-    <v-btn variant="text" color="primary" class="custom-hover-primary nav-links" :ripple="false" href="" to="/instances/chat" target="_blank">Documentation</v-btn>
-    <v-btn variant="text" color="primary" class="custom-hover-primary nav-links" :ripple="false" href="https://uengine.org/" target="_blank">Support</v-btn>
+    <v-btn variant="text" color="primary" class="custom-hover-primary nav-links" :ripple="false" href="" disabled target="_blank">{{ $t('mainPage.pricing') }}</v-btn>
+    <v-btn variant="text" color="primary" class="custom-hover-primary nav-links" :ripple="false" href="" to="/instances/chat" target="_blank">{{ $t('mainPage.documentation') }}</v-btn>
+    <v-btn variant="text" color="primary" class="custom-hover-primary nav-links" :ripple="false" href="https://uengine.org/" target="_blank">{{ $t('mainPage.support') }}</v-btn>
     
 </template>
