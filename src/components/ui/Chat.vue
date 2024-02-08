@@ -135,10 +135,10 @@
                                         <v-btn v-if="replyIndex === index" @click="beforeReply(message)" icon="mdi-reply"
                                             variant="text" size="x-small" class="bg-lightsecondary float-right"></v-btn>
 
-                                        <v-btn v-if="message.jsonText" class="mt-2" elevation="0"
+                                        <v-btn v-if="message.jsonContent" class="mt-2" elevation="0"
                                             @click="viewJSON(index)">View JSON</v-btn>
                                         <pre v-if="isViewJSON.includes(index)"
-                                            class="text-body-1">{{ message.jsonText }}</pre>
+                                            class="text-body-1">{{ message.jsonContent }}</pre>
                                     </v-sheet>
                                 </div>
                             </div>
@@ -242,18 +242,6 @@ export default {
             this.messages.forEach((item) => {
                 let data = JSON.parse(JSON.stringify(item));
                 if (data.content) {
-                    // let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
-                    // const match = data.content.match(regex);
-                    // if (match) {
-                    //     data.content = data.content.replace(match[1], '');
-                    //     regex = /`{3}(?:json|markdown)?\s?\n/g;
-                    //     data.content = data.content.replace(regex, '');
-                    //     data.content = data.content.replace(/\s?\n?`{3}?\s?\n/g, '');
-                    //     data.content = data.content.replace(/`{3}/g, '');
-                    //     data.jsonText = match[1];
-                    // } else {
-                    //     data.jsonText = null;
-                    // }
                     list.push(data);
                 }
             });

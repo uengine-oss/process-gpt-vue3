@@ -113,28 +113,12 @@ export default {
         await this.init();
     },
     methods: {
-        async init(path) {
+        async init() {
             if (this.$route.params && this.$route.params.id) {
                 this.currentChatId = this.$route.params.id;
             }
 
             this.instanceList = await this.getData(this.path);
-            // await this.storage.watch(`db://${callPath}`, (callback) => {
-            //     this.instanceList = [];
-            //     if (callback) {
-            //         const keys = Object.keys(callback);
-            //         keys.forEach(async key => {
-            //             const item = callback[key];
-            //             if (item && item.participants) {
-            //                 if (item.participants.includes(this.email)) {
-            //                     item.instanceId = key;
-            //                     this.instanceList.push(item);
-            //                 }
-            //             }
-            //         });
-            //         this.instanceList.sort((a, b) => b.timeStamp - a.timeStamp);
-            //     }
-            // });
         },
         selectChat(id) {
             this.currentChatId = id;

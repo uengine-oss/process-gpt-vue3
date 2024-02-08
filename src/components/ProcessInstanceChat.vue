@@ -153,9 +153,11 @@ export default {
             let value = await this.getData(path, {key: "instanceid"});
             if (value) {
                 this.processInstance = value;
-                this.processInstance.processInstanceId = this.$route.params.id;
-
                 this.checkDisableChat(value);
+
+                if (value.messages) {
+                    this.messages = value.messages;
+                }
             }
 
             value = await this.getData("organization");
@@ -178,16 +180,16 @@ export default {
             }
         },
         async beforeSendMessage(newMessage) {
-            // if(!this.generator.contexts) {
-            //     this.processDefinition = null;
-            //     let contexts = await this.queryFromVectorDB(newMessage);
-            //     if (!contexts || contexts.length < 1) {
-            //         await this.saveDefinitionToVectorDB();
-            //         contexts = await this.queryFromVectorDB(newMessage);
-            //     }
-            //     this.processDefinition = contexts[0];
-            //     this.generator.setContexts(contexts);
-            // }
+            if(!this.generator.contexts) {
+                this.processDefinition = null;
+                let contexts = await this.queryFromVectorDB(newMessage);
+                if (!contexts || contexts.length < 1) {
+                    await this.saveDefinitionToVectorDB();
+                    contexts = await this.queryFromVectorDB(newMessage);
+                }
+                this.processDefinition = contexts[0];
+                this.generator.setContexts(contexts);
+            }
             this.sendMessage(newMessage);
         },
         afterModelCreated(response) {

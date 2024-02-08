@@ -28,7 +28,7 @@ const name = localStorage.getItem("userName");
 const email = localStorage.getItem("email");
 
 // 유저 이름 변경
-const userInfo = storage?.getUser();
+const userInfo = storage?.getUserInfo();
  
 // 프로필 이미지 변경 관련
 
