@@ -114,34 +114,34 @@ export default {
     },
     methods: {
         async getDefinitionList() {
-            await this.storage.getObject(`definitions`)
-                .then((definitions) => {
-                    console.log(definitions)
-                })
+            let def = await this.storage.getObject(`definitions`)
+            // .then((definitions) => {
+            //     console.log(definitions)
+            // })
             // console.log(def)
-            // if (def) {
-            //     var menu = {
-            //         title: '프로세스 목록',
-            //         icon: 'solar:list-bold',
-            //         BgColor: 'primary',
-            //         to: `/`,
-            //         children: []
-            //     };
-            //     var list = Object.values(def);
-            //     if (list.length > 0) {
-            //         list.forEach(item => {
-            //             if (item.model) {
-            //                 var jsonProcess = partialParse(item.model);
-            //                 var obj = {
-            //                     title: jsonProcess.processDefinitionName,
-            //                     to: `/definitions/${jsonProcess.processDefinitionId}`
-            //                 }
-            //                 menu.children.push(obj);
-            //             }
-            //         });
-            //     }
-            //     this.definitions = menu;
-            // }
+            if (def) {
+                var menu = {
+                    title: '프로세스 목록',
+                    icon: 'solar:list-bold',
+                    BgColor: 'primary',
+                    to: `/`,
+                    children: []
+                };
+                var list = Object.values(def);
+                if (list.length > 0) {
+                    list.forEach(item => {
+                        if (item.model) {
+                            var jsonProcess = partialParse(item.model);
+                            var obj = {
+                                title: jsonProcess.processDefinitionName,
+                                to: `/definitions/${jsonProcess.processDefinitionId}`
+                            }
+                            menu.children.push(obj);
+                        }
+                    });
+                }
+                this.definitions = menu;
+            }
         }
     }
 }
