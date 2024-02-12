@@ -18,23 +18,36 @@
                 <bpmn2:flowNodeRef>approveVacation</bpmn2:flowNodeRef>
             </bpmn2:lane>
         </bpmn2:laneSet>
-        <bpmn2:startEvent id="StartEvent" name="StartEvent" />
+        <bpmn2:startEvent id="StartEvent_1" name="StartEvent" />
         <bpmn2:endEvent id="EndEvent" name="EndEvent" />
-        <bpmn2:userTask id="requestVacation" name="휴가 신청" />
-        <bpmn2:userTask id="approveVacation" name="휴가 승인" />
-        <bpmn2:userTask id="returnVacation" name="휴가 복귀" />
         <bpmn2:sequenceFlow id="SequenceFlow_requestVacation_approveVacation"
             sourceRef="requestVacation" targetRef="approveVacation" />
         <bpmn2:sequenceFlow id="SequenceFlow_approveVacation_returnVacation"
             sourceRef="approveVacation" targetRef="returnVacation" />
+        <bpmn2:sequenceFlow id="SequenceFlow_StartEvent_requestVacation" sourceRef="StartEvent_1"
+            targetRef="requestVacation" />
+        <bpmn2:userTask id="requestVacation" name="휴가 신청">
+            <bpmn2:outgoing>SequenceFlow_requestVacation_approveVacation</bpmn2:outgoing>
+            <bpmn2:incoming>SequenceFlow_StartEvent_requestVacation</bpmn2:incoming>
+        </bpmn2:userTask>
+        <bpmn2:userTask id="approveVacation" name="휴가 승인">
+            <bpmn2:outgoing>SequenceFlow_approveVacation_returnVacation</bpmn2:outgoing>
+            <bpmn2:incoming>SequenceFlow_requestVacation_approveVacation</bpmn2:incoming>
+        </bpmn2:userTask>
+        <bpmn2:sequenceFlow id="SequenceFlow_returnVacation_EndEvent" sourceRef="returnVacation"
+            targetRef="EndEvent" />
+        <bpmn2:userTask id="returnVacation" name="휴가 복귀">
+            <bpmn2:incoming>SequenceFlow_approveVacation_returnVacation</bpmn2:incoming>
+            <bpmn2:outgoing>SequenceFlow_returnVacation_EndEvent</bpmn2:outgoing>
+        </bpmn2:userTask>
     </bpmn2:process>
     <bpmndi:BPMNDiagram id="BPMNDiagram_1">
         <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
-            <bpmndi:BPMNShape id="StartEvent_di" bpmnElement="StartEvent">
-                <dc:Bounds x="100" y="100" width="36" height="36" />
+            <bpmndi:BPMNShape id="StartEvent_di" bpmnElement="StartEvent_1">
+                <dc:Bounds x="500" y="500" width="36" height="36" />
             </bpmndi:BPMNShape>
             <bpmndi:BPMNShape id="EndEvent_di" bpmnElement="EndEvent">
-                <dc:Bounds x="300" y="100" width="36" height="36" />
+                <dc:Bounds x="500" y="500" width="36" height="36" />
             </bpmndi:BPMNShape>
             <bpmndi:BPMNShape id="BPMNShape_직원" bpmnElement="Lane_직원" isHorizontal="true">
                 <dc:Bounds x="100" y="100" width="600" height="100" />
