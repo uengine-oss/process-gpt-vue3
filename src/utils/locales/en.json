@@ -70,5 +70,15 @@
         "phone" : "Phone",
         "address" : "Address",
         "save" : "Save"
+    },
+    "loginPage" : {
+        "title" : "Welcome to Process-GPT",
+        "google" : "Sign in with Google",
+        "or" : "or sign in with",
+        "userName" : "Username",
+        "password" : "Password",
+        "remeber" : "Remeber this Device",
+        "login" : "Sign In",
+        "create" : "Create an account"
     }
 }
