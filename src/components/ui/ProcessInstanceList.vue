@@ -5,7 +5,7 @@
                 variant="outlined"
                 v-model="searchValue"
                 append-inner-icon="mdi-magnify"
-                placeholder="Search Contact"
+                :placeholder="$t('processExecution.search')"
                 hide-details
                 density="compact"
             ></v-text-field>
@@ -14,19 +14,19 @@
                 <v-menu>
                     <template v-slot:activator="{ props }">
                         <v-btn color="white" variant="flat" class="mt-4 text-medium-emphasis" v-bind="props">
-                            Recent Chats 
+                            {{ $t('processExecution.recentChats') }}
                             <ChevronDownIcon size="18" class="ml-2" />
                         </v-btn>
                     </template>
                     <v-list class="elevation-10">
                         <v-list-item v-for="(item, index) in menuItems" :key="index" :value="index">
-                            <v-list-item-title>{{ item.title }}</v-list-item-title>
+                            <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
                         </v-list-item>
                     </v-list>
                 </v-menu>
 
                 <v-btn color="primary" variant="flat" class="mt-4 ml-auto text-medium-emphasis" @click="newInstanceChat">
-                    New Chat
+                    {{ $t('processExecution.newChat') }}
                 </v-btn>
             </div>
         </div>
@@ -93,8 +93,8 @@ export default {
         searchValue: "",
         currentChatId: "",
         menuItems: [
-            { title: 'Sort by Time' }, 
-            { title: 'Sort by Completed' }
+            { title: 'processExecution.sortByTime' }, 
+            { title: 'processExecution.sortByCompleted' }
         ],
         email: "",
     }),
