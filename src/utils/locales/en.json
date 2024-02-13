@@ -47,6 +47,9 @@
         "cardTitle" : "Process Definition Management",
         "processDefinitionExplanation" : "Manage the process interactively. For example, you can issue commands like: \n'Register the sales management process as follows:\n1. Register sales opportunities including customer name, estimated business size, key person, requirements\n2. Proposal preparation: proposal contents, pricing\n3. Winning or losing an order\n4. If the order is won, proceed with contract execution'"
     },
+    "processList" : {
+        "title" : "Process List"
+    },
     "chat" : {
         "placeholder": "Type a Message"
     },

@@ -117,7 +117,7 @@ export default {
             let def = await this.storage.getObject(`definitions`);
             if (def) {
                 var menu = {
-                    title: '프로세스 목록',
+                    title: 'processList.title',
                     icon: 'solar:list-bold',
                     BgColor: 'primary',
                     to: `/`,
