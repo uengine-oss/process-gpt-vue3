@@ -78,8 +78,8 @@ export default {
         path: 'instances',
         organizationChart: [],
         chatInfo: {
-            title: '프로세스 실행',
-            text: "대화형으로 프로세스를 실행하십시오. \n 예를 들어, '휴가를 신청할게: 1. 사유: 개인사유 2. 휴가 시작일: 오늘 3. 휴가 복귀일: 금요일' 와 같은 명령을 할 수 있습니다."
+            title: 'processExecution.cardTitle',
+            text: "processExecution.processDefinitionExplanation"
         },
         isViewProcess: false,
         onLoad: false,

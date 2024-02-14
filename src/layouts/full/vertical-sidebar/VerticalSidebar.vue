@@ -117,18 +117,20 @@ export default {
             let def = await this.storage.getObject(`definitions`);
             if (def) {
                 var menu = {
-                    title: '프로세스 목록',
+                    title: 'processList.title',
                     icon: 'solar:list-bold',
                     BgColor: 'primary',
                     to: `/`,
                     children: []
                 };
-                if (def.length > 0) {
-                    def.forEach(item => {
-                        if (item.definition) {
+                var list = Object.values(def);
+                if (list.length > 0) {
+                    list.forEach(item => {
+                        if (item.model) {
+                            var jsonProcess = partialParse(item.model);
                             var obj = {
-                                title: item.name,
-                                to: `/definitions/${item.id}`
+                                title: jsonProcess.processDefinitionName,
+                                to: `/definitions/${jsonProcess.processDefinitionId}`
                             }
                             menu.children.push(obj);
                         }

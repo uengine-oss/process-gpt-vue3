@@ -24,7 +24,14 @@
         "title" : "인스턴스"
     },
     "processExecution" : {
-        "title" : "프로세스 실행"
+        "title" : "프로세스 실행",
+        "cardTitle" : "프로세스 실행",
+        "processDefinitionExplanation" : "대화형으로 프로세스를 실행하십시오. \n 예를 들어,\n '휴가를 신청할게:\n 1. 사유: 개인사유\n 2. 휴가 시작일: 오늘\n 3. 휴가 복귀일: 금요일' 와 같은 명령을 할 수 있습니다.",
+        "search" : "검색",
+        "newChat" : "새 채팅",
+        "recentChats" : "최근 채팅",
+        "sortByTime" : "시간 순으로 정렬",
+        "sortByCompleted" : "완료 순으로 정렬"
     },
     "definitionManagement" : {
         "title" : "정의 관리"
@@ -38,7 +45,10 @@
     "processDefinition" : {
         "title" : "프로세스 정의",
         "cardTitle" : "프로세스 정의 관리",
-        "processDefinitionExplanation" : "대화형으로 프로세스를 관리하십시오. \n 예를 들어, \n'영업관리 프로세스를 다음과 같이 등록해줘:\n 1. 영업기회등 고객명, 예상사업규모, 키맨, 요구사항\n 2. 제안 작성: 제안 내용, 가격\n 3. 수주 혹은 실주\n 4. 수주한 경우, 계약진행' 와 같은 명령을 할 수 있습니다."
+        "processDefinitionExplanation" : "대화형으로 프로세스를 관리하십시오. \n 예를 들어,\n '영업관리 프로세스를 다음과 같이 등록해줘:\n 1. 영업기회등 고객명, 예상사업규모, 키맨, 요구사항\n 2. 제안 작성: 제안 내용, 가격\n 3. 수주 혹은 실주\n 4. 수주한 경우, 계약진행' 와 같은 명령을 할 수 있습니다."
+    },
+    "processList" : {
+        "title" : "프로세스 목록"
     },
     "chat" : {
         "placeholder": "메시지 입력"
@@ -60,5 +70,25 @@
         "phone" : "전화번호",
         "address" : "주소",
         "save" : "저장"
+    },
+    "loginPage" : {
+        "title" : "Welcome to Process-GPT",
+        "google" : "구글 로그인",
+        "or" : "또는 다음 계정으로 로그인",
+        "userName" : "계정",
+        "password" : "암호",
+        "remeber" : "이 장치에 기억",
+        "login" : "로그인",
+        "create" : "계정 생성"
+    },
+    "createAccount" : {
+        "title" : "Welcome to Process-GPT",
+        "already" : "이미 계정이 있으신가요?",
+        "login" : "로그인",
+        "userName" : "계정",
+        "password" : "암호",
+        "email" : "이메일",
+        "google" : "구글 로그인",
+        "or" : "또는 다음 계정으로 로그인"
     }
 }

@@ -24,7 +24,14 @@
         "title" : "Instance"
     },
     "processExecution" : {
-        "title" : "Process Execution"
+        "title" : "Process Execution",
+        "cardTitle" : "Process Execution",
+        "processDefinitionExplanation" : "Execute the process interactively. For example, you can issue commands like: \n'I'd like to apply for a vacation:\n 1. Reason: Personal matter\n 2. Start date of leave: Today\n 3. Return date from leave: Friday'",
+        "search" : "Search",
+        "newChat" : "New Chat",
+        "recentChats" : "Recent Chats",
+        "sortByTime" : "Sort by Time",
+        "sortByCompleted" : "Sort by Completed"
     },
     "definitionManagement" : {
         "title" : "Definition Management"
@@ -36,9 +43,12 @@
         "title" : "Process Definition Map"
     },
     "processDefinition" : {
-        "title" : "프로세스 정의",
-        "cardTitle" : "프로세스 정의 관리",
-        "processDefinitionExplanation" : "대화형으로 프로세스를 관리하십시오. \n 예를 들어, '영업관리 프로세스를 다음과 같이 등록해줘: 1. 영업기회등 고객명, 예상사업규모, 키맨, 요구사항 2. 제안 작성: 제안 내용, 가격 3. 수주 혹은 실주 4. 수주한 경우, 계약진행' 와 같은 명령을 할 수 있습니다."
+        "title" : "Process Definition",
+        "cardTitle" : "Process Definition Management",
+        "processDefinitionExplanation" : "Manage the process interactively. For example, you can issue commands like: \n'Register the sales management process as follows:\n1. Register sales opportunities including customer name, estimated business size, key person, requirements\n2. Proposal preparation: proposal contents, pricing\n3. Winning or losing an order\n4. If the order is won, proceed with contract execution'"
+    },
+    "processList" : {
+        "title" : "Process List"
     },
     "chat" : {
         "placeholder": "Type a Message"
@@ -60,5 +70,25 @@
         "phone" : "Phone",
         "address" : "Address",
         "save" : "Save"
+    },
+    "loginPage" : {
+        "title" : "Welcome to Process-GPT",
+        "google" : "Sign in with Google",
+        "or" : "or sign in with",
+        "userName" : "Username",
+        "password" : "Password",
+        "remeber" : "Remeber this Device",
+        "login" : "Sign In",
+        "create" : "Create an account"
+    },
+    "createAccount" : {
+        "title" : "Welcome to Process-GPT",
+        "already" : "Already have an Account?",
+        "login" : "Sign In",
+        "userName" : "User Name",
+        "password" : "Password",
+        "email" : "Email",
+        "google" : "Sign in with Google",
+        "or" : "or sign in with"
     }
 }

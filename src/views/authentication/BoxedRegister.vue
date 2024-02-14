@@ -17,9 +17,9 @@ import RegisterForm from '@/components/auth/RegisterForm.vue';
                                 </div>
                                 <RegisterForm />
                                 <h6 class="text-subtitle-1  text-grey100 d-flex justify-center align-center mt-3">
-                                    Already have an Account?
+                                    {{ $t('createAccount.already') }}
                                     <v-btn variant="plain" to="/auth/login2"
-                                        class="text-primary text-body-1 opacity-1 pl-2">Sign In</v-btn>
+                                        class="text-primary text-body-1 opacity-1 pl-2">{{ $t('createAccount.login') }}</v-btn>
                                 </h6>
                             </v-card-item>
                         </v-card>
