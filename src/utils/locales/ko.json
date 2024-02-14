@@ -80,5 +80,15 @@
         "remeber" : "이 장치에 기억",
         "login" : "로그인",
         "create" : "계정 생성"
+    },
+    "createAccount" : {
+        "title" : "Welcome to Process-GPT",
+        "already" : "이미 계정이 있으신가요?",
+        "login" : "로그인",
+        "userName" : "계정",
+        "password" : "암호",
+        "email" : "이메일",
+        "google" : "구글 로그인",
+        "or" : "또는 다음 계정으로 로그인"
     }
 }

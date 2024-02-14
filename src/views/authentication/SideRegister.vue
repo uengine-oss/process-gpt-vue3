@@ -21,12 +21,11 @@ import RegisterForm from '@/components/auth/RegisterForm.vue';
             </v-col>
             <v-col cols="12" lg="5" xl="4" class="d-flex align-center justify-center bg-surface">
                 <div class="mt-xl-0 mt-5 mw-100" >
-                    <h2 class="text-h3 font-weight-semibold mb-2">Welcome to Process-GPT</h2>
-                    <div class="text-subtitle-1 mb-6">Your Admin Dashboard</div>
+                    <h2 class="text-h3 font-weight-semibold mb-4">{{ $t('createAccount.title') }}</h2>
                     <RegisterForm />
                     <h6 class="text-subtitle-1  text-grey100 d-flex align-center mt-6">
-                        Already have an Account?
-                        <v-btn variant="plain" to="/auth/login" class="text-primary text-body-1 opacity-1 pl-2">Sign In</v-btn>
+                        {{ $t('createAccount.already') }}
+                        <v-btn variant="plain" to="/auth/login" class="text-primary text-body-1 opacity-1 pl-2">{{ $t('createAccount.login') }}</v-btn>
                     </h6>
                 </div>
             </v-col>
