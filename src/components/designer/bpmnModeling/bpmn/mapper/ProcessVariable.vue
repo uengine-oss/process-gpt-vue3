@@ -36,8 +36,10 @@
                     <v-autocomplete v-model="processVariable.datasource.type" :items="datasources" color="primary"
                         variant="outlined" hide-details></v-autocomplete>
                 </v-col>
-                <v-text-field v-if="processVariable.datasource?.type == 'sql'"
-                    v-model="processVariable.datasource.sql"></v-text-field>
+                <v-textarea v-if="processVariable.datasource?.type == 'sql'"
+                    v-model="processVariable.datasource.sql"></v-textarea>
+                <v-btn style="margin-left: 5px;" color="primary" v-if="processVariable.datasource?.type == 'sql'" size="small" @click="generateSql()">generate</v-btn>
+                <v-btn style="margin-left: 5px;" color="success" v-if="processVariable.datasource?.type == 'sql'" size="small" @click="testSql()">test</v-btn>
             </v-row>
             <v-row>
                 <v-col cols="12" sm="9" offset-sm="3">
@@ -48,6 +50,7 @@
     </v-row>
 </template>
 <script>
+import axios from 'axios';
 export default {
     name: 'ProcessVariable',
     props: {
@@ -69,6 +72,33 @@ export default {
         }
     },
     methods: {
+        async generateSql() {
+            try {
+                const response = await axios.post('http://localhost:8001/process-var-sql/invoke', {
+                    input: {
+                        var_name: this.processVariable.name,
+                        resolution_rule: this.processVariable.description
+                    }
+                });
+                this.processVariable.datasource.sql = response.data.output;
+            } catch (error) {
+                console.error('Error generating SQL:', error);
+            }
+        },
+        async testSql() {
+            try {
+                const response = await axios.post('http://localhost:8001/execute-sql', {
+                    sql_query: this.processVariable.datasource.sql
+                });
+                console.log('SQL Test Response:', response.data);
+                alert("Success to SQL Test")
+                // this.$emit('sqlTestSuccess', response.data);
+            } catch (error) {
+                alert("Failed to SQL Test")
+                console.error('Error testing SQL:', error);
+                // this.$emit('sqlTestError', error);
+            }
+        },
         addVariable() {
             this.$emit("addVariables", this.processVariable)
             this.$emit("updateVariables", this.processVariable)
