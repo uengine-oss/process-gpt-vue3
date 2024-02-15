@@ -80,5 +80,15 @@
         "remeber" : "Remeber this Device",
         "login" : "Sign In",
         "create" : "Create an account"
+    },
+    "createAccount" : {
+        "title" : "Welcome to Process-GPT",
+        "already" : "Already have an Account?",
+        "login" : "Sign In",
+        "userName" : "User Name",
+        "password" : "Password",
+        "email" : "Email",
+        "google" : "Sign in with Google",
+        "or" : "or sign in with"
     }
 }
