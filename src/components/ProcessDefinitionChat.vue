@@ -147,18 +147,18 @@ export default {
                         unknown.modifications.forEach((modification) => {
                             if (modification.action == 'replace') {
                                 this.jsonPathReplace(this.processDefinition, modification.targetJsonPath, modification.value);
-                                this.model = this.createBpmnXml(this.processDefinition);
+                                this.bpmn = this.createBpmnXml(this.processDefinition);
                             } else if (modification.action == 'add') {
                                 this.jsonPathAdd(this.processDefinition, modification.targetJsonPath, modification.value);
-                                this.model = this.createBpmnXml(this.processDefinition);
+                                this.bpmn = this.createBpmnXml(this.processDefinition);
                             } else if (modification.action == 'delete') {
                                 this.jsonPathDelete(this.processDefinition, modification.targetJsonPath);
-                                this.model = this.createBpmnXml(this.processDefinition);
+                                this.bpmn = this.createBpmnXml(this.processDefinition);
                             }
                         });
                     } else if (unknown.processDefinitionId) {
                         this.processDefinition = unknown;
-                        this.model = this.createBpmnXml(this.processDefinition);
+                        this.bpmn = this.createBpmnXml(this.processDefinition);
                     }
                     this.definitionChangeCount++;
                 }
@@ -555,6 +555,8 @@ export default {
             bpmnPlane.setAttribute('bpmnElement', 'Collaboration_1');
             bpmnDiagram.appendChild(bpmnPlane);
             let rolePos = {}
+            let activityPos = {};
+
             // Lane 및 Activity에 대한 시각적 표현 추가
             if (jsonModel.roles)
                 jsonModel.roles.forEach((role, roleIndex) => {
@@ -579,7 +581,6 @@ export default {
             if (jsonModel.activities) {
                 const firstActivity = jsonModel.activities[0];
                 const lastActivity = jsonModel.activities[jsonModel.activities.length - 1];
-                let activityPos = {};
                 jsonModel.activities.forEach((activity, activityIndex) => {
                     if (!activity.role) {
                         return false;
@@ -680,8 +681,11 @@ export default {
                 });
             }
 
-            if (jsonModel.sequences && activityPos)
+            if (jsonModel.sequences)
                 jsonModel.sequences.forEach(sequence => {
+                    if (!activityPos[sequence.source] || !activityPos[sequence.target]) {
+                        return false;
+                    }
                     const bpmnEdge = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNEdge');
                     bpmnEdge.setAttribute('id', `BPMNEdge_${sequence.source}_${sequence.target}`);
                     bpmnEdge.setAttribute('bpmnElement', 'SequenceFlow_' + sequence.source + '_' + sequence.target);
