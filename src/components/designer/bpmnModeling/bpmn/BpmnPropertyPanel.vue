@@ -24,6 +24,7 @@ export default {
     },
     methods: {
         onClickOutside() {
+            this.$emit('updateElement', this.copyElement)
             this.$emit('close');
         }
     }
