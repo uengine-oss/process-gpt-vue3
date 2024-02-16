@@ -3,8 +3,15 @@
         <v-row style="height: 100%" class="ma-0">
             <v-col class="d-flex ma-0 pa-0">
                 <v-card elevation="1" style="border-radius: 0px !important;">
-                    <v-btn @click="openProcessVariables" variant="text">Process
-                        Variables</v-btn>
+                    <v-tooltip text="Process Variables">
+                        <template v-slot:activator="{ props }">
+                            <v-btn @click="openProcessVariables" variant="icon" v-bind="props"
+                                style="margin:10px 0px 0px 7px;"
+                            >
+                                <Icon icon="codicon:server-process" width="40" height="40" />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
                     <vue-bpmn :bpmn="bpmn" :options="options" v-on:error="handleError" v-on:shown="handleShown"
                         v-on:loading="handleLoading" v-on:openPanel="(id) => openPanel(id)"
                         v-on:definition="(def) => (definitions = def)"></vue-bpmn>
@@ -20,7 +27,8 @@
         </v-row>
         <v-dialog v-model="isViewProcessVariables" max-width="1000">
             <v-card>
-                <v-card-text style="height: 1000px; width: 1000px">
+                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">Edit Process Data</v-card-title>
+                <v-card-text style="height: 1000px; width: 1000px;">
                     <v-data-table items-per-page="5" class="border rounded-md">
                         <thead>
                             <tr>
@@ -65,15 +73,24 @@
                             </tr>
                         </tbody>
                     </v-data-table>
-                    <v-btn right @click="addProcessVaribles" variant="text">ADD PV</v-btn>
+                    <v-row class="ma-0" style="margin:10px 0px 10px 0px !important;">
+                        <v-card @click="addProcessVaribles"
+                            elevation="9"
+                            variant="outlined"
+                            style="padding: 10px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;"
+                        >
+                            <div style="display: flex; justify-content: center; align-items: center;">
+                                <Icon icon="streamline:add-1-solid" width="24" height="24" style="color: #5EB2E8" />
+                            </div>
+                        </v-card>
+                    </v-row>
                     <div v-if="processVariblesWindow">
-                        <v-card elevation="8">
-                            <v-card-text>
-                                <process-variable
+                        <v-card variant="outlined">
+                            <v-card-text class="ma-0 pa-0">
+                                <process-variable mode="add"
                                     @add-variables="val => copyProcessDefinition.data.push(val)"></process-variable>
                             </v-card-text>
                         </v-card>
-
                     </div>
                 </v-card-text>
                 <v-card-actions>
@@ -83,10 +100,8 @@
             </v-card>
             <v-dialog v-model="editDialog" max-width="500">
                 <v-card>
-                    <v-card-title class="px-4 pt-6 justify-space-between d-flex align-center">
-                    </v-card-title>
                     <v-card-text class="px-4">
-                        <process-variable :variable="editedItem"
+                        <process-variable :variable="editedItem" mode="edit"
                             @update-variables="val => updateVariable(val)"></process-variable>
                     </v-card-text>
                 </v-card>
@@ -104,6 +119,8 @@ import { VDataTable } from 'vuetify/labs/VDataTable'
 import VueBpmn from './Bpmn.vue';
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/BpmnPropertyPanel.vue';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
+import { Icon } from '@iconify/vue';
+
 
 export default {
     name: 'ProcessDefinition',
@@ -111,7 +128,8 @@ export default {
         VueBpmn,
         BpmnPropertyPanel,
         VDataTable,
-        ProcessVariable
+        ProcessVariable,
+        Icon
     },
     props: {
         processDefinition: Object,
