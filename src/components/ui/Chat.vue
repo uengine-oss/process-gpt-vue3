@@ -98,9 +98,6 @@
                                             max-height="48" max-width="48" />
                                         <v-img v-else :src="userInfo.profile" :alt="message.name" height="48" width="48" />
                                     </v-avatar>
-
-                                    <v-progress-circular v-if="message.isLoading" indeterminate color="grey"
-                                        class="mt-5"></v-progress-circular>
                                 </div>
 
                                 <div class="w-90">
@@ -113,33 +110,56 @@
                                         <img :src="message.content" class="rounded-md" alt="pro" width="250" />
                                     </v-sheet>
 
-                                    <v-sheet v-else class="bg-lightsecondary rounded-md px-3 py-2 mb-1"
-                                        @mouseover="replyIndex = index" @mouseleave="replyIndex = -1">
-                                        <pre class="text-body-1"
-                                            v-if="message.replyUserName">{{ message.replyUserName }}</pre>
-                                        <pre class="text-body-1"
-                                            v-if="message.replyContent">{{ message.replyContent }}</pre>
-                                        <v-divider v-if="message.replyContent"></v-divider>
+                                    <div class="progress-border" :class="{ animate: borderCompletedAnimated }">
+                                        <template v-if="message.role == 'system' && filteredMessages.length - 1 == index">
+                                            <span class="progress-border-span"></span>
+                                            <span class="progress-border-span"></span>
+                                            <span class="progress-border-span"></span>
+                                            <span class="progress-border-span"></span>
+                                        </template>
+                                        <v-sheet
+                                            class="bg-lightsecondary rounded-md px-3 py-2 mb-1"
+                                            @mouseover="replyIndex = index"
+                                            @mouseleave="replyIndex = -1"
+                                        >
+                                            <pre class="text-body-1"
+                                                v-if="message.replyUserName"
+                                            >{{ message.replyUserName }}
+                                            </pre>
+                                            <pre class="text-body-1"
+                                                v-if="message.replyContent"
+                                            >{{ message.replyContent }}
+                                            </pre>
+                                            <v-divider v-if="message.replyContent"></v-divider>
 
-                                        <pre class="text-body-1">{{ message.content }}</pre>
+                                            <pre class="text-body-1">{{ message.content }}</pre>
 
-                                        <p style="margin-top: 5px" v-if="message.role == 'system' &&
-                                            index == filteredMessages.length - 1 &&
-                                            message['prompt'] &&
-                                            userInfo.email == message['prompt'].requestUserEmail
-                                            ">
-                                            <v-btn style="margin-right: 5px" size="small"
-                                                @click="processInstance(message)">y</v-btn>
-                                            <v-btn size="small">n</v-btn>
-                                        </p>
-                                        <v-btn v-if="replyIndex === index" @click="beforeReply(message)" icon="mdi-reply"
-                                            variant="text" size="x-small" class="bg-lightsecondary float-right"></v-btn>
+                                            <p style="margin-top: 5px" v-if="message.role == 'system' &&
+                                                index == filteredMessages.length - 1 &&
+                                                message['prompt'] &&
+                                                userInfo.email == message['prompt'].requestUserEmail
+                                                ">
+                                                <v-btn style="margin-right: 5px" size="small"
+                                                    @click="processInstance(message)">y</v-btn>
+                                                <v-btn size="small">n</v-btn>
+                                            </p>
+                                            <div style="position: relative;">
+                                                <v-btn v-if="replyIndex === index" @click="beforeReply(message)" icon="mdi-reply"
+                                                variant="text" size="x-small" style="position: absolute;right:0px; bottom:-5px; background-color:white;"></v-btn>
+                                            </div>
 
-                                        <v-btn v-if="message.jsonContent" class="mt-2" elevation="0"
-                                            @click="viewJSON(index)">View JSON</v-btn>
-                                        <pre v-if="isViewJSON.includes(index)"
-                                            class="text-body-1">{{ message.jsonContent }}</pre>
-                                    </v-sheet>
+                                            <v-btn v-if="message.jsonContent" class="mt-2" elevation="0"
+                                                @click="viewJSON(index)">View JSON</v-btn>
+                                            <pre v-if="isViewJSON.includes(index)"
+                                                class="text-body-1">{{ message.jsonContent }}</pre>
+                                        </v-sheet>
+
+                                        <v-progress-linear
+                                            v-if="message.role == 'system' && filteredMessages.length - 1 == index"
+                                            v-model="value"
+                                            :buffer-value="bufferValue"
+                                        ></v-progress-linear>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -196,11 +216,15 @@
 
 <script>
 import { Icon } from '@iconify/vue';
+import ProgressAnimated from '@/components/ui/ProgressAnimated.vue';
 
 export default {
     components: {
         Icon
     },
+    mixins: [
+        ProgressAnimated
+    ],
     props: {
         name: String,
         messages: Array,
@@ -219,9 +243,36 @@ export default {
             replyIndex: -1,
             replyUser: null,
             isViewDetail: false,
-            isViewJSON: []
+            isViewJSON: [],
+            value: 10,
+            bufferValue: 20,
+            interval: 0,
         };
     },
+    watch: {
+        value (val) {
+            if (val < 100) return
+
+            this.value = 0
+            this.bufferValue = 10
+            this.startBuffer()
+        },
+        // isLoading 상태의 변화를 감시합니다.
+        isLoading(newVal) {
+            if (!newVal) {
+                // isLoading이 false로 변경되면 animateBorder 메소드를 호출합니다.
+                this.animateBorder();
+            }
+        },
+    },
+    mounted () {
+      this.startBuffer()
+    },
+
+    beforeUnmount () {
+      clearInterval(this.interval)
+    },
+
     computed: {
         filteredAlert() {
             const textObj = {
@@ -265,6 +316,14 @@ export default {
         },
     },
     methods: {
+        startBuffer () {
+        clearInterval(this.interval)
+
+        this.interval = setInterval(() => {
+          this.value += Math.random() * (15 - 5) + 5
+          this.bufferValue += Math.random() * (15 - 5) + 6
+        }, 2000)
+      },
         viewProcess() {
             this.$emit('viewProcess');
         },
@@ -328,6 +387,13 @@ export default {
 </script>
 
 <style lang="scss">
+.chat-reply-icon {
+    position:absolute;
+    bottom:-5px;
+    right:0px;
+    z-index:1;
+    background-color:white;
+}
 .w-90 {
     width: 90% !important;
 }

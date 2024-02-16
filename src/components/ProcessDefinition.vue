@@ -65,7 +65,17 @@
                             </tr>
                         </tbody>
                     </v-data-table>
-                    <v-btn right @click="addProcessVaribles" variant="text">ADD PV</v-btn>
+                    <v-row class="ma-0" style="margin:10px 0px 10px 0px !important;">
+                        <v-card @click="addProcessVaribles"
+                            elevation="9"
+                            variant="outlined"
+                            style="padding: 10px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;"
+                        >
+                            <div style="display: flex; justify-content: center; align-items: center;">
+                                <Icon icon="streamline:add-1-solid" width="24" height="24" style="color: #5EB2E8" />
+                            </div>
+                        </v-card>
+                    </v-row>
                     <div v-if="processVariblesWindow">
                         <v-card elevation="8">
                             <v-card-text>
@@ -104,6 +114,8 @@ import { VDataTable } from 'vuetify/labs/VDataTable'
 import VueBpmn from './Bpmn.vue';
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/BpmnPropertyPanel.vue';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
+import { Icon } from '@iconify/vue';
+
 
 export default {
     name: 'ProcessDefinition',
@@ -111,7 +123,8 @@ export default {
         VueBpmn,
         BpmnPropertyPanel,
         VDataTable,
-        ProcessVariable
+        ProcessVariable,
+        Icon
     },
     props: {
         processDefinition: Object,

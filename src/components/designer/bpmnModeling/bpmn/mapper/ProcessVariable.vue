@@ -1,6 +1,6 @@
 <template>
-    <v-row>
-        <v-col cols="12" md="6">
+    <v-row class="ma-0">
+        <v-col cols="12">
             <v-row class="align-center mb-3">
                 <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
                     <v-label class=" font-weight-medium" for="hbnm">Name</v-label>
@@ -39,10 +39,9 @@
                 <v-text-field v-if="processVariable.datasource?.type == 'sql'"
                     v-model="processVariable.datasource.sql"></v-text-field>
             </v-row>
-            <v-row>
-                <v-col cols="12" sm="9" offset-sm="3">
-                    <v-btn color="primary" rounded="pill" @click="addVariable">Add</v-btn>
-                </v-col>
+            <v-row class="ma-0">
+                <v-spacer></v-spacer>
+                <v-btn color="primary" rounded="pill" @click="addVariable">Add</v-btn>
             </v-row>
         </v-col>
     </v-row>
