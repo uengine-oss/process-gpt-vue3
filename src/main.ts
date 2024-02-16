@@ -24,6 +24,9 @@ import { createI18n } from 'vue-i18n';
 import messages from '@/utils/locales/messages';
 import setLocale from './plugins/setLocale';
 
+// icon
+import { Icon } from '@iconify/vue';
+
 //ScrollTop
 import VueScrollTo from 'vue-scrollto';
 const i18n = createI18n({
@@ -60,6 +63,7 @@ app.use(PerfectScrollbar);
 app.use(createPinia());
 app.use(VCalendar, {});
 app.use(VueTablerIcons);
+app.component('Icon', Icon)
 // app.use(print);
 app.use(VueRecaptcha, {
     siteKey: '6LdzqbcaAAAAALrGEZWQHIHUhzJZc8O-KSTdTTh_',

@@ -39,7 +39,7 @@
                 <v-divider/>
             </div>
 
-            <perfect-scrollbar class="rightpartHeight h-100">
+            <perfect-scrollbar class="rightpartHeight h-100" ref="scrollContainer" @scroll="handleScroll">
                 <v-btn v-if="type == 'chats' && filteredMessages.length > 0" style="position: absolute; left: 45%"
                     @click="getMoreChat()">get more chat</v-btn>
 
@@ -118,7 +118,7 @@
                                             <span class="progress-border-span"></span>
                                         </template>
                                         <v-sheet
-                                            class="bg-lightsecondary rounded-md px-3 py-2 mb-1"
+                                            class="bg-lightsecondary rounded-md px-3 py-2"
                                             @mouseover="replyIndex = index"
                                             @mouseleave="replyIndex = -1"
                                         >
@@ -155,9 +155,10 @@
                                         </v-sheet>
 
                                         <v-progress-linear
-                                            v-if="message.role == 'system' && filteredMessages.length - 1 == index"
+                                            v-if="message.role == 'system' && filteredMessages.length - 1 == index && isLoading"
                                             v-model="value"
                                             :buffer-value="bufferValue"
+                                            class="my-progress-linear"
                                         ></v-progress-linear>
                                     </div>
                                 </div>
@@ -215,15 +216,15 @@
 </template>
 
 <script>
-import { Icon } from '@iconify/vue';
 import ProgressAnimated from '@/components/ui/ProgressAnimated.vue';
+import ScrollBottomHandle from '@/components/ui/ScrollBottomHandle.vue';
 
 export default {
     components: {
-        Icon
     },
     mixins: [
-        ProgressAnimated
+        ProgressAnimated,
+        ScrollBottomHandle
     ],
     props: {
         name: String,
@@ -317,13 +318,13 @@ export default {
     },
     methods: {
         startBuffer () {
-        clearInterval(this.interval)
+            clearInterval(this.interval)
 
-        this.interval = setInterval(() => {
-          this.value += Math.random() * (15 - 5) + 5
-          this.bufferValue += Math.random() * (15 - 5) + 6
-        }, 2000)
-      },
+            this.interval = setInterval(() => {
+            this.value += Math.random() * (15 - 5) + 5
+            this.bufferValue += Math.random() * (15 - 5) + 6
+            }, 200)
+        },
         viewProcess() {
             this.$emit('viewProcess');
         },
@@ -387,6 +388,9 @@ export default {
 </script>
 
 <style lang="scss">
+.my-progress-linear .v-progress-linear__determinate {
+    background: linear-gradient(to right, #E1F5FE, #80DEEA, #1565C0) !important;
+}
 .chat-reply-icon {
     position:absolute;
     bottom:-5px;
