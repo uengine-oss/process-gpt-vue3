@@ -2,7 +2,6 @@
 import jp from 'jsonpath';
 import partialParse from 'partial-json-parser';
 
-import axios from '@/utils/axios';
 import StorageBase from '@/utils/StorageBase';
 
 export default {
@@ -150,11 +149,12 @@ export default {
 
                 if (this.messages && this.messages.length > 0) {
                     this.messages.forEach((msg) => {
-                        if (msg.content)
+                        if (msg.content) {
                             chatMsgs.push({
                                 role: msg.role,
                                 content: msg.content
                             });
+                        }
                     });
                 }
 
@@ -162,40 +162,22 @@ export default {
                     role: 'user',
                     content: message
                 };
+                
                 chatMsgs.push(chatObj);
-
-                chatObj = this.createMessageObj(message);
-
-                this.messages.push(chatObj);
-
                 this.generator.previousMessages = [...this.generator.previousMessages, ...chatMsgs];
 
-                await this.generator.generate();
-
+                chatObj = this.createMessageObj(message);
+                this.messages.push(chatObj);
                 this.messages.push({
                     role: 'system',
                     content: '...',
                     isLoading: true
                 });
 
+                await this.generator.generate();
+
                 this.replyUser = null;
             }
-        },
-
-        async sendMessage(url, req) {
-            await axios.post(url, req).then(async res => {
-                if (res.data) {
-                    const data = res.data;
-                    if (data.output) {
-                        this.onGenerationFinished(data.output)
-                    }
-                }
-            })
-            .catch(error => {
-                console.log(error);
-            });
-
-            this.replyUser = null;
         },
 
         stopMessage() {
@@ -377,11 +359,11 @@ export default {
                 let messageWriting = this.messages[this.messages.length - 1];
                 if (messageWriting.role == 'system' && messageWriting.isLoading) {
                     delete messageWriting.isLoading;
-                    messageWriting.content = error.message;
+                    messageWriting.content = error;
                 } else {
                     this.messages.push({
                         role: 'system',
-                        content: error.message
+                        content: error
                     });
                 }
             }

@@ -126,7 +126,6 @@
 <script>
 import partialParse from 'partial-json-parser';
 import { VectorStorage } from 'vector-storage';
-import { VDataTable } from 'vuetify/labs/VDataTable'
 import VueBpmn from './Bpmn.vue';
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/BpmnPropertyPanel.vue';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
@@ -138,7 +137,6 @@ export default {
     components: {
         VueBpmn,
         BpmnPropertyPanel,
-        VDataTable,
         ProcessVariable,
         Icon
     },
