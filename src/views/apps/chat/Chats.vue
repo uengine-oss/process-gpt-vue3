@@ -137,6 +137,9 @@ export default {
                 let obj = this.createMessageObj(response, 'system')
                 if(response && response.includes("{")){
                     let responseObj = partialParse(response)
+                    if(responseObj.work == 'query'){
+                        /// ...
+                    }else
                     if(responseObj.work == 'ScheduleRegistration'){
                         let start = responseObj.startDateTime.split('/')
                         let startDate = start[0].split("-")
