@@ -91,21 +91,20 @@
                                 </div>
                             </div>
 
-                            <div v-else class="d-flex align-items-start gap-3 mb-1 w-90">
-                                <div style="max-width: 40px;">
-                                    <v-avatar>
+                            <div v-else class="align-items-start gap-3 mb-1 w-100">
+                                <v-row class="ma-0 pa-0" style="margin-bottom:10px !important;">
+                                    <v-avatar style="margin-right:10px;">
                                         <img v-if="message.role == 'system'" src="@/assets/images/chat/chat-icon.png"
                                             max-height="48" max-width="48" />
                                         <v-img v-else :src="userInfo.profile" :alt="message.name" height="48" width="48" />
                                     </v-avatar>
-                                </div>
-
-                                <div class="w-90">
-                                    <small class="text-medium-emphasis text-subtitle-2" v-if="message.timeStamp">
+                                    <div v-if="message.timeStamp" style="font-size:12px; padding-top:20px;">
                                         {{ message.role == 'system' ? 'System,' : message.name + ',' }}
                                         {{ formatTime(message.timeStamp) }}
-                                    </small>
+                                    </div>
+                                </v-row>
 
+                                <div class="w-100 pb-5">
                                     <v-sheet v-if="message.type == 'img'" class="mb-1">
                                         <img :src="message.content" class="rounded-md" alt="pro" width="250" />
                                     </v-sheet>
