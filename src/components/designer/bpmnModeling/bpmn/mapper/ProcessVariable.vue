@@ -40,8 +40,8 @@
                     <v-textarea v-if="processVariable.datasource?.type == 'sql'"
                         v-model="processVariable.datasource.sql"
                     ></v-textarea>
-                    <v-btn color="primary"  rounded="pill" v-if="processVariable.datasource?.type == 'sql'" size="small" @click="generateSql()">generate</v-btn>
-                    <v-btn style="margin-left: 5px;" color="success"  rounded="pill" v-if="processVariable.datasource?.type == 'sql'" size="small" @click="testSql()">test</v-btn>
+                    <v-btn v-if="processVariable.datasource?.type == 'sql'" variant="outlined" color="primary" rounded="pill"  size="small" @click="generateSql()">generate</v-btn>
+                    <v-btn style="margin-left: 5px;" color="success" variant="outlined" rounded="pill" v-if="processVariable.datasource?.type == 'sql'" size="small" @click="testSql()">test</v-btn>
                 </v-col>
             </v-row>
             <v-row class="ma-0 mt-2">

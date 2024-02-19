@@ -8,7 +8,7 @@
                             <v-btn @click="openProcessVariables" variant="icon" v-bind="props"
                                 style="margin:10px 0px 0px 7px;"
                             >
-                                <Icon icon="codicon:server-process" width="40" height="40" />
+                                <Icon icon="tabler:variable" width="36" height="36" />
                             </v-btn>
                         </template>
                     </v-tooltip>
@@ -88,7 +88,17 @@
                         <v-card variant="outlined">
                             <v-card-text class="ma-0 pa-0">
                                 <process-variable mode="add"
-                                    @add-variables="val => copyProcessDefinition.data.push(val)"></process-variable>
+                                    @add-variables="val => copyProcessDefinition.data.push(val)"
+                                ></process-variable>
+                            </v-card-text>
+                        </v-card>
+                    </div>
+                    <div v-if="editDialog">
+                        <v-card variant="outlined">
+                            <v-card-text class="ma-0 pa-0">
+                                <process-variable :key="editComponentKey" :variable="editedItem" mode="edit"
+                                    @update-variables="val => updateVariable(val)"
+                                ></process-variable>
                             </v-card-text>
                         </v-card>
                     </div>
@@ -98,15 +108,16 @@
                         variant="tonal">Close Dialog</v-btn>
                 </v-card-actions>
             </v-card>
-            <v-dialog v-model="editDialog" max-width="500">
-                <v-card>
-                    <v-card-text class="px-4">
-                        <process-variable :variable="editedItem" mode="edit"
-                            @update-variables="val => updateVariable(val)"></process-variable>
-                    </v-card-text>
-                </v-card>
-            </v-dialog>
         </v-dialog>
+
+        <!-- <v-dialog v-model="editDialog" max-width="1000">
+            <v-card>
+                <v-card-text class="px-4">
+                    <process-variable :variable="editedItem" mode="edit"
+                        @update-variables="val => updateVariable(val)"></process-variable>
+                </v-card-text>
+            </v-card>
+        </v-dialog> -->
 
         <!-- <v-navigation-drawer permanent location="right" :width="400"> {{ panelId }} </v-navigation-drawer> -->
     </div>
@@ -152,7 +163,9 @@ export default {
         processVariblesWindow: false,
         editDialog: false,
         editedIndex: null,
-        editedItem: null
+        editedItem: null,
+        lastEditedIndex: 0,
+        editComponentKey: 0,
     }),
     computed() {
     },
@@ -172,7 +185,18 @@ export default {
         editItem(item) {
             this.editedIndex = this.copyProcessDefinition.data.indexOf(item);
             this.editedItem = Object.assign({}, item);
-            this.editDialog = true;
+            
+            if(this.processVariblesWindow == true) {
+                this.processVariblesWindow = false;
+            }
+            this.editComponentKey ^= 1; // ProcessVariable 컴포넌트 새로고침용 변수
+
+            if(this.lastEditedIndex == this.editedIndex) {
+                this.editDialog = !this.editDialog
+            } else {
+                this.editDialog = true
+            }
+            this.lastEditedIndex = this.editedIndex
         },
         deleteItem(item) {
             const index = this.copyProcessDefinition.data.indexOf(item);
@@ -202,6 +226,9 @@ export default {
             this.isViewProcessVariables = !this.isViewProcessVariables
         },
         addProcessVaribles() {
+            if(this.editDialog == true) {
+                this.editDialog = false
+            }
             this.processVariblesWindow = !this.processVariblesWindow
         },
         updateElement(element) {

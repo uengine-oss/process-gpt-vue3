@@ -84,7 +84,7 @@ import { HelpIcon, ChevronDownIcon } from 'vue-tabler-icons';
         </v-sheet>
     </v-menu> -->
     <v-btn variant="text" color="primary" class="custom-hover-primary nav-links" :ripple="false" href="" disabled target="_blank">{{ $t('mainPage.pricing') }}</v-btn>
-    <v-btn variant="text" color="primary" class="custom-hover-primary nav-links" :ripple="false" href="" to="/instances/chat" target="_blank">{{ $t('mainPage.documentation') }}</v-btn>
-    <v-btn variant="text" color="primary" class="custom-hover-primary nav-links" :ripple="false" href="https://uengine.org/" target="_blank">{{ $t('mainPage.support') }}</v-btn>
+    <v-btn variant="text" color="primary" class="custom-hover-primary nav-links" :ripple="false" href="" disabled target="_blank">{{ $t('mainPage.documentation') }}</v-btn>
+    <v-btn variant="text" color="primary" class="custom-hover-primary nav-links" :ripple="false" href="https://www.uengine.org/" target="_blank">{{ $t('mainPage.support') }}</v-btn>
     
 </template>
