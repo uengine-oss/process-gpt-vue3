@@ -62,7 +62,7 @@
                 :disableChat="disableChat"
                 :type="path"
                 @sendMessage="beforeSendMessage"
-                @sendEditedMessage="sendEditedMessage"
+                @sendEditedMessage="beforeSendEditedMessage"
                 @stopMessage="stopMessage"
                 @getMoreChat="getMoreChat"
                 @viewProcess="viewProcess"
@@ -240,11 +240,17 @@ export default {
                 this.sendMessage(this.generator.input.answer);
             }
         },
+        beforeSendEditedMessage(index) {
+            if (index > 0) {
+                this.generator.beforeGenerate(this.messages[index-1].content, false);
+                this.sendEditedMessage(index);
+            }
+        },
         afterModelCreated(response) {
         },
         async afterGenerationFinished(response) {
             let messageWriting = this.messages[this.messages.length - 1];
-            messageWriting.content = response;
+            messageWriting.jsonContent = response;
             
             const jsonData = JSON.parse(response);
             if (jsonData) {
@@ -255,13 +261,6 @@ export default {
                     this.$router.replace(`chat?id=${jsonData.instanceId}`);
                 }
             }
-            // if (this.processInstance) {
-            //     if (typeof this.processInstance === 'string') {
-            //         this.processInstance = partialParse(this.processInstance);
-            //     }
-            //     await this.saveInstance();
-            //     await this.saveTodolist();
-            // }
         },
         afterModelStopped(response) {
             let path = '';

@@ -198,15 +198,14 @@ export default {
                     });
                 }
 
-                this.generator.previousMessages = [...this.generator.previousMessages, ...chatMsgs];
-
-                await this.generator.generate();
-
                 this.messages.push({
                     role: 'system',
                     content: '...',
                     isLoading: true
                 });
+
+                this.generator.previousMessages = [...this.generator.previousMessages, ...chatMsgs];
+                await this.generator.generate();
             }
         },
 

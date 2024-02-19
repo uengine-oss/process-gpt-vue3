@@ -301,7 +301,7 @@ export default {
             var list = [];
             this.messages.forEach((item) => {
                 let data = JSON.parse(JSON.stringify(item));
-                if (data.content) {
+                if (data.content || data.jsonContent) {
                     list.push(data);
                 }
             });
