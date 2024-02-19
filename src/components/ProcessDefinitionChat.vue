@@ -38,7 +38,7 @@ import ChatDetail from '@/components/apps/chats/ChatDetail.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
-import { ref } from 'vue';
+
 
 export default {
     mixins: [ChatModule],

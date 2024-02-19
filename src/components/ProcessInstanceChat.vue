@@ -10,25 +10,22 @@
             <v-dialog v-model="isViewProcess" max-width="1000">
                 <v-card>
                     <v-card-text style="height: 1000px; width: 1000px">
-                        <bpmn-modeling-canvas
-                            v-if="onLoad"
-                            :monitor="true"
-                            :readOnly="false"
-                            :projectName="projectName"
-                            v-model="model"
-                            :movable="false"
-                            :resizable="false"
-                            :connectable="false"
-                            :selectable="true"
-                        ></bpmn-modeling-canvas>
+                        <process-definition 
+                            v-if="onLoad"    
+                            style="width: 100%; height: 100%" 
+                            :bpmn="bpmn" 
+                            :processDefinition="processDefinition"
+                        ></process-definition>
                         <div v-else style="height: 100%; text-align: center">
                             <v-progress-circular style="top: 50%" indeterminate color="primary"></v-progress-circular>
                         </div>
                     </v-card-text>
                     <v-card-actions>
-                        <v-btn color="secondary" class="px-4 rounded-pill mx-auto" @click="isViewProcess = false" variant="tonal"
-                            >Close Dialog</v-btn
-                        >
+                        <v-btn color="secondary"
+                            class="px-4 rounded-pill mx-auto" 
+                            @click="isViewProcess = false" 
+                            variant="tonal"
+                        >Close Dialog</v-btn>
                     </v-card-actions>
                 </v-card>
             </v-dialog>
@@ -65,7 +62,7 @@
                 :disableChat="disableChat"
                 :type="path"
                 @sendMessage="beforeSendMessage"
-                @sendEditedMessage="sendEditedMessage"
+                @sendEditedMessage="beforeSendEditedMessage"
                 @stopMessage="stopMessage"
                 @getMoreChat="getMoreChat"
                 @viewProcess="viewProcess"
@@ -81,7 +78,6 @@
 <script>
 import partialParse from 'partial-json-parser';
 import { VectorStorage } from 'vector-storage';
-import axios from '@/utils/axios';
 
 import ChatGenerator from './ai/ProcessInstanceGenerator.js';
 import ChatModule from '@/components/ChatModule.vue';
@@ -90,7 +86,7 @@ import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 
 import Chat from "@/components/ui/Chat.vue";
 import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
-import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
+import ProcessDefinition from '@/components/ProcessDefinition.vue';
 
 export default {
     mixins: [ChatModule],
@@ -98,7 +94,7 @@ export default {
         AppBaseCard,
         Chat,
         ProcessInstanceList,
-        BpmnModelingCanvas,
+        ProcessDefinition,
     },
     data: () => ({
         headers: [
@@ -159,26 +155,26 @@ export default {
             this.onLoad = false;
             let definitionInfo = null;
             let instanceId = "";
-            if (this.$route.params && this.$route.params.id) {
-                instanceId = this.$route.params.id;
+            if (this.$route.query.id) {
+                instanceId = this.$route.query.id;
                 this.isViewProcess = !this.isViewProcess;
-            } else if (this.processInstance && this.processInstance.processInstanceId) {
-                instanceId = this.processInstance.processInstanceId;
+            } else if (this.processInstance && this.processInstance.proc_inst_id) {
+                instanceId = this.processInstance.proc_inst_id;
                 this.isViewProcess = !this.isViewProcess;
             } else {
                 alert("실행 중인 프로세스 인스턴스를 선택하세요.");
                 return;
             }
-            const instanceInfo = await this.getData(`instances/${instanceId}`);
+            var definitionId = instanceId.split('.')[0];
+            const instanceInfo = await this.getData(`${definitionId}/${instanceId}`, {key: "proc_inst_id"});
             if (instanceInfo) {
-                definitionInfo = await this.getData(`definitions/${instanceInfo.definitionId}`);
+                definitionInfo = await this.getData(`definitions/${definitionId}`, {key: "id"});
             }
             if (definitionInfo) {
                 let definition = partialParse(definitionInfo.model);
                 definition.activities.forEach(function (activity) {
                     if (activity.id == instanceInfo.nextActivityId) activity.status = 'Running';
                 });
-                this.model = this.createUEngine(definition);
                 this.onLoad = true;
             }
         },
@@ -221,56 +217,41 @@ export default {
         },
         async beforeSendMessage(newMessage) {
             if (newMessage) {
-                var chatObj = this.createMessageObj(newMessage);
-                this.messages.push(chatObj);
-            }
+                if (this.processInstance && this.processInstance.proc_inst_id) {
+                    this.generator.beforeGenerate(newMessage, false);
 
-            var url = '/complete/invoke';
-            if (this.processInstance && this.processInstance.proc_inst_id) {
-                this.definitionDialog = false;
+                    this.sendMessage(newMessage);
+                } else {
+                    this.generator.beforeGenerate(newMessage, true);
 
-                var def_id = this.processInstance.proc_inst_id.split('.')[0];
-                var inputData = {
-                    input: {
-                        answer: newMessage,
-                        activity_id: this.processInstance.current_activity_ids[0],
-                        process_instance_id: this.processInstance.proc_inst_id,
-                        process_definition_id: def_id
-                    }
+                    var procDefs = await this.queryFromVectorDB(newMessage);
+                    procDefs = procDefs.map(item => JSON.parse(item));
+                    this.definitions = procDefs;
+                    this.definitionDialog = true;
                 }
-                this.sendMessage(url, inputData);
-
-            } else if (!this.processInstance && this.processDefinition) {
-                this.definitionDialog = false;
-                
-                var inputData = {
-                    input: {
-                        answer: newMessage,
-                        process_instance_id: "new",
-                        process_definition_id: this.processDefinition[0].processDefinitionId
-                    }
-                };
-                this.sendMessage(url, inputData);
-                this.processDefinition = null;
-
             } else {
-                this.definitions = await this.queryFromVectorDB(newMessage);
-                if (!this.definitions || this.definitions.length < 1) {
-                    await this.saveDefinitionToVectorDB();
-                    this.definitions = await this.queryFromVectorDB(newMessage);
+                if (this.processInstance && this.processInstance.proc_inst_id) {
+                    this.generator.beforeGenerate(newMessage, false);
+                } else {
+                    this.generator.beforeGenerate(newMessage, true);
                 }
-                
-                this.definitionDialog = true;
+
+                this.definitionDialog = false;
+                this.sendMessage(this.generator.input.answer);
+            }
+        },
+        beforeSendEditedMessage(index) {
+            if (index > 0) {
+                this.generator.beforeGenerate(this.messages[index-1].content, false);
+                this.sendEditedMessage(index);
             }
         },
         afterModelCreated(response) {
-            // let jsonInstance = this.extractJSON(response);
-
-            // if (jsonInstance) {
-            //     this.processInstance = partialParse(jsonInstance);
-            // }
         },
         async afterGenerationFinished(response) {
+            let messageWriting = this.messages[this.messages.length - 1];
+            messageWriting.jsonContent = response;
+            
             const jsonData = JSON.parse(response);
             if (jsonData) {
                 this.saveInstance(jsonData);
@@ -280,26 +261,22 @@ export default {
                     this.$router.replace(`chat?id=${jsonData.instanceId}`);
                 }
             }
-            // if (this.processInstance) {
-            //     if (typeof this.processInstance === 'string') {
-            //         this.processInstance = partialParse(this.processInstance);
-            //     }
-            //     await this.saveInstance();
-            //     // await this.saveTodolist();
-            // }
         },
         afterModelStopped(response) {
-            let path = `${this.path}/`
-            if (this.$route.params && this.$route.params.id) {
-                path += this.$route.params.id;
+            let path = '';
+
+            if (this.$route.query.id) {
+                path = this.$route.query.id;
             } else if (this.processInstance && this.processInstance.processInstanceId) {
-                path += this.processInstance.processInstanceId;
+                path = this.processInstance.processInstanceId;
             }
             
-            // let putObj = {
-            //     messages: this.messages
-            // }
-            // this.putObject(path, putObj);
+            if (path != '') {
+                let putObj = {
+                    messages: this.messages
+                };
+                this.putObject(`${this.path}/${path}`, putObj, {key: 'id'});
+            }
         },
         async saveInstance(data) {
             if (data) {
@@ -309,7 +286,6 @@ export default {
                     messages: this.messages
                 }
                 await this.putObject(this.path, putObj);
-
                 // this.checkDisableChat(putObj);
             }
         },
@@ -398,7 +374,7 @@ export default {
         },
 
         async saveDefinitionToVectorDB() {
-            let definitions = await this.getData("proc_def");
+            let definitions = await this.getData("definitions");
             if (definitions) {
                 const apiToken = this.generator.getToken();
                 const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
@@ -424,7 +400,10 @@ export default {
             });
 
             if (results.similarItems) {
-                return results.similarItems.map((item) => partialParse(JSON.parse(item.text)));
+                return results.similarItems.map(item => item.text);
+            } else {
+                this.saveDefinitionToVectorDB();
+                this.queryFromVectorDB(messsage);
             }
         },
 

@@ -71,13 +71,17 @@ export default {
     },
     methods: {
         async loadData(path) {
-            let value = await this.getData(path);
+            let value = await this.getData(`${path}/1`, {key: 'id'});
 
             if (value) {
                 this.checkDisableChat(value);
 
-                if (value.organizationChart && value.organizationChart.length > 0) {
-                    let orgChart = JSON.parse(value.organizationChart);
+                if (value.messages) {
+                    this.messages = value.messages;
+                }
+
+                if (value.organization_chart && value.organization_chart.length > 0) {
+                    let orgChart = JSON.parse(value.organization_chart);
                     if (orgChart && orgChart.length > 0) {
                         this.organizationChart = orgChart;
                     }
@@ -114,7 +118,6 @@ export default {
 
         afterGenerationFinished(response) {
             let json = this.extractJSON(response);
-
             if (json) {
                 let unknown = partialParse(json);
 
@@ -133,16 +136,15 @@ export default {
 
             let chartText = "";
             let putObj =  {
+                id: 1,
                 messages: this.messages,
-                organizationChart: "",
+                organization_chart: "",
             };
-
             if (this.organizationChart) {
                 chartText = JSON.stringify(this.organizationChart);
-                putObj.organizationChart = chartText;
+                putObj.organization_chart = chartText;
             }
-
-            this.putObject(this.path, putObj);
+            this.putObject(this.path, putObj, {key: 'id'});
         },
     }
 }

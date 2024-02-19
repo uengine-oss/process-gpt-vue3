@@ -6,7 +6,7 @@
                     <v-tooltip text="Process Variables">
                         <template v-slot:activator="{ props }">
                             <v-btn @click="openProcessVariables" variant="icon" v-bind="props"
-                                style="margin:10px 0px 0px 7px;"
+                                style="margin:10px 0px 0px 10px;"
                             >
                                 <Icon icon="tabler:variable" width="36" height="36" />
                             </v-btn>
@@ -126,7 +126,6 @@
 <script>
 import partialParse from 'partial-json-parser';
 import { VectorStorage } from 'vector-storage';
-import { VDataTable } from 'vuetify/labs/VDataTable'
 import VueBpmn from './Bpmn.vue';
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/BpmnPropertyPanel.vue';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
@@ -138,7 +137,6 @@ export default {
     components: {
         VueBpmn,
         BpmnPropertyPanel,
-        VDataTable,
         ProcessVariable,
         Icon
     },
