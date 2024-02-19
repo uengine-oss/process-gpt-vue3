@@ -167,9 +167,9 @@
                     </div>
                 </div>
             </perfect-scrollbar>
-            <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
+            <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
                 <RetrievalBox v-model:message="retrievalMsg"></RetrievalBox>
-            </div>
+            </div> -->
         </div>
         <v-divider />
       
