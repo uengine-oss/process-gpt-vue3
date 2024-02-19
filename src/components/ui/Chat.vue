@@ -166,9 +166,12 @@
                     </div>
                 </div>
             </perfect-scrollbar>
+            <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
+                <RetrievalBox v-model:message="retrievalMsg"></RetrievalBox>
+            </div>
         </div>
         <v-divider />
-
+      
         <div class="text-body-1" v-if="isReply" style="margin-left: 10px">
             {{ replyUser.name }}님에게 답장
             <v-icon @click="cancelReply()">mdi-close</v-icon>
@@ -215,12 +218,17 @@
 </template>
 
 <script>
+import { Icon } from '@iconify/vue';
+import RetrievalBox from '../retrieval/RetrievalBox.vue'
+
 import ProgressAnimated from '@/components/ui/ProgressAnimated.vue';
 import ScrollBottomHandle from '@/components/ui/ScrollBottomHandle.vue';
 
 export default {
     components: {
-    },
+        Icon,
+        RetrievalBox
+   },
     mixins: [
         ProgressAnimated,
         ScrollBottomHandle
@@ -238,6 +246,7 @@ export default {
         return {
             isReply: false,
             newMessage: '',
+            retrievalMsg: '',
             hoverIndex: -1,
             editIndex: -1,
             replyIndex: -1,
@@ -352,6 +361,7 @@ export default {
             this.replyUser = message;
         },
         send() {
+            if (this.newMessage) this.retrievalMsg = this.newMessage
             if (this.editIndex >= 0) {
                 this.$emit('sendEditedMessage', this.editIndex + 1);
                 this.editIndex = -1;

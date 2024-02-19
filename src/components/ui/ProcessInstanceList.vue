@@ -37,30 +37,21 @@
             <!---Single Item-->
             <v-list-item
                 v-for="item in instanceList"
-                :key="item.instanceid"
-                :value="item.instanceid"
+                :key="item.proc_inst_id"
+                :value="item.proc_inst_id"
                 color="secondary"
                 class="text-no-wrap chatItem"
                 lines="two"
-                :active="currentChatId === item.instanceid"
-                @click="selectChat(item.instanceid)"
+                :active="currentChatId === item.proc_inst_id"
+                @click="selectChat(item.proc_inst_id)"
             >
-                <!-- Participants User  -->
-                <!-- <template v-slot:prepend>
-                    <v-avatar size="32">
-                        <v-img src="" width="32" height="32" />
-                    </v-avatar>
-                </template> -->
                 <!---Name-->
                 <v-list-item-title class="text-subtitle-1 textPrimary w-100 font-weight-semibold">
-                    {{ item.instancename }}
+                    {{ item.proc_inst_name }}
                 </v-list-item-title>
                 <!---Subtitle-->
                 <div class="text-subtitle-2 textPrimary mt-1 text-truncate w-100">
-                    {{
-                        item.nextactivityname && item.nextactivityname !== '' && item.nextactivityname !== 'null' ? 
-                            item.nextactivityname : item.status
-                    }}
+                    {{ item.current_activity_ids }}
                 </div>
                 <!---Last seen--->
                 <template v-slot:append>
@@ -69,7 +60,7 @@
                         <v-menu activator="parent">
                             <v-list density="compact">
                                 <v-list-item value="Delete">
-                                    <v-list-item-title @click="deleteInstance(item.instanceid)">
+                                    <v-list-item-title @click="deleteInstance(item.proc_inst_id)">
                                         Delete
                                     </v-list-item-title>
                                 </v-list-item>
@@ -83,54 +74,68 @@
 </template>
 
 <script>
-import ChatModule from "../ChatModule.vue"
+import StorageBase from '@/utils/StorageBase';
 
 export default {
-    mixins: [ChatModule],
     data: () => ({
         path: "instances",
         instanceList: [],
         searchValue: "",
         currentChatId: "",
         menuItems: [
-            { title: 'processExecution.sortByTime' }, 
+            { title: 'processExecution.sortByTime' },
             { title: 'processExecution.sortByCompleted' }
         ],
         email: "",
+        storage: null,
     }),
-    watch: {
-        "$route": {
-            deep: true,
-            async handler(newVal, oldVal) {
-                if (newVal.path !== oldVal.path) {
-                    await this.init();
-                }
-            }
-        },
-    },
     async created() {
+        this.storage = StorageBase.getStorage("supabase");
         this.email = localStorage.getItem("email")
         await this.init();
     },
     methods: {
         async init() {
-            if (this.$route.params && this.$route.params.id) {
-                this.currentChatId = this.$route.params.id;
+            if (this.$route.query && this.$route.query.id) {
+                const id = this.$route.query.id;
+                this.currentChatId = id;
             }
 
-            this.instanceList = await this.getData(this.path);
+            var me = this;
+            var list = await this.storage.list(`${this.path}/${this.email}`, {key: 'user_id'});
+            if (list) {
+                me.instanceList = [];
+                list.forEach(async item => {
+                    var def_id = item.id.split('.')[0];
+                    var inst = await this.storage.getObject(`${def_id}/${item.id}`, {key: 'proc_inst_id'});
+                    if (inst) {
+                        me.instanceList.push(inst);
+                    }
+                })
+            }
+
+            await this.storage.watch(`${this.path}`)
         },
         selectChat(id) {
             this.currentChatId = id;
-            this.$router.push(`/${this.path}/${id}`);
+            this.$router.push(`/${this.path}/chat?id=${id}`);
         },
         newInstanceChat() {
             this.currentChatId = "";
             this.$router.push(`/${this.path}/chat`);
         },
         async deleteInstance(id) {
-            await this.delete(`${this.path}/${id}`, {key: "instanceid"});
+            // TODO delete 트리거 처리 
+            var def_id = id.split('.')[0];
+            var chat_id = id.split('.')[1];
+            await this.storage.delete(`${def_id}/${id}`, {key: 'proc_inst_id'});
+            await this.storage.delete(`${this.path}/${id}`, {key: "id"});
+
             await this.init();
+
+            if (this.currentChatId == id) {
+                this.newInstanceChat();
+            }            
         }
     }
 };
