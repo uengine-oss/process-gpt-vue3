@@ -32,6 +32,33 @@
                     </v-card-actions>
                 </v-card>
             </v-dialog>
+            
+            <v-dialog v-model="definitionDialog" max-width="800">
+                <v-card>
+                    <v-card-title class="text-h5">
+                        프로세스 정의 목록
+                    </v-card-title>
+                    <v-card-text>
+                        <v-data-table
+                            v-model="processDefinition"
+                            :headers="headers"
+                            :items="definitions"
+                            item-value="id"
+                            select-strategy="single"
+                            show-select
+                            return-object
+                        ></v-data-table>
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-btn color="success" 
+                            class="px-4 rounded-pill mx-auto"
+                            variant="tonal"
+                            @click="beforeSendMessage()"
+                        >Select</v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
+
             <Chat :messages="messages"
                 :chatInfo="chatInfo"
                 :userInfo="userInfo" 
@@ -54,6 +81,7 @@
 <script>
 import partialParse from 'partial-json-parser';
 import { VectorStorage } from 'vector-storage';
+import axios from '@/utils/axios';
 
 import ChatGenerator from './ai/ProcessInstanceGenerator.js';
 import ChatModule from '@/components/ChatModule.vue';
@@ -73,6 +101,13 @@ export default {
         BpmnModelingCanvas,
     },
     data: () => ({
+        headers: [
+            { title: 'id', align: 'start', key: 'processDefinitionId' },
+            { title: 'name', align: 'start', key: 'processDefinitionName' },
+            { title: 'description', align: 'start', key: 'description' },
+        ],
+        definitions: null,
+        definitionDialog: false,
         processDefinition: null,
         processInstance: null,
         path: 'instances',
@@ -94,6 +129,7 @@ export default {
             scm: {}
         },
         projectName: '',
+
     }),
     async created() {
         await this.init();
@@ -111,12 +147,9 @@ export default {
         "$route": {
             deep: true,
             async handler(newVal, oldVal) {
-                if (newVal.path !== oldVal.path) {
+                if (newVal.query !== oldVal.query) {
+                    this.messages = [];
                     await this.init();
-                    this.generator = new ChatGenerator(this, {
-                        isStream: true,
-                        preferredLanguage: 'Korean'
-                    });
                 }
             }
         },
@@ -150,16 +183,23 @@ export default {
             }
         },
         async loadData(path) {
-            let value = await this.getData(path, {key: "instanceid"});
-            if (value) {
-                this.processInstance = value;
-                this.checkDisableChat(value);
+            let value;
+            this.processInstance = null;
 
-                if (value.messages) {
+            if (this.$route.query.id) {
+                const id = this.$route.query.id;
+                value = await this.getData(`${this.path}/${id}`, {key: "id"});
+                if (value && value.messages) {
                     this.messages = value.messages;
                 }
-            }
 
+                var def_id = id.split('.')[0];
+                value = await this.getData(`${def_id}/${id}`, {key: "proc_inst_id"});
+                if (value) {
+                    this.processInstance = value;
+                }
+            }
+            
             value = await this.getData("organization");
             
             if (value && value.organizationChart) {
@@ -180,34 +220,73 @@ export default {
             }
         },
         async beforeSendMessage(newMessage) {
-            if(!this.generator.contexts) {
-                this.processDefinition = null;
-                let contexts = await this.queryFromVectorDB(newMessage);
-                if (!contexts || contexts.length < 1) {
-                    await this.saveDefinitionToVectorDB();
-                    contexts = await this.queryFromVectorDB(newMessage);
-                }
-                this.processDefinition = contexts[0];
-                this.generator.setContexts(contexts);
+            if (newMessage) {
+                var chatObj = this.createMessageObj(newMessage);
+                this.messages.push(chatObj);
             }
-            this.sendMessage(newMessage);
-        },
-        afterModelCreated(response) {
-            let jsonInstance = this.extractJSON(response);
 
-            if (jsonInstance) {
-                this.processInstance = partialParse(jsonInstance);
-            }
-        },
-        async afterGenerationFinished(response) {
-            if (this.processInstance) {
-                if (typeof this.processInstance === 'string') {
-                    this.processInstance = partialParse(this.processInstance);
+            var url = '/complete/invoke';
+            if (this.processInstance && this.processInstance.proc_inst_id) {
+                this.definitionDialog = false;
+
+                var def_id = this.processInstance.proc_inst_id.split('.')[0];
+                var inputData = {
+                    input: {
+                        answer: newMessage,
+                        activity_id: this.processInstance.current_activity_ids[0],
+                        process_instance_id: this.processInstance.proc_inst_id,
+                        process_definition_id: def_id
+                    }
+                }
+                this.sendMessage(url, inputData);
+
+            } else if (!this.processInstance && this.processDefinition) {
+                this.definitionDialog = false;
+                
+                var inputData = {
+                    input: {
+                        answer: newMessage,
+                        process_instance_id: "new",
+                        process_definition_id: this.processDefinition[0].processDefinitionId
+                    }
+                };
+                this.sendMessage(url, inputData);
+                this.processDefinition = null;
+
+            } else {
+                this.definitions = await this.queryFromVectorDB(newMessage);
+                if (!this.definitions || this.definitions.length < 1) {
+                    await this.saveDefinitionToVectorDB();
+                    this.definitions = await this.queryFromVectorDB(newMessage);
                 }
                 
-                await this.saveInstance();
-                // await this.sendTodolist();
+                this.definitionDialog = true;
             }
+        },
+        afterModelCreated(response) {
+            // let jsonInstance = this.extractJSON(response);
+
+            // if (jsonInstance) {
+            //     this.processInstance = partialParse(jsonInstance);
+            // }
+        },
+        async afterGenerationFinished(response) {
+            const jsonData = JSON.parse(response);
+            if (jsonData) {
+                this.saveInstance(jsonData);
+
+                if (!this.$route.query.id) {
+                    this.processInstance = jsonData;
+                    this.$router.replace(`chat?id=${jsonData.instanceId}`);
+                }
+            }
+            // if (this.processInstance) {
+            //     if (typeof this.processInstance === 'string') {
+            //         this.processInstance = partialParse(this.processInstance);
+            //     }
+            //     await this.saveInstance();
+            //     // await this.saveTodolist();
+            // }
         },
         afterModelStopped(response) {
             let path = `${this.path}/`
@@ -217,58 +296,24 @@ export default {
                 path += this.processInstance.processInstanceId;
             }
             
-            let putObj = {
-                messages: this.messages
-            }
-
-            this.putObject(path, putObj);
+            // let putObj = {
+            //     messages: this.messages
+            // }
+            // this.putObject(path, putObj);
         },
-        async saveInstance(status) {
-            if (this.processInstance) {
-                let path = `${this.path}/${this.processInstance.processInstanceId}`;
-                let putObj = null //await this.getData(path);
-
-                if (putObj) {
-                    putObj.messages = this.messages;
-                    putObj.currentUserId = this.processInstance.currentUserEmail;
-                    putObj.currentActivityId = this.processInstance.currentActivityId;
-                    putObj.currentActivityName = this.processInstance.currentActivityName;
-                    putObj.nextUserId = this.processInstance.nextUserEmail;
-                    putObj.nextActivityId = this.processInstance.nextActivityId;
-                    putObj.nextActivityName = this.processInstance.nextActivityName;
-                    putObj.timeStamp = this.messages[this.messages.length-1].timeStamp;
-
-                    let newParticipants = [this.processInstance.currentUserEmail, this.processInstance.nextUserEmail];
-                    newParticipants = [...putObj.participants, ...newParticipants];
-                    const set = new Set(newParticipants);
-                    putObj.participants = [...set];
-
-                    if (status) {
-                        putObj.status = status;
-                    }
-                } else {
-                    putObj = {
-                        messages: this.messages,
-                        definitionId: this.processInstance.processDefinitionId,
-                        instanceId: this.processInstance.processInstanceId,
-                        instanceName: this.processInstance.processInstanceName,
-                        currentUserId: this.processInstance.currentUserEmail,
-                        currentActivityId: this.processInstance.currentActivityId,
-                        currentActivityName: this.processInstance.currentActivityName,
-                        nextUserId: this.processInstance.nextUserEmail,
-                        nextActivityId: this.processInstance.nextActivityId,
-                        nextActivityName: this.processInstance.nextActivityName,
-                        participants: [this.processInstance.currentUserEmail, this.processInstance.nextUserEmail],
-                        status: 'Running',
-                        timeStamp: this.messages[this.messages.length-1].timeStamp,
-                    };
+        async saveInstance(data) {
+            if (data) {
+                let putObj = {
+                    id: data.instanceId,
+                    user_id: this.userInfo.email,
+                    messages: this.messages
                 }
+                await this.putObject(this.path, putObj);
 
-                await this.putObject(path, putObj);
-                this.checkDisableChat(putObj);
+                // this.checkDisableChat(putObj);
             }
         },
-        async sendTodolist() {
+        async saveTodolist() {
             if (this.processInstance) {
                 const checkedNextAct = await this.checkNextActivity(this.processInstance.currentActivityId, this.processInstance.nextActivityId);
                 if (this.processInstance.currentUserEmail !== "") {
@@ -353,17 +398,18 @@ export default {
         },
 
         async saveDefinitionToVectorDB() {
-            let definitions = await this.getData("definitions");
+            let definitions = await this.getData("proc_def");
             if (definitions) {
                 const apiToken = this.generator.getToken();
                 const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
 
                 let list = Object.values(definitions);
                 list.forEach(async (item) => {
-                    var definition = partialParse(item.model);
-                    await vectorStore.addText(JSON.stringify(definition), {
-                        category: definition.processDefinitionId
-                    });
+                    if (item.definition) {
+                        await vectorStore.addText(JSON.stringify(item.definition), {
+                            category: item.definition.processDefinitionId
+                        });
+                    }
                 })
             }
         },
@@ -378,7 +424,7 @@ export default {
             });
 
             if (results.similarItems) {
-                return results.similarItems.map((item) => item.text);
+                return results.similarItems.map((item) => partialParse(JSON.parse(item.text)));
             }
         },
 
@@ -426,7 +472,7 @@ export default {
         async saveUserInstance(item) {
             if (this.checkUserEmail(item.userId)) {
                 var convertEmail = item.userId.replace(/\./gi, '_');
-                const userInfo = await this.getData(`enrolledUsers/${convertEmail}`);
+                const userInfo = await this.getData(`users/${convertEmail}`);
                 if (userInfo && userInfo.uid) {
                     const path = `users/${userInfo.uid}/instances`;
                     let putObj = [item.instanceId];
@@ -445,7 +491,7 @@ export default {
 
         async beforeSendNotification(item) {
             var convertEmail = item.userId.replace(/\./gi, '_');
-            const userInfo = await this.getData(`enrolledUsers/${convertEmail}`);
+            const userInfo = await this.getData(`users/${convertEmail}`);
             if (userInfo && userInfo.uid) {
                 const notiInfo = {
                     noti_type: "instances",

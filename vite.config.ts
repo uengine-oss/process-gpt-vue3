@@ -26,6 +26,18 @@ export default defineConfig({
         exclude: ['vuetify'],
         entries: ['./src/**/*.vue']
     },
+    server: {
+        proxy: {
+            '/complete': {
+                target: 'http://localhost:8000',
+                changeOrigin: true,
+            },
+            '/vision-complete': {
+                target: 'http://localhost:8000',
+                changeOrigin: true,
+            }
+        }
+    }
     // build: {
     //     rollupOptions: {
     //         treeshake:  false 

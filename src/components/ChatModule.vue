@@ -2,6 +2,7 @@
 import jp from 'jsonpath';
 import partialParse from 'partial-json-parser';
 
+import axios from '@/utils/axios';
 import StorageBase from '@/utils/StorageBase';
 
 export default {
@@ -27,7 +28,7 @@ export default {
             this.userInfo = await this.storage.getUserInfo();
 
             await this.loadData(this.getDataPath());
-            await this.loadMessages(this.getDataPath());
+            // await this.loadMessages(this.getDataPath());
         },
         async getChatList() {
             var me = this;
@@ -181,6 +182,22 @@ export default {
             }
         },
 
+        async sendMessage(url, req) {
+            await axios.post(url, req).then(async res => {
+                if (res.data) {
+                    const data = res.data;
+                    if (data.output) {
+                        this.onGenerationFinished(data.output)
+                    }
+                }
+            })
+            .catch(error => {
+                console.log(error);
+            });
+
+            this.replyUser = null;
+        },
+
         stopMessage() {
             this.generator.stop();
         },
@@ -209,11 +226,6 @@ export default {
                     isLoading: true
                 });
             }
-        },
-
-        sendNotification(uid, obj) {
-            const path = `users/${uid}/notifications`;
-            this.pushObject(path, obj);
         },
 
         jsonPathReplace(src, jsonPath, newData) {
