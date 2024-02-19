@@ -91,7 +91,7 @@ export default {
                 }
             }
 
-            // this.userList = await this.getData("users");
+            this.userList = await this.getData("users");
         },
 
         beforeSendMessage(newMessage) {
