@@ -40,8 +40,8 @@
             </div>
 
             <perfect-scrollbar class="rightpartHeight h-100" ref="scrollContainer" @scroll="handleScroll">
-                <v-btn v-if="type == 'chats' && filteredMessages.length > 0" style="position: absolute; left: 45%"
-                    @click="getMoreChat()">get more chat</v-btn>
+                <!-- <v-btn v-if="type == 'chats' && filteredMessages.length > 0" style="position: absolute; left: 45%"
+                    @click="getMoreChat()">get more chat</v-btn> -->
 
                 <div class="d-flex">
                     <div class="w-100" style="height: calc(100vh - 320px)">
@@ -179,7 +179,7 @@
             <v-divider />
         </div>
 
-        <form class="d-flex align-center pa-0" @submit.prevent="send">
+        <form class="d-flex align-center pa-0">
             <v-textarea
                 variant="solo"
                 hide-details
@@ -190,6 +190,7 @@
                 :placeholder="$t('chat.placeholder')"
                 auto-grow
                 rows="1"
+                @keydown.enter="!$event.shiftKey && send()"
                 :disabled="disableChat"
             >
                 <!-- <template v-slot:prepend-inner>

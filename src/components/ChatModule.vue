@@ -32,51 +32,56 @@ export default {
         },
         async getChatList() {
             var me = this;
-            me.userInfo = this.storage.getUserInfo();
+            this.userInfo = await this.storage.getUserInfo();
             // this.storage.delete(`db://chats/1`)
-            var option = {
-                sort: 'desc',
-                orderBy: null,
-                size: 20,
-                startAt: null,
-                endAt: null
-            };
-            this.storage.watch_added(`db://chats/1/messages`, option, function (item) {
-                if (me.isInitDone) {
-                    if (item.role == 'system') {
-                        if (me.messages[me.messages.length - 1].role == 'system') {
-                            me.messages[me.messages.length - 1] = item;
-                        } else {
-                            me.messages.push(item);
-                        }
-                    } else {
-                        if (item.email != me.userInfo.email) {
-                            me.messages.push(item);
-                        }
-                    }
-                }
-            });
-            await this.storage.list(`db://chats/1/messages`, option).then(function (messages) {
+            // var option = {
+            //     sort: 'desc',
+            //     orderBy: null,
+            //     size: 20,
+            //     startAt: null,
+            //     endAt: null
+            // };
+            let option = {
+                key: "id"
+            }
+            // this.storage.watch_added(`db://chats/1/messages`, option, function (item) {
+            //     if (me.isInitDone) {
+            //         if (item.role == 'system') {
+            //             if (me.messages[me.messages.length - 1].role == 'system') {
+            //                 me.messages[me.messages.length - 1] = item;
+            //             } else {
+            //                 me.messages.push(item);
+            //             }
+            //         } else {
+            //             if (item.email != me.userInfo.email) {
+            //                 me.messages.push(item);
+            //             }
+            //         }
+            //     }
+            // });
+
+            await this.storage.list(`db://chats/chat1`, option).then(function (messages) {
                 if (messages) {
-                    me.messages = messages.reverse();
+                    me.messages = messages.map(message => message.messages);
+                    // me.messages = messages.reverse();
                 }
                 me.isInitDone = true;
             });
         },
-        async getMoreChat() {
-            var option = {
-                sort: 'desc',
-                orderBy: null,
-                size: 11,
-                startAt: null,
-                endAt: this.messages[0].timeStamp
-            };
-            let messages = await this.storage.list(`db://chats/1/messages`, option);
-            if (messages) {
-                messages.splice(0, 1);
-                this.messages = messages.reverse().concat(this.messages);
-            }
-        },
+        // async getMoreChat() {
+        //     var option = {
+        //         sort: 'desc',
+        //         orderBy: null,
+        //         size: 11,
+        //         startAt: null,
+        //         endAt: this.messages[0].timeStamp
+        //     };
+        //     let messages = await this.storage.list(`db://chats/1/messages`, option);
+        //     if (messages) {
+        //         messages.splice(0, 1);
+        //         this.messages = messages.reverse().concat(this.messages);
+        //     }
+        // },
 
         getDataPath() {
             return this.$route.href.replace('/', '');
@@ -182,21 +187,21 @@ export default {
             }
         },
 
-        async sendMessage(url, req) {
-            await axios.post(url, req).then(async res => {
-                if (res.data) {
-                    const data = res.data;
-                    if (data.output) {
-                        this.onGenerationFinished(data.output)
-                    }
-                }
-            })
-            .catch(error => {
-                console.log(error);
-            });
+        // async sendMessage(url, req) {
+        //     await axios.post(url, req).then(async res => {
+        //         if (res.data) {
+        //             const data = res.data;
+        //             if (data.output) {
+        //                 this.onGenerationFinished(data.output)
+        //             }
+        //         }
+        //     })
+        //     .catch(error => {
+        //         console.log(error);
+        //     });
 
-            this.replyUser = null;
-        },
+        //     this.replyUser = null;
+        // },
 
         stopMessage() {
             this.generator.stop();

@@ -63,7 +63,6 @@ export default class WorkAssistantGenerator extends AIGenerator {
                 }
             \`\`\`
 
-            
             그외 특별한 의견이 없을때 또는 업무 관련 내용이 아닌 일상적인 대화로 판단되면 . 만을 리턴해야해.
             `
             // 3. 태스크 등록: 어떤일을 새롭게 지시 받았을때 그일의 담당자, 완료일, 완료기준(체크포인트) 들을 기록해두는 도움을 줘.
