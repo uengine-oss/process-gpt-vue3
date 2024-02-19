@@ -35,7 +35,15 @@ export default defineConfig({
             '/vision-complete': {
                 target: 'http://localhost:8000',
                 changeOrigin: true,
-            }
+            },
+            '/query': {
+                target: 'http://localhost:8005',
+                changeOrigin: true,
+            },
+            '/retrieve': {
+                target: 'http://localhost:8005',
+                changeOrigin: true,
+            },
         }
     }
     // build: {
