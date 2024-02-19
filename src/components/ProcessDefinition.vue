@@ -6,7 +6,7 @@
                     <v-tooltip text="Process Variables">
                         <template v-slot:activator="{ props }">
                             <v-btn @click="openProcessVariables" variant="icon" v-bind="props"
-                                style="margin:10px 0px 0px 7px;"
+                                style="margin:10px 0px 0px 10px;"
                             >
                                 <Icon icon="tabler:variable" width="36" height="36" />
                             </v-btn>
