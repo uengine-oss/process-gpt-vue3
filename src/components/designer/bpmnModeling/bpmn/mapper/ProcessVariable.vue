@@ -42,6 +42,19 @@
                     ></v-textarea>
                     <v-btn v-if="processVariable.datasource?.type == 'sql'" variant="outlined" color="primary" rounded="pill"  size="small" @click="generateSql()">generate</v-btn>
                     <v-btn style="margin-left: 5px;" color="success" variant="outlined" rounded="pill" v-if="processVariable.datasource?.type == 'sql'" size="small" @click="testSql()">test</v-btn>
+                    <v-row v-if="processVariable.table" class="my-5">
+                        <v-col cols="12">
+                            <v-card outlined>
+                                <v-card-title>Table Preview</v-card-title>
+                                <v-card-text>
+                                    <div v-html="processVariable.table" class="table-responsive"></div>
+                                </v-card-text>
+                                <!-- <v-textarea v-if="processVariable.table != ''" style="margin-top: 10px;"
+                                    v-model="processVariable.table"
+                                ></v-textarea> -->
+                            </v-card>
+                        </v-col>
+                    </v-row>
                 </v-col>
             </v-row>
             <v-row class="ma-0 mt-2">
@@ -74,14 +87,16 @@ export default {
                 datasource: {
                     type: "",
                     sql: ""
-                }
+                },
+                // table: '<table><tr><th>Name</th><th>Position</th></tr><tr><td>John Doe</td><td>Developer</td></tr><tr><td>Jane Doe</td><td>Designer</td></tr></table>'
+                table: ""
             }
         }
     },
     methods: {
         async generateSql() {
             try {
-                const response = await axios.post('http://localhost:8001/process-var-sql/invoke', {
+                const response = await axios.post('http://localhost:8006/process-var-sql/invoke', {
                     input: {
                         var_name: this.processVariable.name,
                         resolution_rule: this.processVariable.description
@@ -94,16 +109,14 @@ export default {
         },
         async testSql() {
             try {
-                const response = await axios.post('http://localhost:8001/execute-sql', {
-                    sql_query: this.processVariable.datasource.sql
+                const response = await axios.post('http://localhost:8006/process-data-query/invoke', {
+                    input: {
+                        var_name: this.processVariable.name
+                    }
                 });
-                console.log('SQL Test Response:', response.data);
-                alert("Success to SQL Test")
-                // this.$emit('sqlTestSuccess', response.data);
+                this.processVariable.table = response.data.output
             } catch (error) {
-                alert("Failed to SQL Test")
                 console.error('Error testing SQL:', error);
-                // this.$emit('sqlTestError', error);
             }
         },
         addVariable() {
@@ -122,9 +135,23 @@ export default {
             this.processVariable = Object.assign({}, this.variable)
         }
     }
-
-    // components: {
-
-    // },
 }
 </script>
+<style>
+.table-responsive table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.table-responsive th,
+.table-responsive td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+.table-responsive th {
+    background-color: #f2f2f2;
+}
+.table-responsive tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+</style>

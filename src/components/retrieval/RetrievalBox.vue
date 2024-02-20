@@ -1,7 +1,7 @@
 <template>
     <v-card flat>
         <div v-if="foldedbtn">
-            <v-btn block @click="foldedbtn = false" style="background: lightgrey;"> 
+            <v-btn block @click="foldedbtn = false" style="background: lightgrey;">
                 <Icon icon="streamline:ai-edit-spark" style="font-size: large; margin-right: 5px;"/> AI Retrieval
             </v-btn>
             <v-progress-linear
@@ -72,7 +72,8 @@ export default {
     watch: {
         "message":function(newVal, oldVal){
             if(newVal) {
-                this.query(newVal)
+                // this.query(newVal)
+                this.queryData = newVal
             }
         }
     },
@@ -94,19 +95,19 @@ export default {
         }
     },
     created(){
-       this.retrievalJS = new GPTMemento();
+    //    this.retrievalJS = new GPTMemento();
     },
     methods: {
-        async query(str){
-            this.loading = true
-            this.queryData = await this.retrievalJS.query(str)
-            this.loading = false
-        },
-        async retrieval(str){
-            this.loading = true
-            this.retrievalData = await this.retrievalJS.retrieval(str)
-            this.loading = false
-        },
+        // async query(str){
+        //     this.loading = true
+        //     this.queryData = await this.retrievalJS.query(str)
+        //     this.loading = false
+        // },
+        // async retrieval(str){
+        //     this.loading = true
+        //     this.retrievalData = await this.retrievalJS.retrieval(str)
+        //     this.loading = false
+        // },
     }
 };
 </script>
