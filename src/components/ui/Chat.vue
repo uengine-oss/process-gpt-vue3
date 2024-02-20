@@ -199,7 +199,7 @@
                 <template v-slot:append-inner>
                     <v-btn v-if="!isLoading" icon variant="text" type="submit" @click="send" class="text-medium-emphasis"
                         :disabled="!newMessage">
-                        <SendIcon size="24" />
+                        <Icon width="24" height="24" icon="fluent:document-one-page-sparkle-16-regular"  />
                     </v-btn>
                     <v-btn v-else icon variant="text" @click="isLoading = !isLoading" class="text-medium-emphasis">
                         <Icon icon="ic:outline-stop-circle" width="30" height="30" />
