@@ -51,7 +51,7 @@
         "title" : "Process List"
     },
     "chat" : {
-        "placeholder": "Type a Message"
+        "inputMessage": "Type a Message"
     },
     "accountTab" : {
         "accountSetting" : "Account Settings",

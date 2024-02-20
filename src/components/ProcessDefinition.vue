@@ -130,6 +130,7 @@ import VueBpmn from './Bpmn.vue';
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/BpmnPropertyPanel.vue';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
 import { Icon } from '@iconify/vue';
+import customRendererModule from './custom';
 
 
 export default {
@@ -149,7 +150,7 @@ export default {
         panelId: null,
         options: {
             propertiesPanel: {},
-            additionalModules: [],
+            additionalModules: [customRendererModule],
             moddleExtensions: []
         },
         // headers: [{ title: 'Name', align: 'start', key: 'name', sortable: false, },
@@ -257,3 +258,4 @@ export default {
     }
 };
 </script>
+./custom/CustomRenderer.js

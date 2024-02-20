@@ -51,7 +51,7 @@
         "title" : "프로세스 목록"
     },
     "chat" : {
-        "placeholder": "메시지 입력"
+        "inputMessage": "메시지 입력"
     },
     "accountTab" : {
         "accountSetting" : "계정 설정",

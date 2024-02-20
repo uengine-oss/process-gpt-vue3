@@ -10,7 +10,7 @@ import BpmnModeler from 'bpmn-js/lib/Modeler';
 import BpmnModdle from 'bpmn-moddle';
 import uEngineModdleDescriptor from '@/components/descriptors/uEngine.json';
 import 'bpmn-js/dist/assets/diagram-js.css';
-import 'bpmn-js/dist/assets/diagram-js.css';
+
 export default {
     name: 'vue-bpmn',
     props: {
@@ -41,12 +41,15 @@ export default {
                 keyboard: {
                     bindTo: window
                 },
+                additionalModules: [
+                ],
                 moddleExtensions: {
                     uengine: uEngineModdleDescriptor
                 }
             },
             this.options
         );
+        
         this.bpmnViewer = new BpmnModeler(_options); //new BpmnJS(_options);  //
         var eventBus = this.bpmnViewer.get('eventBus');
         // eventBus.on('import.render.start', function (e) {
@@ -311,3 +314,4 @@ export default {
     width: 100%;
 }
 </style>
+./custom
