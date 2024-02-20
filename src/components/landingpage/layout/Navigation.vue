@@ -12,7 +12,7 @@ import { HelpIcon, ChevronDownIcon } from 'vue-tabler-icons';
     <!-- ---------------------------------------------- -->
     <v-menu open-on-hover open-delay=1  :close-on-content-click="false" class="lp_wrapper position-relative">
         <template v-slot:activator="{ props }">
-            <v-btn class="hidden-sm-and-down nav-links custom-hover-primary" :ripple="false"  rounded="sm" variant="text"  v-bind="props"
+            <v-btn class="hidden-sm-and-down nav-links custom-hover-primary" disabled :ripple="false"  rounded="sm" variant="text"  v-bind="props"
                 >{{ $t('mainPage.demo') }}<ChevronDownIcon size="18" class="mt-1 ml-1" />
             </v-btn>
         </template>

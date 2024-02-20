@@ -3,7 +3,7 @@
         <v-col cols="12">
             <v-row class="align-center ">
                 <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
-                    <v-label class=" font-weight-medium" for="hbnm">Name</v-label>
+                    <v-label class=" font-weight-medium" for="hbnm">{{ $t('ProcessVariable.name') }}</v-label>
                 </v-col>
                 <v-col cols="12" sm="9">
                     <v-text-field v-model="processVariable.name" color="primary" variant="outlined" type="text" id="hbnm"
@@ -12,7 +12,7 @@
             </v-row>
             <v-row class="align-center">
                 <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
-                    <v-label class=" font-weight-medium" for="hcpm">Type</v-label>
+                    <v-label class=" font-weight-medium" for="hcpm">{{ $t('ProcessVariable.type') }}</v-label>
                 </v-col>
                 <v-col cols="12" sm="9">
                     <v-autocomplete v-model="processVariable.type" :items="types" color="primary" variant="outlined"
@@ -21,7 +21,7 @@
             </v-row>
             <v-row class="align-center">
                 <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
-                    <v-label class=" font-weight-medium" for="hem">Description</v-label>
+                    <v-label class=" font-weight-medium" for="hem">{{ $t('ProcessVariable.description') }}</v-label>
                 </v-col>
                 <v-col cols="12" sm="9">
                     <v-text-field v-model="processVariable.description" color="primary" variant="outlined" id="hem"
@@ -30,7 +30,7 @@
             </v-row>
             <v-row class="align-center">
                 <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
-                    <v-label class=" font-weight-medium" for="hph">DataSource</v-label>
+                    <v-label class=" font-weight-medium" for="hph">{{ $t('ProcessVariable.dataSource') }}</v-label>
                 </v-col>
                 <v-col cols="12" sm="9">
                     <v-autocomplete v-model="processVariable.datasource.type" :items="datasources" color="primary"
@@ -46,8 +46,8 @@
             </v-row>
             <v-row class="ma-0 mt-2">
                 <v-spacer></v-spacer>
-                <v-btn v-if="mode === 'add'" color="primary" rounded="pill" @click="addVariable">Add</v-btn>
-                <v-btn v-else color="primary" rounded="pill" >edit</v-btn>
+                <v-btn v-if="mode === 'add'" color="primary" rounded="pill" @click="addVariable">{{ $t('ProcessVariable.add') }}</v-btn>
+                <v-btn v-else color="primary" rounded="pill" >{{ $t('ProcessVariable.edit') }}</v-btn>
             </v-row>
         </v-col>
     </v-row>

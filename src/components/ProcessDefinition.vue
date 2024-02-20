@@ -3,12 +3,12 @@
         <v-row style="height: 100%" class="ma-0">
             <v-col class="d-flex ma-0 pa-0">
                 <v-card elevation="1" style="border-radius: 0px !important;">
-                    <v-tooltip text="Process Variables">
+                    <v-tooltip :text="$t('processDefinition.processVariables')">
                         <template v-slot:activator="{ props }">
-                            <v-btn @click="openProcessVariables" variant="icon" v-bind="props"
-                                style="margin:10px 0px 0px 10px;"
+                            <v-btn @click="openProcessVariables" icon v-bind="props"
+                                style="margin:10px 0px -10px 20px;"
                             >
-                                <Icon icon="tabler:variable" width="36" height="36" />
+                                <Icon icon="tabler:variable" width="32" height="32" />
                             </v-btn>
                         </template>
                     </v-tooltip>
@@ -27,17 +27,23 @@
         </v-row>
         <v-dialog v-model="isViewProcessVariables" max-width="1000">
             <v-card>
-                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">Edit Process Data</v-card-title>
+                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{ $t('processDefinition.editProcessData') }}</v-card-title>
+                <v-btn icon style="position:absolute; right:5px; top:5px;" @click="isViewProcessVariables = false">
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
                 <v-card-text style="height: 1000px; width: 1000px;">
-                    <v-data-table items-per-page="5" class="border rounded-md">
+                    <VDataTable class="border rounded-md"
+                        :items-per-page="5"
+                        :items-per-page-text="$t('processDefinition.itemsPerPage')"
+                    >
                         <thead>
                             <tr>
-                                <th class="text-subtitle-1 font-weight-semibold">Name</th>
-                                <th class="text-subtitle-1 font-weight-semibold">Type</th>
-                                <th class="text-subtitle-1 font-weight-semibold">Description</th>
-                                <th class="text-subtitle-1 font-weight-semibold">DataSource</th>
-                                <th class="text-subtitle-1 font-weight-semibold">Query</th>
-                                <th class="text-subtitle-1 font-weight-semibold">Actions</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.name') }}</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.type') }}</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.description') }}</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.dataSource') }}</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.query') }}</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -54,14 +60,14 @@
                                 </td>
                                 <td>
                                     <div class="d-flex align-center">
-                                        <v-tooltip text="Edit">
+                                        <v-tooltip :text="$t('processDefinition.edit')">
                                             <template v-slot:activator="{ props }">
                                                 <v-btn icon flat @click="editItem(item)" v-bind="props">
                                                     <PencilIcon stroke-width="1.5" size="20" class="text-primary" />
                                                 </v-btn>
                                             </template>
                                         </v-tooltip>
-                                        <v-tooltip text="Delete">
+                                        <v-tooltip :text="$t('processDefinition.delete')">
                                             <template v-slot:activator="{ props }">
                                                 <v-btn icon flat @click="deleteItem(item)" v-bind="props">
                                                     <TrashIcon stroke-width="1.5" size="20" class="text-error" />
@@ -72,7 +78,7 @@
                                 </td>
                             </tr>
                         </tbody>
-                    </v-data-table>
+                    </VDataTable>
                     <v-row class="ma-0" style="margin:10px 0px 10px 0px !important;">
                         <v-card @click="addProcessVaribles"
                             elevation="9"
@@ -103,10 +109,6 @@
                         </v-card>
                     </div>
                 </v-card-text>
-                <v-card-actions>
-                    <v-btn color="secondary" class="px-4 rounded-pill mx-auto" @click="isViewProcessVariables = false"
-                        variant="tonal">Close Dialog</v-btn>
-                </v-card-actions>
             </v-card>
         </v-dialog>
 
@@ -130,6 +132,9 @@ import VueBpmn from './Bpmn.vue';
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/BpmnPropertyPanel.vue';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
 import { Icon } from '@iconify/vue';
+import customBpmnModule from './customBpmn';
+import { VDataTable } from 'vuetify/labs/VDataTable'
+
 
 
 export default {
@@ -138,7 +143,8 @@ export default {
         VueBpmn,
         BpmnPropertyPanel,
         ProcessVariable,
-        Icon
+        Icon,
+        VDataTable
     },
     props: {
         processDefinition: Object,
@@ -149,7 +155,7 @@ export default {
         panelId: null,
         options: {
             propertiesPanel: {},
-            additionalModules: [],
+            additionalModules: [customBpmnModule],
             moddleExtensions: []
         },
         // headers: [{ title: 'Name', align: 'start', key: 'name', sortable: false, },
