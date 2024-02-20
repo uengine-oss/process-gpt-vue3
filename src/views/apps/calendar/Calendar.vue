@@ -1,4 +1,4 @@
-<!-- <script setup lang="ts">
+<script setup lang="ts">
 import 'v-calendar/dist/style.css';
 import { ref } from 'vue';
 import '@fullcalendar/core/vdom'
@@ -15,4 +15,4 @@ import FullCalendar from './FullCalender.vue';
             </UiParentCard>
         </v-col>
     </v-row>
-</template> -->
+</template>
