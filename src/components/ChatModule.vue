@@ -27,55 +27,60 @@ export default {
             this.userInfo = await this.storage.getUserInfo();
 
             await this.loadData(this.getDataPath());
-            await this.loadMessages(this.getDataPath());
+            // await this.loadMessages(this.getDataPath());
         },
         async getChatList() {
             var me = this;
-            me.userInfo = this.storage.getUserInfo();
+            this.userInfo = await this.storage.getUserInfo();
             // this.storage.delete(`db://chats/1`)
-            var option = {
-                sort: 'desc',
-                orderBy: null,
-                size: 20,
-                startAt: null,
-                endAt: null
-            };
-            this.storage.watch_added(`db://chats/1/messages`, option, function (item) {
-                if (me.isInitDone) {
-                    if (item.role == 'system') {
-                        if (me.messages[me.messages.length - 1].role == 'system') {
-                            me.messages[me.messages.length - 1] = item;
-                        } else {
-                            me.messages.push(item);
-                        }
-                    } else {
-                        if (item.email != me.userInfo.email) {
-                            me.messages.push(item);
-                        }
-                    }
-                }
-            });
-            await this.storage.list(`db://chats/1/messages`, option).then(function (messages) {
+            // var option = {
+            //     sort: 'desc',
+            //     orderBy: null,
+            //     size: 20,
+            //     startAt: null,
+            //     endAt: null
+            // };
+            let option = {
+                key: "id"
+            }
+            // this.storage.watch_added(`db://chats/1/messages`, option, function (item) {
+            //     if (me.isInitDone) {
+            //         if (item.role == 'system') {
+            //             if (me.messages[me.messages.length - 1].role == 'system') {
+            //                 me.messages[me.messages.length - 1] = item;
+            //             } else {
+            //                 me.messages.push(item);
+            //             }
+            //         } else {
+            //             if (item.email != me.userInfo.email) {
+            //                 me.messages.push(item);
+            //             }
+            //         }
+            //     }
+            // });
+
+            await this.storage.list(`db://chats/chat1`, option).then(function (messages) {
                 if (messages) {
-                    me.messages = messages.reverse();
+                    me.messages = messages.map(message => message.messages);
+                    // me.messages = messages.reverse();
                 }
                 me.isInitDone = true;
             });
         },
-        async getMoreChat() {
-            var option = {
-                sort: 'desc',
-                orderBy: null,
-                size: 11,
-                startAt: null,
-                endAt: this.messages[0].timeStamp
-            };
-            let messages = await this.storage.list(`db://chats/1/messages`, option);
-            if (messages) {
-                messages.splice(0, 1);
-                this.messages = messages.reverse().concat(this.messages);
-            }
-        },
+        // async getMoreChat() {
+        //     var option = {
+        //         sort: 'desc',
+        //         orderBy: null,
+        //         size: 11,
+        //         startAt: null,
+        //         endAt: this.messages[0].timeStamp
+        //     };
+        //     let messages = await this.storage.list(`db://chats/1/messages`, option);
+        //     if (messages) {
+        //         messages.splice(0, 1);
+        //         this.messages = messages.reverse().concat(this.messages);
+        //     }
+        // },
 
         getDataPath() {
             return this.$route.href.replace('/', '');
@@ -129,7 +134,8 @@ export default {
                     content: message,
                     replyUserName: this.replyUser.name,
                     replyContent: this.replyUser.content,
-                    replyUserEmail: this.replyUser.email
+                    replyUserEmail: this.replyUser.email,
+                    profile: this.userInfo.profile
                 };
             } else {
                 obj = {
@@ -137,7 +143,8 @@ export default {
                     email: role ? role + '@uengine.org' : this.userInfo.email,
                     role: role ? role : 'user',
                     timeStamp: Date.now(),
-                    content: message
+                    content: message,
+                    profile: this.userInfo.profile
                 };
             }
 
@@ -149,11 +156,12 @@ export default {
 
                 if (this.messages && this.messages.length > 0) {
                     this.messages.forEach((msg) => {
-                        if (msg.content)
+                        if (msg.content) {
                             chatMsgs.push({
                                 role: msg.role,
                                 content: msg.content
                             });
+                        }
                     });
                 }
 
@@ -161,28 +169,31 @@ export default {
                     role: 'user',
                     content: message
                 };
+                
                 chatMsgs.push(chatObj);
-
-                chatObj = this.createMessageObj(message);
-
-                this.messages.push(chatObj);
-
                 this.generator.previousMessages = [...this.generator.previousMessages, ...chatMsgs];
 
-                await this.generator.generate();
+                chatObj = this.createMessageObj(message);
+                this.messages.push(chatObj);
 
+                this.saveMessages(this.messages);
+                
                 this.messages.push({
                     role: 'system',
                     content: '...',
                     isLoading: true
                 });
 
+                await this.generator.generate();
+
                 this.replyUser = null;
             }
         },
-
         stopMessage() {
             this.generator.stop();
+        },
+
+        saveMessages(messages) {
         },
 
         async sendEditedMessage(index) {
@@ -199,21 +210,15 @@ export default {
                     });
                 }
 
-                this.generator.previousMessages = [...this.generator.previousMessages, ...chatMsgs];
-
-                await this.generator.generate();
-
                 this.messages.push({
                     role: 'system',
                     content: '...',
                     isLoading: true
                 });
-            }
-        },
 
-        sendNotification(uid, obj) {
-            const path = `users/${uid}/notifications`;
-            this.pushObject(path, obj);
+                this.generator.previousMessages = [...this.generator.previousMessages, ...chatMsgs];
+                await this.generator.generate();
+            }
         },
 
         jsonPathReplace(src, jsonPath, newData) {
@@ -365,11 +370,11 @@ export default {
                 let messageWriting = this.messages[this.messages.length - 1];
                 if (messageWriting.role == 'system' && messageWriting.isLoading) {
                     delete messageWriting.isLoading;
-                    messageWriting.content = error.message;
+                    messageWriting.content = error;
                 } else {
                     this.messages.push({
                         role: 'system',
-                        content: error.message
+                        content: error
                     });
                 }
             }

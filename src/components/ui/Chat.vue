@@ -39,9 +39,9 @@
                 <v-divider/>
             </div>
 
-            <perfect-scrollbar class="rightpartHeight h-100">
-                <v-btn v-if="type == 'chats' && filteredMessages.length > 0" style="position: absolute; left: 45%"
-                    @click="getMoreChat()">get more chat</v-btn>
+            <perfect-scrollbar class="rightpartHeight h-100" ref="scrollContainer" @scroll="handleScroll">
+                <!-- <v-btn v-if="type == 'chats' && filteredMessages.length > 0" style="position: absolute; left: 45%"
+                    @click="getMoreChat()">get more chat</v-btn> -->
 
                 <div class="d-flex">
                     <div class="w-100" style="height: calc(100vh - 320px)">
@@ -91,64 +91,85 @@
                                 </div>
                             </div>
 
-                            <div v-else class="d-flex align-items-start gap-3 mb-1 w-90">
-                                <div style="max-width: 40px;">
-                                    <v-avatar>
+                            <div v-else class="align-items-start gap-3 mb-1 w-100">
+                                <v-row class="ma-0 pa-0" style="margin-bottom:10px !important;">
+                                    <v-avatar style="margin-right:10px;">
                                         <img v-if="message.role == 'system'" src="@/assets/images/chat/chat-icon.png"
                                             max-height="48" max-width="48" />
-                                        <v-img v-else :src="userInfo.profile" :alt="message.name" height="48" width="48" />
+                                        <v-img v-else :src="message.profile" :alt="message.name" height="48" width="48" />
                                     </v-avatar>
-
-                                    <v-progress-circular v-if="message.isLoading" indeterminate color="grey"
-                                        class="mt-5"></v-progress-circular>
-                                </div>
-
-                                <div class="w-90">
-                                    <small class="text-medium-emphasis text-subtitle-2" v-if="message.timeStamp">
+                                    <div v-if="message.timeStamp" style="font-size:12px; padding-top:20px;">
                                         {{ message.role == 'system' ? 'System,' : message.name + ',' }}
                                         {{ formatTime(message.timeStamp) }}
-                                    </small>
+                                    </div>
+                                </v-row>
 
+                                <div class="w-100 pb-5">
                                     <v-sheet v-if="message.type == 'img'" class="mb-1">
                                         <img :src="message.content" class="rounded-md" alt="pro" width="250" />
                                     </v-sheet>
 
-                                    <v-sheet v-else class="bg-lightsecondary rounded-md px-3 py-2 mb-1"
-                                        @mouseover="replyIndex = index" @mouseleave="replyIndex = -1">
-                                        <pre class="text-body-1"
-                                            v-if="message.replyUserName">{{ message.replyUserName }}</pre>
-                                        <pre class="text-body-1"
-                                            v-if="message.replyContent">{{ message.replyContent }}</pre>
-                                        <v-divider v-if="message.replyContent"></v-divider>
+                                    <div class="progress-border" :class="{ animate: borderCompletedAnimated }">
+                                        <template v-if="message.role == 'system' && filteredMessages.length - 1 == index">
+                                            <span class="progress-border-span"></span>
+                                            <span class="progress-border-span"></span>
+                                            <span class="progress-border-span"></span>
+                                            <span class="progress-border-span"></span>
+                                        </template>
+                                        <v-sheet
+                                            class="bg-lightsecondary rounded-md px-3 py-2"
+                                            @mouseover="replyIndex = index"
+                                            @mouseleave="replyIndex = -1"
+                                        >
+                                            <pre class="text-body-1"
+                                                v-if="message.replyUserName"
+                                            >{{ message.replyUserName }}
+                                            </pre>
+                                            <pre class="text-body-1"
+                                                v-if="message.replyContent"
+                                            >{{ message.replyContent }}
+                                            </pre>
+                                            <v-divider v-if="message.replyContent"></v-divider>
 
-                                        <pre class="text-body-1">{{ message.content }}</pre>
+                                            <pre class="text-body-1">{{ message.content }}</pre>
 
-                                        <p style="margin-top: 5px" v-if="message.role == 'system' &&
-                                            index == filteredMessages.length - 1 &&
-                                            message['prompt'] &&
-                                            userInfo.email == message['prompt'].requestUserEmail
-                                            ">
-                                            <v-btn style="margin-right: 5px" size="small"
-                                                @click="processInstance(message)">y</v-btn>
-                                            <v-btn size="small">n</v-btn>
-                                        </p>
-                                        <v-btn v-if="replyIndex === index" @click="beforeReply(message)" icon="mdi-reply"
-                                            variant="text" size="x-small" class="bg-lightsecondary float-right"></v-btn>
+                                            <p style="margin-top: 5px" v-if="message.role == 'system' &&
+                                                index == filteredMessages.length - 1 &&
+                                                message['prompt'] &&
+                                                userInfo.email == message['prompt'].requestUserEmail
+                                                ">
+                                                <v-btn style="margin-right: 5px" size="small"
+                                                    @click="processInstance(message)">y</v-btn>
+                                                <v-btn size="small">n</v-btn>
+                                            </p>
+                                            <div style="position: relative;">
+                                                <v-btn v-if="replyIndex === index" @click="beforeReply(message)" icon="mdi-reply"
+                                                variant="text" size="x-small" style="position: absolute;right:0px; bottom:-5px; background-color:white;"></v-btn>
+                                            </div>
 
-                                        <v-btn v-if="message.jsonContent" class="mt-2" elevation="0"
-                                            @click="viewJSON(index)">View JSON</v-btn>
-                                        <pre v-if="isViewJSON.includes(index)"
-                                            class="text-body-1">{{ message.jsonContent }}</pre>
-                                    </v-sheet>
+                                            <v-btn v-if="message.jsonContent" class="mt-2" elevation="0"
+                                                @click="viewJSON(index)">View JSON</v-btn>
+                                            <pre v-if="isViewJSON.includes(index)"
+                                                class="text-body-1">{{ message.jsonContent }}</pre>
+                                        </v-sheet>
+                                        <v-progress-linear
+                                            v-if="message.role == 'system' && filteredMessages.length - 1 == index && isLoading"
+                                            indeterminate
+                                            class="my-progress-linear"
+                                        ></v-progress-linear>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </perfect-scrollbar>
+            <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
+                <RetrievalBox v-model:message="retrievalMsg"></RetrievalBox>
+            </div> -->
         </div>
         <v-divider />
-
+      
         <div class="text-body-1" v-if="isReply" style="margin-left: 10px">
             {{ replyUser.name }}님에게 답장
             <v-icon @click="cancelReply()">mdi-close</v-icon>
@@ -156,7 +177,9 @@
             <v-divider />
         </div>
 
-        <form class="d-flex align-center pa-0" @submit.prevent="send">
+        <form class="d-flex align-center pa-0">
+            <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
+            <div id="imagePreview" style="max-width: 300px;"></div>
             <v-textarea
                 variant="solo"
                 hide-details
@@ -164,9 +187,10 @@
                 color="primary"
                 class="shadow-none"
                 density="compact"
-                :placeholder="$t('chat.placeholder')"
+                :placeholder="$t('chat.inputMessage')"
                 auto-grow
                 rows="1"
+                @keydown.enter="!$event.shiftKey && send()"
                 :disabled="disableChat"
             >
                 <!-- <template v-slot:prepend-inner>
@@ -177,15 +201,15 @@
                 <template v-slot:append-inner>
                     <v-btn v-if="!isLoading" icon variant="text" type="submit" @click="send" class="text-medium-emphasis"
                         :disabled="!newMessage">
-                        <SendIcon size="24" />
+                        <Icon width="24" height="24" icon="fluent:document-one-page-sparkle-16-regular"  />
                     </v-btn>
                     <v-btn v-else icon variant="text" @click="isLoading = !isLoading" class="text-medium-emphasis">
                         <Icon icon="ic:outline-stop-circle" width="30" height="30" />
                     </v-btn>
-                    <!-- <v-btn icon variant="text" class="text-medium-emphasis">
+                    <v-btn icon variant="text" class="text-medium-emphasis" @click="uploadImage">
                         <PhotoIcon size="20" />
                     </v-btn>
-                    <v-btn icon variant="text" class="text-medium-emphasis">
+                    <!-- <v-btn icon variant="text" class="text-medium-emphasis">
                         <PaperclipIcon size="20" />
                     </v-btn> -->
                 </template>
@@ -196,11 +220,20 @@
 
 <script>
 import { Icon } from '@iconify/vue';
+import RetrievalBox from '../retrieval/RetrievalBox.vue'
+
+import ProgressAnimated from '@/components/ui/ProgressAnimated.vue';
+import ScrollBottomHandle from '@/components/ui/ScrollBottomHandle.vue';
 
 export default {
     components: {
-        Icon
-    },
+        Icon,
+        RetrievalBox
+   },
+    mixins: [
+        ProgressAnimated,
+        ScrollBottomHandle
+    ],
     props: {
         name: String,
         messages: Array,
@@ -214,14 +247,31 @@ export default {
         return {
             isReply: false,
             newMessage: '',
+            retrievalMsg: '',
             hoverIndex: -1,
             editIndex: -1,
             replyIndex: -1,
             replyUser: null,
             isViewDetail: false,
-            isViewJSON: []
+            isViewJSON: [],
+            attachedImg: null,
         };
     },
+    watch: {
+        // isLoading 상태의 변화를 감시합니다.
+        isLoading(newVal) {
+            if (!newVal) {
+                // isLoading이 false로 변경되면 animateBorder 메소드를 호출합니다.
+                this.animateBorder();
+            }
+        },
+    },
+    mounted () {
+    },
+
+    beforeUnmount () {
+    },
+
     computed: {
         filteredAlert() {
             const textObj = {
@@ -241,7 +291,7 @@ export default {
             var list = [];
             this.messages.forEach((item) => {
                 let data = JSON.parse(JSON.stringify(item));
-                if (data.content) {
+                if (data.content || data.jsonContent) {
                     list.push(data);
                 }
             });
@@ -293,9 +343,18 @@ export default {
             this.replyUser = message;
         },
         send() {
+            if (this.newMessage) this.retrievalMsg = this.newMessage
             if (this.editIndex >= 0) {
                 this.$emit('sendEditedMessage', this.editIndex + 1);
                 this.editIndex = -1;
+            } else if (this.attachedImg) {
+                this.$emit('sendMessage', {
+                    image: this.attachedImg,
+                    message: this.newMessage
+                });
+                $('#imagePreview').append('');
+                this.attachedImg = null;
+                this.newMessage = '';
             } else {
                 this.$emit('sendMessage', this.newMessage);
                 this.newMessage = '';
@@ -322,12 +381,40 @@ export default {
             } else {
                 this.isViewJSON = this.isViewJSON.filter((idx) => idx != index);
             }
-        }
+        },
+        uploadImage() {
+            this.$refs.uploader.click();
+        },
+        changeImage(e) {
+            const me = this;
+            const imageFile = e.target.files[0];
+            const reader = new FileReader();
+
+            reader.onloadend = async () => {
+                var html = `<img src=${reader.result} width='100%' />`;
+                $('#imagePreview').append(html);
+                me.attachedImg = reader.result;
+            };
+
+            if (imageFile) {
+                reader.readAsDataURL(imageFile);
+            }
+        },
     }
 };
 </script>
 
 <style lang="scss">
+.my-progress-linear .v-progress-linear__indeterminate {
+    background: linear-gradient(to right, #E1F5FE, #80DEEA, #1565C0) !important;
+}
+.chat-reply-icon {
+    position:absolute;
+    bottom:-5px;
+    right:0px;
+    z-index:1;
+    background-color:white;
+}
 .w-90 {
     width: 90% !important;
 }

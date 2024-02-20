@@ -25,6 +25,7 @@ export default class StorageBaseSupabase {
                 }
             }
         });
+
         if (!result.error) {
             this.writeUserData(result.data);
             return result.data;
@@ -49,10 +50,9 @@ export default class StorageBaseSupabase {
             const userInfo = {
                 email: result.data.user.email,
                 name: result.data.user.user_metadata.name,
-                profile: result.data.user.user_metadata.profile,
+                profile: window.localStorage.getItem("picture"),
                 uid: result.data.user.id,
                 role: result.data.user.role,
-                phone: result.data.user.phone,
                 last_sign_in_at: result.data.user.last_sign_in_at
             }
             return userInfo;
@@ -85,7 +85,7 @@ export default class StorageBaseSupabase {
                 }
             }
         } catch(error) {
-            console.log(`GET STRING: ${e}`);
+            console.log(`GET STRING: ${error}`);
             return { Error: error }
         }
     }
@@ -114,7 +114,7 @@ export default class StorageBaseSupabase {
                 }
             }
         } catch(error) {
-            console.log(`GET OBJECT: ${e}`);
+            console.log(`GET OBJECT: ${error}`);
             return { Error: error }
         }
     }
@@ -140,7 +140,7 @@ export default class StorageBaseSupabase {
                 }
             }
         } catch(error) {
-            console.log(`PUT STRING: ${e}`);
+            console.log(`PUT STRING: ${error}`);
             return { Error: error }
         }
     }
@@ -166,7 +166,7 @@ export default class StorageBaseSupabase {
                 }
             }
         } catch(error) {
-            console.log(`PUT OBJECT: ${e}`);
+            console.log(`PUT OBJECT: ${error}`);
             return { Error: error }
         }
     }
@@ -192,7 +192,7 @@ export default class StorageBaseSupabase {
                 }
             }
         } catch(error) {
-            console.log(`PUSH STRING: ${e}`);
+            console.log(`PUSH STRING: ${error}`);
             return { Error: error }
         }
     }
@@ -217,7 +217,7 @@ export default class StorageBaseSupabase {
                 }
             }
         } catch(error) {
-            console.log(`PUSH OBJECT: ${e}`);
+            console.log(`PUSH OBJECT: ${error}`);
             return { Error: error }
         }
     }
@@ -238,7 +238,7 @@ export default class StorageBaseSupabase {
 
             return false;
         } catch(error) {
-            console.log(`DELETE: ${e}`);
+            console.log(`DELETE: ${error}`);
             return { Error: error }
         }
     }
@@ -246,16 +246,15 @@ export default class StorageBaseSupabase {
     async watch(path, options) {
         try {
             let obj = this.formatDataPath(path, options);
-            await window.$supabase.channel('channel').on('postgres_changes', {
-                event: '*',
-                schema: 'public',
-                table: obj.table,
-            }, (payload) => {
-                console.log('received!', payload)
-                callback(payload);
-            });
+            await window.$supabase
+                .channel(obj.table)
+                .on('*', payload =>
+                    console.log('received!', payload)
+                )
+                .subscribe();
+            
         } catch(error) {
-            console.log(`WATCH: ${e}`);
+            console.log(`WATCH: ${error}`);
             return { Error: error }
         }
     }
@@ -272,13 +271,37 @@ export default class StorageBaseSupabase {
     async list(path, options) {
         try {
             let obj = this.formatDataPath(path, options);
-            return await window.$supabase.from(obj.table).select();
+            if (obj.searchVal) {
+                const { data, error } = await window.$supabase
+                    .from(obj.table)
+                    .select()
+                    .eq(obj.searchKey, obj.searchVal);
+                
+                if (error) {
+                    return error;
+                } else {
+                    if (data.length > 0) return data;
+                    return null;
+                }
+            } else {
+                const { data, error } = await window.$supabase
+                    .from(obj.table)
+                    .select();
+                
+                if (error) {
+                    return error;
+                } else {
+                    if (data.length > 0) return data;
+                    return null;
+                }
+            }
         } catch(error) {
+            console.log(`GET OBJECT: ${error}`);
             return { Error: error }
         }
     }
 
-    writeUserData(value) {
+    async writeUserData(value) {
         if (value.session) {
             window.localStorage.setItem("accessToken", value.session.access_token);
         }
@@ -286,9 +309,13 @@ export default class StorageBaseSupabase {
             window.localStorage.setItem("author", value.user.email);
             window.localStorage.setItem("userName", value.user.user_metadata.name);
             window.localStorage.setItem("email", value.user.email);
-            window.localStorage.setItem("picture", value.user.profile);
+            // window.localStorage.setItem("picture", value.user.profile);
             window.localStorage.setItem("uid", value.user.id);
         }
+        var userInfo = await this.getObject(`users/${value.user.id}`, {key: 'id'});
+        if (userInfo) {
+            window.localStorage.setItem("picture", userInfo.profile);
+        }            
     }
 
     formatDataPath(path, options) {

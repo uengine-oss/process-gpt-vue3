@@ -75,10 +75,22 @@ export default {
             }
         },
         async beforeSendMessage(newMessage) {
+            let uuid = this.uuid()
             if(newMessage && newMessage.includes("시작하겠습니다.")){
-                this.putObject(`chats/1/messages/${this.uuid()}`, this.createMessageObj(newMessage, 'system'));
+                let message = {
+                    "messages": this.createMessageObj(newMessage, 'system'),
+                    "id": "chat1",
+                    "uid": uuid,
+                }
+                this.putObject(`chats/${uuid}`, message);
             } else {
-                this.putObject(`chats/1/messages/${this.uuid()}`, this.createMessageObj(newMessage));
+                let message = {
+                    "messages": this.createMessageObj(newMessage),
+                    "id": "chat1",
+                    "uid": uuid,
+                }
+                this.putObject(`chats/${uuid}`, message);
+
                 if(!this.generator.contexts) {
                     let contexts = await this.queryFromVectorDB(newMessage);
                     this.generator.setContexts(contexts);
@@ -130,13 +142,16 @@ export default {
             // }
         },
 
-        afterGenerationFinished(response) {
+        async afterGenerationFinished(response) {
             if(response == '.') {
                 this.messages.splice(this.messages.length - 1, 1)
             } else {
                 let obj = this.createMessageObj(response, 'system')
                 if(response && response.includes("{")){
                     let responseObj = partialParse(response)
+                    if(responseObj.work == 'DocumentQuery'){
+                        /// ...
+                    }else
                     if(responseObj.work == 'ScheduleRegistration'){
                         let start = responseObj.startDateTime.split('/')
                         let startDate = start[0].split("-")
@@ -187,10 +202,16 @@ export default {
                         //     color: '#1a97f5',
                         // },
                         
-    
+                        let option = {
+                            key: "uid"
+                        }
+                        const data = await this.storage.getObject(`db://users/${localStorage.getItem('uid')}`, option);
+                        let calender = data ? data.calender:{}
                         let uuid = this.uuid()
-                        let path = `users/${localStorage.getItem('uid')}/calender/${startDate[0]}/${startDate[1]}/${uuid}`
-                        let calenderObj = {
+                        if(!calender[`${startDate[0]}_${startDate[1]}`]){
+                            calender[`${startDate[0]}_${startDate[1]}`] = {}
+                        }
+                        calender[`${startDate[0]}_${startDate[1]}`][uuid] = {
                             id: uuid,
                             title: responseObj.title,
                             allDay: true,
@@ -198,7 +219,22 @@ export default {
                             end: new Date(endDate[0], endDate[1] - 1, endDate[2]),
                             color: '#615dff',
                         }
-                        this.putObject(path, calenderObj);
+                        let calenderObj = {
+                            "uid": localStorage.getItem('uid'),
+                            "calender": calender
+                        }
+                        this.putObject(`users/${localStorage.getItem('uid')}`, calenderObj);
+
+                        // let path = `users/${localStorage.getItem('uid')}/calender/${startDate[0]}/${startDate[1]}/${uuid}`
+                        // let calenderObj = {
+                        //     id: uuid,
+                        //     title: responseObj.title,
+                        //     allDay: true,
+                        //     start: new Date(startDate[0], startDate[1] - 1, startDate[2]),
+                        //     end: new Date(endDate[0], endDate[1] - 1, endDate[2]),
+                        //     color: '#615dff',
+                        // }
+                        // this.putObject(path, calenderObj);
     
                         let todoObj = {
                             definitionId: null,
@@ -219,8 +255,13 @@ export default {
                         }
                     }
                 }
-
-                this.putObject(`chats/1/messages/${this.uuid()}`, obj);
+                let uuid = this.uuid()
+                let message = {
+                    "messages": obj,
+                    "id": "chat1",
+                    "uid": uuid,
+                }
+                this.putObject(`chats/${uuid}`, message);
             }
         },
 

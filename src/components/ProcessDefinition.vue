@@ -3,8 +3,15 @@
         <v-row style="height: 100%" class="ma-0">
             <v-col class="d-flex ma-0 pa-0">
                 <v-card elevation="1" style="border-radius: 0px !important;">
-                    <v-btn @click="openProcessVariables" variant="text">Process
-                        Variables</v-btn>
+                    <v-tooltip :text="$t('processDefinition.processVariables')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn @click="openProcessVariables" icon v-bind="props"
+                                style="margin:10px 0px -10px 20px;"
+                            >
+                                <Icon icon="tabler:variable" width="32" height="32" />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
                     <vue-bpmn :bpmn="bpmn" :options="options" v-on:error="handleError" v-on:shown="handleShown"
                         v-on:loading="handleLoading" v-on:openPanel="(id) => openPanel(id)"
                         v-on:update-xml="val => $emit('update-xml', val)"
@@ -21,16 +28,23 @@
         </v-row>
         <v-dialog v-model="isViewProcessVariables" max-width="1000">
             <v-card>
-                <v-card-text style="height: 1000px; width: 1000px">
-                    <v-data-table items-per-page="5" class="border rounded-md">
+                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{ $t('processDefinition.editProcessData') }}</v-card-title>
+                <v-btn icon style="position:absolute; right:5px; top:5px;" @click="isViewProcessVariables = false">
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
+                <v-card-text style="height: 1000px; width: 1000px;">
+                    <VDataTable class="border rounded-md"
+                        :items-per-page="5"
+                        :items-per-page-text="$t('processDefinition.itemsPerPage')"
+                    >
                         <thead>
                             <tr>
-                                <th class="text-subtitle-1 font-weight-semibold">Name</th>
-                                <th class="text-subtitle-1 font-weight-semibold">Type</th>
-                                <th class="text-subtitle-1 font-weight-semibold">Description</th>
-                                <th class="text-subtitle-1 font-weight-semibold">DataSource</th>
-                                <th class="text-subtitle-1 font-weight-semibold">Query</th>
-                                <th class="text-subtitle-1 font-weight-semibold">Actions</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.name') }}</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.type') }}</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.description') }}</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.dataSource') }}</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.query') }}</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -47,14 +61,14 @@
                                 </td>
                                 <td>
                                     <div class="d-flex align-center">
-                                        <v-tooltip text="Edit">
+                                        <v-tooltip :text="$t('processDefinition.edit')">
                                             <template v-slot:activator="{ props }">
                                                 <v-btn icon flat @click="editItem(item)" v-bind="props">
                                                     <PencilIcon stroke-width="1.5" size="20" class="text-primary" />
                                                 </v-btn>
                                             </template>
                                         </v-tooltip>
-                                        <v-tooltip text="Delete">
+                                        <v-tooltip :text="$t('processDefinition.delete')">
                                             <template v-slot:activator="{ props }">
                                                 <v-btn icon flat @click="deleteItem(item)" v-bind="props">
                                                     <TrashIcon stroke-width="1.5" size="20" class="text-error" />
@@ -65,34 +79,48 @@
                                 </td>
                             </tr>
                         </tbody>
-                    </v-data-table>
-                    <v-btn right @click="addProcessVaribles" variant="text">ADD PV</v-btn>
+                    </VDataTable>
+                    <v-row class="ma-0" style="margin:10px 0px 10px 0px !important;">
+                        <v-card @click="addProcessVaribles"
+                            elevation="9"
+                            variant="outlined"
+                            style="padding: 10px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;"
+                        >
+                            <div style="display: flex; justify-content: center; align-items: center;">
+                                <Icon icon="streamline:add-1-solid" width="24" height="24" style="color: #5EB2E8" />
+                            </div>
+                        </v-card>
+                    </v-row>
                     <div v-if="processVariblesWindow">
-                        <v-card elevation="8">
-                            <v-card-text>
-                                <process-variable
-                                    @add-variables="val => copyProcessDefinition.data.push(val)"></process-variable>
+                        <v-card variant="outlined">
+                            <v-card-text class="ma-0 pa-0">
+                                <process-variable mode="add"
+                                    @add-variables="val => copyProcessDefinition.data.push(val)"
+                                ></process-variable>
                             </v-card-text>
                         </v-card>
-
+                    </div>
+                    <div v-if="editDialog">
+                        <v-card variant="outlined">
+                            <v-card-text class="ma-0 pa-0">
+                                <process-variable :key="editComponentKey" :variable="editedItem" mode="edit"
+                                    @update-variables="val => updateVariable(val)"
+                                ></process-variable>
+                            </v-card-text>
+                        </v-card>
                     </div>
                 </v-card-text>
-                <v-card-actions>
-                    <v-btn color="secondary" class="px-4 rounded-pill mx-auto" @click="isViewProcessVariables = false"
-                        variant="tonal">Close Dialog</v-btn>
-                </v-card-actions>
             </v-card>
-            <v-dialog v-model="editDialog" max-width="500">
-                <v-card>
-                    <v-card-title class="px-4 pt-6 justify-space-between d-flex align-center">
-                    </v-card-title>
-                    <v-card-text class="px-4">
-                        <process-variable :variable="editedItem"
-                            @update-variables="val => updateVariable(val)"></process-variable>
-                    </v-card-text>
-                </v-card>
-            </v-dialog>
         </v-dialog>
+
+        <!-- <v-dialog v-model="editDialog" max-width="1000">
+            <v-card>
+                <v-card-text class="px-4">
+                    <process-variable :variable="editedItem" mode="edit"
+                        @update-variables="val => updateVariable(val)"></process-variable>
+                </v-card-text>
+            </v-card>
+        </v-dialog> -->
 
         <!-- <v-navigation-drawer permanent location="right" :width="400"> {{ panelId }} </v-navigation-drawer> -->
     </div>
@@ -101,18 +129,23 @@
 <script>
 import partialParse from 'partial-json-parser';
 import { VectorStorage } from 'vector-storage';
-import { VDataTable } from 'vuetify/labs/VDataTable'
 import VueBpmn from './Bpmn.vue';
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/BpmnPropertyPanel.vue';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
+import { Icon } from '@iconify/vue';
+import customBpmnModule from './customBpmn';
+import { VDataTable } from 'vuetify/labs/VDataTable'
+
+
 
 export default {
     name: 'ProcessDefinition',
     components: {
         VueBpmn,
         BpmnPropertyPanel,
-        VDataTable,
-        ProcessVariable
+        ProcessVariable,
+        Icon,
+        VDataTable
     },
     props: {
         processDefinition: Object,
@@ -123,7 +156,7 @@ export default {
         panelId: null,
         options: {
             propertiesPanel: {},
-            additionalModules: [],
+            additionalModules: [customBpmnModule],
             moddleExtensions: []
         },
         element: null,
@@ -133,7 +166,9 @@ export default {
         processVariblesWindow: false,
         editDialog: false,
         editedIndex: null,
-        editedItem: null
+        editedItem: null,
+        lastEditedIndex: 0,
+        editComponentKey: 0,
     }),
     computed() {
     },
@@ -182,7 +217,18 @@ export default {
         editItem(item) {
             this.editedIndex = this.copyProcessDefinition.data.indexOf(item);
             this.editedItem = Object.assign({}, item);
-            this.editDialog = true;
+            
+            if(this.processVariblesWindow == true) {
+                this.processVariblesWindow = false;
+            }
+            this.editComponentKey ^= 1; // ProcessVariable 컴포넌트 새로고침용 변수
+
+            if(this.lastEditedIndex == this.editedIndex) {
+                this.editDialog = !this.editDialog
+            } else {
+                this.editDialog = true
+            }
+            this.lastEditedIndex = this.editedIndex
         },
         deleteItem(item) {
             const index = this.copyProcessDefinition.data.indexOf(item);
@@ -218,6 +264,9 @@ export default {
             this.isViewProcessVariables = !this.isViewProcessVariables
         },
         addProcessVaribles() {
+            if(this.editDialog == true) {
+                this.editDialog = false
+            }
             this.processVariblesWindow = !this.processVariblesWindow
         },
         updateElement(element) {

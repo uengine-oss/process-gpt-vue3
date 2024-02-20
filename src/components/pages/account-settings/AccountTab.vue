@@ -26,12 +26,9 @@ const storeaddress = ref('814 Howard Street, 120065, India');
 const storage = StorageBase.getStorage("supabase");
 const name = localStorage.getItem("userName");
 const email = localStorage.getItem("email");
+const uid = localStorage.getItem("uid");
 
-// 유저 이름 변경
-const userInfo = storage?.getUserInfo();
- 
 // 프로필 이미지 변경 관련
-
 const picture = localStorage.getItem("picture");
 const imageChangeDialog = ref(false);
 const selectedProfileImage = ref("")
@@ -42,9 +39,15 @@ function imageChange(profileImageUrl: string) {
 }
 
 // 유저 프로필 저장 관련
-function saveUserProfile() {
+async function saveUserProfile() {
     if (selectedProfileImage.value) {
         localStorage.setItem("picture", selectedProfileImage.value);
+        await storage?.putObject('users', {
+            id: uid, 
+            username: name,
+            email: email,
+            profile: selectedProfileImage.value
+        });
         window.location.reload();
     }
 }

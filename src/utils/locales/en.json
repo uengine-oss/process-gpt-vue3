@@ -7,7 +7,7 @@
         "pricing" : "pricing",
         "documentation" : "documentation",
         "support" : "Support",
-        "preview" : "Preview",
+        "start" : "Start",
         "title" : "Easily initiate from AI-based process management to execution.",
         "subTitle" : "Process definition, organizational chart management, To-Do management, process execution, process monitoring, process analysis."
     },
@@ -45,13 +45,32 @@
     "processDefinition" : {
         "title" : "Process Definition",
         "cardTitle" : "Process Definition Management",
-        "processDefinitionExplanation" : "Manage the process interactively. For example, you can issue commands like: \n'Register the sales management process as follows:\n1. Register sales opportunities including customer name, estimated business size, key person, requirements\n2. Proposal preparation: proposal contents, pricing\n3. Winning or losing an order\n4. If the order is won, proceed with contract execution'"
+        "processDefinitionExplanation" : "Manage the process interactively. For example, you can issue commands like: \n'Register the sales management process as follows:\n1. Register sales opportunities including customer name, estimated business size, key person, requirements\n2. Proposal preparation: proposal contents, pricing\n3. Winning or losing an order\n4. If the order is won, proceed with contract execution'",
+        "name" : "Name",
+        "type" : "Type",
+        "description" : "Description",
+        "dataSource" : "DataSource",
+        "query" : "Query",
+        "actions" : "Actions",
+        "itemsPerPage" : "Items per page",
+        "processVariables" : "Process Variables",
+        "editProcessData" : "Edit Process Data",
+        "edit" : "Edit",
+        "delete" : "Delete"
+    },
+    "ProcessVariable" : {
+        "name" : "Name",
+        "type" : "Type",
+        "description" : "Description",
+        "dataSource" : "DataSource",
+        "add" : "Add",
+        "edit" : "Edit"
     },
     "processList" : {
         "title" : "Process List"
     },
     "chat" : {
-        "placeholder": "Type a Message"
+        "inputMessage": "Type a Message"
     },
     "accountTab" : {
         "accountSetting" : "Account Settings",
