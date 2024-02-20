@@ -3,7 +3,7 @@
         <v-col cols="12">
             <v-row class="align-center ">
                 <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
-                    <v-label class=" font-weight-medium" for="hbnm">Name</v-label>
+                    <v-label class=" font-weight-medium" for="hbnm">{{ $t('ProcessVariable.name') }}</v-label>
                 </v-col>
                 <v-col cols="12" sm="9">
                     <v-text-field v-model="processVariable.name" color="primary" variant="outlined" type="text" id="hbnm"
@@ -12,7 +12,7 @@
             </v-row>
             <v-row class="align-center">
                 <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
-                    <v-label class=" font-weight-medium" for="hcpm">Type</v-label>
+                    <v-label class=" font-weight-medium" for="hcpm">{{ $t('ProcessVariable.type') }}</v-label>
                 </v-col>
                 <v-col cols="12" sm="9">
                     <v-autocomplete v-model="processVariable.type" :items="types" color="primary" variant="outlined"
@@ -21,7 +21,7 @@
             </v-row>
             <v-row class="align-center">
                 <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
-                    <v-label class=" font-weight-medium" for="hem">Description</v-label>
+                    <v-label class=" font-weight-medium" for="hem">{{ $t('ProcessVariable.description') }}</v-label>
                 </v-col>
                 <v-col cols="12" sm="9">
                     <v-text-field v-model="processVariable.description" color="primary" variant="outlined" id="hem"
@@ -30,18 +30,18 @@
             </v-row>
             <v-row class="align-center">
                 <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
-                    <v-label class=" font-weight-medium" for="hph">DataSource</v-label>
+                    <v-label class=" font-weight-medium" for="hph">{{ $t('ProcessVariable.dataSource') }}</v-label>
                 </v-col>
                 <v-col cols="12" sm="9">
                     <v-autocomplete v-model="processVariable.datasource.type" :items="datasources" color="primary"
                         variant="outlined" hide-details></v-autocomplete>
                 </v-col>
                 <v-col cols="12">
-                    <v-textarea v-if="processVariable.datasource?.type == 'sql'"
+                    <v-textarea v-if="processVariable.datasource?.type == 'SQL'"
                         v-model="processVariable.datasource.sql"
                     ></v-textarea>
-                    <v-btn v-if="processVariable.datasource?.type == 'sql'" variant="outlined" color="primary" rounded="pill"  size="small" @click="generateSql()">generate</v-btn>
-                    <v-btn style="margin-left: 5px;" color="success" variant="outlined" rounded="pill" v-if="processVariable.datasource?.type == 'sql'" size="small" @click="testSql()">test</v-btn>
+<v-btn v-if="processVariable.datasource?.type == 'SQL'" variant="outlined" color="primary" rounded="pill"  size="small" @click="generateSql()">generate</v-btn>
+                    <v-btn style="margin-left: 5px;" color="success" variant="outlined" rounded="pill" v-if="processVariable.datasource?.type == 'SQL'" size="small" @click="testSql()">test</v-btn>
                     <v-row v-if="processVariable.table" class="my-5">
                         <v-col cols="12">
                             <v-card outlined>
@@ -59,8 +59,8 @@
             </v-row>
             <v-row class="ma-0 mt-2">
                 <v-spacer></v-spacer>
-                <v-btn v-if="mode === 'add'" color="primary" rounded="pill" @click="addVariable">Add</v-btn>
-                <v-btn v-else color="primary" rounded="pill" >edit</v-btn>
+                <v-btn v-if="mode === 'add'" color="primary" rounded="pill" @click="addVariable">{{ $t('ProcessVariable.add') }}</v-btn>
+                <v-btn v-else color="primary" rounded="pill" >{{ $t('ProcessVariable.edit') }}</v-btn>
             </v-row>
         </v-col>
     </v-row>
@@ -78,7 +78,7 @@ export default {
     },
     data() {
         return {
-            datasources: ["bpmn", "sql"],
+            datasources: ["BPMN", "SQL"],
             types: ["Text", "Number", "Date", "Attachment"],
             processVariable: {
                 name: "",
@@ -128,7 +128,7 @@ export default {
         if (this.variable) {
             if (!this.variable.datasource) {
                 this.variable.datasource = {
-                    type: "bpmn",
+                    type: "BPMN",
                     sql: ""
                 }
             }

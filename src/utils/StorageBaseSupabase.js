@@ -25,6 +25,7 @@ export default class StorageBaseSupabase {
                 }
             }
         });
+
         if (!result.error) {
             this.writeUserData(result.data);
             return result.data;
@@ -49,10 +50,9 @@ export default class StorageBaseSupabase {
             const userInfo = {
                 email: result.data.user.email,
                 name: result.data.user.user_metadata.name,
-                profile: result.data.user.user_metadata.profile,
+                profile: window.localStorage.getItem("picture"),
                 uid: result.data.user.id,
                 role: result.data.user.role,
-                phone: result.data.user.phone,
                 last_sign_in_at: result.data.user.last_sign_in_at
             }
             return userInfo;
@@ -301,7 +301,7 @@ export default class StorageBaseSupabase {
         }
     }
 
-    writeUserData(value) {
+    async writeUserData(value) {
         if (value.session) {
             window.localStorage.setItem("accessToken", value.session.access_token);
         }
@@ -309,9 +309,13 @@ export default class StorageBaseSupabase {
             window.localStorage.setItem("author", value.user.email);
             window.localStorage.setItem("userName", value.user.user_metadata.name);
             window.localStorage.setItem("email", value.user.email);
-            window.localStorage.setItem("picture", value.user.profile);
+            // window.localStorage.setItem("picture", value.user.profile);
             window.localStorage.setItem("uid", value.user.id);
         }
+        var userInfo = await this.getObject(`users/${value.user.id}`, {key: 'id'});
+        if (userInfo) {
+            window.localStorage.setItem("picture", userInfo.profile);
+        }            
     }
 
     formatDataPath(path, options) {

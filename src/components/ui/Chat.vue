@@ -96,7 +96,7 @@
                                     <v-avatar style="margin-right:10px;">
                                         <img v-if="message.role == 'system'" src="@/assets/images/chat/chat-icon.png"
                                             max-height="48" max-width="48" />
-                                        <v-img v-else :src="userInfo.profile" :alt="message.name" height="48" width="48" />
+                                        <v-img v-else :src="message.profile" :alt="message.name" height="48" width="48" />
                                     </v-avatar>
                                     <div v-if="message.timeStamp" style="font-size:12px; padding-top:20px;">
                                         {{ message.role == 'system' ? 'System,' : message.name + ',' }}
@@ -163,11 +163,9 @@
                                             <pre v-if="isViewJSON.includes(index)"
                                                 class="text-body-1">{{ message.jsonContent }}</pre>
                                         </v-sheet>
-
                                         <v-progress-linear
                                             v-if="message.role == 'system' && filteredMessages.length - 1 == index && isLoading"
-                                            v-model="value"
-                                            :buffer-value="bufferValue"
+                                            indeterminate
                                             class="my-progress-linear"
                                         ></v-progress-linear>
                                     </div>
@@ -191,6 +189,8 @@
         </div>
 
         <form class="d-flex align-center pa-0">
+            <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
+            <div id="imagePreview" style="max-width: 300px;"></div>
             <v-textarea
                 variant="solo"
                 hide-details
@@ -198,7 +198,7 @@
                 color="primary"
                 class="shadow-none"
                 density="compact"
-                :placeholder="$t('chat.placeholder')"
+                :placeholder="$t('chat.inputMessage')"
                 auto-grow
                 rows="1"
                 @keydown.enter="!$event.shiftKey && send()"
@@ -212,15 +212,15 @@
                 <template v-slot:append-inner>
                     <v-btn v-if="!isLoading" icon variant="text" type="submit" @click="send" class="text-medium-emphasis"
                         :disabled="!newMessage">
-                        <SendIcon size="24" />
+                        <Icon width="24" height="24" icon="fluent:document-one-page-sparkle-16-regular"  />
                     </v-btn>
                     <v-btn v-else icon variant="text" @click="isLoading = !isLoading" class="text-medium-emphasis">
                         <Icon icon="ic:outline-stop-circle" width="30" height="30" />
                     </v-btn>
-                    <!-- <v-btn icon variant="text" class="text-medium-emphasis">
+                    <v-btn icon variant="text" class="text-medium-emphasis" @click="uploadImage">
                         <PhotoIcon size="20" />
                     </v-btn>
-                    <v-btn icon variant="text" class="text-medium-emphasis">
+                    <!-- <v-btn icon variant="text" class="text-medium-emphasis">
                         <PaperclipIcon size="20" />
                     </v-btn> -->
                 </template>
@@ -265,19 +265,10 @@ export default {
             replyUser: null,
             isViewDetail: false,
             isViewJSON: [],
-            value: 10,
-            bufferValue: 20,
-            interval: 0,
+            attachedImg: null,
         };
     },
     watch: {
-        value (val) {
-            if (val < 100) return
-
-            this.value = 0
-            this.bufferValue = 10
-            this.startBuffer()
-        },
         // isLoading 상태의 변화를 감시합니다.
         isLoading(newVal) {
             if (!newVal) {
@@ -287,11 +278,9 @@ export default {
         },
     },
     mounted () {
-      this.startBuffer()
     },
 
     beforeUnmount () {
-      clearInterval(this.interval)
     },
 
     computed: {
@@ -337,14 +326,6 @@ export default {
         },
     },
     methods: {
-        startBuffer () {
-            clearInterval(this.interval)
-
-            this.interval = setInterval(() => {
-            this.value += Math.random() * (15 - 5) + 5
-            this.bufferValue += Math.random() * (15 - 5) + 6
-            }, 200)
-        },
         viewProcess() {
             this.$emit('viewProcess');
         },
@@ -376,6 +357,14 @@ export default {
             if (this.editIndex >= 0) {
                 this.$emit('sendEditedMessage', this.editIndex + 1);
                 this.editIndex = -1;
+            } else if (this.attachedImg) {
+                this.$emit('sendMessage', {
+                    image: this.attachedImg,
+                    message: this.newMessage
+                });
+                $('#imagePreview').append('');
+                this.attachedImg = null;
+                this.newMessage = '';
             } else {
                 this.$emit('sendMessage', this.newMessage);
                 this.newMessage = '';
@@ -402,13 +391,31 @@ export default {
             } else {
                 this.isViewJSON = this.isViewJSON.filter((idx) => idx != index);
             }
-        }
+        },
+        uploadImage() {
+            this.$refs.uploader.click();
+        },
+        changeImage(e) {
+            const me = this;
+            const imageFile = e.target.files[0];
+            const reader = new FileReader();
+
+            reader.onloadend = async () => {
+                var html = `<img src=${reader.result} width='100%' />`;
+                $('#imagePreview').append(html);
+                me.attachedImg = reader.result;
+            };
+
+            if (imageFile) {
+                reader.readAsDataURL(imageFile);
+            }
+        },
     }
 };
 </script>
 
 <style lang="scss">
-.my-progress-linear .v-progress-linear__determinate {
+.my-progress-linear .v-progress-linear__indeterminate {
     background: linear-gradient(to right, #E1F5FE, #80DEEA, #1565C0) !important;
 }
 .chat-reply-icon {

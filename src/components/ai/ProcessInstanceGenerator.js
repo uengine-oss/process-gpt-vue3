@@ -12,12 +12,19 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
             answer: "",
             process_instance_id: "",
             process_definition_id: "",
+            userInfo: client.userInfo,
+            image: null,
         };
     }
 
-    beforeGenerate(newMessage, isNew) {
-        if (newMessage) {
-            this.input.answer = newMessage
+    beforeGenerate(obj, isNew, image) {
+        if (obj) {
+            if (obj.message) {
+                this.input.answer = obj.message
+            }
+            if (obj.image) {
+                this.input.image = obj.image;
+            }
         }
 
         if (isNew) {
@@ -36,6 +43,9 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
 
     async generate() {
         var url = '/complete/invoke';
+        if (this.input.image != null) {
+            url = '/vision-complete/invoke';
+        }
         var req = {
             input: this.input
         };
