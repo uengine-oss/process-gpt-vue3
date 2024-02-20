@@ -7,6 +7,7 @@
                         Variables</v-btn>
                     <vue-bpmn :bpmn="bpmn" :options="options" v-on:error="handleError" v-on:shown="handleShown"
                         v-on:loading="handleLoading" v-on:openPanel="(id) => openPanel(id)"
+                        v-on:update-xml="val => $emit('update-xml', val)"
                         v-on:definition="(def) => (definitions = def)"></vue-bpmn>
                 </v-card>
             </v-col>
@@ -125,10 +126,6 @@ export default {
             additionalModules: [],
             moddleExtensions: []
         },
-        // headers: [{ title: 'Name', align: 'start', key: 'name', sortable: false, },
-        // { title: 'Type', align: 'start', key: 'type' },
-        // { title: 'Description', align: 'start', key: 'description' },
-        // { title: 'DataSource', align: 'start', key: 'datasource' }],
         element: null,
         definitions: null,
         isViewProcessVariables: false,
@@ -144,7 +141,36 @@ export default {
         copyProcessDefinition: {
             deep: true,
             handler(newVal) {
+                console.log(newVal)
                 this.$emit("updateDefinition", this.copyProcessDefinition)
+            }
+        },
+        definitions: {
+            deep: true,
+            handler(newVal) {
+                let replacer = function (key, value) {
+                    // 만약 값이 객체이고 bpmnElement 속성을 가지고 있다면
+                    if (value && typeof value === 'object' && !Array.isArray(value)) {
+                        let replacement = { ...value };
+                        if (value.bpmnElement) {
+                            replacement.bpmnElement = value.bpmnElement.id;
+                        }
+                        if (value.$parent) {
+                            replacement.$parent = value.$parent.id;
+                        }
+                        if (value.sourceRef) {
+                            replacement.sourceRef = value.sourceRef.id;
+                        }
+                        if (value.targetRef) {
+                            replacement.targetRef = value.targetRef.id;
+                        }
+                        return replacement;
+                    }
+                    // 다른 경우에는 값을 그대로 반환
+                    return value;
+                };
+                let str = JSON.stringify(newVal, replacer);
+                this.$emit("valueToStr", str)
             }
         }
     },
@@ -178,6 +204,12 @@ export default {
 
             return null;
         },
+        updateItemById(array, id, newItem) {
+            const index = array.findIndex(item => item.id === id);
+            if (index !== -1) {
+                array[index] = newItem;
+            }
+        },
         updateVariable(val) {
             this.copyProcessDefinition.data[editedIndex] = val;
             this.editDialog = false
@@ -189,13 +221,14 @@ export default {
             this.processVariblesWindow = !this.processVariblesWindow
         },
         updateElement(element) {
+            // let 
+            this.convertElementToJSON(element);
+            // this.changeElement(this.copyProcessDefinition, 'id', newObj.id, newObj)
+            // obj = newObj
             this.$emit('update')
         },
         openPanel(id) {
             this.panel = true;
-            console.log(this.definitions);
-            console.log(this.findElement(this.definitions, 'id', id));
-            // console.log(JSON.stringify(this.findElement('id', id)));
             this.element = this.findElement(this.definitions, 'id', id);
         },
         closePanel() {
@@ -210,6 +243,47 @@ export default {
         },
         handleLoading() {
             console.log('diagram loading');
+        },
+        taskMapping(activity) {
+            switch (activity) {
+                case 'bpmn2:scriptTask': return "ScriptActivity";
+                case 'bpmn2:sendTask': return "EmailActivity";
+                default: return 'UserActivity';
+            }
+        },
+        convertElementToJSON(element) {
+            console.log(element)
+            if (element.$type.includes("Task")) {
+                // Task Parser
+                let taskType = this.taskMapping(element.$type)
+                let inputData = {}
+                let outputData = {}
+                this.copyElement?.extensionElements?.values?.[0]?.$children?.[0]?.$children.forEach(function (data) {
+                    if (data.category == 'input') {
+                        inputData[data.key] = { "mandatory": data.mandatory ? data.mandatory : false };
+                        // inputData.push(obj)
+                    } else if (data.category == 'output') {
+                        outputData[data.key] = { "mandatory": data.mandatory ? data.mandatory : false };
+                    }
+                })
+                let task = {
+                    checkpoints: [],
+                    description: element.extensionElements.values[0].description,
+                    id: element.id,
+                    inputData: [inputData],
+                    instruction: "",
+                    name: element.name,
+                    outputData: [outputData],
+                    role: element.extensionElements.values[0].role,
+                    type: taskType
+                }
+                console.log(task)
+                this.updateItemById(this.copyProcessDefinition.activities, task.id, task)
+            } else if (element.$type.includes("Flow")) {
+                // Sequence Parser
+            } else if (element.$type.includes("Lane")) {
+                // Role Parser
+            }
         }
     }
 };

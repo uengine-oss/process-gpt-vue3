@@ -1,9 +1,63 @@
 <template>
-    <div style="height: 100%" v-click-outside="onClickOutside">
-        <v-text-field v-model="copyElement.name"></v-text-field>
+    <div style="height: 95%; margin-top: 10px; overflow: auto;" v-click-outside="onClickOutside">
+        <v-card-text>
+            Name
+            <v-text-field v-model="copyElement.name"></v-text-field>
+            <div>
+                Description
+                <v-textarea v-if="!copyElement.$type.includes('Event')"
+                    v-model="copyElement.extensionElements.values[0].description"></v-textarea>
+            </div>
+            <div v-if="element.$type.includes('Task') && inputData.length > 0">
+                Input Data
+                <v-row style="margin-top: 10px;">
+                    <div v-for="(inputData, idx) in inputData" :key="idx">
+                        <v-chip color="primary" class="text-body-2" v-if="inputData.mandatory">
+                            {{ inputData.key }}
+                            <CircleXIcon class="ml-2" start size="20" />
+                        </v-chip>
+                        <v-chip v-else class="text-body-2">
+                            {{ inputData.key }}
+                            <CircleXIcon class="ml-2" start size="20" />
+                        </v-chip>
+                    </div>
+                </v-row>
+            </div>
+            <div v-if="element.$type.includes('Task') && outputData.length > 0">
+                Output Data
+                <v-row style="margin-top: 10px;">
+                    <div v-for="(output, idx) in outputData" :key="idx">
+                        <v-chip color="primary" class="text-body-2" v-if="output.mandatory">
+                            {{ output.key }}
+                            <CircleXIcon class="ml-2" start size="20" />
+                        </v-chip>
+                        <v-chip v-else class="text-body-2">
+                            {{ output.key }}
+                            <CircleXIcon class="ml-2" start size="20" />
+                        </v-chip>
+                    </div>
+                </v-row>
+            </div>
+            <div v-if="element.$type == 'bpmn:SciptTask'">
+                Script
+                <v-textarea></v-textarea>
+            </div>
+            <div v-if="element.$type.includes('Flow')">
+                Condition
+                <br />
+                {{ copyElement?.extensionElements?.values?.[0]?.$children?.[0].$children?.[0].$body }}
+                <v-text-field v-model="fromVar"></v-text-field>
+                <v-select :items="conditionItem" v-model="condition"></v-select>
+                <v-text-field v-model="toVar"></v-text-field>
+            </div>
+            <!-- "condition": "total_vacation_days_remains > total_vacation_days" -->
+
+        </v-card-text>
+
     </div>
 </template>
 <script>
+import { MoodSmileIcon, CircleXIcon } from 'vue-tabler-icons';
 export default {
     name: 'bpmn-property-panel',
     props: {
@@ -11,8 +65,40 @@ export default {
     },
     data() {
         return {
-            copyElement: this.element
+            copyElement: this.element,
+            conditionItem: [">", "==", "<"],
+            fromVar: "",
+            condition: "",
+            toVar: ""
         };
+    },
+    mounted() {
+        if (this.element.$type.includes('Flow')) {
+            let split = this.element?.extensionElements?.values?.[0]?.$children?.[0].$children?.[0].$body.split(" ");
+            this.fromVar = split[0]
+            this.condition = split[1]
+            this.toVar = split[2]
+        }
+    },
+    computed: {
+        inputData() {
+            let params = this.copyElement?.extensionElements?.values?.[0]?.$children?.[0]?.$children
+            let result = []
+            params.forEach(element => {
+                if (element.category == 'input')
+                    result.push(element)
+            });
+            return result
+        },
+        outputData() {
+            let params = this.copyElement?.extensionElements?.values?.[0]?.$children?.[0]?.$children
+            let result = []
+            params.forEach(element => {
+                if (element.category == 'output')
+                    result.push(element)
+            });
+            return result
+        }
     },
     watch: {
         copyElement: {
@@ -20,13 +106,35 @@ export default {
             handler(val) {
                 console.log(val);
             }
+        },
+        fromVar: {
+            deep: true,
+            handler(newVal) {
+                console.log(newVal)
+                let str = newVal + " " + this.condition + " " + this.toVar
+                this.copyElement.extensionElements.values[0].$children[0].$children[0].$body = str;
+            }
+        },
+        condition: {
+            handler(newVal) {
+                let str = this.fromVar + " " + newVal + " " + this.toVar
+                this.copyElement.extensionElements.values[0].$children[0].$children[0].$body = str;
+            }
+        },
+        toVar: {
+            handler(newVal) {
+                let str = this.fromVar + " " + this.condition + " " + newVal
+                this.copyElement.extensionElements.values[0].$children[0].$children[0].$body = str;
+            }
         }
     },
     methods: {
         onClickOutside() {
             this.$emit('updateElement', this.copyElement)
             this.$emit('close');
-        }
+            console.log(this.copyElement);
+        },
+
     }
 };
 </script>

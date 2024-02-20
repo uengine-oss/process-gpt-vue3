@@ -31,6 +31,12 @@ export default {
             moddle: null
         };
     },
+    computed: {
+        // async getXML() {
+        //     let xml = await self.bpmnViewer.saveXML({ format: true, preamble: true });
+        //     return xml;
+        // }
+    },
     mounted() {
         var container = this.$refs.container;
 
@@ -58,36 +64,9 @@ export default {
             console.log("complete?")
             var error = event.error;
             var warnings = event.warnings;
-            console.log(self.bpmnViewer.getDefinitions());
             let def = self.bpmnViewer.getDefinitions();
-            let xml = await self.bpmnViewer.saveXML({ format: true, preamble: true });
-            let replacer = function (key, value) {
-                // 만약 값이 객체이고 bpmnElement 속성을 가지고 있다면
-                if (value && typeof value === 'object' && !Array.isArray(value)) {
-                    let replacement = { ...value };
-                    if (value.bpmnElement) {
-                        replacement.bpmnElement = value.bpmnElement.id;
-                    }
-                    if (value.$parent) {
-                        replacement.$parent = value.$parent.id;
-                    }
-                    if (value.sourceRef) {
-                        replacement.sourceRef = value.sourceRef.id;
-                    }
-                    if (value.targetRef) {
-                        replacement.targetRef = value.targetRef.id;
-                    }
-                    return replacement;
-                }
-                // 다른 경우에는 값을 그대로 반환
-                return value;
-            };
-            let str = JSON.stringify(def, replacer);
-            console.log(str);
-            if (xml) console.log(xml);
-            // var elementRegistry = self.bpmnViewer.get('elementRegistry');
-            // console.log(elementRegistry);
-            self.$emit('definition', self.bpmnViewer.getDefinitions());
+
+            self.$emit('definition', def);
             if (error) {
                 self.$emit('error', error);
             } else {
@@ -99,6 +78,12 @@ export default {
             eventBus.on('element.dblclick', function (e) {
                 // self.openPanel = true;
                 self.$emit('openPanel', e.element.id);
+            });
+            eventBus.on('commandStack.changed', async function (e) {
+                let xml = await self.bpmnViewer.saveXML({ format: true, preamble: true });
+                // console.log(xml)
+                self.$emit("update-xml", xml.xml)
+                // save XML
             });
             // var events = ['element.hover', 'element.out', 'element.click', 'element.dblclick', 'element.mousedown', 'element.mouseup'];
             // events.forEach(function (event) {

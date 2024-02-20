@@ -36,7 +36,7 @@
                     <v-autocomplete v-model="processVariable.datasource.type" :items="datasources" color="primary"
                         variant="outlined" hide-details></v-autocomplete>
                 </v-col>
-                <v-text-field v-if="processVariable.datasource?.type == 'sql'"
+                <v-text-field v-if="processVariable.datasource?.type == 'SQL'"
                     v-model="processVariable.datasource.sql"></v-text-field>
             </v-row>
             <v-row>
@@ -55,7 +55,7 @@ export default {
     },
     data() {
         return {
-            datasources: ["bpmn", "sql"],
+            datasources: ["BPMN", "SQL"],
             types: ["Text", "Number", "Date", "Attachment"],
             processVariable: {
                 name: "",
@@ -78,7 +78,7 @@ export default {
         if (this.variable) {
             if (!this.variable.datasource) {
                 this.variable.datasource = {
-                    type: "bpmn",
+                    type: "BPMN",
                     sql: ""
                 }
             }
