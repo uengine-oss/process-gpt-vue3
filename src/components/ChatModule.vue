@@ -129,7 +129,8 @@ export default {
                     content: message,
                     replyUserName: this.replyUser.name,
                     replyContent: this.replyUser.content,
-                    replyUserEmail: this.replyUser.email
+                    replyUserEmail: this.replyUser.email,
+                    profile: this.userInfo.profile
                 };
             } else {
                 obj = {
@@ -137,7 +138,8 @@ export default {
                     email: role ? role + '@uengine.org' : this.userInfo.email,
                     role: role ? role : 'user',
                     timeStamp: Date.now(),
-                    content: message
+                    content: message,
+                    profile: this.userInfo.profile
                 };
             }
 
@@ -168,6 +170,9 @@ export default {
 
                 chatObj = this.createMessageObj(message);
                 this.messages.push(chatObj);
+
+                this.saveMessages(this.messages);
+                
                 this.messages.push({
                     role: 'system',
                     content: '...',
@@ -179,9 +184,11 @@ export default {
                 this.replyUser = null;
             }
         },
-
         stopMessage() {
             this.generator.stop();
+        },
+
+        saveMessages(messages) {
         },
 
         async sendEditedMessage(index) {

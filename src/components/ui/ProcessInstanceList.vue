@@ -51,7 +51,10 @@
                 </v-list-item-title>
                 <!---Subtitle-->
                 <div class="text-subtitle-2 textPrimary mt-1 text-truncate w-100">
-                    {{ item.current_activity_ids }}
+                    {{
+                        item.current_activity_ids.length > 0 ? 
+                            item.current_activity_ids : '다음 액티비티가 없습니다.'
+                    }}
                 </div>
                 <!---Last seen--->
                 <template v-slot:append>
@@ -89,6 +92,16 @@ export default {
         email: "",
         storage: null,
     }),
+    watch: {
+        "$route": {
+            deep: true,
+            async handler(newVal) {
+                if (!newVal.query.id) {
+                    this.currentChatId = "";
+                }
+            }
+        },
+    },
     async created() {
         this.storage = StorageBase.getStorage("supabase");
         this.email = localStorage.getItem("email")
@@ -102,14 +115,17 @@ export default {
             }
 
             var me = this;
-            var list = await this.storage.list(`${this.path}/${this.email}`, {key: 'user_id'});
-            if (list) {
+            var list = await this.storage.list(`${this.path}`);
+            // var list = await this.storage.list(`${this.path}/${this.email}`, {key: 'user_id'});
+            if (list && list.length > 0) {
                 me.instanceList = [];
                 list.forEach(async item => {
-                    var def_id = item.id.split('.')[0];
-                    var inst = await this.storage.getObject(`${def_id}/${item.id}`, {key: 'proc_inst_id'});
-                    if (inst) {
-                        me.instanceList.push(inst);
+                    if (item.user_ids.includes(this.email)) {
+                        var def_id = item.id.split('.')[0];
+                        var inst = await this.storage.getObject(`${def_id}/${item.id}`, {key: 'proc_inst_id'});
+                        if (inst) {
+                            me.instanceList.push(inst);
+                        }
                     }
                 })
             }
@@ -127,7 +143,6 @@ export default {
         async deleteInstance(id) {
             // TODO delete 트리거 처리 
             var def_id = id.split('.')[0];
-            var chat_id = id.split('.')[1];
             await this.storage.delete(`${def_id}/${id}`, {key: 'proc_inst_id'});
             await this.storage.delete(`${this.path}/${id}`, {key: "id"});
 

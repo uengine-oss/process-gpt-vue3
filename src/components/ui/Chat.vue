@@ -96,7 +96,7 @@
                                     <v-avatar style="margin-right:10px;">
                                         <img v-if="message.role == 'system'" src="@/assets/images/chat/chat-icon.png"
                                             max-height="48" max-width="48" />
-                                        <v-img v-else :src="userInfo.profile" :alt="message.name" height="48" width="48" />
+                                        <v-img v-else :src="message.profile" :alt="message.name" height="48" width="48" />
                                     </v-avatar>
                                     <div v-if="message.timeStamp" style="font-size:12px; padding-top:20px;">
                                         {{ message.role == 'system' ? 'System,' : message.name + ',' }}
@@ -180,6 +180,8 @@
         </div>
 
         <form class="d-flex align-center pa-0" @submit.prevent="send">
+            <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
+            <div id="imagePreview" style="max-width: 300px;"></div>
             <v-textarea
                 variant="solo"
                 hide-details
@@ -205,10 +207,10 @@
                     <v-btn v-else icon variant="text" @click="isLoading = !isLoading" class="text-medium-emphasis">
                         <Icon icon="ic:outline-stop-circle" width="30" height="30" />
                     </v-btn>
-                    <!-- <v-btn icon variant="text" class="text-medium-emphasis">
+                    <v-btn icon variant="text" class="text-medium-emphasis" @click="uploadImage">
                         <PhotoIcon size="20" />
                     </v-btn>
-                    <v-btn icon variant="text" class="text-medium-emphasis">
+                    <!-- <v-btn icon variant="text" class="text-medium-emphasis">
                         <PaperclipIcon size="20" />
                     </v-btn> -->
                 </template>
@@ -256,6 +258,7 @@ export default {
             value: 10,
             bufferValue: 20,
             interval: 0,
+            attachedImg: null,
         };
     },
     watch: {
@@ -365,6 +368,14 @@ export default {
             if (this.editIndex >= 0) {
                 this.$emit('sendEditedMessage', this.editIndex + 1);
                 this.editIndex = -1;
+            } else if (this.attachedImg) {
+                this.$emit('sendMessage', {
+                    image: this.attachedImg,
+                    message: this.newMessage
+                });
+                $('#imagePreview').append('');
+                this.attachedImg = null;
+                this.newMessage = '';
             } else {
                 this.$emit('sendMessage', this.newMessage);
                 this.newMessage = '';
@@ -391,7 +402,25 @@ export default {
             } else {
                 this.isViewJSON = this.isViewJSON.filter((idx) => idx != index);
             }
-        }
+        },
+        uploadImage() {
+            this.$refs.uploader.click();
+        },
+        changeImage(e) {
+            const me = this;
+            const imageFile = e.target.files[0];
+            const reader = new FileReader();
+
+            reader.onloadend = async () => {
+                var html = `<img src=${reader.result} width='100%' />`;
+                $('#imagePreview').append(html);
+                me.attachedImg = reader.result;
+            };
+
+            if (imageFile) {
+                reader.readAsDataURL(imageFile);
+            }
+        },
     }
 };
 </script>

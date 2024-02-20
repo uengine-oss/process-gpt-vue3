@@ -112,18 +112,10 @@ export default {
             title: 'processExecution.cardTitle',
             text: "processExecution.processDefinitionExplanation"
         },
+        // bpmn
         isViewProcess: false,
         onLoad: false,
-        model: {
-            elements: {},
-            relations: {},
-            basePlatform: null,
-            basePlatformConf: {},
-            toppingPlatforms: null,
-            toppingPlatformsConf: {},
-            processVariableDescriptors: [],
-            scm: {}
-        },
+        bpmn: null,
         projectName: '',
 
     }),
@@ -172,10 +164,11 @@ export default {
             }
             if (definitionInfo) {
                 let definition = partialParse(definitionInfo.model);
-                definition.activities.forEach(function (activity) {
-                    if (activity.id == instanceInfo.nextActivityId) activity.status = 'Running';
-                });
+                // definition.activities.forEach(function (activity) {
+                //     if (activity.id == instanceInfo.nextActivityId) activity.status = 'Running';
+                // });
                 this.onLoad = true;
+                this.bpmn = this.createBpmnXml(definition);
             }
         },
         async loadData(path) {
@@ -217,14 +210,20 @@ export default {
         },
         async beforeSendMessage(newMessage) {
             if (newMessage) {
+                if (typeof newMessage == 'string') {
+                    newMessage = {
+                        message: newMessage,
+                        image: null,
+                    }
+                }
                 if (this.processInstance && this.processInstance.proc_inst_id) {
                     this.generator.beforeGenerate(newMessage, false);
 
-                    this.sendMessage(newMessage);
+                    this.sendMessage(newMessage.message);
                 } else {
                     this.generator.beforeGenerate(newMessage, true);
 
-                    var procDefs = await this.queryFromVectorDB(newMessage);
+                    var procDefs = await this.queryFromVectorDB(newMessage.message);
                     procDefs = procDefs.map(item => JSON.parse(item));
                     this.definitions = procDefs;
                     this.definitionDialog = true;
@@ -246,6 +245,13 @@ export default {
                 this.sendEditedMessage(index);
             }
         },
+        async saveMessages(messages) {
+            if (this.processInstance) {
+                var instObj = await this.getData(`${this.path}/${this.processInstance.proc_inst_id}`, {key: 'id'});
+                instObj.messages = messages;
+                await this.putObject(this.path, instObj);
+            }
+        },
         afterModelCreated(response) {
         },
         async afterGenerationFinished(response) {
@@ -254,10 +260,14 @@ export default {
             
             const jsonData = JSON.parse(response);
             if (jsonData) {
+                if (jsonData.description) {
+                    messageWriting.content = jsonData.description;
+                }
+
                 this.saveInstance(jsonData);
+                // this.saveTodolist(jsonData);
 
                 if (!this.$route.query.id) {
-                    this.processInstance = jsonData;
                     this.$router.replace(`chat?id=${jsonData.instanceId}`);
                 }
             }
@@ -280,97 +290,128 @@ export default {
         },
         async saveInstance(data) {
             if (data) {
-                let putObj = {
-                    id: data.instanceId,
-                    user_id: this.userInfo.email,
-                    messages: this.messages
+                var user_ids = [];
+                if (data.roleBindingChanges && data.roleBindingChanges.length > 0) {
+                    var nextUsers = data.roleBindingChanges.map(item => item.userId);
+                    if (nextUsers) user_ids = nextUsers;
+                } else {
+                    user_ids = [this.userInfo.email];
                 }
-                await this.putObject(this.path, putObj);
-                // this.checkDisableChat(putObj);
+
+                if (this.processInstance) {
+                    var instObj = await this.getData(`${this.path}/${data.instanceId}`, {key: 'id'});
+                    instObj.user_ids = [...instObj.user_ids, ...user_ids];
+                    instObj.messages = this.messages;
+                    await this.putObject(this.path, instObj);
+                } else {
+                    let putObj = {
+                        id: data.instanceId,
+                        user_ids: user_ids,
+                        messages: this.messages
+                    }
+                    await this.putObject(this.path, putObj);
+                    // this.checkDisableChat(putObj);
+                }
             }
         },
-        async saveTodolist() {
-            if (this.processInstance) {
-                const checkedNextAct = await this.checkNextActivity(this.processInstance.currentActivityId, this.processInstance.nextActivityId);
-                if (this.processInstance.currentUserEmail !== "") {
-                    const path = `todolist/${this.processInstance.currentUserEmail}`;
-                    const pushObj = {
-                        definitionId: this.processInstance.processDefinitionId,
-                        definitionName: this.processInstance.processDefinitionName,
-                        instanceId: this.processInstance.processInstanceId,
-                        instanceName: this.processInstance.processInstanceName,
-                        activityId: this.processInstance.currentActivityId,
-                        activityName: this.processInstance.currentActivityName,
-                        userId: this.processInstance.currentUserEmail,
-                        endDate: Date.now(),
-                    };
-
-                    if (checkedNextAct) {
-                        pushObj.status = 'done';
-                    } else {
-                        pushObj.status = 'pending';
-                    }
-
-                    const workItem = await this.checkTodolist(path, pushObj);
-                    if (workItem) {
-                        pushObj.startDate = workItem.startDate;
-                        await this.delete(`${path}/${workItem.key}`);
-                    } else {
-                        pushObj.startDate = Date.now();
-                    }
-                    
-                    await this.pushObject(path, pushObj);
-                    await this.saveUserInstance(pushObj);
+        async saveTodolist(data) {
+            if (data) {
+                let putObj = {
+                    proc_inst_id: data.instanceId,
+                    proc_def_id: data.processDefinitionId,
+                    activity_ids: data.nextActivities,
+                    user_id: this.userInfo.email,
+                    start_date: Date.now(),
+                    end_date: null,
+                    status: 'pending',
                 }
-
-                if (this.processInstance.nextUserEmail !== '' && this.checkUserEmail(this.processInstance.nextUserEmail)) {
-                    const path = `todolist/${this.processInstance.nextUserEmail}`;
-                    const pushObj = {
-                        definitionId: this.processInstance.processDefinitionId,
-                        definitionName: this.processInstance.processDefinitionName,
-                        instanceId: this.processInstance.processInstanceId,
-                        instanceName: this.processInstance.processInstanceName,
-                        activityId: this.processInstance.nextActivityId,
-                        activityName: this.processInstance.nextActivityName,
-                        activityName: this.processInstance.nextActivityName,
-                        userId: this.processInstance.nextUserEmail,
-                        startDate: Date.now(),
-                    };
-
-                    if (checkedNextAct) {
-                        pushObj.status = 'in_progress';
-                    } else {
-                        pushObj.status = 'todo';
-                    }
-
-                    if (this.processInstance.nextActivityId == "end_process") {
-                        pushObj.activityId = "";
-                        pushObj.activityName = "";
-                    }
-
-                    const workItem = await this.checkTodolist(path, pushObj);
-                    if (workItem) {
-                        await this.delete(`${path}/${workItem.key}`);
-                    }
-
-                    await this.pushObject(path, pushObj);
-                    await this.saveUserInstance(pushObj);
-                    await this.beforeSendNotification(pushObj);
-
-                } else {
-                    let actIdx = -1;
-                    if (this.processDefinition && this.processDefinition.activities) {
-                        actIdx = this.processDefinition.activities.findIndex(activity => 
-                            activity.id == this.processInstance.nextActivityId
-                        );
-                    }
-                    if (actIdx > -1) {
-                        alert("다음 담당자가 조직도상에 없습니다. 담당자를 다시 지정해주시거나 담당자를 등록해주세요");
-                    } else {
-                        this.saveInstance('Completed');
-                    }
+                if (data.nextActivities.length < 1) {
+                    putObj.status = 'done';
                 }
+                await this.putObject('todolist', putObj);
             }
+
+            // if (this.processInstance) {
+            //     const checkedNextAct = await this.checkNextActivity(this.processInstance.currentActivityId, this.processInstance.nextActivityId);
+            //     if (this.processInstance.currentUserEmail !== "") {
+            //         const path = `todolist/${this.processInstance.currentUserEmail}`;
+            //         const pushObj = {
+            //             definitionId: this.processInstance.processDefinitionId,
+            //             definitionName: this.processInstance.processDefinitionName,
+            //             instanceId: this.processInstance.processInstanceId,
+            //             instanceName: this.processInstance.processInstanceName,
+            //             activityId: this.processInstance.currentActivityId,
+            //             activityName: this.processInstance.currentActivityName,
+            //             userId: this.processInstance.currentUserEmail,
+            //             endDate: Date.now(),
+            //         };
+
+            //         if (checkedNextAct) {
+            //             pushObj.status = 'done';
+            //         } else {
+            //             pushObj.status = 'pending';
+            //         }
+
+            //         const workItem = await this.checkTodolist(path, pushObj);
+            //         if (workItem) {
+            //             pushObj.startDate = workItem.startDate;
+            //             await this.delete(`${path}/${workItem.key}`);
+            //         } else {
+            //             pushObj.startDate = Date.now();
+            //         }
+                    
+            //         await this.pushObject(path, pushObj);
+            //         await this.saveUserInstance(pushObj);
+            //     }
+
+            //     if (this.processInstance.nextUserEmail !== '' && this.checkUserEmail(this.processInstance.nextUserEmail)) {
+            //         const path = `todolist/${this.processInstance.nextUserEmail}`;
+            //         const pushObj = {
+            //             definitionId: this.processInstance.processDefinitionId,
+            //             definitionName: this.processInstance.processDefinitionName,
+            //             instanceId: this.processInstance.processInstanceId,
+            //             instanceName: this.processInstance.processInstanceName,
+            //             activityId: this.processInstance.nextActivityId,
+            //             activityName: this.processInstance.nextActivityName,
+            //             activityName: this.processInstance.nextActivityName,
+            //             userId: this.processInstance.nextUserEmail,
+            //             startDate: Date.now(),
+            //         };
+
+            //         if (checkedNextAct) {
+            //             pushObj.status = 'in_progress';
+            //         } else {
+            //             pushObj.status = 'todo';
+            //         }
+
+            //         if (this.processInstance.nextActivityId == "end_process") {
+            //             pushObj.activityId = "";
+            //             pushObj.activityName = "";
+            //         }
+
+            //         const workItem = await this.checkTodolist(path, pushObj);
+            //         if (workItem) {
+            //             await this.delete(`${path}/${workItem.key}`);
+            //         }
+
+            //         await this.pushObject(path, pushObj);
+            //         await this.saveUserInstance(pushObj);
+            //         await this.beforeSendNotification(pushObj);
+
+            //     } else {
+            //         let actIdx = -1;
+            //         if (this.processDefinition && this.processDefinition.activities) {
+            //             actIdx = this.processDefinition.activities.findIndex(activity => 
+            //                 activity.id == this.processInstance.nextActivityId
+            //             );
+            //         }
+            //         if (actIdx > -1) {
+            //             alert("다음 담당자가 조직도상에 없습니다. 담당자를 다시 지정해주시거나 담당자를 등록해주세요");
+            //         } else {
+            //             this.saveInstance('Completed');
+            //         }
+            //     }
+            // }
         },
 
         async saveDefinitionToVectorDB() {
@@ -399,7 +440,7 @@ export default {
                 query: messsage
             });
 
-            if (results.similarItems) {
+            if (results.similarItems.length > 0) {
                 return results.similarItems.map(item => item.text);
             } else {
                 this.saveDefinitionToVectorDB();
@@ -407,99 +448,301 @@ export default {
             }
         },
 
-        async checkNextActivity(prevId, nextId) {
-            var res = false;
-            if (nextId) {
-                if (nextId == "end_process") {
-                    res = true;
-                } else {
-                    var contexts = await this.queryFromVectorDB(prevId);
-                    if (!contexts || contexts.length < 1) {
-                        await this.saveDefinitionToVectorDB();
-                        contexts = await this.queryFromVectorDB(prevId);
-                    }
-                    var definition = JSON.parse(contexts[0]);
-                    var prevIdx = definition.activities.findIndex(act => act.id == prevId);
-                    var nextIdx = definition.activities.findIndex(act => act.id == nextId);
-                    if (prevIdx < nextIdx) {
-                        res = true;
-                    }
-                }
-            }
-            return res;
-        },
 
-        async checkTodolist(path, obj) {
-            let workItem;
-            let todolist = await this.getData(path);
-            if (todolist) {
-                todolist = Object.values(todolist);
-                todolist.forEach((item) => {
-                    if (item.instanceId == obj.instanceId && item.activityId == obj.activityId) {
-                        workItem = item;
+        // bpmn
+        createBpmnXml(jsonModel) {
+            // XML 문서 초기화
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString('<?xml version="1.0" encoding="UTF-8"?><bpmn2:definitions xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI"></bpmn2:definitions>', 'application/xml');
+            const bpmnDefinitions = xmlDoc.documentElement;
+
+            bpmnDefinitions.setAttribute('id', 'Definitions_' + jsonModel.processDefinitionId);
+            bpmnDefinitions.setAttribute('targetNamespace', 'http://bpmn.io/schema/bpmn');
+            bpmnDefinitions.setAttribute('exporter', 'Custom BPMN Modeler');
+            bpmnDefinitions.setAttribute('exporterVersion', '1.0');
+
+            const collaboration = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:collaboration');
+            collaboration.setAttribute('id', 'Collaboration_1');
+            bpmnDefinitions.appendChild(collaboration);
+
+            const process = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:process');
+            process.setAttribute('id', jsonModel.processDefinitionId);
+            process.setAttribute('isExecutable', 'true');
+            bpmnDefinitions.appendChild(process);
+            // Collaboration 추가
+            const participant = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:participant');
+            participant.setAttribute('id', `Participant`);
+            participant.setAttribute('name', `Participant`);
+            participant.setAttribute('processRef', jsonModel.processDefinitionId);
+            collaboration.appendChild(participant);
+
+            const laneSet = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:laneSet');
+            laneSet.setAttribute('id', 'LaneSet_1');
+            process.appendChild(laneSet);
+
+            // Lane 및 Activity 매핑
+            const laneActivityMapping = {};
+            if (jsonModel.activities)
+                jsonModel.activities.forEach(activity => {
+                    if (!laneActivityMapping[activity.role]) {
+                        laneActivityMapping[activity.role] = [];
+                    }
+                    laneActivityMapping[activity.role].push(activity.id);
+                });
+
+            // Lanes 생성
+            if (jsonModel.roles)
+                jsonModel.roles.forEach((role, idx) => {
+                    const lane = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:lane');
+                    lane.setAttribute('id', 'Lane_' + idx);
+                    lane.setAttribute('name', role.name);
+                    laneSet.appendChild(lane);
+                    // Activity를 Lane에 할당
+                    if (laneActivityMapping[role.name]) {
+                        laneActivityMapping[role.name].forEach(activityId => {
+                            const flowNodeRef = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:flowNodeRef');
+                            flowNodeRef.textContent = activityId;
+                            lane.appendChild(flowNodeRef);
+                        });
+                    }
+                });
+            let inComing = {}
+            let outGoing = {}
+            // Sequences 생성
+            if (jsonModel.sequences)
+                jsonModel.sequences.forEach(sequence => {
+                    const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:sequenceFlow');
+                    sequenceFlow.setAttribute('id', 'SequenceFlow_' + sequence.source + '_' + sequence.target);
+                    sequenceFlow.setAttribute('sourceRef', sequence.source);
+                    sequenceFlow.setAttribute('targetRef', sequence.target);
+                    process.appendChild(sequenceFlow);
+
+                    outGoing[sequence.source] = 'SequenceFlow_' + sequence.source + '_' + sequence.target
+                    inComing[sequence.target] = 'SequenceFlow_' + sequence.source + '_' + sequence.target
+                });
+
+            // Activities 생성
+            if (jsonModel.activities)
+                jsonModel.activities.forEach((activity, idx) => {
+                    const userTask = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:userTask');
+                    userTask.setAttribute('id', activity.id);
+                    userTask.setAttribute('name', activity.name);
+                    if (outGoing[activity.id]) {
+                        let outGoingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:outgoing');
+                        outGoingSeq.textContent = outGoing[activity.id]
+                        userTask.appendChild(outGoingSeq)
+                    }
+                    if (inComing[activity.id]) {
+                        let inComingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:incoming');
+                        inComingSeq.textContent = inComing[activity.id]
+                        userTask.appendChild(inComingSeq)
+                    }
+                    if (idx == 0) {
+                        // 시작일땐 StartEvent와 연결
+                        const startEvent = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:startEvent');
+                        startEvent.setAttribute('id', 'StartEvent_1');
+                        startEvent.setAttribute('name', 'StartEvent');
+                        process.appendChild(startEvent);
+
+                        const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:sequenceFlow');
+                        sequenceFlow.setAttribute('id', 'SequenceFlow_' + 'StartEvent' + '_' + activity.id);
+                        sequenceFlow.setAttribute('sourceRef', 'StartEvent_1');
+                        sequenceFlow.setAttribute('targetRef', activity.id);
+                        process.appendChild(sequenceFlow);
+
+                        let inComingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:incoming');
+                        inComingSeq.textContent = 'SequenceFlow_' + 'StartEvent' + '_' + activity.id
+                        userTask.appendChild(inComingSeq)
+                    } else if (idx == jsonModel.activities.length - 1) {
+                        // 마지막엔 EndEvent와 연결
+                        // EndEvent 요소 추가
+                        const endEvent = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:endEvent');
+                        endEvent.setAttribute('id', 'EndEvent');
+                        endEvent.setAttribute('name', 'EndEvent');
+                        process.appendChild(endEvent);
+
+                        const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:sequenceFlow');
+                        sequenceFlow.setAttribute('id', 'SequenceFlow_' + activity.id + '_' + 'EndEvent');
+                        sequenceFlow.setAttribute('sourceRef', activity.id);
+                        sequenceFlow.setAttribute('targetRef', 'EndEvent');
+                        process.appendChild(sequenceFlow);
+
+                        let outGoingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:outgoing');
+                        outGoingSeq.textContent = 'SequenceFlow_' + activity.id + '_' + 'EndEvent'
+                        userTask.appendChild(outGoingSeq)
+                    }
+                    process.appendChild(userTask);
+                });
+
+
+            const bpmnDiagram = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNDiagram');
+            bpmnDiagram.setAttribute('id', 'BPMNDiagram_1');
+            bpmnDefinitions.appendChild(bpmnDiagram);
+
+            const bpmnPlane = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNPlane');
+            bpmnPlane.setAttribute('id', 'BPMNPlane_1');
+            bpmnPlane.setAttribute('bpmnElement', 'Collaboration_1');
+            bpmnDiagram.appendChild(bpmnPlane);
+            let rolePos = {}
+            let activityPos = {};
+
+            // Lane 및 Activity에 대한 시각적 표현 추가
+            if (jsonModel.roles)
+                jsonModel.roles.forEach((role, roleIndex) => {
+                    const laneShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
+                    laneShape.setAttribute('id', `BPMNShape_${roleIndex}`);
+                    laneShape.setAttribute('bpmnElement', `Lane_${roleIndex}`);
+                    laneShape.setAttribute('isHorizontal', true)
+                    const dcBoundsLane = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
+                    dcBoundsLane.setAttribute('x', '100');
+                    dcBoundsLane.setAttribute('y', `${100 + roleIndex * 100}`);
+                    dcBoundsLane.setAttribute('width', '600');
+                    dcBoundsLane.setAttribute('height', '100');
+                    laneShape.appendChild(dcBoundsLane);
+                    bpmnPlane.appendChild(laneShape);
+                    rolePos[role.name] = {
+                        x: dcBoundsLane.getAttribute('x'),
+                        y: dcBoundsLane.getAttribute('y')
+                    }
+                });
+            let lastXPos = 140;
+
+            if (jsonModel.activities) {
+                const firstActivity = jsonModel.activities[0];
+                const lastActivity = jsonModel.activities[jsonModel.activities.length - 1];
+                jsonModel.activities.forEach((activity, activityIndex) => {
+                    if (!activity.role) {
+                        return false;
+                    }
+                    if (activityIndex == 0 && firstActivity.role) {
+                        // StartEvent의 BPMNShape 추가
+                        let eventY = parseInt(rolePos[firstActivity.role].y) + 36
+                        const startEventShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
+                        startEventShape.setAttribute('id', `StartEvent_di`);
+                        startEventShape.setAttribute('bpmnElement', `StartEvent_1`);
+                        const startEventBounds = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
+                        startEventBounds.setAttribute('x', lastXPos);
+                        startEventBounds.setAttribute('y', eventY);
+                        startEventBounds.setAttribute('width', 36);
+                        startEventBounds.setAttribute('height', 36);
+                        startEventShape.appendChild(startEventBounds);
+                        bpmnPlane.appendChild(startEventShape);
+                        activityPos['startEvent'] = {
+                            x: lastXPos,
+                            y: eventY,
+                            width: 36,
+                            height: 36
+                        }
+                        lastXPos += 120
+
+                    }
+                    let activityY = parseInt(rolePos[activity.role].y)
+                    const activityShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
+                    activityShape.setAttribute('id', `BPMNShape_${activity.id}`);
+                    activityShape.setAttribute('bpmnElement', activity.id);
+
+                    const dcBoundsActivity = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
+                    dcBoundsActivity.setAttribute('x', lastXPos);
+                    dcBoundsActivity.setAttribute('y', `${activityY + 20}`);
+                    dcBoundsActivity.setAttribute('width', 80);
+                    dcBoundsActivity.setAttribute('height', 60);
+                    activityPos[activity.id] = {
+                        x: lastXPos,
+                        y: activityY + 20,
+                        width: 80,
+                        height: 60
+                    }
+                    activityShape.appendChild(dcBoundsActivity);
+                    bpmnPlane.appendChild(activityShape);
+                    lastXPos += 120
+
+                    if (activityIndex == jsonModel.activities.length - 1 && lastActivity.role) {
+                        // EndEvent의 BPMNShape 추가
+                        let eventY = parseInt(rolePos[lastActivity.role].y) + 36
+                        const endEventShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
+                        endEventShape.setAttribute('id', `EndEvent_di`);
+                        endEventShape.setAttribute('bpmnElement', `EndEvent`);
+                        const endEventBounds = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
+                        // endEventBounds.setAttribute('x', '100'); // 위치는 예시이며, 실제 모델에 따라 조정 필요
+                        // endEventBounds.setAttribute('y', '218');
+                        endEventBounds.setAttribute('x', lastXPos);
+                        endEventBounds.setAttribute('y', eventY);
+                        endEventBounds.setAttribute('width', 36);
+                        endEventBounds.setAttribute('height', 36);
+                        endEventShape.appendChild(endEventBounds);
+                        bpmnPlane.appendChild(endEventShape);
+
+                        // 마지막엔 Event들 Sequence 생성
+                        // Start Event
+                        const startBpmnEdge = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNEdge');
+                        startBpmnEdge.setAttribute('id', `BPMNEdge_StartEvent_${firstActivity.id}`);
+                        startBpmnEdge.setAttribute('bpmnElement', 'SequenceFlow_' + 'StartEvent' + '_' + firstActivity.id);
+                        const startWaypoint1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                        // let startX, startY, endX, endY;
+
+                        startWaypoint1.setAttribute('x', parseInt(activityPos['startEvent'].x) + parseInt(activityPos['startEvent'].width));
+                        startWaypoint1.setAttribute('y', parseInt(activityPos['startEvent'].y) + (parseInt(activityPos['startEvent'].height) / 2));
+                        startBpmnEdge.appendChild(startWaypoint1);
+                        const startWaypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+
+                        startWaypoint2.setAttribute('x', parseInt(activityPos[firstActivity.id].x));
+                        startWaypoint2.setAttribute('y', parseInt(activityPos[firstActivity.id].y) + (parseInt(activityPos[firstActivity.id].height) / 2));
+                        startBpmnEdge.appendChild(startWaypoint2);
+
+                        const endBpmnEdge = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNEdge');
+                        endBpmnEdge.setAttribute('id', `BPMNEdge_${lastActivity.id}_EndEvent`);
+                        endBpmnEdge.setAttribute('bpmnElement', 'SequenceFlow_' + lastActivity.id + '_' + 'EndEvent');
+                        const endWaypoint1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                        // startX = 
+                        // startY = 
+                        endWaypoint1.setAttribute('x', parseInt(activityPos[lastActivity.id].x) + parseInt(activityPos[lastActivity.id].width));
+                        endWaypoint1.setAttribute('y', parseInt(activityPos[lastActivity.id].y) + (parseInt(activityPos[lastActivity.id].height) / 2));
+                        endBpmnEdge.appendChild(endWaypoint1);
+                        const endWaypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                        // endX = parseInt(activityPos['endEvent'].x)
+                        // endY = parseInt(activityPos[sequence.target].y) + (parseInt(activityPos[sequence.target].height) / 2)
+                        endWaypoint2.setAttribute('x', lastXPos);
+                        endWaypoint2.setAttribute('y', eventY + 18);
+                        endBpmnEdge.appendChild(endWaypoint2);
+                        bpmnPlane.appendChild(startBpmnEdge);
+                        bpmnPlane.appendChild(endBpmnEdge);
                     }
                 });
             }
-            return workItem;
-        },
 
-        checkUserEmail(email) {
-            const checked = this.organizationChart.some((user) => user.email == email);
-            return checked;
-        },
-
-        async saveUserInstance(item) {
-            if (this.checkUserEmail(item.userId)) {
-                var convertEmail = item.userId.replace(/\./gi, '_');
-                const userInfo = await this.getData(`users/${convertEmail}`);
-                if (userInfo && userInfo.uid) {
-                    const path = `users/${userInfo.uid}/instances`;
-                    let putObj = [item.instanceId];
-
-                    let instanceList = await this.getData(path);
-                    if (instanceList) {
-                        instanceList = [...instanceList, ...putObj];
-                        const set = new Set(instanceList);
-                        putObj = [...set];
+            if (jsonModel.sequences)
+                jsonModel.sequences.forEach(sequence => {
+                    if (!activityPos[sequence.source] || !activityPos[sequence.target]) {
+                        return false;
                     }
+                    const bpmnEdge = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNEdge');
+                    bpmnEdge.setAttribute('id', `BPMNEdge_${sequence.source}_${sequence.target}`);
+                    bpmnEdge.setAttribute('bpmnElement', 'SequenceFlow_' + sequence.source + '_' + sequence.target);
 
-                    await this.putObject(path, putObj);
-                }
-            }
+                    // 예시로, 시작점과 끝점만 정의합니다. 실제 좌표는 모델에 따라 달라집니다.
+                    const waypoint1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                    // activity
+                    let startX, startY, endX, endY;
+                    startX = parseInt(activityPos[sequence.source].x) + parseInt(activityPos[sequence.source].width)
+                    startY = parseInt(activityPos[sequence.source].y) + (parseInt(activityPos[sequence.source].height) / 2)
+                    waypoint1.setAttribute('x', startX);
+                    waypoint1.setAttribute('y', startY);
+                    bpmnEdge.appendChild(waypoint1);
+
+                    const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                    endX = parseInt(activityPos[sequence.target].x)
+                    endY = parseInt(activityPos[sequence.target].y) + (parseInt(activityPos[sequence.target].height) / 2)
+                    waypoint2.setAttribute('x', endX);
+                    waypoint2.setAttribute('y', endY);
+                    bpmnEdge.appendChild(waypoint2);
+
+                    bpmnPlane.appendChild(bpmnEdge);
+                });
+            // XML 문자열로 변환 및 반환
+            const serializer = new XMLSerializer();
+            const bpmn2Xml = serializer.serializeToString(xmlDoc);
+            return bpmn2Xml;
         },
-
-        async beforeSendNotification(item) {
-            var convertEmail = item.userId.replace(/\./gi, '_');
-            const userInfo = await this.getData(`users/${convertEmail}`);
-            if (userInfo && userInfo.uid) {
-                const notiInfo = {
-                    noti_type: "instances",
-                    isChecked: false,
-                    chatId: item.instanceId,
-                    title: item.activityName,
-                    subtitle: item.definitionName,
-                };
-                this.sendNotification(userInfo.uid, notiInfo);
-            }
-        },
-
-        createTests() {
-            return {
-                // function(me){
-                //     let lastReply = me.messages[me.messages.length - 1].content
-                //     let json = me.extractJSON(lastReply, (message)=>{
-                //             try{
-                //                 JSON.parse(message);
-                //                 return true
-                //             }catch(e){
-                //                 return false
-                //             }
-                //         }
-                //     )
-                //     if(json.processDefinitionId) alert("success")
-                // }
-            };
-        }
     }
 };
 </script>
