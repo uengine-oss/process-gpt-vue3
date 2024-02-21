@@ -47,18 +47,10 @@ export default class WorkAssistantGenerator extends AIGenerator {
             \`\`\`
             
 
-            3. 기존 회사의 문서에 대한 질문
+            3. 기존 회사의 문서 또는 정보에 대한 질문
             JSON 형식: 
             \`\`\`
-                {   "work": "DocumentQuery",
-                    "content": "질의 내용"
-                }
-            \`\`\`
-
-            4. 기존 회사의 정보에 대한 질문
-            JSON 형식: 
-            \`\`\`
-                {   "work": "DataQuery",
+                {   "work": "CompanyQuery",
                     "content": "질의 내용"
                 }
             \`\`\`

@@ -156,7 +156,34 @@
                                                         </v-card-text>
                                                     </v-card>
                                                 </v-col>
-                                            </v-row>                                           
+                                            </v-row>   
+                                            <v-row v-if="message.memento" class="my-5">
+                                                <v-col cols="12">
+                                                    <v-card outlined>
+                                                        <v-card-title>Memento</v-card-title>
+                                                        <v-card-text>
+                                                            <v-textarea
+                                                                hide-details
+                                                                v-model="message.memento.response"
+                                                                auto-grow
+                                                                readonly
+                                                                variant="solo-filled"
+                                                            ></v-textarea>
+                                                            <div class="chips-container" style="margin-top: 5px;">
+                                                                <v-chip
+                                                                    v-for="(source, index) in message.memento.sources"
+                                                                    :key="index"
+                                                                    variant="outlined"
+                                                                    size="x-small"
+                                                                    text-color="primary"
+                                                                    style="margin-bottom: 1px;">
+                                                                    <v-icon start icon="mdi-label" x-small></v-icon> {{ source.file_name }}
+                                                                </v-chip>
+                                                            </div>                                        
+                                                        </v-card-text>
+                                                    </v-card>
+                                                </v-col>
+                                            </v-row>   
 
                                             <v-btn v-if="message.jsonContent" class="mt-2" elevation="0"
                                                 @click="viewJSON(index)">View JSON</v-btn>
@@ -175,9 +202,9 @@
                     </div>
                 </div>
             </perfect-scrollbar>
-            <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
+            <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
                 <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
-            </div>
+            </div> -->
         </div>
         <v-divider />
       
@@ -253,7 +280,7 @@ export default {
         disableChat: Boolean,
         isChanged: Boolean,
         type: String,
-        documentQueryStr: String,
+        // documentQueryStr: String,
     },
     data() {
         return {

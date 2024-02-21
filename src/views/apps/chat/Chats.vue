@@ -12,7 +12,6 @@
                     :messages="messages"
                     :userInfo="userInfo"
                     :type="path"
-                    :documentQueryStr="documentQueryStr"
                     @beforeReply="beforeReply"
                     @sendMessage="beforeSendMessage"
                     @sendEditedMessage="sendEditedMessage"
@@ -57,8 +56,6 @@ export default {
         // processInstance: {},
         path: "chats",
         organizationChart: [],
-        tableData: null,
-        documentQueryStr: null,
     }),
     async created() {
         // this.init();
@@ -153,27 +150,30 @@ export default {
                 let obj = this.createMessageObj(response, 'system')
                 if(response && response.includes("{")){
                     let responseObj = partialParse(response)
-                    if(responseObj.work == 'DocumentQuery'){
+                    if(responseObj.work == 'CompanyQuery'){
                         try{
-                            let response = await axios.post('http://localhost:8005/query', { query: responseObj.content});
-                            this.documentQueryStr = response.data
-                        } catch(error){
-                            alert(error);
-                        }
+                            let responseMemento = await axios.post('http://localhost:8005/query', { query: responseObj.content});
+                            obj.memento = {}
+                            obj.memento.response = responseMemento.data.response
+                            if (!responseMemento.data.metadata) return {};
+                            const unique = {};
+                            const sources = Object.values(responseMemento.data.metadata).filter(obj => {
+                                if (!unique[obj.file_path]) {
+                                    unique[obj.file_path] = true;
+                                    return true;
+                                }
+                            });
+                            obj.memento.sources = sources
 
-                    } else if(responseObj.work == 'DataQuery'){
-                        try {
-                            const response = await axios.post('http://localhost:8006/process-data-query/invoke', {
+                            const responseTable = await axios.post('http://localhost:8006/process-data-query/invoke', {
                                 input: {
                                     var_name: responseObj.content
                                 }
                             });
-                            obj.tableData = response.data.output
-                            this.messages[this.messages.length - 1].tableData = response.data.output
-                            // console.log(obj.tableData)
-
-                        } catch (error) {
-                            console.error('Error testing SQL:', error);
+                            obj.tableData = responseTable.data.output
+                            this.messages[this.messages.length - 1] = obj
+                        } catch(error){
+                            alert(error);
                         }
                     } else if(responseObj.work == 'ScheduleRegistration'){
                         let start = responseObj.startDateTime.split('/')
