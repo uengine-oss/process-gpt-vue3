@@ -76,36 +76,36 @@ export default {
             }
         },
         async beforeSendMessage(newMessage) {
-            let uuid = this.uuid()
-            if(newMessage && newMessage.includes("시작하겠습니다.")){
-                let message = {
-                    "messages": this.createMessageObj(newMessage, 'system'),
-                    "id": "chat1",
-                    "uid": uuid,
-                }
-                this.putObject(`chats/${uuid}`, message);
-            } else {
-                let message = {
-                    "messages": this.createMessageObj(newMessage),
-                    "id": "chat1",
-                    "uid": uuid,
-                }
-                this.putObject(`chats/${uuid}`, message);
+            if (newMessage && newMessage.text != '') {
+                let uuid = this.uuid()
+                if(newMessage.text.includes("시작하겠습니다.")){
+                    let message = {
+                        "messages": this.createMessageObj(newMessage.text, 'system'),
+                        "id": "chat1",
+                        "uid": uuid,
+                    }
+                    this.putObject(`chats/${uuid}`, message);
+                } else {
+                    let message = {
+                        "messages": this.createMessageObj(newMessage.text),
+                        "id": "chat1",
+                        "uid": uuid,
+                    }
+                    this.putObject(`chats/${uuid}`, message);
 
-                if(!this.generator.contexts) {
-                    let contexts = await this.queryFromVectorDB(newMessage);
-                    this.generator.setContexts(contexts);
+                    if(!this.generator.contexts) {
+                        let contexts = await this.queryFromVectorDB(newMessage.text);
+                        this.generator.setContexts(contexts);
+                    }
+                    
+                    this.prompt = {
+                        content: newMessage,
+                        requestUserEmail: this.userInfo.email,
+                        requestUserName: this.userInfo.name,
+                    }
+                    this.sendMessage(newMessage);
                 }
-                
-                this.prompt = {
-                    content: newMessage,
-                    requestUserEmail: this.userInfo.email,
-                    requestUserName: this.userInfo.name,
-                }
-                this.sendMessage(newMessage);
             }
-
-
         },
 
         // async loadData(path) {
