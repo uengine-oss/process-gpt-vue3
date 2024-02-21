@@ -109,12 +109,9 @@
                                         <img :src="message.content" class="rounded-md" alt="pro" width="250" />
                                     </v-sheet>
 
-                                    <div class="progress-border" :class="{ animate: borderCompletedAnimated }">
+                                    <div class="progress-border" :class="{ 'animate': borderCompletedAnimated }">
                                         <template v-if="message.role == 'system' && filteredMessages.length - 1 == index">
-                                            <span class="progress-border-span"></span>
-                                            <span class="progress-border-span"></span>
-                                            <span class="progress-border-span"></span>
-                                            <span class="progress-border-span"></span>
+                                            <div class="progress-border-span" :class="{ 'opacity': !borderCompletedAnimated }" v-for="n in 5" :key="n"></div>
                                         </template>
                                         <v-sheet
                                             class="bg-lightsecondary rounded-md px-3 py-2"
@@ -201,7 +198,7 @@
                 <template v-slot:append-inner>
                     <v-btn v-if="!isLoading" icon variant="text" type="submit" @click="send" class="text-medium-emphasis"
                         :disabled="!newMessage">
-                        <Icon width="24" height="24" icon="fluent:document-one-page-sparkle-16-regular"  />
+                        <SendIcon size="24" />
                     </v-btn>
                     <v-btn v-else icon variant="text" @click="isLoading = !isLoading" class="text-medium-emphasis">
                         <Icon icon="ic:outline-stop-circle" width="30" height="30" />
