@@ -214,7 +214,7 @@
 
         <form class="d-flex align-center pa-0">
             <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
-            <div id="imagePreview" style="max-width: 300px;"></div>
+            <div id="imagePreview" style="max-width: 200px;"></div>
             <v-textarea
                 variant="solo"
                 hide-details

@@ -165,7 +165,7 @@ export default {
                     def_id = id.split('.')[0];
                     const proc_inst = await this.getData(`${def_id}/${id}`, {key: "proc_inst_id"});
                     if (proc_inst) {
-                        this.currentActivities = this.processInstance.current_activity_ids;
+                        this.currentActivities = proc_inst.current_activity_ids;
                     }
                 }
 
