@@ -59,6 +59,12 @@ export default {
             //     }
             // });
 
+            // await this.storage.watch(`chats`, (callback) => {
+            //     if (callback) {
+            //         console.log(callback)
+            //     }
+            // });
+
             await this.storage.list(`db://chats/chat1`, option).then(function (messages) {
                 if (messages) {
                     me.messages = messages.map(message => message.messages);

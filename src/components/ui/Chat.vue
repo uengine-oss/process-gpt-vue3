@@ -147,6 +147,17 @@
                                                 variant="text" size="x-small" style="position: absolute;right:0px; bottom:-5px; background-color:white;"></v-btn>
                                             </div>
 
+                                            <v-row v-if="message.tableData" class="my-5">
+                                                <v-col cols="12">
+                                                    <v-card outlined>
+                                                        <v-card-title>Table Preview</v-card-title>
+                                                        <v-card-text>
+                                                            <div v-html="message.tableData" class="table-responsive"></div>
+                                                        </v-card-text>
+                                                    </v-card>
+                                                </v-col>
+                                            </v-row>                                           
+
                                             <v-btn v-if="message.jsonContent" class="mt-2" elevation="0"
                                                 @click="viewJSON(index)">View JSON</v-btn>
                                             <pre v-if="isViewJSON.includes(index)"
@@ -164,9 +175,9 @@
                     </div>
                 </div>
             </perfect-scrollbar>
-            <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
-                <RetrievalBox v-model:message="retrievalMsg"></RetrievalBox>
-            </div> -->
+            <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
+                <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
+            </div>
         </div>
         <v-divider />
       
@@ -242,12 +253,12 @@ export default {
         disableChat: Boolean,
         isChanged: Boolean,
         type: String,
+        documentQueryStr: String,
     },
     data() {
         return {
             isReply: false,
             newMessage: '',
-            retrievalMsg: '',
             hoverIndex: -1,
             editIndex: -1,
             replyIndex: -1,
@@ -343,7 +354,6 @@ export default {
             this.replyUser = message;
         },
         send() {
-            if (this.newMessage) this.retrievalMsg = this.newMessage
             if (this.editIndex >= 0) {
                 this.$emit('sendEditedMessage', this.editIndex + 1);
                 this.editIndex = -1;

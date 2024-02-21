@@ -12,6 +12,7 @@
                     :messages="messages"
                     :userInfo="userInfo"
                     :type="path"
+                    :documentQueryStr="documentQueryStr"
                     @beforeReply="beforeReply"
                     @sendMessage="beforeSendMessage"
                     @sendEditedMessage="sendEditedMessage"
@@ -37,6 +38,7 @@ import { VectorStorage } from "vector-storage";
 import ChatGenerator from "@/components/ai/WorkAssistantGenerator.js";
 import Chat from "@/components/ui/Chat.vue";
 import ChatModule from "@/components/ChatModule.vue";
+import axios from 'axios';
 
 
 export default {
@@ -55,6 +57,8 @@ export default {
         // processInstance: {},
         path: "chats",
         organizationChart: [],
+        tableData: null,
+        documentQueryStr: null,
     }),
     async created() {
         // this.init();
@@ -143,16 +147,35 @@ export default {
         },
 
         async afterGenerationFinished(response) {
-            if(response == '.') {
+            if(response == '.' || response == '.\n') {
                 this.messages.splice(this.messages.length - 1, 1)
             } else {
                 let obj = this.createMessageObj(response, 'system')
                 if(response && response.includes("{")){
                     let responseObj = partialParse(response)
                     if(responseObj.work == 'DocumentQuery'){
-                        /// ...
-                    }else
-                    if(responseObj.work == 'ScheduleRegistration'){
+                        try{
+                            let response = await axios.post('http://localhost:8005/query', { query: responseObj.content});
+                            this.documentQueryStr = response.data
+                        } catch(error){
+                            alert(error);
+                        }
+
+                    } else if(responseObj.work == 'DataQuery'){
+                        try {
+                            const response = await axios.post('http://localhost:8006/process-data-query/invoke', {
+                                input: {
+                                    var_name: responseObj.content
+                                }
+                            });
+                            obj.tableData = response.data.output
+                            this.messages[this.messages.length - 1].tableData = response.data.output
+                            // console.log(obj.tableData)
+
+                        } catch (error) {
+                            console.error('Error testing SQL:', error);
+                        }
+                    } else if(responseObj.work == 'ScheduleRegistration'){
                         let start = responseObj.startDateTime.split('/')
                         let startDate = start[0].split("-")
                         let startTime = start[1].split("-")
