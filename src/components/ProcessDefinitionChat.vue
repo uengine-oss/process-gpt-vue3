@@ -39,6 +39,7 @@ import ChatDetail from '@/components/apps/chats/ChatDetail.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import * as jsondiff from 'jsondiffpatch'
+import axios from '@/utils/axios'
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
 import { ref } from 'vue';
 var jsondiffpatch = jsondiff.create({
@@ -154,8 +155,8 @@ export default {
         },
         modificationReplace(modification) {
             let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath)
-            const updateAtIndex = (array, index, newValue) => (array[index] = newValue, array);
-            updateAtIndex(this.processDefinition[obj.propertyName], obj.index, modification.value)
+            // const updateAtIndex = (array, index, newValue) => (array[index] = newValue, array);
+            this.processDefinition[obj.propertyName][obj.index] = modification.value
             // this.processDefinition[obj.propertyName].splice(obj.index, 0, modification.value)
         },
         modificationRemove(modification) {
@@ -171,7 +172,7 @@ export default {
             //     }   
             // }    
         },
-        afterModelCreated(response) {
+        async afterModelCreated(response) {
             let jsonProcess
             try {
                 jsonProcess = this.extractJSON(response);
@@ -197,6 +198,15 @@ export default {
                         this.bpmn = this.createBpmnXml(this.processDefinition);
                     }
                     this.definitionChangeCount++;
+                    const res = await axios.post('http://localhost:8001/process-db-schema/invoke', {
+                        "input": {
+                            "process_definition_id": this.processDefinition.processDefinitionName
+                        }
+                    })
+                    if (res) {
+                        console.log(res)
+                    }
+
                 }
             } catch (error) {
                 console.log(jsonProcess)
@@ -414,6 +424,14 @@ export default {
 
             let path = `${this.path}/${definition.processDefinitionId}`
             this.putObject(path, putObj)
+            const res = await axios.post('http://localhost:8001/process-db-schema/invoke', {
+                "input": {
+                    "process_definition_id": this.processDefinition.processDefinitionName
+                }
+            })
+            if (res) {
+                console.log(res)
+            }
         },
         // parseDefinition(model) {
         //     let definition = {};
