@@ -576,9 +576,12 @@ export default {
         // }
         taskMapping(activity) {
             switch (activity) {
-                case "ScriptActivity": return 'bpmn2:scriptTask';
-                case "EmailActivity": return 'bpmn2:sendTask';
-                default: return 'bpmn2:userTask';
+                case "ScriptActivity":
+                    return 'bpmn:scriptTask';
+                case "EmailActivity":
+                    return 'bpmn:sendTask';
+                default:
+                    return 'bpmn2:userTask';
             }
         },
         createBpmnXml(jsonModel) {
@@ -671,7 +674,7 @@ export default {
             if (jsonModel.activities)
                 jsonModel.activities.forEach((activity, idx) => {
 
-                    const userTaskType = me.taskMapping(activity)
+                    const userTaskType = me.taskMapping(activity.type)
 
                     const userTask = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', userTaskType);
                     userTask.setAttribute('id', activity.id);
@@ -691,6 +694,17 @@ export default {
                     let root = xmlDoc.createElementNS('http://uengine', 'uengine:uengine-params');
                     root.setAttribute('role', activity.role)
                     root.setAttribute('description', activity.description)
+                    root.setAttribute('code', activity.code)
+                    let checkpoints = xmlDoc.createElementNS('http://uengine', 'uengine:checkpoints');
+                    if (activity.checkpoints) {
+                        activity.checkpoints.forEach((checkpoint) => {
+                            console.log(checkpoint)
+                            let check = xmlDoc.createElementNS('http://uengine', 'uengine:checkpoint');
+                            check.setAttribute('checkpoint', checkpoint)
+                            checkpoints.appendChild(check)
+                        })
+                    }
+                    root.appendChild(checkpoints)
                     let params = xmlDoc.createElementNS('http://uengine', 'uengine:parameters');
                     if (activity.inputData) {
                         activity.inputData.forEach((data) => {

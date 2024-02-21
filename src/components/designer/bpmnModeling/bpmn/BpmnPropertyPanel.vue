@@ -38,23 +38,36 @@
                     </div>
                 </v-row>
             </div>
-            <div v-if="element.$type == 'bpmn:SciptTask'">
-                Script
-                <v-textarea></v-textarea>
+            <div v-if="element.$type == 'bpmn:ScriptTask'">
+                Script (Python)
+                <v-textarea v-model="copyElement.extensionElements.values[0].pythonCode"></v-textarea>
             </div>
             <div v-if="element.$type.includes('Flow')">
                 Condition
                 <br />
                 <v-text-field
                     v-model="copyElement.extensionElements.values[0].$children[0].$children[0].$body"></v-text-field>
-
+            </div>
+            <div>
+                Checkpoints
+                <div v-for="(checkpoint, idx) in checkpoints" :key="idx">
+                    <v-checkbox-btn color="success" :label="checkpoint.checkpoint" hide-details
+                        v-model="checkbox"></v-checkbox-btn>
+                </div>
+                <v-text-field v-if="editCheckpoint" v-model="checkpointMessage.checkpoint"></v-text-field>
+                <v-btn v-if="editCheckpoint" @click="addCheckpoint">
+                    Submit
+                </v-btn>
+                <v-btn @click="editCheckpoint = !editCheckpoint">
+                    <PlusIcon></PlusIcon>
+                </v-btn>
             </div>
         </v-card-text>
 
     </div>
 </template>
 <script>
-import { MoodSmileIcon, CircleXIcon } from 'vue-tabler-icons';
+import { UserIcon, PlusIcon, UsersIcon, PhotoIcon, StarIcon, FileDescriptionIcon, CreditCardIcon, KeyIcon } from 'vue-tabler-icons';
 export default {
     name: 'bpmn-property-panel',
     props: {
@@ -63,29 +76,41 @@ export default {
     data() {
         return {
             copyElement: this.element,
-            name: ""
+            name: "",
+            checkpoints: [],
+            editCheckpoint: false,
+            checkpointMessage: {
+                "$type": "uengine:checkpoint",
+                "checkpoint": ""
+            },
+            code: ""
         };
     },
     mounted() {
+        console.log(this.element)
         this.name = this.element.name
+        this.checkpoints = this.element.extensionElements.values?.[0]?.$children?.[0]?.$children ? this.element.extensionElements.values[0].$children[0].$children : []
+
     },
     computed: {
         inputData() {
-            let params = this.copyElement?.extensionElements?.values?.[0]?.$children?.[0]?.$children
+            let params = this.copyElement?.extensionElements?.values?.[0]?.$children?.[1]?.$children
             let result = []
-            params.forEach(element => {
-                if (element.category == 'input')
-                    result.push(element)
-            });
+            if (params)
+                params.forEach(element => {
+                    if (element.category == 'input')
+                        result.push(element)
+                });
             return result
         },
         outputData() {
-            let params = this.copyElement?.extensionElements?.values?.[0]?.$children?.[0]?.$children
+            let params = this.copyElement?.extensionElements?.values?.[0]?.$children?.[1]?.$children
             let result = []
-            params.forEach(element => {
-                if (element.category == 'output')
-                    result.push(element)
-            });
+            if (params)
+                params.forEach(element => {
+                    if (element.category == 'output')
+                        result.push(element)
+                });
             return result
         }
     },
@@ -98,8 +123,16 @@ export default {
         }
     },
     methods: {
+        addCheckpoint() {
+            this.checkpoints.push(this.checkpointMessage)
+            this.checkpointMessage = {
+                "$type": "uengine:checkpoint",
+                "checkpoint": ""
+            };
+        },
         onClickOutside() {
             this.copyElement.name = this.name
+            this.copyElement.extensionElements.values[0].$children[0].$children = this.checkpoints
             this.$emit('updateElement', this.copyElement)
             this.$emit('close');
         },

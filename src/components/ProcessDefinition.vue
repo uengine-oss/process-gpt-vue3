@@ -3,17 +3,26 @@
         <v-row style="height: 100%" class="ma-0">
             <v-col class="d-flex ma-0 pa-0">
                 <v-card elevation="1" style="border-radius: 0px !important;">
-                    <v-tooltip :text="$t('processDefinition.processVariables')">
+                    <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
                         <template v-slot:activator="{ props }">
-                            <v-btn @click="openProcessVariables" icon v-bind="props" style="margin:10px 0px -10px 20px;">
+                            <v-btn @click="openProcessVariables" icon v-bind="props"
+                                style="position: absolute; right:20px; top:20px; z-index:1"
+                            >
                                 <Icon icon="tabler:variable" width="32" height="32" />
                             </v-btn>
                         </template>
                     </v-tooltip>
-                    <vue-bpmn :bpmn="bpmn" :options="options" v-on:error="handleError" v-on:shown="handleShown"
-                        v-on:loading="handleLoading" v-on:openPanel="(id) => openPanel(id)"
+                    <vue-bpmn :bpmn="bpmn"
+                        :options="options"
+                        :isViewMode="isViewMode"
+                        :currentActivities="currentActivities"
+                        v-on:error="handleError"
+                        v-on:shown="handleShown"
+                        v-on:loading="handleLoading"
+                        v-on:openPanel="(id) => openPanel(id)"
                         v-on:update-xml="val => $emit('update-xml', val)"
-                        v-on:definition="(def) => (definitions = def)"></vue-bpmn>
+                        v-on:definition="(def) => (definitions = def)"
+                    ></vue-bpmn>
                 </v-card>
             </v-col>
             <v-col v-if="panel" cols="12" sm="12" lg="4" md="6" class="d-flex">
@@ -143,7 +152,9 @@ export default {
     },
     props: {
         processDefinition: Object,
-        bpmn: String
+        bpmn: String,
+        isViewMode: Boolean,
+        currentActivities: Array,
     },
     data: () => ({
         panel: false,
@@ -289,9 +300,12 @@ export default {
         },
         taskMapping(activity) {
             switch (activity) {
-                case 'bpmn2:scriptTask': return "ScriptActivity";
-                case 'bpmn2:sendTask': return "EmailActivity";
-                default: return 'UserActivity';
+                case 'bpmn:ScriptTask':
+                    return "ScriptActivity";
+                case 'bpmn:sendTask':
+                    return "EmailActivity";
+                default:
+                    return 'UserActivity';
             }
         },
         convertElementToJSON(element) {
@@ -302,6 +316,7 @@ export default {
                 let inputData = {}
                 let outputData = {}
                 this.copyElement?.extensionElements?.values?.[0]?.$children?.[0]?.$children.forEach(function (data) {
+                    console.log(data)
                     if (data.category == 'input') {
                         inputData[data.key] = { "mandatory": data.mandatory ? data.mandatory : false };
                         // inputData.push(obj)
@@ -309,17 +324,25 @@ export default {
                         outputData[data.key] = { "mandatory": data.mandatory ? data.mandatory : false };
                     }
                 })
+                let resultInputData = Object.keys(inputData).length > 0 ? [inputData] : []
+                let resultOutputData = Object.keys(outputData).length > 0 ? [outputData] : []
+                let checkpoints = []
+                element.extensionElements?.values[0]?.$children[0]?.$children.forEach(function (checkpoint) {
+                    checkpoints.push(checkpoint.checkpoint)
+                })
                 let task = {
-                    checkpoints: [],
+                    checkpoints: checkpoints,
                     description: element.extensionElements.values[0].description,
                     id: element.id,
-                    inputData: [inputData],
+                    inputData: resultInputData,
                     instruction: "",
                     name: element.name,
-                    outputData: [outputData],
+                    outputData: resultOutputData,
                     role: element.extensionElements.values[0].role,
                     type: taskType
                 }
+                if (element.extensionElements.values[0].pythonCode)
+                    task['code'] = element.extensionElements.values[0].pythonCode
                 console.log(task)
                 this.updateItemByKey(this.copyProcessDefinition.activities, "id", task.id, task)
             } else if (element.$type.includes("Flow")) {
