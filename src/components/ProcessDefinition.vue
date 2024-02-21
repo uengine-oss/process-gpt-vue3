@@ -5,7 +5,9 @@
                 <v-card elevation="1" style="border-radius: 0px !important;">
                     <v-tooltip :text="$t('processDefinition.processVariables')">
                         <template v-slot:activator="{ props }">
-                            <v-btn @click="openProcessVariables" icon v-bind="props" style="margin:10px 0px -10px 20px;">
+                            <v-btn @click="openProcessVariables" icon v-bind="props"
+                                style="position: absolute; right:20px; top:20px; z-index:1"
+                            >
                                 <Icon icon="tabler:variable" width="32" height="32" />
                             </v-btn>
                         </template>

@@ -299,5 +299,19 @@ export default {
     height: 100%;
     width: 100%;
 }
+
+/* 팔레트 커스텀 부분 */
+.vue-bpmn-diagram-container .separator{
+    display: none;
+}
+
+.vue-bpmn-diagram-container .djs-palette {
+    width: 610px;
+    height: 50px;
+    margin-left: 0px;
+    background-color: white;
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.1);
+}
 </style>
-./custom

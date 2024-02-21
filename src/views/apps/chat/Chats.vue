@@ -68,6 +68,15 @@ export default {
         await this.getChatList()
     },
     methods: {
+        putMessage(chatRoomId, msg){
+            let uuid = this.uuid()
+            let message = {
+                "messages": msg,
+                "id": chatRoomId,
+                "uid": uuid,
+            }
+            this.putObject(`chats/${uuid}`, message);
+        },
         beforeReply(msg){
             if(msg){
                 this.replyUser = msg
@@ -77,22 +86,10 @@ export default {
         },
         async beforeSendMessage(newMessage) {
             if (newMessage && newMessage.text != '') {
-                let uuid = this.uuid()
                 if(newMessage.text.includes("시작하겠습니다.")){
-                    let message = {
-                        "messages": this.createMessageObj(newMessage.text, 'system'),
-                        "id": "chat1",
-                        "uid": uuid,
-                    }
-                    this.putObject(`chats/${uuid}`, message);
+                    this.putMessage("chat1", this.createMessageObj(newMessage.text, 'system'))
                 } else {
-                    let message = {
-                        "messages": this.createMessageObj(newMessage.text),
-                        "id": "chat1",
-                        "uid": uuid,
-                    }
-                    this.putObject(`chats/${uuid}`, message);
-
+                    this.putMessage("chat1", this.createMessageObj(newMessage.text))
                     if(!this.generator.contexts) {
                         let contexts = await this.queryFromVectorDB(newMessage.text);
                         this.generator.setContexts(contexts);
@@ -228,13 +225,13 @@ export default {
                         let option = {
                             key: "uid"
                         }
-                        const data = await this.storage.getObject(`db://users/${localStorage.getItem('uid')}`, option);
-                        let calender = data ? data.calender:{}
+                        const res = await this.storage.getObject(`db://calendar/${localStorage.getItem('uid')}`, option);
+                        let calendarData = res ? res.data:{}
                         let uuid = this.uuid()
-                        if(!calender[`${startDate[0]}_${startDate[1]}`]){
-                            calender[`${startDate[0]}_${startDate[1]}`] = {}
+                        if(!calendarData[`${startDate[0]}_${startDate[1]}`]){
+                            calendarData[`${startDate[0]}_${startDate[1]}`] = {}
                         }
-                        calender[`${startDate[0]}_${startDate[1]}`][uuid] = {
+                        calendarData[`${startDate[0]}_${startDate[1]}`][uuid] = {
                             id: uuid,
                             title: responseObj.title,
                             allDay: true,
@@ -242,22 +239,11 @@ export default {
                             end: new Date(endDate[0], endDate[1] - 1, endDate[2]),
                             color: '#615dff',
                         }
-                        let calenderObj = {
+                        let calendarObj = {
                             "uid": localStorage.getItem('uid'),
-                            "calender": calender
+                            "data": calendarData
                         }
-                        this.putObject(`users/${localStorage.getItem('uid')}`, calenderObj);
-
-                        // let path = `users/${localStorage.getItem('uid')}/calender/${startDate[0]}/${startDate[1]}/${uuid}`
-                        // let calenderObj = {
-                        //     id: uuid,
-                        //     title: responseObj.title,
-                        //     allDay: true,
-                        //     start: new Date(startDate[0], startDate[1] - 1, startDate[2]),
-                        //     end: new Date(endDate[0], endDate[1] - 1, endDate[2]),
-                        //     color: '#615dff',
-                        // }
-                        // this.putObject(path, calenderObj);
+                        this.putObject(`calendar/${localStorage.getItem('uid')}`, calendarObj);
     
                         let todoObj = {
                             definitionId: null,
@@ -278,13 +264,7 @@ export default {
                         }
                     }
                 }
-                let uuid = this.uuid()
-                let message = {
-                    "messages": obj,
-                    "id": "chat1",
-                    "uid": uuid,
-                }
-                this.putObject(`chats/${uuid}`, message);
+                this.putMessage("chat1", obj)
             }
         },
 
