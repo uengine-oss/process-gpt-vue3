@@ -109,12 +109,9 @@
                                         <img :src="message.content" class="rounded-md" alt="pro" width="250" />
                                     </v-sheet>
 
-                                    <div class="progress-border" :class="{ animate: borderCompletedAnimated }">
+                                    <div class="progress-border" :class="{ 'animate': borderCompletedAnimated }">
                                         <template v-if="message.role == 'system' && filteredMessages.length - 1 == index">
-                                            <span class="progress-border-span"></span>
-                                            <span class="progress-border-span"></span>
-                                            <span class="progress-border-span"></span>
-                                            <span class="progress-border-span"></span>
+                                            <div class="progress-border-span" :class="{ 'opacity': !borderCompletedAnimated }" v-for="n in 5" :key="n"></div>
                                         </template>
                                         <v-sheet
                                             class="bg-lightsecondary rounded-md px-3 py-2"
@@ -156,7 +153,34 @@
                                                         </v-card-text>
                                                     </v-card>
                                                 </v-col>
-                                            </v-row>                                           
+                                            </v-row>   
+                                            <v-row v-if="message.memento" class="my-5">
+                                                <v-col cols="12">
+                                                    <v-card outlined>
+                                                        <v-card-title>Memento</v-card-title>
+                                                        <v-card-text>
+                                                            <v-textarea
+                                                                hide-details
+                                                                v-model="message.memento.response"
+                                                                auto-grow
+                                                                readonly
+                                                                variant="solo-filled"
+                                                            ></v-textarea>
+                                                            <div class="chips-container" style="margin-top: 5px;">
+                                                                <v-chip
+                                                                    v-for="(source, index) in message.memento.sources"
+                                                                    :key="index"
+                                                                    variant="outlined"
+                                                                    size="x-small"
+                                                                    text-color="primary"
+                                                                    style="margin-bottom: 1px;">
+                                                                    <v-icon start icon="mdi-label" x-small></v-icon> {{ source.file_name }}
+                                                                </v-chip>
+                                                            </div>                                        
+                                                        </v-card-text>
+                                                    </v-card>
+                                                </v-col>
+                                            </v-row>   
 
                                             <v-btn v-if="message.jsonContent" class="mt-2" elevation="0"
                                                 @click="viewJSON(index)">View JSON</v-btn>
@@ -175,9 +199,9 @@
                     </div>
                 </div>
             </perfect-scrollbar>
-            <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
+            <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
                 <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
-            </div>
+            </div> -->
         </div>
         <v-divider />
       
@@ -201,7 +225,7 @@
                 :placeholder="$t('chat.inputMessage')"
                 auto-grow
                 rows="1"
-                @keydown.enter="!$event.shiftKey && send()"
+                @keydown.enter="beforeSend"
                 :disabled="disableChat"
             >
                 <template v-slot:prepend-inner>
@@ -213,9 +237,9 @@
                     </v-btn>
                 </template>
                 <template v-slot:append-inner>
-                    <v-btn v-if="!isLoading" icon variant="text" type="submit" @click="send" class="text-medium-emphasis"
+                    <v-btn v-if="!isLoading" icon variant="text" type="submit" @click="beforeSend" class="text-medium-emphasis"
                         :disabled="!newMessage">
-                        <Icon width="24" height="24" icon="fluent:document-one-page-sparkle-16-regular"  />
+                        <SendIcon size="24" />
                     </v-btn>
                     <v-btn v-else icon variant="text" @click="isLoading = !isLoading" class="text-medium-emphasis">
                         <Icon icon="ic:outline-stop-circle" width="30" height="30" />
@@ -253,7 +277,7 @@ export default {
         disableChat: Boolean,
         isChanged: Boolean,
         type: String,
-        documentQueryStr: String,
+        // documentQueryStr: String,
     },
     data() {
         return {
@@ -269,13 +293,6 @@ export default {
         };
     },
     watch: {
-        // isLoading 상태의 변화를 감시합니다.
-        isLoading(newVal) {
-            if (!newVal) {
-                // isLoading이 false로 변경되면 animateBorder 메소드를 호출합니다.
-                this.animateBorder();
-            }
-        },
     },
     mounted () {
     },
@@ -308,6 +325,7 @@ export default {
             });
             return list;
         },
+        // isLoading 상태의 변화를 감시합니다.
         isLoading: {
             get() {
                 var res = false;
@@ -320,6 +338,8 @@ export default {
             },
             set(val) {
                 if (!val) {
+                    // isLoading이 false로 변경되면 animateBorder 메소드를 호출합니다.
+                    this.animateBorder();
                     this.$emit("stopMessage");
                 }
             }
@@ -353,6 +373,16 @@ export default {
             this.isReply = true;
             this.replyUser = message;
         },
+        beforeSend($event) {
+            if ($event.shiftKey) return;
+            if (this.isLoading) {
+                this.isLoading = false;
+            }
+            var copyMsg = this.newMessage.replace(/(?:\r\n|\r|\n)/g, '');
+            if (copyMsg.length > 0)
+                this.send();
+                this.newMessage = "";
+        },
         send() {
             if (this.editIndex >= 0) {
                 this.$emit('sendEditedMessage', this.editIndex + 1);
@@ -363,7 +393,6 @@ export default {
                     text: this.newMessage
                 });
                 this.attachedImg = null;
-                this.newMessage = '';
                 var imagePreview = document.querySelector("#imagePreview");
                 imagePreview.innerHTML = '';
             }

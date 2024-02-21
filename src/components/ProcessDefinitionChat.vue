@@ -39,6 +39,7 @@ import ChatDetail from '@/components/apps/chats/ChatDetail.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import * as jsondiff from 'jsondiffpatch'
+import axios from '@/utils/axios'
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
 import { ref } from 'vue';
 var jsondiffpatch = jsondiff.create({
@@ -127,6 +128,7 @@ export default {
             const value = await this.getData(path, { key: "id" });
             if (value) {
                 if (this.$route.params && this.$route.params.id) {
+                    this.messages = value.messages
                     this.processDefinition = partialParse(value.model);
                     if (!this.processDefinition) {
                         this.processDefinition = [];
@@ -143,8 +145,34 @@ export default {
         beforeSendMessage(newMessage) {
             this.sendMessage(newMessage);
         },
-
-        afterModelCreated(response) {
+        extractPropertyNameAndIndex(jsonPath) {
+            const match = jsonPath.match(/^\$\.(\w+)\[(\d+)\]$/);
+            return match ? { propertyName: match[1], index: parseInt(match[2], 10) } : null;
+        },
+        modificationAdd(modification) {
+            let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath)
+            this.processDefinition[obj.propertyName].splice(obj.index, 0, modification.value)
+        },
+        modificationReplace(modification) {
+            let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath)
+            // const updateAtIndex = (array, index, newValue) => (array[index] = newValue, array);
+            this.processDefinition[obj.propertyName][obj.index] = modification.value
+            // this.processDefinition[obj.propertyName].splice(obj.index, 0, modification.value)
+        },
+        modificationRemove(modification) {
+            let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath)
+            this.processDefinition[obj.propertyName].splice(obj.index, 1)
+            // {
+            //     action: "replace",
+            //     index: 2, 
+            //     targetJsonPath: "$.sequences[2]",
+            //     value: {
+            //         "source": "AcceptLeader",
+            //         "target": "ReturnFromLeave" 
+            //     }   
+            // }    
+        },
+        async afterModelCreated(response) {
             let jsonProcess
             try {
                 jsonProcess = this.extractJSON(response);
@@ -155,13 +183,13 @@ export default {
                         //means process modification
                         unknown.modifications.forEach((modification) => {
                             if (modification.action == 'replace') {
-                                this.jsonPathReplace(this.processDefinition, modification.targetJsonPath, modification.value);
+                                this.modificationReplace(modification);
                                 this.bpmn = this.createBpmnXml(this.processDefinition);
                             } else if (modification.action == 'add') {
-                                this.jsonPathAdd(this.processDefinition, modification.targetJsonPath, modification.value);
+                                this.modificationAdd(modification);
                                 this.bpmn = this.createBpmnXml(this.processDefinition);
                             } else if (modification.action == 'delete') {
-                                this.jsonPathDelete(this.processDefinition, modification.targetJsonPath);
+                                this.modificationRemove(modification);
                                 this.bpmn = this.createBpmnXml(this.processDefinition);
                             }
                         });
@@ -170,6 +198,15 @@ export default {
                         this.bpmn = this.createBpmnXml(this.processDefinition);
                     }
                     this.definitionChangeCount++;
+                    const res = await axios.post('http://localhost:8001/process-db-schema/invoke', {
+                        "input": {
+                            "process_definition_id": this.processDefinition.processDefinitionName
+                        }
+                    })
+                    if (res) {
+                        console.log(res)
+                    }
+
                 }
             } catch (error) {
                 console.log(jsonProcess)
@@ -183,7 +220,8 @@ export default {
             let putObj = {
                 id: this.processDefinition.processDefinitionId,
                 name: this.processDefinition.processDefinitionName,
-                definition: this.processDefinition
+                definition: this.processDefinition,
+                messages: this.messages
             };
 
             if (this.processDefinition) {
@@ -357,7 +395,7 @@ export default {
             console.log(this.changedXML);
             this.projectName = this.processDefinition.processDefinitionName;
             const apiToken = this.generator.getToken();
-            let orderedActivities = this.convertXMLToJSON(this.changedXML);
+            // let orderedActivities = this.convertXMLToJSON(this.changedXML);
 
             let definition = Object.assign({}, this.processDefinition)
             // definition.activities = orderedActivities.activities
@@ -386,6 +424,14 @@ export default {
 
             let path = `${this.path}/${definition.processDefinitionId}`
             this.putObject(path, putObj)
+            const res = await axios.post('http://localhost:8001/process-db-schema/invoke', {
+                "input": {
+                    "process_definition_id": this.processDefinition.processDefinitionName
+                }
+            })
+            if (res) {
+                console.log(res)
+            }
         },
         // parseDefinition(model) {
         //     let definition = {};
@@ -530,9 +576,12 @@ export default {
         // }
         taskMapping(activity) {
             switch (activity) {
-                case "ScriptActivity": return 'bpmn2:scriptTask';
-                case "EmailActivity": return 'bpmn2:sendTask';
-                default: return 'bpmn2:userTask';
+                case "ScriptActivity":
+                    return 'bpmn:scriptTask';
+                case "EmailActivity":
+                    return 'bpmn:sendTask';
+                default:
+                    return 'bpmn2:userTask';
             }
         },
         createBpmnXml(jsonModel) {
@@ -599,6 +648,7 @@ export default {
                 jsonModel.sequences.forEach(sequence => {
                     const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:sequenceFlow');
                     sequenceFlow.setAttribute('id', 'SequenceFlow_' + sequence.source + '_' + sequence.target);
+                    sequenceFlow.setAttribute('name', sequence.name ? sequence.name : "")
                     sequenceFlow.setAttribute('sourceRef', sequence.source);
                     sequenceFlow.setAttribute('targetRef', sequence.target);
                     let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:extensionElements');
@@ -608,7 +658,7 @@ export default {
                     // if (sequence.condition) {
                     let param = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
                     param.setAttribute('key', "condition")
-                    param.textContent = "asdf > 0"
+                    param.textContent = sequence.condition ? sequence.condition : ""
                     params.appendChild(param)
                     // }
                     root.appendChild(params)
@@ -624,7 +674,7 @@ export default {
             if (jsonModel.activities)
                 jsonModel.activities.forEach((activity, idx) => {
 
-                    const userTaskType = me.taskMapping(activity)
+                    const userTaskType = me.taskMapping(activity.type)
 
                     const userTask = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', userTaskType);
                     userTask.setAttribute('id', activity.id);
@@ -644,6 +694,17 @@ export default {
                     let root = xmlDoc.createElementNS('http://uengine', 'uengine:uengine-params');
                     root.setAttribute('role', activity.role)
                     root.setAttribute('description', activity.description)
+                    root.setAttribute('code', activity.code)
+                    let checkpoints = xmlDoc.createElementNS('http://uengine', 'uengine:checkpoints');
+                    if (activity.checkpoints) {
+                        activity.checkpoints.forEach((checkpoint) => {
+                            console.log(checkpoint)
+                            let check = xmlDoc.createElementNS('http://uengine', 'uengine:checkpoint');
+                            check.setAttribute('checkpoint', checkpoint)
+                            checkpoints.appendChild(check)
+                        })
+                    }
+                    root.appendChild(checkpoints)
                     let params = xmlDoc.createElementNS('http://uengine', 'uengine:parameters');
                     if (activity.inputData) {
                         activity.inputData.forEach((data) => {
@@ -678,6 +739,7 @@ export default {
 
                         const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:sequenceFlow');
                         sequenceFlow.setAttribute('id', 'SequenceFlow_' + 'StartEvent' + '_' + activity.id);
+                        sequenceFlow.setAttribute('name', "")
                         sequenceFlow.setAttribute('sourceRef', 'StartEvent_1');
                         sequenceFlow.setAttribute('targetRef', activity.id);
                         let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:extensionElements');
@@ -685,7 +747,7 @@ export default {
                         let conditionParam = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
                         let conditionParams = xmlDoc.createElementNS('http://uengine', 'uengine:parameters');
                         conditionParam.setAttribute('key', "condition")
-                        conditionParam.textContent = "asdf > 0"
+                        conditionParam.textContent = ""
                         conditionParams.appendChild(conditionParam)
                         root.appendChild(conditionParams)
                         extensionElements.appendChild(root)
@@ -705,6 +767,7 @@ export default {
 
                         const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:sequenceFlow');
                         sequenceFlow.setAttribute('id', 'SequenceFlow_' + activity.id + '_' + 'EndEvent');
+                        sequenceFlow.setAttribute('name', "")
                         sequenceFlow.setAttribute('sourceRef', activity.id);
                         sequenceFlow.setAttribute('targetRef', 'EndEvent');
                         let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:extensionElements');
@@ -712,7 +775,7 @@ export default {
                         let conditionParam = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
                         let conditionParams = xmlDoc.createElementNS('http://uengine', 'uengine:parameters');
                         conditionParam.setAttribute('key', "condition")
-                        conditionParam.textContent = "asdf > 0"
+                        conditionParam.textContent = ""
                         conditionParams.appendChild(conditionParam)
                         root.appendChild(conditionParams)
                         extensionElements.appendChild(root)

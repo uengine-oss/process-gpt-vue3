@@ -9,10 +9,14 @@
     "types": [
         {
             "name": "uengine-params",
-            "superClass": ["Element","FlowElement"],
+            "superClass": ["Element", "FlowElement"],
             "properties": [
                 {
                     "name": "role",
+                    "type": "String"
+                },
+                {
+                    "name": "pythonCode",
                     "type": "String"
                 },
                 {
@@ -20,9 +24,23 @@
                     "type": "String"
                 },
                 {
+                    "name": "checkpoints",
+                    "type": "Checkpoint"
+                },
+                {
                     "name": "parameters",
                     "isMany": true,
                     "type": "Parameter"
+                }
+            ]
+        },
+        {
+            "name": "Checkpoint",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "checkpoint",
+                    "type": "String"
                 }
             ]
         },

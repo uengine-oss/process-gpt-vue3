@@ -10,6 +10,7 @@ import BpmnModeler from 'bpmn-js/lib/Modeler';
 import BpmnModdle from 'bpmn-moddle';
 import uEngineModdleDescriptor from '@/components/descriptors/uEngine.json';
 import 'bpmn-js/dist/assets/diagram-js.css';
+import BpmnViewer from 'bpmn-js/lib/Viewer';
 
 export default {
     name: 'vue-bpmn',
@@ -22,6 +23,12 @@ export default {
         },
         options: {
             type: Object
+        },
+        isViewMode: {
+            type: Boolean
+        },
+        currentActivities: {
+            type: Array
         }
     },
     data: function () {
@@ -55,14 +62,20 @@ export default {
             },
             this.options
         );
+
+        if (self.isViewMode) {
+            self.bpmnViewer = new BpmnViewer(_options);
+        } else {
+            this.bpmnViewer = new BpmnModeler(_options); //new BpmnJS(_options);  //
+        }
         
-        this.bpmnViewer = new BpmnModeler(_options); //new BpmnJS(_options);  //
         var eventBus = this.bpmnViewer.get('eventBus');
         // eventBus.on('import.render.start', function (e) {
         //     // self.openPanel = true;
         //     console.log("render  complete")
         //     self.$emit('openPanel', e.element.id);
         // });
+
         eventBus.on('import.render.complete', async function (event) {
             console.log("complete?")
             var error = event.error;
@@ -76,16 +89,29 @@ export default {
                 self.$emit('shown', warnings);
             }
 
-            self.bpmnViewer.get('canvas').zoom('fit-viewport');
+            // self.bpmnViewer.get('canvas').zoom('fit-viewport');
+            var canvas = self.bpmnViewer.get('canvas');
+            canvas.zoom('fit-viewport');
+
+            if (self.isViewMode) {
+                // add marker to current activity elements
+                if (self.currentActivities && self.currentActivities.length > 0) {
+                    self.currentActivities.forEach(actId => {
+                        if (actId) canvas.addMarker(actId, 'highlight')
+                    })
+                }
+            }
+
             // you may hook into any of the following events
             eventBus.on('element.dblclick', function (e) {
                 // self.openPanel = true;
                 self.$emit('openPanel', e.element.id);
             });
-            eventBus.on('commandStack.changed', async function (e) {
-                let xml = await self.bpmnViewer.saveXML({ format: true, preamble: true });
+            eventBus.on('shape.remove', async function (e) {
+                // let xml = await self.bpmnViewer.saveXML({ format: true, preamble: true });
                 // console.log(xml)
-                self.$emit("update-xml", xml.xml)
+                console.log(e)
+                // self.$emit("update-xml", xml.xml)
                 // save XML
             });
             // var events = ['element.hover', 'element.out', 'element.click', 'element.dblclick', 'element.mousedown', 'element.mouseup'];
@@ -94,7 +120,6 @@ export default {
             // });
 
         });
-
 
         if (this.url) {
             this.fetchDiagram(this.url);
@@ -298,5 +323,28 @@ export default {
     height: 100%;
     width: 100%;
 }
+
+.highlight:not(.djs-connection) .djs-visual > :nth-child(1) {
+    stroke-width: 2px !important;
+    stroke: #5140bd !important;
+    fill: #5140bd !important;
+}
+.highlight:not(.djs-connection) .djs-visual > :nth-child(2) {
+    fill: #ffffff !important;
+}
+
+/* 팔레트 커스텀 부분 */
+.vue-bpmn-diagram-container .separator{
+    display: none;
+}
+
+.vue-bpmn-diagram-container .djs-palette {
+    width: 610px;
+    height: 50px;
+    margin-left: 0px;
+    background-color: white;
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.1);
+}
 </style>
-./custom

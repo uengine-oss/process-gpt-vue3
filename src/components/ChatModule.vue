@@ -67,7 +67,12 @@ export default {
 
             await this.storage.list(`db://chats/chat1`, option).then(function (messages) {
                 if (messages) {
-                    me.messages = messages.map(message => message.messages);
+                    let allMessages = messages.map(message => message.messages);
+                    allMessages.sort((a, b) => {
+                        return new Date(a.timeStamp) - new Date(b.timeStamp);
+                    });
+                    me.messages = allMessages;
+                    // me.messages = messages.map(message => message.messages);
                     // me.messages = messages.reverse();
                 }
                 me.isInitDone = true;

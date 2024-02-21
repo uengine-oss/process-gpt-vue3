@@ -15,6 +15,8 @@
                             style="width: 100%; height: 100%" 
                             :bpmn="bpmn" 
                             :processDefinition="processDefinition"
+                            :isViewMode="true"
+                            :currentActivities="currentActivities"
                         ></process-definition>
                         <div v-else style="height: 100%; text-align: center">
                             <v-progress-circular style="top: 50%" indeterminate color="primary"></v-progress-circular>
@@ -87,6 +89,8 @@ import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import Chat from "@/components/ui/Chat.vue";
 import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
+import { VDataTable } from 'vuetify/labs/VDataTable'
+
 
 export default {
     mixins: [ChatModule],
@@ -95,6 +99,7 @@ export default {
         Chat,
         ProcessInstanceList,
         ProcessDefinition,
+        VDataTable
     },
     data: () => ({
         headers: [
@@ -104,7 +109,7 @@ export default {
         ],
         definitions: null,
         definitionDialog: false,
-        processDefinition: null,
+        processDefinition: [],
         processInstance: null,
         path: 'instances',
         organizationChart: [],
@@ -116,8 +121,7 @@ export default {
         isViewProcess: false,
         onLoad: false,
         bpmn: null,
-        projectName: '',
-
+        currentActivities: null,
     }),
     async created() {
         await this.init();
@@ -145,30 +149,35 @@ export default {
     methods: {
         async viewProcess() {
             this.onLoad = false;
-            let definitionInfo = null;
-            let instanceId = "";
-            if (this.$route.query.id) {
-                instanceId = this.$route.query.id;
+            let id = "";
+            let def_id = "";
+
+            if (this.$route.query.id || (this.processInstance && this.processInstance.proc_inst_id)) {
                 this.isViewProcess = !this.isViewProcess;
-            } else if (this.processInstance && this.processInstance.proc_inst_id) {
-                instanceId = this.processInstance.proc_inst_id;
-                this.isViewProcess = !this.isViewProcess;
+
+                if (this.processInstance && this.processInstance.proc_inst_id) {
+                    id = this.processInstance.proc_inst_id;
+                    this.currentActivities = this.processInstance.current_activity_ids;
+                    def_id = id.split('.')[0];
+                
+                } else if (this.$route.query.id) {
+                    id = this.$route.query.id;
+                    def_id = id.split('.')[0];
+                    const proc_inst = await this.getData(`${def_id}/${id}`, {key: "proc_inst_id"});
+                    if (proc_inst) {
+                        this.currentActivities = this.processInstance.current_activity_ids;
+                    }
+                }
+
+                var defInfo = await this.getData(`definitions/${def_id}`, {key: "id"});
+                if (defInfo) {
+                    let definition = partialParse(defInfo.model);
+                    this.bpmn = this.createBpmnXml(definition);
+                    this.onLoad = true;
+                }
             } else {
                 alert("실행 중인 프로세스 인스턴스를 선택하세요.");
                 return;
-            }
-            var definitionId = instanceId.split('.')[0];
-            const instanceInfo = await this.getData(`${definitionId}/${instanceId}`, {key: "proc_inst_id"});
-            if (instanceInfo) {
-                definitionInfo = await this.getData(`definitions/${definitionId}`, {key: "id"});
-            }
-            if (definitionInfo) {
-                let definition = partialParse(definitionInfo.model);
-                // definition.activities.forEach(function (activity) {
-                //     if (activity.id == instanceInfo.nextActivityId) activity.status = 'Running';
-                // });
-                this.onLoad = true;
-                this.bpmn = this.createBpmnXml(definition);
             }
         },
         async loadData(path) {
@@ -215,13 +224,13 @@ export default {
 
                     this.sendMessage(newMessage);
                 } else {
+                    this.processDefinition = [];
                     this.generator.beforeGenerate(newMessage, true);
 
                     var procDefs = await this.queryFromVectorDB(newMessage.text);
                     procDefs = procDefs.map(item => JSON.parse(item));
                     this.definitions = procDefs;
                     this.definitionDialog = true;
-                    this.processDefinition = null;
                 }
             } else {
                 if (this.processInstance && this.processInstance.proc_inst_id) {
@@ -232,7 +241,7 @@ export default {
 
                 this.definitionDialog = false;
                 var msgObj = {
-                    content: this.generator.input.answer,
+                    text: this.generator.input.answer,
                     image: this.generator.input.image
                 }
                 this.sendMessage(msgObj);
@@ -452,8 +461,9 @@ export default {
         // bpmn
         createBpmnXml(jsonModel) {
             // XML 문서 초기화
+            let me = this;
             const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString('<?xml version="1.0" encoding="UTF-8"?><bpmn2:definitions xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI"></bpmn2:definitions>', 'application/xml');
+            const xmlDoc = parser.parseFromString('<?xml version="1.0" encoding="UTF-8"?><bpmn2:definitions xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine"></bpmn2:definitions>', 'application/xml');
             const bpmnDefinitions = xmlDoc.documentElement;
 
             bpmnDefinitions.setAttribute('id', 'Definitions_' + jsonModel.processDefinitionId);
@@ -515,6 +525,19 @@ export default {
                     sequenceFlow.setAttribute('id', 'SequenceFlow_' + sequence.source + '_' + sequence.target);
                     sequenceFlow.setAttribute('sourceRef', sequence.source);
                     sequenceFlow.setAttribute('targetRef', sequence.target);
+                    let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:extensionElements');
+                    let root = xmlDoc.createElementNS('http://uengine', 'uengine:uengine-params');
+                    extensionElements.setAttribute('description', sequence.description ? sequence.description : "")
+                    let params = xmlDoc.createElementNS('http://uengine', 'uengine:parameters');
+                    // if (sequence.condition) {
+                    let param = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
+                    param.setAttribute('key', "condition")
+                    param.textContent = "asdf > 0"
+                    params.appendChild(param)
+                    // }
+                    root.appendChild(params)
+                    extensionElements.appendChild(root)
+                    sequenceFlow.appendChild(extensionElements)
                     process.appendChild(sequenceFlow);
 
                     outGoing[sequence.source] = 'SequenceFlow_' + sequence.source + '_' + sequence.target
@@ -524,9 +547,13 @@ export default {
             // Activities 생성
             if (jsonModel.activities)
                 jsonModel.activities.forEach((activity, idx) => {
-                    const userTask = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:userTask');
+
+                    const userTaskType = me.taskMapping(activity)
+
+                    const userTask = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', userTaskType);
                     userTask.setAttribute('id', activity.id);
                     userTask.setAttribute('name', activity.name);
+                    // let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:description');
                     if (outGoing[activity.id]) {
                         let outGoingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:outgoing');
                         outGoingSeq.textContent = outGoing[activity.id]
@@ -537,6 +564,35 @@ export default {
                         inComingSeq.textContent = inComing[activity.id]
                         userTask.appendChild(inComingSeq)
                     }
+                    let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:extensionElements');
+                    let root = xmlDoc.createElementNS('http://uengine', 'uengine:uengine-params');
+                    root.setAttribute('role', activity.role)
+                    root.setAttribute('description', activity.description)
+                    let params = xmlDoc.createElementNS('http://uengine', 'uengine:parameters');
+                    if (activity.inputData) {
+                        activity.inputData.forEach((data) => {
+                            let param = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
+                            param.setAttribute('key', data.name)
+                            param.setAttribute('category', "input")
+                            params.appendChild(param)
+                        })
+
+                        // userTask.appendChild(extensionElements)
+                    }
+                    if (activity.outputData) {
+                        activity.outputData.forEach((data) => {
+                            let param = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
+                            param.setAttribute('key', data.name)
+                            param.setAttribute('category', "output")
+                            params.appendChild(param)
+                        })
+                        root.appendChild(params)
+                        extensionElements.appendChild(root)
+                    }
+                    root.appendChild(params)
+                    extensionElements.appendChild(root)
+                    userTask.appendChild(extensionElements)
+
                     if (idx == 0) {
                         // 시작일땐 StartEvent와 연결
                         const startEvent = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:startEvent');
@@ -548,6 +604,16 @@ export default {
                         sequenceFlow.setAttribute('id', 'SequenceFlow_' + 'StartEvent' + '_' + activity.id);
                         sequenceFlow.setAttribute('sourceRef', 'StartEvent_1');
                         sequenceFlow.setAttribute('targetRef', activity.id);
+                        let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:extensionElements');
+                        let root = xmlDoc.createElementNS('http://uengine', 'uengine:uengine-params');
+                        let conditionParam = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
+                        let conditionParams = xmlDoc.createElementNS('http://uengine', 'uengine:parameters');
+                        conditionParam.setAttribute('key', "condition")
+                        conditionParam.textContent = "asdf > 0"
+                        conditionParams.appendChild(conditionParam)
+                        root.appendChild(conditionParams)
+                        extensionElements.appendChild(root)
+                        sequenceFlow.appendChild(extensionElements)
                         process.appendChild(sequenceFlow);
 
                         let inComingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:incoming');
@@ -565,6 +631,16 @@ export default {
                         sequenceFlow.setAttribute('id', 'SequenceFlow_' + activity.id + '_' + 'EndEvent');
                         sequenceFlow.setAttribute('sourceRef', activity.id);
                         sequenceFlow.setAttribute('targetRef', 'EndEvent');
+                        let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:extensionElements');
+                        let root = xmlDoc.createElementNS('http://uengine', 'uengine:uengine-params');
+                        let conditionParam = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
+                        let conditionParams = xmlDoc.createElementNS('http://uengine', 'uengine:parameters');
+                        conditionParam.setAttribute('key', "condition")
+                        conditionParam.textContent = "asdf > 0"
+                        conditionParams.appendChild(conditionParam)
+                        root.appendChild(conditionParams)
+                        extensionElements.appendChild(root)
+                        sequenceFlow.appendChild(extensionElements)
                         process.appendChild(sequenceFlow);
 
                         let outGoingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:outgoing');
@@ -742,6 +818,13 @@ export default {
             const serializer = new XMLSerializer();
             const bpmn2Xml = serializer.serializeToString(xmlDoc);
             return bpmn2Xml;
+        },
+        taskMapping(activity) {
+            switch (activity) {
+                case "ScriptActivity": return 'bpmn2:scriptTask';
+                case "EmailActivity": return 'bpmn2:sendTask';
+                default: return 'bpmn2:userTask';
+            }
         },
     }
 };
