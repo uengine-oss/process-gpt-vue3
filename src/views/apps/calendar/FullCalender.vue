@@ -48,25 +48,17 @@ export default defineComponent({
   },
   async created() {
     this.storage = StorageBase.getStorage("supabase");
-    // var date = new Date();
-    // var year = date.getFullYear(); 
-    // var month = date.getMonth() + 1; 
-    // if(month < 10){
-    //   month = `0${month}`
-    // }
-    // let path = `users/${localStorage.getItem('uid')}/calender/${year}/${month}`
-    // const data = await this.storage.getObject(`db://${path}`);
     let option = {
         key: "uid"
     }
-    const data = await this.storage.getObject(`db://users/${localStorage.getItem('uid')}`, option);
+    const res = await this.storage.getObject(`db://calendar/${localStorage.getItem('uid')}`, option);
     // console.log(data)
-    if(data){
+    if(res){
       const currentYear = new Date().getFullYear();
       const currentMonth = new Date().getMonth() + 1;
       const calendarKey = `${currentYear}_${currentMonth < 10 ? `0${currentMonth}` : currentMonth}`;
-      if (data && data.calender && data.calender[calendarKey]) {
-        this.calendarOptions.initialEvents = Object.values(data.calender[calendarKey]);
+      if (res && res.data && res.data[calendarKey]) {
+        this.calendarOptions.initialEvents = Object.values(res.data[calendarKey]);
       }
       // this.calendarOptions.initialEvents = Object.values(data);
       // console.log(this.calendarOptions)

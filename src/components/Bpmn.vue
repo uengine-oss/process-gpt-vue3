@@ -107,10 +107,11 @@ export default {
                 // self.openPanel = true;
                 self.$emit('openPanel', e.element.id);
             });
-            eventBus.on('commandStack.changed', async function (e) {
-                let xml = await self.bpmnViewer.saveXML({ format: true, preamble: true });
+            eventBus.on('shape.remove', async function (e) {
+                // let xml = await self.bpmnViewer.saveXML({ format: true, preamble: true });
                 // console.log(xml)
-                self.$emit("update-xml", xml.xml)
+                console.log(e)
+                // self.$emit("update-xml", xml.xml)
                 // save XML
             });
             // var events = ['element.hover', 'element.out', 'element.click', 'element.dblclick', 'element.mousedown', 'element.mouseup'];
@@ -330,5 +331,20 @@ export default {
 }
 .highlight:not(.djs-connection) .djs-visual > :nth-child(2) {
     fill: #ffffff !important;
+}
+
+/* 팔레트 커스텀 부분 */
+.vue-bpmn-diagram-container .separator{
+    display: none;
+}
+
+.vue-bpmn-diagram-container .djs-palette {
+    width: 610px;
+    height: 50px;
+    margin-left: 0px;
+    background-color: white;
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.1);
 }
 </style>

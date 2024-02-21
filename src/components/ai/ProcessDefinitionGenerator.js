@@ -20,7 +20,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
             ${processDefinitionMap}
             
             결과는 프로세스에 대한 설명과 함께 valid 한 json 으로 표현해줘. markdown 으로, three backticks 로 감싸. 예를 들면 :
-            
+            checkPoints가 없으면 비어있는 Array로 생성해줘.
+            activity에 있는 role이 roles에 없으면 추가적으로 생성해줘.
             프로세스에 대한 설명입니다.
 
             \`\`\`
@@ -43,7 +44,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
               "activities": [{
                   "name": "activity name",
                   "id": "String-based unique id of the activity not including space",
-                  "type": "UserActivity" | "EMailActivity" | "ScriptActivity",,
+                  "type": "UserActivity" | "EMailActivity" | "ScriptActivity",
                   "description": "description of activity",
                   "instruction": "instruction to user",
                   "role": "role name",
@@ -53,8 +54,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                    "outputData": [
                      {"name": "name of data for output"}
                    ],
-                   "checkpoints":["checkpoint 1", "checkpoint 2"],
-                   
+                   "checkpoints":["checkpoint 1", "checkpoint 2"]
               }],
               "sequences": [
                 {
@@ -75,12 +75,12 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
             
             \`\`\`
               { 
-                modifications: [
+                "modifications": [
                   
                   {
-                    action: "replace" | "add" | "delete",
-                    targetJsonPath: "$.activities[?(@.id=='request_vacation')]",
-                    value: {...} //delete 인 경우는 불필요
+                    "action": "replace" | "add" | "delete",
+                    "targetJsonPath": "$.activities[?(@.id=='request_vacation')]",
+                    "value": {...} //delete 인 경우는 불필요
                   }   
                   
                 ]
