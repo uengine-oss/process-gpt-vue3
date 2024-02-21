@@ -98,6 +98,7 @@ export default {
             async handler(newVal) {
                 if (!newVal.query.id) {
                     this.currentChatId = "";
+                    await this.init();
                 }
             }
         },

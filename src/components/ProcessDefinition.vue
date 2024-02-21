@@ -3,7 +3,7 @@
         <v-row style="height: 100%" class="ma-0">
             <v-col class="d-flex ma-0 pa-0">
                 <v-card elevation="1" style="border-radius: 0px !important;">
-                    <v-tooltip :text="$t('processDefinition.processVariables')">
+                    <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
                         <template v-slot:activator="{ props }">
                             <v-btn @click="openProcessVariables" icon v-bind="props"
                                 style="position: absolute; right:20px; top:20px; z-index:1">
@@ -11,10 +11,17 @@
                             </v-btn>
                         </template>
                     </v-tooltip>
-                    <vue-bpmn :bpmn="bpmn" :options="options" v-on:error="handleError" v-on:shown="handleShown"
-                        v-on:loading="handleLoading" v-on:openPanel="(id) => openPanel(id)"
+                    <vue-bpmn :bpmn="bpmn"
+                        :options="options"
+                        :isViewMode="isViewMode"
+                        :currentActivities="currentActivities"
+                        v-on:error="handleError"
+                        v-on:shown="handleShown"
+                        v-on:loading="handleLoading"
+                        v-on:openPanel="(id) => openPanel(id)"
                         v-on:update-xml="val => $emit('update-xml', val)"
-                        v-on:definition="(def) => (definitions = def)"></vue-bpmn>
+                        v-on:definition="(def) => (definitions = def)"
+                    ></vue-bpmn>
                 </v-card>
             </v-col>
             <v-col v-if="panel" cols="12" sm="12" lg="4" md="6" class="d-flex">
@@ -144,7 +151,9 @@ export default {
     },
     props: {
         processDefinition: Object,
-        bpmn: String
+        bpmn: String,
+        isViewMode: Boolean,
+        currentActivities: Array,
     },
     data: () => ({
         panel: false,

@@ -45,7 +45,7 @@ export default class CustomRenderer extends BaseRenderer {
       'text-anchor': 'middle',
       fill: '#535353'
     });
-    titleText.textContent = '영업 활동 프로세스';
+    // titleText.textContent = '영업 활동 프로세스';
   
     svgAppend(svgRoot, titleText);
   }

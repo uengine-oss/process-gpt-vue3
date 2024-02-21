@@ -34,10 +34,10 @@ export default class WorkAssistantGenerator extends AIGenerator {
             }
             \`\`\`
             
-            그리고 반대로 그 스케쥴 정보을 물어볼때는 그 스케줄에 대한 질문의 답을 해줘
+            2. 스케쥴 정보을 물어볼때는 그 스케줄에 대한 질문의 답을 해줘
             // e.g. 이번달 내 일정은 ? 답변: startDateTime 가 현재날짜와 같은 달이라면 그에 해당하는 모든 일정을 요약해서 리턴해
             
-            2. 프로세스 시작: 대화맥락에서 사용자의 요청사항을 파악하고 프로세스 목록중 하나의 프로세스를 시작해야 할때라고 판단되면 다음과 같은 JSON 형식으로 답변해
+            3. 프로세스 시작: 대화맥락에서 사용자의 요청사항을 파악하고 프로세스 목록중 하나의 프로세스를 시작해야 할때라고 판단되면 다음과 같은 JSON 형식으로 답변해
             JSON 형식: 
             \`\`\`
             {
@@ -47,7 +47,7 @@ export default class WorkAssistantGenerator extends AIGenerator {
             \`\`\`
             
 
-            3. 기존 회사의 문서 또는 정보에 대한 질문
+            4. 기존 회사의 문서 또는 정보에 대한 질문
             JSON 형식: 
             \`\`\`
                 {   "work": "CompanyQuery",
