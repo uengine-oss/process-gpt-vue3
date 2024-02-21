@@ -40,7 +40,7 @@
             </div>
             <div v-if="element.$type == 'bpmn:ScriptTask'">
                 Script (Python)
-                <v-textarea v-model="copyElement.extensionElements.values[0].code"></v-textarea>
+                <v-textarea v-model="copyElement.extensionElements.values[0].pythonCode"></v-textarea>
             </div>
             <div v-if="element.$type.includes('Flow')">
                 Condition

@@ -16,7 +16,7 @@
                     "type": "String"
                 },
                 {
-                    "name": "code",
+                    "name": "pythonCode",
                     "type": "String"
                 },
                 {

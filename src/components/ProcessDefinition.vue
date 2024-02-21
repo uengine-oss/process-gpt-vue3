@@ -332,8 +332,8 @@ export default {
                     role: element.extensionElements.values[0].role,
                     type: taskType
                 }
-                if (element.extensionElements.values[0].code)
-                    task['code'] = element.extensionElements.values[0].code
+                if (element.extensionElements.values[0].pythonCode)
+                    task['code'] = element.extensionElements.values[0].pythonCode
                 console.log(task)
                 this.updateItemByKey(this.copyProcessDefinition.activities, "id", task.id, task)
             } else if (element.$type.includes("Flow")) {
