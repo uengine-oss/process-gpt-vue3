@@ -6,8 +6,7 @@
                     <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
                         <template v-slot:activator="{ props }">
                             <v-btn @click="openProcessVariables" icon v-bind="props"
-                                style="position: absolute; right:20px; top:20px; z-index:1"
-                            >
+                                style="position: absolute; right:20px; top:20px; z-index:1">
                                 <Icon icon="tabler:variable" width="32" height="32" />
                             </v-btn>
                         </template>
@@ -342,7 +341,7 @@ export default {
                     type: taskType
                 }
                 if (element.extensionElements.values[0].pythonCode)
-                    task['code'] = element.extensionElements.values[0].pythonCode
+                    task['pythonCode'] = element.extensionElements.values[0].pythonCode
                 console.log(task)
                 this.updateItemByKey(this.copyProcessDefinition.activities, "id", task.id, task)
             } else if (element.$type.includes("Flow")) {

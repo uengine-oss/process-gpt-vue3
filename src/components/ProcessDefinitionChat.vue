@@ -694,7 +694,7 @@ export default {
                     let root = xmlDoc.createElementNS('http://uengine', 'uengine:uengine-params');
                     root.setAttribute('role', activity.role)
                     root.setAttribute('description', activity.description)
-                    root.setAttribute('code', activity.code)
+                    root.setAttribute('pythonCode', activity.pythonCode)
                     let checkpoints = xmlDoc.createElementNS('http://uengine', 'uengine:checkpoints');
                     if (activity.checkpoints) {
                         activity.checkpoints.forEach((checkpoint) => {
@@ -811,7 +811,7 @@ export default {
                     const dcBoundsLane = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
                     dcBoundsLane.setAttribute('x', '100');
                     dcBoundsLane.setAttribute('y', `${100 + roleIndex * 100}`);
-                    dcBoundsLane.setAttribute('width', '600');
+                    dcBoundsLane.setAttribute('width', '800');
                     dcBoundsLane.setAttribute('height', '100');
                     laneShape.appendChild(dcBoundsLane);
                     bpmnPlane.appendChild(laneShape);
