@@ -289,9 +289,12 @@ export default {
         },
         taskMapping(activity) {
             switch (activity) {
-                case 'bpmn2:scriptTask': return "ScriptActivity";
-                case 'bpmn2:sendTask': return "EmailActivity";
-                default: return 'UserActivity';
+                case 'bpmn:ScriptTask':
+                    return "ScriptActivity";
+                case 'bpmn:sendTask':
+                    return "EmailActivity";
+                default:
+                    return 'UserActivity';
             }
         },
         convertElementToJSON(element) {
@@ -302,6 +305,7 @@ export default {
                 let inputData = {}
                 let outputData = {}
                 this.copyElement?.extensionElements?.values?.[0]?.$children?.[0]?.$children.forEach(function (data) {
+                    console.log(data)
                     if (data.category == 'input') {
                         inputData[data.key] = { "mandatory": data.mandatory ? data.mandatory : false };
                         // inputData.push(obj)
@@ -309,17 +313,25 @@ export default {
                         outputData[data.key] = { "mandatory": data.mandatory ? data.mandatory : false };
                     }
                 })
+                let resultInputData = Object.keys(inputData).length > 0 ? [inputData] : []
+                let resultOutputData = Object.keys(outputData).length > 0 ? [outputData] : []
+                let checkpoints = []
+                element.extensionElements?.values[0]?.$children[0]?.$children.forEach(function (checkpoint) {
+                    checkpoints.push(checkpoint.checkpoint)
+                })
                 let task = {
-                    checkpoints: [],
+                    checkpoints: checkpoints,
                     description: element.extensionElements.values[0].description,
                     id: element.id,
-                    inputData: [inputData],
+                    inputData: resultInputData,
                     instruction: "",
                     name: element.name,
-                    outputData: [outputData],
+                    outputData: resultOutputData,
                     role: element.extensionElements.values[0].role,
                     type: taskType
                 }
+                if (element.extensionElements.values[0].code)
+                    task['code'] = element.extensionElements.values[0].code
                 console.log(task)
                 this.updateItemByKey(this.copyProcessDefinition.activities, "id", task.id, task)
             } else if (element.$type.includes("Flow")) {
