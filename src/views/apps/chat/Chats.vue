@@ -37,6 +37,7 @@ import { VectorStorage } from "vector-storage";
 import ChatGenerator from "@/components/ai/WorkAssistantGenerator.js";
 import Chat from "@/components/ui/Chat.vue";
 import ChatModule from "@/components/ChatModule.vue";
+import axios from 'axios';
 
 
 export default {
@@ -75,36 +76,36 @@ export default {
             }
         },
         async beforeSendMessage(newMessage) {
-            let uuid = this.uuid()
-            if(newMessage && newMessage.includes("시작하겠습니다.")){
-                let message = {
-                    "messages": this.createMessageObj(newMessage, 'system'),
-                    "id": "chat1",
-                    "uid": uuid,
-                }
-                this.putObject(`chats/${uuid}`, message);
-            } else {
-                let message = {
-                    "messages": this.createMessageObj(newMessage),
-                    "id": "chat1",
-                    "uid": uuid,
-                }
-                this.putObject(`chats/${uuid}`, message);
+            if (newMessage && newMessage.text != '') {
+                let uuid = this.uuid()
+                if(newMessage.text.includes("시작하겠습니다.")){
+                    let message = {
+                        "messages": this.createMessageObj(newMessage.text, 'system'),
+                        "id": "chat1",
+                        "uid": uuid,
+                    }
+                    this.putObject(`chats/${uuid}`, message);
+                } else {
+                    let message = {
+                        "messages": this.createMessageObj(newMessage.text),
+                        "id": "chat1",
+                        "uid": uuid,
+                    }
+                    this.putObject(`chats/${uuid}`, message);
 
-                if(!this.generator.contexts) {
-                    let contexts = await this.queryFromVectorDB(newMessage);
-                    this.generator.setContexts(contexts);
+                    if(!this.generator.contexts) {
+                        let contexts = await this.queryFromVectorDB(newMessage.text);
+                        this.generator.setContexts(contexts);
+                    }
+                    
+                    this.prompt = {
+                        content: newMessage.text,
+                        requestUserEmail: this.userInfo.email,
+                        requestUserName: this.userInfo.name,
+                    }
+                    this.sendMessage(newMessage);
                 }
-                
-                this.prompt = {
-                    content: newMessage,
-                    requestUserEmail: this.userInfo.email,
-                    requestUserName: this.userInfo.name,
-                }
-                this.sendMessage(newMessage);
             }
-
-
         },
 
         // async loadData(path) {
@@ -143,16 +144,38 @@ export default {
         },
 
         async afterGenerationFinished(response) {
-            if(response == '.') {
+            if(response == '.' || response == '.\n') {
                 this.messages.splice(this.messages.length - 1, 1)
             } else {
                 let obj = this.createMessageObj(response, 'system')
                 if(response && response.includes("{")){
                     let responseObj = partialParse(response)
-                    if(responseObj.work == 'DocumentQuery'){
-                        /// ...
-                    }else
-                    if(responseObj.work == 'ScheduleRegistration'){
+                    if(responseObj.work == 'CompanyQuery'){
+                        try{
+                            let responseMemento = await axios.post('http://localhost:8005/query', { query: responseObj.content});
+                            obj.memento = {}
+                            obj.memento.response = responseMemento.data.response
+                            if (!responseMemento.data.metadata) return {};
+                            const unique = {};
+                            const sources = Object.values(responseMemento.data.metadata).filter(obj => {
+                                if (!unique[obj.file_path]) {
+                                    unique[obj.file_path] = true;
+                                    return true;
+                                }
+                            });
+                            obj.memento.sources = sources
+
+                            const responseTable = await axios.post('http://localhost:8006/process-data-query/invoke', {
+                                input: {
+                                    var_name: responseObj.content
+                                }
+                            });
+                            obj.tableData = responseTable.data.output
+                            this.messages[this.messages.length - 1] = obj
+                        } catch(error){
+                            alert(error);
+                        }
+                    } else if(responseObj.work == 'ScheduleRegistration'){
                         let start = responseObj.startDateTime.split('/')
                         let startDate = start[0].split("-")
                         let startTime = start[1].split("-")

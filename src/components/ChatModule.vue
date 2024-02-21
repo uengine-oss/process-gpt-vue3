@@ -59,6 +59,12 @@ export default {
             //     }
             // });
 
+            // await this.storage.watch(`chats`, (callback) => {
+            //     if (callback) {
+            //         console.log(callback)
+            //     }
+            // });
+
             await this.storage.list(`db://chats/chat1`, option).then(function (messages) {
                 if (messages) {
                     me.messages = messages.map(message => message.messages);
@@ -151,7 +157,7 @@ export default {
             return obj;
         },
         async sendMessage(message) {
-            if (message !== '') {
+            if (message.text !== '') {
                 let chatMsgs = [];
 
                 if (this.messages && this.messages.length > 0) {
@@ -167,13 +173,14 @@ export default {
 
                 let chatObj = {
                     role: 'user',
-                    content: message
+                    content: message.text
                 };
                 
                 chatMsgs.push(chatObj);
                 this.generator.previousMessages = [...this.generator.previousMessages, ...chatMsgs];
 
-                chatObj = this.createMessageObj(message);
+                chatObj = this.createMessageObj(message.text);
+                if (message.image) chatObj.image = message.image;
                 this.messages.push(chatObj);
 
                 this.saveMessages(this.messages);

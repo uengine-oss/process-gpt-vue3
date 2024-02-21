@@ -17,14 +17,12 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
         };
     }
 
-    beforeGenerate(obj, isNew, image) {
+    beforeGenerate(obj, isNew) {
         if (obj) {
-            if (obj.message) {
-                this.input.answer = obj.message
-            }
-            if (obj.image) {
+            if (obj.content)
+                this.input.answer = obj.content;
+            if (obj.image) 
                 this.input.image = obj.image;
-            }
         }
 
         if (isNew) {
