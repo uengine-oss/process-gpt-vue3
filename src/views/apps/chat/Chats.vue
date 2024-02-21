@@ -99,7 +99,7 @@ export default {
                     }
                     
                     this.prompt = {
-                        content: newMessage,
+                        content: newMessage.text,
                         requestUserEmail: this.userInfo.email,
                         requestUserName: this.userInfo.name,
                     }
