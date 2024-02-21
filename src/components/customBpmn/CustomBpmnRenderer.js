@@ -25,7 +25,7 @@ export default class CustomRenderer extends BaseRenderer {
   }
 
   canRender(element) {
-    console.log('Rendering a Task:', element.type);
+    // console.log('Rendering a Task:', element.type);
     // only render tasks and events (ignore labels)
     return isAny(element, [ 'bpmn:Task', "bpmn:Lane", "bpmn:Participant", "bpmn:SequenceFlow", "bpmn:StartEvent", "bpmn:EndEvent", "bpmn2:outgoing" ]) && !element.labelTarget;
   }

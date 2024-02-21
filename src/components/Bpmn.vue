@@ -55,7 +55,7 @@ export default {
             },
             this.options
         );
-        
+
         this.bpmnViewer = new BpmnModeler(_options); //new BpmnJS(_options);  //
         var eventBus = this.bpmnViewer.get('eventBus');
         // eventBus.on('import.render.start', function (e) {
@@ -82,10 +82,11 @@ export default {
                 // self.openPanel = true;
                 self.$emit('openPanel', e.element.id);
             });
-            eventBus.on('commandStack.changed', async function (e) {
-                let xml = await self.bpmnViewer.saveXML({ format: true, preamble: true });
+            eventBus.on('shape.remove', async function (e) {
+                // let xml = await self.bpmnViewer.saveXML({ format: true, preamble: true });
                 // console.log(xml)
-                self.$emit("update-xml", xml.xml)
+                console.log(e)
+                // self.$emit("update-xml", xml.xml)
                 // save XML
             });
             // var events = ['element.hover', 'element.out', 'element.click', 'element.dblclick', 'element.mousedown', 'element.mouseup'];

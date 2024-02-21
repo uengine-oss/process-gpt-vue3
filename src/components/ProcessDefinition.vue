@@ -5,9 +5,7 @@
                 <v-card elevation="1" style="border-radius: 0px !important;">
                     <v-tooltip :text="$t('processDefinition.processVariables')">
                         <template v-slot:activator="{ props }">
-                            <v-btn @click="openProcessVariables" icon v-bind="props"
-                                style="margin:10px 0px -10px 20px;"
-                            >
+                            <v-btn @click="openProcessVariables" icon v-bind="props" style="margin:10px 0px -10px 20px;">
                                 <Icon icon="tabler:variable" width="32" height="32" />
                             </v-btn>
                         </template>
@@ -28,21 +26,22 @@
         </v-row>
         <v-dialog v-model="isViewProcessVariables" max-width="1000">
             <v-card>
-                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{ $t('processDefinition.editProcessData') }}</v-card-title>
+                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{
+                    $t('processDefinition.editProcessData') }}</v-card-title>
                 <v-btn icon style="position:absolute; right:5px; top:5px;" @click="isViewProcessVariables = false">
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
                 <v-card-text style="height: 1000px; width: 1000px;">
-                    <VDataTable class="border rounded-md"
-                        :items-per-page="5"
-                        :items-per-page-text="$t('processDefinition.itemsPerPage')"
-                    >
+                    <VDataTable class="border rounded-md" :items-per-page="5"
+                        :items-per-page-text="$t('processDefinition.itemsPerPage')">
                         <thead>
                             <tr>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.name') }}</th>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.type') }}</th>
-                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.description') }}</th>
-                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.dataSource') }}</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.description') }}
+                                </th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.dataSource') }}
+                                </th>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.query') }}</th>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.actions') }}</th>
                             </tr>
@@ -81,11 +80,8 @@
                         </tbody>
                     </VDataTable>
                     <v-row class="ma-0" style="margin:10px 0px 10px 0px !important;">
-                        <v-card @click="addProcessVaribles"
-                            elevation="9"
-                            variant="outlined"
-                            style="padding: 10px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;"
-                        >
+                        <v-card @click="addProcessVaribles" elevation="9" variant="outlined"
+                            style="padding: 10px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;">
                             <div style="display: flex; justify-content: center; align-items: center;">
                                 <Icon icon="streamline:add-1-solid" width="24" height="24" style="color: #5EB2E8" />
                             </div>
@@ -95,8 +91,7 @@
                         <v-card variant="outlined">
                             <v-card-text class="ma-0 pa-0">
                                 <process-variable mode="add"
-                                    @add-variables="val => copyProcessDefinition.data.push(val)"
-                                ></process-variable>
+                                    @add-variables="val => copyProcessDefinition.data.push(val)"></process-variable>
                             </v-card-text>
                         </v-card>
                     </div>
@@ -104,8 +99,7 @@
                         <v-card variant="outlined">
                             <v-card-text class="ma-0 pa-0">
                                 <process-variable :key="editComponentKey" :variable="editedItem" mode="edit"
-                                    @update-variables="val => updateVariable(val)"
-                                ></process-variable>
+                                    @update-variables="val => updateVariable(val)"></process-variable>
                             </v-card-text>
                         </v-card>
                     </div>
@@ -217,13 +211,13 @@ export default {
         editItem(item) {
             this.editedIndex = this.copyProcessDefinition.data.indexOf(item);
             this.editedItem = Object.assign({}, item);
-            
-            if(this.processVariblesWindow == true) {
+
+            if (this.processVariblesWindow == true) {
                 this.processVariblesWindow = false;
             }
             this.editComponentKey ^= 1; // ProcessVariable 컴포넌트 새로고침용 변수
 
-            if(this.lastEditedIndex == this.editedIndex) {
+            if (this.lastEditedIndex == this.editedIndex) {
                 this.editDialog = !this.editDialog
             } else {
                 this.editDialog = true
@@ -250,8 +244,8 @@ export default {
 
             return null;
         },
-        updateItemById(array, id, newItem) {
-            const index = array.findIndex(item => item.id === id);
+        updateItemByKey(array, key, id, newItem) {
+            const index = array.findIndex(item => item[key] === id);
             if (index !== -1) {
                 array[index] = newItem;
             }
@@ -264,7 +258,7 @@ export default {
             this.isViewProcessVariables = !this.isViewProcessVariables
         },
         addProcessVaribles() {
-            if(this.editDialog == true) {
+            if (this.editDialog == true) {
                 this.editDialog = false
             }
             this.processVariblesWindow = !this.processVariblesWindow
@@ -301,7 +295,7 @@ export default {
             }
         },
         convertElementToJSON(element) {
-            console.log(element)
+            console.log(element.name)
             if (element.$type.includes("Task")) {
                 // Task Parser
                 let taskType = this.taskMapping(element.$type)
@@ -327,9 +321,16 @@ export default {
                     type: taskType
                 }
                 console.log(task)
-                this.updateItemById(this.copyProcessDefinition.activities, task.id, task)
+                this.updateItemByKey(this.copyProcessDefinition.activities, "id", task.id, task)
             } else if (element.$type.includes("Flow")) {
                 // Sequence Parser
+                let sequence = {
+                    name: element.name,
+                    source: element.sourceRef.id,
+                    target: element.targetRef.id,
+                    condition: element.extensionElements.values[0].$children[0].$children[0].$body
+                }
+                this.updateItemByKey(this.copyProcessDefinition.sequences, "source", sequence.source, sequence)
             } else if (element.$type.includes("Lane")) {
                 // Role Parser
             }
