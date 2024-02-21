@@ -183,7 +183,8 @@ export default {
                         //means process modification
                         unknown.modifications.forEach((modification) => {
                             if (modification.action == 'replace') {
-                                this.modificationReplace(modification);
+                                this.jsonPathReplace(this.processDefinition, modification.targetJsonPath, modification.value);
+                                console.log(this.processDefinition)
                                 this.bpmn = this.createBpmnXml(this.processDefinition);
                             } else if (modification.action == 'add') {
                                 this.modificationAdd(modification);
@@ -198,14 +199,14 @@ export default {
                         this.bpmn = this.createBpmnXml(this.processDefinition);
                     }
                     this.definitionChangeCount++;
-                    const res = await axios.post('http://localhost:8001/process-db-schema/invoke', {
-                        "input": {
-                            "process_definition_id": this.processDefinition.processDefinitionName
-                        }
-                    })
-                    if (res) {
-                        console.log(res)
-                    }
+                    // const res = await axios.post('http://localhost:8001/process-db-schema/invoke', {
+                    //     "input": {
+                    //         "process_definition_id": this.processDefinition.processDefinitionName
+                    //     }
+                    // })
+                    // if (res) {
+                    //     console.log(res)
+                    // }
 
                 }
             } catch (error) {
@@ -424,14 +425,14 @@ export default {
 
             let path = `${this.path}/${definition.processDefinitionId}`
             this.putObject(path, putObj)
-            const res = await axios.post('http://localhost:8001/process-db-schema/invoke', {
-                "input": {
-                    "process_definition_id": this.processDefinition.processDefinitionName
-                }
-            })
-            if (res) {
-                console.log(res)
-            }
+            // const res = await axios.post('http://localhost:8001/process-db-schema/invoke', {
+            //     "input": {
+            //         "process_definition_id": this.processDefinition.processDefinitionName
+            //     }
+            // })
+            // if (res) {
+            //     console.log(res)
+            // }
         },
         // parseDefinition(model) {
         //     let definition = {};
@@ -619,8 +620,8 @@ export default {
             const laneActivityMapping = {};
             if (jsonModel.activities)
                 jsonModel.activities.forEach(activity => {
-                    if (!laneActivityMapping[activity.role]) {
-                        laneActivityMapping[activity.role] = [];
+                    if (!laneActivityMapping[activity?.role]) {
+                        laneActivityMapping[activity?.role] = [];
                     }
                     laneActivityMapping[activity.role].push(activity.id);
                 });
@@ -849,7 +850,6 @@ export default {
                             height: 36
                         }
                         lastXPos += 120
-
                     }
                     let activityY = parseInt(rolePos[activity.role].y)
                     const activityShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
@@ -895,13 +895,13 @@ export default {
                         const startWaypoint1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
                         // let startX, startY, endX, endY;
 
-                        startWaypoint1.setAttribute('x', parseInt(activityPos['startEvent'].x) + parseInt(activityPos['startEvent'].width));
-                        startWaypoint1.setAttribute('y', parseInt(activityPos['startEvent'].y) + (parseInt(activityPos['startEvent'].height) / 2));
+                        startWaypoint1.setAttribute('x', parseInt(activityPos['startEvent']?.x) + parseInt(activityPos['startEvent']?.width));
+                        startWaypoint1.setAttribute('y', parseInt(activityPos['startEvent']?.y) + (parseInt(activityPos['startEvent']?.height) / 2));
                         startBpmnEdge.appendChild(startWaypoint1);
                         const startWaypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
 
-                        startWaypoint2.setAttribute('x', parseInt(activityPos[firstActivity.id].x));
-                        startWaypoint2.setAttribute('y', parseInt(activityPos[firstActivity.id].y) + (parseInt(activityPos[firstActivity.id].height) / 2));
+                        startWaypoint2.setAttribute('x', parseInt(activityPos[firstActivity.id]?.x));
+                        startWaypoint2.setAttribute('y', parseInt(activityPos[firstActivity.id]?.y) + (parseInt(activityPos[firstActivity.id]?.height) / 2));
                         startBpmnEdge.appendChild(startWaypoint2);
 
                         const endBpmnEdge = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNEdge');
@@ -910,8 +910,8 @@ export default {
                         const endWaypoint1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
                         // startX = 
                         // startY = 
-                        endWaypoint1.setAttribute('x', parseInt(activityPos[lastActivity.id].x) + parseInt(activityPos[lastActivity.id].width));
-                        endWaypoint1.setAttribute('y', parseInt(activityPos[lastActivity.id].y) + (parseInt(activityPos[lastActivity.id].height) / 2));
+                        endWaypoint1.setAttribute('x', parseInt(activityPos[lastActivity.id]?.x) + parseInt(activityPos[lastActivity.id]?.width));
+                        endWaypoint1.setAttribute('y', parseInt(activityPos[lastActivity.id]?.y) + (parseInt(activityPos[lastActivity.id]?.height) / 2));
                         endBpmnEdge.appendChild(endWaypoint1);
                         const endWaypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
                         // endX = parseInt(activityPos['endEvent'].x)

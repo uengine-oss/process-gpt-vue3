@@ -80,7 +80,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   {
                     "action": "replace" | "add" | "delete",
                     "targetJsonPath": "$.activities[?(@.id=='request_vacation')]",
-                    "value": {...} //delete 인 경우는 불필요
+                    "value": {...} //delete 인 경우는 불필요, replace의 경우 기존 value에서 변경된 부분을 수정하여 생략 하지 않고 value로 리턴
                   }   
                   
                 ]

@@ -48,7 +48,7 @@
                 <v-text-field
                     v-model="copyElement.extensionElements.values[0].$children[0].$children[0].$body"></v-text-field>
             </div>
-            <div>
+            <div v-if="element.$type.includes('Task')">
                 Checkpoints
                 <div v-for="(checkpoint, idx) in checkpoints" :key="idx">
                     <v-checkbox-btn color="success" :label="checkpoint.checkpoint" hide-details
