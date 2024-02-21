@@ -19,14 +19,14 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
 
     beforeGenerate(obj, isNew) {
         if (obj) {
-            if (obj.content)
-                this.input.answer = obj.content;
+            if (obj.text)
+                this.input.answer = obj.text;
             if (obj.image) 
                 this.input.image = obj.image;
         }
 
         if (isNew) {
-            if (this.client.processDefinition) {
+            if (this.client.processDefinition.length > 0) {
                 var procDef = this.client.processDefinition[0];
                 this.input.process_definition_id = procDef.processDefinitionId;
             };
