@@ -9,10 +9,14 @@
     "types": [
         {
             "name": "uengine-params",
-            "superClass": ["Element"],
+            "superClass": ["Element","FlowElement"],
             "properties": [
                 {
                     "name": "role",
+                    "type": "String"
+                },
+                {
+                    "name": "description",
                     "type": "String"
                 },
                 {
@@ -31,7 +35,7 @@
                     "type": "String"
                 },
                 {
-                    "name": "value",
+                    "name": "category",
                     "type": "String"
                 }
             ]

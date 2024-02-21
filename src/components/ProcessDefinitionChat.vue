@@ -11,8 +11,9 @@
             </template>
             <template v-slot:rightpart>
                 <process-definition style="width: 100%; height: 100%" :bpmn="bpmn" :processDefinition="processDefinition"
-                    @update="isChanged = true" :key="definitionChangeCount"
-                    @updateDefinition="(val) => processDefinition = val"></process-definition>
+                    @update="definitionChangeCount++" :key="definitionChangeCount"
+                    @updateDefinition="(val) => updateDefinition(val)"
+                    @update-xml="val => changedXML = val"></process-definition>
             </template>
 
             <template v-slot:mobileLeftContent>
@@ -37,9 +38,15 @@ import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import ChatDetail from '@/components/apps/chats/ChatDetail.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
+import * as jsondiff from 'jsondiffpatch'
+import axios from '@/utils/axios'
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
-
-
+import { ref } from 'vue';
+var jsondiffpatch = jsondiff.create({
+    objectHash: function (obj, index) {
+        return '$$index:' + index;
+    },
+});
 export default {
     mixins: [ChatModule],
     name: 'ProcessDefinitionChat',
@@ -56,6 +63,7 @@ export default {
     data: () => ({
         processDefinition: null,
         bpmn: null,
+        changedXML: "",
         projectName: '',
         path: 'definitions',
         definitionChangeCount: 0,
@@ -64,7 +72,6 @@ export default {
             title: 'processDefinition.cardTitle',
             text: "processDefinition.processDefinitionExplanation"
         },
-        changedModel: null,
         processDefinitionMap: null
     }),
     async created() {
@@ -79,52 +86,56 @@ export default {
     },
     watch: {
         $route: {
-            //     deep: true,
+            deep: true,
             async handler(newVal, oldVal) {
+                // console.log(newVal, oldVal)
                 //         if (newVal.path !== oldVal.path) {
                 //             // console.log('aa');
                 //             // this.processDefinition = null;
                 //             // this.bpmn = null;
                 var path = this.$route.href.replace('#/', '');
+                console.log(path)
                 this.loadData(path);
 
                 // this.messages = await this.loadMessages(path);
                 //         }
             }
         },
-        processDefinition: {
-            deep: true,
-            handler(newVal, oldVal) {
-                if (oldVal != null) {
-                    let putObj = {
-                        id: newVal.processDefinitionId,
-                        name: newVal.processDefinitionName,
-                        definition: newVal
-                    };
-                    let modelText = JSON.stringify(this.processDefinition);
-                    putObj.model = modelText
-                    let path = `${this.path}/${newVal.processDefinitionId}`
-                    this.putObject(path, putObj)
-                }
-            }
-        }
+        // processDefinition: {
+        //     deep: true,
+        //     handler(newVal, oldVal) {
+        //         if (oldVal != null) {
+
+        //         }
+        //     }
+        // }
     },
     methods: {
+        updateDefinition(val) {
+            this.bpmn = this.createBpmnXml(this.processDefinition)
+            // let diff = jsondiffpatch.diff(this.processDefinition, val)
+            // if (diff) {
+            this.isChanged = true
+            //     this.processDefinition = val
+            //     this.definitionChangeCount++
+            // }
+        },
         async loadData(path) {
             // this.bpmn = '<?xml version="1.0" encoding="UTF-8"?><bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" id="sample-diagram" targetNamespace="http://bpmn.io/schema/bpmn" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd"><bpmn2:collaboration id="Collaboration_1tj7ei2"><bpmn2:participant id="Participant_1eqhejj" processRef="Process_1"/></bpmn2:collaboration><bpmn2:process id="Process_1" isExecutable="false"><bpmn2:laneSet id="LaneSet_1g2nbpc"><bpmn2:lane id="Lane_0wneims" name="Woker"><bpmn2:flowNodeRef>StartEvent_1</bpmn2:flowNodeRef><bpmn2:flowNodeRef>Activity_1ta8n6y</bpmn2:flowNodeRef></bpmn2:lane><bpmn2:lane id="Lane_1lf58ly" name="HR"><bpmn2:flowNodeRef>Event_0h4j724</bpmn2:flowNodeRef><bpmn2:flowNodeRef>Activity_0ji9jev</bpmn2:flowNodeRef></bpmn2:lane></bpmn2:laneSet><bpmn2:startEvent id="StartEvent_1" name="시작" magic:spell="Avada Kedavra"><bpmn2:outgoing>Flow_0sp25wg</bpmn2:outgoing></bpmn2:startEvent><bpmn2:sequenceFlow id="Flow_0sp25wg" sourceRef="StartEvent_1" targetRef="Activity_1ta8n6y"/><bpmn2:sequenceFlow id="Flow_03dbjwz" sourceRef="Activity_1ta8n6y" targetRef="Activity_0ji9jev"/><bpmn2:endEvent id="Event_0h4j724" name="종료"><bpmn2:incoming>Flow_182335x</bpmn2:incoming></bpmn2:endEvent><bpmn2:sequenceFlow id="Flow_182335x" sourceRef="Activity_0ji9jev" targetRef="Event_0h4j724"/><bpmn2:userTask id="Activity_1ta8n6y" name="휴가 신청"><bpmn2:documentation>Vacation</bpmn2:documentation><bpmn2:incoming>Flow_0sp25wg</bpmn2:incoming><bpmn2:outgoing>Flow_03dbjwz</bpmn2:outgoing></bpmn2:userTask><bpmn2:userTask id="Activity_0ji9jev" name="승인"><bpmn2:documentation>confirm</bpmn2:documentation><bpmn2:incoming>Flow_03dbjwz</bpmn2:incoming><bpmn2:outgoing>Flow_182335x</bpmn2:outgoing></bpmn2:userTask></bpmn2:process><bpmndi:BPMNDiagram id="BPMNDiagram_1"><bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1tj7ei2"><bpmndi:BPMNShape id="Participant_1eqhejj_di" bpmnElement="Participant_1eqhejj" isHorizontal="true"><dc:Bounds x="270" y="150" width="600" height="250"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="Lane_0wneims_di" bpmnElement="Lane_0wneims" isHorizontal="true"><dc:Bounds x="300" y="150" width="570" height="125"/><bpmndi:BPMNLabel/></bpmndi:BPMNShape><bpmndi:BPMNShape id="Lane_1lf58ly_di" bpmnElement="Lane_1lf58ly" isHorizontal="true"><dc:Bounds x="300" y="275" width="570" height="125"/><bpmndi:BPMNLabel/></bpmndi:BPMNShape><bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1"><dc:Bounds x="352" y="192" width="36" height="36"/><bpmndi:BPMNLabel><dc:Bounds x="361" y="235" width="20" height="14"/></bpmndi:BPMNLabel></bpmndi:BPMNShape><bpmndi:BPMNShape id="Event_0h4j724_di" bpmnElement="Event_0h4j724"><dc:Bounds x="762" y="322" width="36" height="36"/><bpmndi:BPMNLabel><dc:Bounds x="770" y="365" width="20" height="14"/></bpmndi:BPMNLabel></bpmndi:BPMNShape><bpmndi:BPMNShape id="Activity_18762mc_di" bpmnElement="Activity_1ta8n6y"><dc:Bounds x="440" y="170" width="100" height="80"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="Activity_1omaje8_di" bpmnElement="Activity_0ji9jev"><dc:Bounds x="600" y="300" width="100" height="80"/></bpmndi:BPMNShape><bpmndi:BPMNEdge id="Flow_0sp25wg_di" bpmnElement="Flow_0sp25wg"><di:waypoint x="388" y="210"/><di:waypoint x="440" y="210"/></bpmndi:BPMNEdge><bpmndi:BPMNEdge id="Flow_03dbjwz_di" bpmnElement="Flow_03dbjwz"><di:waypoint x="540" y="210"/><di:waypoint x="570" y="210"/><di:waypoint x="570" y="340"/><di:waypoint x="600" y="340"/></bpmndi:BPMNEdge><bpmndi:BPMNEdge id="Flow_182335x_di" bpmnElement="Flow_182335x"><di:waypoint x="700" y="340"/><di:waypoint x="762" y="340"/></bpmndi:BPMNEdge></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn2:definitions>';
             // this.bpmn = `{"$type":"bpmn:Definitions","id":"sample-diagram","targetNamespace":"http://bpmn.io/schema/bpmn","rootElements":[{"$type":"bpmn:Collaboration","id":"Collaboration_1tj7ei2","participants":[{"$type":"bpmn:Participant","id":"Participant_1eqhejj","$parent":"Collaboration_1tj7ei2"}],"$parent":"sample-diagram"},{"$type":"bpmn:Process","id":"Process_1","isExecutable":false,"laneSets":[{"$type":"bpmn:LaneSet","id":"LaneSet_1g2nbpc","lanes":[{"$type":"bpmn:Lane","id":"Lane_0wneims","name":"Woker","$parent":"LaneSet_1g2nbpc"},{"$type":"bpmn:Lane","id":"Lane_1lf58ly","name":"HR","$parent":"LaneSet_1g2nbpc"}],"$parent":"Process_1"}],"flowElements":[{"$type":"bpmn:StartEvent","id":"StartEvent_1","name":"시작","eventDefinitions":[],"$parent":"Process_1"},{"$type":"bpmn:SequenceFlow","id":"Flow_0sp25wg","$parent":"Process_1","sourceRef":"StartEvent_1","targetRef":"Activity_1ta8n6y"},{"$type":"bpmn:SequenceFlow","id":"Flow_03dbjwz","$parent":"Process_1","sourceRef":"Activity_1ta8n6y","targetRef":"Activity_0ji9jev"},{"$type":"bpmn:EndEvent","id":"Event_0h4j724","name":"종료","eventDefinitions":[],"$parent":"Process_1"},{"$type":"bpmn:SequenceFlow","id":"Flow_182335x","$parent":"Process_1","sourceRef":"Activity_0ji9jev","targetRef":"Event_0h4j724"},{"$type":"bpmn:UserTask","id":"Activity_1ta8n6y","name":"휴가 신청","documentation":[{"$type":"bpmn:Documentation","text":"Vacation","$parent":"Activity_1ta8n6y"}],"uengine-params":{"script": "System.out.println('hello world')"},"$parent":"Process_1"},{"$type":"bpmn:UserTask","id":"Activity_0ji9jev","name":"승인","documentation":[{"$type":"bpmn:Documentation","text":"confirm","$parent":"Activity_0ji9jev"}],"$parent":"Process_1"}],"$parent":"sample-diagram"}],"diagrams":[{"$type":"bpmndi:BPMNDiagram","id":"BPMNDiagram_1","plane":{"$type":"bpmndi:BPMNPlane","id":"BPMNPlane_1","planeElement":[{"$type":"bpmndi:BPMNShape","id":"Lane_1lf58ly_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":300,"y":275,"width":570,"height":125,"$parent":"Lane_1lf58ly_di"},"label":{"$type":"bpmndi:BPMNLabel","$parent":"Lane_1lf58ly_di"},"bpmnElement":"Lane_1lf58ly","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Lane_0wneims_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":300,"y":150,"width":570,"height":125,"$parent":"Lane_0wneims_di"},"label":{"$type":"bpmndi:BPMNLabel","$parent":"Lane_0wneims_di"},"bpmnElement":"Lane_0wneims","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Participant_1eqhejj_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":270,"y":150,"width":600,"height":250,"$parent":"Participant_1eqhejj_di"},"bpmnElement":"Participant_1eqhejj","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"_BPMNShape_StartEvent_2","bounds":{"$type":"dc:Bounds","x":352,"y":192,"width":36,"height":36,"$parent":"_BPMNShape_StartEvent_2"},"label":{"$type":"bpmndi:BPMNLabel","bounds":{"$type":"dc:Bounds","x":361,"y":235,"width":20,"height":14},"$parent":"_BPMNShape_StartEvent_2"},"bpmnElement":"StartEvent_1","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Event_0h4j724_di","bounds":{"$type":"dc:Bounds","x":762,"y":322,"width":36,"height":36,"$parent":"Event_0h4j724_di"},"label":{"$type":"bpmndi:BPMNLabel","bounds":{"$type":"dc:Bounds","x":770,"y":365,"width":20,"height":14},"$parent":"Event_0h4j724_di"},"bpmnElement":"Event_0h4j724","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Activity_18762mc_di","bounds":{"$type":"dc:Bounds","x":440,"y":170,"width":100,"height":80,"$parent":"Activity_18762mc_di"},"bpmnElement":"Activity_1ta8n6y","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Activity_1omaje8_di","bounds":{"$type":"dc:Bounds","x":600,"y":300,"width":100,"height":80,"$parent":"Activity_1omaje8_di"},"bpmnElement":"Activity_0ji9jev","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_0sp25wg_di","waypoint":[{"$type":"dc:Point","x":388,"y":210,"$parent":"Flow_0sp25wg_di"},{"$type":"dc:Point","x":440,"y":210,"$parent":"Flow_0sp25wg_di"}],"bpmnElement":"Flow_0sp25wg","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_03dbjwz_di","waypoint":[{"$type":"dc:Point","x":540,"y":210,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":570,"y":210,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":570,"y":340,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":600,"y":340,"$parent":"Flow_03dbjwz_di"}],"bpmnElement":"Flow_03dbjwz","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_182335x_di","waypoint":[{"$type":"dc:Point","x":700,"y":340,"$parent":"Flow_182335x_di"},{"$type":"dc:Point","x":762,"y":340,"$parent":"Flow_182335x_di"}],"bpmnElement":"Flow_182335x","$parent":"BPMNPlane_1"}],"bpmnElement":"Collaboration_1tj7ei2","$parent":"BPMNDiagram_1"},"$parent":"sample-diagram"}]}`;
-            // this.projectName = this.processDefinition.name;
+            // this.projectName = this.processDefinition.processDefinitionName;
             // this.definitionChangeCount++;
             const value = await this.getData(path, { key: "id" });
             if (value) {
                 if (this.$route.params && this.$route.params.id) {
+                    this.messages = value.messages
                     this.processDefinition = partialParse(value.model);
                     if (!this.processDefinition) {
                         this.processDefinition = [];
                     } else {
                         this.bpmn = this.createBpmnXml(this.processDefinition);
                         // this.bpmn = `{"$type":"bpmn:Definitions","id":"sample-diagram","targetNamespace":"http://bpmn.io/schema/bpmn","rootElements":[{"$type":"bpmn:Collaboration","id":"Collaboration_1tj7ei2","participants":[{"$type":"bpmn:Participant","id":"Participant_1eqhejj","$parent":"Collaboration_1tj7ei2"}],"$parent":"sample-diagram"},{"$type":"bpmn:Process","id":"Process_1","isExecutable":false,"laneSets":[{"$type":"bpmn:LaneSet","id":"LaneSet_1g2nbpc","lanes":[{"$type":"bpmn:Lane","id":"Lane_0wneims","name":"Woker","$parent":"LaneSet_1g2nbpc"},{"$type":"bpmn:Lane","id":"Lane_1lf58ly","name":"HR","$parent":"LaneSet_1g2nbpc"}],"$parent":"Process_1"}],"flowElements":[{"$type":"bpmn:StartEvent","id":"StartEvent_1","name":"시작","eventDefinitions":[],"$parent":"Process_1"},{"$type":"bpmn:SequenceFlow","id":"Flow_0sp25wg","$parent":"Process_1","sourceRef":"StartEvent_1","targetRef":"Activity_1ta8n6y"},{"$type":"bpmn:SequenceFlow","id":"Flow_03dbjwz","$parent":"Process_1","sourceRef":"Activity_1ta8n6y","targetRef":"Activity_0ji9jev"},{"$type":"bpmn:EndEvent","id":"Event_0h4j724","name":"종료","eventDefinitions":[],"$parent":"Process_1"},{"$type":"bpmn:SequenceFlow","id":"Flow_182335x","$parent":"Process_1","sourceRef":"Activity_0ji9jev","targetRef":"Event_0h4j724"},{"$type":"bpmn:UserTask","id":"Activity_1ta8n6y","name":"휴가 신청","documentation":[{"$type":"bpmn:Documentation","text":"Vacation","$parent":"Activity_1ta8n6y"}],"$parent":"Process_1"},{"$type":"bpmn:UserTask","id":"Activity_0ji9jev","name":"승인","documentation":[{"$type":"bpmn:Documentation","text":"confirm","$parent":"Activity_0ji9jev"}],"$parent":"Process_1"}],"$parent":"sample-diagram"}],"diagrams":[{"$type":"bpmndi:BPMNDiagram","id":"BPMNDiagram_1","plane":{"$type":"bpmndi:BPMNPlane","id":"BPMNPlane_1","planeElement":[{"$type":"bpmndi:BPMNShape","id":"Participant_1eqhejj_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":270,"y":150,"width":600,"height":250,"$parent":"Participant_1eqhejj_di"},"bpmnElement":"Participant_1eqhejj","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Lane_1lf58ly_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":300,"y":275,"width":570,"height":125,"$parent":"Lane_1lf58ly_di"},"label":{"$type":"bpmndi:BPMNLabel","$parent":"Lane_1lf58ly_di"},"bpmnElement":"Lane_1lf58ly","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Lane_0wneims_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":300,"y":150,"width":570,"height":125,"$parent":"Lane_0wneims_di"},"label":{"$type":"bpmndi:BPMNLabel","$parent":"Lane_0wneims_di"},"bpmnElement":"Lane_0wneims","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"_BPMNShape_StartEvent_2","bounds":{"$type":"dc:Bounds","x":352,"y":192,"width":36,"height":36,"$parent":"_BPMNShape_StartEvent_2"},"label":{"$type":"bpmndi:BPMNLabel","bounds":{"$type":"dc:Bounds","x":361,"y":235,"width":20,"height":14},"$parent":"_BPMNShape_StartEvent_2"},"bpmnElement":"StartEvent_1","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Event_0h4j724_di","bounds":{"$type":"dc:Bounds","x":762,"y":322,"width":36,"height":36,"$parent":"Event_0h4j724_di"},"label":{"$type":"bpmndi:BPMNLabel","bounds":{"$type":"dc:Bounds","x":770,"y":365,"width":20,"height":14},"$parent":"Event_0h4j724_di"},"bpmnElement":"Event_0h4j724","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Activity_18762mc_di","bounds":{"$type":"dc:Bounds","x":440,"y":170,"width":100,"height":80,"$parent":"Activity_18762mc_di"},"bpmnElement":"Activity_1ta8n6y","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Activity_1omaje8_di","bounds":{"$type":"dc:Bounds","x":600,"y":300,"width":100,"height":80,"$parent":"Activity_1omaje8_di"},"bpmnElement":"Activity_0ji9jev","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_0sp25wg_di","waypoint":[{"$type":"dc:Point","x":388,"y":210,"$parent":"Flow_0sp25wg_di"},{"$type":"dc:Point","x":440,"y":210,"$parent":"Flow_0sp25wg_di"}],"bpmnElement":"Flow_0sp25wg","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_03dbjwz_di","waypoint":[{"$type":"dc:Point","x":540,"y":210,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":570,"y":210,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":570,"y":340,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":600,"y":340,"$parent":"Flow_03dbjwz_di"}],"bpmnElement":"Flow_03dbjwz","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_182335x_di","waypoint":[{"$type":"dc:Point","x":700,"y":340,"$parent":"Flow_182335x_di"},{"$type":"dc:Point","x":762,"y":340,"$parent":"Flow_182335x_di"}],"bpmnElement":"Flow_182335x","$parent":"BPMNPlane_1"}],"bpmnElement":"Collaboration_1tj7ei2","$parent":"BPMNDiagram_1"},"$parent":"sample-diagram"}]}`;
-                        this.projectName = this.processDefinition.name;
+                        this.projectName = this.processDefinition.processDefinitionName;
                         this.definitionChangeCount++;
                     }
                 }
@@ -134,8 +145,34 @@ export default {
         beforeSendMessage(newMessage) {
             this.sendMessage(newMessage);
         },
-
-        afterModelCreated(response) {
+        extractPropertyNameAndIndex(jsonPath) {
+            const match = jsonPath.match(/^\$\.(\w+)\[(\d+)\]$/);
+            return match ? { propertyName: match[1], index: parseInt(match[2], 10) } : null;
+        },
+        modificationAdd(modification) {
+            let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath)
+            this.processDefinition[obj.propertyName].splice(obj.index, 0, modification.value)
+        },
+        modificationReplace(modification) {
+            let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath)
+            // const updateAtIndex = (array, index, newValue) => (array[index] = newValue, array);
+            this.processDefinition[obj.propertyName][obj.index] = modification.value
+            // this.processDefinition[obj.propertyName].splice(obj.index, 0, modification.value)
+        },
+        modificationRemove(modification) {
+            let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath)
+            this.processDefinition[obj.propertyName].splice(obj.index, 1)
+            // {
+            //     action: "replace",
+            //     index: 2, 
+            //     targetJsonPath: "$.sequences[2]",
+            //     value: {
+            //         "source": "AcceptLeader",
+            //         "target": "ReturnFromLeave" 
+            //     }   
+            // }    
+        },
+        async afterModelCreated(response) {
             let jsonProcess
             try {
                 jsonProcess = this.extractJSON(response);
@@ -146,13 +183,13 @@ export default {
                         //means process modification
                         unknown.modifications.forEach((modification) => {
                             if (modification.action == 'replace') {
-                                this.jsonPathReplace(this.processDefinition, modification.targetJsonPath, modification.value);
+                                this.modificationReplace(modification);
                                 this.bpmn = this.createBpmnXml(this.processDefinition);
                             } else if (modification.action == 'add') {
-                                this.jsonPathAdd(this.processDefinition, modification.targetJsonPath, modification.value);
+                                this.modificationAdd(modification);
                                 this.bpmn = this.createBpmnXml(this.processDefinition);
                             } else if (modification.action == 'delete') {
-                                this.jsonPathDelete(this.processDefinition, modification.targetJsonPath);
+                                this.modificationRemove(modification);
                                 this.bpmn = this.createBpmnXml(this.processDefinition);
                             }
                         });
@@ -161,6 +198,15 @@ export default {
                         this.bpmn = this.createBpmnXml(this.processDefinition);
                     }
                     this.definitionChangeCount++;
+                    const res = await axios.post('http://localhost:8001/process-db-schema/invoke', {
+                        "input": {
+                            "process_definition_id": this.processDefinition.processDefinitionName
+                        }
+                    })
+                    if (res) {
+                        console.log(res)
+                    }
+
                 }
             } catch (error) {
                 console.log(jsonProcess)
@@ -174,7 +220,8 @@ export default {
             let putObj = {
                 id: this.processDefinition.processDefinitionId,
                 name: this.processDefinition.processDefinitionName,
-                definition: this.processDefinition
+                definition: this.processDefinition,
+                messages: this.messages
             };
 
             if (this.processDefinition) {
@@ -187,6 +234,89 @@ export default {
                 this.putObject(path, putObj);
                 // this.saveDefinitionMap(putObj);
             }
+        },
+        convertXMLToJSON(xmlString) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+            // Lanes (Roles) 추출
+            const lanes = xmlDoc.getElementsByTagName("bpmn2:lane");
+            const laneMap = Array.from(lanes).reduce((acc, lane) => {
+                const laneName = lane.getAttribute("name");
+                const flowNodeRefs = lane.getElementsByTagName("bpmn2:flowNodeRef");
+                Array.from(flowNodeRefs).forEach(flowNodeRef => {
+                    const activityId = flowNodeRef.textContent;
+                    acc[activityId] = laneName; // Map activity ID to lane (role) name
+                });
+                return acc;
+            }, {});
+
+            // User Tasks 추출
+            const userTasks = xmlDoc.getElementsByTagName("bpmn2:userTask");
+            const activities = Array.from(userTasks).map(task => {
+                const id = task.getAttribute("id");
+                return {
+                    name: task.getAttribute("name"),
+                    id: id,
+                    type: "UserActivity",
+                    description: "", // XML에서 제공되지 않음
+                    instruction: "", // XML에서 제공되지 않음
+                    role: laneMap[id] || "", // LaneMap에서 Role 할당
+                    inputData: [], // XML에서 제공되지 않음
+                    outputData: [], // XML에서 제공되지 않음
+                    checkpoints: [], // XML에서 제공되지 않음
+                };
+            });
+
+            // Sequence Flows 추출
+            const sequenceFlows = xmlDoc.getElementsByTagName("bpmn2:sequenceFlow");
+            const sequences = Array.from(sequenceFlows).map(flow => {
+                if ((flow.getAttribute("sourceRef") != "StartEvent_1") && (flow.getAttribute("targetRef") != "EndEvent"))
+                    return {
+                        source: flow.getAttribute("sourceRef"),
+                        target: flow.getAttribute("targetRef")
+                    }
+            }).filter(flow => flow);
+
+            // activities 배열을 sequenceFlow의 순서에 따라 정렬
+            // const orderedActivities = [];
+            // let currentId = xmlDoc.getElementsByTagName("bpmn2:startEvent")[0].getAttribute("id");
+            // while (sequences.length > 0) {
+            //     const currentIndex = sequences.findIndex(seq => seq.source === currentId);
+            //     if (currentIndex === -1) break;
+
+            //     const currentSequence = sequences.splice(currentIndex, 1)[0];
+            //     const activityIndex = activities.findIndex(act => act.id === currentSequence.target);
+            //     if (activityIndex !== -1) {
+            //         orderedActivities.push(activities[activityIndex]);
+            //     }
+            //     currentId = currentSequence.target;
+            // }
+            let orderedActivities = this.orderActivitiesBySequence(activities, sequences)
+
+            return { activities: orderedActivities, sequences };
+        },
+        orderActivitiesBySequence(activities, sequences) {
+            // 시작 활동 찾기: 'source'가 되지만 'target'이 되지 않는 항목
+            let currentId = sequences.find(seq =>
+                !sequences.some(innerSeq => innerSeq.target === seq.source)
+            )?.source;
+            let startActivity = activities.findIndex(act => act.id === currentId)
+            const orderedActivities = [activities[startActivity]];
+            const visitedSequences = new Set(); // 중복 방문 방지
+            // orderedActivities.push(ac)
+            while (currentId && sequences.length > visitedSequences.size) {
+                const sequence = sequences.find(seq => seq.source === currentId && !visitedSequences.has(seq.source + seq.target));
+                if (!sequence) break; // 다음 시퀀스를 찾을 수 없으면 중단
+
+                visitedSequences.add(sequence.source + sequence.target); // 시퀀스 방문 기록
+                const activityIndex = activities.findIndex(act => act.id === sequence.target);
+                if (activityIndex !== -1) {
+                    orderedActivities.push(activities[activityIndex]);
+                }
+                currentId = sequence.target; // 다음 대상으로 이동
+            }
+
+            return orderedActivities;
         },
         // async saveDefinitionMap(obj) {
         //     if (this.processDefinition) {
@@ -214,58 +344,71 @@ export default {
         //         }
         //     }
         // },
-        convertToProcessDefinition(jsonInput) {
-            const processDefinition = {
-                processDefinitionName: jsonInput.name,
-                processDefinitionId: jsonInput.definitionId,
-                description: '', // Assuming a generic description; update as needed
-                data: jsonInput.processVariableDescriptors.map((variable) => ({
-                    name: variable.name,
-                    description: variable.displayName.text,
-                    type: 'Text' // Assuming all variables are of type Text; update logic as needed for different types
-                })),
-                roles: Object.values(jsonInput.elements)
-                    .filter((element) => element != null)
-                    .filter((element) => element._type == 'org.uengine.kernel.Role')
-                    .map((role) => ({
-                        name: role.name,
-                        resolutionRule: role.roleResolutionContext.endpoint
-                    })),
-                activities: Object.values(jsonInput.elements)
-                    .filter((element) => element != null)
-                    .filter((element) => element._type == 'org.uengine.kernel.HumanActivity')
-                    .map((activity) => ({
-                        name: activity.name || activity.oldName,
-                        id: activity.elementView.id,
-                        type: 'UserActivity', // Assuming UserActivity; update as needed for different activity types
-                        description: activity.name + ' 활동', // Assuming a generic description; update as needed
-                        instruction: '장애 정보를 기반으로 문제를 해결하세요.', // Assuming a generic instruction; update as needed
-                        role: activity.role.name,
-                        inputData: activity.parameters?.map((param) => ({
-                            name: param.variable.name
-                        })),
-                        outputData: activity.parameters?.map((param) => ({
-                            name: param.variable.name
-                        })),
-                        checkpoints: [] // Assuming no checkpoints; update as needed
-                    })),
-                sequences: Object.values(jsonInput.relations)
-                    .filter((relation) => relation != null)
-                    .filter((relation) => relation._type == 'org.uengine.kernel.bpmn.SequenceFlow')
-                    .map((sequence) => ({
-                        source: sequence.from,
-                        target: sequence.to
-                    }))
-            };
+        // convertToProcessDefinition(jsonInput) {
+        //     const processDefinition = {
+        //         processDefinitionName: jsonInput.name,
+        //         processDefinitionId: jsonInput.definitionId,
+        //         description: '', // Assuming a generic description; update as needed
+        //         data: jsonInput.processVariableDescriptors.map((variable) => ({
+        //             name: variable.name,
+        //             description: variable.displayName.text,
+        //             type: 'Text' // Assuming all variables are of type Text; update logic as needed for different types
+        //         })),
+        //         roles: Object.values(jsonInput.elements)
+        //             .filter((element) => element != null)
+        //             .filter((element) => element._type == 'org.uengine.kernel.Role')
+        //             .map((role) => ({
+        //                 name: role.name,
+        //                 resolutionRule: role.roleResolutionContext.endpoint
+        //             })),
+        //         activities: Object.values(jsonInput.elements)
+        //             .filter((element) => element != null)
+        //             .filter((element) => element._type == 'org.uengine.kernel.HumanActivity')
+        //             .map((activity) => ({
+        //                 name: activity.name || activity.oldName,
+        //                 id: activity.elementView.id,
+        //                 type: 'UserActivity', // Assuming UserActivity; update as needed for different activity types
+        //                 description: activity.name + ' 활동', // Assuming a generic description; update as needed
+        //                 instruction: '장애 정보를 기반으로 문제를 해결하세요.', // Assuming a generic instruction; update as needed
+        //                 role: activity.role.name,
+        //                 inputData: activity.parameters?.map((param) => ({
+        //                     name: param.variable.name
+        //                 })),
+        //                 outputData: activity.parameters?.map((param) => ({
+        //                     name: param.variable.name
+        //                 })),
+        //                 checkpoints: [] // Assuming no checkpoints; update as needed
+        //             })),
+        //         sequences: Object.values(jsonInput.relations)
+        //             .filter((relation) => relation != null)
+        //             .filter((relation) => relation._type == 'org.uengine.kernel.bpmn.SequenceFlow')
+        //             .map((sequence) => ({
+        //                 source: sequence.from,
+        //                 target: sequence.to
+        //             }))
+        //     };
 
-            return processDefinition;
-        },
+        //     return processDefinition;
+        // },
         async saveModel() {
             // alert(model);
-            console.log(this.changedModel);
-            this.projectName = this.projectName;
+            console.log(this.changedXML);
+            this.projectName = this.processDefinition.processDefinitionName;
             const apiToken = this.generator.getToken();
-            let definition = this.convertToProcessDefinition(this.changedModel);
+            // let orderedActivities = this.convertXMLToJSON(this.changedXML);
+
+            let definition = Object.assign({}, this.processDefinition)
+            // definition.activities = orderedActivities.activities
+            // definition.sequences = orderedActivities.sequences
+            // console.log(definition)
+            let putObj = {
+                id: definition.processDefinitionId,
+                name: definition.processDefinitionName,
+                definition: definition
+            };
+            let modelText = JSON.stringify(definition);
+            putObj.model = modelText
+
             const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
             let vectorId = await vectorStore.similaritySearch({
                 query: this.projectName,
@@ -273,10 +416,21 @@ export default {
             });
             if (vectorId) {
                 console.log(vectorId);
-                let path = `proc_def/${this.changedModel.definitionId ? this.changedModel.definitionId : this.$route.params.id}/model`;
-                this.pushObject(path, definition);
+                // let path = `proc_def/${this.processDefinition.processDefinitionId ? this.processDefinition.processDefinitionId : this.$route.params.id}/model`;
+                // this.pushObject(path, definition);
                 this.deleteVectorStorage(vectorId.similarItems[0].id);
                 this.saveDefinition(definition);
+            }
+
+            let path = `${this.path}/${definition.processDefinitionId}`
+            this.putObject(path, putObj)
+            const res = await axios.post('http://localhost:8001/process-db-schema/invoke', {
+                "input": {
+                    "process_definition_id": this.processDefinition.processDefinitionName
+                }
+            })
+            if (res) {
+                console.log(res)
             }
         },
         // parseDefinition(model) {
@@ -420,11 +574,18 @@ export default {
         // absY(y, height) {
         //     return element.elementView.y - (element.elementView.height / 2)
         // }
+        taskMapping(activity) {
+            switch (activity) {
+                case "ScriptActivity": return 'bpmn2:scriptTask';
+                case "EmailActivity": return 'bpmn2:sendTask';
+                default: return 'bpmn2:userTask';
+            }
+        },
         createBpmnXml(jsonModel) {
             // XML 문서 초기화
-
+            let me = this;
             const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString('<?xml version="1.0" encoding="UTF-8"?><bpmn2:definitions xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI"></bpmn2:definitions>', 'application/xml');
+            const xmlDoc = parser.parseFromString('<?xml version="1.0" encoding="UTF-8"?><bpmn2:definitions xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine"></bpmn2:definitions>', 'application/xml');
             const bpmnDefinitions = xmlDoc.documentElement;
 
             bpmnDefinitions.setAttribute('id', 'Definitions_' + jsonModel.processDefinitionId);
@@ -484,8 +645,22 @@ export default {
                 jsonModel.sequences.forEach(sequence => {
                     const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:sequenceFlow');
                     sequenceFlow.setAttribute('id', 'SequenceFlow_' + sequence.source + '_' + sequence.target);
+                    sequenceFlow.setAttribute('name', sequence.name ? sequence.name : "")
                     sequenceFlow.setAttribute('sourceRef', sequence.source);
                     sequenceFlow.setAttribute('targetRef', sequence.target);
+                    let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:extensionElements');
+                    let root = xmlDoc.createElementNS('http://uengine', 'uengine:uengine-params');
+                    extensionElements.setAttribute('description', sequence.description ? sequence.description : "")
+                    let params = xmlDoc.createElementNS('http://uengine', 'uengine:parameters');
+                    // if (sequence.condition) {
+                    let param = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
+                    param.setAttribute('key', "condition")
+                    param.textContent = sequence.condition ? sequence.condition : ""
+                    params.appendChild(param)
+                    // }
+                    root.appendChild(params)
+                    extensionElements.appendChild(root)
+                    sequenceFlow.appendChild(extensionElements)
                     process.appendChild(sequenceFlow);
 
                     outGoing[sequence.source] = 'SequenceFlow_' + sequence.source + '_' + sequence.target
@@ -495,9 +670,13 @@ export default {
             // Activities 생성
             if (jsonModel.activities)
                 jsonModel.activities.forEach((activity, idx) => {
-                    const userTask = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:userTask');
+
+                    const userTaskType = me.taskMapping(activity)
+
+                    const userTask = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', userTaskType);
                     userTask.setAttribute('id', activity.id);
                     userTask.setAttribute('name', activity.name);
+                    // let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:description');
                     if (outGoing[activity.id]) {
                         let outGoingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:outgoing');
                         outGoingSeq.textContent = outGoing[activity.id]
@@ -508,6 +687,35 @@ export default {
                         inComingSeq.textContent = inComing[activity.id]
                         userTask.appendChild(inComingSeq)
                     }
+                    let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:extensionElements');
+                    let root = xmlDoc.createElementNS('http://uengine', 'uengine:uengine-params');
+                    root.setAttribute('role', activity.role)
+                    root.setAttribute('description', activity.description)
+                    let params = xmlDoc.createElementNS('http://uengine', 'uengine:parameters');
+                    if (activity.inputData) {
+                        activity.inputData.forEach((data) => {
+                            let param = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
+                            param.setAttribute('key', data.name)
+                            param.setAttribute('category', "input")
+                            params.appendChild(param)
+                        })
+
+                        // userTask.appendChild(extensionElements)
+                    }
+                    if (activity.outputData) {
+                        activity.inputData.forEach((data) => {
+                            let param = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
+                            param.setAttribute('key', data.name)
+                            param.setAttribute('category', "output")
+                            params.appendChild(param)
+                        })
+                        root.appendChild(params)
+                        extensionElements.appendChild(root)
+                    }
+                    root.appendChild(params)
+                    extensionElements.appendChild(root)
+                    userTask.appendChild(extensionElements)
+
                     if (idx == 0) {
                         // 시작일땐 StartEvent와 연결
                         const startEvent = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:startEvent');
@@ -517,8 +725,19 @@ export default {
 
                         const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:sequenceFlow');
                         sequenceFlow.setAttribute('id', 'SequenceFlow_' + 'StartEvent' + '_' + activity.id);
+                        sequenceFlow.setAttribute('name', "")
                         sequenceFlow.setAttribute('sourceRef', 'StartEvent_1');
                         sequenceFlow.setAttribute('targetRef', activity.id);
+                        let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:extensionElements');
+                        let root = xmlDoc.createElementNS('http://uengine', 'uengine:uengine-params');
+                        let conditionParam = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
+                        let conditionParams = xmlDoc.createElementNS('http://uengine', 'uengine:parameters');
+                        conditionParam.setAttribute('key', "condition")
+                        conditionParam.textContent = ""
+                        conditionParams.appendChild(conditionParam)
+                        root.appendChild(conditionParams)
+                        extensionElements.appendChild(root)
+                        sequenceFlow.appendChild(extensionElements)
                         process.appendChild(sequenceFlow);
 
                         let inComingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:incoming');
@@ -534,8 +753,19 @@ export default {
 
                         const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:sequenceFlow');
                         sequenceFlow.setAttribute('id', 'SequenceFlow_' + activity.id + '_' + 'EndEvent');
+                        sequenceFlow.setAttribute('name', "")
                         sequenceFlow.setAttribute('sourceRef', activity.id);
                         sequenceFlow.setAttribute('targetRef', 'EndEvent');
+                        let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:extensionElements');
+                        let root = xmlDoc.createElementNS('http://uengine', 'uengine:uengine-params');
+                        let conditionParam = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
+                        let conditionParams = xmlDoc.createElementNS('http://uengine', 'uengine:parameters');
+                        conditionParam.setAttribute('key', "condition")
+                        conditionParam.textContent = ""
+                        conditionParams.appendChild(conditionParam)
+                        root.appendChild(conditionParams)
+                        extensionElements.appendChild(root)
+                        sequenceFlow.appendChild(extensionElements)
                         process.appendChild(sequenceFlow);
 
                         let outGoingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:outgoing');
