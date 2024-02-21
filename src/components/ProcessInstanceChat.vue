@@ -209,24 +209,19 @@ export default {
             }
         },
         async beforeSendMessage(newMessage) {
-            if (newMessage) {
-                if (typeof newMessage == 'string') {
-                    newMessage = {
-                        message: newMessage,
-                        image: null,
-                    }
-                }
+            if (newMessage && newMessage.text != '') {
                 if (this.processInstance && this.processInstance.proc_inst_id) {
                     this.generator.beforeGenerate(newMessage, false);
 
-                    this.sendMessage(newMessage.message);
+                    this.sendMessage(newMessage);
                 } else {
                     this.generator.beforeGenerate(newMessage, true);
 
-                    var procDefs = await this.queryFromVectorDB(newMessage.message);
+                    var procDefs = await this.queryFromVectorDB(newMessage.text);
                     procDefs = procDefs.map(item => JSON.parse(item));
                     this.definitions = procDefs;
                     this.definitionDialog = true;
+                    this.processDefinition = null;
                 }
             } else {
                 if (this.processInstance && this.processInstance.proc_inst_id) {
@@ -236,7 +231,11 @@ export default {
                 }
 
                 this.definitionDialog = false;
-                this.sendMessage(this.generator.input.answer);
+                var msgObj = {
+                    content: this.generator.input.answer,
+                    image: this.generator.input.image
+                }
+                this.sendMessage(msgObj);
             }
         },
         beforeSendEditedMessage(index) {
@@ -291,12 +290,13 @@ export default {
         async saveInstance(data) {
             if (data) {
                 var user_ids = [];
-                if (data.roleBindingChanges && data.roleBindingChanges.length > 0) {
-                    var nextUsers = data.roleBindingChanges.map(item => item.userId);
+                if (data.nextActivities && data.nextActivities.length > 0) {
+                    var nextUsers = data.nextActivities.map(item => item.nextUserEmail);
                     if (nextUsers) user_ids = nextUsers;
-                } else {
-                    user_ids = [this.userInfo.email];
                 }
+
+                if (!user_ids.includes(this.userInfo.email))
+                    user_ids.push(this.userInfo.email)
 
                 if (this.processInstance) {
                     var instObj = await this.getData(`${this.path}/${data.instanceId}`, {key: 'id'});
