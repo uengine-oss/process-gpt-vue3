@@ -228,7 +228,7 @@
                 :placeholder="$t('chat.inputMessage')"
                 auto-grow
                 rows="1"
-                @keydown.enter="!$event.shiftKey && send()"
+                @keydown.enter="beforeSend"
                 :disabled="disableChat"
             >
                 <template v-slot:prepend-inner>
@@ -240,7 +240,7 @@
                     </v-btn>
                 </template>
                 <template v-slot:append-inner>
-                    <v-btn v-if="!isLoading" icon variant="text" type="submit" @click="send" class="text-medium-emphasis"
+                    <v-btn v-if="!isLoading" icon variant="text" type="submit" @click="beforeSend" class="text-medium-emphasis"
                         :disabled="!newMessage">
                         <Icon width="24" height="24" icon="fluent:document-one-page-sparkle-16-regular"  />
                     </v-btn>
@@ -296,13 +296,6 @@ export default {
         };
     },
     watch: {
-        // isLoading 상태의 변화를 감시합니다.
-        isLoading(newVal) {
-            if (!newVal) {
-                // isLoading이 false로 변경되면 animateBorder 메소드를 호출합니다.
-                this.animateBorder();
-            }
-        },
     },
     mounted () {
     },
@@ -335,6 +328,7 @@ export default {
             });
             return list;
         },
+        // isLoading 상태의 변화를 감시합니다.
         isLoading: {
             get() {
                 var res = false;
@@ -347,6 +341,8 @@ export default {
             },
             set(val) {
                 if (!val) {
+                    // isLoading이 false로 변경되면 animateBorder 메소드를 호출합니다.
+                    this.animateBorder();
                     this.$emit("stopMessage");
                 }
             }
@@ -380,6 +376,16 @@ export default {
             this.isReply = true;
             this.replyUser = message;
         },
+        beforeSend($event) {
+            if ($event.shiftKey) return;
+            if (this.isLoading) {
+                this.isLoading = false;
+            }
+            var copyMsg = this.newMessage.replace(/(?:\r\n|\r|\n)/g, '');
+            if (copyMsg.length > 0)
+                this.send();
+                this.newMessage = "";
+        },
         send() {
             if (this.editIndex >= 0) {
                 this.$emit('sendEditedMessage', this.editIndex + 1);
@@ -390,7 +396,6 @@ export default {
                     text: this.newMessage
                 });
                 this.attachedImg = null;
-                this.newMessage = '';
                 var imagePreview = document.querySelector("#imagePreview");
                 imagePreview.innerHTML = '';
             }
