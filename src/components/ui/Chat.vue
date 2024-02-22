@@ -44,7 +44,7 @@
                     @click="getMoreChat()">get more chat</v-btn> -->
 
                 <div class="d-flex">
-                    <div class="w-100" style="height: calc(100vh - 320px)">
+                    <div class="w-100" style="height: calc(100vh - 330px)">
                         <div v-for="(message, index) in filteredMessages" :key="index" class="px-5 py-1">
                             <div v-if="message.email == userInfo.email" class="justify-end d-flex mb-1">
                                 <div>
