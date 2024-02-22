@@ -254,7 +254,7 @@ export default class StorageBaseSupabase {
                     table: obj.table
                 }, payload => {
                     console.log('Change received!', payload)
-                    callback()
+                    callback(payload)
                 })
                 .subscribe();
             
