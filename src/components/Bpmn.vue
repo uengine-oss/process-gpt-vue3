@@ -339,12 +339,29 @@ export default {
 }
 
 .vue-bpmn-diagram-container .djs-palette {
-    width: 610px;
+    width: 630px !important;
     height: 50px;
     margin-left: 0px;
     background-color: white;
     border: none;
     border-radius: 10px;
     box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.1);
+}
+.vue-bpmn-diagram-container .djs-context-pad .entry {
+    width:30px;
+    height:30px;
+    /* border: solid 1px rgba(124, 124, 124, 0.3); */
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.7);
+}
+
+.vue-bpmn-diagram-container .djs-context-pad .group {
+    min-width:100px;
+}
+
+@media only screen and (max-width:800px) {
+    .vue-bpmn-diagram-container .djs-palette {
+        width: 325px !important;
+        height: 94px !important;
+    }
 }
 </style>
