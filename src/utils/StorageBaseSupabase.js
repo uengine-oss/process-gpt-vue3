@@ -243,14 +243,19 @@ export default class StorageBaseSupabase {
         }
     }
 
-    async watch(path, options) {
+    async watch(path, callback) {
         try {
-            let obj = this.formatDataPath(path, options);
+            let obj = this.formatDataPath(path);
             await window.$supabase
-                .channel(obj.table)
-                .on('*', payload =>
-                    console.log('received!', payload)
-                )
+                .channel('room1')
+                .on('postgres_changes', {
+                    event: '*', 
+                    schema: 'public', 
+                    table: obj.table
+                }, payload => {
+                    console.log('Change received!', payload)
+                    callback(payload)
+                })
                 .subscribe();
             
         } catch(error) {

@@ -30,6 +30,7 @@ export default class WorkAssistantGenerator extends AIGenerator {
                 "startDateTime": 'yyyy-mm-dd/hh:mm', 
                 "endDateTime": 'yyyy-mm-dd/hh:mm',
                 "location": '제공받은 location',
+                "messageForUser": '요청에 대한 요약된 생성 정보' // ~ 생성하겠습니다. ~ 시작하겠습니다. // 무조건 생성
                 그 외 제공받은 정보명칭: '정보' // 장소, 참석자 등 ..
             }
             \`\`\`
@@ -42,7 +43,8 @@ export default class WorkAssistantGenerator extends AIGenerator {
             \`\`\`
             {
                 "work": 'StartProcess' // 고정 값 
-                "content": '시작 시킬 프로세스명' + '프로세스를 시작하시겠습니까 ?'
+                "content": '시작 시킬 프로세스명' + '프로세스를 시작하시겠습니까 ?',
+                "messageForUser": '요청에 대한 요약된 생성 정보' // ~ 생성하겠습니다. ~ 시작하겠습니다. // 무조건 생성
             }
             \`\`\`
             
@@ -50,8 +52,18 @@ export default class WorkAssistantGenerator extends AIGenerator {
             4. 기존 회사의 문서 또는 정보에 대한 질문
             JSON 형식: 
             \`\`\`
-                {   "work": "CompanyQuery",
-                    "content": "질의 내용"
+                {   
+                    "work": "CompanyQuery",
+                    "content": "질의 내용",
+                    "messageForUser": '요청에 대한 요약된 생성 정보' // ~ 생성하겠습니다. ~ 시작하겠습니다. // 무조건 생성
+                }
+            \`\`\`
+
+            5. 문서 생성: 대화맥락에서 사용자의 제안서 생성 요청시 
+            JSON 형식: 
+            \`\`\`
+                {   
+                    "work": "CreateAgent" 
                 }
             \`\`\`
 
