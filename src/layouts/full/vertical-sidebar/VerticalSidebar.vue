@@ -74,6 +74,12 @@ export default {
                 BgColor: 'primary',
                 to: "/chats",
             },
+            // {
+            //     title: "proposals.title",
+            //     icon: 'solar:chat-round-unread-line-duotone',
+            //     BgColor: 'primary',
+            //     to: "/proposals",
+            // },
             {
                 header: 'instance.title'
             },
@@ -127,7 +133,7 @@ export default {
                 var list = Object.values(def);
                 if (list.length > 0) {
                     list.forEach(item => {
-                        if (item.definition) {
+                        if (item && item.definition) {
                             var obj = {
                                 title: item.definition.processDefinitionName,
                                 to: `/definitions/${item.definition.processDefinitionId}`

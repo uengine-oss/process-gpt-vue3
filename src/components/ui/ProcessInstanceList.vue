@@ -134,11 +134,11 @@ export default {
         },
         selectChat(id) {
             this.currentChatId = id;
-            this.$router.push(`/${this.path}/chat?id=${id}`);
+            this.$router.push(`/instances/chat?id=${id}`);
         },
         newInstanceChat() {
             this.currentChatId = "";
-            this.$router.push(`/${this.path}/chat`);
+            this.$router.push(`/instances/chat`);
         },
         async deleteInstance(id) {
             // TODO delete 트리거 처리 
