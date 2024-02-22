@@ -101,7 +101,8 @@ export default class CustomRenderer extends BaseRenderer {
   
   drawCustomParticipant(parentNode, shape) {
     svgAttr(shape, {
-      fill: '#FFFF00',
+      stroke: '#4e72be',
+      fill:"#f4f8fc"
     });
   }
 
