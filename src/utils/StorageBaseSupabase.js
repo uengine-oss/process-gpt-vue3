@@ -243,9 +243,9 @@ export default class StorageBaseSupabase {
         }
     }
 
-    async watch(path, options, callback) {
+    async watch(path, callback) {
         try {
-            let obj = this.formatDataPath(path, options);
+            let obj = this.formatDataPath(path);
             await window.$supabase
                 .channel('room1')
                 .on('postgres_changes', {

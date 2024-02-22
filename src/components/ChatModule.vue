@@ -113,7 +113,7 @@ export default {
                 this.messages = value.messages
             }
 
-            await this.storage.watch(`db://${callPath}`, options, async () => {
+            await this.storage.watch(`db://${callPath}`, async () => {
                 const value = await this.getData(callPath, options);
                 if (value && value.messages) {
                     this.messages = value.messages

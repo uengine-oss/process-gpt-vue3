@@ -111,10 +111,11 @@ export default {
         this.storage = StorageBase.getStorage("supabase");
 
         this.getDefinitionList();
+        this.storage.watch(`proc_def`, this.getDefinitionList);
     },
     methods: {
         async getDefinitionList() {
-            let def = await this.storage.getObject(`definitions`);
+            let def = await this.storage.getObject(`proc_def`);
             if (def) {
                 var menu = {
                     title: 'processList.title',
@@ -126,11 +127,10 @@ export default {
                 var list = Object.values(def);
                 if (list.length > 0) {
                     list.forEach(item => {
-                        if (item.model) {
-                            var jsonProcess = partialParse(item.model);
+                        if (item.definition) {
                             var obj = {
-                                title: jsonProcess.processDefinitionName,
-                                to: `/definitions/${jsonProcess.processDefinitionId}`
+                                title: item.definition.processDefinitionName,
+                                to: `/definitions/${item.definition.processDefinitionId}`
                             }
                             menu.children.push(obj);
                         }

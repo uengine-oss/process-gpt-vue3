@@ -81,7 +81,7 @@ import StorageBase from '@/utils/StorageBase';
 
 export default {
     data: () => ({
-        path: "instances",
+        path: "proc_inst",
         instanceList: [],
         searchValue: "",
         currentChatId: "",
@@ -108,7 +108,7 @@ export default {
         await this.init();
     },
     async mounted() {
-        await this.storage.watch(`${this.path}`, null, this.init);
+        await this.storage.watch(`${this.path}`, this.init);
     },
     methods: {
         async init() {
