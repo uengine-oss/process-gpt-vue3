@@ -110,7 +110,7 @@ export default {
         definitionDialog: false,
         processDefinition: [],
         processInstance: null,
-        path: 'instances',
+        path: 'proc_inst',
         organizationChart: [],
         chatInfo: {
             title: 'processExecution.cardTitle',
@@ -168,9 +168,9 @@ export default {
                     }
                 }
 
-                var defInfo = await this.getData(`definitions/${def_id}`, {key: "id"});
+                var defInfo = await this.getData(`proc_def/${def_id}`, {key: "id"});
                 if (defInfo) {
-                    let definition = partialParse(defInfo.model);
+                    let definition = defInfo.definition;
                     this.bpmn = this.createBpmnXml(definition);
                     this.onLoad = true;
                 }
@@ -420,7 +420,7 @@ export default {
         },
 
         async saveDefinitionToVectorDB() {
-            let definitions = await this.getData("definitions");
+            let definitions = await this.getData("proc_def");
             if (definitions) {
                 const apiToken = this.generator.getToken();
                 const vectorStore = new VectorStorage({ openAIApiKey: apiToken });

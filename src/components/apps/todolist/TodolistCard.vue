@@ -33,14 +33,15 @@ export default {
     }),
     async created() {
         this.storage = StorageBase.getStorage("supabase");
-
-        await this.init();
+        await this.getTodolist();
+        await this.storage.watch(path, this.getTodolist);
     }, 
     methods:{
-        async init() {
+        async getTodolist() {
             if (this.userInfo && this.userInfo.email) {
-                var callPath = this.path + '/' + this.userInfo.email;
-                await this.storage.watch(`${callPath}`, callback => {
+                const path = this.path + '/' + this.userInfo.email;
+                const list = await this.storage.list(path);
+                if (list && list.length > 0) {
                     this.todolist =  [
                         {
                             id: 'todo',
@@ -67,21 +68,19 @@ export default {
                             tasks: []
                         }
                     ];
-                    if (callback) {
-                        var list = Object.values(callback);
-                        list.forEach(item => {
-                            if (item.status == "todo") {
-                                this.todolist[0].tasks.push(item);
-                            } else if (item.status == "in_progress") {
-                                this.todolist[1].tasks.push(item);
-                            } else if (item.status == "pending") {
-                                this.todolist[2].tasks.push(item);
-                            } else if (item.status == "done") {
-                                this.todolist[3].tasks.push(item);
-                            }
-                        })
-                    }
-                });
+
+                    list.forEach(item => {
+                        if (item.status == "todo") {
+                            this.todolist[0].tasks.push(item);
+                        } else if (item.status == "in_progress") {
+                            this.todolist[1].tasks.push(item);
+                        } else if (item.status == "pending") {
+                            this.todolist[2].tasks.push(item);
+                        } else if (item.status == "done") {
+                            this.todolist[3].tasks.push(item);
+                        }
+                    })
+                }
             }
         },
     },

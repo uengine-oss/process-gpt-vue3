@@ -32,38 +32,16 @@ export default {
         async getChatList() {
             var me = this;
             this.userInfo = await this.storage.getUserInfo();
-            // this.storage.delete(`db://chats/1`)
-            // var option = {
-            //     sort: 'desc',
-            //     orderBy: null,
-            //     size: 20,
-            //     startAt: null,
-            //     endAt: null
-            // };
             let option = {
                 key: "id"
             }
-            // this.storage.watch_added(`db://chats/1/messages`, option, function (item) {
-            //     if (me.isInitDone) {
-            //         if (item.role == 'system') {
-            //             if (me.messages[me.messages.length - 1].role == 'system') {
-            //                 me.messages[me.messages.length - 1] = item;
-            //             } else {
-            //                 me.messages.push(item);
-            //             }
-            //         } else {
-            //             if (item.email != me.userInfo.email) {
-            //                 me.messages.push(item);
-            //             }
-            //         }
-            //     }
-            // });
-
-            // await this.storage.watch(`chats`, (callback) => {
-            //     if (callback) {
-            //         console.log(callback)
-            //     }
-            // });
+            await this.storage.watch(`db://chats/chat1`, async (data) => {
+                if(data && data.new){
+                    if(data.new.messages.email != me.userInfo.email){
+                        me.messages.push(data.new.messages)
+                    }
+                }
+            });
 
             await this.storage.list(`db://chats/chat1`, option).then(function (messages) {
                 if (messages) {
@@ -72,11 +50,10 @@ export default {
                         return new Date(a.timeStamp) - new Date(b.timeStamp);
                     });
                     me.messages = allMessages;
-                    // me.messages = messages.map(message => message.messages);
-                    // me.messages = messages.reverse();
                 }
                 me.isInitDone = true;
             });
+
         },
         // async getMoreChat() {
         //     var option = {
@@ -113,7 +90,7 @@ export default {
                 this.messages = value.messages
             }
 
-            await this.storage.watch(`db://${callPath}`, options, async () => {
+            await this.storage.watch(`db://${callPath}`, async () => {
                 const value = await this.getData(callPath, options);
                 if (value && value.messages) {
                     this.messages = value.messages

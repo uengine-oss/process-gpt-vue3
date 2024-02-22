@@ -81,7 +81,7 @@ import StorageBase from '@/utils/StorageBase';
 
 export default {
     data: () => ({
-        path: "instances",
+        path: "proc_inst",
         instanceList: [],
         searchValue: "",
         currentChatId: "",
@@ -108,7 +108,7 @@ export default {
         await this.init();
     },
     async mounted() {
-        await this.storage.watch(`${this.path}`, null, this.init);
+        await this.storage.watch(`${this.path}`, this.init);
     },
     methods: {
         async init() {
@@ -134,11 +134,11 @@ export default {
         },
         selectChat(id) {
             this.currentChatId = id;
-            this.$router.push(`/${this.path}/chat?id=${id}`);
+            this.$router.push(`/instances/chat?id=${id}`);
         },
         newInstanceChat() {
             this.currentChatId = "";
-            this.$router.push(`/${this.path}/chat`);
+            this.$router.push(`/instances/chat`);
         },
         async deleteInstance(id) {
             // TODO delete 트리거 처리 
