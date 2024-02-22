@@ -46,7 +46,7 @@
                 <div class="d-flex">
                     <div class="w-100" style="height: calc(100vh - 320px)">
                         <div v-for="(message, index) in filteredMessages" :key="index" class="px-5 py-1">
-                            <div v-if="message.email == userInfo.email" class="justify-end d-flex text-end mb-1">
+                            <div v-if="message.email == userInfo.email" class="justify-end d-flex mb-1">
                                 <div>
                                     <small class="text-medium-emphasis text-subtitle-2" v-if="message.timeStamp">
                                         {{ formatTime(message.timeStamp) }}

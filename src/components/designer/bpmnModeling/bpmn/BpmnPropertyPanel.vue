@@ -1,15 +1,15 @@
 <template>
     <div style="height: 95%; margin-top: 10px; overflow: auto;" v-click-outside="onClickOutside">
         <v-card-text>
-            Name
+            <div>Name</div>
             <v-text-field v-model="name"></v-text-field>
             <div>
-                Description
+                <div>Description</div>
                 <v-textarea v-if="!copyElement.$type.includes('Event')"
                     v-model="copyElement.extensionElements.values[0].description"></v-textarea>
             </div>
             <div v-if="element.$type.includes('Task') && inputData.length > 0" style="margin-bottom:20px;">
-                <div>Input Data</div>
+                <div style="margin-bottom:-8px;">Input Data</div>
                 <v-row class="ma-0 pa-0">
                     <div v-for="(inputData, idx) in inputData" :key="idx" class="mr-2 mt-2">
                         <v-chip v-if="inputData.mandatory" color="primary" variant="outlined" class="text-body-2">
@@ -24,7 +24,7 @@
                 </v-row>
             </div>
             <div v-if="element.$type.includes('Task') && outputData.length > 0" style="margin-bottom:20px;">
-                <div>Input Data</div>
+                <div style="margin-bottom:-8px;">Output Data</div>
                 <v-row class="ma-0 pa-0">
                     <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
                         <v-chip v-if="output.mandatory" color="primary" class="text-body-2" variant="outlined">
@@ -60,10 +60,10 @@
                 </v-btn>
                 <v-card @click="editCheckpoint = !editCheckpoint"
                     elevation="9" variant="outlined"
-                    style="padding: 10px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;"
+                    style="padding: 5px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;"
                 >
                     <div style="display: flex; justify-content: center; align-items: center;">
-                        <Icon icon="streamline:add-1-solid" width="24" height="24" style="color: #5EB2E8" />
+                        <Icon icon="streamline:add-1-solid" width="20" height="20" style="color: #5EB2E8" />
                     </div>
                 </v-card>
             </div>
