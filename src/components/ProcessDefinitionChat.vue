@@ -199,14 +199,14 @@ export default {
                         this.bpmn = this.createBpmnXml(this.processDefinition);
                     }
                     this.definitionChangeCount++;
-                    // const res = await axios.post('http://localhost:8001/process-db-schema/invoke', {
-                    //     "input": {
-                    //         "process_definition_id": this.processDefinition.processDefinitionName
-                    //     }
-                    // })
-                    // if (res) {
-                    //     console.log(res)
-                    // }
+                    const res = await axios.post('http://localhost:8001/process-db-schema/invoke', {
+                        "input": {
+                            "process_definition_id": this.processDefinition.processDefinitionName
+                        }
+                    })
+                    if (res) {
+                        console.log(res)
+                    }
 
                 }
             } catch (error) {
@@ -425,14 +425,14 @@ export default {
 
             let path = `${this.path}/${definition.processDefinitionId}`
             this.putObject(path, putObj)
-            // const res = await axios.post('http://localhost:8001/process-db-schema/invoke', {
-            //     "input": {
-            //         "process_definition_id": this.processDefinition.processDefinitionName
-            //     }
-            // })
-            // if (res) {
-            //     console.log(res)
-            // }
+            const res = await axios.post('http://localhost:8001/process-db-schema/invoke', {
+                "input": {
+                    "process_definition_id": this.processDefinition.processDefinitionName
+                }
+            })
+            if (res) {
+                console.log(res)
+            }
         },
         // parseDefinition(model) {
         //     let definition = {};
@@ -799,6 +799,22 @@ export default {
             bpmnPlane.setAttribute('id', 'BPMNPlane_1');
             bpmnPlane.setAttribute('bpmnElement', 'Collaboration_1');
             bpmnDiagram.appendChild(bpmnPlane);
+            if (jsonModel.roles) {
+                const participantShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
+                participantShape.setAttribute('id', 'Participant_1');
+                participantShape.setAttribute('bpmnElement', 'Participant');
+                const dcBoundsParticipant = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
+                dcBoundsParticipant.setAttribute('x', '70');
+                dcBoundsParticipant.setAttribute('y', `100`);
+                dcBoundsParticipant.setAttribute('width', '830');
+                dcBoundsParticipant.setAttribute('height', `${jsonModel?.roles.length * 100}`);
+                participantShape.appendChild(dcBoundsParticipant)
+                bpmnPlane.appendChild(participantShape)
+            }
+
+            //         <bpmndi:BPMNShape id="Participant_0r9od0v_di" bpmnElement="Participant_0r9od0v" isHorizontal="true">
+            //     <dc:Bounds x="156" y="62" width="600" height="250" />
+            //   </bpmndi:BPMNShape>
             let rolePos = {}
             let activityPos = {};
 
