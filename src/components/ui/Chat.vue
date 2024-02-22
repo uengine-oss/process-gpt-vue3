@@ -46,7 +46,7 @@
                 <div class="d-flex">
                     <div class="w-100" style="height: calc(100vh - 320px)">
                         <div v-for="(message, index) in filteredMessages" :key="index" class="px-5 py-1">
-                            <div v-if="message.email == userInfo.email" class="justify-end d-flex text-end mb-1">
+                            <div v-if="message.email == userInfo.email" class="justify-end d-flex mb-1">
                                 <div>
                                     <small class="text-medium-emphasis text-subtitle-2" v-if="message.timeStamp">
                                         {{ formatTime(message.timeStamp) }}
@@ -215,7 +215,7 @@
 
         <form class="d-flex align-center pa-0">
             <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
-            <div id="imagePreview" style="max-width: 300px;"></div>
+            <div id="imagePreview" style="max-width: 200px;"></div>
             <v-textarea
                 variant="solo"
                 hide-details
@@ -394,7 +394,6 @@ export default {
             var copyMsg = this.newMessage.replace(/(?:\r\n|\r|\n)/g, '');
             if (copyMsg.length > 0)
                 this.send();
-                this.newMessage = "";
         },
         send() {
             if (this.editIndex >= 0) {
@@ -405,11 +404,14 @@ export default {
                     image: this.attachedImg,
                     text: this.newMessage
                 });
-                this.attachedImg = null;
-                var imagePreview = document.querySelector("#imagePreview");
-                imagePreview.innerHTML = '';
             }
             if (this.isReply) this.isReply = false;
+
+            this.newMessage = "";
+            this.newMessage = this.newMessage.replace(/(?:\r\n|\r|\n)/g, '');
+            this.attachedImg = null;
+            var imagePreview = document.querySelector("#imagePreview");
+            imagePreview.innerHTML = '';
         },
         cancel() {
             this.editIndex = -1;

@@ -105,21 +105,18 @@ export default {
             }
         },
 
-        async loadMessages(path) {
-            // 문제 있음 확인 필요
+        async loadMessages(path, options) {
             const callPath = path ? path : this.path;
-            await this.storage.watch(`db://${callPath}`, (callback) => {
-                this.messages = [];
-                if (callback) {
-                    if (callback.messages) {
-                        if (typeof callback.messages == 'string') {
-                            this.messages = partialParse(callback.messages);
-                        } else {
-                            this.messages = callback.messages;
-                        }
-                    } else {
-                        this.messages = [];
-                    }
+            
+            const value = await this.getData(callPath, options);
+            if (value && value.messages) {
+                this.messages = value.messages
+            }
+
+            await this.storage.watch(`db://${callPath}`, async () => {
+                const value = await this.getData(callPath, options);
+                if (value && value.messages) {
+                    this.messages = value.messages
                 }
             });
         },

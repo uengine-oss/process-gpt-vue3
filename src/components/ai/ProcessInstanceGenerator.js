@@ -52,6 +52,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
             if (res.data) {
                 const data = res.data;
                 if (data.output) {
+                    this.input.answer = "";
+                    this.input.image = null;
                     this.client.onGenerationFinished(data.output);
                 }
             }

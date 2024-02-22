@@ -66,7 +66,6 @@
                 @sendMessage="beforeSendMessage"
                 @sendEditedMessage="beforeSendEditedMessage"
                 @stopMessage="stopMessage"
-                @getMoreChat="getMoreChat"
                 @viewProcess="viewProcess"
             ></Chat>
         </template>
@@ -111,7 +110,7 @@ export default {
         definitionDialog: false,
         processDefinition: [],
         processInstance: null,
-        path: 'instances',
+        path: 'proc_inst',
         organizationChart: [],
         chatInfo: {
             title: 'processExecution.cardTitle',
@@ -165,13 +164,13 @@ export default {
                     def_id = id.split('.')[0];
                     const proc_inst = await this.getData(`${def_id}/${id}`, {key: "proc_inst_id"});
                     if (proc_inst) {
-                        this.currentActivities = this.processInstance.current_activity_ids;
+                        this.currentActivities = proc_inst.current_activity_ids;
                     }
                 }
 
-                var defInfo = await this.getData(`definitions/${def_id}`, {key: "id"});
+                var defInfo = await this.getData(`proc_def/${def_id}`, {key: "id"});
                 if (defInfo) {
-                    let definition = partialParse(defInfo.model);
+                    let definition = defInfo.definition;
                     this.bpmn = this.createBpmnXml(definition);
                     this.onLoad = true;
                 }
@@ -186,10 +185,7 @@ export default {
 
             if (this.$route.query.id) {
                 const id = this.$route.query.id;
-                value = await this.getData(`${this.path}/${id}`, {key: "id"});
-                if (value && value.messages) {
-                    this.messages = value.messages;
-                }
+                this.loadMessages(`${this.path}/${id}`, {key: "id"});
 
                 var def_id = id.split('.')[0];
                 value = await this.getData(`${def_id}/${id}`, {key: "proc_inst_id"});
@@ -424,7 +420,7 @@ export default {
         },
 
         async saveDefinitionToVectorDB() {
-            let definitions = await this.getData("definitions");
+            let definitions = await this.getData("proc_def");
             if (definitions) {
                 const apiToken = this.generator.getToken();
                 const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
