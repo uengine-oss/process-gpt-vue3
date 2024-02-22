@@ -128,7 +128,8 @@
                                             </pre>
                                             <v-divider v-if="message.replyContent"></v-divider>
 
-                                            <pre class="text-body-1">{{ message.content }}</pre>
+                                            <pre class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
+                                            <!-- <pre class="text-body-1">{{ message.content }}</pre> -->
 
                                             <p style="margin-top: 5px" v-if="message.role == 'system' &&
                                                 index == filteredMessages.length - 1 &&
@@ -147,7 +148,7 @@
                                             <v-row v-if="message.tableData" class="my-5">
                                                 <v-col cols="12">
                                                     <v-card outlined>
-                                                        <v-card-title>Table Preview</v-card-title>
+                                                        <v-card-title>{{ setTableName(message.content) }}</v-card-title>
                                                         <v-card-text>
                                                             <div v-html="message.tableData" class="table-responsive"></div>
                                                         </v-card-text>
@@ -346,6 +347,18 @@ export default {
         },
     },
     methods: {
+        setMessageForUser(content){
+            if (content.includes(`"messageForUser":`)) {
+                let contentObj = JSON.parse(content)
+                return contentObj.messageForUser || content;
+            } else {
+                return content
+            }
+        },
+        setTableName(content){
+            let contentObj = JSON.parse(content)
+            return contentObj.content || content;
+        },
         viewProcess() {
             this.$emit('viewProcess');
         },

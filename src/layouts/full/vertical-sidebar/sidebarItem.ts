@@ -37,6 +37,12 @@ const sidebarItem: menu[] = [
         to: "/chats",
     },
     {
+        title: "Proposals",
+        icon: 'chat-round-unread-line-duotone',
+        BgColor: 'primary',
+        to: "/proposals",
+    },
+    {
         header: '인스턴스'
     },
     {

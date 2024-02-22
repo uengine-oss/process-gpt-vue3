@@ -20,6 +20,9 @@
     "chats" : {
         "title" : "채팅"
     },
+    "proposals" : {
+        "title" : "제안서"
+    },
     "instance" : {
         "title" : "인스턴스"
     },
@@ -70,7 +73,8 @@
         "title" : "프로세스 목록"
     },
     "chat" : {
-        "inputMessage": "메시지 입력"
+        "inputMessage": "메시지 입력",
+        "placeholder": "메시지 입력"
     },
     "accountTab" : {
         "accountSetting" : "계정 설정",
