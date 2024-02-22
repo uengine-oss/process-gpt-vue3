@@ -10,7 +10,11 @@ export const useAuthStore = defineStore({
         async logout() {
             try {
                 await storage?.signOut();
-                router.push("/");
+                if (router.currentRoute.value.path === "/") {
+                    window.location.reload();
+                } else {
+                    router.push("/");
+                }
             } catch (e) {
                 console.log(e);
             }
