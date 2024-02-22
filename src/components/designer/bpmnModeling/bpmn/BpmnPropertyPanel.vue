@@ -8,30 +8,30 @@
                 <v-textarea v-if="!copyElement.$type.includes('Event')"
                     v-model="copyElement.extensionElements.values[0].description"></v-textarea>
             </div>
-            <div v-if="element.$type.includes('Task') && inputData.length > 0">
-                Input Data
-                <v-row style="margin-top: 10px;">
-                    <div v-for="(inputData, idx) in inputData" :key="idx">
-                        <v-chip color="primary" class="text-body-2" v-if="inputData.mandatory">
+            <div v-if="element.$type.includes('Task') && inputData.length > 0" style="margin-bottom:20px;">
+                <div>Input Data</div>
+                <v-row class="ma-0 pa-0">
+                    <div v-for="(inputData, idx) in inputData" :key="idx" class="mr-2 mt-2">
+                        <v-chip v-if="inputData.mandatory" color="primary" variant="outlined" class="text-body-2">
                             {{ inputData.key }}
                             <CircleXIcon class="ml-2" start size="20" />
                         </v-chip>
-                        <v-chip v-else class="text-body-2">
+                        <v-chip v-else class="text-body-2" variant="outlined">
                             {{ inputData.key }}
                             <CircleXIcon class="ml-2" start size="20" />
                         </v-chip>
                     </div>
                 </v-row>
             </div>
-            <div v-if="element.$type.includes('Task') && outputData.length > 0">
-                Output Data
-                <v-row style="margin-top: 10px;">
-                    <div v-for="(output, idx) in outputData" :key="idx">
-                        <v-chip color="primary" class="text-body-2" v-if="output.mandatory">
+            <div v-if="element.$type.includes('Task') && outputData.length > 0" style="margin-bottom:20px;">
+                <div>Input Data</div>
+                <v-row class="ma-0 pa-0">
+                    <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
+                        <v-chip v-if="output.mandatory" color="primary" class="text-body-2" variant="outlined">
                             {{ output.key }}
                             <CircleXIcon class="ml-2" start size="20" />
                         </v-chip>
-                        <v-chip v-else class="text-body-2">
+                        <v-chip v-else class="text-body-2" variant="outlined">
                             {{ output.key }}
                             <CircleXIcon class="ml-2" start size="20" />
                         </v-chip>
@@ -49,7 +49,7 @@
                     v-model="copyElement.extensionElements.values[0].$children[0].$children[0].$body"></v-text-field>
             </div>
             <div v-if="element.$type.includes('Task')">
-                Checkpoints
+                <div>Checkpoints</div>
                 <div v-for="(checkpoint, idx) in checkpoints" :key="idx">
                     <v-checkbox-btn color="success" :label="checkpoint.checkpoint" hide-details
                         v-model="checkbox"></v-checkbox-btn>
@@ -58,9 +58,14 @@
                 <v-btn v-if="editCheckpoint" @click="addCheckpoint">
                     Submit
                 </v-btn>
-                <v-btn @click="editCheckpoint = !editCheckpoint">
-                    <PlusIcon></PlusIcon>
-                </v-btn>
+                <v-card @click="editCheckpoint = !editCheckpoint"
+                    elevation="9" variant="outlined"
+                    style="padding: 10px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;"
+                >
+                    <div style="display: flex; justify-content: center; align-items: center;">
+                        <Icon icon="streamline:add-1-solid" width="24" height="24" style="color: #5EB2E8" />
+                    </div>
+                </v-card>
             </div>
         </v-card-text>
 
