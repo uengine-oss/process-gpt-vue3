@@ -49,23 +49,28 @@
                     v-model="copyElement.extensionElements.values[0].$children[0].$children[0].$body"></v-text-field>
             </div>
             <div v-if="element.$type.includes('Task')">
-                <div>Checkpoints</div>
+                <v-row class="ma-0 pa-0">
+                    <div>Checkpoints</div>
+                    <v-spacer></v-spacer>
+                    <v-icon v-if="editCheckpoint" @click="editCheckpoint = false" style="margin-top:2px;">mdi-close</v-icon>
+                </v-row>
                 <div v-for="(checkpoint, idx) in checkpoints" :key="idx">
                     <v-checkbox-btn color="success" :label="checkpoint.checkpoint" hide-details
                         v-model="checkbox"></v-checkbox-btn>
                 </div>
                 <v-text-field v-if="editCheckpoint" v-model="checkpointMessage.checkpoint"></v-text-field>
-                <v-btn v-if="editCheckpoint" @click="addCheckpoint">
-                    Submit
-                </v-btn>
-                <v-card @click="editCheckpoint = !editCheckpoint"
-                    elevation="9" variant="outlined"
-                    style="padding: 5px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;"
-                >
-                    <div style="display: flex; justify-content: center; align-items: center;">
-                        <Icon icon="streamline:add-1-solid" width="20" height="20" style="color: #5EB2E8" />
-                    </div>
-                </v-card>
+                <v-row class="ma-0 pa-0">
+                    <v-spacer></v-spacer>
+                    <v-btn v-if="editCheckpoint" @click="addCheckpoint" color="primary" rounded="pill" size="small">Submit</v-btn>
+                    <v-card v-else @click="editCheckpoint = !editCheckpoint"
+                        elevation="9" variant="outlined"
+                        style="padding: 5px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;"
+                    >
+                        <div style="display: flex; justify-content: center; align-items: center;">
+                            <Icon icon="streamline:add-1-solid" width="20" height="20" style="color: #5EB2E8" />
+                        </div>
+                    </v-card>
+                </v-row>
             </div>
         </v-card-text>
 
