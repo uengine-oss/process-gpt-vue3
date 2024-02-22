@@ -74,6 +74,12 @@ export default {
                 BgColor: 'primary',
                 to: "/chats",
             },
+            // {
+            //     title: "proposals.title",
+            //     icon: 'solar:chat-round-unread-line-duotone',
+            //     BgColor: 'primary',
+            //     to: "/proposals",
+            // },
             {
                 header: 'instance.title'
             },
@@ -126,7 +132,7 @@ export default {
                 var list = Object.values(def);
                 if (list.length > 0) {
                     list.forEach(item => {
-                        if (item.model) {
+                        if (item && item.model) {
                             var jsonProcess = partialParse(item.model);
                             var obj = {
                                 title: jsonProcess.processDefinitionName,
