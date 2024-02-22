@@ -66,7 +66,6 @@
                 @sendMessage="beforeSendMessage"
                 @sendEditedMessage="beforeSendEditedMessage"
                 @stopMessage="stopMessage"
-                @getMoreChat="getMoreChat"
                 @viewProcess="viewProcess"
             ></Chat>
         </template>
@@ -186,10 +185,7 @@ export default {
 
             if (this.$route.query.id) {
                 const id = this.$route.query.id;
-                value = await this.getData(`${this.path}/${id}`, {key: "id"});
-                if (value && value.messages) {
-                    this.messages = value.messages;
-                }
+                this.loadMessages(`${this.path}/${id}`, {key: "id"});
 
                 var def_id = id.split('.')[0];
                 value = await this.getData(`${def_id}/${id}`, {key: "proc_inst_id"});

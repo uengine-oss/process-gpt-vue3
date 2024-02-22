@@ -98,15 +98,17 @@ export default {
             async handler(newVal) {
                 if (!newVal.query.id) {
                     this.currentChatId = "";
-                    await this.init();
                 }
             }
         },
     },
     async created() {
         this.storage = StorageBase.getStorage("supabase");
-        this.email = localStorage.getItem("email")
+        this.email = localStorage.getItem("email");
         await this.init();
+    },
+    async mounted() {
+        await this.storage.watch(`${this.path}`, null, this.init);
     },
     methods: {
         async init() {
@@ -117,7 +119,6 @@ export default {
 
             var me = this;
             var list = await this.storage.list(`${this.path}`);
-            // var list = await this.storage.list(`${this.path}/${this.email}`, {key: 'user_id'});
             if (list && list.length > 0) {
                 me.instanceList = [];
                 list.forEach(async item => {
@@ -130,8 +131,6 @@ export default {
                     }
                 })
             }
-
-            await this.storage.watch(`${this.path}`)
         },
         selectChat(id) {
             this.currentChatId = id;

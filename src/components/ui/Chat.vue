@@ -381,7 +381,6 @@ export default {
             var copyMsg = this.newMessage.replace(/(?:\r\n|\r|\n)/g, '');
             if (copyMsg.length > 0)
                 this.send();
-                this.newMessage = "";
         },
         send() {
             if (this.editIndex >= 0) {
@@ -392,11 +391,14 @@ export default {
                     image: this.attachedImg,
                     text: this.newMessage
                 });
-                this.attachedImg = null;
-                var imagePreview = document.querySelector("#imagePreview");
-                imagePreview.innerHTML = '';
             }
             if (this.isReply) this.isReply = false;
+
+            this.newMessage = "";
+            this.newMessage = this.newMessage.replace(/(?:\r\n|\r|\n)/g, '');
+            this.attachedImg = null;
+            var imagePreview = document.querySelector("#imagePreview");
+            imagePreview.innerHTML = '';
         },
         cancel() {
             this.editIndex = -1;
