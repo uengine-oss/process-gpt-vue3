@@ -62,7 +62,7 @@
                 :chatInfo="chatInfo"
                 :userInfo="userInfo" 
                 :disableChat="disableChat"
-                :type="path"
+                :type="'instances'"
                 @sendMessage="beforeSendMessage"
                 @sendEditedMessage="beforeSendEditedMessage"
                 @stopMessage="stopMessage"
