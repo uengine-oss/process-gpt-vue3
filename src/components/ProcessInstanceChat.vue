@@ -39,6 +39,7 @@
                     </v-card-title>
                     <v-card-text>
                         <v-data-table
+                            v-if="onLoad"
                             v-model="processDefinition"
                             :headers="headers"
                             :items="definitions"
@@ -47,6 +48,9 @@
                             show-select
                             return-object
                         ></v-data-table>
+                        <div v-else style="height: 100%; text-align: center">
+                            <v-progress-circular style="top: 50%" indeterminate color="primary"></v-progress-circular>
+                        </div>
                     </v-card-text>
                     <v-card-actions>
                         <v-btn color="success" 
@@ -77,7 +81,8 @@
 </template>
 
 <script>
-import partialParse from 'partial-json-parser';
+import { format } from 'date-fns';
+
 import { VectorStorage } from 'vector-storage';
 
 import ChatGenerator from './ai/ProcessInstanceGenerator.js';
@@ -141,6 +146,10 @@ export default {
                 if (newVal.query !== oldVal.query) {
                     this.messages = [];
                     await this.init();
+                    if (newVal.query.id) {
+                        const id = newVal.query.id;
+                        this.loadMessages(`${this.path}/${id}`, {key: "id"});
+                    }
                 }
             }
         },
@@ -187,7 +196,7 @@ export default {
                 const id = this.$route.query.id;
                 this.loadMessages(`${this.path}/${id}`, {key: "id"});
 
-                var def_id = id.split('.')[0];
+                const def_id = id.split('.')[0];
                 value = await this.getData(`${def_id}/${id}`, {key: "proc_inst_id"});
                 if (value) {
                     this.processInstance = value;
@@ -203,14 +212,17 @@ export default {
                     this.organizationChart = [];
                 }
             }
-        },
-        checkDisableChat(value) {
-            if (value.status && value.status == 'Completed') {
-                this.disableChat = true;
-            }
 
-            if (value.nextUserId && value.nextUserId !== this.userInfo.email) {
-                this.disableChat = true;
+            this.checkDisableChat();
+        },
+        checkDisableChat() {
+            if (this.processInstance) {
+                if (this.processInstance.current_user_ids && 
+                    this.processInstance.current_user_ids.length > 0 &&
+                    !this.processInstance.current_user_ids.includes(this.userInfo.email)
+                ) {
+                    this.disableChat = true;
+                }
             }
         },
         async beforeSendMessage(newMessage) {
@@ -220,13 +232,18 @@ export default {
 
                     this.sendMessage(newMessage);
                 } else {
+                    this.onLoad = false;
+                    this.definitionDialog = true;
+
                     this.processDefinition = [];
                     this.generator.beforeGenerate(newMessage, true);
 
                     var procDefs = await this.queryFromVectorDB(newMessage.text);
-                    procDefs = procDefs.map(item => JSON.parse(item));
-                    this.definitions = procDefs;
-                    this.definitionDialog = true;
+                    if (procDefs) {
+                        procDefs = procDefs.map(item => JSON.parse(item));
+                        this.definitions = procDefs;
+                        this.onLoad = true;
+                    }
                 }
             } else {
                 if (this.processInstance && this.processInstance.proc_inst_id) {
@@ -267,14 +284,15 @@ export default {
                 if (jsonData.description) {
                     messageWriting.content = jsonData.description;
                 }
-
-                this.saveInstance(jsonData);
-                // this.saveTodolist(jsonData);
-
                 if (!this.$route.query.id) {
                     this.$router.replace(`chat?id=${jsonData.instanceId}`);
                 }
+
+                this.saveInstance(jsonData);
+                this.saveTodolist(jsonData);
             }
+
+            this.checkDisableChat();
         },
         afterModelStopped(response) {
             let path = '';
@@ -315,120 +333,52 @@ export default {
                         messages: this.messages
                     }
                     await this.putObject(this.path, putObj);
-                    // this.checkDisableChat(putObj);
                 }
             }
         },
         async saveTodolist(data) {
             if (data) {
-                let putObj = {
-                    proc_inst_id: data.instanceId,
-                    proc_def_id: data.processDefinitionId,
-                    activity_ids: data.nextActivities,
-                    user_id: this.userInfo.email,
-                    start_date: Date.now(),
-                    end_date: null,
-                    status: 'pending',
+                if (data.nextActivities && data.nextActivities.length > 0) {
+                    const nextAct = data.nextActivities[0];
+                    if (nextAct.nextUserEmail) {
+                        let putObj = {
+                            id: nextAct.nextUserEmail + "_" + data.instanceId,
+                            proc_inst_id: data.instanceId,
+                            proc_def_id: data.processDefinitionId,
+                            activity_id: nextAct.nextActvityId,
+                            start_date: format(new Date(), "yyyy-MM-dd HH:mm:ss.SSS"),
+                            // end_date: Date.now(),
+                            status: 'IN_PROGRESS',
+                        }
+                        await this.putObject('todolist', putObj);
+                    }
                 }
-                if (data.nextActivities.length < 1) {
-                    putObj.status = 'done';
+
+                if (data.completedActivities && data.completedActivities.length > 0) {
+                    const completedAct = data.completedActivities[0];
+                    let putObj = {
+                        id: this.userInfo.email + "_" + data.instanceId,
+                        proc_inst_id: data.instanceId,
+                        proc_def_id: data.processDefinitionId,
+                        activity_id: completedAct.completedActivityId,
+                        end_date: format(new Date(), "yyyy-MM-dd HH:mm:ss.SSS"),
+                        status: completedAct.result,
+                    }
+                    await this.putObject('todolist', putObj);
                 }
-                await this.putObject('todolist', putObj);
             }
-
-            // if (this.processInstance) {
-            //     const checkedNextAct = await this.checkNextActivity(this.processInstance.currentActivityId, this.processInstance.nextActivityId);
-            //     if (this.processInstance.currentUserEmail !== "") {
-            //         const path = `todolist/${this.processInstance.currentUserEmail}`;
-            //         const pushObj = {
-            //             definitionId: this.processInstance.processDefinitionId,
-            //             definitionName: this.processInstance.processDefinitionName,
-            //             instanceId: this.processInstance.processInstanceId,
-            //             instanceName: this.processInstance.processInstanceName,
-            //             activityId: this.processInstance.currentActivityId,
-            //             activityName: this.processInstance.currentActivityName,
-            //             userId: this.processInstance.currentUserEmail,
-            //             endDate: Date.now(),
-            //         };
-
-            //         if (checkedNextAct) {
-            //             pushObj.status = 'done';
-            //         } else {
-            //             pushObj.status = 'pending';
-            //         }
-
-            //         const workItem = await this.checkTodolist(path, pushObj);
-            //         if (workItem) {
-            //             pushObj.startDate = workItem.startDate;
-            //             await this.delete(`${path}/${workItem.key}`);
-            //         } else {
-            //             pushObj.startDate = Date.now();
-            //         }
-                    
-            //         await this.pushObject(path, pushObj);
-            //         await this.saveUserInstance(pushObj);
-            //     }
-
-            //     if (this.processInstance.nextUserEmail !== '' && this.checkUserEmail(this.processInstance.nextUserEmail)) {
-            //         const path = `todolist/${this.processInstance.nextUserEmail}`;
-            //         const pushObj = {
-            //             definitionId: this.processInstance.processDefinitionId,
-            //             definitionName: this.processInstance.processDefinitionName,
-            //             instanceId: this.processInstance.processInstanceId,
-            //             instanceName: this.processInstance.processInstanceName,
-            //             activityId: this.processInstance.nextActivityId,
-            //             activityName: this.processInstance.nextActivityName,
-            //             activityName: this.processInstance.nextActivityName,
-            //             userId: this.processInstance.nextUserEmail,
-            //             startDate: Date.now(),
-            //         };
-
-            //         if (checkedNextAct) {
-            //             pushObj.status = 'in_progress';
-            //         } else {
-            //             pushObj.status = 'todo';
-            //         }
-
-            //         if (this.processInstance.nextActivityId == "end_process") {
-            //             pushObj.activityId = "";
-            //             pushObj.activityName = "";
-            //         }
-
-            //         const workItem = await this.checkTodolist(path, pushObj);
-            //         if (workItem) {
-            //             await this.delete(`${path}/${workItem.key}`);
-            //         }
-
-            //         await this.pushObject(path, pushObj);
-            //         await this.saveUserInstance(pushObj);
-            //         await this.beforeSendNotification(pushObj);
-
-            //     } else {
-            //         let actIdx = -1;
-            //         if (this.processDefinition && this.processDefinition.activities) {
-            //             actIdx = this.processDefinition.activities.findIndex(activity => 
-            //                 activity.id == this.processInstance.nextActivityId
-            //             );
-            //         }
-            //         if (actIdx > -1) {
-            //             alert("다음 담당자가 조직도상에 없습니다. 담당자를 다시 지정해주시거나 담당자를 등록해주세요");
-            //         } else {
-            //             this.saveInstance('Completed');
-            //         }
-            //     }
-            // }
         },
 
         async saveDefinitionToVectorDB() {
-            let definitions = await this.getData("proc_def");
-            if (definitions) {
+            const list = await this.storage.list("proc_def");
+            if (list && list.length > 0) {
                 const apiToken = this.generator.getToken();
                 const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
 
-                let list = Object.values(definitions);
                 list.forEach(async (item) => {
                     if (item.definition) {
-                        await vectorStore.addText(JSON.stringify(item.definition), {
+                        const jsonText = JSON.stringify(item.definition);
+                        await vectorStore.addText(jsonText, {
                             category: item.definition.processDefinitionId
                         });
                     }
@@ -444,12 +394,12 @@ export default {
             const results = await vectorStore.similaritySearch({
                 query: messsage
             });
-
             if (results.similarItems.length > 0) {
-                return results.similarItems.map(item => item.text);
+                const res = results.similarItems.map(item => item.text);
+                return res
             } else {
-                this.saveDefinitionToVectorDB();
-                this.queryFromVectorDB(messsage);
+                await this.saveDefinitionToVectorDB();
+                return this.queryFromVectorDB(messsage);
             }
         },
 
