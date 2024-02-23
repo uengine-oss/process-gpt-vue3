@@ -10,7 +10,7 @@
                     sm="6" 
                     class="d-flex" 
                 >
-                    <TodoTaskColumn :column="column" :path="path" :userInfo="userInfo" />
+                    <TodoTaskColumn :column="column" :path="path" :userInfo="userInfo" :storage="storage" />
                 </v-col>
             </v-row>
         </div>
@@ -33,14 +33,14 @@ export default {
     }),
     async created() {
         this.storage = StorageBase.getStorage("supabase");
+        this.userInfo = await this.storage.getUserInfo();
         await this.getTodolist();
-        await this.storage.watch(path, this.getTodolist);
+        await this.storage.watch(this.path, this.getTodolist);
     }, 
     methods:{
         async getTodolist() {
             if (this.userInfo && this.userInfo.email) {
-                const path = this.path + '/' + this.userInfo.email;
-                const list = await this.storage.list(path);
+                const list = await this.storage.list(this.path);
                 if (list && list.length > 0) {
                     this.todolist =  [
                         {
@@ -70,14 +70,16 @@ export default {
                     ];
 
                     list.forEach(item => {
-                        if (item.status == "todo") {
-                            this.todolist[0].tasks.push(item);
-                        } else if (item.status == "in_progress") {
-                            this.todolist[1].tasks.push(item);
-                        } else if (item.status == "pending") {
-                            this.todolist[2].tasks.push(item);
-                        } else if (item.status == "done") {
-                            this.todolist[3].tasks.push(item);
+                        if (item.id.includes(this.userInfo.email)) {
+                            if (item.status == "TODO") {
+                                this.todolist[0].tasks.push(item);
+                            } else if (item.status == "IN_PROGRESS") {
+                                this.todolist[1].tasks.push(item);
+                            } else if (item.status == "PENDING") {
+                                this.todolist[2].tasks.push(item);
+                            } else if (item.status == "DONE") {
+                                this.todolist[3].tasks.push(item);
+                            }
                         }
                     })
                 }
