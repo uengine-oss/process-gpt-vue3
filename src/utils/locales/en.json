@@ -109,5 +109,16 @@
         "email" : "Email",
         "google" : "Sign in with Google",
         "or" : "or sign in with"
+    },
+    "ExtraBox" : {
+        "logOut" : "log out"
+    },
+    "BpnmPropertyPanel" : {
+        "name" : "Name",
+        "description" : "Description",
+        "inputData" : "Input Data",
+        "outputData" : "Output Data",
+        "checkPoints" : "Checkpoints",
+        "add" : "Add"
     }
 }

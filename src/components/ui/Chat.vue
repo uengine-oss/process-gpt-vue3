@@ -1,7 +1,7 @@
 <template>
     <div class="customHeight" style="background-color: rgba( 255, 255, 255, 1 );">
         <div>
-            <div style="position: sticky; top:0px; z-index:1;">
+            <div style="position: sticky; top:0px; z-index:1; background-color:white;">
                 <div class="d-flex align-right gap-3 pa-4 justify-space-between">
                     <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
                         <div>
@@ -46,7 +46,7 @@
                 <div class="d-flex">
                     <div class="w-100" style="height: calc(100vh - 330px)">
                         <div v-for="(message, index) in filteredMessages" :key="index" class="px-5 py-1">
-                            <div v-if="message.email == userInfo.email" class="justify-end d-flex mb-1">
+                            <div v-if="message.email == userInfo.email" class="justify-end mb-1">
                                 <div>
                                     <small class="text-medium-emphasis text-subtitle-2" v-if="message.timeStamp">
                                         {{ formatTime(message.timeStamp) }}
@@ -56,25 +56,27 @@
                                         <img :src="message.image" class="rounded-md" alt="pro" width="250" />
                                     </v-sheet>
 
-                                    <v-textarea v-if="editIndex === index" v-model="messages[index].content" variant="solo"
-                                        hide-details bg-color="lightprimary" class="shadow-none" density="compact" auto-grow
-                                        rows="1">
-                                        <template v-slot:append-inner>
-                                            <v-btn icon variant="text" class="text-medium-emphasis" @click="send">
-                                                <SendIcon size="20" />
-                                            </v-btn>
-                                            <v-btn icon variant="text" class="text-medium-emphasis" @click="cancel">
-                                                <Icon icon="solar:backspace-bold" height="20" width="20" />
-                                            </v-btn>
-                                        </template>
-                                    </v-textarea>
+                                    <template v-if="editIndex === index">
+                                        <v-sheet class="bg-lightprimary rounded-md px-3 py-2 mb-1">
+                                            <v-textarea v-model="messages[index].content" variant="solo"
+                                                hide-details class="shadow-none pa-0 prompt-edit-textarea" density="compact" auto-grow
+                                                rows="1"
+                                            >
+                                            </v-textarea>
+                                            <v-row class="ma-0 pa-0" style="margin-top:8px !important;">
+                                                <v-spacer></v-spacer>
+                                                <v-btn icon style="background-color:white; width:30px; height:30px; margin-right:5px;" @click="send">
+                                                    <SendIcon size="20" />
+                                                </v-btn>
+                                                <v-btn icon style="background-color:white; width:30px; height:30px;" @click="cancel">
+                                                    <Icon icon="solar:backspace-bold" height="20" width="20" />
+                                                </v-btn>
+                                            </v-row>
+                                        </v-sheet>
+                                    </template>
 
-                                    <div v-else class="d-flex justify-end" @mouseover="hoverIndex = index"
+                                    <div v-else class="justify-end" @mouseover="hoverIndex = index"
                                         @mouseleave="hoverIndex = -1">
-                                        <v-btn v-if="hoverIndex === index && !disableChat" @click="editMessage(index)" icon
-                                            variant="text" size="x-small" class="bg-lightprimary float-left edit-btn">
-                                            <Icon icon="solar:pen-bold" height="20" width="20" />
-                                        </v-btn>
 
                                         <v-sheet class="bg-lightprimary rounded-md px-3 py-2 mb-1">
                                             <pre class="text-body-1"
@@ -86,6 +88,14 @@
                                             <pre class="text-body-1">{{ message.content }}</pre>
 
                                             <pre v-if="message.jsonContent" class="text-body-1">{{ message.jsonContent }}</pre>
+                                            <v-row class="ma-0 pa-0">
+                                                <v-spacer></v-spacer>
+                                                <v-btn v-if="hoverIndex === index && !disableChat" @click="editMessage(index)"
+                                                    icon style="background-color:white; width:30px; height:30px;"
+                                                >
+                                                    <Icon icon="solar:pen-bold" height="20" width="20" />
+                                                </v-btn>
+                                            </v-row>
                                         </v-sheet>
                                     </div>
                                 </div>
@@ -221,29 +231,36 @@
                 hide-details
                 v-model="newMessage"
                 color="primary"
-                class="shadow-none"
+                class="shadow-none message-input-box"
                 density="compact"
                 :placeholder="$t('chat.inputMessage')"
                 auto-grow
                 rows="1"
                 @keydown.enter="beforeSend"
                 :disabled="disableChat"
+                style="font-size:20px !important;"
             >
                 <template v-slot:prepend-inner>
                     <!-- <v-btn icon variant="text" class="text-medium-emphasis">
                         <MoodSmileIcon size="24" />
                     </v-btn> -->
-                    <v-btn icon variant="text" class="text-medium-emphasis" @click="uploadImage">
-                        <PhotoIcon size="20" />
+                    <v-btn icon variant="text" @click="uploadImage"
+                        style="width:30px; height:30px;"
+                    >
+                        <PhotoIcon width="20" height="20" />
                     </v-btn>
                 </template>
                 <template v-slot:append-inner>
-                    <v-btn v-if="!isLoading" icon variant="text" type="submit" @click="beforeSend" class="text-medium-emphasis"
-                        :disabled="!newMessage">
-                        <SendIcon size="24" />
+                    <v-btn v-if="!isLoading" icon variant="text" type="submit" @click="beforeSend"
+                        style="width:30px; height:30px;"
+                        :disabled="!newMessage"
+                    >
+                        <Icon icon="teenyicons:send-outline" width="20" height="20" />
                     </v-btn>
-                    <v-btn v-else icon variant="text" @click="isLoading = !isLoading" class="text-medium-emphasis">
-                        <Icon icon="ic:outline-stop-circle" width="30" height="30" />
+                    <v-btn v-else icon variant="text" @click="isLoading = !isLoading"
+                        style="width:30px; height:30px;"
+                    >
+                        <Icon icon="ic:outline-stop-circle" width="20" height="20"/>
                     </v-btn>
                     <!-- <v-btn icon variant="text" class="text-medium-emphasis">
                         <PaperclipIcon size="20" />
@@ -457,8 +474,20 @@ export default {
 </script>
 
 <style lang="scss">
+.message-input-box .v-field__input {
+    font-size:16px;
+}
+.message-input-box .v-field{
+    padding:0px;
+}
+.message-input-box .v-field__append-inner, .v-field__prepend-inner {
+    padding:0px !important;
+}
 .my-progress-linear .v-progress-linear__indeterminate {
     background: linear-gradient(to right, #E1F5FE, #80DEEA, #1565C0) !important;
+}
+.prompt-edit-textarea textarea {
+    padding:5px !important;
 }
 .chat-reply-icon {
     position:absolute;
@@ -469,11 +498,6 @@ export default {
 }
 .w-90 {
     width: 90% !important;
-}
-
-.edit-btn {
-    position: relative;
-    left: -5px;
 }
 
 pre {
