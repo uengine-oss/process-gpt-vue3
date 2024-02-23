@@ -51,17 +51,16 @@ export default class OrganizationChartGenerator extends AIGenerator{
 
               이때 지킬 사항:
                1.  {modifications: [..]} 내에 여러개의 항목으로 넣어줘.
+               2. 반드시 markdown 으로 three backtick 으로 묶어서 표시해.
             
             \`\`\`
               { 
                 modifications: [
-                  
                   {
                     action: "replace" | "add" | "delete",
-                    targetJsonPath: "$.organizationChart[?(@.id=='userid')]",
+                    targetJsonPath: "$.organizationChart[?(@.email=='email')]",
                     value: {...} //delete 인 경우는 불필요
                   }
-                  
                 ]
               }
             \`\`\`
