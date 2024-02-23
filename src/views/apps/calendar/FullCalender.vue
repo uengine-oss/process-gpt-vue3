@@ -44,6 +44,7 @@ export default defineComponent({
       },
       currentEvents: [],
       render: 0,
+      selectedEvent: {}, // Initialize event data for editing
     }
   },
   async created() {
@@ -73,34 +74,77 @@ export default defineComponent({
                 .substring(1);
         }
 
-        return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+        return s4() + s4() + '-' + s4() + '-' +
             s4() + '-' + s4() + s4() + s4();
     },
     handleWeekendsToggle() {
       this.calendarOptions.weekends = !this.calendarOptions.weekends // update a property
     },
     handleDateSelect(selectInfo) {
-      this.AddModal = true;
+      // this.AddModal = true;
       const title ='Please enter a new title for your event'
       const calendarApi = selectInfo.view.calendar
       calendarApi.unselect() // clear date selection
       if (title) {
-        calendarApi.addEvent({
-          id: createEventId(),
+        let data = {
+          id: this.uuid(),
           title,
           start: selectInfo.startStr,
           end: selectInfo.endStr,
           allDay: selectInfo.allDay
-        })
+        }
+        calendarApi.addEvent(data)
+        this.calendarOptions.initialEvents.push(data)
       }
       
     },
     handleEventClick(clickInfo) {
+      let selectedEvent = this.calendarOptions.initialEvents.find(x => x.id == clickInfo.event.id)
+      if(selectedEvent){
+        this.selectedEvent = selectedEvent
+      } else {
+        this.selectedEvent = clickInfo.event
+      }
       this.updateModalShow = true;
-      // eventClick.clickInfo.event
+      // this.render++;
     },
     handleEvents(events) {
       this.currentEvents = events;
+    },
+    async saveCalendar(option) {
+      var me = this
+      const date = new Date(this.selectedEvent.start);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0'); // JavaScript months are 0-based.
+
+      let calendarData = {}
+      calendarData[`${year}_${month}`] = {}
+
+      this.calendarOptions.initialEvents.forEach(data => {
+        calendarData[`${year}_${month}`][data.id] = data;
+      });
+
+      let calendarObj = {
+          "uid": localStorage.getItem('uid'),
+          "data": calendarData
+      }
+      await this.storage.putObject(`db://calendar/${localStorage.getItem('uid')}`, calendarObj);
+    },
+    updateEvent() {
+      let eventIdx = this.calendarOptions.initialEvents.findIndex(x => x.id == this.selectedEvent.id)
+      this.calendarOptions.initialEvents[eventIdx] = this.selectedEvent
+      this.updateModalShow = false;
+      this.saveCalendar()
+      // this.render++;
+    },
+    deleteEvent() {
+      let eventIdx = this.calendarOptions.initialEvents.findIndex(x => x.id == this.selectedEvent.id);
+      if (eventIdx !== -1) {
+        this.calendarOptions.initialEvents.splice(eventIdx, 1);
+      }
+      this.updateModalShow = false;
+      this.saveCalendar()
+      // this.render++;
     },
   }
 })
@@ -119,8 +163,36 @@ export default defineComponent({
         <v-card>
           <v-card-text>
             <h4 class="text-h4">Update Event</h4>
-            <p class="text-subtitle-1 text-grey100 my-4">To Edit/Update Event kindly change the title and choose the event
-              color and press the update button</p>
+            <p class="text-subtitle-1 text-grey100 my-4">To Edit/Update Event kindly change the title and choose the event color and press the update button</p>
+            <!-- Add input fields for event data -->
+            <v-text-field
+              v-model="selectedEvent.title"
+              label="Event Title"
+              outlined
+            ></v-text-field>
+            <v-text-field
+              v-model="selectedEvent.start"
+              label="Start Date"
+              outlined
+            ></v-text-field>
+            <v-text-field
+              v-model="selectedEvent.end"
+              label="End Date"
+              outlined
+            ></v-text-field>
+              <!-- <v-text-field
+                v-model="selectedEvent.allDay"
+                label="All Day"
+                type="checkbox"
+              ></v-text-field> -->
+            <v-text-field
+              v-model="selectedEvent.color"
+              label="Color"
+              outlined
+            ></v-text-field>
+            <!-- Update button to trigger event update -->
+            <v-btn style="margin-right: 5px;" color="primary" @click="updateEvent">Update</v-btn>
+            <v-btn color="error" @click="deleteEvent">Delete</v-btn>
           </v-card-text>
         </v-card>
       </v-dialog>

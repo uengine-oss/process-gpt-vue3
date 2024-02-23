@@ -179,34 +179,21 @@ export default {
 
                 if (jsonProcess) {
                     let unknown = partialParse(jsonProcess);
-                    if (unknown.modifications) {
-                        //means process modification
-                        unknown.modifications.forEach((modification) => {
-                            if (modification.action == 'replace') {
-                                this.jsonPathReplace(this.processDefinition, modification.targetJsonPath, modification.value);
-                                console.log(this.processDefinition)
-                                this.bpmn = this.createBpmnXml(this.processDefinition);
-                            } else if (modification.action == 'add') {
-                                this.modificationAdd(modification);
-                                this.bpmn = this.createBpmnXml(this.processDefinition);
-                            } else if (modification.action == 'delete') {
-                                this.modificationRemove(modification);
-                                this.bpmn = this.createBpmnXml(this.processDefinition);
-                            }
-                        });
-                    } else if (unknown.processDefinitionId) {
+                    if (unknown.processDefinitionId) {
                         this.processDefinition = unknown;
                         this.bpmn = this.createBpmnXml(this.processDefinition);
+                        this.definitionChangeCount++;
                     }
-                    this.definitionChangeCount++;
-                    const res = await axios.post('http://localhost:8001/process-db-schema/invoke', {
-                        "input": {
-                            "process_definition_id": this.processDefinition.processDefinitionName
-                        }
-                    })
-                    if (res) {
-                        console.log(res)
-                    }
+
+                    //// TODO: 저장 버튼 누를때만 해야지
+                    // const res = await axios.post('http://localhost:8001/process-db-schema/invoke', {
+                    //     "input": {
+                    //         "process_definition_id": this.processDefinition.processDefinitionName
+                    //     }
+                    // })
+                    // if (res) {
+                    //     console.log(res)
+                    // }
 
                 }
             } catch (error) {
@@ -216,6 +203,33 @@ export default {
         },
 
         afterGenerationFinished(response) {
+
+            let jsonProcess = this.extractJSON(response);
+
+            if (jsonProcess) {
+                let unknown = JSON.parse(jsonProcess);
+                if (unknown.modifications) {
+                
+                    unknown.modifications.forEach((modification) => {
+                        if (modification.action == 'replace') {
+                            this.jsonPathReplace(this.processDefinition, modification.targetJsonPath, modification.value);
+                            console.log(this.processDefinition)
+                            this.bpmn = this.createBpmnXml(this.processDefinition);
+                        } else if (modification.action == 'add') {
+                            this.modificationAdd(modification);
+                            this.bpmn = this.createBpmnXml(this.processDefinition);
+                        } else if (modification.action == 'delete') {
+                            this.modificationRemove(modification);
+                            this.bpmn = this.createBpmnXml(this.processDefinition);
+                        }
+                    });
+
+                    this.definitionChangeCount++;
+
+                }
+            }
+
+
             let modelText = '';
             let path = this.path;
             let putObj = {
@@ -236,6 +250,7 @@ export default {
                 // this.saveDefinitionMap(putObj);
             }
         },
+
         convertXMLToJSON(xmlString) {
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(xmlString, "text/xml");
