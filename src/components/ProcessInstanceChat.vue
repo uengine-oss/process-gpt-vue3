@@ -62,16 +62,19 @@
                 </v-card>
             </v-dialog>
 
-            <Chat :messages="messages"
+            <Chat 
+                :messages="messages"
+                :draftAgentPrompt="draftAgentPrompt"
                 :chatInfo="chatInfo"
                 :userInfo="userInfo" 
                 :disableChat="disableChat"
                 :type="'instances'"
+                @requestDraftAgent="requestDraftAgent"
                 @sendMessage="beforeSendMessage"
                 @sendEditedMessage="beforeSendEditedMessage"
                 @stopMessage="stopMessage"
-                @viewProcess="viewProcess"
-            ></Chat>
+                @viewProcess="viewProcess">
+            </Chat>
         </template>
 
         <template v-slot:mobileLeftContent>
@@ -94,10 +97,11 @@ import Chat from "@/components/ui/Chat.vue";
 import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import { VDataTable } from 'vuetify/labs/VDataTable'
+import GeneratorAgent from './GeneratorAgent.vue';
 
 
 export default {
-    mixins: [ChatModule],
+    mixins: [ChatModule, GeneratorAgent],
     components: {
         AppBaseCard,
         Chat,
@@ -126,6 +130,8 @@ export default {
         onLoad: false,
         bpmn: null,
         currentActivities: null,
+
+        draftAgentPrompt: '',
     }),
     async created() {
         await this.init();
@@ -138,6 +144,24 @@ export default {
             this.beforeSendMessage(prompt.content)
             localStorage.removeItem('instancePrompt')
         }
+    },
+    mounted(){
+        var me = this
+        me.connectAgent()
+        me.receiveAgent(function(callback){
+            if(callback.connection){
+                if(callback.data){
+                    let message = callback.data
+                    message['_template'] = 'agent'
+                    me.messages.push(message)
+                    me.saveMessages(me.messages)
+                } else {
+                    // running.
+                }
+            } else {
+                // disconnection.
+            }
+        })
     },
     watch: {
         "$route": {
@@ -155,6 +179,10 @@ export default {
         },
     },
     methods: {
+        requestDraftAgent(){
+            this.draftAgentPrompt = '클라우드 네이티브 앱을 정부에 적용할 제안서'
+            this.sendAgent(this.draftAgentPrompt)
+        },
         async viewProcess() {
             this.onLoad = false;
             let id = "";
@@ -226,6 +254,7 @@ export default {
             }
         },
         async beforeSendMessage(newMessage) {
+           
             if (newMessage && newMessage.text != '') {
                 if (this.processInstance && this.processInstance.proc_inst_id) {
                     this.generator.beforeGenerate(newMessage, false);
@@ -246,6 +275,14 @@ export default {
                     }
                 }
             } else {
+
+                if(this.processDefinition){
+                    // !! prompt!! , 
+                    // 이전 message : this.messages
+                    // 현재: newMessage.text (string)
+                    // this.draftAgentPrompt = this.processDefinition[0].description
+                }
+
                 if (this.processInstance && this.processInstance.proc_inst_id) {
                     this.generator.beforeGenerate(newMessage, false);
                 } else {
