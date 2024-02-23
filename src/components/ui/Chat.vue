@@ -1,7 +1,7 @@
 <template>
     <div class="customHeight" style="background-color: rgba( 255, 255, 255, 1 );">
         <div>
-            <div style="position: sticky; top:0px; z-index:1;">
+            <div style="position: sticky; top:0px; z-index:1; background-color:white;">
                 <div class="d-flex align-right gap-3 pa-4 justify-space-between">
                     <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
                         <div>
@@ -224,13 +224,14 @@
                 hide-details
                 v-model="newMessage"
                 color="primary"
-                class="shadow-none"
+                class="shadow-none message-input-box"
                 density="compact"
                 :placeholder="$t('chat.inputMessage')"
                 auto-grow
                 rows="1"
                 @keydown.enter="beforeSend"
                 :disabled="disableChat"
+                style="font-size:20px !important;"
             >
                 <template v-slot:prepend-inner>
                     <v-col>
@@ -245,7 +246,7 @@
                         <!-- <v-btn icon variant="text" class="text-medium-emphasis">
                             <MoodSmileIcon size="24" />
                         </v-btn> -->
-                        <v-btn icon variant="text" class="text-medium-emphasis" @click="uploadImage">
+                        <v-btn icon variant="text" class="text-medium-emphasis" @click="uploadImage" style="width:30px; height:30px;">
                             <PhotoIcon size="20" />
                         </v-btn>
                     </v-col>
@@ -253,12 +254,16 @@
             
               
                 <template v-slot:append-inner>
-                    <v-btn v-if="!isLoading" icon variant="text" type="submit" @click="beforeSend" class="text-medium-emphasis"
-                        :disabled="!newMessage">
-                        <SendIcon size="24" />
+                    <v-btn v-if="!isLoading" icon variant="text" type="submit" @click="beforeSend"
+                        style="width:30px; height:30px;"
+                        :disabled="!newMessage"
+                    >
+                        <Icon icon="teenyicons:send-outline" width="20" height="20" />
                     </v-btn>
-                    <v-btn v-else icon variant="text" @click="isLoading = !isLoading" class="text-medium-emphasis">
-                        <Icon icon="ic:outline-stop-circle" width="30" height="30" />
+                    <v-btn v-else icon variant="text" @click="isLoading = !isLoading"
+                        style="width:30px; height:30px;"
+                    >
+                        <Icon icon="ic:outline-stop-circle" width="20" height="20"/>
                     </v-btn>
                     <!-- <v-btn icon variant="text" class="text-medium-emphasis">
                         <PaperclipIcon size="20" />
@@ -478,8 +483,20 @@ export default {
 </script>
 
 <style lang="scss">
+.message-input-box .v-field__input {
+    font-size:16px;
+}
+.message-input-box .v-field{
+    padding:0px;
+}
+.message-input-box .v-field__append-inner, .v-field__prepend-inner {
+    padding:0px !important;
+}
 .my-progress-linear .v-progress-linear__indeterminate {
     background: linear-gradient(to right, #E1F5FE, #80DEEA, #1565C0) !important;
+}
+.prompt-edit-textarea textarea {
+    padding:5px !important;
 }
 .chat-reply-icon {
     position:absolute;
@@ -490,11 +507,6 @@ export default {
 }
 .w-90 {
     width: 90% !important;
-}
-
-.edit-btn {
-    position: relative;
-    left: -5px;
 }
 
 pre {

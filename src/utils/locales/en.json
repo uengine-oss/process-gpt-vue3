@@ -37,7 +37,9 @@
         "title" : "Definition Management"
     },
     "organizationChartDefinition" : {
-        "title" : "Org Chart Setup"
+        "title" : "Org Chart Setup",
+        "cardTitle" : "Org Chart Management",
+        "organizationChartExplanation": "Manage the organization chart interactively.\nYou can register, modify, and delete teams (departments), roles, and employees.\nFor example, you can issue commands like: 'Register the development and management teams, and add Mr. Hong Gil-dong as a new employee to the management team. His role is a developer. The team leader of the management team is Team Leader Amuge.'"
     },
     "processDefinitionMap" : {
         "title" : "Process Definition Map"
@@ -109,5 +111,16 @@
         "email" : "Email",
         "google" : "Sign in with Google",
         "or" : "or sign in with"
+    },
+    "ExtraBox" : {
+        "logOut" : "log out"
+    },
+    "BpnmPropertyPanel" : {
+        "name" : "Name",
+        "description" : "Description",
+        "inputData" : "Input Data",
+        "outputData" : "Output Data",
+        "checkPoints" : "Checkpoints",
+        "add" : "Add"
     }
 }
