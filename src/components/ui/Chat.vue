@@ -46,7 +46,7 @@
                 <div class="d-flex">
                     <div class="w-100" style="height: calc(100vh - 330px)">
                         <div v-for="(message, index) in filteredMessages" :key="index" class="px-5 py-1">
-                            <AgentsChat v-if="message._template === 'agent'" :message="message" :topic="draftAgentPrompt"/>
+                            <AgentsChat v-if="message && message._template === 'agent'" :message="message" :topic="draftAgentPrompt"/>
                             <div v-else>
                                 <div v-if="message.email == userInfo.email" class="justify-end d-flex mb-1">
                                     <div>
