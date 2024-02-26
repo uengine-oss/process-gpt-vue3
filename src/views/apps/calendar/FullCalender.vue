@@ -43,8 +43,31 @@ export default defineComponent({
         */
       },
       currentEvents: [],
-      render: 0,
+      calendarKey: 0,
       selectedEvent: {}, // Initialize event data for editing
+      showColorPicker: false, // Added for color picker toggle
+      colorItems: [
+        {
+          text: 'Red',
+          value: '#EC4545'
+        },
+        {
+          text: 'Blue',
+          value: '#2196F3'
+        },
+        {
+          text: 'Green',
+          value: '#4CAF50'
+        },
+        {
+          text: 'Yellow',
+          value: '#FFEB3B'
+        },
+        {
+          text: 'Purple',
+          value: '#9C27B0'
+        }
+      ],
     }
   },
   async created() {
@@ -61,9 +84,7 @@ export default defineComponent({
       if (res && res.data && res.data[calendarKey]) {
         this.calendarOptions.initialEvents = Object.values(res.data[calendarKey]);
       }
-      // this.calendarOptions.initialEvents = Object.values(data);
-      // console.log(this.calendarOptions)
-      this.render++;
+      this.calendarKey++;
     }
   },
   methods: {
@@ -105,14 +126,13 @@ export default defineComponent({
       } else {
         this.selectedEvent = clickInfo.event
       }
+      this.showColorPicker = false;
       this.updateModalShow = true;
-      // this.render++;
     },
     handleEvents(events) {
       this.currentEvents = events;
     },
-    async saveCalendar(option) {
-      var me = this
+    async saveCalendar() {
       const date = new Date(this.selectedEvent.start);
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0'); // JavaScript months are 0-based.
@@ -129,13 +149,13 @@ export default defineComponent({
           "data": calendarData
       }
       await this.storage.putObject(`db://calendar/${localStorage.getItem('uid')}`, calendarObj);
+      this.calendarKey++;
     },
     updateEvent() {
       let eventIdx = this.calendarOptions.initialEvents.findIndex(x => x.id == this.selectedEvent.id)
       this.calendarOptions.initialEvents[eventIdx] = this.selectedEvent
       this.updateModalShow = false;
       this.saveCalendar()
-      // this.render++;
     },
     deleteEvent() {
       let eventIdx = this.calendarOptions.initialEvents.findIndex(x => x.id == this.selectedEvent.id);
@@ -144,7 +164,6 @@ export default defineComponent({
       }
       this.updateModalShow = false;
       this.saveCalendar()
-      // this.render++;
     },
   }
 })
@@ -153,8 +172,8 @@ export default defineComponent({
 
 <template>
   <div class='demo-app'>
-    <div :key="render" class='demo-app-main '>
-      <FullCalendar class='demo-app-calendar rounded-md' :options='calendarOptions' >
+    <div class='demo-app-main '>
+      <FullCalendar class='demo-app-calendar rounded-md' :options='calendarOptions' :key="calendarKey">
         <template v-slot:eventContent='arg'>
           <div class="text-subtitle-1 pa-1 text-truncate">{{ arg.event.title }}</div>
         </template>
@@ -174,25 +193,39 @@ export default defineComponent({
               v-model="selectedEvent.start"
               label="Start Date"
               outlined
+              type="datetime-local"
             ></v-text-field>
             <v-text-field
               v-model="selectedEvent.end"
               label="End Date"
               outlined
+              type="datetime-local"
             ></v-text-field>
-              <!-- <v-text-field
-                v-model="selectedEvent.allDay"
-                label="All Day"
-                type="checkbox"
-              ></v-text-field> -->
-            <v-text-field
+            <v-select 
+              v-model="selectedEvent.color" 
+              label="Color" 
+              :items="colorItems"
+              item-title="text"
+              item-value="value"
+            >
+              <template v-slot:append>
+                <v-btn icon @click="showColorPicker = !showColorPicker">
+                  <v-icon :style="showColorPicker ? 'color: #2196F3':''">mdi-palette</v-icon>
+                </v-btn>
+              </template>
+            </v-select>
+            <v-color-picker
+              v-if="showColorPicker"
               v-model="selectedEvent.color"
-              label="Color"
+              label="Custom Color"
+              hide-inputs
               outlined
-            ></v-text-field>
+            ></v-color-picker>
             <!-- Update button to trigger event update -->
-            <v-btn style="margin-right: 5px;" color="primary" @click="updateEvent">Update</v-btn>
-            <v-btn color="error" @click="deleteEvent">Delete</v-btn>
+            <div style="margin-top: 10px;">
+              <v-btn style="margin-right: 5px;" color="primary" @click="updateEvent">Update</v-btn>
+              <v-btn color="error" @click="deleteEvent">Delete</v-btn>
+            </div>
           </v-card-text>
         </v-card>
       </v-dialog>
