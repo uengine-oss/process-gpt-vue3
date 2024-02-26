@@ -44,7 +44,7 @@ const isLogin: boolean = localStorage.getItem("accessToken") ? true : false;
                             <span class="text-white">{{ $t('mainPage.login') }}</span>
                         </v-btn>
                         <v-btn class="custom-hover-primary bg-primary d-lg-flex d-none rounded-pill px-8 align-center login-shadow" 
-                            v-else="isLogin"
+                            v-else
                             @click="authStore.logout()"
                         >
                             <span class="text-white">{{ $t('mainPage.logout') }}</span>

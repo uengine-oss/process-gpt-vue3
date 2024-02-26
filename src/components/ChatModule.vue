@@ -395,7 +395,9 @@ export default {
             }
 
             // 정규 표현식 정의
-            const regex = /^.*?`{3}(?:json)?\n(.*?)`{3}.*?$/s;
+            //const regex = /^.*?`{3}(?:json)?\n(.*?)`{3}.*?$/s;
+            const regex = /```(?:json)?\s*([\s\S]*?)\s*```/;
+
 
             // 정규 표현식을 사용하여 입력 문자열에서 JSON 부분 추출
             const match = inputString.match(regex);

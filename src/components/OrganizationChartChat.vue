@@ -27,7 +27,6 @@
                 @sendMessage="beforeSendMessage"
                 @sendEditedMessage="sendEditedMessage"
                 @stopMessage="stopMessage"
-                @getMoreChat="getMoreChat"
             ></Chat>
         </template>
     </AppBaseCard>
@@ -56,8 +55,8 @@ export default {
         organizationChart: [],
         userList: [],
         chatInfo: {
-            title: "조직도 관리",
-            text: "대화형으로 조직도를 관리하십시오.\n 팀(부서) 롤(역할), 직원들을 등록 수정 삭제할 수 있습니다. 예를 들어, '개발팀, 관리팀을 등록하고, 홍길동님을 신입사원으로 관리팀에 등록해줘. 이메일 주소는 new@company.com 이야. 역할은 개발자로 들어오셨어. 관리팀의 팀장은 아무개 팀장님이야.' 와 같은 명령을 할 수 있습니다.",
+            title: "organizationChartDefinition.cardTitle",
+            text: "organizationChartDefinition.organizationChartExplanation"
         },
     }),
     async created() {
@@ -99,12 +98,18 @@ export default {
         },
 
         afterModelCreated(response) {
-            let json = this.extractJSON(response);
+            let messageWriting = this.messages[this.messages.length - 1];
 
-            if (json) {
-                let unknown = partialParse(json);
+            if (messageWriting.jsonContent) {
+                let unknown
+                try {
+                    unknown = partialParse(messageWriting.jsonContent);
+                } catch(e) {
+                    console.log(er)
+                    unknown = JSON.parse(messageWriting.jsonContent)
+                }
 
-                if(!unknown.modifications) {
+                if (unknown && !unknown.modifications) {
                     this.drawChart(unknown);
                 }
             }
@@ -117,11 +122,18 @@ export default {
         },
 
         afterGenerationFinished(response) {
-            let json = this.extractJSON(response);
-            if (json) {
-                let unknown = partialParse(json);
+            let messageWriting = this.messages[this.messages.length - 1];
 
-                if(unknown.modifications) {
+            if (messageWriting.jsonContent) {
+                let unknown
+                try {
+                    unknown = partialParse(messageWriting.jsonContent);
+                } catch(e) {
+                    console.log(e)
+                    unknown = JSON.parse(messageWriting.jsonContent)
+                }
+
+                if (unknown && unknown.modifications) {
                     unknown.modifications.forEach(modification => {
                         if (modification.action == "replace") {
                             this.jsonPathReplace(this, modification.targetJsonPath, modification.value)
@@ -143,8 +155,18 @@ export default {
             if (this.organizationChart) {
                 chartText = JSON.stringify(this.organizationChart);
                 putObj.organization_chart = chartText;
+
+                this.drawChart(this.organizationChart);
             }
-            this.putObject(this.path, putObj, {key: 'id'});
+            this.putObject(this.path, putObj);
+        },
+
+        afterModelStopped(response) {
+            let putObj =  {
+                id: 1,
+                messages: this.messages,
+            };
+            this.putObject(this.path, putObj);
         },
     }
 }

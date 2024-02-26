@@ -19,9 +19,13 @@ const picture = localStorage.getItem("picture");
                 <span class="text-subtitle-2 font-weight-medium text-grey100">Admin</span>
             </div>
             <div>
-                <v-btn icon class="bg-lightprimary" flat  size="small" @click="authStore.logout()">
-                    <Icon icon="solar:logout-linear" class="text-primary" stroke-width="3" height="24" width="24" />
-                </v-btn>
+                <v-tooltip :text="$t('ExtraBox.logOut')">
+                    <template v-slot:activator="{ props }">
+                        <v-btn icon class="bg-lightprimary" flat  size="small" @click="authStore.logout()" v-bind="props">
+                            <Icon icon="solar:logout-linear" class="text-primary" stroke-width="3" height="24" width="24" />
+                        </v-btn>
+                    </template>
+                </v-tooltip>
             </div>
         </div>
     </v-sheet>

@@ -1,15 +1,15 @@
 <template>
     <div style="height: 95%; margin-top: 10px; overflow: auto;" v-click-outside="onClickOutside">
         <v-card-text>
-            <div>Name</div>
+            <div>{{ $t('BpnmPropertyPanel.name') }}</div>
             <v-text-field v-model="name"></v-text-field>
             <div>
-                <div>Description</div>
+                <div>{{ $t('BpnmPropertyPanel.description') }}</div>
                 <v-textarea v-if="!copyElement.$type.includes('Event')"
                     v-model="copyElement.extensionElements.values[0].description"></v-textarea>
             </div>
             <div v-if="element.$type.includes('Task') && inputData.length > 0" style="margin-bottom:20px;">
-                <div style="margin-bottom:-8px;">Input Data</div>
+                <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.inputData') }}</div>
                 <v-row class="ma-0 pa-0">
                     <div v-for="(inputData, idx) in inputData" :key="idx" class="mr-2 mt-2">
                         <v-chip v-if="inputData.mandatory" color="primary" variant="outlined" class="text-body-2">
@@ -24,7 +24,7 @@
                 </v-row>
             </div>
             <div v-if="element.$type.includes('Task') && outputData.length > 0" style="margin-bottom:20px;">
-                <div style="margin-bottom:-8px;">Output Data</div>
+                <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.outputData') }}</div>
                 <v-row class="ma-0 pa-0">
                     <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
                         <v-chip v-if="output.mandatory" color="primary" class="text-body-2" variant="outlined">
@@ -50,7 +50,7 @@
             </div>
             <div v-if="element.$type.includes('Task')">
                 <v-row class="ma-0 pa-0">
-                    <div>Checkpoints</div>
+                    <div>{{ $t('BpnmPropertyPanel.checkPoints') }}</div>
                     <v-spacer></v-spacer>
                     <v-icon v-if="editCheckpoint" @click="editCheckpoint = false" style="margin-top:2px;">mdi-close</v-icon>
                 </v-row>
@@ -61,7 +61,7 @@
                 <v-text-field v-if="editCheckpoint" v-model="checkpointMessage.checkpoint"></v-text-field>
                 <v-row class="ma-0 pa-0">
                     <v-spacer></v-spacer>
-                    <v-btn v-if="editCheckpoint" @click="addCheckpoint" color="primary" rounded="pill" size="small">Submit</v-btn>
+                    <v-btn v-if="editCheckpoint" @click="addCheckpoint" color="primary" rounded="pill" size="small">{{ $t('BpnmPropertyPanel.add') }}</v-btn>
                     <v-card v-else @click="editCheckpoint = !editCheckpoint"
                         elevation="9" variant="outlined"
                         style="padding: 5px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;"
