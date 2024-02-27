@@ -2,24 +2,37 @@
     <div class="w-100">
         <div class="d-flex align-center bg-lightwarning pa-3 mb-3">
             <h6 class="text-h6 font-weight-semibold">
-                {{ megaProcess.name }}
+                {{ value.label }}
             </h6>
-            <div class="ml-auto d-flex">
-                <ProcessMenu :size="20" :type="'Major'" @add="addMajorProcess" />
+            <div class="ml-auto">
+                <ProcessMenu
+                    :size="20"
+                    :type="'mega'"
+                    :process="value"
+                    :storage="storage"
+                    @add="addProcess"
+                    @edit="editProcess"
+                    @delete="deleteProcess"
+                />
             </div>
         </div>
         
         <draggable class="dragArea list-group" 
-            :list="megaProcess.majorProcess" 
+            :list="value.major_proc_list" 
             :animation="200" 
             ghost-class="ghost-card"
             group="majorProcess"
         >
             <transition-group>
-                <div v-for="process in megaProcess.majorProcess"
-                    :key="process.name" 
+                <div v-for="item in value.major_proc_list"
+                    :key="item.id" 
+                    class="cursor-pointer"
                 >
-                    <MajorProcess :majorProcess="process" @updateProcess="updateProcess" />
+                    <MajorProcess 
+                        :value="item" 
+                        :parent="value" 
+                        :storage="storage" 
+                    />
                 </div>
             </transition-group>
         </draggable>
@@ -36,20 +49,27 @@ export default {
         MajorProcess,
     },
     props: {
-        megaProcess: Object,
+        value: Object,
+        parent: Object,
+        storage: Object,
     },
     methods:{
-        addMajorProcess(newProcess) {
-            this.megaProcess.majorProcess.push(newProcess);
-
-            this.updateProcess();
+        addProcess(newProcess) {
+            var newMajorProc = {
+                id: newProcess.id,
+                label: newProcess.label,
+                sub_proc_list: [],
+            };
+            this.value.major_proc_list.push(newMajorProc);
+            // this.storage.putObject(`proc_map`, this.value);
         },
-        updateProcess() {
-            this.$emit("updateProcess");
+        editProcess(process) {
+            this.value.id = process.id;
+            this.value.label = process.label;
         },
-        deleteMegaProcess() {
-            //
-        }
+        deleteProcess() {
+            this.parent.mega_proc_list = this.parent.mega_proc_list.filter(item => item.id != this.value.id);
+        },
     },
 }
 </script>

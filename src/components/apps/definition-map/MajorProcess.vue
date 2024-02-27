@@ -2,24 +2,37 @@
     <div class="mb-3">
         <div class="d-flex align-center bg-lightsecondary pa-3">
             <h6 class="text-subtitle-1 font-weight-semibold">
-                {{ majorProcess.name }}
+                {{ value.label }}
             </h6>
             <div class="ml-auto">
-                <ProcessMenu :size="16" :type="'Sub'" @add="addSubProcess" @delete="deleteMajorProcess" />
+                <ProcessMenu
+                    :size="16"
+                    :type="'major'"
+                    :process="value"
+                    :storage="storage"
+                    @add="addProcess"
+                    @edit="editProcess"
+                    @delete="deleteProcess"
+                />
             </div>
         </div>
 
         <draggable class="dragArea list-group" 
-            :list="majorProcess.subProcess" 
+            :list="value.sub_proc_list" 
             :animation="200" 
             ghost-class="ghost-card"
             group="subProcess"
         >
             <transition-group>
-                <div v-for="process in majorProcess.subProcess"
-                    :key="process.name" 
+                <div v-for="item in value.sub_proc_list"
+                    :key="item.id"
+                    class="cursor-pointer"
                 >
-                    <SubProcess :subProcess="process" />
+                    <SubProcess 
+                        :value="item" 
+                        :parent="value" 
+                        :storage="storage"
+                    />
                 </div>
             </transition-group>
         </draggable>
@@ -36,19 +49,24 @@ export default {
         SubProcess,
     },
     props: {
-        majorProcess: Object,
+        value: Object,
+        parent: Object,
+        storage: Object,
     },
     methods: {
-        addSubProcess(newProcess) {
-            this.majorProcess.subProcess.push(newProcess);
-
-            this.updateProcess();
+        addProcess(newProcess) {
+            var newSubProc = {
+                id: newProcess.id,
+                label: newProcess.name,
+            };
+            this.value.sub_proc_list.push(newSubProc);
         },
-        updateProcess() {
-            this.$emit("updateProcess");
+        editProcess(process) {
+            this.value.id = process.id;
+            this.value.label = process.label;
         },
-        deleteMajorProcess() {
-            this.updateProcess();
+        deleteProcess() {
+            this.parent.major_proc_list = this.parent.major_proc_list.filter(item => item.id != this.value.id);
         },
     },
 }
