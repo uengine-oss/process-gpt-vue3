@@ -64,6 +64,7 @@
 
             <Chat 
                 :messages="messages"
+                :agentInfo="agentInfo"
                 :draftAgentPrompt="draftAgentPrompt"
                 :chatInfo="chatInfo"
                 :userInfo="userInfo" 
@@ -131,7 +132,13 @@ export default {
         bpmn: null,
         currentActivities: null,
 
-        draftAgentPrompt: '',
+        // temp
+        isRunningId : null,
+        agentInfo: {
+            draftPrompt: '',
+            isRunning: false,
+            isConnection: false,
+        }
     }),
     async created() {
         await this.init();
@@ -150,16 +157,24 @@ export default {
         me.connectAgent()
         me.receiveAgent(function(callback){
             if(callback.connection){
+                me.agentInfo.isConnection = true
+                me.agentInfo.isRunning = true
                 if(callback.data){
                     let message = callback.data
                     message['_template'] = 'agent'
                     me.messages.push(message)
                     me.saveMessages(me.messages)
-                } else {
-                    // running.
-                }
+                    // me.agentInfo.isRunning = false
+                } 
+
+                // temp Logic
+                if(me.isRunningId) clearTimeout(me.isRunningId)
+                me.isRunningId = setTimeout(() => {
+                    me.agentInfo.isRunning = false
+                }, 30 * 1000);
             } else {
-                // disconnection.
+                me.agentInfo.isConnection = false
+                me.agentInfo.isRunning = false
             }
         })
     },
@@ -180,8 +195,18 @@ export default {
     },
     methods: {
         requestDraftAgent(){
-            this.draftAgentPrompt = '클라우드 네이티브 앱을 정부에 적용할 제안서'
-            this.sendAgent(this.draftAgentPrompt)
+            var me = this
+            me.$app.try({
+                context: me,
+                action(me) {
+                    if(!me.agentInfo.draftPrompt) return;
+
+                    me.agentInfo.isRunning = true
+                    me.requestAgent(me.agentInfo.draftPrompt)
+                },
+                // onFail() {
+                // }
+            })
         },
         async viewProcess() {
             this.onLoad = false;
@@ -241,7 +266,7 @@ export default {
                 }
             }
 
-            this.checkDisableChat();
+            // this.checkDisableChat();
         },
         checkDisableChat() {
             if (this.processInstance) {
@@ -280,7 +305,10 @@ export default {
                     // !! prompt!! , 
                     // 이전 message : this.messages
                     // 현재: newMessage.text (string)
-                    // this.draftAgentPrompt = this.processDefinition[0].description
+
+                    // let agents = this.processDefinition[0].roles ? this.processDefinition[0].roles : []
+                    // this.agentInfo.draftPrompt = `The topic is ${this.processDefinition[0].description} and the agents involved are ${JSON.stringify(agents)}.`
+                    this.agentInfo.draftPrompt = `${this.processDefinition[0].description}`
                 }
 
                 if (this.processInstance && this.processInstance.proc_inst_id) {

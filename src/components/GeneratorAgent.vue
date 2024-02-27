@@ -11,7 +11,7 @@ export default {
         };
     },
     methods: {
-        sendAgent(str) {
+        requestAgent(str){
             this.ws.send(str);
         },
         connectAgent(url){
