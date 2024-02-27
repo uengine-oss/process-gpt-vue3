@@ -54,6 +54,8 @@ export default {
     }),
     async created() {
         this.instance = await this.storage.getObject(`${this.task.proc_def_id}/${this.task.proc_inst_id}`, {key: 'proc_inst_id'});
+
+        this.init();
     }, 
     computed: {
         formattedDate() {
@@ -71,9 +73,29 @@ export default {
         }
     },
     methods: {
+        init() {
+            var isUpdated = false;
+            if (this.instance) {
+                if (!this.task.activity_id) {
+                    isUpdated = true;
+                    this.task.activity_id = this.instance.current_activity_ids[0];
+                }
+
+                if (this.task.status === "IN_PROGRESS" && !this.task.start_date) {
+                    isUpdated = true;
+                    this.task.start_date = this.task.end_date;
+                }
+
+                if (isUpdated) this.storage.putObjct('todolist', this.task)
+            }
+        },
         goChat() {
             this.$router.push(`/instances/chat?id=${this.task.proc_inst_id}`);
         },
+        deleteTask(instId) {
+            var id = this.userInfo.email + '_' + instId;
+            this.storage.delete(`todolist/${id}`, {key: 'id'});
+        }
     },
 }
 </script>
