@@ -2,17 +2,28 @@
     <div>
         <div class="d-flex">
             <v-btn icon variant="text" :width="size" :height="size">
-                <DotsVerticalIcon :size="size" />
+                <PlusIcon v-if="type == 'map'" :size="size" />
+                <DotsVerticalIcon v-else :size="size" />
                 <v-menu activator="parent">
-                    <v-list density="compact">
-                        <v-list-item value="Add">
-                            <v-list-item-title @click="dialog = true">
-                                Add New {{ type }} Process
+                    <v-list density="compact" class="cursor-pointer">
+                        <v-list-item v-if="type != 'sub'">
+                            <v-list-item-title @click="openDialog('add')">
+                                {{ addType.toUpperCase() }} 프로세스 추가
                             </v-list-item-title>
                         </v-list-item>
-                        <v-list-item value="Delete">
+                        <v-list-item v-else>
+                            <v-list-item-title @click="editProcess">
+                                프로세스 편집
+                            </v-list-item-title>
+                        </v-list-item>
+                        <v-list-item v-if="type != 'map'">
+                            <v-list-item-title @click="openDialog('update')">
+                                수정
+                            </v-list-item-title>
+                        </v-list-item>
+                        <v-list-item v-if="type != 'map'">
                             <v-list-item-title @click="deleteProcess">
-                                Delete This Process
+                                삭제
                             </v-list-item-title>
                         </v-list-item>
                     </v-list>
@@ -20,26 +31,74 @@
             </v-btn>
         </div>
         
-        <v-dialog v-model="dialog" max-width="500">
+        <v-dialog v-model="addDialog" max-width="500">
             <v-card>
                 <v-card-title>
-                    Add {{ type }} Process
+                    {{ addType.toUpperCase() }} 프로세스 추가
                 </v-card-title>
+
                 <v-card-text>
+                    <v-autocomplete
+                        v-if="addType == 'sub' && !isNewDef"
+                        v-model="newProcess"
+                        :items="definitions"
+                        label="프로세스 정의"
+                        item-title="name"
+                        return-object
+                    ></v-autocomplete>
+
+                    <v-checkbox
+                        v-if="addType == 'sub'"
+                        v-model="isNewDef"
+                        label="새로운 프로세스 정의 추가"
+                        color="primary"
+                        density="compact"
+                    ></v-checkbox>
+
                     <v-text-field
-                            v-model="newProcess.id"
-                            label="Process Id"
-                            autofocus
+                        v-if="addType != 'sub' || isNewDef"
+                        v-model="newProcess.id"
+                        label="프로세스 ID"
+                        autofocus
                     ></v-text-field>
+                    
                     <v-text-field
-                            v-model="newProcess.name"
-                            label="Process Name"
+                        v-if="addType != 'sub' || isNewDef"
+                        v-model="newProcess.label"
+                        label="프로세스명"
                     ></v-text-field>
                 </v-card-text>
+                
                 <v-card-actions>
                     <v-spacer></v-spacer>
-                    <v-btn color="primary" @click="addProcess">Save</v-btn>
-                    <v-btn color="error" @click="dialog = false">Close</v-btn>
+                    <v-btn color="primary" @click="addProcess">저장</v-btn>
+                    <v-btn color="error" @click="closeDialog('add')">닫기</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+        <v-dialog v-model="updateDialog" max-width="500">
+            <v-card>
+                <v-card-title>
+                    {{ type.toUpperCase() }} 프로세스 수정
+                </v-card-title>
+                
+                <v-card-text>
+                    <v-text-field
+                        v-model="newProcess.id"
+                        label="프로세스 ID"
+                        autofocus
+                    ></v-text-field>
+                    <v-text-field
+                        v-model="newProcess.label"
+                        label="프로세스명"
+                    ></v-text-field>
+                </v-card-text>
+                
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="primary" @click="updateProcess">저장</v-btn>
+                    <v-btn color="error" @click="closeDialog('update')">닫기</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -51,36 +110,95 @@ export default {
     props: {
         size: Number,
         type: String,
+        process: Object,
+        storage: Object,
     },
     data: () => ({
-        dialog: false,
+        addDialog: false,
+        updateDialog: false,
         newProcess: {
             id: "",
-            name: "",
-        }
+            label: ""
+        },
+        isNewDef: false,
+        definitions: [],
     }),
-    methods: {
-        addProcess() {
-            if (this.type == "Mega") {
-                this.newProcess.majorProcess = [];
-            } else if (this.type == "Major") {
-                this.newProcess.subProcess = [];
-            } else if (this.type == "Sub") {
-                this.newProcess.messages = [];
-                this.newProcess.model = null;
+    computed: {
+        addType() {
+            if (this.type == 'map') {
+                return "mega";
+            } else if (this.type == 'mega') {
+                return "major";
+            } else if (this.type == 'major') {
+                return "sub";
             }
-
+        },
+    },
+    watch: {
+        isNewDef(val) {
+            if (val) {
+                this.newProcess = {
+                    id: "",
+                    label: "",
+                };
+            } else {
+                this.newProcess = {
+                    id: "",
+                    label: "",
+                    name: ""
+                };
+            }
+        }
+    },
+    created() {
+        this.init();
+    },
+    methods: {
+        async init() {
+            if (this.addType == 'sub') {
+                this.definitions = await this.storage.list(`proc_def`);
+            }
+        },
+        addProcess() {
             this.$emit("add", this.newProcess);
-
+            this.closeDialog('add');
+        },
+        openDialog(type) {
+            if (type == 'add') {
+                this.newProcess = {
+                    id: "",
+                    label: "",
+                    name: ""
+                };
+                this.addDialog = true;
+            } else if(type == 'update') {
+                this.newProcess.id = this.process.id;
+                this.newProcess.label = this.process.label;
+                this.updateDialog = true;
+            }
+        },
+        updateProcess() {
+            this.$emit("edit", this.newProcess);
+            this.closeDialog('update');
+        },
+        closeDialog(type) {
             this.newProcess = {
                 id: "",
-                name: ""
+                label: ""
             };
-            this.dialog = false;
+            this.isNewDef = false;
+            if (type == 'add') {
+                this.addDialog = false;
+            } else if(type == 'update') {
+                this.updateDialog = false;
+            }
         },
         deleteProcess() {
             this.$emit("delete");
         },
+        editProcess() {
+            this.$emit("modeling");
+        }
     },
 }
 </script>
