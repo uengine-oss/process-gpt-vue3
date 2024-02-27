@@ -38,7 +38,11 @@ export default {
             await this.storage.watch(`db://chats/chat1`, async (data) => {
                 if(data && data.new){
                     if(data.new.messages.email != me.userInfo.email){
-                        me.messages.push(data.new.messages)
+                        if (data.new.messages.role == 'system' && me.messages.length > 0 &&  me.messages[me.messages.length - 1].content === data.new.messages.content) {
+                            me.messages[me.messages.length - 1] = data.new.messages
+                        } else {
+                            me.messages.push(data.new.messages)
+                        }
                     }
                 }
             });
