@@ -112,7 +112,9 @@ export default {
     },
     methods: {
         updateDefinition(val) {
-            this.bpmn = this.createBpmnXml(this.processDefinition)
+            console.log(val)
+            this.processDefinition = val
+            this.bpmn = this.createBpmnXml(val)
             // let diff = jsondiffpatch.diff(this.processDefinition, val)
             // if (diff) {
             this.isChanged = true
@@ -209,7 +211,7 @@ export default {
             if (jsonProcess) {
                 let unknown = JSON.parse(jsonProcess);
                 if (unknown.modifications) {
-                
+
                     unknown.modifications.forEach((modification) => {
                         if (modification.action == 'replace') {
                             this.jsonPathReplace(this.processDefinition, modification.targetJsonPath, modification.value);
@@ -733,7 +735,7 @@ export default {
                         // userTask.appendChild(extensionElements)
                     }
                     if (activity.outputData) {
-                        activity.inputData.forEach((data) => {
+                        activity.outputData.forEach((data) => {
                             let param = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
                             param.setAttribute('key', data.name)
                             param.setAttribute('category', "output")
@@ -841,10 +843,10 @@ export default {
                     laneShape.setAttribute('bpmnElement', `Lane_${roleIndex}`);
                     laneShape.setAttribute('isHorizontal', true)
                     const dcBoundsLane = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
-                    dcBoundsLane.setAttribute('x', '100');
-                    dcBoundsLane.setAttribute('y', `${100 + roleIndex * 100}`);
-                    dcBoundsLane.setAttribute('width', '800');
-                    dcBoundsLane.setAttribute('height', '100');
+                    dcBoundsLane.setAttribute('x', role.x ? role.x : '100');
+                    dcBoundsLane.setAttribute('y', role.y ? role.y : `${100 + roleIndex * 100}`);
+                    dcBoundsLane.setAttribute('width', role.width ? role.width : '800');
+                    dcBoundsLane.setAttribute('height', role.height ? role.height : '100');
                     laneShape.appendChild(dcBoundsLane);
                     bpmnPlane.appendChild(laneShape);
                     rolePos[role.name] = {
@@ -868,18 +870,19 @@ export default {
                         startEventShape.setAttribute('id', `StartEvent_di`);
                         startEventShape.setAttribute('bpmnElement', `StartEvent_1`);
                         const startEventBounds = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
-                        startEventBounds.setAttribute('x', lastXPos);
-                        startEventBounds.setAttribute('y', eventY);
-                        startEventBounds.setAttribute('width', 36);
-                        startEventBounds.setAttribute('height', 36);
+                        startEventBounds.setAttribute('x', activity.x ? activity.x : lastXPos);
+                        startEventBounds.setAttribute('y', activity.y ? activity.y : eventY);
+                        startEventBounds.setAttribute('width', activity.width ? activity.width : 36);
+                        startEventBounds.setAttribute('height', activity.height ? activity.height : 36);
                         startEventShape.appendChild(startEventBounds);
                         bpmnPlane.appendChild(startEventShape);
                         activityPos['startEvent'] = {
-                            x: lastXPos,
-                            y: eventY,
+                            x: activity.x ? activity.x : lastXPos,
+                            y: activity.y ? activity.y : eventY,
                             width: 36,
                             height: 36
                         }
+                        lastXPos = activity.x ? activity.x : lastXPos
                         lastXPos += 120
                     }
                     let activityY = parseInt(rolePos[activity.role].y)
@@ -888,18 +891,24 @@ export default {
                     activityShape.setAttribute('bpmnElement', activity.id);
 
                     const dcBoundsActivity = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
-                    dcBoundsActivity.setAttribute('x', lastXPos);
-                    dcBoundsActivity.setAttribute('y', `${activityY + 20}`);
-                    dcBoundsActivity.setAttribute('width', 80);
-                    dcBoundsActivity.setAttribute('height', 60);
+                    dcBoundsActivity.setAttribute('x', activity.x ? activity.x : lastXPos);
+                    dcBoundsActivity.setAttribute('y', activity.y ? activity.y : activityY + 20);
+                    dcBoundsActivity.setAttribute('width', activity.width ? activity.width : 80);
+                    dcBoundsActivity.setAttribute('height', activity.height ? activity.height : 60);
                     activityPos[activity.id] = {
-                        x: lastXPos,
-                        y: activityY + 20,
+                        x: activity.x ? activity.x : lastXPos,
+                        y: activity.y ? activity.y : activityY + 20,
                         width: 80,
                         height: 60
                     }
+                    activity.x = activity.x ? activity.x : lastXPos
+                    activity.y = activity.y ? activity.y : activityY + 20
+                    activity.width = activity.width ? activity.width : 80
+                    activity.height = activity.height ? activity.height : 60
+
                     activityShape.appendChild(dcBoundsActivity);
                     bpmnPlane.appendChild(activityShape);
+                    lastXPos = activity.x ? activity.x : lastXPos
                     lastXPos += 120
 
                     if (activityIndex == jsonModel.activities.length - 1 && lastActivity.role) {
@@ -911,10 +920,10 @@ export default {
                         const endEventBounds = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
                         // endEventBounds.setAttribute('x', '100'); // 위치는 예시이며, 실제 모델에 따라 조정 필요
                         // endEventBounds.setAttribute('y', '218');
-                        endEventBounds.setAttribute('x', lastXPos);
-                        endEventBounds.setAttribute('y', eventY);
-                        endEventBounds.setAttribute('width', 36);
-                        endEventBounds.setAttribute('height', 36);
+                        endEventBounds.setAttribute('x', activity.x ? activity.x : lastXPos);
+                        endEventBounds.setAttribute('y', activity.y ? activity.y : eventY);
+                        endEventBounds.setAttribute('width', activity.width ? activity.width : 36);
+                        endEventBounds.setAttribute('height', activity.height ? activity.height : 36);
                         endEventShape.appendChild(endEventBounds);
                         bpmnPlane.appendChild(endEventShape);
 

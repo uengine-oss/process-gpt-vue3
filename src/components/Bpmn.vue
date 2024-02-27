@@ -68,14 +68,13 @@ export default {
         } else {
             this.bpmnViewer = new BpmnModeler(_options); //new BpmnJS(_options);  //
         }
-        
+
         var eventBus = this.bpmnViewer.get('eventBus');
         // eventBus.on('import.render.start', function (e) {
         //     // self.openPanel = true;
         //     console.log("render  complete")
         //     self.$emit('openPanel', e.element.id);
         // });
-
         eventBus.on('import.render.complete', async function (event) {
             console.log("complete?")
             var error = event.error;
@@ -101,19 +100,25 @@ export default {
                     })
                 }
             }
-
+            console.log(eventBus)
+            eventBus.on('shape.added', function (e) {
+                self.$emit('addShape', e.element)
+            })
+            eventBus.on('shape.changed', function (e) {
+                self.$emit('changeShape', e.element)
+            })
+            eventBus.on('connection.changed', function (e) {
+                self.$emit('changeSequence', e.element)
+            })
+            eventBus.on('shape.removed', async function (e) {
+                self.$emit('removeShape', e.element)
+            });
             // you may hook into any of the following events
             eventBus.on('element.dblclick', function (e) {
                 // self.openPanel = true;
                 self.$emit('openPanel', e.element.id);
             });
-            eventBus.on('shape.remove', async function (e) {
-                // let xml = await self.bpmnViewer.saveXML({ format: true, preamble: true });
-                // console.log(xml)
-                console.log(e)
-                // self.$emit("update-xml", xml.xml)
-                // save XML
-            });
+
             // var events = ['element.hover', 'element.out', 'element.click', 'element.dblclick', 'element.mousedown', 'element.mouseup'];
             // events.forEach(function (event) {
 
@@ -125,6 +130,8 @@ export default {
             this.fetchDiagram(this.url);
         } else if (this.bpmn) {
             this.diagramXML = this.bpmn;
+        } else {
+            this.diagramXML = '<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" id="Definitions_0bfky9r" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0"><bpmn:process id="Process_1oscmbn" isExecutable="false" /><bpmndi:BPMNDiagram id="BPMNDiagram_1"><bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1oscmbn" /></bpmndi:BPMNDiagram></bpmn:definitions>'
         }
     },
     beforeDestroy() {
@@ -324,17 +331,18 @@ export default {
     width: 100%;
 }
 
-.highlight:not(.djs-connection) .djs-visual > :nth-child(1) {
+.highlight:not(.djs-connection) .djs-visual> :nth-child(1) {
     stroke-width: 2px !important;
     stroke: #5140bd !important;
     fill: #5140bd !important;
 }
-.highlight:not(.djs-connection) .djs-visual > :nth-child(2) {
+
+.highlight:not(.djs-connection) .djs-visual> :nth-child(2) {
     fill: #ffffff !important;
 }
 
 /* 팔레트 커스텀 부분 */
-.vue-bpmn-diagram-container .separator{
+.vue-bpmn-diagram-container .separator {
     display: none;
 }
 
@@ -347,15 +355,16 @@ export default {
     border-radius: 10px;
     box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.1);
 }
+
 .vue-bpmn-diagram-container .djs-context-pad .entry {
-    width:30px;
-    height:30px;
+    width: 30px;
+    height: 30px;
     /* border: solid 1px rgba(124, 124, 124, 0.3); */
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.7);
 }
 
 .vue-bpmn-diagram-container .djs-context-pad .group {
-    min-width:100px;
+    min-width: 100px;
 }
 
 @media only screen and (max-width:800px) {

@@ -5,7 +5,7 @@
             <v-text-field v-model="name"></v-text-field>
             <div>
                 <div>Description</div>
-                <v-textarea v-if="!copyElement.$type.includes('Event')"
+                <v-textarea v-if="!copyElement.$type.includes('Event') && !copyElement.$type.includes('Lane')"
                     v-model="copyElement.extensionElements.values[0].description"></v-textarea>
             </div>
             <div v-if="element.$type.includes('Task') && inputData.length > 0" style="margin-bottom:20px;">
@@ -61,11 +61,10 @@
                 <v-text-field v-if="editCheckpoint" v-model="checkpointMessage.checkpoint"></v-text-field>
                 <v-row class="ma-0 pa-0">
                     <v-spacer></v-spacer>
-                    <v-btn v-if="editCheckpoint" @click="addCheckpoint" color="primary" rounded="pill" size="small">Submit</v-btn>
-                    <v-card v-else @click="editCheckpoint = !editCheckpoint"
-                        elevation="9" variant="outlined"
-                        style="padding: 5px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;"
-                    >
+                    <v-btn v-if="editCheckpoint" @click="addCheckpoint" color="primary" rounded="pill"
+                        size="small">Submit</v-btn>
+                    <v-card v-else @click="editCheckpoint = !editCheckpoint" elevation="9" variant="outlined"
+                        style="padding: 5px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;">
                         <div style="display: flex; justify-content: center; align-items: center;">
                             <Icon icon="streamline:add-1-solid" width="20" height="20" style="color: #5EB2E8" />
                         </div>
@@ -83,6 +82,9 @@ export default {
     props: {
         element: Object
     },
+    created() {
+        this.element
+    },
     data() {
         return {
             copyElement: this.element,
@@ -99,7 +101,8 @@ export default {
     mounted() {
         console.log(this.element)
         this.name = this.element.name
-        this.checkpoints = this.element.extensionElements.values?.[0]?.$children?.[0]?.$children ? this.element.extensionElements.values[0].$children[0].$children : []
+        if (this.copyElement.$type.includes('Task'))
+            this.checkpoints = this.element.extensionElements.values?.[0]?.$children?.[0]?.$children ? this.element.extensionElements.values[0].$children[0].$children : []
 
     },
     computed: {
@@ -142,7 +145,8 @@ export default {
         },
         onClickOutside() {
             this.copyElement.name = this.name
-            this.copyElement.extensionElements.values[0].$children[0].$children = this.checkpoints
+            if (this.copyElement.$type.includes('Task'))
+                this.copyElement.extensionElements.values[0].$children[0].$children = this.checkpoints
             this.$emit('updateElement', this.copyElement)
             this.$emit('close');
         },

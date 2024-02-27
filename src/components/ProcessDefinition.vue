@@ -11,17 +11,12 @@
                             </v-btn>
                         </template>
                     </v-tooltip>
-                    <vue-bpmn :bpmn="bpmn"
-                        :options="options"
-                        :isViewMode="isViewMode"
-                        :currentActivities="currentActivities"
-                        v-on:error="handleError"
-                        v-on:shown="handleShown"
-                        v-on:loading="handleLoading"
-                        v-on:openPanel="(id) => openPanel(id)"
-                        v-on:update-xml="val => $emit('update-xml', val)"
-                        v-on:definition="(def) => (definitions = def)"
-                    ></vue-bpmn>
+                    <vue-bpmn :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
+                        :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
+                        v-on:loading="handleLoading" v-on:openPanel="(id) => openPanel(id)"
+                        v-on:update-xml="val => $emit('update-xml', val)" v-on:definition="(def) => (definitions = def)"
+                        v-on:add-shape="onAddShape" v-on:change-sequence="onChangeSequence"
+                        v-on:remove-shape="onRemoveShape" v-on:change-shape="onChangeShape"></vue-bpmn>
                 </v-card>
             </v-col>
             <v-col v-if="panel" cols="12" sm="12" lg="4" md="6" class="d-flex">
@@ -181,7 +176,7 @@ export default {
             deep: true,
             handler(newVal) {
                 console.log(newVal)
-                this.$emit("updateDefinition", this.copyProcessDefinition)
+                this.$emit("updateDefinition", newVal)
             }
         },
         definitions: {
@@ -215,9 +210,59 @@ export default {
     },
     created() { },
     mounted() {
-        this.copyProcessDefinition = this.processDefinition
+        // Initial Data
+        if (this.processDefinition)
+            this.copyProcessDefinition = this.processDefinition
+        else
+            this.copyProcessDefinition = {
+                "megaProcessId": "",
+                "majorProcessId": "",
+                "processDefinitionName": "",
+                "processDefinitionId": this.uuid(),
+                "description": "",
+                "data": [],
+                "roles": [],
+                "activities": [],
+                "sequences": []
+            }
     },
     methods: {
+        uuid() {
+            function s4() {
+                return Math.floor((1 + Math.random()) * 0x10000)
+                    .toString(16)
+                    .substring(1);
+            }
+
+            return s4() + s4() + '-' + s4() + '-' +
+                s4() + '-' + s4() + s4() + s4();
+        },
+        onAddShape(e) {
+            console.log(e)
+            let activity = this.createActivity(e)
+            this.copyProcessDefinition.activities.push(activity)
+        },
+        onChangeShape(e) {
+            console.log(e)
+        },
+        onChangeSequence(e) {
+            console.log(e)
+        },
+        onRemoveShape(e) {
+            console.log(e)
+        },
+        createActivity(element) {
+            let task = this.taskMapping(element.type)
+            let activity = {
+                "name": "",
+                "id": element.id,
+                "type": task,
+                "description": "",
+                "role": "",
+                "outputData": []
+            }
+            return activity
+        },
         editItem(item) {
             this.editedIndex = this.copyProcessDefinition.data.indexOf(item);
             this.editedItem = Object.assign({}, item);
