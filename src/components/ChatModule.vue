@@ -178,8 +178,6 @@ export default {
                 chatObj = this.createMessageObj(message.text);
                 if (message.image) chatObj.image = message.image;
                 this.messages.push(chatObj);
-
-                this.saveMessages(this.messages);
                 
                 this.messages.push({
                     role: 'system',
@@ -194,9 +192,6 @@ export default {
         },
         stopMessage() {
             this.generator.stop();
-        },
-
-        saveMessages(messages) {
         },
 
         async sendEditedMessage(index) {
