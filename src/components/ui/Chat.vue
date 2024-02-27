@@ -238,7 +238,7 @@
                     <v-col style="text-align: center; padding-left: 0px;">
                         <v-tooltip right>
                             <template v-slot:activator="{ on, attrs }">
-                                <v-btn v-if="type=='instances' && !agentInfo.isRunning"  icon variant="text" class="text-medium-emphasis" @click="requestDraftAgent" v-bind="attrs" v-on="on">
+                                <v-btn v-if="type=='instances' && !agentInfo.isRunning" :disabled="!agentInfo.draftPrompt" icon variant="text" class="text-medium-emphasis" @click="requestDraftAgent" v-bind="attrs" v-on="on">
                                     <Icon width="20" height="20" icon="fluent:document-one-page-sparkle-16-regular" />
                                 </v-btn>
                                 <v-btn v-if="type=='instances' && agentInfo.isRunning"  icon variant="text" class="text-medium-emphasis">

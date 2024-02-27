@@ -201,7 +201,7 @@ export default {
             me.$app.try({
                 context: me,
                 action(me) {
-                    // if(!me.agentInfo.draftPrompt) return;
+                    if(!me.agentInfo.draftPrompt) return;
 
                     me.agentInfo.isRunning = true
                     me.requestAgent(me.agentInfo.draftPrompt)
