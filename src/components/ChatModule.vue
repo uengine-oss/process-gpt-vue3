@@ -150,10 +150,27 @@ export default {
                     });
                 }
 
-                let chatObj = {
-                    role: 'user',
-                    content: message.text
-                };
+                let chatObj = {role: 'user'}
+                if(false){
+                    chatObj.content = [
+                        {
+                            "type": "text",
+                            "text": message.text
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                            "url": "https://images.edrawsoft.com/kr/articles/edrawmax/er/bpmn1.png"
+                            }
+                        }
+                    ];
+                    this.generator.model = "gpt-4-vision-preview"
+
+                }else{
+                    chatObj.content= message.text
+                    this.generator.model = "gpt-4"
+                }
+                
                 
                 chatMsgs.push(chatObj);
                 this.generator.previousMessages = [...this.generator.previousMessages, ...chatMsgs];
