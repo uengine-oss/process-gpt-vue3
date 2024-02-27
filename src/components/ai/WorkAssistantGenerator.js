@@ -27,6 +27,7 @@ export default class WorkAssistantGenerator extends AIGenerator {
             {
                 "work": 'ScheduleRegistration' // 고정 값 
                 "title": '스케줄 명칭(스케줄 전체내용을 요약하거나 한눈에 알아볼 수 있는 명칭)',
+                "description": '스케줄에 대한 설명',
                 "startDateTime": 'yyyy-mm-dd/hh:mm', 
                 "endDateTime": 'yyyy-mm-dd/hh:mm',
                 "location": '제공받은 location',

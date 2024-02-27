@@ -5,6 +5,7 @@
                 <div class="no-scrollbar">
                 <ChatProfile />
                 <ChatListing />
+                <!-- <ChatListing :chatRoomList="chatRoomList" @chat-selected="chatRoomSelected" /> -->
                 </div>
             </template>
             <template v-slot:rightpart>
@@ -56,6 +57,36 @@ export default {
         // processInstance: {},
         path: "chats",
         organizationChart: [],
+        chatRoomList: [
+            // {
+            //     "id":1,
+            //     "name":"James Johnson",
+            //     "status":"online",
+            //     "thumb":"/src/assets/images/profile/user-2.jpg",
+            //     "recent":false,
+            //     "chatHistory":[
+            //         {
+            //             "createdAt":"2024-02-23T06:21:22.893Z",
+            //             "msg":"Vof bedvibu gegcip ricubo vidfu.",
+            //             "type":"text",
+            //         }
+            //     ]
+            // },
+            // {
+            //     "id":2,
+            //     "name":"Maria Hernandez",
+            //     "status":"online",
+            //     "thumb":"/src/assets/images/profile/user-3.jpg",
+            //     "recent":true,
+            //     "chatHistory":[
+            //         {
+            //             "createdAt":"2024-02-23T06:21:22.893Z",
+            //             "msg":"Vof bedvibu gegcip ricubo vidfu.",
+            //             "type":"img",
+            //         }
+            //     ]
+            // },
+        ]
     }),
     async created() {
         // this.init();
@@ -65,9 +96,36 @@ export default {
             preferredLanguage: "Korean"
         });
 
+        // await this.getChatRoomList()
         await this.getChatList()
     },
     methods: {
+        async getChatRoomList(){
+            var me = this
+            // await this.storage.watch(`db://chats/chat1`, async (data) => {
+            //     if(data && data.new){
+            //         if(data.new.messages.email != me.userInfo.email){
+            //             me.messages.push(data.new.messages)
+            //         }
+            //     }
+            // });
+            me.userInfo = await me.storage.getUserInfo();
+            await me.storage.list(`db://chat_rooms`).then(function (chatRooms) {
+                if (chatRooms) {
+                    chatRooms.forEach(function (chatRoom) {
+                        if(chatRoom.participants.find(x => x === me.userInfo.email)){
+                            chatRoom.status = "online"
+                            chatRoom.thumb = "/src/assets/images/profile/user-2.jpg"
+                            chatRoom.recent = false
+                            me.chatRoomList.push(chatRoom)
+                        }
+                    })
+                }
+            });
+        },
+        chatRoomSelected(id){
+            console.log(id)
+        },
         putMessage(chatRoomId, msg){
             let uuid = this.uuid()
             let message = {
@@ -234,6 +292,7 @@ export default {
                         calendarData[`${startDate[0]}_${startDate[1]}`][uuid] = {
                             id: uuid,
                             title: responseObj.title,
+                            description: responseObj.description,
                             allDay: true,
                             start: new Date(startDate[0], startDate[1] - 1, startDate[2]),
                             end: new Date(endDate[0], endDate[1] - 1, endDate[2]),
