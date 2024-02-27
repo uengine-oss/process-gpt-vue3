@@ -133,7 +133,7 @@ export default {
         currentActivities: null,
 
         // temp
-        isRunningId : null,
+        isRunningId: null,
         agentInfo: {
             draftPrompt: '',
             isRunning: false,
@@ -158,14 +158,16 @@ export default {
         me.receiveAgent(function(callback){
             if(callback.connection){
                 me.agentInfo.isConnection = true
-                me.agentInfo.isRunning = true
                 if(callback.data){
+                    me.agentInfo.isRunning = true
+
                     let message = callback.data
                     message['_template'] = 'agent'
                     me.messages.push(message)
                     me.saveMessages(me.messages)
-                    // me.agentInfo.isRunning = false
-                } 
+                } else {
+                    // me.agentInfo.isRunning = true
+                }
 
                 // temp Logic
                 if(me.isRunningId) clearTimeout(me.isRunningId)
@@ -199,7 +201,7 @@ export default {
             me.$app.try({
                 context: me,
                 action(me) {
-                    if(!me.agentInfo.draftPrompt) return;
+                    // if(!me.agentInfo.draftPrompt) return;
 
                     me.agentInfo.isRunning = true
                     me.requestAgent(me.agentInfo.draftPrompt)

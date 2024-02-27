@@ -9,7 +9,7 @@
                 <div style="font-weight: bold; align-self: self-end; margin-left: 5px;">{{ message.role }}</div>                    
             </v-row>
             <div class="progress-border" :class="{ 'animate': borderCompletedAnimated }">
-                <template v-if="totalSize == currentIndex">
+                <template v-if="totalSize == (currentIndex+1)">
                     <div class="progress-border-span" :class="{ 'opacity': !borderCompletedAnimated }" v-for="n in 5" :key="n"></div>
                 </template>
 
@@ -85,10 +85,10 @@
                         <div v-html="message.content.data"></div>
                     </div>
                 </v-sheet>
-                <v-progress-linear v-if="totalSize == currentIndex && agentInfo.isRunning" class="my-progress-linear" indeterminate></v-progress-linear>
+                <v-progress-linear v-if="totalSize == (currentIndex+1) && agentInfo.isRunning" class="my-progress-linear" indeterminate></v-progress-linear>
             </div>
         </div>
-        <div v-if="false" style="margin:5%;">
+        <div v-if="agentInfo.isRunning && totalSize == 0" style="margin:5%;">
             <v-row class="ma-0 pa-0" style="margin-bottom:10px !important; align-items: center;">
                 <v-avatar size="40" style="margin-right: 5px;;">
                     <img src="@/assets/images/chat/chat-icon.png" alt="pro" width="50">

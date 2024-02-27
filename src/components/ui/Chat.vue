@@ -46,7 +46,7 @@
                 <div class="d-flex">
                     <div class="w-100" style="height: calc(100vh - 330px)">
                         <div v-for="(message, index) in filteredMessages" :key="index" class="px-5 py-1">
-                            <AgentsChat v-if=" message && message._template === 'agent' " :message="message" :agentInfo="agentInfo" :totalSize="filteredMessages.length-1" :currentIndex="index"/>
+                            <AgentsChat v-if="message && message._template === 'agent' " :message="message" :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="index"/>
                             <div v-else>
                                 <div v-if="message.email == userInfo.email" class="justify-end d-flex mb-1">
                                     <div>
@@ -200,6 +200,7 @@
                                 </div>
                             </div>
                         </div>
+                        <AgentsChat v-if="agentInfo.isRunning" :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="0"/>
                     </div>
                 </div>
             </perfect-scrollbar>
@@ -237,8 +238,11 @@
                     <v-col style="text-align: center; padding-left: 0px;">
                         <v-tooltip right>
                             <template v-slot:activator="{ on, attrs }">
-                                <v-btn v-if="type=='instances'" :disabled="!agentInfo.draftPrompt" icon variant="text" class="text-medium-emphasis" @click="requestDraftAgent" v-bind="attrs" v-on="on">
+                                <v-btn v-if="type=='instances' && !agentInfo.isRunning"  icon variant="text" class="text-medium-emphasis" @click="requestDraftAgent" v-bind="attrs" v-on="on">
                                     <Icon width="20" height="20" icon="fluent:document-one-page-sparkle-16-regular" />
+                                </v-btn>
+                                <v-btn v-if="type=='instances' && agentInfo.isRunning"  icon variant="text" class="text-medium-emphasis">
+                                    <v-progress-circular :size="20" indeterminate color="primary"></v-progress-circular>
                                 </v-btn>
                             </template>
                             <span>Draft Agent</span>
