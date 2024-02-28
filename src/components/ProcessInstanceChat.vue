@@ -159,26 +159,28 @@ export default {
             if(callback.connection){
                 me.agentInfo.isConnection = true
                 if(callback.data){
-                    me.agentInfo.isRunning = true
-
                     let message = callback.data
+                    let duplication = me.messages.find(mes=> mes.role == message.role && JSON.stringify(mes.content) === JSON.stringify(message.content))
+                    if(duplication) return;
+
                     message['_template'] = 'agent'
                     me.messages.push(message)
                     me.saveMessages(me.messages)
-                } else {
-                    // me.agentInfo.isRunning = true
-                }
+                } 
 
-                // temp Logic
-                if(me.isRunningId) clearTimeout(me.isRunningId)
-                me.isRunningId = setTimeout(() => {
+                if(callback.isFinished){
                     me.agentInfo.isRunning = false
-                }, 30 * 1000);
+                } else {
+                    me.agentInfo.isRunning = true
+                }
             } else {
                 me.agentInfo.isConnection = false
                 me.agentInfo.isRunning = false
             }
         })
+    },
+    beforeUnmount(){
+        this.releaseAgent()
     },
     watch: {
         "$route": {
@@ -196,13 +198,14 @@ export default {
         },
     },
     methods: {
-        requestDraftAgent(){
+        requestDraftAgent(newVal){
             var me = this
             me.$app.try({
                 context: me,
                 action(me) {
-                    if(!me.agentInfo.draftPrompt) return;
+                    if(newVal) me.agentInfo.draftPrompt = newVal
 
+                    if(!me.agentInfo.draftPrompt) return;
                     me.agentInfo.isRunning = true
                     me.requestAgent(me.agentInfo.draftPrompt)
                 },
