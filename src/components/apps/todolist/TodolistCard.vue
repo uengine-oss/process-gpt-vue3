@@ -27,7 +27,32 @@ export default {
     },
     data: () => ({
         storage: null,
-        todolist: [],
+        todolist: [
+            {
+                id: 'todo',
+                title: 'Todo',
+                cardbg: 'background',
+                tasks: []
+            },
+            {
+                id: 'in_progress',
+                title: 'In Progress',
+                cardbg: 'lightsecondary',
+                tasks: []
+            },
+            {
+                id: 'pending',
+                title: 'Pending',
+                cardbg: 'lightinfo',
+                tasks: []
+            },
+            {
+                id: 'done',
+                title: 'Done',
+                cardbg: 'lightsuccess',
+                tasks: []
+            }
+        ],
         userInfo: {},
         path: 'todolist',
     }),
@@ -70,7 +95,7 @@ export default {
                     ];
 
                     list.forEach(item => {
-                        if (item.id.includes(this.userInfo.email)) {
+                        if (item.user_id == this.userInfo.email) {
                             if (item.status == "TODO") {
                                 this.todolist[0].tasks.push(item);
                             } else if (item.status == "IN_PROGRESS") {
