@@ -4,8 +4,7 @@
             <template v-slot:leftpart>
                 <div class="no-scrollbar">
                 <ChatProfile />
-                <ChatListing />
-                <!-- <ChatListing :chatRoomList="chatRoomList" @chat-selected="chatRoomSelected" /> -->
+                <ChatListing :chatRoomList="chatRoomList" @chat-selected="chatRoomSelected" />
                 </div>
             </template>
             <template v-slot:rightpart>
@@ -57,6 +56,7 @@ export default {
         // processInstance: {},
         path: "chats",
         organizationChart: [],
+        calendarData: null,
         chatRoomList: [
             // {
             //     "id":1,
@@ -96,10 +96,19 @@ export default {
             preferredLanguage: "Korean"
         });
 
-        // await this.getChatRoomList()
+        await this.getChatRoomList()
         await this.getChatList()
+        await this.getCalendar();
     },
     methods: {
+        async getCalendar(){
+            let option = {
+                key: "uid"
+            }
+            const res = await this.storage.getObject(`db://calendar/${localStorage.getItem('uid')}`, option);
+            this.calendarData = res && res.data ? res.data : {};
+            this.generator.setCalendarData(this.calendarData);
+        },
         async getChatRoomList(){
             var me = this
             // await this.storage.watch(`db://chats/chat1`, async (data) => {
@@ -197,7 +206,6 @@ export default {
             //     }
             // }
         },
-
         async afterGenerationFinished(response) {
             if(response == '.' || response == '.\n') {
                 this.messages.splice(this.messages.length - 1, 1)
@@ -226,10 +234,11 @@ export default {
                                 }
                             });
                             obj.tableData = responseTable.data.output
-                            this.messages[this.messages.length - 1] = obj
                         } catch(error){
                             alert(error);
                         }
+                    } else if(responseObj.work == 'ScheduleQuery'){
+                       console.log(responseObj)
                     } else if(responseObj.work == 'ScheduleRegistration'){
                         let start = responseObj.startDateTime.split('/')
                         let startDate = start[0].split("-")
@@ -238,58 +247,15 @@ export default {
                         let end = responseObj.endDateTime.split('/')
                         let endDate = end[0].split("-")
                         let endTime = end[1].split("-")
-    
-                        // endDateTime: "2024-02-24/15:00"
-                        // location: "온라인"
-                        // startDateTime: "2024-01-25/09:00"
-                        // title: "온라인 강의 진행"
-                        // work: "스케줄 등록"
-                        // 참석자: "50명"
-    
-                       
                         // {
-                        //     id: createEventId(),
-                        //     title: 'Learn ReactJs',
                         //     start: new Date(y, m, d + 3, 10, 30),
                         //     end: new Date(y, m, d + 3, 11, 30),
-                        //     allDay: true,
-                        //     color: '#39b69a',
                         // },
-                        // {
-                        //     id: createEventId(),
-                        //     title: 'Launching MaterialArt Angular',
-                        //     start: new Date(y, m, d + 7, 12, 0),
-                        //     end: new Date(y, m, d + 7, 14, 0),
-                        //     allDay: true,
-                        //     color: '#fc4b6c',
-                        // },
-                        // {
-                        //     id: createEventId(),
-                        //     title: 'Lunch with Mr.Raw',
-                        //     start: new Date(y, m, d - 2),
-                        //     end: new Date(y, m, d - 2),
-                        //     allDay: true,
-                        //     color: '#1a97f5',
-                        // },
-                        // {
-                        //     id: createEventId(),
-                        //     title: 'Going For Party of Sahs',
-                        //     start: new Date(y, m, d + 1, 19, 0),
-                        //     end: new Date(y, m, d + 1, 22, 30),
-                        //     allDay: true,
-                        //     color: '#1a97f5',
-                        // },
-                        
-                        let option = {
-                            key: "uid"
-                        }
-                        const res = await this.storage.getObject(`db://calendar/${localStorage.getItem('uid')}`, option);
-                        let calendarData = res ? res.data:{}
                         let uuid = this.uuid()
-                        if(!calendarData[`${startDate[0]}_${startDate[1]}`]){
-                            calendarData[`${startDate[0]}_${startDate[1]}`] = {}
+                        if(!this.calendarData[`${startDate[0]}_${startDate[1]}`]){
+                            this.calendarData[`${startDate[0]}_${startDate[1]}`] = {}
                         }
-                        calendarData[`${startDate[0]}_${startDate[1]}`][uuid] = {
+                        this.calendarData[`${startDate[0]}_${startDate[1]}`][uuid] = {
                             id: uuid,
                             title: responseObj.title,
                             description: responseObj.description,
@@ -300,21 +266,21 @@ export default {
                         }
                         let calendarObj = {
                             "uid": localStorage.getItem('uid'),
-                            "data": calendarData
+                            "data": this.calendarData
                         }
                         this.putObject(`calendar/${localStorage.getItem('uid')}`, calendarObj);
     
-                        let todoObj = {
-                            definitionId: null,
-                            definitionName: null,
-                            instanceId: null,
-                            activityName: responseObj.title,
-                            userId: this.userInfo.email,
-                            status: 'Running',
-                            startDate: new Date().toISOString().substr(0, 10)
-                        };
+                        // let todoObj = {
+                        //     definitionId: null,
+                        //     definitionName: null,
+                        //     instanceId: null,
+                        //     activityName: responseObj.title,
+                        //     userId: this.userInfo.email,
+                        //     status: 'Running',
+                        //     startDate: new Date().toISOString().substr(0, 10)
+                        // };
     
-                        this.pushObject(`todolist/${this.userInfo.email}`, todoObj);
+                        // this.pushObject(`todolist/${this.userInfo.email}`, todoObj);
     
                     } else {
                         if(this.prompt && this.prompt.content){

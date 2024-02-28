@@ -46,7 +46,7 @@
                 <div class="d-flex">
                     <div class="w-100" style="height: calc(100vh - 330px)">
                         <div v-for="(message, index) in filteredMessages" :key="index" class="px-5 py-1">
-                            <AgentsChat v-if="message && message._template === 'agent'" :message="message" :topic="draftAgentPrompt"/>
+                            <AgentsChat v-if="message && message._template === 'agent' " :message="message" :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="index"/>
                             <div v-else>
                                 <div v-if="message.email == userInfo.email" class="justify-end d-flex mb-1">
                                     <div>
@@ -200,6 +200,7 @@
                                 </div>
                             </div>
                         </div>
+                        <AgentsChat v-if="agentInfo.isRunning" :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="0"/>
                     </div>
                 </div>
             </perfect-scrollbar>
@@ -234,11 +235,14 @@
                 style="font-size:20px !important;"
             >
                 <template v-slot:prepend-inner>
-                    <v-col>
+                    <v-col style="text-align: center; padding-left: 0px;">
                         <v-tooltip right>
                             <template v-slot:activator="{ on, attrs }">
-                                <v-btn v-if="type=='instances' && false" icon variant="text" class="text-medium-emphasis" @click="requestDraftAgent" v-bind="attrs" v-on="on">
+                                <v-btn v-if="type=='instances' && !agentInfo.isRunning" :disabled="!agentInfo.draftPrompt" icon variant="text" class="text-medium-emphasis" @click="requestDraftAgent" v-bind="attrs" v-on="on">
                                     <Icon width="20" height="20" icon="fluent:document-one-page-sparkle-16-regular" />
+                                </v-btn>
+                                <v-btn v-if="type=='instances' && agentInfo.isRunning"  icon variant="text" class="text-medium-emphasis">
+                                    <v-progress-circular :size="20" indeterminate color="primary"></v-progress-circular>
                                 </v-btn>
                             </template>
                             <span>Draft Agent</span>
@@ -254,20 +258,23 @@
             
               
                 <template v-slot:append-inner>
-                    <v-btn v-if="!isLoading" icon variant="text" type="submit" @click="beforeSend"
-                        style="width:30px; height:30px;"
-                        :disabled="!newMessage"
-                    >
-                        <Icon icon="teenyicons:send-outline" width="20" height="20" />
-                    </v-btn>
-                    <v-btn v-else icon variant="text" @click="isLoading = !isLoading"
-                        style="width:30px; height:30px;"
-                    >
-                        <Icon icon="ic:outline-stop-circle" width="20" height="20"/>
-                    </v-btn>
-                    <!-- <v-btn icon variant="text" class="text-medium-emphasis">
-                        <PaperclipIcon size="20" />
-                    </v-btn> -->
+                    <div style="height: -webkit-fill-available; margin-right: 10px; margin-top: 10px;">
+                        <v-btn 
+                            v-if="!isLoading" 
+                            icon variant="text" type="submit" @click="beforeSend"
+                            style="width:30px; height:30px;"
+                            :disabled="!newMessage">
+                            <Icon icon="teenyicons:send-outline" width="20" height="20" />
+                        </v-btn>
+                        <v-btn v-else 
+                            icon variant="text" @click="isLoading = !isLoading"
+                            style="width:30px; height:30px;">
+                            <Icon icon="ic:outline-stop-circle" width="20" height="20"/>
+                        </v-btn>
+                        <!-- <v-btn icon variant="text" class="text-medium-emphasis">
+                            <PaperclipIcon size="20" />
+                        </v-btn> -->
+                    </div>
                 </template>
             </v-textarea>
         </form>
@@ -300,7 +307,7 @@ export default {
         disableChat: Boolean,
         isChanged: Boolean,
         type: String,
-        draftAgentPrompt: String
+        agentInfo: Object
         // documentQueryStr: String,
     },
     data() {

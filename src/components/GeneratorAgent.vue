@@ -11,7 +11,7 @@ export default {
         };
     },
     methods: {
-        sendAgent(str) {
+        requestAgent(str){
             this.ws.send(str);
         },
         connectAgent(url){
@@ -21,9 +21,11 @@ export default {
         receiveAgent(callback){
             var me = this
         
-            me.ws.onopen = () => {
-                callback({connection: true, data: null})
-            };
+            // me.ws.onopen = () => {
+            //     if (me.ws.readyState === WebSocket.OPEN) {
+            //         callback({connection: true, data: null});
+            //     }
+            // };
 
             me.ws.onmessage = (event) => {
                 if(!this.agentInfo) this.agentInfo = {}
@@ -68,9 +70,9 @@ export default {
                 callback({connection: true, data: result}) 
             };
 
-            me.ws.onclose = () => {
-                callback({connection: false, data: null})
-            }; 
+            // me.ws.onclose = () => {
+            //     callback({connection: false, data: null})
+            // }; 
         },
         getAgentInfo(){
             return this.agentInfo

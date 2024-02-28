@@ -9,13 +9,13 @@
                 <div style="font-weight: bold; align-self: self-end; margin-left: 5px;">{{ message.role }}</div>                    
             </v-row>
             <div class="progress-border" :class="{ 'animate': borderCompletedAnimated }">
-                <template v-if="false">
+                <template v-if="totalSize == (currentIndex+1)">
                     <div class="progress-border-span" :class="{ 'opacity': !borderCompletedAnimated }" v-for="n in 5" :key="n"></div>
                 </template>
 
                 <v-sheet class="bg-lightsecondary rounded-md px-3 py-2">
                     <div v-if="message.content.type =='agents'">
-                        <div style="margin:15px;">요청 주신 "{{topic}}"작업을 위해서 팀 구성을 아래와 같이 하였습니다.</div>
+                        <div style="margin:15px;">요청 주신 "{{agentInfo.draftPrompt}}"작업을 위해서 팀 구성을 아래와 같이 하였습니다..</div>
                             <div v-for="agent in message.content.data" :key="agent.name" class="d-flex align-items-start mb-3" style="margin-left: 5%;">
                                 <v-avatar size="40">
                                     <img :src="agent.profile" alt="profile" width="50">
@@ -85,22 +85,22 @@
                         <div v-html="message.content.data"></div>
                     </div>
                 </v-sheet>
-                <v-progress-linear v-if="false" class="my-progress-linear" indeterminate ></v-progress-linear>
+                <v-progress-linear v-if="totalSize == (currentIndex+1) && agentInfo.isRunning" class="my-progress-linear" indeterminate></v-progress-linear>
             </div>
-            <div v-if="!message" style="margin:5%;">
-                <v-row class="ma-0 pa-0" style="margin-bottom:10px !important; align-items: center;">
-                    <v-avatar size="40" style="margin-right: 5px;;">
-                        <img src="@/assets/images/chat/chat-icon.png" alt="pro" width="50">
-                    </v-avatar>             
-                    system               
-                </v-row>
-                <div class="progress-border" :class="{ 'animate': borderCompletedAnimated }">
-                    <template>
-                        <div class="progress-border-span" :class="{ 'opacity': !borderCompletedAnimated }" v-for="n in 5" :key="n"></div>
-                    </template>
-                    <v-sheet class="bg-lightsecondary rounded-md px-3 py-2" style="height: 100px;"></v-sheet>
-                    <v-progress-linear class="my-progress-linear" indeterminate></v-progress-linear>
-                </div>
+        </div>
+        <div v-if="agentInfo.isRunning && totalSize == 0" style="margin:5%;">
+            <v-row class="ma-0 pa-0" style="margin-bottom:10px !important; align-items: center;">
+                <v-avatar size="40" style="margin-right: 5px;;">
+                    <img src="@/assets/images/chat/chat-icon.png" alt="pro" width="50">
+                </v-avatar>             
+                system               
+            </v-row>
+            <div class="progress-border" :class="{ 'animate': borderCompletedAnimated }">
+                <template>
+                    <div class="progress-border-span" :class="{ 'opacity': !borderCompletedAnimated }" v-for="n in 5" :key="n"></div>
+                </template>
+                <v-sheet class="bg-lightsecondary rounded-md px-3 py-2" style="height: 100px;"></v-sheet>
+                <v-progress-linear class="my-progress-linear" indeterminate></v-progress-linear>
             </div>
         </div>
     </div>
@@ -115,8 +115,10 @@ export default {
         Icon,
     },
     props:{
-        topic: String,
-        message: Object
+        agentInfo: Object,
+        message: Object,
+        totalSize: Number,
+        currentIndex: Number
     },
     mixins:[ProgressAnimated],
     data() {
