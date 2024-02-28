@@ -150,8 +150,10 @@ export default {
                     });
                 }
 
-                let chatObj = {role: 'user'}
-                if(false){
+                let chatObj = {
+                    role: 'user'
+                };
+                if (message.image && message.image != '') {
                     chatObj.content = [
                         {
                             "type": "text",
@@ -160,23 +162,24 @@ export default {
                         {
                             "type": "image_url",
                             "image_url": {
-                            "url": "https://images.edrawsoft.com/kr/articles/edrawmax/er/bpmn1.png"
+                                "url": message.image
                             }
                         }
                     ];
-                    this.generator.model = "gpt-4-vision-preview"
+                    this.generator.model = "gpt-4-vision-preview";
 
-                }else{
-                    chatObj.content= message.text
-                    this.generator.model = "gpt-4"
+                } else {
+                    chatObj.content= message.text;
+                    this.generator.model = "gpt-4";
                 }
-                
                 
                 chatMsgs.push(chatObj);
                 this.generator.previousMessages = [...this.generator.previousMessages, ...chatMsgs];
 
                 chatObj = this.createMessageObj(message.text);
-                if (message.image) chatObj.image = message.image;
+                if (message.image && message.image != '') {
+                    chatObj['image'] = message.image;
+                }
                 this.messages.push(chatObj);
 
                 this.saveMessages(this.messages);

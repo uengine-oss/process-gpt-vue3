@@ -61,13 +61,13 @@ export default {
     },
     mounted() {
         this.getProcessMap();
-        this.storage.watch(`proc_map`, this.getProcessMap);
+        this.storage.watch(`configuration`, this.getProcessMap);
     },
     methods:{
         async getProcessMap() {
-            const list = await this.storage.list(`proc_map`);
-            if (list && list.length > 0) {
-                this.value = list[0].configuration;
+            const procMap = await this.storage.getObject(`configuration/proc_map`, {key: 'key'});
+            if (procMap && procMap.value) {
+                this.value = procMap.value;
             }
         },
         addProcess(newProcess) {

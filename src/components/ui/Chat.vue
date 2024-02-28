@@ -216,9 +216,9 @@
             <v-divider />
         </div>
 
+        <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
+        <div id="imagePreview" style="max-width: 200px;"></div>
         <form class="d-flex align-center pa-0">
-            <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
-            <div id="imagePreview" style="max-width: 200px;"></div>
             <v-textarea
                 variant="solo"
                 hide-details
@@ -341,23 +341,27 @@ export default {
         },
         filteredMessages() {
             var list = [];
-            this.messages.forEach((item) => {
-                let data = JSON.parse(JSON.stringify(item));
-                if (data.content || data.jsonContent) {
-                    list.push(data);
-                }
-            });
+            if (this.messages && this.messages.length > 0) {
+                this.messages.forEach((item) => {
+                    let data = JSON.parse(JSON.stringify(item));
+                    if (data.content || data.jsonContent) {
+                        list.push(data);
+                    }
+                });
+            }
             return list;
         },
         // isLoading 상태의 변화를 감시합니다.
         isLoading: {
             get() {
                 var res = false;
-                this.messages.forEach(item => {
-                    if (item.isLoading) {
-                        res = item.isLoading;
-                    }
-                });
+                if (this.messages && this.messages.length > 0) {
+                    this.messages.forEach(item => {
+                        if (item.isLoading) {
+                            res = item.isLoading;
+                        }
+                    });
+                }
                 return res;
             },
             set(val) {

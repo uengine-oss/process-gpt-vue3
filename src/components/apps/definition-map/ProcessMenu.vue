@@ -69,10 +69,16 @@
                     ></v-text-field>
                 </v-card-text>
                 
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn color="primary" @click="addProcess">저장</v-btn>
-                    <v-btn color="error" @click="closeDialog('add')">닫기</v-btn>
+                <v-card-actions class="justify-center">
+                    <v-btn color="primary" 
+                        variant="flat"
+                        :disabled="newProcess.id == '' && newProcess.label == ''"
+                        @click="addProcess"
+                    >저장</v-btn>
+                    <v-btn color="error" 
+                        variant="flat" 
+                        @click="closeDialog('add')"
+                    >닫기</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -95,10 +101,13 @@
                     ></v-text-field>
                 </v-card-text>
                 
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn color="primary" @click="updateProcess">저장</v-btn>
-                    <v-btn color="error" @click="closeDialog('update')">닫기</v-btn>
+                <v-card-actions class="justify-center">
+                    <v-btn color="primary" 
+                        variant="flat"
+                        :disabled="newProcess.id == '' && newProcess.label == ''"
+                        @click="updateProcess"
+                    >저장</v-btn>
+                    <v-btn color="error" variant="flat" @click="closeDialog('update')">닫기</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -160,8 +169,10 @@ export default {
             }
         },
         addProcess() {
-            this.$emit("add", this.newProcess);
-            this.closeDialog('add');
+            if (this.newProcess.id != '' && this.newProcess.label != '') {
+                this.$emit("add", this.newProcess);
+                this.closeDialog('add');
+            }
         },
         openDialog(type) {
             if (type == 'add') {
@@ -178,8 +189,10 @@ export default {
             }
         },
         updateProcess() {
-            this.$emit("edit", this.newProcess);
-            this.closeDialog('update');
+            if (this.newProcess.id != '' && this.newProcess.label != '') {
+                this.$emit("edit", this.newProcess);
+                this.closeDialog('update');
+            }
         },
         closeDialog(type) {
             this.newProcess = {
