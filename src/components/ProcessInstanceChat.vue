@@ -412,12 +412,12 @@ export default {
                     const nextAct = data.nextActivities[0];
                     if (nextAct.nextUserEmail) {
                         let putObj = {
-                            id: nextAct.nextUserEmail + "_" + data.instanceId,
+                            id: this.uuid(),
+                            user_id: this.userInfo.email,
                             proc_inst_id: data.instanceId,
                             proc_def_id: data.processDefinitionId,
                             activity_id: nextAct.nextActvityId,
-                            start_date: format(new Date(), "yyyy-MM-dd HH:mm:ss.SSS"),
-                            // end_date: Date.now(),
+                            start_date: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
                             status: 'IN_PROGRESS',
                         }
                         await this.putObject('todolist', putObj);
@@ -427,11 +427,12 @@ export default {
                 if (data.completedActivities && data.completedActivities.length > 0) {
                     const completedAct = data.completedActivities[0];
                     let putObj = {
-                        id: this.userInfo.email + "_" + data.instanceId,
+                        id: this.uuid(),
+                        user_id: this.userInfo.email,
                         proc_inst_id: data.instanceId,
                         proc_def_id: data.processDefinitionId,
                         activity_id: completedAct.completedActivityId,
-                        end_date: format(new Date(), "yyyy-MM-dd HH:mm:ss.SSS"),
+                        end_date: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
                         status: completedAct.result,
                     }
                     await this.putObject('todolist', putObj);

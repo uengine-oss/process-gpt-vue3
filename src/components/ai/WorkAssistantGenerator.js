@@ -36,8 +36,22 @@ export default class WorkAssistantGenerator extends AIGenerator {
             }
             \`\`\`
             
-            2. 스케쥴 정보을 물어볼때는 그 스케줄에 대한 질문의 답을 해줘
-            // e.g. 이번달 내 일정은 ? 답변: startDateTime 가 현재날짜와 같은 달이라면 그에 해당하는 모든 일정을 요약해서 리턴해
+            2. 일정을 물어볼때:
+            전체 일정 데이터: {{ 전체 일정 데이터 }}
+            해당 일정 데이터를 참고하여 질의내용 또는 요청에 대한 답변을 요약해서 해줘.
+            질의내용 또는 요청에 있는 제공받은 날짜가 명확하지 않은 경우 또는 오늘 내일 등 날짜가 아닌 표현을 하면 제공받은 현재 날짜를 기준으로 그에 맞게 답변해줘
+            현재 날짜: ${this.timeStamp}
+            // e.g. 현재날짜: 2024-01-24 Wed, 내일: 2024-01-25 Thu, 다음주 월요일: 2024-01-29 Mon(오늘 이후로 가장 가까운 월요일이 표시되어야함)
+            // e.g. 이번달 일정 전체를 알려줘. 답변: 일정 정보중 start 날짜가 이번달(현재 날짜 기준)인 일정을 모두 요약해서 답변해야함.
+
+            JSON 형식: 
+            \`\`\`
+            {
+                "work": 'ScheduleQuery', // 고정 값
+                "content": '사용자의 질의내용 또는 요청'
+                "messageForUser": '사용자의 질문에 대한 요약된 일정 답변' // 일정이 없다고 판단된 경우 "일정이 존재하지 않습니다." 라고 답변해야하고 답변시 가독성 좋게 일정 하나당 한줄씩 답변해줘.
+            }
+            \`\`\`
             
             3. 프로세스 시작: 대화맥락에서 사용자의 요청사항을 파악하고 프로세스 목록중 하나의 프로세스를 시작해야 할때라고 판단되면 다음과 같은 JSON 형식으로 답변해
             JSON 형식: 
@@ -80,6 +94,10 @@ export default class WorkAssistantGenerator extends AIGenerator {
         contexts.forEach(context => {
             this.previousMessages[0].content += context + "\n\n";
         });
+    }
+
+    setCalendarData(calendar) {
+        this.previousMessages[0].content = this.previousMessages[0].content.replace('{{ 전체 일정 데이터 }}', JSON.stringify(calendar));
     }
 
     createPrompt() {

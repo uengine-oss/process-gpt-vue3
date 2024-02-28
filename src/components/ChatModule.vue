@@ -38,7 +38,11 @@ export default {
             await this.storage.watch(`db://chats/chat1`, async (data) => {
                 if(data && data.new){
                     if(data.new.messages.email != me.userInfo.email){
-                        me.messages.push(data.new.messages)
+                        if (data.new.messages.role == 'system' && me.messages.length > 0 &&  me.messages[me.messages.length - 1].content === data.new.messages.content) {
+                            me.messages[me.messages.length - 1] = data.new.messages
+                        } else {
+                            me.messages.push(data.new.messages)
+                        }
                     }
                 }
             });
@@ -150,8 +154,10 @@ export default {
                     });
                 }
 
-                let chatObj = {role: 'user'}
-                if(false){
+                let chatObj = {
+                    role: 'user'
+                };
+                if (message.image && message.image != '') {
                     chatObj.content = [
                         {
                             "type": "text",
@@ -160,26 +166,25 @@ export default {
                         {
                             "type": "image_url",
                             "image_url": {
-                            "url": "https://images.edrawsoft.com/kr/articles/edrawmax/er/bpmn1.png"
+                                "url": message.image
                             }
                         }
                     ];
-                    this.generator.model = "gpt-4-vision-preview"
+                    this.generator.model = "gpt-4-vision-preview";
 
-                }else{
-                    chatObj.content= message.text
-                    this.generator.model = "gpt-4"
+                } else {
+                    chatObj.content= message.text;
+                    this.generator.model = "gpt-4";
                 }
-                
                 
                 chatMsgs.push(chatObj);
                 this.generator.previousMessages = [...this.generator.previousMessages, ...chatMsgs];
 
                 chatObj = this.createMessageObj(message.text);
-                if (message.image) chatObj.image = message.image;
+                if (message.image && message.image != '') {
+                    chatObj['image'] = message.image;
+                }
                 this.messages.push(chatObj);
-
-                this.saveMessages(this.messages);
                 
                 this.messages.push({
                     role: 'system',
@@ -194,9 +199,6 @@ export default {
         },
         stopMessage() {
             this.generator.stop();
-        },
-
-        saveMessages(messages) {
         },
 
         async sendEditedMessage(index) {
