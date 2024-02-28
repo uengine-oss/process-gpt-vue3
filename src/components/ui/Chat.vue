@@ -200,7 +200,7 @@
                                 </div>
                             </div>
                         </div>
-                        <AgentsChat v-if="agentInfo.isRunning && filteredMessages.length == 0" class="px-5 py-1" :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="-1"/>
+                        <AgentsChat v-if="type=='instances'&& agentInfo.isRunning && filteredMessages.length == 0" class="px-5 py-1" :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="-1"/>
                     </div>
                 </div>
             </perfect-scrollbar>
