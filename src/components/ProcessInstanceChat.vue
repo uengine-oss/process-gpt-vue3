@@ -187,12 +187,10 @@ export default {
             deep: true,
             async handler(newVal, oldVal) {
                 if (newVal.query !== oldVal.query) {
-                    this.messages = [];
-                    await this.init();
-                    if (newVal.query.id) {
-                        const id = newVal.query.id;
-                        this.loadMessages(`${this.path}/${id}`, {key: "id"});
+                    if (!newVal.query.id) {
+                        this.messages = [];
                     }
+                    await this.init();
                 }
             }
         },
@@ -258,8 +256,10 @@ export default {
                 value = await this.getData(`${def_id}/${id}`, {key: "proc_inst_id"});
                 if (value) {
                     this.processInstance = value;
+                    this.checkDisableChat();
                 }
             }
+
             
             value = await this.getData("organization");
             
@@ -270,8 +270,6 @@ export default {
                     this.organizationChart = [];
                 }
             }
-
-            // this.checkDisableChat();
         },
         checkDisableChat() {
             if (this.processInstance) {
