@@ -57,8 +57,14 @@ export default {
         storage: null,
         sidebarItem: [
             {
+            title: "dashboard.title",
+                icon: 'lucide:layout-panel-top',
+                BgColor: 'primary',
+                to: "/dashboard2",
+            },
+            {
                 title: "todoList.title",
-                icon: 'solar:widget-4-linear',
+                icon: 'pajamas:overview',
                 BgColor: 'primary',
                 to: "/todolist",
             },

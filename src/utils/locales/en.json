@@ -11,6 +11,20 @@
         "title" : "Easily initiate from AI-based process management to execution.",
         "subTitle" : "Process definition, organizational chart management, To-Do management, process execution, process monitoring, process analysis."
     },
+    "DashboardUpcomingScheduls" : {
+        "title" : "Upcoming Schedules",
+        "schedule" : "Schedule",
+        "dateAndTime" : "Date and Time",
+        "category" : "Category"
+    },
+    "DashboardTodoList" : {
+        "todo" : "Todo",
+        "inProgress" : "In Progess",
+        "done" : "Done"
+    },
+    "dashboard" : {
+        "title" : "Dashboard"
+    },
     "todoList" : {
         "title" : "ToDoList"
     },

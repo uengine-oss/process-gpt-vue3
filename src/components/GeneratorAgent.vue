@@ -11,26 +11,26 @@ export default {
         };
     },
     methods: {
-        sendAgent(str) {
+        requestAgent(str){
             this.ws.send(str);
         },
         connectAgent(url){
             if(!url) url = `ws://localhost:6789`
             this.ws = new WebSocket(url);
         },
+        releaseAgent(){
+            if (this.ws) this.ws.close();
+            this.ws = null;
+        },
         receiveAgent(callback){
             var me = this
-        
-            me.ws.onopen = () => {
-                callback({connection: true, data: null})
-            };
-
             me.ws.onmessage = (event) => {
                 if(!this.agentInfo) this.agentInfo = {}
                 let result = null
+                let isFinished = false;
 
                 if (event.data.startsWith("Chain started with inputs: ")) {
-
+                    // running.
                 } else if(event.data.includes("{'text': ") || event.data.includes("You are a tool for") || event.data.includes("{'topic'")){
                     if(event.data.includes("{'topic'")){
                          // setting 
@@ -63,14 +63,23 @@ export default {
                     result = me.convertSearchOutputContent(event.data, me.agentInfo.agents)
                 } else {
                     result = me.convertSystemContent(event.data)
+                    isFinished = true
                 }
 
-                callback({connection: true, data: result}) 
+                callback({connection: true, isFinished: isFinished, data: result}) 
             };
 
-            me.ws.onclose = () => {
-                callback({connection: false, data: null})
-            }; 
+
+                  
+            // me.ws.onopen = () => {
+            //     if (me.ws.readyState === WebSocket.OPEN) {
+            //         callback({connection: true, data: null});
+            //     }
+            // };
+            
+            // me.ws.onclose = () => {
+            //     callback({connection: false, data: null})
+            // }; 
         },
         getAgentInfo(){
             return this.agentInfo
@@ -94,7 +103,7 @@ export default {
                     "data": formattedMessage
                 },
                 "profile": "@/assets/images/chat/chat-icon.png",
-                "timeStamp": 1708491834047
+                "timeStamp": Date.now()
             }
         },
         convertAgentsContent(data, agents){
@@ -117,7 +126,7 @@ export default {
                     "data": content
                 },
                 "profile": "@/assets/images/chat/chat-icon.png",
-                "timeStamp": 1708491834047
+                "timeStamp": Date.now()
             }
         },
         convertInputContent(data, agents, tools){
@@ -156,7 +165,7 @@ export default {
                         "delegateProfile": delegateInfo ? delegateInfo.profile : `/src/assets/images/profile/user-9.jpg`,
                     },
                     "profile": profile, //"/src/assets/images/profile/user-2.jpg",
-                    "timeStamp": 1708491834047
+                    "timeStamp": Date.now()
                 }
             } else {
                 let message =`"${input}"을(를) ${toolName}...`
@@ -169,7 +178,7 @@ export default {
                         "data": message
                     },
                     "profile": profile, //"/src/assets/images/profile/user-2.jpg",
-                    "timeStamp": 1708491834047
+                    "timeStamp": Date.now()
                 }
             }
 
@@ -216,7 +225,7 @@ export default {
                     "data": output
                 },
                 "profile": profile,
-                "timeStamp": 1708491834047
+                "timeStamp": Date.now()
             }
         },
         transformLinks(content) {

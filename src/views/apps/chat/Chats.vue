@@ -4,7 +4,10 @@
             <template v-slot:leftpart>
                 <div class="no-scrollbar">
                 <ChatProfile />
-                <ChatListing />
+                <ChatListing :chatRoomList="chatRoomList" :userList="userList" 
+                    @chat-selected="chatRoomSelected" 
+                    @create-chat-room="createChatRoom"
+                />
                 </div>
             </template>
             <template v-slot:rightpart>
@@ -56,6 +59,9 @@ export default {
         // processInstance: {},
         path: "chats",
         organizationChart: [],
+        calendarData: null,
+        currendtChatRoom: null,
+        userList: null,
     }),
     async created() {
         // this.init();
@@ -65,17 +71,99 @@ export default {
             preferredLanguage: "Korean"
         });
 
-        await this.getChatList()
+        this.userInfo = await this.storage.getUserInfo();
+        await this.getChatRoomList();
+        await this.getUserList();
+        await this.getCalendar();
     },
     methods: {
-        putMessage(chatRoomId, msg){
+        async getCalendar(){
+            let option = {
+                key: "uid"
+            }
+            const res = await this.storage.getObject(`db://calendar/${localStorage.getItem('uid')}`, option);
+            this.calendarData = res && res.data ? res.data : {};
+            this.generator.setCalendarData(this.calendarData);
+        },
+        async getUserList(){
+            var me = this
+            await me.storage.list(`db://users`).then(function (users) {
+                if (users) {
+                    users = users.filter(user => user.email !== me.userInfo.email);
+                    me.userList = users
+                }
+            });
+        },
+        async getChatRoomList(){
+            var me = this
+            // await this.storage.watch(`db://chats/chat1`, async (data) => {
+            //     if(data && data.new){
+            //         if(data.new.messages.email != me.userInfo.email){
+            //             me.messages.push(data.new.messages)
+            //         }
+            //     }
+            // });
+            await me.storage.list(`db://chat_rooms`).then(function (chatRooms) {
+                if (chatRooms) {
+                    chatRooms.forEach(function (chatRoom) {
+                        if(chatRoom.participants.find(x => x === me.userInfo.email)){
+                            me.chatRoomList.push(chatRoom)
+                        }
+                    })
+                    if(me.chatRoomList.length > 0){
+                        me.currendtChatRoom = me.chatRoomList[0]
+                        me.getChatList(me.chatRoomList[0].id);
+                    } else {
+                        alert("Create a new chat room")
+                    }
+                }
+            });
+        },
+        createChatRoom(chatRoomInfo){
+            if(!chatRoomInfo.id){
+                chatRoomInfo.id = this.uuid();
+                chatRoomInfo.participants.push(this.userInfo.email)
+                chatRoomInfo.status = "online"
+                chatRoomInfo.recent = false
+                chatRoomInfo.thumb = "/src/assets/images/profile/user-2.jpg"
+                let currentTimestamp = Date.now().toString();
+                chatRoomInfo.message = {
+                    "msg": "NEW",
+                    "type": "text",
+                    "createdAt": currentTimestamp
+                }
+                this.chatRoomList.push(chatRoomInfo)
+            } else {
+                let index = this.chatRoomList.findIndex(room => room.id === chatRoomInfo.id);
+                if(index !== -1) {
+                    this.chatRoomList.splice(index, 1, chatRoomInfo);
+                }
+            }
+            
+            this.currendtChatRoom = chatRoomInfo
+            this.putObject(`chat_rooms`, chatRoomInfo);
+        },
+        chatRoomSelected(chatRoomInfo){
+            this.currendtChatRoom = chatRoomInfo
+            this.getChatList(chatRoomInfo.id);
+        },
+        putMessage(msg){
             let uuid = this.uuid()
             let message = {
                 "messages": msg,
-                "id": chatRoomId,
+                "id": this.currendtChatRoom.id,
                 "uid": uuid,
             }
+            console.log(message)
             this.putObject(`chats/${uuid}`, message);
+
+            let chatRoomObj = {
+                "msg": msg.content,
+                "type": "text",
+                "createdAt": msg.timeStamp
+            }
+            this.currendtChatRoom.message = chatRoomObj
+            this.putObject(`chat_rooms`, this.currendtChatRoom);
         },
         beforeReply(msg){
             if(msg){
@@ -87,9 +175,9 @@ export default {
         async beforeSendMessage(newMessage) {
             if (newMessage && newMessage.text != '') {
                 if(newMessage.text.includes("시작하겠습니다.")){
-                    this.putMessage("chat1", this.createMessageObj(newMessage.text, 'system'))
+                    this.putMessage(this.createMessageObj(newMessage.text, 'system'))
                 } else {
-                    this.putMessage("chat1", this.createMessageObj(newMessage.text))
+                    this.putMessage(this.createMessageObj(newMessage.text))
                     if(!this.generator.contexts) {
                         let contexts = await this.queryFromVectorDB(newMessage.text);
                         this.generator.setContexts(contexts);
@@ -139,7 +227,6 @@ export default {
             //     }
             // }
         },
-
         async afterGenerationFinished(response) {
             if(response == '.' || response == '.\n') {
                 this.messages.splice(this.messages.length - 1, 1)
@@ -168,10 +255,11 @@ export default {
                                 }
                             });
                             obj.tableData = responseTable.data.output
-                            this.messages[this.messages.length - 1] = obj
                         } catch(error){
                             alert(error);
                         }
+                    } else if(responseObj.work == 'ScheduleQuery'){
+                       console.log(responseObj)
                     } else if(responseObj.work == 'ScheduleRegistration'){
                         let start = responseObj.startDateTime.split('/')
                         let startDate = start[0].split("-")
@@ -180,60 +268,18 @@ export default {
                         let end = responseObj.endDateTime.split('/')
                         let endDate = end[0].split("-")
                         let endTime = end[1].split("-")
-    
-                        // endDateTime: "2024-02-24/15:00"
-                        // location: "온라인"
-                        // startDateTime: "2024-01-25/09:00"
-                        // title: "온라인 강의 진행"
-                        // work: "스케줄 등록"
-                        // 참석자: "50명"
-    
-                       
                         // {
-                        //     id: createEventId(),
-                        //     title: 'Learn ReactJs',
                         //     start: new Date(y, m, d + 3, 10, 30),
                         //     end: new Date(y, m, d + 3, 11, 30),
-                        //     allDay: true,
-                        //     color: '#39b69a',
                         // },
-                        // {
-                        //     id: createEventId(),
-                        //     title: 'Launching MaterialArt Angular',
-                        //     start: new Date(y, m, d + 7, 12, 0),
-                        //     end: new Date(y, m, d + 7, 14, 0),
-                        //     allDay: true,
-                        //     color: '#fc4b6c',
-                        // },
-                        // {
-                        //     id: createEventId(),
-                        //     title: 'Lunch with Mr.Raw',
-                        //     start: new Date(y, m, d - 2),
-                        //     end: new Date(y, m, d - 2),
-                        //     allDay: true,
-                        //     color: '#1a97f5',
-                        // },
-                        // {
-                        //     id: createEventId(),
-                        //     title: 'Going For Party of Sahs',
-                        //     start: new Date(y, m, d + 1, 19, 0),
-                        //     end: new Date(y, m, d + 1, 22, 30),
-                        //     allDay: true,
-                        //     color: '#1a97f5',
-                        // },
-                        
-                        let option = {
-                            key: "uid"
-                        }
-                        const res = await this.storage.getObject(`db://calendar/${localStorage.getItem('uid')}`, option);
-                        let calendarData = res ? res.data:{}
                         let uuid = this.uuid()
-                        if(!calendarData[`${startDate[0]}_${startDate[1]}`]){
-                            calendarData[`${startDate[0]}_${startDate[1]}`] = {}
+                        if(!this.calendarData[`${startDate[0]}_${startDate[1]}`]){
+                            this.calendarData[`${startDate[0]}_${startDate[1]}`] = {}
                         }
-                        calendarData[`${startDate[0]}_${startDate[1]}`][uuid] = {
+                        this.calendarData[`${startDate[0]}_${startDate[1]}`][uuid] = {
                             id: uuid,
                             title: responseObj.title,
+                            description: responseObj.description,
                             allDay: true,
                             start: new Date(startDate[0], startDate[1] - 1, startDate[2]),
                             end: new Date(endDate[0], endDate[1] - 1, endDate[2]),
@@ -241,21 +287,21 @@ export default {
                         }
                         let calendarObj = {
                             "uid": localStorage.getItem('uid'),
-                            "data": calendarData
+                            "data": this.calendarData
                         }
                         this.putObject(`calendar/${localStorage.getItem('uid')}`, calendarObj);
     
-                        let todoObj = {
-                            definitionId: null,
-                            definitionName: null,
-                            instanceId: null,
-                            activityName: responseObj.title,
-                            userId: this.userInfo.email,
-                            status: 'Running',
-                            startDate: new Date().toISOString().substr(0, 10)
-                        };
+                        // let todoObj = {
+                        //     definitionId: null,
+                        //     definitionName: null,
+                        //     instanceId: null,
+                        //     activityName: responseObj.title,
+                        //     userId: this.userInfo.email,
+                        //     status: 'Running',
+                        //     startDate: new Date().toISOString().substr(0, 10)
+                        // };
     
-                        this.pushObject(`todolist/${this.userInfo.email}`, todoObj);
+                        // this.pushObject(`todolist/${this.userInfo.email}`, todoObj);
     
                     } else {
                         if(this.prompt && this.prompt.content){
@@ -264,7 +310,7 @@ export default {
                         }
                     }
                 }
-                this.putMessage("chat1", obj)
+                this.putMessage(obj)
             }
         },
 

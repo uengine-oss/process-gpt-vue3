@@ -44,6 +44,10 @@ export default defineConfig({
                 target: 'http://localhost:8005',
                 changeOrigin: true,
             },
+            '/process-db-schema': {
+                target: 'http://localhost:8001',
+                changeOrigin: true,
+            }
         }
     }
     // build: {

@@ -9,6 +9,12 @@ export default class AIGenerator {
         this.openaiToken = null
         // this.model = "gpt-3.5-turbo-16k" 
         this.model = "gpt-4" 
+        //this.model = "gpt-4-vision-preview"
+
+        if(this.model.includes("vision")){
+            this.vision = true
+        }
+        
 
         if(options) {
             this.preferredLanguage = options.preferredLanguage;
@@ -272,16 +278,19 @@ export default class AIGenerator {
         if(this.isContinued) messages[messages.length-1].content = "continue";
 
         
-        const data = JSON.stringify({
+        const data = {
             model: this.model,
             messages: messages,
             temperature: 1,
             frequency_penalty: 0,
             presence_penalty: 0,
             stream: this.options.isStream,
-        });
+        }
 
-        xhr.send(data);
+        if(this.model.includes('vision'))
+            data.max_tokens = 4096
+
+        xhr.send(JSON.stringify(data));
 
     }
 

@@ -64,6 +64,7 @@
 
             <Chat 
                 :messages="messages"
+                :agentInfo="agentInfo"
                 :draftAgentPrompt="draftAgentPrompt"
                 :chatInfo="chatInfo"
                 :userInfo="userInfo" 
@@ -131,7 +132,13 @@ export default {
         bpmn: null,
         currentActivities: null,
 
-        draftAgentPrompt: '',
+        // temp
+        isRunningId: null,
+        agentInfo: {
+            draftPrompt: '',
+            isRunning: false,
+            isConnection: false,
+        }
     }),
     async created() {
         await this.init();
@@ -150,18 +157,30 @@ export default {
         me.connectAgent()
         me.receiveAgent(function(callback){
             if(callback.connection){
+                me.agentInfo.isConnection = true
                 if(callback.data){
                     let message = callback.data
+                    let duplication = me.messages.find(mes=> mes.role == message.role && JSON.stringify(mes.content) === JSON.stringify(message.content))
+                    if(duplication) return;
+
                     message['_template'] = 'agent'
                     me.messages.push(message)
                     me.saveMessages(me.messages)
+                } 
+
+                if(callback.isFinished){
+                    me.agentInfo.isRunning = false
                 } else {
-                    // running.
+                    me.agentInfo.isRunning = true
                 }
             } else {
-                // disconnection.
+                me.agentInfo.isConnection = false
+                me.agentInfo.isRunning = false
             }
         })
+    },
+    beforeUnmount(){
+        this.releaseAgent()
     },
     watch: {
         "$route": {
@@ -179,9 +198,20 @@ export default {
         },
     },
     methods: {
-        requestDraftAgent(){
-            this.draftAgentPrompt = '클라우드 네이티브 앱을 정부에 적용할 제안서'
-            this.sendAgent(this.draftAgentPrompt)
+        requestDraftAgent(newVal){
+            var me = this
+            me.$app.try({
+                context: me,
+                action(me) {
+                    if(newVal) me.agentInfo.draftPrompt = newVal
+
+                    if(!me.agentInfo.draftPrompt) return;
+                    me.agentInfo.isRunning = true
+                    me.requestAgent(me.agentInfo.draftPrompt)
+                },
+                // onFail() {
+                // }
+            })
         },
         async viewProcess() {
             this.onLoad = false;
@@ -241,7 +271,7 @@ export default {
                 }
             }
 
-            this.checkDisableChat();
+            // this.checkDisableChat();
         },
         checkDisableChat() {
             if (this.processInstance) {
@@ -280,7 +310,10 @@ export default {
                     // !! prompt!! , 
                     // 이전 message : this.messages
                     // 현재: newMessage.text (string)
-                    // this.draftAgentPrompt = this.processDefinition[0].description
+
+                    // let agents = this.processDefinition[0].roles ? this.processDefinition[0].roles : []
+                    // this.agentInfo.draftPrompt = `The topic is ${this.processDefinition[0].description} and the agents involved are ${JSON.stringify(agents)}.`
+                    this.agentInfo.draftPrompt = `${this.processDefinition[0].description}`
                 }
 
                 if (this.processInstance && this.processInstance.proc_inst_id) {
@@ -379,12 +412,12 @@ export default {
                     const nextAct = data.nextActivities[0];
                     if (nextAct.nextUserEmail) {
                         let putObj = {
-                            id: nextAct.nextUserEmail + "_" + data.instanceId,
+                            id: this.uuid(),
+                            user_id: this.userInfo.email,
                             proc_inst_id: data.instanceId,
                             proc_def_id: data.processDefinitionId,
                             activity_id: nextAct.nextActvityId,
-                            start_date: format(new Date(), "yyyy-MM-dd HH:mm:ss.SSS"),
-                            // end_date: Date.now(),
+                            start_date: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
                             status: 'IN_PROGRESS',
                         }
                         await this.putObject('todolist', putObj);
@@ -394,11 +427,12 @@ export default {
                 if (data.completedActivities && data.completedActivities.length > 0) {
                     const completedAct = data.completedActivities[0];
                     let putObj = {
-                        id: this.userInfo.email + "_" + data.instanceId,
+                        id: this.uuid(),
+                        user_id: this.userInfo.email,
                         proc_inst_id: data.instanceId,
                         proc_def_id: data.processDefinitionId,
                         activity_id: completedAct.completedActivityId,
-                        end_date: format(new Date(), "yyyy-MM-dd HH:mm:ss.SSS"),
+                        end_date: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
                         status: completedAct.result,
                     }
                     await this.putObject('todolist', putObj);

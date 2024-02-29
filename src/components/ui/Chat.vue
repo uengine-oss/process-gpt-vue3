@@ -46,7 +46,7 @@
                 <div class="d-flex">
                     <div class="w-100" style="height: calc(100vh - 330px)">
                         <div v-for="(message, index) in filteredMessages" :key="index" class="px-5 py-1">
-                            <AgentsChat v-if="message && message._template === 'agent'" :message="message" :topic="draftAgentPrompt"/>
+                            <AgentsChat v-if="message && message._template === 'agent' " :message="message" :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="index"/>
                             <div v-else>
                                 <div v-if="message.email == userInfo.email" class="justify-end d-flex mb-1">
                                     <div>
@@ -200,6 +200,7 @@
                                 </div>
                             </div>
                         </div>
+                        <AgentsChat v-if="type=='instances'&& agentInfo.isRunning && filteredMessages.length == 0" class="px-5 py-1" :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="-1"/>
                     </div>
                 </div>
             </perfect-scrollbar>
@@ -216,9 +217,9 @@
             <v-divider />
         </div>
 
+        <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
+        <div id="imagePreview" style="max-width: 200px;"></div>
         <form class="d-flex align-center pa-0">
-            <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
-            <div id="imagePreview" style="max-width: 200px;"></div>
             <v-textarea
                 variant="solo"
                 hide-details
@@ -234,11 +235,14 @@
                 style="font-size:20px !important;"
             >
                 <template v-slot:prepend-inner>
-                    <v-col>
+                    <v-col style="text-align: center; padding-left: 0px;">
                         <v-tooltip right>
                             <template v-slot:activator="{ on, attrs }">
-                                <v-btn v-if="type=='instances' && false" icon variant="text" class="text-medium-emphasis" @click="requestDraftAgent" v-bind="attrs" v-on="on">
+                                <v-btn v-if="type=='instances' && !agentInfo.isRunning" :disabled="!(newMessage || agentInfo.draftPrompt)" icon variant="text" class="text-medium-emphasis" @click="requestDraftAgent" v-bind="attrs" v-on="on">
                                     <Icon width="20" height="20" icon="fluent:document-one-page-sparkle-16-regular" />
+                                </v-btn>
+                                <v-btn v-if="type=='instances' && agentInfo.isRunning"  icon variant="text" class="text-medium-emphasis">
+                                    <v-progress-circular :size="20" indeterminate color="primary"></v-progress-circular>
                                 </v-btn>
                             </template>
                             <span>Draft Agent</span>
@@ -254,20 +258,23 @@
             
               
                 <template v-slot:append-inner>
-                    <v-btn v-if="!isLoading" icon variant="text" type="submit" @click="beforeSend"
-                        style="width:30px; height:30px;"
-                        :disabled="!newMessage"
-                    >
-                        <Icon icon="teenyicons:send-outline" width="20" height="20" />
-                    </v-btn>
-                    <v-btn v-else icon variant="text" @click="isLoading = !isLoading"
-                        style="width:30px; height:30px;"
-                    >
-                        <Icon icon="ic:outline-stop-circle" width="20" height="20"/>
-                    </v-btn>
-                    <!-- <v-btn icon variant="text" class="text-medium-emphasis">
-                        <PaperclipIcon size="20" />
-                    </v-btn> -->
+                    <div style="height: -webkit-fill-available; margin-right: 10px; margin-top: 10px;">
+                        <v-btn 
+                            v-if="!isLoading" 
+                            icon variant="text" type="submit" @click="beforeSend"
+                            style="width:30px; height:30px;"
+                            :disabled="!newMessage">
+                            <Icon icon="teenyicons:send-outline" width="20" height="20" />
+                        </v-btn>
+                        <v-btn v-else 
+                            icon variant="text" @click="isLoading = !isLoading"
+                            style="width:30px; height:30px;">
+                            <Icon icon="ic:outline-stop-circle" width="20" height="20"/>
+                        </v-btn>
+                        <!-- <v-btn icon variant="text" class="text-medium-emphasis">
+                            <PaperclipIcon size="20" />
+                        </v-btn> -->
+                    </div>
                 </template>
             </v-textarea>
         </form>
@@ -300,7 +307,7 @@ export default {
         disableChat: Boolean,
         isChanged: Boolean,
         type: String,
-        draftAgentPrompt: String
+        agentInfo: Object
         // documentQueryStr: String,
     },
     data() {
@@ -341,23 +348,27 @@ export default {
         },
         filteredMessages() {
             var list = [];
-            this.messages.forEach((item) => {
-                let data = JSON.parse(JSON.stringify(item));
-                if (data.content || data.jsonContent) {
-                    list.push(data);
-                }
-            });
+            if (this.messages && this.messages.length > 0) {
+                this.messages.forEach((item) => {
+                    let data = JSON.parse(JSON.stringify(item));
+                    if (data.content || data.jsonContent) {
+                        list.push(data);
+                    }
+                });
+            }
             return list;
         },
         // isLoading 상태의 변화를 감시합니다.
         isLoading: {
             get() {
                 var res = false;
-                this.messages.forEach(item => {
-                    if (item.isLoading) {
-                        res = item.isLoading;
-                    }
-                });
+                if (this.messages && this.messages.length > 0) {
+                    this.messages.forEach(item => {
+                        if (item.isLoading) {
+                            res = item.isLoading;
+                        }
+                    });
+                }
                 return res;
             },
             set(val) {
@@ -371,7 +382,7 @@ export default {
     },
     methods: {
         requestDraftAgent(){
-            this.$emit('requestDraftAgent');
+            this.$emit('requestDraftAgent', this.newMessage);
         },
         setMessageForUser(content){
             if (content.includes(`"messageForUser":`)) {

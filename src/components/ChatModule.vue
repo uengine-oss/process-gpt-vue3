@@ -12,7 +12,8 @@ export default {
         generator: null,
         messages: [],
         userInfo: {},
-        disableChat: false
+        disableChat: false,
+        chatRoomList: []
     }),
     created() {
         var me = this;
@@ -29,21 +30,37 @@ export default {
             await this.loadData(this.getDataPath());
             // await this.loadMessages(this.getDataPath());
         },
-        async getChatList() {
+        async getChatList(chatRoomId) {
             var me = this;
+            me.messages = []
             this.userInfo = await this.storage.getUserInfo();
             let option = {
                 key: "id"
             }
-            await this.storage.watch(`db://chats/chat1`, async (data) => {
+            await this.storage.watch(`db://chats/${chatRoomId}`, async (data) => {
                 if(data && data.new){
                     if(data.new.messages.email != me.userInfo.email){
-                        me.messages.push(data.new.messages)
+                        if ((me.messages && me.messages.length > 0) 
+                        && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
+                        &&  me.messages[me.messages.length - 1].content === data.new.messages.content) {
+                            me.messages[me.messages.length - 1] = data.new.messages
+                        } else {
+                            me.messages.push(data.new.messages)
+                        }
+
+                        console.log(data.new)
+                        console.log(me.chatRoomList)
+
+                        let idx = me.chatRoomList.findIndex(x => x.id == data.new.id)
+                        if(idx && idx != -1){
+                            me.chatRoomList[idx].message.msg = data.new.messages.content
+                            me.chatRoomList[idx].message.createdAt = data.new.messages.timeStamp
+                        }
                     }
                 }
             });
 
-            await this.storage.list(`db://chats/chat1`, option).then(function (messages) {
+            await this.storage.list(`db://chats/${chatRoomId}`, option).then(function (messages) {
                 if (messages) {
                     let allMessages = messages.map(message => message.messages);
                     allMessages.sort((a, b) => {
@@ -151,18 +168,36 @@ export default {
                 }
 
                 let chatObj = {
-                    role: 'user',
-                    content: message.text
+                    role: 'user'
                 };
+                if (message.image && message.image != '') {
+                    chatObj.content = [
+                        {
+                            "type": "text",
+                            "text": message.text
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": message.image
+                            }
+                        }
+                    ];
+                    this.generator.model = "gpt-4-vision-preview";
+
+                } else {
+                    chatObj.content= message.text;
+                    this.generator.model = "gpt-4";
+                }
                 
                 chatMsgs.push(chatObj);
                 this.generator.previousMessages = [...this.generator.previousMessages, ...chatMsgs];
 
                 chatObj = this.createMessageObj(message.text);
-                if (message.image) chatObj.image = message.image;
+                if (message.image && message.image != '') {
+                    chatObj['image'] = message.image;
+                }
                 this.messages.push(chatObj);
-
-                this.saveMessages(this.messages);
                 
                 this.messages.push({
                     role: 'system',
@@ -177,9 +212,6 @@ export default {
         },
         stopMessage() {
             this.generator.stop();
-        },
-
-        saveMessages(messages) {
         },
 
         async sendEditedMessage(index) {

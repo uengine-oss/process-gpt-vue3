@@ -13,12 +13,12 @@ export default defineComponent({
   data() {
     return {
       updateModalShow: false,
-      AddModal: false,
+      editMode: false, 
       calendarOptions: {
         plugins: [
           dayGridPlugin,
           timeGridPlugin,
-          interactionPlugin // needed for dateClick
+          interactionPlugin 
         ],
         headerToolbar: {
           left: 'prev,next today',
@@ -26,7 +26,7 @@ export default defineComponent({
           right: 'dayGridMonth,timeGridWeek,timeGridDay'
         },
         initialView: 'dayGridMonth',
-        initialEvents: [], // alternatively, use the `events` setting to fetch from a feed
+        initialEvents: [], 
         editable: true,
         selectable: true,
         selectMirror: true,
@@ -35,17 +35,14 @@ export default defineComponent({
         select: this.handleDateSelect,
         eventClick: this.handleEventClick,
         eventsSet: this.handleEvents,
-        // eventAdd:this.handleDateSelect
-        /* you can update a remote database when these fire:
-        eventAdd:
-        eventChange:
-        eventRemove:
-        */
+        datesSet: this.handleDateSet,
+        initialView: 'dayGridMonth',
+        initialDate: null,
       },
       currentEvents: [],
       calendarKey: 0,
-      selectedEvent: {}, // Initialize event data for editing
-      showColorPicker: false, // Added for color picker toggle
+      selectedEvent: {},
+      showColorPicker: false,
       colorItems: [
         {
           text: 'Red',
@@ -68,26 +65,55 @@ export default defineComponent({
           value: '#9C27B0'
         }
       ],
+      calendarData: null,
+      currentMonth: null,
     }
   },
-  async created() {
-    this.storage = StorageBase.getStorage("supabase");
-    let option = {
-        key: "uid"
-    }
-    const res = await this.storage.getObject(`db://calendar/${localStorage.getItem('uid')}`, option);
-    // console.log(data)
-    if(res){
-      const currentYear = new Date().getFullYear();
-      const currentMonth = new Date().getMonth() + 1;
-      const calendarKey = `${currentYear}_${currentMonth < 10 ? `0${currentMonth}` : currentMonth}`;
-      if (res && res.data && res.data[calendarKey]) {
-        this.calendarOptions.initialEvents = Object.values(res.data[calendarKey]);
+  created() {},
+  methods: {
+    handleDateSet(info){
+      const startDate = new Date(info.startStr);
+      let currentMonth;
+      let currentYear = startDate.getFullYear();
+
+      if (startDate.getDate() === 1) {
+        currentMonth = startDate.getMonth();
+      } else {
+        if (startDate.getMonth() === 11) {
+          currentMonth = 0;
+          currentYear += 1;
+        } else {
+          currentMonth = startDate.getMonth() + 1;
+        }
+      }
+
+      const newCurrentMonth = `${currentYear}_${currentMonth < 9 ? `0${currentMonth + 1}` : currentMonth + 1}`;
+      if (!this.currentMonth || this.currentMonth !== newCurrentMonth) {
+        this.currentMonth = newCurrentMonth;
+        this.setCalendar()
+      }
+    },
+    async setCalendar(){
+      this.storage = StorageBase.getStorage("supabase");
+      let option = {
+          key: "uid"
+      }
+      if(!this.calendarData){
+        const res = await this.storage.getObject(`db://calendar/${localStorage.getItem('uid')}`, option);
+        if(res && res.data){
+            this.calendarData = res.data
+        }
+      } 
+      if(this.calendarData) {
+        if(this.calendarData[this.currentMonth]){
+          this.calendarOptions.initialEvents = Object.values(this.calendarData[this.currentMonth])
+        } else {
+          this.calendarOptions.initialEvents = []
+        }
+        this.calendarOptions.initialDate = this.currentMonth.replace('_', "-")
       }
       this.calendarKey++;
-    }
-  },
-  methods: {
+    },
     uuid() {
         function s4() {
             return Math.floor((1 + Math.random()) * 0x10000)
@@ -99,13 +125,12 @@ export default defineComponent({
             s4() + '-' + s4() + s4() + s4();
     },
     handleWeekendsToggle() {
-      this.calendarOptions.weekends = !this.calendarOptions.weekends // update a property
+      this.calendarOptions.weekends = !this.calendarOptions.weekends 
     },
     handleDateSelect(selectInfo) {
-      // this.AddModal = true;
       const title ='Please enter a new title for your event'
       const calendarApi = selectInfo.view.calendar
-      calendarApi.unselect() // clear date selection
+      calendarApi.unselect()
       if (title) {
         let data = {
           id: this.uuid(),
@@ -132,38 +157,45 @@ export default defineComponent({
     handleEvents(events) {
       this.currentEvents = events;
     },
-    async saveCalendar() {
+    async saveCalendar(option) {
+      this.updateModalShow = false;
+      this.editMode = false;
+
       const date = new Date(this.selectedEvent.start);
       const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0'); // JavaScript months are 0-based.
+      const month = String(date.getMonth() + 1).padStart(2, '0');
 
-      let calendarData = {}
-      calendarData[`${year}_${month}`] = {}
-
-      this.calendarOptions.initialEvents.forEach(data => {
-        calendarData[`${year}_${month}`][data.id] = data;
-      });
+      if(option == 'update'){
+        if(!this.calendarData){
+          this.calendarData = {}
+        }
+        if(!this.calendarData[`${year}_${month}`]){
+          this.calendarData[`${year}_${month}`] = {}
+        }
+        this.calendarData[`${year}_${month}`][this.selectedEvent.id] = this.selectedEvent;
+      } else {
+        delete this.calendarData[`${year}_${month}`][this.selectedEvent.id]
+      }
 
       let calendarObj = {
           "uid": localStorage.getItem('uid'),
-          "data": calendarData
+          "data": this.calendarData
       }
-      await this.storage.putObject(`db://calendar/${localStorage.getItem('uid')}`, calendarObj);
+      await this.storage.putObject(`db://calendar`, calendarObj);
       this.calendarKey++;
     },
     updateEvent() {
-      let eventIdx = this.calendarOptions.initialEvents.findIndex(x => x.id == this.selectedEvent.id)
-      this.calendarOptions.initialEvents[eventIdx] = this.selectedEvent
-      this.updateModalShow = false;
-      this.saveCalendar()
+      this.saveCalendar('update')
     },
     deleteEvent() {
       let eventIdx = this.calendarOptions.initialEvents.findIndex(x => x.id == this.selectedEvent.id);
       if (eventIdx !== -1) {
         this.calendarOptions.initialEvents.splice(eventIdx, 1);
       }
-      this.updateModalShow = false;
-      this.saveCalendar()
+      this.saveCalendar('delete')
+    },
+    toggleEditMode() {
+      this.editMode = !this.editMode; 
     },
   }
 })
@@ -181,71 +213,82 @@ export default defineComponent({
       <v-dialog v-model="updateModalShow" max-width="500px">
         <v-card>
           <v-card-text>
-            <h4 class="text-h4">Update Event</h4>
-            <p class="text-subtitle-1 text-grey100 my-4">To Edit/Update Event kindly change the title and choose the event color and press the update button</p>
-            <!-- Add input fields for event data -->
-            <v-text-field
-              v-model="selectedEvent.title"
-              label="Event Title"
-              outlined
-            ></v-text-field>
-            <v-text-field
-              v-model="selectedEvent.start"
-              label="Start Date"
-              outlined
-              type="datetime-local"
-            ></v-text-field>
-            <v-text-field
-              v-model="selectedEvent.end"
-              label="End Date"
-              outlined
-              type="datetime-local"
-            ></v-text-field>
-            <v-select 
-              v-model="selectedEvent.color" 
-              label="Color" 
-              :items="colorItems"
-              item-title="text"
-              item-value="value"
-            >
-              <template v-slot:append>
-                <v-btn icon @click="showColorPicker = !showColorPicker">
-                  <v-icon :style="showColorPicker ? 'color: #2196F3':''">mdi-palette</v-icon>
-                </v-btn>
-              </template>
-            </v-select>
-            <v-color-picker
-              v-if="showColorPicker"
-              v-model="selectedEvent.color"
-              label="Custom Color"
-              hide-inputs
-              outlined
-            ></v-color-picker>
-            <!-- Update button to trigger event update -->
-            <div style="margin-top: 10px;">
-              <v-btn style="margin-right: 5px;" color="primary" @click="updateEvent">Update</v-btn>
-              <v-btn color="error" @click="deleteEvent">Delete</v-btn>
+            <div class="event-details-header">
+              <h4 class="text-h4">Event Details</h4>
+              <v-btn v-if="!editMode" icon @click="toggleEditMode" class="edit-button">
+                <v-icon>mdi-pencil</v-icon>
+              </v-btn>
+              <v-btn v-else icon @click="toggleEditMode" class="edit-button">
+                <v-icon>mdi-arrow-left</v-icon>
+              </v-btn>
+            </div>
+            <div v-if="!editMode" class="event-details">
+              <div class="event-detail-item">
+                <span class="event-label">Title:</span>
+                <span class="event-value">{{ selectedEvent.title }}</span>
+              </div>
+              <div class="event-detail-item">
+                <span class="event-label">Start:</span>
+                <span class="event-value">{{ selectedEvent.start }}</span>
+              </div>
+              <div class="event-detail-item">
+                <span class="event-label">End:</span>
+                <span class="event-value">{{ selectedEvent.end }}</span>
+              </div>
+              <div class="event-detail-item">
+                <span class="event-label">Description:</span>
+                <span class="event-value">{{ selectedEvent.description }}</span>
+              </div>
+            </div>
+            <div v-if="editMode">
+              <v-text-field
+                v-model="selectedEvent.title"
+                label="Event Title"
+                outlined
+              ></v-text-field>
+              <v-text-field
+                v-model="selectedEvent.start"
+                label="Start Date"
+                outlined
+                type="datetime-local"
+              ></v-text-field>
+              <v-text-field
+                v-model="selectedEvent.end"
+                label="End Date"
+                outlined
+                type="datetime-local"
+              ></v-text-field>
+              <v-textarea
+                v-model="selectedEvent.description"
+                label="Description"
+                outlined
+              ></v-textarea>
+              <v-select 
+                v-model="selectedEvent.color" 
+                label="Color" 
+                :items="colorItems"
+                item-title="text"
+                item-value="value"
+              >
+                <template v-slot:append>
+                  <v-btn icon @click="showColorPicker = !showColorPicker">
+                    <v-icon :style="showColorPicker ? 'color: #2196F3':''">mdi-palette</v-icon>
+                  </v-btn>
+                </template>
+              </v-select>
+              <v-color-picker
+                v-if="showColorPicker"
+                v-model="selectedEvent.color"
+                label="Custom Color"
+                hide-inputs
+                outlined
+              ></v-color-picker>
+              <div style="margin-top: 10px;">
+                <v-btn style="margin-right: 5px;" color="primary" @click="updateEvent">Update</v-btn>
+                <v-btn color="error" @click="deleteEvent">Delete</v-btn>
+              </div>
             </div>
           </v-card-text>
-        </v-card>
-      </v-dialog>
-
-      <v-dialog v-model="AddModal" max-width="500px">
-        <v-card>
-          <v-card-text>
-            <h4 class="text-h4">Add Event</h4>
-            <p class="text-subtitle-1 text-grey100 my-4">To add Event kindly fillup the title and choose the event color
-              and press the add button</p>
-
-              <!-- <div v-for='event in currentEvents' :key='event.id'>
-                <v-text-field
-            :model-value=event.title
-            label="Outlined"
-            variant="outlined"
-          ></v-text-field>
-              </div> -->
-              
-        </v-card-text>
         </v-card>
       </v-dialog>
     </div>
@@ -355,4 +398,38 @@ export default defineComponent({
   .fc-toolbar-chunk .fc-toolbar-title {
     margin: 15px 0
   }
-}</style>
+}
+
+/* 추가된 스타일 */
+.event-details {
+  padding: 10px;
+}
+
+.event-detail-item {
+  margin-bottom: 10px;
+}
+
+.event-label {
+  font-weight: bold;
+}
+
+.event-value {
+  margin-left: 5px;
+}
+
+.edit-button {
+  margin-top: 5px;
+  display: block; /* 버튼을 블록 요소로 만들어 아래로 내림 */
+}
+
+.event-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.event-details-title {
+  margin: 0;
+}
+</style>
