@@ -319,10 +319,12 @@ export default {
 </script>
 
 <style>
+
 .vue-bpmn-diagram-container {
     height: 100%;
     width: 100%;
 }
+
 
 .highlight:not(.djs-connection) .djs-visual > :nth-child(1) {
     stroke-width: 2px !important;
@@ -336,6 +338,11 @@ export default {
 /* 팔레트 커스텀 부분 */
 .vue-bpmn-diagram-container .separator{
     display: none;
+}
+
+.vue-bpmn-diagram-container .djs-direct-editing-parent {
+    width:80px !important;
+    height:60px !important;
 }
 
 .vue-bpmn-diagram-container .djs-palette {
