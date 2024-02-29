@@ -8,6 +8,7 @@
 import BpmnJS from 'bpmn-js/dist/bpmn-navigated-viewer.production.min.js';
 import BpmnModeler from 'bpmn-js/lib/Modeler';
 import BpmnModdle from 'bpmn-moddle';
+import { useBpmnStore } from '@/stores/bpmn'
 import uEngineModdleDescriptor from '@/components/descriptors/uEngine.json';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import BpmnViewer from 'bpmn-js/lib/Viewer';
@@ -35,27 +36,27 @@ export default {
         return {
             diagramXML: null,
             openPanel: false,
-            moddle: null
+            moddle: null,
+            bpmnStore: null
         };
     },
     computed: {
-        // async getXML() {
-        //     let xml = await self.bpmnViewer.saveXML({ format: true, preamble: true });
-        //     return xml;
-        // }
+        async getXML() {
+            let xml = await this.bpmnViewer.saveXML({ format: true, preamble: true });
+            return xml;
+        }
     },
     mounted() {
         var container = this.$refs.container;
 
         var self = this;
+        this.bpmnStore = useBpmnStore();
         var _options = Object.assign(
             {
                 container: container,
                 keyboard: {
                     bindTo: window
                 },
-                additionalModules: [
-                ],
                 moddleExtensions: {
                     uengine: uEngineModdleDescriptor
                 }
@@ -65,17 +66,18 @@ export default {
 
         if (self.isViewMode) {
             self.bpmnViewer = new BpmnViewer(_options);
+            self.bpmnStore.setModeler(self.bpmnViewer)
         } else {
-            this.bpmnViewer = new BpmnModeler(_options); //new BpmnJS(_options);  //
+            self.bpmnViewer = new BpmnModeler(_options); //new BpmnJS(_options);  //
+            self.bpmnStore.setModeler(self.bpmnViewer)
         }
-        
+
         var eventBus = this.bpmnViewer.get('eventBus');
         // eventBus.on('import.render.start', function (e) {
         //     // self.openPanel = true;
         //     console.log("render  complete")
         //     self.$emit('openPanel', e.element.id);
         // });
-
         eventBus.on('import.render.complete', async function (event) {
             console.log("complete?")
             var error = event.error;
@@ -101,30 +103,73 @@ export default {
                     })
                 }
             }
+            console.log(eventBus)
+            eventBus.on('shape.added', async function (event) {
+                const bpmnFactory = self.bpmnViewer.get('bpmnFactory');
+                const element = event.element;
+                const businessObject = element.businessObject;
 
+                // 이미 extensionElements가 있는 경우, 추가 작업을 수행하지 않음
+                if (businessObject.extensionElements) {
+                    return;
+                }
+                console.log(bpmnFactory)
+                // 사용자 정의 XML 요소 생성
+                const uengineParams = bpmnFactory.create('uengine:uengine-params', {
+                    role: '',
+                    pythonCode: '',
+                    description: ''
+                });
+
+                // Checkpoint 요소 생성
+                // const checkpoint = bpmnFactory.create('uengine:Checkpoint', { checkpoint: 'checkpoint1' });
+                uengineParams.checkpoints = [];
+
+                // uengineParams에 checkpoints와 parameters 추가
+                // const parameter = bpmnFactory.create('uengine:Parameter', { key: 'param1', category: 'input' });
+                // const parameter2 = bpmnFactory.create('uengine:Parameter', { key: 'param2', category: 'input' });
+                uengineParams.parameters = [];
+                const extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
+                extensionElements.get('values').push(uengineParams);
+                businessObject.extensionElements = extensionElements;
+
+                //
+                // 요소 업데이트를 위해 모델링 컴포넌트 사용
+                setTimeout(async () => {
+                    const modeling = self.bpmnViewer.get('modeling');
+                    modeling.updateProperties(element, { extensionElements: extensionElements });
+                    let xml = await self.bpmnViewer.saveXML({ format: true, preamble: true });
+                    console.log(xml)
+                }, 0);
+
+            })
+            // eventBus.on('shape.changed', function (e) {
+            //     self.$emit('changeShape', e.element)
+            // })
+            // eventBus.on('connection.changed', function (e) {
+            //     self.$emit('changeSequence', e.element)
+            // })
+            // eventBus.on('shape.removed', async function (e) {
+            //     self.$emit('removeShape', e.element)
+            // });
             // you may hook into any of the following events
             eventBus.on('element.dblclick', function (e) {
                 // self.openPanel = true;
                 self.$emit('openPanel', e.element.id);
             });
-            eventBus.on('shape.remove', async function (e) {
-                // let xml = await self.bpmnViewer.saveXML({ format: true, preamble: true });
-                // console.log(xml)
-                console.log(e)
-                // self.$emit("update-xml", xml.xml)
-                // save XML
-            });
+
             // var events = ['element.hover', 'element.out', 'element.click', 'element.dblclick', 'element.mousedown', 'element.mouseup'];
             // events.forEach(function (event) {
 
             // });
 
         });
-
         if (this.url) {
             this.fetchDiagram(this.url);
         } else if (this.bpmn) {
             this.diagramXML = this.bpmn;
+        } else {
+            this.diagramXML = '<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_0bfky9r" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0"><bpmn:process id="Process_1oscmbn" isExecutable="false" /><bpmndi:BPMNDiagram id="BPMNDiagram_1"><bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1oscmbn" /></bpmndi:BPMNDiagram></bpmn:definitions>'
         }
     },
     beforeDestroy() {
@@ -156,6 +201,10 @@ export default {
         }
     },
     methods: {
+        updateElement(element, extensionElements) {
+            const modeling = this.bpmnViewer.get('modeling');
+            modeling.updateProperties(element, { extensionElements: extensionElements });
+        },
         diagramObject(obj) {
             // let obj = this.parseJsonToModdle(val);
             // const parsedData = JSON.parse(val);
@@ -325,18 +374,18 @@ export default {
     width: 100%;
 }
 
-
 .highlight:not(.djs-connection) .djs-visual > :nth-child(1) {
     stroke-width: 2px !important;
     stroke: #5140bd !important;
     fill: #5140bd !important;
 }
-.highlight:not(.djs-connection) .djs-visual > :nth-child(2) {
+
+.highlight:not(.djs-connection) .djs-visual> :nth-child(2) {
     fill: #ffffff !important;
 }
 
 /* 팔레트 커스텀 부분 */
-.vue-bpmn-diagram-container .separator{
+.vue-bpmn-diagram-container .separator {
     display: none;
 }
 
@@ -354,15 +403,16 @@ export default {
     border-radius: 10px;
     box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.1);
 }
+
 .vue-bpmn-diagram-container .djs-context-pad .entry {
-    width:30px;
-    height:30px;
+    width: 30px;
+    height: 30px;
     /* border: solid 1px rgba(124, 124, 124, 0.3); */
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.7);
 }
 
 .vue-bpmn-diagram-container .djs-context-pad .group {
-    min-width:100px;
+    min-width: 100px;
 }
 
 @media only screen and (max-width:800px) {

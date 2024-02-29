@@ -11,17 +11,12 @@
                             </v-btn>
                         </template>
                     </v-tooltip>
-                    <vue-bpmn :bpmn="bpmn"
-                        :options="options"
-                        :isViewMode="isViewMode"
-                        :currentActivities="currentActivities"
-                        v-on:error="handleError"
-                        v-on:shown="handleShown"
-                        v-on:loading="handleLoading"
-                        v-on:openPanel="(id) => openPanel(id)"
-                        v-on:update-xml="val => $emit('update-xml', val)"
-                        v-on:definition="(def) => (definitions = def)"
-                    ></vue-bpmn>
+                    <vue-bpmn :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
+                        :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
+                        v-on:loading="handleLoading" v-on:openPanel="(id) => openPanel(id)"
+                        v-on:update-xml="val => $emit('update-xml', val)" v-on:definition="(def) => (definitions = def)"
+                        v-on:add-shape="onAddShape" v-on:change-sequence="onChangeSequence"
+                        v-on:remove-shape="onRemoveShape" v-on:change-shape="onChangeShape"></vue-bpmn>
                 </v-card>
             </v-col>
             <v-col v-if="panel" cols="12" sm="12" lg="4" md="6" class="d-flex">
@@ -161,7 +156,6 @@ export default {
         options: {
             propertiesPanel: {},
             additionalModules: [customBpmnModule],
-            moddleExtensions: []
         },
         element: null,
         definitions: null,
@@ -180,8 +174,8 @@ export default {
         copyProcessDefinition: {
             deep: true,
             handler(newVal) {
-                console.log(newVal)
-                this.$emit("updateDefinition", this.copyProcessDefinition)
+                console.log("********* watch  ********")
+                this.$emit("updateDefinition", newVal)
             }
         },
         definitions: {
@@ -215,9 +209,105 @@ export default {
     },
     created() { },
     mounted() {
-        this.copyProcessDefinition = this.processDefinition
+        // Initial Data
+        if (this.processDefinition)
+            this.copyProcessDefinition = this.processDefinition
+        else
+            this.copyProcessDefinition = {
+                "megaProcessId": "",
+                "majorProcessId": "",
+                "processDefinitionName": "",
+                "processDefinitionId": this.uuid(),
+                "events": [],
+                "gateways": [],
+                "participants": [],
+                "description": "",
+                "data": [],
+                "roles": [],
+                "activities": [],
+                "sequences": []
+            }
     },
     methods: {
+        uuid() {
+            function s4() {
+                return Math.floor((1 + Math.random()) * 0x10000)
+                    .toString(16)
+                    .substring(1);
+            }
+
+            return s4() + s4() + '-' + s4() + '-' +
+                s4() + '-' + s4() + s4() + s4();
+        },
+        onAddShape(e) {
+            console.log(e)
+            let element;
+            if (e.type.includes("Task")) {
+                element = this.createActivity(e)
+                this.copyProcessDefinition.activities.push(element)
+            } else if (e.type.includes("Participant")) {
+                element = this.createParticipant(e)
+                this.copyProcessDefinition.participants.push(element)
+            } else if (e.type.includes("Lane")) {
+                element = this.createRole(e)
+                this.copyProcessDefinition.roles.push(element)
+            }
+
+        },
+        onChangeShape(e) {
+            console.log(e)
+        },
+        onChangeSequence(e) {
+            console.log(e)
+        },
+        onRemoveShape(e) {
+            console.log(e)
+        },
+        createParticipant(element) {
+            let participant = {
+                "name": element.name,
+                "resolutionRule": "",
+                "pos": {
+                    x: element.x,
+                    y: element.y,
+                    width: element.width,
+                    height: element.height
+                }
+            }
+            return participant
+        },
+        createRole(element) {
+            let role = {
+                "name": element.name,
+                "resolutionRule": "",
+                "pos": {
+                    x: element.x,
+                    y: element.y,
+                    width: element.width,
+                    height: element.height
+                }
+            }
+            return role
+        },
+        createActivity(element) {
+            let task = this.taskMapping(element.type)
+            let activity = {
+                "name": "",
+                "id": element.id,
+                "type": task,
+                "description": "",
+                "role": "",
+                "outputData": [],
+                "inputData": [],
+                "pos": {
+                    x: element.x,
+                    y: element.y,
+                    width: element.width,
+                    height: element.height
+                }
+            }
+            return activity
+        },
         editItem(item) {
             this.editedIndex = this.copyProcessDefinition.data.indexOf(item);
             this.editedItem = Object.assign({}, item);
@@ -275,7 +365,7 @@ export default {
         },
         updateElement(element) {
             // let 
-            this.convertElementToJSON(element);
+            // this.convertElementToJSON(element);
             // this.changeElement(this.copyProcessDefinition, 'id', newObj.id, newObj)
             // obj = newObj
             this.$emit('update')
