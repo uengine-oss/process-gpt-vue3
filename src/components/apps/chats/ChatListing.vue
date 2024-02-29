@@ -154,8 +154,12 @@ const openEditDialog = (chat) => {
             >
                 <!---Avatar-->
                 <template v-slot:prepend>
-                    <v-avatar>
-                        <img :src="chat.thumb" alt="pro" width="50" />
+                    <v-avatar color="#f0f5f9">
+                        <!-- <img :src="chat.thumb" alt="pro" width="50" /> -->
+                        <v-icon
+                            icon="mdi-account-multiple"
+                            size="large"
+                        ></v-icon>
                     </v-avatar>
                     <v-badge
                         class="badg-dot"
