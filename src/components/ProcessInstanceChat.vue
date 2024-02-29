@@ -10,70 +10,42 @@
             <v-dialog v-model="isViewProcess" max-width="1000">
                 <v-card>
                     <v-card-text style="height: 1000px; width: 1000px">
-                        <process-definition 
-                            v-if="onLoad"    
-                            style="width: 100%; height: 100%" 
-                            :bpmn="bpmn" 
-                            :processDefinition="processDefinition"
-                            :isViewMode="true"
-                            :currentActivities="currentActivities"
-                        ></process-definition>
+                        <process-definition v-if="onLoad" style="width: 100%; height: 100%" :bpmn="bpmn"
+                            :processDefinition="processDefinition" :isViewMode="true"
+                            :currentActivities="currentActivities"></process-definition>
                         <div v-else style="height: 100%; text-align: center">
                             <v-progress-circular style="top: 50%" indeterminate color="primary"></v-progress-circular>
                         </div>
                     </v-card-text>
                     <v-card-actions>
-                        <v-btn color="secondary"
-                            class="px-4 rounded-pill mx-auto" 
-                            @click="isViewProcess = false" 
-                            variant="tonal"
-                        >Close Dialog</v-btn>
+                        <v-btn color="secondary" class="px-4 rounded-pill mx-auto" @click="isViewProcess = false"
+                            variant="tonal">Close Dialog</v-btn>
                     </v-card-actions>
                 </v-card>
             </v-dialog>
-            
+
             <v-dialog v-model="definitionDialog" max-width="800">
                 <v-card>
                     <v-card-title class="text-h5">
                         프로세스 정의 목록
                     </v-card-title>
                     <v-card-text>
-                        <v-data-table
-                            v-if="onLoad"
-                            v-model="processDefinition"
-                            :headers="headers"
-                            :items="definitions"
-                            item-value="id"
-                            select-strategy="single"
-                            show-select
-                            return-object
-                        ></v-data-table>
+                        <v-data-table v-if="onLoad" v-model="processDefinition" :headers="headers" :items="definitions"
+                            item-value="id" select-strategy="single" show-select return-object></v-data-table>
                         <div v-else style="height: 100%; text-align: center">
                             <v-progress-circular style="top: 50%" indeterminate color="primary"></v-progress-circular>
                         </div>
                     </v-card-text>
                     <v-card-actions>
-                        <v-btn color="success" 
-                            class="px-4 rounded-pill mx-auto"
-                            variant="tonal"
-                            @click="beforeSendMessage()"
-                        >Select</v-btn>
+                        <v-btn color="success" class="px-4 rounded-pill mx-auto" variant="tonal"
+                            @click="beforeSendMessage()">Select</v-btn>
                     </v-card-actions>
                 </v-card>
             </v-dialog>
 
-            <Chat 
-                :messages="messages"
-                :agentInfo="agentInfo"
-                :draftAgentPrompt="draftAgentPrompt"
-                :chatInfo="chatInfo"
-                :userInfo="userInfo" 
-                :disableChat="disableChat"
-                :type="'instances'"
-                @requestDraftAgent="requestDraftAgent"
-                @sendMessage="beforeSendMessage"
-                @sendEditedMessage="beforeSendEditedMessage"
-                @stopMessage="stopMessage"
+            <Chat :messages="messages" :agentInfo="agentInfo" :draftAgentPrompt="draftAgentPrompt" :chatInfo="chatInfo"
+                :userInfo="userInfo" :disableChat="disableChat" :type="'instances'" @requestDraftAgent="requestDraftAgent"
+                @sendMessage="beforeSendMessage" @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
                 @viewProcess="viewProcess">
             </Chat>
         </template>
@@ -146,29 +118,29 @@ export default {
             isStream: true,
             preferredLanguage: 'Korean'
         });
-        if(localStorage.getItem('instancePrompt')){
+        if (localStorage.getItem('instancePrompt')) {
             let prompt = JSON.parse(localStorage.getItem('instancePrompt'))
             this.beforeSendMessage(prompt.content)
             localStorage.removeItem('instancePrompt')
         }
     },
-    mounted(){
+    mounted() {
         var me = this
         me.connectAgent()
-        me.receiveAgent(function(callback){
-            if(callback.connection){
+        me.receiveAgent(function (callback) {
+            if (callback.connection) {
                 me.agentInfo.isConnection = true
-                if(callback.data){
+                if (callback.data) {
                     let message = callback.data
-                    let duplication = me.messages.find(mes=> mes.role == message.role && JSON.stringify(mes.content) === JSON.stringify(message.content))
-                    if(duplication) return;
+                    let duplication = me.messages.find(mes => mes.role == message.role && JSON.stringify(mes.content) === JSON.stringify(message.content))
+                    if (duplication) return;
 
                     message['_template'] = 'agent'
                     me.messages.push(message)
                     me.saveMessages(me.messages)
-                } 
+                }
 
-                if(callback.isFinished){
+                if (callback.isFinished) {
                     me.agentInfo.isRunning = false
                 } else {
                     me.agentInfo.isRunning = true
@@ -179,7 +151,7 @@ export default {
             }
         })
     },
-    beforeUnmount(){
+    beforeUnmount() {
         this.releaseAgent()
     },
     watch: {
@@ -191,21 +163,21 @@ export default {
                     await this.init();
                     if (newVal.query.id) {
                         const id = newVal.query.id;
-                        this.loadMessages(`${this.path}/${id}`, {key: "id"});
+                        this.loadMessages(`${this.path}/${id}`, { key: "id" });
                     }
                 }
             }
         },
     },
     methods: {
-        requestDraftAgent(newVal){
+        requestDraftAgent(newVal) {
             var me = this
             me.$app.try({
                 context: me,
                 action(me) {
-                    if(newVal) me.agentInfo.draftPrompt = newVal
+                    if (newVal) me.agentInfo.draftPrompt = newVal
 
-                    if(!me.agentInfo.draftPrompt) return;
+                    if (!me.agentInfo.draftPrompt) return;
                     me.agentInfo.isRunning = true
                     me.requestAgent(me.agentInfo.draftPrompt)
                 },
@@ -225,17 +197,17 @@ export default {
                     id = this.processInstance.proc_inst_id;
                     this.currentActivities = this.processInstance.current_activity_ids;
                     def_id = id.split('.')[0];
-                
+
                 } else if (this.$route.query.id) {
                     id = this.$route.query.id;
                     def_id = id.split('.')[0];
-                    const proc_inst = await this.getData(`${def_id}/${id}`, {key: "proc_inst_id"});
+                    const proc_inst = await this.getData(`${def_id}/${id}`, { key: "proc_inst_id" });
                     if (proc_inst) {
                         this.currentActivities = proc_inst.current_activity_ids;
                     }
                 }
 
-                var defInfo = await this.getData(`proc_def/${def_id}`, {key: "id"});
+                var defInfo = await this.getData(`proc_def/${def_id}`, { key: "id" });
                 if (defInfo) {
                     let definition = defInfo.definition;
                     this.bpmn = this.createBpmnXml(definition);
@@ -252,20 +224,20 @@ export default {
 
             if (this.$route.query.id) {
                 const id = this.$route.query.id;
-                this.loadMessages(`${this.path}/${id}`, {key: "id"});
+                this.loadMessages(`${this.path}/${id}`, { key: "id" });
 
                 const def_id = id.split('.')[0];
-                value = await this.getData(`${def_id}/${id}`, {key: "proc_inst_id"});
+                value = await this.getData(`${def_id}/${id}`, { key: "proc_inst_id" });
                 if (value) {
                     this.processInstance = value;
                 }
             }
-            
+
             value = await this.getData("organization");
-            
+
             if (value && value.organizationChart) {
                 this.organizationChart = JSON.parse(value.organizationChart);
-                
+
                 if (!this.organizationChart) {
                     this.organizationChart = [];
                 }
@@ -275,7 +247,7 @@ export default {
         },
         checkDisableChat() {
             if (this.processInstance) {
-                if (this.processInstance.current_user_ids && 
+                if (this.processInstance.current_user_ids &&
                     this.processInstance.current_user_ids.length > 0 &&
                     !this.processInstance.current_user_ids.includes(this.userInfo.email)
                 ) {
@@ -284,7 +256,7 @@ export default {
             }
         },
         async beforeSendMessage(newMessage) {
-           
+
             if (newMessage && newMessage.text != '') {
                 if (this.processInstance && this.processInstance.proc_inst_id) {
                     this.generator.beforeGenerate(newMessage, false);
@@ -306,7 +278,7 @@ export default {
                 }
             } else {
 
-                if(this.processDefinition){
+                if (this.processDefinition) {
                     // !! prompt!! , 
                     // 이전 message : this.messages
                     // 현재: newMessage.text (string)
@@ -332,13 +304,13 @@ export default {
         },
         beforeSendEditedMessage(index) {
             if (index > 0) {
-                this.generator.beforeGenerate(this.messages[index-1].content, false);
+                this.generator.beforeGenerate(this.messages[index - 1].content, false);
                 this.sendEditedMessage(index);
             }
         },
         async saveMessages(messages) {
             if (this.processInstance) {
-                var instObj = await this.getData(`${this.path}/${this.processInstance.proc_inst_id}`, {key: 'id'});
+                var instObj = await this.getData(`${this.path}/${this.processInstance.proc_inst_id}`, { key: 'id' });
                 instObj.messages = messages;
                 await this.putObject(this.path, instObj);
             }
@@ -348,7 +320,7 @@ export default {
         async afterGenerationFinished(response) {
             let messageWriting = this.messages[this.messages.length - 1];
             messageWriting.jsonContent = response;
-            
+
             const jsonData = JSON.parse(response);
             if (jsonData) {
                 if (jsonData.description) {
@@ -372,12 +344,12 @@ export default {
             } else if (this.processInstance && this.processInstance.processInstanceId) {
                 path = this.processInstance.processInstanceId;
             }
-            
+
             if (path != '') {
                 let putObj = {
                     messages: this.messages
                 };
-                this.putObject(`${this.path}/${path}`, putObj, {key: 'id'});
+                this.putObject(`${this.path}/${path}`, putObj, { key: 'id' });
             }
         },
         async saveInstance(data) {
@@ -392,7 +364,7 @@ export default {
                     user_ids.push(this.userInfo.email)
 
                 if (this.processInstance) {
-                    var instObj = await this.getData(`${this.path}/${data.instanceId}`, {key: 'id'});
+                    var instObj = await this.getData(`${this.path}/${data.instanceId}`, { key: 'id' });
                     instObj.user_ids = [...instObj.user_ids, ...user_ids];
                     instObj.messages = this.messages;
                     await this.putObject(this.path, instObj);
@@ -457,7 +429,7 @@ export default {
             }
         },
 
-        async queryFromVectorDB(messsage){
+        async queryFromVectorDB(messsage) {
             const apiToken = this.generator.getToken();
             const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
 
@@ -542,7 +514,7 @@ export default {
                     sequenceFlow.setAttribute('id', 'SequenceFlow_' + sequence.source + '_' + sequence.target);
                     sequenceFlow.setAttribute('sourceRef', sequence.source);
                     sequenceFlow.setAttribute('targetRef', sequence.target);
-                    let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:extensionElements');
+                    let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
                     let root = xmlDoc.createElementNS('http://uengine', 'uengine:uengine-params');
                     extensionElements.setAttribute('description', sequence.description ? sequence.description : "")
                     let params = xmlDoc.createElementNS('http://uengine', 'uengine:parameters');
@@ -581,7 +553,7 @@ export default {
                         inComingSeq.textContent = inComing[activity.id]
                         userTask.appendChild(inComingSeq)
                     }
-                    let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:extensionElements');
+                    let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
                     let root = xmlDoc.createElementNS('http://uengine', 'uengine:uengine-params');
                     root.setAttribute('role', activity.role)
                     root.setAttribute('description', activity.description)
@@ -621,7 +593,7 @@ export default {
                         sequenceFlow.setAttribute('id', 'SequenceFlow_' + 'StartEvent' + '_' + activity.id);
                         sequenceFlow.setAttribute('sourceRef', 'StartEvent_1');
                         sequenceFlow.setAttribute('targetRef', activity.id);
-                        let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:extensionElements');
+                        let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
                         let root = xmlDoc.createElementNS('http://uengine', 'uengine:uengine-params');
                         let conditionParam = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
                         let conditionParams = xmlDoc.createElementNS('http://uengine', 'uengine:parameters');
@@ -648,7 +620,7 @@ export default {
                         sequenceFlow.setAttribute('id', 'SequenceFlow_' + activity.id + '_' + 'EndEvent');
                         sequenceFlow.setAttribute('sourceRef', activity.id);
                         sequenceFlow.setAttribute('targetRef', 'EndEvent');
-                        let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:extensionElements');
+                        let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
                         let root = xmlDoc.createElementNS('http://uengine', 'uengine:uengine-params');
                         let conditionParam = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
                         let conditionParams = xmlDoc.createElementNS('http://uengine', 'uengine:parameters');

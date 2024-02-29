@@ -2,11 +2,11 @@
     <div style="height: 95%; margin-top: 10px; overflow: auto;" v-click-outside="onClickOutside">
         <v-card-text>
             <div>{{ $t('BpnmPropertyPanel.name') }}</div>
-            <v-text-field v-model="this.copyElement.name"></v-text-field>
+            <v-text-field v-model="name"></v-text-field>
             <div>
                 <div>{{ $t('BpnmPropertyPanel.description') }}</div>
                 <v-textarea v-if="!copyElement.$type.includes('Event')"
-                    v-model="this.copyElement.extensionElements.values[0].description"></v-textarea>
+                    v-model="copyElement.extensionElements.values[0].description"></v-textarea>
             </div>
             <div v-if="element.$type.includes('Task') && inputData.length > 0" style="margin-bottom:20px;">
                 <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.inputData') }}</div>
@@ -113,7 +113,7 @@ export default {
         this.bpmnModeler = store.getModeler;
         this.name = this.element.name
 
-        if (element.$type == 'bpmn:CallActivity') {
+        if (this.element.$type == 'bpmn:CallActivity') {
             const value = await this.getData('proc_def', { key: "id" });
             if (value) {
                 console.log(value)
@@ -161,6 +161,7 @@ export default {
             const modeling = this.bpmnModeler.get('modeling');
             const elementRegistry = this.bpmnModeler.get('elementRegistry');
             const task = elementRegistry.get(this.element.id);
+            this.copyElement.name = this.name
             modeling.updateProperties(task, this.copyElement);
 
             this.$emit('close');
