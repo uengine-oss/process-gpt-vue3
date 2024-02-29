@@ -64,7 +64,7 @@ export default {
         bpmn: null,
         changedXML: "",
         projectName: '',
-        path: 'definitions',
+        path: 'proc_def',
         definitionChangeCount: 0,
         isChanged: false,
         chatInfo: {
@@ -113,10 +113,10 @@ export default {
         // }
     },
     computed: {
-        LLMDefinition() {
-            let result = this.removePositionKey(this.processDefinition)
-            return result
-        }
+        // LLMDefinition() {
+        //     let result = this.removePositionKey(this.processDefinition)
+        //     return result
+        // }
     },
     methods: {
         removePositionKey(obj) {
@@ -151,7 +151,7 @@ export default {
             // this.isChanged = true
         },
         async loadData(path) {
-            // this.bpmn = '<?xml version="1.0" encoding="UTF-8"?><bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" id="sample-diagram" targetNamespace="http://bpmn.io/schema/bpmn" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd"><bpmn2:collaboration id="Collaboration_1tj7ei2"><bpmn2:participant id="Participant_1eqhejj" processRef="Process_1"/></bpmn2:collaboration><bpmn2:process id="Process_1" isExecutable="false"><bpmn2:laneSet id="LaneSet_1g2nbpc"><bpmn2:lane id="Lane_0wneims" name="Woker"><bpmn2:flowNodeRef>StartEvent_1</bpmn2:flowNodeRef><bpmn2:flowNodeRef>Activity_1ta8n6y</bpmn2:flowNodeRef></bpmn2:lane><bpmn2:lane id="Lane_1lf58ly" name="HR"><bpmn2:flowNodeRef>Event_0h4j724</bpmn2:flowNodeRef><bpmn2:flowNodeRef>Activity_0ji9jev</bpmn2:flowNodeRef></bpmn2:lane></bpmn2:laneSet><bpmn2:startEvent id="StartEvent_1" name="시작" magic:spell="Avada Kedavra"><bpmn2:outgoing>Flow_0sp25wg</bpmn2:outgoing></bpmn2:startEvent><bpmn2:sequenceFlow id="Flow_0sp25wg" sourceRef="StartEvent_1" targetRef="Activity_1ta8n6y"/><bpmn2:sequenceFlow id="Flow_03dbjwz" sourceRef="Activity_1ta8n6y" targetRef="Activity_0ji9jev"/><bpmn2:endEvent id="Event_0h4j724" name="종료"><bpmn2:incoming>Flow_182335x</bpmn2:incoming></bpmn2:endEvent><bpmn2:sequenceFlow id="Flow_182335x" sourceRef="Activity_0ji9jev" targetRef="Event_0h4j724"/><bpmn2:userTask id="Activity_1ta8n6y" name="휴가 신청"><bpmn2:documentation>Vacation</bpmn2:documentation><bpmn2:incoming>Flow_0sp25wg</bpmn2:incoming><bpmn2:outgoing>Flow_03dbjwz</bpmn2:outgoing></bpmn2:userTask><bpmn2:userTask id="Activity_0ji9jev" name="승인"><bpmn2:documentation>confirm</bpmn2:documentation><bpmn2:incoming>Flow_03dbjwz</bpmn2:incoming><bpmn2:outgoing>Flow_182335x</bpmn2:outgoing></bpmn2:userTask></bpmn2:process><bpmndi:BPMNDiagram id="BPMNDiagram_1"><bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1tj7ei2"><bpmndi:BPMNShape id="Participant_1eqhejj_di" bpmnElement="Participant_1eqhejj" isHorizontal="true"><dc:Bounds x="270" y="150" width="600" height="250"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="Lane_0wneims_di" bpmnElement="Lane_0wneims" isHorizontal="true"><dc:Bounds x="300" y="150" width="570" height="125"/><bpmndi:BPMNLabel/></bpmndi:BPMNShape><bpmndi:BPMNShape id="Lane_1lf58ly_di" bpmnElement="Lane_1lf58ly" isHorizontal="true"><dc:Bounds x="300" y="275" width="570" height="125"/><bpmndi:BPMNLabel/></bpmndi:BPMNShape><bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1"><dc:Bounds x="352" y="192" width="36" height="36"/><bpmndi:BPMNLabel><dc:Bounds x="361" y="235" width="20" height="14"/></bpmndi:BPMNLabel></bpmndi:BPMNShape><bpmndi:BPMNShape id="Event_0h4j724_di" bpmnElement="Event_0h4j724"><dc:Bounds x="762" y="322" width="36" height="36"/><bpmndi:BPMNLabel><dc:Bounds x="770" y="365" width="20" height="14"/></bpmndi:BPMNLabel></bpmndi:BPMNShape><bpmndi:BPMNShape id="Activity_18762mc_di" bpmnElement="Activity_1ta8n6y"><dc:Bounds x="440" y="170" width="100" height="80"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="Activity_1omaje8_di" bpmnElement="Activity_0ji9jev"><dc:Bounds x="600" y="300" width="100" height="80"/></bpmndi:BPMNShape><bpmndi:BPMNEdge id="Flow_0sp25wg_di" bpmnElement="Flow_0sp25wg"><di:waypoint x="388" y="210"/><di:waypoint x="440" y="210"/></bpmndi:BPMNEdge><bpmndi:BPMNEdge id="Flow_03dbjwz_di" bpmnElement="Flow_03dbjwz"><di:waypoint x="540" y="210"/><di:waypoint x="570" y="210"/><di:waypoint x="570" y="340"/><di:waypoint x="600" y="340"/></bpmndi:BPMNEdge><bpmndi:BPMNEdge id="Flow_182335x_di" bpmnElement="Flow_182335x"><di:waypoint x="700" y="340"/><di:waypoint x="762" y="340"/></bpmndi:BPMNEdge></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn2:definitions>';
+            // this.bpmn = '<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" id="sample-diagram" targetNamespace="http://bpmn.io/schema/bpmn" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL bpmn0.xsd"><bpmn:collaboration id="Collaboration_1tj7ei2"><bpmn:participant id="Participant_1eqhejj" processRef="Process_1"/></bpmn:collaboration><bpmn:process id="Process_1" isExecutable="false"><bpmn:laneSet id="LaneSet_1g2nbpc"><bpmn:lane id="Lane_0wneims" name="Woker"><bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef><bpmn:flowNodeRef>Activity_1ta8n6y</bpmn:flowNodeRef></bpmn:lane><bpmn:lane id="Lane_1lf58ly" name="HR"><bpmn:flowNodeRef>Event_0h4j724</bpmn:flowNodeRef><bpmn:flowNodeRef>Activity_0ji9jev</bpmn:flowNodeRef></bpmn:lane></bpmn:laneSet><bpmn:startEvent id="StartEvent_1" name="시작" magic:spell="Avada Kedavra"><bpmn:outgoing>Flow_0sp25wg</bpmn:outgoing></bpmn:startEvent><bpmn:sequenceFlow id="Flow_0sp25wg" sourceRef="StartEvent_1" targetRef="Activity_1ta8n6y"/><bpmn:sequenceFlow id="Flow_03dbjwz" sourceRef="Activity_1ta8n6y" targetRef="Activity_0ji9jev"/><bpmn:endEvent id="Event_0h4j724" name="종료"><bpmn:incoming>Flow_182335x</bpmn:incoming></bpmn:endEvent><bpmn:sequenceFlow id="Flow_182335x" sourceRef="Activity_0ji9jev" targetRef="Event_0h4j724"/><bpmn:userTask id="Activity_1ta8n6y" name="휴가 신청"><bpmn:documentation>Vacation</bpmn:documentation><bpmn:incoming>Flow_0sp25wg</bpmn:incoming><bpmn:outgoing>Flow_03dbjwz</bpmn:outgoing></bpmn:userTask><bpmn:userTask id="Activity_0ji9jev" name="승인"><bpmn:documentation>confirm</bpmn:documentation><bpmn:incoming>Flow_03dbjwz</bpmn:incoming><bpmn:outgoing>Flow_182335x</bpmn:outgoing></bpmn:userTask></bpmn:process><bpmndi:BPMNDiagram id="BPMNDiagram_1"><bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1tj7ei2"><bpmndi:BPMNShape id="Participant_1eqhejj_di" bpmnElement="Participant_1eqhejj" isHorizontal="true"><dc:Bounds x="270" y="150" width="600" height="250"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="Lane_0wneims_di" bpmnElement="Lane_0wneims" isHorizontal="true"><dc:Bounds x="300" y="150" width="570" height="125"/><bpmndi:BPMNLabel/></bpmndi:BPMNShape><bpmndi:BPMNShape id="Lane_1lf58ly_di" bpmnElement="Lane_1lf58ly" isHorizontal="true"><dc:Bounds x="300" y="275" width="570" height="125"/><bpmndi:BPMNLabel/></bpmndi:BPMNShape><bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1"><dc:Bounds x="352" y="192" width="36" height="36"/><bpmndi:BPMNLabel><dc:Bounds x="361" y="235" width="20" height="14"/></bpmndi:BPMNLabel></bpmndi:BPMNShape><bpmndi:BPMNShape id="Event_0h4j724_di" bpmnElement="Event_0h4j724"><dc:Bounds x="762" y="322" width="36" height="36"/><bpmndi:BPMNLabel><dc:Bounds x="770" y="365" width="20" height="14"/></bpmndi:BPMNLabel></bpmndi:BPMNShape><bpmndi:BPMNShape id="Activity_18762mc_di" bpmnElement="Activity_1ta8n6y"><dc:Bounds x="440" y="170" width="100" height="80"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="Activity_1omaje8_di" bpmnElement="Activity_0ji9jev"><dc:Bounds x="600" y="300" width="100" height="80"/></bpmndi:BPMNShape><bpmndi:BPMNEdge id="Flow_0sp25wg_di" bpmnElement="Flow_0sp25wg"><di:waypoint x="388" y="210"/><di:waypoint x="440" y="210"/></bpmndi:BPMNEdge><bpmndi:BPMNEdge id="Flow_03dbjwz_di" bpmnElement="Flow_03dbjwz"><di:waypoint x="540" y="210"/><di:waypoint x="570" y="210"/><di:waypoint x="570" y="340"/><di:waypoint x="600" y="340"/></bpmndi:BPMNEdge><bpmndi:BPMNEdge id="Flow_182335x_di" bpmnElement="Flow_182335x"><di:waypoint x="700" y="340"/><di:waypoint x="762" y="340"/></bpmndi:BPMNEdge></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>';
             // this.bpmn = `{"$type":"bpmn:Definitions","id":"sample-diagram","targetNamespace":"http://bpmn.io/schema/bpmn","rootElements":[{"$type":"bpmn:Collaboration","id":"Collaboration_1tj7ei2","participants":[{"$type":"bpmn:Participant","id":"Participant_1eqhejj","$parent":"Collaboration_1tj7ei2"}],"$parent":"sample-diagram"},{"$type":"bpmn:Process","id":"Process_1","isExecutable":false,"laneSets":[{"$type":"bpmn:LaneSet","id":"LaneSet_1g2nbpc","lanes":[{"$type":"bpmn:Lane","id":"Lane_0wneims","name":"Woker","$parent":"LaneSet_1g2nbpc"},{"$type":"bpmn:Lane","id":"Lane_1lf58ly","name":"HR","$parent":"LaneSet_1g2nbpc"}],"$parent":"Process_1"}],"flowElements":[{"$type":"bpmn:StartEvent","id":"StartEvent_1","name":"시작","eventDefinitions":[],"$parent":"Process_1"},{"$type":"bpmn:SequenceFlow","id":"Flow_0sp25wg","$parent":"Process_1","sourceRef":"StartEvent_1","targetRef":"Activity_1ta8n6y"},{"$type":"bpmn:SequenceFlow","id":"Flow_03dbjwz","$parent":"Process_1","sourceRef":"Activity_1ta8n6y","targetRef":"Activity_0ji9jev"},{"$type":"bpmn:EndEvent","id":"Event_0h4j724","name":"종료","eventDefinitions":[],"$parent":"Process_1"},{"$type":"bpmn:SequenceFlow","id":"Flow_182335x","$parent":"Process_1","sourceRef":"Activity_0ji9jev","targetRef":"Event_0h4j724"},{"$type":"bpmn:UserTask","id":"Activity_1ta8n6y","name":"휴가 신청","documentation":[{"$type":"bpmn:Documentation","text":"Vacation","$parent":"Activity_1ta8n6y"}],"uengine-params":{"script": "System.out.println('hello world')"},"$parent":"Process_1"},{"$type":"bpmn:UserTask","id":"Activity_0ji9jev","name":"승인","documentation":[{"$type":"bpmn:Documentation","text":"confirm","$parent":"Activity_0ji9jev"}],"$parent":"Process_1"}],"$parent":"sample-diagram"}],"diagrams":[{"$type":"bpmndi:BPMNDiagram","id":"BPMNDiagram_1","plane":{"$type":"bpmndi:BPMNPlane","id":"BPMNPlane_1","planeElement":[{"$type":"bpmndi:BPMNShape","id":"Lane_1lf58ly_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":300,"y":275,"width":570,"height":125,"$parent":"Lane_1lf58ly_di"},"label":{"$type":"bpmndi:BPMNLabel","$parent":"Lane_1lf58ly_di"},"bpmnElement":"Lane_1lf58ly","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Lane_0wneims_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":300,"y":150,"width":570,"height":125,"$parent":"Lane_0wneims_di"},"label":{"$type":"bpmndi:BPMNLabel","$parent":"Lane_0wneims_di"},"bpmnElement":"Lane_0wneims","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Participant_1eqhejj_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":270,"y":150,"width":600,"height":250,"$parent":"Participant_1eqhejj_di"},"bpmnElement":"Participant_1eqhejj","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"_BPMNShape_StartEvent_2","bounds":{"$type":"dc:Bounds","x":352,"y":192,"width":36,"height":36,"$parent":"_BPMNShape_StartEvent_2"},"label":{"$type":"bpmndi:BPMNLabel","bounds":{"$type":"dc:Bounds","x":361,"y":235,"width":20,"height":14},"$parent":"_BPMNShape_StartEvent_2"},"bpmnElement":"StartEvent_1","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Event_0h4j724_di","bounds":{"$type":"dc:Bounds","x":762,"y":322,"width":36,"height":36,"$parent":"Event_0h4j724_di"},"label":{"$type":"bpmndi:BPMNLabel","bounds":{"$type":"dc:Bounds","x":770,"y":365,"width":20,"height":14},"$parent":"Event_0h4j724_di"},"bpmnElement":"Event_0h4j724","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Activity_18762mc_di","bounds":{"$type":"dc:Bounds","x":440,"y":170,"width":100,"height":80,"$parent":"Activity_18762mc_di"},"bpmnElement":"Activity_1ta8n6y","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Activity_1omaje8_di","bounds":{"$type":"dc:Bounds","x":600,"y":300,"width":100,"height":80,"$parent":"Activity_1omaje8_di"},"bpmnElement":"Activity_0ji9jev","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_0sp25wg_di","waypoint":[{"$type":"dc:Point","x":388,"y":210,"$parent":"Flow_0sp25wg_di"},{"$type":"dc:Point","x":440,"y":210,"$parent":"Flow_0sp25wg_di"}],"bpmnElement":"Flow_0sp25wg","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_03dbjwz_di","waypoint":[{"$type":"dc:Point","x":540,"y":210,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":570,"y":210,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":570,"y":340,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":600,"y":340,"$parent":"Flow_03dbjwz_di"}],"bpmnElement":"Flow_03dbjwz","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_182335x_di","waypoint":[{"$type":"dc:Point","x":700,"y":340,"$parent":"Flow_182335x_di"},{"$type":"dc:Point","x":762,"y":340,"$parent":"Flow_182335x_di"}],"bpmnElement":"Flow_182335x","$parent":"BPMNPlane_1"}],"bpmnElement":"Collaboration_1tj7ei2","$parent":"BPMNDiagram_1"},"$parent":"sample-diagram"}]}`;
             // this.projectName = this.processDefinition.processDefinitionName;
             // this.definitionChangeCount++;
@@ -283,10 +283,10 @@ export default {
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(xmlString, "text/xml");
             // Lanes (Roles) 추출
-            const lanes = xmlDoc.getElementsByTagName("bpmn2:lane");
+            const lanes = xmlDoc.getElementsByTagName("bpmn:lane");
             const laneMap = Array.from(lanes).reduce((acc, lane) => {
                 const laneName = lane.getAttribute("name");
-                const flowNodeRefs = lane.getElementsByTagName("bpmn2:flowNodeRef");
+                const flowNodeRefs = lane.getElementsByTagName("bpmn:flowNodeRef");
                 Array.from(flowNodeRefs).forEach(flowNodeRef => {
                     const activityId = flowNodeRef.textContent;
                     acc[activityId] = laneName; // Map activity ID to lane (role) name
@@ -295,7 +295,7 @@ export default {
             }, {});
 
             // User Tasks 추출
-            const userTasks = xmlDoc.getElementsByTagName("bpmn2:userTask");
+            const userTasks = xmlDoc.getElementsByTagName("bpmn:userTask");
             const activities = Array.from(userTasks).map(task => {
                 const id = task.getAttribute("id");
                 return {
@@ -312,7 +312,7 @@ export default {
             });
 
             // Sequence Flows 추출
-            const sequenceFlows = xmlDoc.getElementsByTagName("bpmn2:sequenceFlow");
+            const sequenceFlows = xmlDoc.getElementsByTagName("bpmn:sequenceFlow");
             const sequences = Array.from(sequenceFlows).map(flow => {
                 if ((flow.getAttribute("sourceRef") != "StartEvent_1") && (flow.getAttribute("targetRef") != "EndEvent"))
                     return {
@@ -323,7 +323,7 @@ export default {
 
             // activities 배열을 sequenceFlow의 순서에 따라 정렬
             // const orderedActivities = [];
-            // let currentId = xmlDoc.getElementsByTagName("bpmn2:startEvent")[0].getAttribute("id");
+            // let currentId = xmlDoc.getElementsByTagName("bpmn:startEvent")[0].getAttribute("id");
             // while (sequences.length > 0) {
             //     const currentIndex = sequences.findIndex(seq => seq.source === currentId);
             //     if (currentIndex === -1) break;
@@ -411,19 +411,18 @@ export default {
         async saveModel() {
             // alert(model);
             console.log(this.changedXML);
+            const store = useBpmnStore();
+            let modeler = store.getModeler;
+            let xml = await modeler.saveXML({ format: true, preamble: true });
             this.projectName = this.processDefinition.processDefinitionName;
             const apiToken = this.generator.getToken();
-            // let orderedActivities = this.convertXMLToJSON(this.changedXML);
 
-            let definition = Object.assign({}, this.LLMDefinition)
-            // definition.activities = orderedActivities.activities
-            // definition.sequences = orderedActivities.sequences
-            // console.log(definition)
             let putObj = {
-                id: definition.processDefinitionId,
-                name: definition.processDefinitionName,
-                definition: definition,
-                messages: this.messages
+                id: this.processDefinition.processDefinitionId,
+                name: this.processDefinition.processDefinitionName,
+                definition: this.processDefinition,
+                messages: this.messages,
+                model: xml.xml
             };
             this.putObject(`${this.path}`, putObj);
 
@@ -602,14 +601,14 @@ export default {
                 case "EmailActivity":
                     return 'bpmn:sendTask';
                 default:
-                    return 'bpmn2:userTask';
+                    return 'bpmn:userTask';
             }
         },
         createBpmnXml(jsonModel) {
             // XML 문서 초기화
             let me = this;
             const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString('<?xml version="1.0" encoding="UTF-8"?><bpmn2:definitions xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine"></bpmn2:definitions>', 'application/xml');
+            const xmlDoc = parser.parseFromString('<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine"></bpmn:definitions>', 'application/xml');
             const bpmnDefinitions = xmlDoc.documentElement;
 
             bpmnDefinitions.setAttribute('id', 'Definitions_' + jsonModel.processDefinitionId);
@@ -617,25 +616,21 @@ export default {
             bpmnDefinitions.setAttribute('exporter', 'Custom BPMN Modeler');
             bpmnDefinitions.setAttribute('exporterVersion', '1.0');
 
-            const collaboration = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:collaboration');
+            const collaboration = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:collaboration');
             collaboration.setAttribute('id', 'Collaboration_1');
             bpmnDefinitions.appendChild(collaboration);
 
-            const process = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:process');
+            const process = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:process');
             process.setAttribute('id', jsonModel.processDefinitionId);
             process.setAttribute('isExecutable', 'true');
             bpmnDefinitions.appendChild(process);
             // Collaboration 추가
-            if (jsonModel.participants) {
-                jsonModel.participants.forEach(participant => {
-                    const pc = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:participant');
-                    pc.setAttribute('id', `Participant`);
-                    pc.setAttribute('name', `${participant.name}`);
-                    pc.setAttribute('processRef', jsonModel.processDefinitionId);
-                    collaboration.appendChild(pc);
-                })
+            const pc = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:participant');
+            pc.setAttribute('id', `Participant`);
+            pc.setAttribute('name', `Participant`);
+            pc.setAttribute('processRef', jsonModel.processDefinitionId);
+            collaboration.appendChild(pc);
 
-            }
 
 
             // Lane 및 Activity 매핑
@@ -650,18 +645,18 @@ export default {
 
             // Lanes 생성
             if (jsonModel.roles) {
-                const laneSet = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:laneSet');
+                const laneSet = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:laneSet');
                 laneSet.setAttribute('id', 'LaneSet_1');
                 process.appendChild(laneSet);
                 jsonModel.roles.forEach((role, idx) => {
-                    const lane = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:lane');
+                    const lane = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:lane');
                     lane.setAttribute('id', 'Lane_' + idx);
                     lane.setAttribute('name', role.name);
                     laneSet.appendChild(lane);
                     // Activity를 Lane에 할당
                     if (laneActivityMapping[role.name]) {
                         laneActivityMapping[role.name].forEach(activityId => {
-                            const flowNodeRef = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:flowNodeRef');
+                            const flowNodeRef = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:flowNodeRef');
                             flowNodeRef.textContent = activityId;
                             lane.appendChild(flowNodeRef);
                         });
@@ -674,17 +669,22 @@ export default {
             // Sequences 생성
             if (jsonModel.sequences)
                 jsonModel.sequences.forEach(sequence => {
-                    const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:sequenceFlow');
+                    const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:sequenceFlow');
                     sequenceFlow.setAttribute('id', 'SequenceFlow_' + sequence.source + '_' + sequence.target);
                     sequenceFlow.setAttribute('name', sequence.name ? sequence.name : "")
                     sequenceFlow.setAttribute('sourceRef', sequence.source);
                     sequenceFlow.setAttribute('targetRef', sequence.target);
-                    let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:extensionElements');
+                    let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
                     let root = xmlDoc.createElementNS('http://uengine', 'uengine:uengine-params');
-                    extensionElements.setAttribute('description', sequence.description ? sequence.description : "")
-                    let params = xmlDoc.createElementNS('http://uengine', 'uengine:parameters');
-                    // if (sequence.condition) {
+                    let params = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
                     let param = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
+                    // let role = xmlDoc.createElementNS('http://uengine', 'uengine:role');
+                    // let desc = xmlDoc.createElementNS('http://uengine', 'uengine:description');
+                    // let checkpoints = xmlDoc.createElementNS('http://uengine', 'uengine:checkpoint');
+                    //             <uengine:description>asdf</uengine:description>
+                    //   <uengine:checkpoint>
+                    //     <uengine:checkpoint>asdf</uengine:checkpoint>
+                    //   </uengine:checkpoint>
                     param.setAttribute('key', "condition")
                     param.textContent = sequence.condition ? sequence.condition : ""
                     params.appendChild(param)
@@ -707,73 +707,80 @@ export default {
                     const userTask = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', userTaskType);
                     userTask.setAttribute('id', activity.id);
                     userTask.setAttribute('name', activity.name);
-                    // let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:description');
+                    // let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:description');
                     if (outGoing[activity.id]) {
-                        let outGoingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:outgoing');
+                        let outGoingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:outgoing');
                         outGoingSeq.textContent = outGoing[activity.id]
                         userTask.appendChild(outGoingSeq)
                     }
                     if (inComing[activity.id]) {
-                        let inComingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:incoming');
+                        let inComingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:incoming');
                         inComingSeq.textContent = inComing[activity.id]
                         userTask.appendChild(inComingSeq)
                     }
-                    let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:extensionElements');
+                    let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
                     let root = xmlDoc.createElementNS('http://uengine', 'uengine:uengine-params');
-                    root.setAttribute('role', activity.role)
-                    root.setAttribute('description', activity.description)
-                    root.setAttribute('pythonCode', activity.pythonCode)
-                    let checkpoints = xmlDoc.createElementNS('http://uengine', 'uengine:checkpoints');
-                    if (activity.checkpoints) {
-                        activity.checkpoints.forEach((checkpoint) => {
-                            console.log(checkpoint)
-                            let check = xmlDoc.createElementNS('http://uengine', 'uengine:checkpoint');
-                            check.setAttribute('checkpoint', checkpoint)
-                            checkpoints.appendChild(check)
-                        })
-                    }
-                    root.appendChild(checkpoints)
-                    let params = xmlDoc.createElementNS('http://uengine', 'uengine:parameters');
-                    if (activity.inputData) {
-                        activity.inputData.forEach((data) => {
-                            let param = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
-                            param.setAttribute('key', data.name)
-                            param.setAttribute('category', "input")
-                            params.appendChild(param)
-                        })
+                    // let role = xmlDoc.createElementNS('http://uengine', 'uengine:role');
+                    // role.textContent = activity.role
+                    // root.appendChild(role)
+                    // let desc = xmlDoc.createElementNS('http://uengine', 'uengine:description');
+                    // desc.textContent = activity.description
+                    // root.appendChild(desc)
+                    // let checkpoints = xmlDoc.createElementNS('http://uengine', 'uengine:checkpoint');
+                    // let pythonCode = xmlDoc.createElementNS('http://uengine', 'uengine:pythonCode');
+                    // pythonCode.textContent = "";
+                    // root.appendChild(pythonCode)
+                    // // let checkpoints = xmlDoc.createElementNS('http://uengine', 'uengine:checkpoints');
+                    // if (activity.checkpoints) {
+                    //     activity.checkpoints.forEach((checkpoint) => {
+                    //         console.log(checkpoint)
+                    //         let check = xmlDoc.createElementNS('http://uengine', 'uengine:checkpoint');
+                    //         check.textContent = checkpoint
+                    //         checkpoints.appendChild(check)
+                    //     })
+                    // }
+                    // root.appendChild(checkpoints)
+                    // let params = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
+                    // if (activity.inputData) {
+                    //     activity.inputData.forEach((data) => {
+                    //         let param = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
+                    //         param.setAttribute('key', data.name)
+                    //         param.setAttribute('category', "input")
+                    //         params.appendChild(param)
+                    //     })
 
-                        // userTask.appendChild(extensionElements)
-                    }
-                    if (activity.outputData) {
-                        activity.outputData.forEach((data) => {
-                            let param = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
-                            param.setAttribute('key', data.name)
-                            param.setAttribute('category', "output")
-                            params.appendChild(param)
-                        })
-                        root.appendChild(params)
-                        extensionElements.appendChild(root)
-                    }
-                    root.appendChild(params)
+                    //     // userTask.appendChild(extensionElements)
+                    // }
+                    // if (activity.outputData) {
+                    //     activity.outputData.forEach((data) => {
+                    //         let param = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
+                    //         param.setAttribute('key', data.name)
+                    //         param.setAttribute('category', "output")
+                    //         params.appendChild(param)
+                    //     })
+                    //     root.appendChild(params)
+                    //     extensionElements.appendChild(root)
+                    // }
+                    // root.appendChild(params)
                     extensionElements.appendChild(root)
                     userTask.appendChild(extensionElements)
 
                     if (idx == 0) {
                         // 시작일땐 StartEvent와 연결
-                        const startEvent = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:startEvent');
+                        const startEvent = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:startEvent');
                         startEvent.setAttribute('id', 'StartEvent_1');
                         startEvent.setAttribute('name', 'StartEvent');
                         process.appendChild(startEvent);
 
-                        const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:sequenceFlow');
+                        const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:sequenceFlow');
                         sequenceFlow.setAttribute('id', 'SequenceFlow_' + 'StartEvent' + '_' + activity.id);
                         sequenceFlow.setAttribute('name', "")
                         sequenceFlow.setAttribute('sourceRef', 'StartEvent_1');
                         sequenceFlow.setAttribute('targetRef', activity.id);
-                        let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:extensionElements');
+                        let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
                         let root = xmlDoc.createElementNS('http://uengine', 'uengine:uengine-params');
                         let conditionParam = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
-                        let conditionParams = xmlDoc.createElementNS('http://uengine', 'uengine:parameters');
+                        let conditionParams = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
                         conditionParam.setAttribute('key', "condition")
                         conditionParam.textContent = ""
                         conditionParams.appendChild(conditionParam)
@@ -782,26 +789,26 @@ export default {
                         sequenceFlow.appendChild(extensionElements)
                         process.appendChild(sequenceFlow);
 
-                        let inComingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:incoming');
+                        let inComingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:incoming');
                         inComingSeq.textContent = 'SequenceFlow_' + 'StartEvent' + '_' + activity.id
                         userTask.appendChild(inComingSeq)
                     } else if (idx == jsonModel.activities.length - 1) {
                         // 마지막엔 EndEvent와 연결
                         // EndEvent 요소 추가
-                        const endEvent = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:endEvent');
+                        const endEvent = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:endEvent');
                         endEvent.setAttribute('id', 'EndEvent');
                         endEvent.setAttribute('name', 'EndEvent');
                         process.appendChild(endEvent);
 
-                        const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:sequenceFlow');
+                        const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:sequenceFlow');
                         sequenceFlow.setAttribute('id', 'SequenceFlow_' + activity.id + '_' + 'EndEvent');
                         sequenceFlow.setAttribute('name', "")
                         sequenceFlow.setAttribute('sourceRef', activity.id);
                         sequenceFlow.setAttribute('targetRef', 'EndEvent');
-                        let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:extensionElements');
+                        let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
                         let root = xmlDoc.createElementNS('http://uengine', 'uengine:uengine-params');
                         let conditionParam = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
-                        let conditionParams = xmlDoc.createElementNS('http://uengine', 'uengine:parameters');
+                        let conditionParams = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
                         conditionParam.setAttribute('key', "condition")
                         conditionParam.textContent = ""
                         conditionParams.appendChild(conditionParam)
@@ -810,7 +817,7 @@ export default {
                         sequenceFlow.appendChild(extensionElements)
                         process.appendChild(sequenceFlow);
 
-                        let outGoingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn2:outgoing');
+                        let outGoingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:outgoing');
                         outGoingSeq.textContent = 'SequenceFlow_' + activity.id + '_' + 'EndEvent'
                         userTask.appendChild(outGoingSeq)
                     }
@@ -855,10 +862,10 @@ export default {
                     laneShape.setAttribute('bpmnElement', `Lane_${roleIndex}`);
                     laneShape.setAttribute('isHorizontal', true)
                     const dcBoundsLane = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
-                    dcBoundsLane.setAttribute('x', role.pos.x ? role.pos.x : '100');
-                    dcBoundsLane.setAttribute('y', role.pos.y ? role.pos.y : `${100 + roleIndex * 100}`);
-                    dcBoundsLane.setAttribute('width', role.pos.width ? role.pos.width : '800');
-                    dcBoundsLane.setAttribute('height', role.pos.height ? role.pos.height : '100');
+                    dcBoundsLane.setAttribute('x', '100');
+                    dcBoundsLane.setAttribute('y', `${100 + roleIndex * 100}`);
+                    dcBoundsLane.setAttribute('width', '800');
+                    dcBoundsLane.setAttribute('height', '100');
                     laneShape.appendChild(dcBoundsLane);
                     bpmnPlane.appendChild(laneShape);
                     rolePos[role.name] = {
@@ -882,19 +889,19 @@ export default {
                         startEventShape.setAttribute('id', `StartEvent_di`);
                         startEventShape.setAttribute('bpmnElement', `StartEvent_1`);
                         const startEventBounds = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
-                        startEventBounds.setAttribute('x', activity.pos.x ? activity.pos.x : lastXPos);
-                        startEventBounds.setAttribute('y', activity.pos.y ? activity.pos.y : eventY);
-                        startEventBounds.setAttribute('width', activity.pos.width ? activity.pos.width : 36);
-                        startEventBounds.setAttribute('height', activity.pos.height ? activity.pos.height : 36);
+                        startEventBounds.setAttribute('x', lastXPos);
+                        startEventBounds.setAttribute('y', eventY);
+                        startEventBounds.setAttribute('width', 36);
+                        startEventBounds.setAttribute('height', 36);
                         startEventShape.appendChild(startEventBounds);
                         bpmnPlane.appendChild(startEventShape);
                         activityPos['startEvent'] = {
-                            x: activity.pos.x ? activity.pos.x : lastXPos,
-                            y: activity.pos.y ? activity.pos.y : eventY,
+                            x: lastXPos,
+                            y: eventY,
                             width: 36,
                             height: 36
                         }
-                        lastXPos = activity.pos.x ? activity.pos.x : lastXPos
+                        lastXPos = lastXPos
                         lastXPos += 120
                     }
                     let activityY = parseInt(rolePos[activity.role].y)
@@ -903,24 +910,26 @@ export default {
                     activityShape.setAttribute('bpmnElement', activity.id);
 
                     const dcBoundsActivity = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
-                    dcBoundsActivity.setAttribute('x', activity.pos.x ? activity.pos.x : lastXPos);
-                    dcBoundsActivity.setAttribute('y', activity.pos.y ? activity.pos.y : activityY + 20);
-                    dcBoundsActivity.setAttribute('width', activity.pos.width ? activity.pos.width : 80);
-                    dcBoundsActivity.setAttribute('height', activity.pos.height ? activity.pos.height : 60);
+                    dcBoundsActivity.setAttribute('x', lastXPos);
+                    dcBoundsActivity.setAttribute('y', activityY + 20);
+                    dcBoundsActivity.setAttribute('width', 80);
+                    dcBoundsActivity.setAttribute('height', 60);
                     activityPos[activity.id] = {
-                        x: activity.pos.x ? activity.pos.x : lastXPos,
-                        y: activity.pos.y ? activity.pos.y : activityY + 20,
+                        x: lastXPos,
+                        y: activityY + 20,
                         width: 80,
                         height: 60
                     }
-                    activity.pos.x = activity.pos.x ? activity.pos.x : lastXPos
-                    activity.pos.y = activity.pos.y ? activity.pos.y : activityY + 20
-                    activity.pos.width = activity.pos.width ? activity.pos.width : 80
-                    activity.pos.height = activity.pos.height ? activity.pos.height : 60
+                    // if (!activity.pos)
+                    //     activity.pos = {}
+                    // activity.pos.x = lastXPos
+                    // activity.pos.y =  activityY + 20
+                    // activity.pos.width = 80
+                    // activity.pos.height = 60
 
                     activityShape.appendChild(dcBoundsActivity);
                     bpmnPlane.appendChild(activityShape);
-                    lastXPos = activity.x ? activity.x : lastXPos
+                    lastXPos = lastXPos
                     lastXPos += 120
 
                     if (activityIndex == jsonModel.activities.length - 1 && lastActivity.role) {
@@ -932,10 +941,10 @@ export default {
                         const endEventBounds = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
                         // endEventBounds.setAttribute('x', '100'); // 위치는 예시이며, 실제 모델에 따라 조정 필요
                         // endEventBounds.setAttribute('y', '218');
-                        endEventBounds.setAttribute('x', activity.pos.x ? activity.pos.x : lastXPos);
-                        endEventBounds.setAttribute('y', activity.pos.y ? activity.pos.y : eventY);
-                        endEventBounds.setAttribute('width', activity.pos.width ? activity.pos.width : 36);
-                        endEventBounds.setAttribute('height', activity.pos.height ? activity.pos.height : 36);
+                        endEventBounds.setAttribute('x', lastXPos);
+                        endEventBounds.setAttribute('y', eventY);
+                        endEventBounds.setAttribute('width', 36);
+                        endEventBounds.setAttribute('height', 36);
                         endEventShape.appendChild(endEventBounds);
                         bpmnPlane.appendChild(endEventShape);
 
@@ -1007,8 +1016,8 @@ export default {
                 });
             // XML 문자열로 변환 및 반환
             const serializer = new XMLSerializer();
-            const bpmn2Xml = serializer.serializeToString(xmlDoc);
-            return bpmn2Xml;
+            const bpmnXml = serializer.serializeToString(xmlDoc);
+            return bpmnXml;
 
             // 기존 코드
             // // XML 문서 초기화
