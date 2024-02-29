@@ -389,10 +389,10 @@ export default {
     display: none;
 }
 
-.vue-bpmn-diagram-container .djs-direct-editing-parent {
+/* .vue-bpmn-diagram-container .djs-direct-editing-parent {
     width:80px !important;
     height:60px !important;
-}
+} */
 
 .vue-bpmn-diagram-container .djs-palette {
     width: 630px !important;

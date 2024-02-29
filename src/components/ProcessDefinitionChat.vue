@@ -884,7 +884,7 @@ export default {
                     }
                     if (activityIndex == 0 && firstActivity.role) {
                         // StartEvent의 BPMNShape 추가
-                        let eventY = parseInt(rolePos[firstActivity.role].y) + 36
+                        let eventY = parseInt(rolePos[firstActivity.role].y) + 32
                         const startEventShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
                         startEventShape.setAttribute('id', `StartEvent_di`);
                         startEventShape.setAttribute('bpmnElement', `StartEvent_1`);
@@ -911,14 +911,14 @@ export default {
 
                     const dcBoundsActivity = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
                     dcBoundsActivity.setAttribute('x', lastXPos);
-                    dcBoundsActivity.setAttribute('y', activityY + 20);
-                    dcBoundsActivity.setAttribute('width', 80);
-                    dcBoundsActivity.setAttribute('height', 60);
+                    dcBoundsActivity.setAttribute('y', activityY + 10);
+                    dcBoundsActivity.setAttribute('width', 100);
+                    dcBoundsActivity.setAttribute('height', 80);
                     activityPos[activity.id] = {
                         x: lastXPos,
-                        y: activityY + 20,
-                        width: 80,
-                        height: 60
+                        y: activityY + 10,
+                        width: 100,
+                        height: 80
                     }
                     // if (!activity.pos)
                     //     activity.pos = {}
@@ -934,7 +934,7 @@ export default {
 
                     if (activityIndex == jsonModel.activities.length - 1 && lastActivity.role) {
                         // EndEvent의 BPMNShape 추가
-                        let eventY = parseInt(rolePos[lastActivity.role].y) + 36
+                        let eventY = parseInt(rolePos[lastActivity.role].y) + 32
                         const endEventShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
                         endEventShape.setAttribute('id', `EndEvent_di`);
                         endEventShape.setAttribute('bpmnElement', `EndEvent`);
