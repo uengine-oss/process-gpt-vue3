@@ -64,9 +64,26 @@ export default class StorageBaseSupabase {
     async getString(path, options) {
         try {
             let obj = this.formatDataPath(path, options);
-            if (obj.searchVal) {
-                const { data, error } = await window.$supabase.from(obj.table).select()
+            if (options && options.match) {
+                const { data, error } = await window.$supabase
+                    .from(obj.table)
+                    .select()
+                    .match(options.match);
+
+                if (error) {
+                    return error;
+                } else {
+                    if (data.length > 0) {
+                        return data[0];
+                    }
+                    return null;
+                }
+            } else if (obj.searchVal) {
+                const { data, error } = await window.$supabase
+                    .from(obj.table)
+                    .select()
                     .eq(obj.searchKey, obj.searchVal);
+
                 if (error) {
                     return error;
                 } else {
@@ -76,7 +93,10 @@ export default class StorageBaseSupabase {
                     return null;
                 }
             } else {
-                const { data, error } = await window.$supabase.from(obj.table).select();
+                const { data, error } = await window.$supabase
+                    .from(obj.table)
+                    .select();
+
                 if (error) {
                     return error;
                 } else {
@@ -93,9 +113,26 @@ export default class StorageBaseSupabase {
     async getObject(path, options) {
         try {
             let obj = this.formatDataPath(path, options);
-            if (obj.searchVal) {
-                const { data, error } = await window.$supabase.from(obj.table).select()
+            if (options && options.match) {
+                const { data, error } = await window.$supabase
+                    .from(obj.table)
+                    .select()
+                    .match(options.match);
+
+                if (error) {
+                    return error;
+                } else {
+                    if (data.length > 0) {
+                        return data[0];
+                    }
+                    return null;
+                }
+            } else if (obj.searchVal) {
+                const { data, error } = await window.$supabase
+                    .from(obj.table)
+                    .select()
                     .eq(obj.searchKey, obj.searchVal);
+
                 if (error) {
                     return error;
                 } else {
@@ -105,7 +142,10 @@ export default class StorageBaseSupabase {
                     return null;
                 }
             } else {
-                const { data, error } = await window.$supabase.from(obj.table).select();
+                const { data, error } = await window.$supabase
+                    .from(obj.table)
+                    .select();
+                
                 if (error) {
                     return error;
                 } else {
@@ -123,16 +163,33 @@ export default class StorageBaseSupabase {
     async putString(path, value, options) {
         try {
             let obj = this.formatDataPath(path, options);
-            if (obj.searchVal) {
-                const { error } = await window.$supabase.from(obj.table).upsert(value)
+            if (options && options.match) {
+                const { error } = await window.$supabase
+                    .from(obj.table)
+                    .upsert(value)
+                    .match(options.match);
+                
+                if (!error) {
+                    return true;
+                } else {
+                    return error;
+                }
+            } else if (obj.searchVal) {
+                const { error } = await window.$supabase
+                    .from(obj.table)
+                    .upsert(value)
                     .eq(obj.searchKey, obj.searchVal);
+
                 if (!error) {
                     return true;
                 } else {
                     return error;
                 }
             } else {
-                const { error } = await window.$supabase.from(obj.table).upsert(value);
+                const { error } = await window.$supabase
+                    .from(obj.table)
+                    .upsert(value);
+                
                 if (!error) {
                     return true;
                 } else {
@@ -148,17 +205,33 @@ export default class StorageBaseSupabase {
     async putObject(path, value, options) {
         try {
             let obj = this.formatDataPath(path, options);
-            value = this.formatDataValue(value);
-            if (obj.searchVal) {
-                const { error } = await window.$supabase.from(obj.table).upsert(value)
+            if (options && options.match) {
+                const { error } = await window.$supabase
+                    .from(obj.table)
+                    .upsert(value)
+                    .match(options.match);
+                
+                if (!error) {
+                    return true;
+                } else {
+                    return error;
+                }
+            } else if (obj.searchVal) {
+                const { error } = await window.$supabase
+                    .from(obj.table)
+                    .upsert(value)
                     .eq(obj.searchKey, obj.searchVal);
+
                 if (!error) {
                     return true;
                 } else {
                     return error;
                 }
             } else {
-                const { error } = await window.$supabase.from(obj.table).upsert(value);
+                const { error } = await window.$supabase
+                    .from(obj.table)
+                    .upsert(value);
+                
                 if (!error) {
                     return true;
                 } else {
@@ -175,16 +248,33 @@ export default class StorageBaseSupabase {
     async pushString(path, value, options) {
         try {
             let obj = this.formatDataPath(path, options);
-            if (obj.searchVal) {
-                const { error } = await window.$supabase.from(obj.table).upsert(value)
+            if (options && options.match) {
+                const { error } = await window.$supabase
+                    .from(obj.table)
+                    .upsert(value)
+                    .match(options.match);
+                
+                if (!error) {
+                    return true;
+                } else {
+                    return error;
+                }
+            } else if (obj.searchVal) {
+                const { error } = await window.$supabase
+                    .from(obj.table)
+                    .upsert(value)
                     .eq(obj.searchKey, obj.searchVal);
+
                 if (!error) {
                     return true;
                 } else {
                     return error;
                 }
             } else {
-                const { error } = await window.$supabase.from(obj.table).upsert(value);
+                const { error } = await window.$supabase
+                    .from(obj.table)
+                    .upsert(value);
+                
                 if (!error) {
                     return true;
                 } else {
@@ -200,16 +290,33 @@ export default class StorageBaseSupabase {
     async pushObject(path, value, options) {
         try {
             let obj = this.formatDataPath(path, options);
-            if (obj.searchVal) {
-                const { error } = await window.$supabase.from(obj.table).upsert(value)
+            if (options && options.match) {
+                const { error } = await window.$supabase
+                    .from(obj.table)
+                    .upsert(value)
+                    .match(options.match);
+                
+                if (!error) {
+                    return true;
+                } else {
+                    return error;
+                }
+            } else if (obj.searchVal) {
+                const { error } = await window.$supabase
+                    .from(obj.table)
+                    .upsert(value)
                     .eq(obj.searchKey, obj.searchVal);
+
                 if (!error) {
                     return true;
                 } else {
                     return error;
                 }
             } else {
-                const { error } = await window.$supabase.from(obj.table).upsert(value);
+                const { error } = await window.$supabase
+                    .from(obj.table)
+                    .upsert(value);
+                
                 if (!error) {
                     return true;
                 } else {
@@ -226,9 +333,23 @@ export default class StorageBaseSupabase {
     async delete(path, options) {
         try {
             let obj = this.formatDataPath(path, options);
-            if (obj.searchVal) {
-                const { error } = await window.$supabase.from(obj.table).delete()
+            if (options && options.match) {
+                const { data, error } = await window.$supabase
+                    .from(obj.table)
+                    .delete()
+                    .match(options.match);
+
+                if (!error) {
+                    return true;
+                } else {
+                    return error;
+                }
+            } else if (obj.searchVal) {
+                const { error } = await window.$supabase
+                    .from(obj.table)
+                    .delete()
                     .eq(obj.searchKey, obj.searchVal);
+                
                 if (!error) {
                     return true;
                 } else {
@@ -264,11 +385,23 @@ export default class StorageBaseSupabase {
         }
     }
 
-    async watch_added(path, options) {
+    async watch_added(path, callback) {
         try {
-            let obj = this.formatDataPath(path, options);
-            return await window.$supabase.from(obj.table).select();
+            let obj = this.formatDataPath(path);
+            await window.$supabase
+                .channel('room1')
+                .on('postgres_changes', {
+                    event: '*', 
+                    schema: 'public', 
+                    table: obj.table
+                }, payload => {
+                    console.log('Change received!', payload)
+                    callback(payload)
+                })
+                .subscribe();
+            
         } catch(error) {
+            console.log(`WATCH ADDED: ${error}`);
             return { Error: error }
         }
     }
@@ -276,7 +409,19 @@ export default class StorageBaseSupabase {
     async list(path, options) {
         try {
             let obj = this.formatDataPath(path, options);
-            if (obj.searchVal) {
+            if (options && options.match) {
+                const { data, error } = await window.$supabase
+                    .from(obj.table)
+                    .select()
+                    .match(options.match);
+
+                if (error) {
+                    return error;
+                } else {
+                    if (data.length > 0) return data;
+                    return null;
+                }
+            } else if (obj.searchVal) {
                 const { data, error } = await window.$supabase
                     .from(obj.table)
                     .select()
@@ -342,14 +487,45 @@ export default class StorageBaseSupabase {
         return obj;
     }
 
-    formatDataValue(value) {
-        let obj = {};
-        let keyArr = Object.keys(value);
-        keyArr.forEach(key => {
-            var newKey = key.toLocaleLowerCase();
-            obj[newKey] = value[key];
-        });
-        obj = [obj];
-        return obj;
+    async getCount(path, options) {
+        try {
+            let obj = this.formatDataPath(path, options);
+            if (options && options.match) {
+                const { count, error } = await window.$supabase
+                    .from(obj.table)
+                    .select('*', { count: 'exact' })
+                    .match(options.match);
+
+                if (error) {
+                    return error;
+                } else {
+                    return count;
+                }
+            } else if (obj.searchVal) {
+                const { count, error } = await window.$supabase
+                    .from(obj.table)
+                    .select('*', { count: 'exact' })
+                    .eq(obj.searchKey, obj.searchVal);
+
+                if (error) {
+                    return error;
+                } else {
+                    return count;
+                }
+            } else {
+                const { count, error } = await window.$supabase
+                    .from(obj.table)
+                    .select('*', { count: 'exact' });
+
+                if (error) {
+                    return error;
+                } else {
+                    return count;
+                }
+            }
+        } catch(error) {
+            console.log(`GET COUNT: ${error}`);
+            return { Error: error }
+        }
     }
 }
