@@ -200,7 +200,7 @@
                                 </div>
                             </div>
                         </div>
-                        <AgentsChat v-if="agentInfo.isRunning" :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="0"/>
+                        <AgentsChat v-if="type=='instances'&& agentInfo.isRunning && filteredMessages.length == 0" class="px-5 py-1" :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="-1"/>
                     </div>
                 </div>
             </perfect-scrollbar>
@@ -217,9 +217,9 @@
             <v-divider />
         </div>
 
+        <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
+        <div id="imagePreview" style="max-width: 200px;"></div>
         <form class="d-flex align-center pa-0">
-            <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
-            <div id="imagePreview" style="max-width: 200px;"></div>
             <v-textarea
                 variant="solo"
                 hide-details
@@ -238,7 +238,7 @@
                     <v-col style="text-align: center; padding-left: 0px;">
                         <v-tooltip right>
                             <template v-slot:activator="{ on, attrs }">
-                                <v-btn v-if="type=='instances' && !agentInfo.isRunning" :disabled="!agentInfo.draftPrompt" icon variant="text" class="text-medium-emphasis" @click="requestDraftAgent" v-bind="attrs" v-on="on">
+                                <v-btn v-if="type=='instances' && !agentInfo.isRunning" :disabled="!(newMessage || agentInfo.draftPrompt)" icon variant="text" class="text-medium-emphasis" @click="requestDraftAgent" v-bind="attrs" v-on="on">
                                     <Icon width="20" height="20" icon="fluent:document-one-page-sparkle-16-regular" />
                                 </v-btn>
                                 <v-btn v-if="type=='instances' && agentInfo.isRunning"  icon variant="text" class="text-medium-emphasis">
@@ -348,23 +348,27 @@ export default {
         },
         filteredMessages() {
             var list = [];
-            this.messages.forEach((item) => {
-                let data = JSON.parse(JSON.stringify(item));
-                if (data.content || data.jsonContent) {
-                    list.push(data);
-                }
-            });
+            if (this.messages && this.messages.length > 0) {
+                this.messages.forEach((item) => {
+                    let data = JSON.parse(JSON.stringify(item));
+                    if (data.content || data.jsonContent) {
+                        list.push(data);
+                    }
+                });
+            }
             return list;
         },
         // isLoading 상태의 변화를 감시합니다.
         isLoading: {
             get() {
                 var res = false;
-                this.messages.forEach(item => {
-                    if (item.isLoading) {
-                        res = item.isLoading;
-                    }
-                });
+                if (this.messages && this.messages.length > 0) {
+                    this.messages.forEach(item => {
+                        if (item.isLoading) {
+                            res = item.isLoading;
+                        }
+                    });
+                }
                 return res;
             },
             set(val) {
@@ -378,7 +382,7 @@ export default {
     },
     methods: {
         requestDraftAgent(){
-            this.$emit('requestDraftAgent');
+            this.$emit('requestDraftAgent', this.newMessage);
         },
         setMessageForUser(content){
             if (content.includes(`"messageForUser":`)) {

@@ -11,6 +11,20 @@
         "title" : "AI를 기반한 프로세스 관리에서 실행까지를 손쉽게 시작하세요",
         "subTitle" : "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
     },
+    "DashboardTodoList" : {
+        "todo" : "할일",
+        "inProgress" : "진행중",
+        "done" : "완료"
+    },
+    "DashboardUpcomingScheduls" : {
+        "title" : "다가오는 일정",
+        "schedule" : "일정",
+        "dateAndTime" : "일시",
+        "category" : "구분"
+    },
+    "dashboard" : {
+        "title" : "대시보드"
+    },
     "todoList" : {
         "title" : "할 일 목록"
     },

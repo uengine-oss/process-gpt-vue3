@@ -159,26 +159,28 @@ export default {
             if(callback.connection){
                 me.agentInfo.isConnection = true
                 if(callback.data){
-                    me.agentInfo.isRunning = true
-
                     let message = callback.data
+                    let duplication = me.messages.find(mes=> mes.role == message.role && JSON.stringify(mes.content) === JSON.stringify(message.content))
+                    if(duplication) return;
+
                     message['_template'] = 'agent'
                     me.messages.push(message)
                     me.saveMessages(me.messages)
-                } else {
-                    // me.agentInfo.isRunning = true
-                }
+                } 
 
-                // temp Logic
-                if(me.isRunningId) clearTimeout(me.isRunningId)
-                me.isRunningId = setTimeout(() => {
+                if(callback.isFinished){
                     me.agentInfo.isRunning = false
-                }, 30 * 1000);
+                } else {
+                    me.agentInfo.isRunning = true
+                }
             } else {
                 me.agentInfo.isConnection = false
                 me.agentInfo.isRunning = false
             }
         })
+    },
+    beforeUnmount(){
+        this.releaseAgent()
     },
     watch: {
         "$route": {
@@ -196,13 +198,14 @@ export default {
         },
     },
     methods: {
-        requestDraftAgent(){
+        requestDraftAgent(newVal){
             var me = this
             me.$app.try({
                 context: me,
                 action(me) {
-                    if(!me.agentInfo.draftPrompt) return;
+                    if(newVal) me.agentInfo.draftPrompt = newVal
 
+                    if(!me.agentInfo.draftPrompt) return;
                     me.agentInfo.isRunning = true
                     me.requestAgent(me.agentInfo.draftPrompt)
                 },
@@ -409,12 +412,12 @@ export default {
                     const nextAct = data.nextActivities[0];
                     if (nextAct.nextUserEmail) {
                         let putObj = {
-                            id: nextAct.nextUserEmail + "_" + data.instanceId,
+                            id: this.uuid(),
+                            user_id: this.userInfo.email,
                             proc_inst_id: data.instanceId,
                             proc_def_id: data.processDefinitionId,
                             activity_id: nextAct.nextActvityId,
-                            start_date: format(new Date(), "yyyy-MM-dd HH:mm:ss.SSS"),
-                            // end_date: Date.now(),
+                            start_date: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
                             status: 'IN_PROGRESS',
                         }
                         await this.putObject('todolist', putObj);
@@ -424,11 +427,12 @@ export default {
                 if (data.completedActivities && data.completedActivities.length > 0) {
                     const completedAct = data.completedActivities[0];
                     let putObj = {
-                        id: this.userInfo.email + "_" + data.instanceId,
+                        id: this.uuid(),
+                        user_id: this.userInfo.email,
                         proc_inst_id: data.instanceId,
                         proc_def_id: data.processDefinitionId,
                         activity_id: completedAct.completedActivityId,
-                        end_date: format(new Date(), "yyyy-MM-dd HH:mm:ss.SSS"),
+                        end_date: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
                         status: completedAct.result,
                     }
                     await this.putObject('todolist', putObj);
