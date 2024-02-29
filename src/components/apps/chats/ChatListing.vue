@@ -4,18 +4,19 @@ import { formatDistanceToNowStrict } from 'date-fns';
 import { last } from 'lodash';
 
 const props = defineProps({
-  chatRoomList: Array
+  chatRoomList: Array,
+  userList: Array
 });
 
-const emit = defineEmits(['chat-selected']);
+const emit = defineEmits(['chat-selected', 'create-chat-room']);
 
 onMounted(() => {
 
 });
 
 
-const selectChat = (chatId) => {
-    emit('chat-selected', chatId);
+const selectChatRoom = (chat) => {
+    emit('chat-selected', chat);
 };
 
 const chatItem = props.chatRoomList;
@@ -30,33 +31,38 @@ const items = ref([{ title: 'Sort by time' }, { title: 'Sort by Unread' }, { tit
 
 const dialog = ref(false);
 const inputObj = ref({
-  name: '',
-  participants: []
+    name: '',
+    participants: []
 });
-const srcs = {
-    1: 'https://cdn.vuetifyjs.com/images/lists/1.jpg',
-    2: 'https://cdn.vuetifyjs.com/images/lists/2.jpg',
-    3: 'https://cdn.vuetifyjs.com/images/lists/3.jpg',
-    4: 'https://cdn.vuetifyjs.com/images/lists/4.jpg',
-    5: 'https://cdn.vuetifyjs.com/images/lists/5.jpg',
-}
 
-const users = [
-    { name: 'Sandra Adams', email: 'test1.gmail.com', avatar: srcs[1] },
-    { name: 'Ali Connors', email: 'test2.gmail.com', avatar: srcs[2] },
-    { name: 'Trevor Hansen', email: 'test3.gmail.com', avatar: srcs[3] },
-    { name: 'Tucker Smith', email: 'test4.gmail.com', avatar: srcs[2] },
-    { name: 'Britta Holt', email: 'test5.gmail.com', avatar: srcs[4] },
-    { name: 'Jane Smith ', email: 'test6.gmail.com', avatar: srcs[5] },
-    { name: 'John Smith', email: 'test7.gmail.com', avatar: srcs[1] },
-    { name: 'Sandra Williams', email: 'test8.gmail.com', avatar: srcs[3] },
-]
+const editMode = ref(false);
+
+// 이름 입력 필드에 대한 검증 규칙
+const nameRules = [
+  v => !!v || '채팅방 이름을 입력해주세요.',
+];
+
+// 참여자 선택 필드에 대한 검증 규칙
+const participantsRules = [
+  v => (v && v.length > 0) || '참여자를 하나 이상 선택해주세요.',
+];
 
 const confirmDialog = () => {
-  console.log(inputObj.value);
+  if (!inputObj.value.name || !inputObj.value.participants.length) {
+    console.log('Invalid input');
+    return;
+  }
+  emit('create-chat-room', inputObj.value);
   dialog.value = false;
   // 여기서 서버에 데이터를 보내거나 추가 처리를 할 수 있습니다.
 };
+
+const openEditDialog = (chat) => {
+    inputObj.value = { ...chat };
+    editMode.value = true;
+    dialog.value = true;
+};
+
 </script>
 <template>
     <v-sheet>
@@ -91,36 +97,37 @@ const confirmDialog = () => {
     <v-dialog v-model="dialog" persistent max-width="600px">
       <v-card>
         <v-card-title>
-          새 채팅방 생성
+            채팅방 설정
         </v-card-title>
         <v-card-text>
-          <v-text-field label="채팅방 이름" v-model="inputObj.name"></v-text-field>
+          <v-text-field label="채팅방 이름" v-model="inputObj.name" :rules="nameRules"></v-text-field>
           <v-autocomplete
                 v-model="inputObj.participants"
-                :items="users"
+                :items="userList"
                 chips
                 closable-chips
                 color="blue-grey-lighten-2"
-                item-title="name"
+                item-title="username"
                 item-value="email"
                 multiple
                 label="참여자 선택"
                 small-chips
                 :item-avatar="'image'"
+                :rules="participantsRules"
             >
               <template v-slot:chip="{ props, item }">
                 <v-chip
                   v-bind="props"
-                  :prepend-avatar="item.raw.avatar"
-                  :text="item.raw.name"
+                  :prepend-avatar="item.raw.profile"
+                  :text="item.raw.username"
                 ></v-chip>
               </template>
 
               <template v-slot:item="{ props, item }">
                 <v-list-item
                   v-bind="props"
-                  :prepend-avatar="item.raw.avatar"
-                  :title="item.raw.name"
+                  :prepend-avatar="item.raw.profile"
+                  :title="item.raw.username"
                   :subtitle="item.raw.email"
                 ></v-list-item>
               </template>
@@ -129,7 +136,7 @@ const confirmDialog = () => {
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn color="blue darken-1" text @click="dialog = false">취소</v-btn>
-          <v-btn color="blue darken-1" text @click="confirmDialog">확인</v-btn>
+          <v-btn color="blue darken-1" text @click="confirmDialog">{{ editMode ? '수정' : '생성' }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -143,7 +150,7 @@ const confirmDialog = () => {
                 v-for="chat in filteredChats"
                 :key="chat.id"
                 lines="two"
-                @click="selectChat(chat.id)"
+                @click="selectChatRoom(chat)"
             >
                 <!---Avatar-->
                 <template v-slot:prepend>
@@ -168,21 +175,24 @@ const confirmDialog = () => {
                 <!---Name-->
                 <v-list-item-title class="text-subtitle-1 textPrimary w-100 font-weight-semibold">{{ chat.name }}</v-list-item-title>
                 <!---Subtitle-->
-                <v-sheet v-if="chat.lastMessage.type == 'img'">
+                <v-sheet v-if="chat.message.type == 'img'">
                     <small class="textPrimary text-subtitle-2">Sent a Photo</small>
                 </v-sheet>
                 <div class="text-subtitle-2 textPrimary mt-1 text-truncate w-100" v-else>
-                    {{ chat.lastMessage.msg }}
+                    {{ chat.message.msg }}
                 </div>
                 <!---Last seen--->
                 <template v-slot:append>
-                    <div class="d-flex flex-column text-right w-25">
+                    <div class="d-flex flex-column text-right w-25" style="margin-right: -40px;">
                         <small class="textPrimary text-subtitle-2">
                             {{
-                                formatDistanceToNowStrict(new Date(chat.lastMessage.createdAt), {
+                                formatDistanceToNowStrict(new Date(chat.message.createdAt), {
                                     addSuffix: false
                                 })
                             }}
+                            <v-btn style="margin-left: 5px; margin-right: -5px;" icon @click="openEditDialog(chat)">
+                                <v-icon>mdi-dots-vertical</v-icon>
+                            </v-btn>
                         </small>
                     </div>
                 </template>

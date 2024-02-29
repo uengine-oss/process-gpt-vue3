@@ -4,7 +4,10 @@
             <template v-slot:leftpart>
                 <div class="no-scrollbar">
                 <ChatProfile />
-                <ChatListing :chatRoomList="chatRoomList" @chat-selected="chatRoomSelected" />
+                <ChatListing :chatRoomList="chatRoomList" :userList="userList" 
+                    @chat-selected="chatRoomSelected" 
+                    @create-chat-room="createChatRoom"
+                />
                 </div>
             </template>
             <template v-slot:rightpart>
@@ -57,36 +60,8 @@ export default {
         path: "chats",
         organizationChart: [],
         calendarData: null,
-        chatRoomList: [
-            // {
-            //     "id":1,
-            //     "name":"James Johnson",
-            //     "status":"online",
-            //     "thumb":"/src/assets/images/profile/user-2.jpg",
-            //     "recent":false,
-            //     "chatHistory":[
-            //         {
-            //             "createdAt":"2024-02-23T06:21:22.893Z",
-            //             "msg":"Vof bedvibu gegcip ricubo vidfu.",
-            //             "type":"text",
-            //         }
-            //     ]
-            // },
-            // {
-            //     "id":2,
-            //     "name":"Maria Hernandez",
-            //     "status":"online",
-            //     "thumb":"/src/assets/images/profile/user-3.jpg",
-            //     "recent":true,
-            //     "chatHistory":[
-            //         {
-            //             "createdAt":"2024-02-23T06:21:22.893Z",
-            //             "msg":"Vof bedvibu gegcip ricubo vidfu.",
-            //             "type":"img",
-            //         }
-            //     ]
-            // },
-        ]
+        currendtChatRoom: null,
+        userList: null,
     }),
     async created() {
         // this.init();
@@ -96,8 +71,9 @@ export default {
             preferredLanguage: "Korean"
         });
 
-        await this.getChatRoomList()
-        await this.getChatList()
+        this.userInfo = await this.storage.getUserInfo();
+        await this.getChatRoomList();
+        await this.getUserList();
         await this.getCalendar();
     },
     methods: {
@@ -109,6 +85,15 @@ export default {
             this.calendarData = res && res.data ? res.data : {};
             this.generator.setCalendarData(this.calendarData);
         },
+        async getUserList(){
+            var me = this
+            await me.storage.list(`db://users`).then(function (users) {
+                if (users) {
+                    users = users.filter(user => user.email !== me.userInfo.email);
+                    me.userList = users
+                }
+            });
+        },
         async getChatRoomList(){
             var me = this
             // await this.storage.watch(`db://chats/chat1`, async (data) => {
@@ -118,31 +103,67 @@ export default {
             //         }
             //     }
             // });
-            me.userInfo = await me.storage.getUserInfo();
             await me.storage.list(`db://chat_rooms`).then(function (chatRooms) {
                 if (chatRooms) {
                     chatRooms.forEach(function (chatRoom) {
                         if(chatRoom.participants.find(x => x === me.userInfo.email)){
-                            chatRoom.status = "online"
-                            chatRoom.thumb = "/src/assets/images/profile/user-2.jpg"
-                            chatRoom.recent = false
                             me.chatRoomList.push(chatRoom)
                         }
                     })
+                    if(me.chatRoomList.length > 0){
+                        me.currendtChatRoom = me.chatRoomList[0]
+                        me.getChatList(me.chatRoomList[0].id);
+                    } else {
+                        alert("Create a new chat room")
+                    }
                 }
             });
         },
-        chatRoomSelected(id){
-            console.log(id)
+        createChatRoom(chatRoomInfo){
+            if(!chatRoomInfo.id){
+                chatRoomInfo.id = this.uuid();
+                chatRoomInfo.participants.push(this.userInfo.email)
+                chatRoomInfo.status = "online"
+                chatRoomInfo.recent = false
+                chatRoomInfo.thumb = "/src/assets/images/profile/user-2.jpg"
+                let currentTimestamp = Date.now().toString();
+                chatRoomInfo.message = {
+                    "msg": "NEW",
+                    "type": "text",
+                    "createdAt": currentTimestamp
+                }
+                this.chatRoomList.push(chatRoomInfo)
+            } else {
+                let index = this.chatRoomList.findIndex(room => room.id === chatRoomInfo.id);
+                if(index !== -1) {
+                    this.chatRoomList.splice(index, 1, chatRoomInfo);
+                }
+            }
+            
+            this.currendtChatRoom = chatRoomInfo
+            this.putObject(`chat_rooms`, chatRoomInfo);
         },
-        putMessage(chatRoomId, msg){
+        chatRoomSelected(chatRoomInfo){
+            this.currendtChatRoom = chatRoomInfo
+            this.getChatList(chatRoomInfo.id);
+        },
+        putMessage(msg){
             let uuid = this.uuid()
             let message = {
                 "messages": msg,
-                "id": chatRoomId,
+                "id": this.currendtChatRoom.id,
                 "uid": uuid,
             }
+            console.log(message)
             this.putObject(`chats/${uuid}`, message);
+
+            let chatRoomObj = {
+                "msg": msg.content,
+                "type": "text",
+                "createdAt": msg.timeStamp
+            }
+            this.currendtChatRoom.message = chatRoomObj
+            this.putObject(`chat_rooms`, this.currendtChatRoom);
         },
         beforeReply(msg){
             if(msg){
@@ -154,9 +175,9 @@ export default {
         async beforeSendMessage(newMessage) {
             if (newMessage && newMessage.text != '') {
                 if(newMessage.text.includes("시작하겠습니다.")){
-                    this.putMessage("chat1", this.createMessageObj(newMessage.text, 'system'))
+                    this.putMessage(this.createMessageObj(newMessage.text, 'system'))
                 } else {
-                    this.putMessage("chat1", this.createMessageObj(newMessage.text))
+                    this.putMessage(this.createMessageObj(newMessage.text))
                     if(!this.generator.contexts) {
                         let contexts = await this.queryFromVectorDB(newMessage.text);
                         this.generator.setContexts(contexts);
@@ -289,7 +310,7 @@ export default {
                         }
                     }
                 }
-                this.putMessage("chat1", obj)
+                this.putMessage(obj)
             }
         },
 

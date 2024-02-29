@@ -166,6 +166,9 @@ export default defineComponent({
       const month = String(date.getMonth() + 1).padStart(2, '0');
 
       if(option == 'update'){
+        if(!this.calendarData){
+          this.calendarData = {}
+        }
         if(!this.calendarData[`${year}_${month}`]){
           this.calendarData[`${year}_${month}`] = {}
         }
@@ -178,7 +181,7 @@ export default defineComponent({
           "uid": localStorage.getItem('uid'),
           "data": this.calendarData
       }
-      await this.storage.putObject(`db://calendar/${localStorage.getItem('uid')}`, calendarObj);
+      await this.storage.putObject(`db://calendar`, calendarObj);
       this.calendarKey++;
     },
     updateEvent() {

@@ -12,7 +12,8 @@ export default {
         generator: null,
         messages: [],
         userInfo: {},
-        disableChat: false
+        disableChat: false,
+        chatRoomList: []
     }),
     created() {
         var me = this;
@@ -29,25 +30,37 @@ export default {
             await this.loadData(this.getDataPath());
             // await this.loadMessages(this.getDataPath());
         },
-        async getChatList() {
+        async getChatList(chatRoomId) {
             var me = this;
+            me.messages = []
             this.userInfo = await this.storage.getUserInfo();
             let option = {
                 key: "id"
             }
-            await this.storage.watch(`db://chats/chat1`, async (data) => {
+            await this.storage.watch(`db://chats/${chatRoomId}`, async (data) => {
                 if(data && data.new){
                     if(data.new.messages.email != me.userInfo.email){
-                        if (data.new.messages.role == 'system' && me.messages.length > 0 &&  me.messages[me.messages.length - 1].content === data.new.messages.content) {
+                        if ((me.messages && me.messages.length > 0) 
+                        && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
+                        &&  me.messages[me.messages.length - 1].content === data.new.messages.content) {
                             me.messages[me.messages.length - 1] = data.new.messages
                         } else {
                             me.messages.push(data.new.messages)
+                        }
+
+                        console.log(data.new)
+                        console.log(me.chatRoomList)
+
+                        let idx = me.chatRoomList.findIndex(x => x.id == data.new.id)
+                        if(idx && idx != -1){
+                            me.chatRoomList[idx].message.msg = data.new.messages.content
+                            me.chatRoomList[idx].message.createdAt = data.new.messages.timeStamp
                         }
                     }
                 }
             });
 
-            await this.storage.list(`db://chats/chat1`, option).then(function (messages) {
+            await this.storage.list(`db://chats/${chatRoomId}`, option).then(function (messages) {
                 if (messages) {
                     let allMessages = messages.map(message => message.messages);
                     allMessages.sort((a, b) => {
