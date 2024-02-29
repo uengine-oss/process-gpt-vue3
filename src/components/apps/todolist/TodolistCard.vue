@@ -27,50 +27,11 @@
         </div>
 
         <v-dialog v-model="dialog" max-width="500">
-            <v-card>
-                <v-card-text class="mb-4">
-                    <h4 class="text-h6 mb-5">할 일 등록</h4>
-                    <v-text-field
-                        v-model="newTask.activity_id" 
-                        label="할일명"
-                        outlined
-                    ></v-text-field>
-                    <v-textarea
-                        v-model="newTask.description"
-                        label="설명"
-                        outlined
-                    ></v-textarea>
-                    <v-text-field
-                        v-model="newTask.start_date"
-                        label="시작일"
-                        outlined
-                        type="datetime-local"
-                    ></v-text-field>
-                    <v-text-field
-                        v-model="newTask.end_date"
-                        label="종료일"
-                        outlined
-                        type="datetime-local"
-                    ></v-text-field>
-                    <v-select 
-                        v-model="newTask.status"
-                        :items="['TODO', 'IN_PROGRESS', 'PENDING', 'DONE']"
-                        label="진행 상태"
-                        variant="outlined"
-                    ></v-select>
-                </v-card-text>
-                <v-card-actions class="justify-center">
-                    <v-btn color="primary" 
-                        variant="flat" 
-                        :disabled="newTask.activity_id==''" 
-                        @click="addNewTask"
-                    >저장</v-btn>
-                    <v-btn color="error" 
-                        variant="flat" 
-                        @click="dialog = false"
-                    >취소</v-btn>
-                </v-card-actions>
-            </v-card>
+            <TodoDialog 
+                :type="'new'"
+                @add="addNewTask"
+                @close="closeDialog"
+            />
         </v-dialog>
     </v-card>
 </template>
@@ -78,10 +39,12 @@
 <script>
 import StorageBase from '@/utils/StorageBase';
 import TodoTaskColumn from './TodoTaskColumn.vue';
+import TodoDialog  from './TodoDialog.vue'
 
 export default {
     components: {
         TodoTaskColumn,
+        TodoDialog,
     },
     data: () => ({
         storage: null,
@@ -114,7 +77,6 @@ export default {
         userInfo: {},
         path: 'todolist',
         dialog: false,
-        newTask: {},
     }),
     async created() {
         this.storage = StorageBase.getStorage("supabase");
@@ -123,7 +85,8 @@ export default {
         this.getTodolist();
     },
     async mounted() {
-        // await this.storage.watch(this.path, this.getTodolist);
+        var me = this;
+        await this.storage.watch(me.path, me.getTodolist);
     },
     methods:{
         async getTodolist() {
@@ -174,22 +137,18 @@ export default {
             }
         },
         openDialog() {
-            this.newTask = {
-                id: this.uuid(),
-                user_id: '',
-                activity_id: '',
-                status: 'TODO',
-                start_date: null,
-                end_date: null,
-            };
             this.dialog = true;
         },
-        addNewTask() {
-            this.newTask.user_id = this.userInfo.email;
-            if (this.newTask.activity_id != '' && this.newTask.user_id != '') {
-                this.storage.putObject(this.path, this.newTask);
-            }
+        closeDialog() {
             this.dialog = false;
+        },
+        addNewTask(task) {
+            task.id = this.uuid();
+            task.user_id = this.userInfo.email;
+            if (task.activity_id != '' && task.user_id != '') {
+                this.storage.putObject(this.path, this.task);
+            }
+            this.closeDialog();
         },
         uuid() {
             function s4() {
