@@ -108,7 +108,12 @@ export default class CustomRenderer extends BaseRenderer {
 
   // bpmn:UserTask 관련
   drawCustomTask(parentNode, shape) {
-    const rect = drawRect(parentNode, 78, 60, TASK_BORDER_RADIUS, 'none', '#fdf2d0');
+    // 기존 shape의 크기를 가져옵니다.
+    const existingWidth = shape.width.baseVal.value;
+    const existingHeight = shape.height.baseVal.value;
+  
+    // 기존 크기를 사용하여 새로운 사각형을 그립니다.
+    const rect = drawRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, 'none', '#fdf2d0');
     prependTo(rect, parentNode);
     svgRemove(shape);
   }
