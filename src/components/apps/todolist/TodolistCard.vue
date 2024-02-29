@@ -37,6 +37,8 @@
 </template>
 
 <script>
+import { format } from 'date-fns';
+
 import StorageBase from '@/utils/StorageBase';
 import TodoTaskColumn from './TodoTaskColumn.vue';
 import TodoDialog  from './TodoDialog.vue'
@@ -146,9 +148,46 @@ export default {
             task.id = this.uuid();
             task.user_id = this.userInfo.email;
             if (task.activity_id != '' && task.user_id != '') {
-                this.storage.putObject(this.path, this.task);
+                this.storage.putObject(this.path, task);
             }
             this.closeDialog();
+            this.addNewSchedule(task);
+        },
+        async addNewSchedule(task) {
+            const uid = localStorage.getItem('uid');
+            const year_month = format(new Date(task.start_date), "yyyy_MM");
+            const schedule = await this.storage.getObject(`calendar/${uid}`, {key: 'uid'});
+
+            var newSchedule = {};
+            if (schedule && schedule.data) {
+                if (schedule.data[`${year_month}`]) {
+                    newSchedule = schedule.data;
+                } else {
+                    newSchedule[`${year_month}`] = {}
+                }
+                newSchedule[`${year_month}`][`${task.id}`] = {
+                    id: task.id,
+                    start: task.start_date,
+                    end: task.end_date,
+                    title: task.activity_id,
+                    allDay: true,
+                }
+            } else {
+                newSchedule[`${year_month}`] = {}
+                newSchedule[`${year_month}`][`${task.id}`] = {
+                    id: task.id,
+                    start: task.start_date,
+                    end: task.end_date,
+                    title: task.activity_id,
+                    allDay: true,
+                }
+            }
+            
+            var putObj = {
+                uid: uid,
+                data: newSchedule
+            };
+            this.storage.putObject('calendar', putObj);
         },
         uuid() {
             function s4() {
