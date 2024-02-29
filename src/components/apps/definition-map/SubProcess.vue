@@ -22,9 +22,9 @@ export default {
     methods: {
         editProcess() {
             if (this.subProcess.id) {
-                this.$router.push(`/definitions/${this.subProcess.id}`);
+                this.$router.push(`/proc_def/${this.subProcess.id}`);
             } else {
-                this.$router.push("/definitions/chat");
+                this.$router.push("/proc_def/chat");
             }
         },
         deleteProcess() {

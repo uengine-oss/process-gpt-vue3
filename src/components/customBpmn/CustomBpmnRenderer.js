@@ -231,3 +231,4 @@ function drawRect(parentNode, width, height, borderRadius, strokeColor, fillColo
 function prependTo(newNode, parentNode, siblingNode) {
     parentNode.insertBefore(newNode, siblingNode || parentNode.firstChild);
 }
+

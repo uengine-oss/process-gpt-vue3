@@ -156,7 +156,6 @@ export default {
         options: {
             propertiesPanel: {},
             additionalModules: [customBpmnModule],
-            moddleExtensions: []
         },
         element: null,
         definitions: null,
@@ -175,7 +174,7 @@ export default {
         copyProcessDefinition: {
             deep: true,
             handler(newVal) {
-                console.log(newVal)
+                console.log("********* watch  ********")
                 this.$emit("updateDefinition", newVal)
             }
         },
@@ -219,6 +218,9 @@ export default {
                 "majorProcessId": "",
                 "processDefinitionName": "",
                 "processDefinitionId": this.uuid(),
+                "events": [],
+                "gateways": [],
+                "participants": [],
                 "description": "",
                 "data": [],
                 "roles": [],
@@ -239,8 +241,18 @@ export default {
         },
         onAddShape(e) {
             console.log(e)
-            let activity = this.createActivity(e)
-            this.copyProcessDefinition.activities.push(activity)
+            let element;
+            if (e.type.includes("Task")) {
+                element = this.createActivity(e)
+                this.copyProcessDefinition.activities.push(element)
+            } else if (e.type.includes("Participant")) {
+                element = this.createParticipant(e)
+                this.copyProcessDefinition.participants.push(element)
+            } else if (e.type.includes("Lane")) {
+                element = this.createRole(e)
+                this.copyProcessDefinition.roles.push(element)
+            }
+
         },
         onChangeShape(e) {
             console.log(e)
@@ -251,6 +263,32 @@ export default {
         onRemoveShape(e) {
             console.log(e)
         },
+        createParticipant(element) {
+            let participant = {
+                "name": element.name,
+                "resolutionRule": "",
+                "pos": {
+                    x: element.x,
+                    y: element.y,
+                    width: element.width,
+                    height: element.height
+                }
+            }
+            return participant
+        },
+        createRole(element) {
+            let role = {
+                "name": element.name,
+                "resolutionRule": "",
+                "pos": {
+                    x: element.x,
+                    y: element.y,
+                    width: element.width,
+                    height: element.height
+                }
+            }
+            return role
+        },
         createActivity(element) {
             let task = this.taskMapping(element.type)
             let activity = {
@@ -259,7 +297,14 @@ export default {
                 "type": task,
                 "description": "",
                 "role": "",
-                "outputData": []
+                "outputData": [],
+                "inputData": [],
+                "pos": {
+                    x: element.x,
+                    y: element.y,
+                    width: element.width,
+                    height: element.height
+                }
             }
             return activity
         },
@@ -320,7 +365,7 @@ export default {
         },
         updateElement(element) {
             // let 
-            this.convertElementToJSON(element);
+            // this.convertElementToJSON(element);
             // this.changeElement(this.copyProcessDefinition, 'id', newObj.id, newObj)
             // obj = newObj
             this.$emit('update')

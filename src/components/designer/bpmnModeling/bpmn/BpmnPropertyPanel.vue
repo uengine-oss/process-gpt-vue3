@@ -1,15 +1,15 @@
 <template>
     <div style="height: 95%; margin-top: 10px; overflow: auto;" v-click-outside="onClickOutside">
         <v-card-text>
-            <div>Name</div>
-            <v-text-field v-model="name"></v-text-field>
+            <div>{{ $t('BpnmPropertyPanel.name') }}</div>
+            <v-text-field v-model="this.copyElement.name"></v-text-field>
             <div>
-                <div>Description</div>
-                <v-textarea v-if="!copyElement.$type.includes('Event') && !copyElement.$type.includes('Lane')"
-                    v-model="copyElement.extensionElements.values[0].description"></v-textarea>
+                <div>{{ $t('BpnmPropertyPanel.description') }}</div>
+                <v-textarea v-if="!copyElement.$type.includes('Event')"
+                    v-model="this.copyElement.extensionElements.values[0].description"></v-textarea>
             </div>
             <div v-if="element.$type.includes('Task') && inputData.length > 0" style="margin-bottom:20px;">
-                <div style="margin-bottom:-8px;">Input Data</div>
+                <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.inputData') }}</div>
                 <v-row class="ma-0 pa-0">
                     <div v-for="(inputData, idx) in inputData" :key="idx" class="mr-2 mt-2">
                         <v-chip v-if="inputData.mandatory" color="primary" variant="outlined" class="text-body-2">
@@ -23,8 +23,13 @@
                     </div>
                 </v-row>
             </div>
+            <div v-if="element.$type == 'bpmn:CallActivity'">
+                <div style="margin-bottom: 8px;">Select Definition</div>
+                <v-autocomplete v-model="selectedDefinition" :items="definitions" color="primary" label="Definition"
+                    variant="outlined" hide-details></v-autocomplete>
+            </div>
             <div v-if="element.$type.includes('Task') && outputData.length > 0" style="margin-bottom:20px;">
-                <div style="margin-bottom:-8px;">Output Data</div>
+                <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.outputData') }}</div>
                 <v-row class="ma-0 pa-0">
                     <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
                         <v-chip v-if="output.mandatory" color="primary" class="text-body-2" variant="outlined">
@@ -50,19 +55,19 @@
             </div>
             <div v-if="element.$type.includes('Task')">
                 <v-row class="ma-0 pa-0">
-                    <div>Checkpoints</div>
+                    <div>{{ $t('BpnmPropertyPanel.checkPoints') }}</div>
                     <v-spacer></v-spacer>
                     <v-icon v-if="editCheckpoint" @click="editCheckpoint = false" style="margin-top:2px;">mdi-close</v-icon>
                 </v-row>
-                <div v-for="(checkpoint, idx) in checkpoints" :key="idx">
+                <div v-for="(checkpoint, idx) in copyElement.extensionElements.values[0].checkpoints" :key="idx">
                     <v-checkbox-btn color="success" :label="checkpoint.checkpoint" hide-details
                         v-model="checkbox"></v-checkbox-btn>
                 </div>
                 <v-text-field v-if="editCheckpoint" v-model="checkpointMessage.checkpoint"></v-text-field>
                 <v-row class="ma-0 pa-0">
                     <v-spacer></v-spacer>
-                    <v-btn v-if="editCheckpoint" @click="addCheckpoint" color="primary" rounded="pill"
-                        size="small">Submit</v-btn>
+                    <v-btn v-if="editCheckpoint" @click="addCheckpoint" color="primary" rounded="pill" size="small">{{
+                        $t('BpnmPropertyPanel.add') }}</v-btn>
                     <v-card v-else @click="editCheckpoint = !editCheckpoint" elevation="9" variant="outlined"
                         style="padding: 5px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;">
                         <div style="display: flex; justify-content: center; align-items: center;">
@@ -76,17 +81,18 @@
     </div>
 </template>
 <script>
-import { UserIcon, PlusIcon, UsersIcon, PhotoIcon, StarIcon, FileDescriptionIcon, CreditCardIcon, KeyIcon } from 'vue-tabler-icons';
+import { useBpmnStore } from '@/stores/bpmn'
 export default {
     name: 'bpmn-property-panel',
     props: {
         element: Object
     },
     created() {
-        this.element
+        console.log(this.element)
     },
     data() {
         return {
+            definitions: [],
             copyElement: this.element,
             name: "",
             checkpoints: [],
@@ -95,19 +101,28 @@ export default {
                 "$type": "uengine:checkpoint",
                 "checkpoint": ""
             },
-            code: ""
+            code: "",
+            description: "",
+            selectedDefinition: "",
+            bpmnModeler: null
         };
     },
-    mounted() {
+    async mounted() {
         console.log(this.element)
+        const store = useBpmnStore();
+        this.bpmnModeler = store.getModeler;
         this.name = this.element.name
-        if (this.copyElement.$type.includes('Task'))
-            this.checkpoints = this.element.extensionElements.values?.[0]?.$children?.[0]?.$children ? this.element.extensionElements.values[0].$children[0].$children : []
 
+        if (element.$type == 'bpmn:CallActivity') {
+            const value = await this.getData('proc_def', { key: "id" });
+            if (value) {
+                console.log(value)
+            }
+        }
     },
     computed: {
         inputData() {
-            let params = this.copyElement?.extensionElements?.values?.[0]?.$children?.[1]?.$children
+            let params = this.copyElement?.extensionElements?.values?.[0].parameters
             let result = []
             if (params)
                 params.forEach(element => {
@@ -137,17 +152,17 @@ export default {
     },
     methods: {
         addCheckpoint() {
-            this.checkpoints.push(this.checkpointMessage)
-            this.checkpointMessage = {
-                "$type": "uengine:checkpoint",
-                "checkpoint": ""
-            };
+            const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
+            // this.checkpoints.push(this.checkpointMessage)
+            const checkpoint = bpmnFactory.create('uengine:Checkpoint', { checkpoint: this.checkpointMessage.checkpoint });
+            this.copyElement.extensionElements.values[0].checkpoints.push(checkpoint)
         },
         onClickOutside() {
-            this.copyElement.name = this.name
-            if (this.copyElement.$type.includes('Task'))
-                this.copyElement.extensionElements.values[0].$children[0].$children = this.checkpoints
-            this.$emit('updateElement', this.copyElement)
+            const modeling = this.bpmnModeler.get('modeling');
+            const elementRegistry = this.bpmnModeler.get('elementRegistry');
+            const task = elementRegistry.get(this.element.id);
+            modeling.updateProperties(task, this.copyElement);
+
             this.$emit('close');
         },
 
