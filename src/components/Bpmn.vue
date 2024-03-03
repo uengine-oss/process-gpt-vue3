@@ -5,13 +5,12 @@
 </template>
 
 <script>
-import BpmnJS from 'bpmn-js/dist/bpmn-navigated-viewer.production.min.js';
-import BpmnModeler from 'bpmn-js/lib/Modeler';
-import BpmnModdle from 'bpmn-moddle';
-import { useBpmnStore } from '@/stores/bpmn'
 import uEngineModdleDescriptor from '@/components/descriptors/uEngine.json';
+import { useBpmnStore } from '@/stores/bpmn';
 import 'bpmn-js/dist/assets/diagram-js.css';
+import BpmnModeler from 'bpmn-js/lib/Modeler';
 import BpmnViewer from 'bpmn-js/lib/Viewer';
+import BpmnModdle from 'bpmn-moddle';
 
 export default {
     name: 'vue-bpmn',
@@ -37,7 +36,8 @@ export default {
             diagramXML: null,
             openPanel: false,
             moddle: null,
-            bpmnStore: null
+            bpmnStore: null,
+            bpmnViewer: null
         };
     },
     computed: {
@@ -105,7 +105,6 @@ export default {
             }
             console.log(eventBus)
             eventBus.on('shape.added', async function (event) {
-                const bpmnFactory = self.bpmnViewer.get('bpmnFactory');
                 const element = event.element;
                 const businessObject = element.businessObject;
 
@@ -113,34 +112,9 @@ export default {
                 if (businessObject.extensionElements) {
                     return;
                 }
-                console.log(bpmnFactory)
-                // 사용자 정의 XML 요소 생성
-                const uengineParams = bpmnFactory.create('uengine:uengine-params', {
-                    role: '',
-                    pythonCode: '',
-                    description: ''
-                });
 
-                // Checkpoint 요소 생성
-                // const checkpoint = bpmnFactory.create('uengine:Checkpoint', { checkpoint: 'checkpoint1' });
-                uengineParams.checkpoints = [];
+                self.extendUEngineProperties(element)
 
-                // uengineParams에 checkpoints와 parameters 추가
-                // const parameter = bpmnFactory.create('uengine:Parameter', { key: 'param1', category: 'input' });
-                // const parameter2 = bpmnFactory.create('uengine:Parameter', { key: 'param2', category: 'input' });
-                uengineParams.parameters = [];
-                const extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
-                extensionElements.get('values').push(uengineParams);
-                businessObject.extensionElements = extensionElements;
-
-                //
-                // 요소 업데이트를 위해 모델링 컴포넌트 사용
-                setTimeout(async () => {
-                    const modeling = self.bpmnViewer.get('modeling');
-                    modeling.updateProperties(element, { extensionElements: extensionElements });
-                    let xml = await self.bpmnViewer.saveXML({ format: true, preamble: true });
-                    console.log(xml)
-                }, 0);
 
             })
             // eventBus.on('shape.changed', function (e) {
@@ -201,6 +175,45 @@ export default {
         }
     },
     methods: {
+        extendUEngineProperties(businessObject){
+            let self = this
+            //let businessObject = element.businessObject
+
+            if (businessObject.extensionElements?.values) {
+                return;
+            }
+
+            const bpmnFactory = self.bpmnViewer.get('bpmnFactory');
+
+            const uengineParams = bpmnFactory.create('uengine:Uengine-params', {
+                role: '',
+                pythonCode: '',
+                description: ''
+            });
+
+            uengineParams.checkpoints = [];
+
+            // uengineParams에 checkpoints와 parameters 추가
+            // const parameter = bpmnFactory.create('uengine:Parameter', { key: 'param1', category: 'input' });
+            // const parameter2 = bpmnFactory.create('uengine:Parameter', { key: 'param2', category: 'input' });
+            uengineParams.parameters = [];
+
+            const extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
+            extensionElements.get('values').push(uengineParams);
+
+            businessObject.extensionElements = extensionElements;
+
+
+            //TODO: 불필요
+            // 요소 업데이트를 위해 모델링 컴포넌트 사용
+            // setTimeout(async () => {
+            //     const modeling = self.bpmnViewer.get('modeling');
+            //     modeling.updateProperties(businessObject, { extensionElements: extensionElements });
+            //     let xml = await self.bpmnViewer.saveXML({ format: true, preamble: true });
+            //     console.log(xml)
+            // }, 0);
+
+        },
         updateElement(element, extensionElements) {
             const modeling = this.bpmnViewer.get('modeling');
             modeling.updateProperties(element, { extensionElements: extensionElements });

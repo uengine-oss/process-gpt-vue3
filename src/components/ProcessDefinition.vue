@@ -11,7 +11,7 @@
                             </v-btn>
                         </template>
                     </v-tooltip>
-                    <vue-bpmn :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
+                    <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
                         :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
                         v-on:loading="handleLoading" v-on:openPanel="(id) => openPanel(id)"
                         v-on:update-xml="val => $emit('update-xml', val)" v-on:definition="(def) => (definitions = def)"
@@ -124,14 +124,12 @@
 </template>
 
 <script>
-import partialParse from 'partial-json-parser';
-import { VectorStorage } from 'vector-storage';
+import { Icon } from '@iconify/vue';
+import { VDataTable } from 'vuetify/labs/VDataTable';
 import VueBpmn from './Bpmn.vue';
+import customBpmnModule from './customBpmn';
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/BpmnPropertyPanel.vue';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
-import { Icon } from '@iconify/vue';
-import customBpmnModule from './customBpmn';
-import { VDataTable } from 'vuetify/labs/VDataTable'
 
 
 
@@ -373,6 +371,8 @@ export default {
         openPanel(id) {
             this.panel = true;
             this.element = this.findElement(this.definitions, 'id', id);
+
+            this.$refs.bpmnVue.extendUEngineProperties(this.element)
         },
         closePanel() {
             this.element = null;

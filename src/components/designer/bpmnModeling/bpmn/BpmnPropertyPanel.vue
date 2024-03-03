@@ -5,8 +5,8 @@
             <v-text-field v-model="name"></v-text-field>
             <div>
                 <div>{{ $t('BpnmPropertyPanel.description') }}</div>
-                <v-textarea v-if="!copyElement.$type.includes('Event')"
-                    v-model="copyElement.extensionElements.values[0].description"></v-textarea>
+                <v-textarea v-if="!elementCopy.$type.includes('Event')"
+                    v-model="elementCopy.extensionElements.values[0].description"></v-textarea>
             </div>
             <div v-if="element.$type.includes('Task') && inputData.length > 0" style="margin-bottom:20px;">
                 <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.inputData') }}</div>
@@ -25,7 +25,7 @@
             </div>
             <div v-if="element.$type == 'bpmn:CallActivity'">
                 <div style="margin-bottom: 8px;">Select Definition</div>
-                <v-autocomplete v-model="selectedDefinition" :items="definitions" color="primary" label="Definition"
+                <v-autocomplete v-model="selectedDefinition" :items="definitions" item-text="name" color="primary" label="Definition"
                     variant="outlined" hide-details></v-autocomplete>
             </div>
             <div v-if="element.$type.includes('Task') && outputData.length > 0" style="margin-bottom:20px;">
@@ -45,13 +45,13 @@
             </div>
             <div v-if="element.$type == 'bpmn:ScriptTask'">
                 Script (Python)
-                <v-textarea v-model="copyElement.extensionElements.values[0].pythonCode"></v-textarea>
+                <v-textarea v-model="elementCopy.extensionElements.values[0].pythonCode"></v-textarea>
             </div>
             <div v-if="element.$type.includes('Flow')">
                 Condition
                 <br />
                 <v-text-field
-                    v-model="copyElement.extensionElements.values[0].$children[0].$children[0].$body"></v-text-field>
+                    v-model="elementCopy.extensionElements.values[0].$children[0].$children[0].$body"></v-text-field>
             </div>
             <div v-if="element.$type.includes('Task')">
                 <v-row class="ma-0 pa-0">
@@ -59,7 +59,7 @@
                     <v-spacer></v-spacer>
                     <v-icon v-if="editCheckpoint" @click="editCheckpoint = false" style="margin-top:2px;">mdi-close</v-icon>
                 </v-row>
-                <div v-for="(checkpoint, idx) in copyElement.extensionElements.values[0].checkpoints" :key="idx">
+                <div v-for="(checkpoint, idx) in elementCopy.extensionElements.values[0].checkpoints" :key="idx">
                     <v-checkbox-btn color="success" :label="checkpoint.checkpoint" hide-details
                         v-model="checkbox"></v-checkbox-btn>
                 </div>
@@ -81,7 +81,10 @@
     </div>
 </template>
 <script>
-import { useBpmnStore } from '@/stores/bpmn'
+import { useBpmnStore } from '@/stores/bpmn';
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
+
+const storage = StorageBaseFactory.getStorage()
 export default {
     name: 'bpmn-property-panel',
     props: {
@@ -91,14 +94,18 @@ export default {
         console.log(this.element)
     },
     data() {
+
+        
+
         return {
             definitions: [],
-            copyElement: this.element,
+            elementCopy: this.element,
+            uengineProperties: this.element.extensionElements?.values?.[0],
             name: "",
             checkpoints: [],
             editCheckpoint: false,
             checkpointMessage: {
-                "$type": "uengine:checkpoint",
+                "$type": "uengine:Checkpoint",
                 "checkpoint": ""
             },
             code: "",
@@ -114,15 +121,16 @@ export default {
         this.name = this.element.name
 
         if (this.element.$type == 'bpmn:CallActivity') {
-            const value = await this.getData('proc_def', { key: "id" });
+            const value = await storage.getObject('proc_def');
             if (value) {
                 console.log(value)
+                this.definitions = value
             }
         }
     },
     computed: {
         inputData() {
-            let params = this.copyElement?.extensionElements?.values?.[0].parameters
+            let params = this.elementCopy?.extensionElements?.values?.[0].parameters
             let result = []
             if (params)
                 params.forEach(element => {
@@ -132,7 +140,7 @@ export default {
             return result
         },
         outputData() {
-            let params = this.copyElement?.extensionElements?.values?.[0]?.$children?.[1]?.$children
+            let params = this.elementCopy?.extensionElements?.values?.[0]?.$children?.[1]?.$children
             let result = []
             if (params)
                 params.forEach(element => {
@@ -143,7 +151,7 @@ export default {
         }
     },
     watch: {
-        copyElement: {
+        elementCopy: {
             deep: true,
             handler(val) {
                 // console.log(val);
@@ -155,14 +163,14 @@ export default {
             const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
             // this.checkpoints.push(this.checkpointMessage)
             const checkpoint = bpmnFactory.create('uengine:Checkpoint', { checkpoint: this.checkpointMessage.checkpoint });
-            this.copyElement.extensionElements.values[0].checkpoints.push(checkpoint)
+            this.elementCopy.extensionElements.values[0].checkpoints.push(checkpoint)
         },
         onClickOutside() {
             const modeling = this.bpmnModeler.get('modeling');
             const elementRegistry = this.bpmnModeler.get('elementRegistry');
             const task = elementRegistry.get(this.element.id);
-            this.copyElement.name = this.name
-            modeling.updateProperties(task, this.copyElement);
+            this.elementCopy.name = this.name
+            modeling.updateProperties(task, this.elementCopy);
 
             this.$emit('close');
         },
