@@ -39,9 +39,9 @@
 <script>
 import { format } from 'date-fns';
 
-import StorageBase from '@/utils/StorageBase';
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import TodoDialog from './TodoDialog.vue';
 import TodoTaskColumn from './TodoTaskColumn.vue';
-import TodoDialog  from './TodoDialog.vue'
 
 export default {
     components: {
@@ -81,7 +81,7 @@ export default {
         dialog: false,
     }),
     async created() {
-        this.storage = StorageBase.getStorage("supabase");
+        this.storage = StorageBaseFactory.getStorage();
         this.userInfo = await this.storage.getUserInfo();
         
         this.getTodolist();

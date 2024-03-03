@@ -43,7 +43,7 @@
     </v-card>
 </template>
 <script>
-import StorageBase from '@/utils/StorageBase';
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
 
 export default {
     data() {
@@ -52,7 +52,7 @@ export default {
         }
     },
     async created() {
-        const storage = await StorageBase.getStorage("supabase");
+        const storage = await StorageBaseFactory.getStorage();
         const calendarsData = await storage?.getObject('calendar/data');
         const userInfo = await storage?.getUserInfo();
 

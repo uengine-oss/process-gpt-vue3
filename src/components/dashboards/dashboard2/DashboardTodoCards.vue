@@ -20,11 +20,12 @@
   </template>
   
   <script>
-  import StorageBase from '@/utils/StorageBase';
-  import shape1 from '@/assets/images/svgs/warning-shap.svg';
   import shape2 from '@/assets/images/svgs/danger-shap.svg';
-  import shape3 from '@/assets/images/svgs/info-shap.svg';
+import shape3 from '@/assets/images/svgs/info-shap.svg';
+import shape1 from '@/assets/images/svgs/warning-shap.svg';
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
   
+
   export default {
     data() {
       return {
@@ -54,7 +55,7 @@
       }
     },
     async created() {
-        const storage = await StorageBase.getStorage("supabase");
+        const storage = StorageBaseFactory.getStorage();
         let userId = localStorage.getItem('email');
         if (!userId) {
             const loginUserInfo = await storage?.getUserInfo();

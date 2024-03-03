@@ -103,7 +103,7 @@ export default {
         },
     },
     async created() {
-        this.storage = StorageBase.getStorage("supabase");
+        this.storage = StorageBase.getStorage();
         this.email = localStorage.getItem("email");
         await this.init();
     },

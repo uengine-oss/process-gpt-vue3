@@ -1,8 +1,8 @@
-import { defineStore } from 'pinia';
 import { router } from '@/router';
+import { defineStore } from 'pinia';
 
-import StorageBase from '@/utils/StorageBase';
-const storage = StorageBase.getStorage('supabase');
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
+const storage = StorageBaseFactory.getStorage();
 
 export const useAuthStore = defineStore({
     id: 'auth',

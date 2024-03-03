@@ -1,8 +1,7 @@
 <script>
 import jp from 'jsonpath';
-import partialParse from 'partial-json-parser';
 
-import StorageBase from '@/utils/StorageBase';
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
 
 export default {
     data: () => ({
@@ -20,7 +19,7 @@ export default {
         if (!me.$app.try) {
             me.$app = me.$app._component.methods;
         }
-        this.storage = StorageBase.getStorage("supabase");
+        this.storage = StorageBaseFactory.getStorage();
     },
     methods: {
         async init() {
