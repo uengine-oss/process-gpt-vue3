@@ -503,6 +503,7 @@ export default {
 <style lang="scss">
 .message-input-box .v-field__input {
     font-size:16px;
+    padding-left:12px;
 }
 .message-input-box .v-field{
     padding:0px;
