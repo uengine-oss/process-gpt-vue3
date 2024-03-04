@@ -146,7 +146,7 @@ export default {
             this.definitionChangeCount++
             // this.processDefinition = val
             // this.bpmn = this.createBpmnXml(val)
-            // this.isChanged = true
+            this.isChanged = true
         },
         async loadData(path) {
             // this.bpmn = '<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" id="sample-diagram" targetNamespace="http://bpmn.io/schema/bpmn" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL bpmn0.xsd"><bpmn:collaboration id="Collaboration_1tj7ei2"><bpmn:participant id="Participant_1eqhejj" processRef="Process_1"/></bpmn:collaboration><bpmn:process id="Process_1" isExecutable="false"><bpmn:laneSet id="LaneSet_1g2nbpc"><bpmn:lane id="Lane_0wneims" name="Woker"><bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef><bpmn:flowNodeRef>Activity_1ta8n6y</bpmn:flowNodeRef></bpmn:lane><bpmn:lane id="Lane_1lf58ly" name="HR"><bpmn:flowNodeRef>Event_0h4j724</bpmn:flowNodeRef><bpmn:flowNodeRef>Activity_0ji9jev</bpmn:flowNodeRef></bpmn:lane></bpmn:laneSet><bpmn:startEvent id="StartEvent_1" name="시작" magic:spell="Avada Kedavra"><bpmn:outgoing>Flow_0sp25wg</bpmn:outgoing></bpmn:startEvent><bpmn:sequenceFlow id="Flow_0sp25wg" sourceRef="StartEvent_1" targetRef="Activity_1ta8n6y"/><bpmn:sequenceFlow id="Flow_03dbjwz" sourceRef="Activity_1ta8n6y" targetRef="Activity_0ji9jev"/><bpmn:endEvent id="Event_0h4j724" name="종료"><bpmn:incoming>Flow_182335x</bpmn:incoming></bpmn:endEvent><bpmn:sequenceFlow id="Flow_182335x" sourceRef="Activity_0ji9jev" targetRef="Event_0h4j724"/><bpmn:userTask id="Activity_1ta8n6y" name="휴가 신청"><bpmn:documentation>Vacation</bpmn:documentation><bpmn:incoming>Flow_0sp25wg</bpmn:incoming><bpmn:outgoing>Flow_03dbjwz</bpmn:outgoing></bpmn:userTask><bpmn:userTask id="Activity_0ji9jev" name="승인"><bpmn:documentation>confirm</bpmn:documentation><bpmn:incoming>Flow_03dbjwz</bpmn:incoming><bpmn:outgoing>Flow_182335x</bpmn:outgoing></bpmn:userTask></bpmn:process><bpmndi:BPMNDiagram id="BPMNDiagram_1"><bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1tj7ei2"><bpmndi:BPMNShape id="Participant_1eqhejj_di" bpmnElement="Participant_1eqhejj" isHorizontal="true"><dc:Bounds x="270" y="150" width="600" height="250"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="Lane_0wneims_di" bpmnElement="Lane_0wneims" isHorizontal="true"><dc:Bounds x="300" y="150" width="570" height="125"/><bpmndi:BPMNLabel/></bpmndi:BPMNShape><bpmndi:BPMNShape id="Lane_1lf58ly_di" bpmnElement="Lane_1lf58ly" isHorizontal="true"><dc:Bounds x="300" y="275" width="570" height="125"/><bpmndi:BPMNLabel/></bpmndi:BPMNShape><bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1"><dc:Bounds x="352" y="192" width="36" height="36"/><bpmndi:BPMNLabel><dc:Bounds x="361" y="235" width="20" height="14"/></bpmndi:BPMNLabel></bpmndi:BPMNShape><bpmndi:BPMNShape id="Event_0h4j724_di" bpmnElement="Event_0h4j724"><dc:Bounds x="762" y="322" width="36" height="36"/><bpmndi:BPMNLabel><dc:Bounds x="770" y="365" width="20" height="14"/></bpmndi:BPMNLabel></bpmndi:BPMNShape><bpmndi:BPMNShape id="Activity_18762mc_di" bpmnElement="Activity_1ta8n6y"><dc:Bounds x="440" y="170" width="100" height="80"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="Activity_1omaje8_di" bpmnElement="Activity_0ji9jev"><dc:Bounds x="600" y="300" width="100" height="80"/></bpmndi:BPMNShape><bpmndi:BPMNEdge id="Flow_0sp25wg_di" bpmnElement="Flow_0sp25wg"><di:waypoint x="388" y="210"/><di:waypoint x="440" y="210"/></bpmndi:BPMNEdge><bpmndi:BPMNEdge id="Flow_03dbjwz_di" bpmnElement="Flow_03dbjwz"><di:waypoint x="540" y="210"/><di:waypoint x="570" y="210"/><di:waypoint x="570" y="340"/><di:waypoint x="600" y="340"/></bpmndi:BPMNEdge><bpmndi:BPMNEdge id="Flow_182335x_di" bpmnElement="Flow_182335x"><di:waypoint x="700" y="340"/><di:waypoint x="762" y="340"/></bpmndi:BPMNEdge></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>';
@@ -613,7 +613,7 @@ export default {
             // XML 문서 초기화
             let me = this;
             const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString('<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine"></bpmn:definitions>', 'application/xml');
+            const xmlDoc = parser.parseFromString('<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_0bfky9r" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0"></bpmn:definitions>', 'application/xml');
             const bpmnDefinitions = xmlDoc.documentElement;
 
             bpmnDefinitions.setAttribute('id', 'Definitions_' + jsonModel.processDefinitionId);
@@ -725,48 +725,42 @@ export default {
                     }
                     let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
                     let root = xmlDoc.createElementNS('http://uengine', 'uengine:Uengine-params');
-                    // let role = xmlDoc.createElementNS('http://uengine', 'uengine:role');
+                    let role = xmlDoc.createElementNS('http://uengine', 'uengine:Role');
                     // role.textContent = activity.role
                     // root.appendChild(role)
-                    // let desc = xmlDoc.createElementNS('http://uengine', 'uengine:description');
+                    let desc = xmlDoc.createElementNS('http://uengine', 'uengine:Description');
                     // desc.textContent = activity.description
                     // root.appendChild(desc)
-                    // let checkpoints = xmlDoc.createElementNS('http://uengine', 'uengine:checkpoint');
-                    // let pythonCode = xmlDoc.createElementNS('http://uengine', 'uengine:pythonCode');
-                    // pythonCode.textContent = "";
-                    // root.appendChild(pythonCode)
-                    // // let checkpoints = xmlDoc.createElementNS('http://uengine', 'uengine:checkpoints');
-                    // if (activity.checkpoints) {
-                    //     activity.checkpoints.forEach((checkpoint) => {
-                    //         console.log(checkpoint)
-                    //         let check = xmlDoc.createElementNS('http://uengine', 'uengine:checkpoint');
-                    //         check.textContent = checkpoint
-                    //         checkpoints.appendChild(check)
-                    //     })
-                    // }
-                    // root.appendChild(checkpoints)
-                    // let params = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
-                    // if (activity.inputData) {
-                    //     activity.inputData.forEach((data) => {
-                    //         let param = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
-                    //         param.setAttribute('key', data.name)
-                    //         param.setAttribute('category', "input")
-                    //         params.appendChild(param)
-                    //     })
+                    let checkpoints = xmlDoc.createElementNS('http://uengine', 'uengine:Checkpoint');
+                    if (activity.checkpoints) {
+                        activity.checkpoints.forEach((checkpoint) => {
+                            console.log(checkpoint)
+                            let check = xmlDoc.createElementNS('http://uengine', 'uengine:Checkpoint');
+                            check.textContent = checkpoint
+                            checkpoints.appendChild(check)
+                        })
+                    }
+                    root.appendChild(checkpoints)
 
-                    //     // userTask.appendChild(extensionElements)
-                    // }
-                    // if (activity.outputData) {
-                    //     activity.outputData.forEach((data) => {
-                    //         let param = xmlDoc.createElementNS('http://uengine', 'uengine:parameter');
-                    //         param.setAttribute('key', data.name)
-                    //         param.setAttribute('category', "output")
-                    //         params.appendChild(param)
-                    //     })
-                    //     root.appendChild(params)
-                    //     extensionElements.appendChild(root)
-                    // }
-                    // root.appendChild(params)
+                    // Params
+                    let params = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
+                    if (activity.inputData) {
+                        activity.inputData.forEach((data) => {
+                            let param = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
+                            param.setAttribute('key', data.name)
+                            param.setAttribute('category', "input")
+                            params.appendChild(param)
+                        })
+                    }
+                    if (activity.outputData) {
+                        activity.outputData.forEach((data) => {
+                            let param = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
+                            param.setAttribute('key', data.name)
+                            param.setAttribute('category', "output")
+                            params.appendChild(param)
+                        })
+                    }
+                    root.appendChild(params)
                     extensionElements.appendChild(root)
                     userTask.appendChild(extensionElements)
 

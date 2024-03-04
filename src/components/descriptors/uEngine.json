@@ -24,9 +24,18 @@
                     "type": "String"
                 },
                 {
+                    "name": "definition",
+                    "type": "String"
+                },
+                {
                     "name": "checkpoints",
                     "isMany": true,
                     "type": "Checkpoint"
+                },
+                {
+                    "name": "instanceData",
+                    "isMany": true,
+                    "type": "Data"
                 },
                 {
                     "name": "parameters",
@@ -47,6 +56,20 @@
         },
         {
             "name": "Parameter",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "key",
+                    "type": "String"
+                },
+                {
+                    "name": "value",
+                    "type": "String"
+                }
+            ]
+        },
+        {
+            "name": "Data",
             "superClass": ["Element"],
             "properties": [
                 {

@@ -32,7 +32,7 @@
                             <DeviceFloppyIcon size="24" @click="$emit('save')" />
                         </v-btn>
                         <v-btn v-if="chatInfo" icon variant="text" class="text-medium-emphasis" @click="moreDetail">
-                            <DotsVerticalIcon size="24" />
+                            <Icon icon="material-symbols:info-outline" width="24" height="24" />
                         </v-btn>
                     </div>
                 </div>
@@ -203,6 +203,34 @@
                         <AgentsChat v-if="type=='instances'&& agentInfo.isRunning && filteredMessages.length == 0" class="px-5 py-1" :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="-1"/>
                     </div>
                 </div>
+                <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
+                    <v-tooltip text="Add image">
+                        <template v-slot:activator="{ props }">
+                            <v-btn icon variant="text" class="text-medium-emphasis" @click="uploadImage"
+                                v-bind="props"
+                                style="width:30px; height:30px; margin-left:5px;"
+                            >
+                                <Icon icon="iconoir:add-media-image" width="20" height="20" />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+                    <v-tooltip text="Draft Agent">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-if="type=='instances' && !agentInfo.isRunning" :disabled="!(newMessage || agentInfo.draftPrompt)" 
+                                icon variant="text" class="text-medium-emphasis" @click="requestDraftAgent" v-bind="props"
+                                style="width:30px; height:30px;"
+                            >
+                                <Icon icon="fluent:document-one-page-sparkle-16-regular" width="20" height="20" />
+                            </v-btn>
+                            <v-btn v-if="type=='instances' && agentInfo.isRunning"
+                                icon variant="text" class="text-medium-emphasis"
+                                style="width:30px; height:30px;"
+                            >
+                                <v-progress-circular :size="20" indeterminate color="primary"></v-progress-circular>
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+                </v-row>
             </perfect-scrollbar>
             <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
                 <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
@@ -234,41 +262,20 @@
                 :disabled="disableChat"
                 style="font-size:20px !important;"
             >
-                <template v-slot:prepend-inner>
-                    <v-col style="text-align: center; padding-left: 0px;">
-                        <v-tooltip right>
-                            <template v-slot:activator="{ on, attrs }">
-                                <v-btn v-if="type=='instances' && !agentInfo.isRunning" :disabled="!(newMessage || agentInfo.draftPrompt)" icon variant="text" class="text-medium-emphasis" @click="requestDraftAgent" v-bind="attrs" v-on="on">
-                                    <Icon width="20" height="20" icon="fluent:document-one-page-sparkle-16-regular" />
-                                </v-btn>
-                                <v-btn v-if="type=='instances' && agentInfo.isRunning"  icon variant="text" class="text-medium-emphasis">
-                                    <v-progress-circular :size="20" indeterminate color="primary"></v-progress-circular>
-                                </v-btn>
-                            </template>
-                            <span>Draft Agent</span>
-                        </v-tooltip>
-                        <!-- <v-btn icon variant="text" class="text-medium-emphasis">
-                            <MoodSmileIcon size="24" />
-                        </v-btn> -->
-                        <v-btn icon variant="text" class="text-medium-emphasis" @click="uploadImage" style="width:30px; height:30px;">
-                            <PhotoIcon size="20" />
-                        </v-btn>
-                    </v-col>
-                </template>     
-            
-              
                 <template v-slot:append-inner>
                     <div style="height: -webkit-fill-available; margin-right: 10px; margin-top: 10px;">
                         <v-btn 
                             v-if="!isLoading" 
                             icon variant="text" type="submit" @click="beforeSend"
                             style="width:30px; height:30px;"
-                            :disabled="!newMessage">
+                            :disabled="!newMessage"
+                        >
                             <Icon icon="teenyicons:send-outline" width="20" height="20" />
                         </v-btn>
                         <v-btn v-else 
                             icon variant="text" @click="isLoading = !isLoading"
-                            style="width:30px; height:30px;">
+                            style="width:30px; height:30px;"
+                        >
                             <Icon icon="ic:outline-stop-circle" width="20" height="20"/>
                         </v-btn>
                         <!-- <v-btn icon variant="text" class="text-medium-emphasis">
@@ -496,6 +503,7 @@ export default {
 <style lang="scss">
 .message-input-box .v-field__input {
     font-size:16px;
+    padding-left:12px;
 }
 .message-input-box .v-field{
     padding:0px;
