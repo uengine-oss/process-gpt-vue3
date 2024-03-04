@@ -4,7 +4,7 @@
             <template v-slot:leftpart>
                 <div class="no-scrollbar">
                 <ChatProfile />
-                <ChatListing :chatRoomList="chatRoomList" :userList="userList" 
+                <ChatListing :chatRoomList="filteredChatRoomList" :userList="userList" 
                     @chat-selected="chatRoomSelected" 
                     @create-chat-room="createChatRoom"
                 />
@@ -32,6 +32,7 @@
 </template>
 
 <script>
+import { format } from 'date-fns';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
@@ -63,9 +64,13 @@ export default {
         currendtChatRoom: null,
         userList: null,
     }),
+    computed: {
+        filteredChatRoomList() {
+            return this.chatRoomList.sort((a, b) => new Date(b.message.createdAt) - new Date(a.message.createdAt));
+        }
+    },
     async created() {
         // this.init();
-
         this.generator = new ChatGenerator(this, {
             isStream: true,
             preferredLanguage: "Korean"
@@ -96,13 +101,6 @@ export default {
         },
         async getChatRoomList(){
             var me = this
-            // await this.storage.watch(`db://chats/chat1`, async (data) => {
-            //     if(data && data.new){
-            //         if(data.new.messages.email != me.userInfo.email){
-            //             me.messages.push(data.new.messages)
-            //         }
-            //     }
-            // });
             await me.storage.list(`db://chat_rooms`).then(function (chatRooms) {
                 if (chatRooms) {
                     chatRooms.forEach(function (chatRoom) {
@@ -111,8 +109,8 @@ export default {
                         }
                     })
                     if(me.chatRoomList.length > 0){
-                        me.currendtChatRoom = me.chatRoomList[0]
-                        me.getChatList(me.chatRoomList[0].id);
+                        me.currendtChatRoom = me.filteredChatRoomList[0]
+                        me.getChatList(me.filteredChatRoomList[0].id);
                     } else {
                         alert("Create a new chat room")
                     }
@@ -123,8 +121,6 @@ export default {
             if(!chatRoomInfo.id){
                 chatRoomInfo.id = this.uuid();
                 chatRoomInfo.participants.push(this.userInfo.email)
-                chatRoomInfo.status = "online"
-                chatRoomInfo.recent = false
                 chatRoomInfo.thumb = "/src/assets/images/profile/user-2.jpg"
                 let currentTimestamp = Date.now().toString();
                 chatRoomInfo.message = {
@@ -154,11 +150,10 @@ export default {
                 "id": this.currendtChatRoom.id,
                 "uid": uuid,
             }
-            console.log(message)
             this.putObject(`chats/${uuid}`, message);
 
             let chatRoomObj = {
-                "msg": msg.content,
+                "msg": msg.messageForUser ? msg.messageForUser : msg.content,
                 "type": "text",
                 "createdAt": msg.timeStamp
             }
@@ -227,6 +222,9 @@ export default {
             //     }
             // }
         },
+        afterModelStopped(response) {
+            // console.log(response)
+        },
         async afterGenerationFinished(response) {
             if(response == '.' || response == '.\n') {
                 this.messages.splice(this.messages.length - 1, 1)
@@ -234,6 +232,10 @@ export default {
                 let obj = this.createMessageObj(response, 'system')
                 if(response && response.includes("{")){
                     let responseObj = partialParse(response)
+                    if(responseObj.messageForUser){
+                        obj.messageForUser = responseObj.messageForUser
+                    }
+
                     if(responseObj.work == 'CompanyQuery'){
                         try{
                             let responseMemento = await axios.post('http://localhost:8005/query', { query: responseObj.content});
@@ -290,19 +292,19 @@ export default {
                             "data": this.calendarData
                         }
                         this.putObject(`calendar/${localStorage.getItem('uid')}`, calendarObj);
-    
-                        // let todoObj = {
-                        //     definitionId: null,
-                        //     definitionName: null,
-                        //     instanceId: null,
-                        //     activityName: responseObj.title,
-                        //     userId: this.userInfo.email,
-                        //     status: 'Running',
-                        //     startDate: new Date().toISOString().substr(0, 10)
-                        // };
-    
-                        // this.pushObject(`todolist/${this.userInfo.email}`, todoObj);
-    
+
+                        let putObj = {
+                            id: uuid,
+                            user_id: this.userInfo.email,
+                            proc_inst_id: null,
+                            proc_def_id: null,
+                            activity_id: responseObj.title,
+                            start_date: format(new Date(startDate[0], startDate[1] - 1, startDate[2]), "yyyy-MM-dd HH:mm:ss"),
+                            end_date: format(new Date(endDate[0], endDate[1] - 1, endDate[2], '23', '59'), "yyyy-MM-dd HH:mm:ss"),
+                            status: 'TODO',
+                        }
+                        await this.putObject('todolist', putObj);
+
                     } else {
                         if(this.prompt && this.prompt.content){
                             obj.prompt = this.prompt

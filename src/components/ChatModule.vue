@@ -46,13 +46,10 @@ export default {
                         } else {
                             me.messages.push(data.new.messages)
                         }
-
-                        console.log(data.new)
-                        console.log(me.chatRoomList)
-
+                        
                         let idx = me.chatRoomList.findIndex(x => x.id == data.new.id)
-                        if(idx && idx != -1){
-                            me.chatRoomList[idx].message.msg = data.new.messages.content
+                        if(idx != -1){
+                            me.chatRoomList[idx].message.msg = data.new.messages.messageForUser ? data.new.messages.messageForUser : data.new.messages.content
                             me.chatRoomList[idx].message.createdAt = data.new.messages.timeStamp
                         }
                     }
@@ -322,13 +319,12 @@ export default {
         },
 
         onModelCreated(response) {
-            var me = this;
-            me.$app.try({
-                context: me,
-                async action(me) {
-                    let messageWriting = me.messages[me.messages.length - 1];
+            this.$app.try({
+                context: this,
+                action: async () => { // Changed to arrow function
+                    let messageWriting = this.messages[this.messages.length - 1];
                     messageWriting.content = response;
-                    messageWriting.jsonContent = me.extractJSON(response);
+                    messageWriting.jsonContent = this.extractJSON(response);
 
                     let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
                     const match = messageWriting.content.match(regex);
@@ -340,10 +336,10 @@ export default {
                         messageWriting.content = messageWriting.content.replace(/`{3}/g, '');
                     }
 
-                    me.afterModelCreated(response);
+                    this.afterModelCreated(response);
                 },
-                onFail() {
-                    me.onModelStopped();
+                onFail: () => {
+                    this.onModelStopped();
                 }
             })
         },
