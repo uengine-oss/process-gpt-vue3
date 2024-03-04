@@ -27,61 +27,26 @@
         </div>
 
         <v-dialog v-model="dialog" max-width="500">
-            <v-card>
-                <v-card-text class="mb-4">
-                    <h4 class="text-h6 mb-5">할 일 등록</h4>
-                    <v-text-field
-                        v-model="newTask.activity_id" 
-                        label="할일명"
-                        outlined
-                    ></v-text-field>
-                    <v-textarea
-                        v-model="newTask.description"
-                        label="설명"
-                        outlined
-                    ></v-textarea>
-                    <v-text-field
-                        v-model="newTask.start_date"
-                        label="시작일"
-                        outlined
-                        type="datetime-local"
-                    ></v-text-field>
-                    <v-text-field
-                        v-model="newTask.end_date"
-                        label="종료일"
-                        outlined
-                        type="datetime-local"
-                    ></v-text-field>
-                    <v-select 
-                        v-model="newTask.status"
-                        :items="['TODO', 'IN_PROGRESS', 'PENDING', 'DONE']"
-                        label="진행 상태"
-                        variant="outlined"
-                    ></v-select>
-                </v-card-text>
-                <v-card-actions class="justify-center">
-                    <v-btn color="primary" 
-                        variant="flat" 
-                        :disabled="newTask.activity_id==''" 
-                        @click="addNewTask"
-                    >저장</v-btn>
-                    <v-btn color="error" 
-                        variant="flat" 
-                        @click="dialog = false"
-                    >취소</v-btn>
-                </v-card-actions>
-            </v-card>
+            <TodoDialog 
+                :type="'new'"
+                @add="addNewTask"
+                @close="closeDialog"
+            />
         </v-dialog>
     </v-card>
 </template>
 
 <script>
-import StorageBase from '@/utils/StorageBase';
+import { format } from 'date-fns';
+
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import TodoDialog from './TodoDialog.vue';
 import TodoTaskColumn from './TodoTaskColumn.vue';
 
 export default {
     components: {
         TodoTaskColumn,
+        TodoDialog,
     },
     data: () => ({
         storage: null,
@@ -114,16 +79,16 @@ export default {
         userInfo: {},
         path: 'todolist',
         dialog: false,
-        newTask: {},
     }),
     async created() {
-        this.storage = StorageBase.getStorage("supabase");
+        this.storage = StorageBaseFactory.getStorage();
         this.userInfo = await this.storage.getUserInfo();
         
         this.getTodolist();
     },
     async mounted() {
-        // await this.storage.watch(this.path, this.getTodolist);
+        var me = this;
+        await this.storage.watch(me.path, me.getTodolist);
     },
     methods:{
         async getTodolist() {
@@ -174,22 +139,55 @@ export default {
             }
         },
         openDialog() {
-            this.newTask = {
-                id: this.uuid(),
-                user_id: '',
-                activity_id: '',
-                status: 'TODO',
-                start_date: null,
-                end_date: null,
-            };
             this.dialog = true;
         },
-        addNewTask() {
-            this.newTask.user_id = this.userInfo.email;
-            if (this.newTask.activity_id != '' && this.newTask.user_id != '') {
-                this.storage.putObject(this.path, this.newTask);
-            }
+        closeDialog() {
             this.dialog = false;
+        },
+        addNewTask(task) {
+            task.id = this.uuid();
+            task.user_id = this.userInfo.email;
+            if (task.activity_id != '' && task.user_id != '') {
+                this.storage.putObject(this.path, task);
+            }
+            this.closeDialog();
+            this.addNewSchedule(task);
+        },
+        async addNewSchedule(task) {
+            const uid = localStorage.getItem('uid');
+            const year_month = format(new Date(task.start_date), "yyyy_MM");
+            const schedule = await this.storage.getObject(`calendar/${uid}`, {key: 'uid'});
+
+            var newSchedule = {};
+            if (schedule && schedule.data) {
+                if (schedule.data[`${year_month}`]) {
+                    newSchedule = schedule.data;
+                } else {
+                    newSchedule[`${year_month}`] = {}
+                }
+                newSchedule[`${year_month}`][`${task.id}`] = {
+                    id: task.id,
+                    start: task.start_date,
+                    end: task.end_date,
+                    title: task.activity_id,
+                    allDay: true,
+                }
+            } else {
+                newSchedule[`${year_month}`] = {}
+                newSchedule[`${year_month}`][`${task.id}`] = {
+                    id: task.id,
+                    start: task.start_date,
+                    end: task.end_date,
+                    title: task.activity_id,
+                    allDay: true,
+                }
+            }
+            
+            var putObj = {
+                uid: uid,
+                data: newSchedule
+            };
+            this.storage.putObject('calendar', putObj);
         },
         uuid() {
             function s4() {

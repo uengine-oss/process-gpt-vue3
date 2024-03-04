@@ -1,6 +1,15 @@
 // import StorageBase from "./StorageBase";
 
-export default class StorageBaseSupabase {
+class StorageBaseError extends Error{
+    constructor(message, cause, args) {
+        super(message, {cause: cause});
+
+        this.args = args;
+    }
+}
+
+
+export default class StorageBaseSupabase {//extends StorageBase{
     
     async signIn(userInfo) {
         const result = await window.$supabase.auth.signInWithPassword({
@@ -211,10 +220,8 @@ export default class StorageBaseSupabase {
                     .upsert(value)
                     .match(options.match);
                 
-                if (!error) {
-                    return true;
-                } else {
-                    return error;
+                if (error) {
+                    throw new StorageBaseError('error in pushObject', error, arguments);
                 }
             } else if (obj.searchVal) {
                 const { error } = await window.$supabase
@@ -222,25 +229,25 @@ export default class StorageBaseSupabase {
                     .upsert(value)
                     .eq(obj.searchKey, obj.searchVal);
 
-                if (!error) {
-                    return true;
-                } else {
-                    return error;
+                if (error) {
+                    throw new StorageBaseError('error in pushObject', error, arguments);
                 }
             } else {
+
+                // let key = path.split('/').pop();
+                // let updateObj = {id: key, value: value}
+                
                 const { error } = await window.$supabase
                     .from(obj.table)
                     .upsert(value);
                 
-                if (!error) {
-                    return true;
-                } else {
-                    return error;
+                if (error) {
+                    throw new StorageBaseError('error in pushObject', error, arguments);
                 }
             }
         } catch(error) {
-            console.log(`PUT OBJECT: ${error}`);
-            return { Error: error }
+
+            throw new StorageBaseError('error in pushObject', error, arguments);
         }
     }
 
@@ -282,8 +289,7 @@ export default class StorageBaseSupabase {
                 }
             }
         } catch(error) {
-            console.log(`PUSH STRING: ${error}`);
-            return { Error: error }
+            throw new Error('error in pushObject', {cause: error, args: arguments});
         }
     }
 
@@ -296,10 +302,8 @@ export default class StorageBaseSupabase {
                     .upsert(value)
                     .match(options.match);
                 
-                if (!error) {
-                    return true;
-                } else {
-                    return error;
+                if (error) {
+                    throw new StorageBaseError('error in pushObject', error, arguments);
                 }
             } else if (obj.searchVal) {
                 const { error } = await window.$supabase
@@ -307,25 +311,20 @@ export default class StorageBaseSupabase {
                     .upsert(value)
                     .eq(obj.searchKey, obj.searchVal);
 
-                if (!error) {
-                    return true;
-                } else {
-                    return error;
+                if (error) {
+                    throw new StorageBaseError('error in pushObject', error, arguments);
                 }
             } else {
                 const { error } = await window.$supabase
                     .from(obj.table)
                     .upsert(value);
                 
-                if (!error) {
-                    return true;
-                } else {
-                    return error;
+                if (error) {
+                    throw new StorageBaseError('error in pushObject', error, arguments);
                 }
             }
         } catch(error) {
-            console.log(`PUSH OBJECT: ${error}`);
-            return { Error: error }
+            throw new StorageBaseError('error in pushObject', error, arguments);
         }
     }
 

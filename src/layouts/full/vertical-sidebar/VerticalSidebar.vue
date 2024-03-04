@@ -1,11 +1,12 @@
 <script setup>
 import { useCustomizerStore } from '@/stores/customizer';
 
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import Logo from '../logo/Logo.vue';
+import NavCollapse from './NavCollapse/NavCollapse.vue';
 import NavGroup from './NavGroup/index.vue';
 import NavItem from './NavItem/index.vue';
-import NavCollapse from './NavCollapse/NavCollapse.vue';
 import ExtraBox from './extrabox/ExtraBox.vue';
-import Logo from '../logo/Logo.vue';
 
 const customizer = useCustomizerStore();
 </script>
@@ -48,9 +49,7 @@ const customizer = useCustomizerStore();
 </template>
 
 <script>
-import partialParse from "partial-json-parser";
 
-import StorageBase from "@/utils/StorageBase";
 
 export default {
     data: () => ({
@@ -120,7 +119,7 @@ export default {
         definitions: null,
     }),
     created() {
-        this.storage = StorageBase.getStorage("supabase");
+        this.storage = StorageBaseFactory.getStorage();
 
         this.getDefinitionList();
         this.storage.watch(`proc_def`, this.getDefinitionList);

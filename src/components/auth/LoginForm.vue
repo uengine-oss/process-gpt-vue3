@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import { Form } from 'vee-validate';
+import { ref } from 'vue';
 
 import { useAuthStore } from '@/stores/auth';
 const authStore = useAuthStore();
 
 /*Social icons*/
-import google from '@/assets/images/svgs/google-icon.svg';
+//import google from '@/assets/images/svgs/google-icon.svg';
 
 const checkbox = ref(false);
 const password = ref('admin123');
@@ -27,7 +27,7 @@ function validate(values: any, { setErrors }: any) {
     <v-row class="d-flex mb-3">
         <v-col cols="12" sm="12">
             <v-btn variant="outlined" size="large" class="border text-subtitle-1 text-gray200 font-weight-semibold" block>
-                <img :src="google" height="16" class="mr-2" alt="google" />
+                <!-- <img :src="google" height="16" class="mr-2" alt="google" /> -->
                 <span class="d-sm-flex d-none mr-1">{{ $t('loginPage.google') }}</span>
             </v-btn>
         </v-col>

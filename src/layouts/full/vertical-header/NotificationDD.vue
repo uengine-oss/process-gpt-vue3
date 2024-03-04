@@ -58,8 +58,8 @@
 </template>
 
 <script>
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { Icon } from '@iconify/vue';
-import StorageBase from '@/utils/StorageBase';
 
 export default {
     components: {
@@ -72,7 +72,7 @@ export default {
         notifications: [],
     }),
     async created() {
-        this.storage = StorageBase.getStorage("supabase");
+        this.storage = StorageBaseFactory.getStorage("supabase");
         this.getNotifications();
     },
     methods: {

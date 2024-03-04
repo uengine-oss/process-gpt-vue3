@@ -1,15 +1,8 @@
 // Strategy pattern.
 // Factory Pattern.
-import StorageBaseSupabase from "./StorageBaseSupabase";
 
 export default class StorageBase {
 
-    static getStorage(type) {
-        // Factory Pattern.
-        if (type == 'supabase') {
-            return new StorageBaseSupabase();
-        }
-    }
    
     signIn(value) {
         throw new Error('signIn() must be implement')
@@ -35,12 +28,12 @@ export default class StorageBase {
     putObject(path, value, options) {
         throw new Error('putObject() must be implement')
     }
-    pushString(path, value, options) {
-        throw new Error('pushString() must be implement')
-    }
-    pushObject(path, value, options) {
-        throw new Error('pushObject() must be implement')
-    }
+    // pushString(path, value, options) {
+    //     throw new Error('pushString() must be implement')
+    // }
+    // pushObject(path, value, options) {
+    //     throw new Error('pushObject() must be implement')
+    // }
     delete(path, options) {
         throw new Error('delete() must be implement')
     }

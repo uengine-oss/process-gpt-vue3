@@ -5,14 +5,14 @@
 </template>
 
 <script>
-import BpmnJS from 'bpmn-js/dist/bpmn-navigated-viewer.production.min.js';
-import BpmnModeler from 'bpmn-js/lib/Modeler';
-import BpmnModdle from 'bpmn-moddle';
-import { useBpmnStore } from '@/stores/bpmn'
 import uEngineModdleDescriptor from '@/components/descriptors/uEngine.json';
+import { useBpmnStore } from '@/stores/bpmn';
 import 'bpmn-js/dist/assets/diagram-js.css';
+import BpmnModeler from 'bpmn-js/lib/Modeler';
 import BpmnViewer from 'bpmn-js/lib/Viewer';
-
+import BpmnModdle from 'bpmn-moddle';
+import { createApp } from 'vue';
+import CallActivityOverlay from './customBpmn/CallActivityOverlay.vue';
 export default {
     name: 'vue-bpmn',
     props: {
@@ -37,7 +37,8 @@ export default {
             diagramXML: null,
             openPanel: false,
             moddle: null,
-            bpmnStore: null
+            bpmnStore: null,
+            bpmnViewer: null
         };
     },
     computed: {
@@ -105,44 +106,28 @@ export default {
             }
             console.log(eventBus)
             eventBus.on('shape.added', async function (event) {
-                console.log(event)
-                const bpmnFactory = self.bpmnViewer.get('bpmnFactory');
                 const element = event.element;
                 const businessObject = element.businessObject;
-
+                console.log(element)
+                console.log(businessObject)
                 // 이미 extensionElements가 있는 경우, 추가 작업을 수행하지 않음
                 if (businessObject.extensionElements) {
                     return;
                 }
-                // 사용자 정의 XML 요소 생성
-                const uengineParams = bpmnFactory.create('uengine:uengine-params', {
-                    role: '',
-                    pythonCode: '',
-                    description: '',
-                    definition: ""
-                });
 
-                // Checkpoint 요소 생성
-                // const checkpoint = bpmnFactory.create('uengine:Checkpoint', { checkpoint: 'checkpoint1' });
-                uengineParams.checkpoints = [];
 
-                // uengineParams에 checkpoints와 parameters 추가
-                // const parameter = bpmnFactory.create('uengine:Parameter', { key: 'param1', category: 'input' });
-                // const parameter2 = bpmnFactory.create('uengine:Parameter', { key: 'param2', category: 'input' });
-                uengineParams.parameters = [];
-                
-                const extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
-                extensionElements.get('values').push(uengineParams);
-                businessObject.extensionElements = extensionElements;
+                self.extendUEngineProperties(element)
 
-                //
-                // 요소 업데이트를 위해 모델링 컴포넌트 사용
-                setTimeout(async () => {
-                    const modeling = self.bpmnViewer.get('modeling');
-                    modeling.updateProperties(element, { extensionElements: extensionElements });
-                    let xml = await self.bpmnViewer.saveXML({ format: true, preamble: true });
-                    console.log(xml)
-                }, 0);
+                if (element.type == 'bpmn:CallActivity') {
+                    var overlays = self.bpmnViewer.get('overlays');
+                    overlays.add(element.id, 'badge', {
+                        position: {
+                            bottom: -10,
+                            left: 0
+                        },
+                        html: self.createOverlayComponent({ element: businessObject })
+                    });
+                }
 
             })
             // eventBus.on('shape.changed', function (e) {
@@ -203,9 +188,65 @@ export default {
         }
     },
     methods: {
+        createOverlayComponent(propsData) {
+            // 임시 컨테이너 생성
+            const container = document.createElement('div');
+
+            // createApp을 사용하여 앱 인스턴스 생성. propsData를 props로 전달
+            const appInstance = createApp(CallActivityOverlay, propsData);
+
+            // 앱 인스턴스를 임시 컨테이너에 마운트
+            appInstance.mount(container);
+
+            // 마운트된 컴포넌트의 루트 DOM 요소 반환
+            return container.firstChild;
+        },
+        extendUEngineProperties(businessObject) {
+            let self = this
+            //let businessObject = element.businessObject
+
+            if (businessObject.extensionElements?.values) {
+                return;
+            }
+
+            const bpmnFactory = self.bpmnViewer.get('bpmnFactory');
+
+            const uengineParams = bpmnFactory.create('uengine:Uengine-params', {
+                role: '',
+                pythonCode: '',
+                description: '',
+                definition: ''
+            });
+
+            uengineParams.checkpoints = [];
+
+            // uengineParams에 checkpoints와 parameters 추가
+            // const parameter = bpmnFactory.create('uengine:Parameter', { key: 'param1', category: 'input' });
+            // const parameter2 = bpmnFactory.create('uengine:Parameter', { key: 'param2', category: 'input' });
+            uengineParams.parameters = [];
+
+            const extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
+            extensionElements.get('values').push(uengineParams);
+
+            businessObject.extensionElements = extensionElements;
+
+
+            //TODO: 불필요
+            // 요소 업데이트를 위해 모델링 컴포넌트 사용
+            // setTimeout(async () => {
+            //     const modeling = self.bpmnViewer.get('modeling');
+            //     modeling.updateProperties(businessObject, { extensionElements: extensionElements });
+            //     let xml = await self.bpmnViewer.saveXML({ format: true, preamble: true });
+            //     console.log(xml)
+            // }, 0);
+
+        },
         updateElement(element, extensionElements) {
             const modeling = this.bpmnViewer.get('modeling');
             modeling.updateProperties(element, { extensionElements: extensionElements });
+        },
+        openProcess(e) {
+            alert(e)
         },
         diagramObject(obj) {
             // let obj = this.parseJsonToModdle(val);
@@ -390,10 +431,10 @@ export default {
     display: none;
 }
 
-.vue-bpmn-diagram-container .djs-direct-editing-parent {
-    width: 80px !important;
-    height: 60px !important;
-}
+/* .vue-bpmn-diagram-container .djs-direct-editing-parent {
+    width:80px !important;
+    height:60px !important;
+} */
 
 .vue-bpmn-diagram-container .djs-palette {
     width: 630px !important;

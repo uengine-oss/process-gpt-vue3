@@ -62,8 +62,8 @@
                         <DotsVerticalIcon size="15" />
                         <v-menu activator="parent">
                             <v-list density="compact">
-                                <v-list-item value="Delete">
-                                    <v-list-item-title @click="deleteInstance(item.proc_inst_id)">
+                                <v-list-item @click="deleteInstance(item.proc_inst_id)">
+                                    <v-list-item-title>
                                         Delete
                                     </v-list-item-title>
                                 </v-list-item>
@@ -103,7 +103,7 @@ export default {
         },
     },
     async created() {
-        this.storage = StorageBase.getStorage("supabase");
+        this.storage = StorageBase.getStorage();
         this.email = localStorage.getItem("email");
         await this.init();
     },
@@ -145,8 +145,6 @@ export default {
             var def_id = id.split('.')[0];
             await this.storage.delete(`${def_id}/${id}`, {key: 'proc_inst_id'});
             await this.storage.delete(`${this.path}/${id}`, {key: "id"});
-
-            await this.init();
 
             if (this.currentChatId == id) {
                 this.newInstanceChat();

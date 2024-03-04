@@ -3,10 +3,6 @@
         <div class="pa-5">
             <div class="d-flex align-center justify-space-between">
                 <h6 class="text-h6 font-weight-semibold">{{ column.title }}</h6>
-                <v-avatar size="20" 
-                    elevation="10" 
-                    class="bg-surface font-weight-bold align-center"
-                >{{ count }}</v-avatar>
             </div>
 
             <draggable 
@@ -16,8 +12,6 @@
                 :animation="200" 
                 ghost-class="ghost-card"
                 group="tasks"
-                @add="handleDragAdd"
-                @remove="handleDragRemove"
             >
                 <transition-group>
                     <div v-for="task in column.tasks"
@@ -44,7 +38,6 @@
                         :path="path" 
                         :userInfo="userInfo" 
                         :storage="storage" 
-                        ref="taskCard" 
                     />
                 </div>
             </div>
@@ -68,23 +61,19 @@ export default {
     data: () => ({
         count: 0,
     }),
-    async created() {
-        this.count = await this.getCount();
-    },
-    methods: {
-        async getCount() {
-            const userId = localStorage.getItem('email');
-            return await this.storage.getCount(this.path, {match: {
-                status: this.column.id,
-                user_id: userId
-            }});
-        },
-        async handleDragAdd(event) {
-            this.$refs.taskCard[0].updateTask(this.column.id);
-            this.count = await this.getCount();
-        },
-        async handleDragRemove(event) {
-            this.count = await this.getCount();
+    watch: {
+        "column.tasks": {
+            deep: true,
+            async handler(val) {
+                if (val && val.length > 0) {
+                    val.forEach(async (item, index) => {
+                        if (item.status != this.column.id) {
+                            item.status = this.column.id;
+                            await this.storage.putObject('todolist', item);
+                        }
+                    })
+                }
+            }
         }
     },
 }

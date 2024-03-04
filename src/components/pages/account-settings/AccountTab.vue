@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
 import { profileImages } from '@/components/pages/account-settings/profileImage';
-import StorageBase from '@/utils/StorageBase';
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import { ref } from 'vue';
 
 /*Location Select*/
 const select = ref('United States');
@@ -23,7 +23,7 @@ const storephone = ref('+91 12345 65478');
 const storeaddress = ref('814 Howard Street, 120065, India');
 
 // 유저 정보 관련
-const storage = StorageBase.getStorage("supabase");
+const storage = StorageBaseFactory.getStorage("supabase");
 const name = localStorage.getItem("userName");
 const email = localStorage.getItem("email");
 const uid = localStorage.getItem("uid");

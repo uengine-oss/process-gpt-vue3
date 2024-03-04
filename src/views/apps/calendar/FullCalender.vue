@@ -1,10 +1,10 @@
 <script>
-import { defineComponent } from 'vue'
-import FullCalendar from '@fullcalendar/vue3'
+import StorageBaseFactory from '@/utils/StorageBaseFactory'
 import dayGridPlugin from '@fullcalendar/daygrid'
-import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
-import StorageBase from '@/utils/StorageBase';
+import timeGridPlugin from '@fullcalendar/timegrid'
+import FullCalendar from '@fullcalendar/vue3'
+import { defineComponent } from 'vue'
 
 export default defineComponent({
   components: {
@@ -94,7 +94,7 @@ export default defineComponent({
       }
     },
     async setCalendar(){
-      this.storage = StorageBase.getStorage("supabase");
+      this.storage = StorageBaseFactory.getStorage();
       let option = {
           key: "uid"
       }
