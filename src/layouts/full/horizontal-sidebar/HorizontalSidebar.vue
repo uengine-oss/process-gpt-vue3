@@ -20,7 +20,7 @@ const { mdAndUp } = useDisplay();
 
 <template>
     <template v-if="mdAndUp">
-        <div class="horizontalMenu bg-containerBg position-relative ">
+        <div class="horizontalMenu bg-containerBg position-relative full-layout">
             <div :class="customizer.boxed ? 'maxWidth ' : 'px-6'">
                 <div class="bg-surface horizontal-head">
                     <ul class="gap-1 horizontal-navbar  mx-lg-0 mx-3">
@@ -41,4 +41,9 @@ const { mdAndUp } = useDisplay();
         <VerticalSidebar />
     </div>
 </template>
-<style lang="scss"></style>
+<style lang="scss">
+// full-layout 레이아웃 커스텀 부분
+.full-layout {
+    display: none;
+}
+</style>

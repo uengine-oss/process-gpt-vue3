@@ -68,7 +68,7 @@ const DarkthemeColors = ref([
         <v-divider></v-divider>
         <perfect-scrollbar style="height: calc(100vh - 90px)">
             <div class="pa-6">
-                <h6 class="text-h6 mb-2">Sidebar Layout</h6>
+                <!-- <h6 class="text-h6 mb-2">Sidebar Layout</h6>
                 <v-btn-toggle v-model="customizer.setHorizontalLayout" color="primary" class="my-2 btn-group-custom gap-3" rounded="0" group>
                     <v-btn :value="false" variant="text" elevation="10" class="rounded-xl">
                         <Icon icon="solar:slider-vertical-minimalistic-linear" height="22" width="22" size="22" class="mr-2" />
@@ -77,10 +77,10 @@ const DarkthemeColors = ref([
                     <v-btn :value="true" variant="text" elevation="10" class="rounded-xl">
                         <Icon icon="solar:slider-minimalistic-horizontal-outline" height="22" width="22" size="22" class="mr-2" /> Horizontal
                     </v-btn>
-                </v-btn-toggle>
+                </v-btn-toggle> -->
 
                 <!------Theme Direction------>
-                <h6 class="text-h6 mt-8 mb-5">Theme Direction</h6>
+                <!-- <h6 class="text-h6 mt-8 mb-5">Theme Direction</h6>
                 <v-btn-toggle v-model="customizer.setRTLLayout" color="primary" class="my-2 btn-group-custom gap-3" rounded="0" group>
                     <v-btn :value="false" variant="text" elevation="10" class="rounded-xl">
                         <Icon icon="solar:align-left-linear" height="22" width="22" size="22" class="mr-2" /> LTR
@@ -88,10 +88,10 @@ const DarkthemeColors = ref([
                     <v-btn :value="true" variant="text" elevation="10" class="rounded-xl">
                         <Icon icon="solar:align-right-linear" height="22" width="22" size="22" class="mr-2" /> RTL
                     </v-btn>
-                </v-btn-toggle>
+                </v-btn-toggle> -->
 
 
-                <h6 class="text-h6 mt-8 mb-5">Theme Color</h6>
+                <h6 class="text-h6 mb-5">Theme Color</h6>
                 <v-item-group mandatory v-model="customizer.actTheme" class="ml-n2 v-row">
                     <v-col cols="4" v-for="theme in themeColors" :key="theme.name" class="pa-2">
                         <v-item v-slot="{ isSelected, toggle }" :value="theme.name">
@@ -108,7 +108,7 @@ const DarkthemeColors = ref([
                         </v-item>
                     </v-col>
                 </v-item-group>
-                <h6 class="text-h6 mt-11 mb-5">Theme Dark Color</h6>
+                <!-- <h6 class="text-h6 mt-11 mb-5">Theme Dark Color</h6>
                 <v-item-group mandatory v-model="customizer.actTheme" class="ml-n2 v-row">
                     <v-col cols="4" v-for="theme in DarkthemeColors" :key="theme.name" class="pa-2">
                         <v-item v-slot="{ isSelected, toggle }" :value="theme.name">
@@ -124,7 +124,7 @@ const DarkthemeColors = ref([
                             </v-sheet>
                         </v-item>
                     </v-col>
-                </v-item-group>
+                </v-item-group> -->
                 <h6 class="text-h6 mt-11 mb-2">Container Option</h6>
                 <v-btn-toggle v-model="customizer.boxed" color="primary" class="my-2 btn-group-custom gap-3" rounded="0" group>
                     <v-btn :value="true" variant="text" elevation="10" class="rounded-xl">
@@ -150,7 +150,7 @@ const DarkthemeColors = ref([
                     </v-btn>
                 </v-btn-toggle>
                 </v-sheet>
-                <h6 class="text-h6 mt-11 mb-2">Card with</h6>
+                <!-- <h6 class="text-h6 mt-11 mb-2">Card with</h6>
                 <v-btn-toggle v-model="customizer.setBorderCard" color="primary" class="my-2 btn-group-custom gap-3" rounded="0" group>
                     <v-btn :value="false" variant="text" elevation="10" class="rounded-xl">
                         <Icon icon="solar:library-broken" height="22" width="22" size="22" class="mr-2" />
@@ -161,7 +161,7 @@ const DarkthemeColors = ref([
                         <Icon icon="solar:box-outline" height="22" width="22" size="22" class="mr-2" />
                         Border
                     </v-btn>
-                </v-btn-toggle>
+                </v-btn-toggle> -->
             </div>
         </perfect-scrollbar>
    
