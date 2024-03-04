@@ -54,10 +54,10 @@ export default {
     async created() {
         const storage = await StorageBaseFactory.getStorage();
         const calendarsData = await storage?.getObject('calendar/data');
-        const userInfo = await storage?.getUserInfo();
+        let userId = localStorage.getItem('uid');
 
         // userInfo.uid와 일치하는 uid를 가진 calendarData만 필터링
-        const userCalendarData = calendarsData.filter(calendar => calendar.uid === userInfo.uid);
+        const userCalendarData = calendarsData.filter(calendar => calendar.uid === userId);
 
         let calendars = [];
         if (userCalendarData.length > 0) {

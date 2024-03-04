@@ -140,7 +140,7 @@ const openEditDialog = (chat) => {
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <perfect-scrollbar class="lgScroll h-100">
+    <perfect-scrollbar class="lgScroll">
         <v-list>
             <!---Single Item-->
             <v-list-item
@@ -215,6 +215,6 @@ const openEditDialog = (chat) => {
     bottom: -10px;
 }
 .lgScroll {
-    height: 500px;
+    height: calc(100vh - 365px);
 }
 </style>
