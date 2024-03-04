@@ -105,6 +105,7 @@ export default {
             }
             console.log(eventBus)
             eventBus.on('shape.added', async function (event) {
+                console.log(event)
                 const bpmnFactory = self.bpmnViewer.get('bpmnFactory');
                 const element = event.element;
                 const businessObject = element.businessObject;
@@ -113,12 +114,12 @@ export default {
                 if (businessObject.extensionElements) {
                     return;
                 }
-                console.log(bpmnFactory)
                 // 사용자 정의 XML 요소 생성
                 const uengineParams = bpmnFactory.create('uengine:uengine-params', {
                     role: '',
                     pythonCode: '',
-                    description: ''
+                    description: '',
+                    definition: ""
                 });
 
                 // Checkpoint 요소 생성
@@ -129,6 +130,7 @@ export default {
                 // const parameter = bpmnFactory.create('uengine:Parameter', { key: 'param1', category: 'input' });
                 // const parameter2 = bpmnFactory.create('uengine:Parameter', { key: 'param2', category: 'input' });
                 uengineParams.parameters = [];
+                
                 const extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
                 extensionElements.get('values').push(uengineParams);
                 businessObject.extensionElements = extensionElements;
@@ -368,13 +370,12 @@ export default {
 </script>
 
 <style>
-
 .vue-bpmn-diagram-container {
     height: 100%;
     width: 100%;
 }
 
-.highlight:not(.djs-connection) .djs-visual > :nth-child(1) {
+.highlight:not(.djs-connection) .djs-visual> :nth-child(1) {
     stroke-width: 2px !important;
     stroke: #5140bd !important;
     fill: #5140bd !important;
@@ -390,8 +391,8 @@ export default {
 }
 
 .vue-bpmn-diagram-container .djs-direct-editing-parent {
-    width:80px !important;
-    height:60px !important;
+    width: 80px !important;
+    height: 60px !important;
 }
 
 .vue-bpmn-diagram-container .djs-palette {

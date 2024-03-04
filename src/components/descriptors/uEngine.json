@@ -24,6 +24,10 @@
                     "type": "String"
                 },
                 {
+                    "name": "definition",
+                    "type": "String"
+                },
+                {
                     "name": "checkpoints",
                     "isMany": true,
                     "type": "Checkpoint"

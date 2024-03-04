@@ -1,5 +1,5 @@
 <template>
-    <div style="height: 95%; margin-top: 10px; overflow: auto;" v-click-outside="onClickOutside">
+    <div style="height: 95%; margin-top: 10px; overflow: auto;">
         <v-card-text>
             <div>{{ $t('BpnmPropertyPanel.name') }}</div>
             <v-text-field v-model="name"></v-text-field>
@@ -23,10 +23,10 @@
                     </div>
                 </v-row>
             </div>
-            <div v-if="element.$type == 'bpmn:CallActivity'">
+            <div class="included" v-if="element.$type == 'bpmn:CallActivity'">
                 <div style="margin-bottom: 8px;">Select Definition</div>
-                <v-autocomplete v-model="selectedDefinition" :items="definitions" color="primary" label="Definition"
-                    variant="outlined" hide-details></v-autocomplete>
+                <v-autocomplete v-model="copyElement.extensionElements.values[0]" :items="definitions" color="primary"
+                    label="Definition" variant="outlined"></v-autocomplete>
             </div>
             <div v-if="element.$type.includes('Task') && outputData.length > 0" style="margin-bottom:20px;">
                 <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.outputData') }}</div>
@@ -77,15 +77,20 @@
                 </v-row>
             </div>
         </v-card-text>
-
+        <v-card-actions>
+            <v-btn color="primary" @click="onClickOutside">Save</v-btn>
+            <v-btn color="alert" @click="$emit('close')">Close</v-btn>
+        </v-card-actions>
     </div>
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn'
+import StorageBase from '@/utils/StorageBase';
 export default {
     name: 'bpmn-property-panel',
     props: {
-        element: Object
+        element: Object,
+        processDefinitionId: String
     },
     created() {
         console.log(this.element)
@@ -104,10 +109,16 @@ export default {
             code: "",
             description: "",
             selectedDefinition: "",
-            bpmnModeler: null
+            bpmnModeler: null,
+            stroage: null
         };
     },
     async mounted() {
+        let me = this
+        if (!me.$app.try) {
+            me.$app = me.$app._component.methods;
+        }
+        this.storage = StorageBase.getStorage("supabase");
         console.log(this.element)
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
@@ -116,7 +127,12 @@ export default {
         if (this.element.$type == 'bpmn:CallActivity') {
             const value = await this.getData('proc_def', { key: "id" });
             if (value) {
-                console.log(value)
+                let result = []
+                value.forEach(function (def) {
+                    if (def.id != this.processDefinitionId)
+                        result.push(def.id)
+                })
+                this.definitions = result
             }
         }
     },
@@ -151,6 +167,18 @@ export default {
         }
     },
     methods: {
+        // include() {
+        //     return [document.querySelector('.included')]
+        // },
+        async getData(path, options) {
+            let value;
+            if (path) {
+                value = await this.storage.getObject(`db://${path}`, options);
+            } else {
+                value = await this.storage.getObject(`db://${this.path}`, options);
+            }
+            return value;
+        },
         addCheckpoint() {
             const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
             // this.checkpoints.push(this.checkpointMessage)
