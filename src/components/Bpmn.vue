@@ -11,7 +11,8 @@ import 'bpmn-js/dist/assets/diagram-js.css';
 import BpmnModeler from 'bpmn-js/lib/Modeler';
 import BpmnViewer from 'bpmn-js/lib/Viewer';
 import BpmnModdle from 'bpmn-moddle';
-
+import { createApp } from 'vue';
+import CallActivityOverlay from './customBpmn/CallActivityOverlay.vue';
 export default {
     name: 'vue-bpmn',
     props: {
@@ -107,14 +108,26 @@ export default {
             eventBus.on('shape.added', async function (event) {
                 const element = event.element;
                 const businessObject = element.businessObject;
-
+                console.log(element)
+                console.log(businessObject)
                 // 이미 extensionElements가 있는 경우, 추가 작업을 수행하지 않음
                 if (businessObject.extensionElements) {
                     return;
                 }
 
+
                 self.extendUEngineProperties(element)
 
+                if (element.type == 'bpmn:CallActivity') {
+                    var overlays = self.bpmnViewer.get('overlays');
+                    overlays.add(element.id, 'badge', {
+                        position: {
+                            bottom: -10,
+                            left: 0
+                        },
+                        html: self.createOverlayComponent({ element: businessObject })
+                    });
+                }
 
             })
             // eventBus.on('shape.changed', function (e) {
@@ -175,7 +188,20 @@ export default {
         }
     },
     methods: {
-        extendUEngineProperties(businessObject){
+        createOverlayComponent(propsData) {
+            // 임시 컨테이너 생성
+            const container = document.createElement('div');
+
+            // createApp을 사용하여 앱 인스턴스 생성. propsData를 props로 전달
+            const appInstance = createApp(CallActivityOverlay, propsData);
+
+            // 앱 인스턴스를 임시 컨테이너에 마운트
+            appInstance.mount(container);
+
+            // 마운트된 컴포넌트의 루트 DOM 요소 반환
+            return container.firstChild;
+        },
+        extendUEngineProperties(businessObject) {
             let self = this
             //let businessObject = element.businessObject
 
@@ -188,11 +214,12 @@ export default {
             const uengineParams = bpmnFactory.create('uengine:Uengine-params', {
                 role: '',
                 pythonCode: '',
-                description: ''
+                description: '',
+                definition: ''
             });
 
             uengineParams.checkpoints = [];
-
+            uengineParams.instanceData = [];
             // uengineParams에 checkpoints와 parameters 추가
             // const parameter = bpmnFactory.create('uengine:Parameter', { key: 'param1', category: 'input' });
             // const parameter2 = bpmnFactory.create('uengine:Parameter', { key: 'param2', category: 'input' });
@@ -217,6 +244,9 @@ export default {
         updateElement(element, extensionElements) {
             const modeling = this.bpmnViewer.get('modeling');
             modeling.updateProperties(element, { extensionElements: extensionElements });
+        },
+        openProcess(e) {
+            alert(e)
         },
         diagramObject(obj) {
             // let obj = this.parseJsonToModdle(val);
@@ -381,13 +411,12 @@ export default {
 </script>
 
 <style>
-
 .vue-bpmn-diagram-container {
     height: 100%;
     width: 100%;
 }
 
-.highlight:not(.djs-connection) .djs-visual > :nth-child(1) {
+.highlight:not(.djs-connection) .djs-visual> :nth-child(1) {
     stroke-width: 2px !important;
     stroke: #5140bd !important;
     fill: #5140bd !important;
