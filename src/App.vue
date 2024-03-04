@@ -29,7 +29,8 @@ export default {
                 if (options.successMsg) {
                     console.log(options.successMsg)
                 }
-                alert('successfully done')
+                // alert('successfully done')
+                console.log('successfully done')
             } catch (e) {
                 if (options.onFail) {
                     options.onFail(e)

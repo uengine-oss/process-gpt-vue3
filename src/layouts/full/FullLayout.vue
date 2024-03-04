@@ -65,11 +65,12 @@ const customizer = useCustomizerStore();
 
             <v-main>
                 <div class=" mb-3 hr-layout">
-                <v-container fluid class="page-wrapper bg-background px-sm-5 px-4  pt-12 rounded-xl">
+                <v-container fluid class="page-wrapper bg-background px-sm-5 pt-12 px-4 rounded-xl">
                     <div class="">
+                        <!-- 정의관련 maxWidth -->
                         <div :class="customizer.boxed ? 'maxWidth' : ''">
                             <RouterView />
-                            <!-- <v-btn class="customizer-btn" size="large" icon variant="flat" color="primary"
+                            <!-- <v-btn class="customizer-btn" size="small" icon text variant="flat" color="primary"
                                 @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
                                 <SettingsIcon />
                             </v-btn> -->
@@ -81,3 +82,4 @@ const customizer = useCustomizerStore();
         </v-app>
     </v-locale-provider>
 </template>
+

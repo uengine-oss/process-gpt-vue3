@@ -1,5 +1,5 @@
 <template>
-    <div style="height: 95%; margin-top: 10px; overflow: auto;" v-click-outside="onClickOutside">
+    <div style="height: 95%; margin-top: 10px; overflow: auto;">
         <v-card-text>
             <div>{{ $t('BpnmPropertyPanel.name') }}</div>
             <v-text-field v-model="name"></v-text-field>
@@ -23,10 +23,10 @@
                     </div>
                 </v-row>
             </div>
-            <div v-if="element.$type == 'bpmn:CallActivity'">
+            <div class="included" v-if="element.$type == 'bpmn:CallActivity'" style="margin-bottom: 22px;">
                 <div style="margin-bottom: 8px;">Select Definition</div>
-                <v-autocomplete v-model="selectedDefinition" :items="definitions" item-text="name" color="primary" label="Definition"
-                    variant="outlined" hide-details></v-autocomplete>
+                <v-autocomplete v-model="elementCopy.extensionElements.values[0].definition" :items="definitions"
+                    item-title="name" color="primary" label="Definition" variant="outlined" hide-details></v-autocomplete>
             </div>
             <div v-if="element.$type.includes('Task') && outputData.length > 0" style="margin-bottom:20px;">
                 <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.outputData') }}</div>
@@ -76,8 +76,47 @@
                     </v-card>
                 </v-row>
             </div>
-        </v-card-text>
+            <div>
+                <div>Key/Value Parameter</div>
+                <v-spacer></v-spacer>
+                <v-table class="month-table">
+                    <thead>
+                        <tr>
+                            <th class="text-h6">Key</th>
+                            <th class="text-h6">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="param in elementCopy.extensionElements.values[0].parameters" :key="param.key"
+                            class="month-item">
+                            <td>
+                                {{ param.key }}
+                            </td>
+                            <td>
+                                {{ param.value }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </v-table>
+                <v-btn flat color="primary" @click="editParam = !editParam">add Key/Value</v-btn>
 
+                <v-card v-if="editParam" style="margin-top: 12px">
+                    <v-card-title>Add Parameter</v-card-title>
+                    <v-card-text>
+                        <v-text-field v-model="paramKey" label="Key"></v-text-field>
+                        <v-text-field v-model="paramValue" label="Value"></v-text-field>
+                    </v-card-text>
+                    <v-card-action>
+                        <v-btn @click="addParameter">add</v-btn>
+                        <v-btn>cancel</v-btn>
+                    </v-card-action>
+                </v-card>
+            </div>
+        </v-card-text>
+        <v-card-actions>
+            <v-btn color="primary" @click="onClickOutside">Save</v-btn>
+            <v-btn color="error" @click="$emit('close')">Close</v-btn>
+        </v-card-actions>
     </div>
 </template>
 <script>
@@ -88,15 +127,13 @@ const storage = StorageBaseFactory.getStorage()
 export default {
     name: 'bpmn-property-panel',
     props: {
-        element: Object
+        element: Object,
+        processDefinitionId: String
     },
     created() {
         console.log(this.element)
     },
     data() {
-
-        
-
         return {
             definitions: [],
             elementCopy: this.element,
@@ -111,10 +148,18 @@ export default {
             code: "",
             description: "",
             selectedDefinition: "",
-            bpmnModeler: null
+            bpmnModeler: null,
+            stroage: null,
+            editParam: false,
+            paramKey: "",
+            paramValue: ""
         };
     },
     async mounted() {
+        let me = this
+        if (!me.$app.try) {
+            me.$app = me.$app._component.methods;
+        }
         console.log(this.element)
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
@@ -123,14 +168,18 @@ export default {
         if (this.element.$type == 'bpmn:CallActivity') {
             const value = await storage.getObject('proc_def');
             if (value) {
-                console.log(value)
+                // let result = []
+                // value.forEach(function (def) {
+                //     if (def.id != this.processDefinitionId)
+                //         result.push(def.id)
+                // })
                 this.definitions = value
             }
         }
     },
     computed: {
         inputData() {
-            let params = this.elementCopy?.extensionElements?.values?.[0].parameters
+            let params = this.elementCopy?.extensionElements?.values?.[0].instanceData
             let result = []
             if (params)
                 params.forEach(element => {
@@ -140,7 +189,7 @@ export default {
             return result
         },
         outputData() {
-            let params = this.elementCopy?.extensionElements?.values?.[0]?.$children?.[1]?.$children
+            let params = this.elementCopy?.extensionElements?.values?.[0].instanceData
             let result = []
             if (params)
                 params.forEach(element => {
@@ -159,6 +208,26 @@ export default {
         }
     },
     methods: {
+        // include() {
+        //     return [document.querySelector('.included')]
+        // },
+        addParameter() {
+            const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
+            // this.checkpoints.push(this.checkpointMessage)
+            const parameter = bpmnFactory.create('uengine:Parameter', { key: this.paramKey, value: this.paramValue });
+            this.elementCopy.extensionElements.values[0].parameters.push(parameter)
+            this.paramKey = ""
+            this.paramValue = ""
+        },
+        async getData(path, options) {
+            let value;
+            if (path) {
+                value = await this.storage.getObject(`db://${path}`, options);
+            } else {
+                value = await this.storage.getObject(`db://${this.path}`, options);
+            }
+            return value;
+        },
         addCheckpoint() {
             const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
             // this.checkpoints.push(this.checkpointMessage)

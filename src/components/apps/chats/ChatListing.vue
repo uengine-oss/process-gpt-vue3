@@ -27,7 +27,7 @@ const filteredChats = computed(() => {
     });
 });
 
-const items = ref([{ title: 'Sort by time' }, { title: 'Sort by Unread' }, { title: 'Mark all as read' }]);
+// const items = ref([{ title: 'Sort by time' }, { title: 'Sort by Unread' }, { title: 'Mark all as read' }]);
 
 const dialog = ref(false);
 const inputObj = ref({
@@ -80,7 +80,7 @@ const openEditDialog = (chat) => {
                     <v-icon>mdi-chat-plus</v-icon>
                 </v-btn>
             </div>
-            <v-menu>
+            <!-- <v-menu>
                 <template v-slot:activator="{ props }">
                     <v-btn color="white" variant="flat" class="mt-4 text-medium-emphasis" v-bind="props"
                         >Recent Chats <ChevronDownIcon size="18" class="ml-2" />
@@ -91,7 +91,7 @@ const openEditDialog = (chat) => {
                         <v-list-item-title>{{ item.title }}</v-list-item-title>
                     </v-list-item>
                 </v-list>
-            </v-menu>
+            </v-menu> -->
         </div>
     </v-sheet>
     <v-dialog v-model="dialog" persistent max-width="600px">
@@ -140,7 +140,7 @@ const openEditDialog = (chat) => {
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <perfect-scrollbar class="lgScroll h-100">
+    <perfect-scrollbar class="lgScroll">
         <v-list>
             <!---Single Item-->
             <v-list-item
@@ -161,7 +161,7 @@ const openEditDialog = (chat) => {
                             size="large"
                         ></v-icon>
                     </v-avatar>
-                    <v-badge
+                    <!-- <v-badge
                         class="badg-dot"
                         dot
                         :color="
@@ -174,7 +174,7 @@ const openEditDialog = (chat) => {
                                 : 'containerBg'
                         "
                     >
-                    </v-badge>
+                    </v-badge> -->
                 </template>
                 <!---Name-->
                 <v-list-item-title class="text-subtitle-1 textPrimary w-100 font-weight-semibold">{{ chat.name }}</v-list-item-title>
@@ -215,6 +215,6 @@ const openEditDialog = (chat) => {
     bottom: -10px;
 }
 .lgScroll {
-    height: 500px;
+    height: calc(100vh - 365px);
 }
 </style>

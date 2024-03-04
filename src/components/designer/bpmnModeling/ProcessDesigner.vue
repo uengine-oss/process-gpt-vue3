@@ -74,7 +74,7 @@
                     ></v-text-field>
                     
                     <!-- 웹페이지 버튼들 -->
-                    <div style="margin-right: 10px;">> 
+                    <div style="margin-right: 10px;">
                         <v-menu offset-y
                                 open-on-hover
                                 left>

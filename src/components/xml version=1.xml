@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
-    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine"
     xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
-    xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine"
     id="Definitions_Recruitment_Management_Process" targetNamespace="http://bpmn.io/schema/bpmn"
     exporter="Custom BPMN Modeler" exporterVersion="1.0">
     <bpmn:collaboration id="Collaboration_1">
@@ -57,8 +57,6 @@
                     <uengine:role>지원자</uengine:role>
                     <uengine:description>지원자가 지원서를 작성하고 제출하는 단계입니다.</uengine:description>
                     <uengine:pythonCode />
-                    <uengine:checkpoint />
-                    <uengine:parameter />
                 </uengine:uengine-params>
             </bpmn:extensionElements>
             <bpmn:incoming>SequenceFlow_StartEvent_registration</bpmn:incoming>
@@ -71,8 +69,6 @@
                     <uengine:role>system</uengine:role>
                     <uengine:description>지원자가 지원서를 정상적으로 제출하면, 시스템에서는 축하 메세지를 발송합니다.</uengine:description>
                     <uengine:pythonCode />
-                    <uengine:checkpoint />
-                    <uengine:parameter />
                 </uengine:uengine-params>
             </bpmn:extensionElements>
         </bpmn:scriptTask>
@@ -94,8 +90,6 @@
                     <uengine:role>system</uengine:role>
                     <uengine:description>추가적인 이메일을 송신하는 단계입니다.</uengine:description>
                     <uengine:pythonCode />
-                    <uengine:checkpoint />
-                    <uengine:parameter />
                 </uengine:uengine-params>
             </bpmn:extensionElements>
             <bpmn:outgoing>SequenceFlow_another_email_EndEvent</bpmn:outgoing>
@@ -129,23 +123,23 @@
             </bpmndi:BPMNShape>
             <bpmndi:BPMNEdge id="BPMNEdge_StartEvent_registration"
                 bpmnElement="SequenceFlow_StartEvent_registration">
-                <di:waypoint x="176" y="154" />
-                <di:waypoint x="260" y="150" />
+                <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="176" y="154" />
+                <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="260" y="150" />
             </bpmndi:BPMNEdge>
             <bpmndi:BPMNEdge id="BPMNEdge_another_email_EndEvent"
                 bpmnElement="SequenceFlow_another_email_EndEvent">
-                <di:waypoint x="580" y="250" />
-                <di:waypoint x="620" y="254" />
+                <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="580" y="250" />
+                <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="620" y="254" />
             </bpmndi:BPMNEdge>
             <bpmndi:BPMNEdge id="BPMNEdge_registration_congratulate"
                 bpmnElement="SequenceFlow_registration_congratulate">
-                <di:waypoint x="340" y="150" />
-                <di:waypoint x="380" y="250" />
+                <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="340" y="150" />
+                <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="380" y="250" />
             </bpmndi:BPMNEdge>
             <bpmndi:BPMNEdge id="BPMNEdge_congratulate_another_email"
                 bpmnElement="SequenceFlow_congratulate_another_email">
-                <di:waypoint x="460" y="250" />
-                <di:waypoint x="500" y="250" />
+                <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="460" y="250" />
+                <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="500" y="250" />
             </bpmndi:BPMNEdge>
         </bpmndi:BPMNPlane>
     </bpmndi:BPMNDiagram>
