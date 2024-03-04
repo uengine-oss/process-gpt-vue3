@@ -23,7 +23,7 @@
                     </div>
                 </v-row>
             </div>
-            <div class="included" v-if="element.$type == 'bpmn:CallActivity'">
+            <div class="included" v-if="element.$type == 'bpmn:CallActivity'" style="margin-bottom: 22px;">
                 <div style="margin-bottom: 8px;">Select Definition</div>
                 <v-autocomplete v-model="elementCopy.extensionElements.values[0].definition" :items="definitions"
                     item-title="name" color="primary" label="Definition" variant="outlined" hide-details></v-autocomplete>
@@ -76,10 +76,46 @@
                     </v-card>
                 </v-row>
             </div>
+            <div>
+                <div>Key/Value Parameter</div>
+                <v-spacer></v-spacer>
+                <v-table class="month-table">
+                    <thead>
+                        <tr>
+                            <th class="text-h6">Key</th>
+                            <th class="text-h6">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="param in elementCopy.extensionElements.values[0].parameters" :key="param.key"
+                            class="month-item">
+                            <td>
+                                {{ param.key }}
+                            </td>
+                            <td>
+                                {{ param.value }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </v-table>
+                <v-btn flat color="primary" @click="editParam = !editParam">add Key/Value</v-btn>
+
+                <v-card v-if="editParam" style="margin-top: 12px">
+                    <v-card-title>Add Parameter</v-card-title>
+                    <v-card-text>
+                        <v-text-field v-model="paramKey" label="Key"></v-text-field>
+                        <v-text-field v-model="paramValue" label="Value"></v-text-field>
+                    </v-card-text>
+                    <v-card-action>
+                        <v-btn @click="addParameter">add</v-btn>
+                        <v-btn>cancel</v-btn>
+                    </v-card-action>
+                </v-card>
+            </div>
         </v-card-text>
         <v-card-actions>
             <v-btn color="primary" @click="onClickOutside">Save</v-btn>
-            <v-btn color="alert" @click="$emit('close')">Close</v-btn>
+            <v-btn color="error" @click="$emit('close')">Close</v-btn>
         </v-card-actions>
     </div>
 </template>
@@ -113,7 +149,10 @@ export default {
             description: "",
             selectedDefinition: "",
             bpmnModeler: null,
-            stroage: null
+            stroage: null,
+            editParam: false,
+            paramKey: "",
+            paramValue: ""
         };
     },
     async mounted() {
@@ -140,7 +179,7 @@ export default {
     },
     computed: {
         inputData() {
-            let params = this.elementCopy?.extensionElements?.values?.[0].parameters
+            let params = this.elementCopy?.extensionElements?.values?.[0].instanceData
             let result = []
             if (params)
                 params.forEach(element => {
@@ -150,7 +189,7 @@ export default {
             return result
         },
         outputData() {
-            let params = this.elementCopy?.extensionElements?.values?.[0]?.$children?.[1]?.$children
+            let params = this.elementCopy?.extensionElements?.values?.[0].instanceData
             let result = []
             if (params)
                 params.forEach(element => {
@@ -172,6 +211,14 @@ export default {
         // include() {
         //     return [document.querySelector('.included')]
         // },
+        addParameter() {
+            const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
+            // this.checkpoints.push(this.checkpointMessage)
+            const parameter = bpmnFactory.create('uengine:Parameter', { key: this.paramKey, value: this.paramValue });
+            this.elementCopy.extensionElements.values[0].parameters.push(parameter)
+            this.paramKey = ""
+            this.paramValue = ""
+        },
         async getData(path, options) {
             let value;
             if (path) {

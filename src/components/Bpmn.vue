@@ -219,7 +219,7 @@ export default {
             });
 
             uengineParams.checkpoints = [];
-
+            uengineParams.instanceData = [];
             // uengineParams에 checkpoints와 parameters 추가
             // const parameter = bpmnFactory.create('uengine:Parameter', { key: 'param1', category: 'input' });
             // const parameter2 = bpmnFactory.create('uengine:Parameter', { key: 'param2', category: 'input' });
