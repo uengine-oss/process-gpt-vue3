@@ -52,6 +52,10 @@ function handleScroll() {
                     @click.stop="customizer.SET_MINI_SIDEBAR(!customizer.mini_sidebar)">
                     <Icon icon="solar:list-bold-duotone" height="24" width="24" />
                 </v-btn>
+                <v-btn class="customizer-btn" size="small" icon variant="flat"
+                    @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
+                    <SettingsIcon />
+                </v-btn>
                 <v-btn class="hidden-lg-and-up" icon variant="text"
                     @click.stop="customizer.SET_SIDEBAR_DRAWER" size="small">
                     <Icon icon="solar:list-bold-duotone" height="24" width="24" />
