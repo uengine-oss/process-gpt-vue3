@@ -32,6 +32,7 @@
                         :value="item" 
                         :parent="value" 
                         :storage="storage" 
+                        @view="viewProcess"
                     />
                 </div>
             </transition-group>
@@ -70,6 +71,9 @@ export default {
         deleteProcess() {
             this.parent.mega_proc_list = this.parent.mega_proc_list.filter(item => item.id != this.value.id);
         },
+        viewProcess(process) {
+            this.$emit('view', process);
+        }
     },
 }
 </script>
