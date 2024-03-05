@@ -312,6 +312,7 @@ export default {
                         console.log(responseObj)
                     } else {
                         obj.systemRequest = true
+                        obj.requestUserEmail = this.userInfo.email
                     }
                 }
                 this.putMessage(obj)
