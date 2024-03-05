@@ -120,7 +120,7 @@ export default {
         });
         if (localStorage.getItem('instancePrompt')) {
             let prompt = JSON.parse(localStorage.getItem('instancePrompt'))
-            this.beforeSendMessage(prompt.content)
+            this.beforeSendMessage(prompt)
             localStorage.removeItem('instancePrompt')
         }
     },
