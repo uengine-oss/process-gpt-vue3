@@ -63,9 +63,9 @@ export default {
 .sub-process-style {
     background-color: transparent;
     padding:5px;
-    border-radius:5px;
+    border-radius:8px;
 }
 .sub-process-hover:hover {
-    background-color:blanchedalmond !important;
+    background-color:#E7ECF0 !important;
 }
 </style>
