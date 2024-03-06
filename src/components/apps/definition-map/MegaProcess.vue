@@ -1,10 +1,16 @@
 <template>
     <div class="w-100">
-        <div class="d-flex align-center bg-lightwarning pa-3 mb-3">
-            <h6 class="text-h6 font-weight-semibold">
+        <v-card class="d-flex align-center pa-3 mb-3"
+            elevation="10"
+            style="border-radius: 10px !important;
+            background-color:#FFA726;"
+        >
+            <h6 class="text-h6 font-weight-semibold"
+                style="color:white"
+            >
                 {{ value.label }}
             </h6>
-            <div class="ml-auto">
+            <div class="ml-auto" style="color:white;">
                 <ProcessMenu
                     :size="20"
                     :type="'mega'"
@@ -15,7 +21,7 @@
                     @delete="deleteProcess"
                 />
             </div>
-        </div>
+        </v-card>
         
         <draggable class="dragArea list-group" 
             :list="value.major_proc_list" 

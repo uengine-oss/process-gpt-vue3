@@ -1,5 +1,5 @@
 <template>
-    <div class="d-flex align-center bg-lightprimary px-3 py-2 cursor-pointer"
+    <div class="d-flex align-center px-3 cursor-pointer sub-process-hover sub-process-style"
         @click="viewProcess"
     >
         <h6 class="text-subtitle-2 font-weight-semibold">
@@ -58,3 +58,14 @@ export default {
     },
 }
 </script>
+
+<style scoped>
+.sub-process-style {
+    background-color: transparent;
+    padding:5px;
+    border-radius:5px;
+}
+.sub-process-hover:hover {
+    background-color:blanchedalmond !important;
+}
+</style>

@@ -8,7 +8,7 @@
     "associations": [],
     "types": [
         {
-            "name": "Uengine-params",
+            "name": "Properties",
             "superClass": ["Element"],
             "properties": [
                 {
@@ -38,9 +38,9 @@
                     "type": "Data"
                 },
                 {
-                    "name": "parameters",
+                    "name": "ExtendedProperties",
                     "isMany": true,
-                    "type": "Parameter"
+                    "type": "ExtendedProperty"
                 }
             ]
         },
@@ -55,7 +55,7 @@
             ]
         },
         {
-            "name": "Parameter",
+            "name": "ExtendedProperty",
             "superClass": ["Element"],
             "properties": [
                 {

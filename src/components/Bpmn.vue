@@ -12,7 +12,6 @@ import BpmnModeler from 'bpmn-js/lib/Modeler';
 import BpmnViewer from 'bpmn-js/lib/Viewer';
 import BpmnModdle from 'bpmn-moddle';
 import { createApp } from 'vue';
-import CallActivityOverlay from './customBpmn/CallActivityOverlay.vue';
 export default {
     name: 'vue-bpmn',
     props: {
@@ -115,19 +114,11 @@ export default {
                     return;
                 }
 
-
+                let xml = await self.getXML
+                console.log(xml)
                 self.extendUEngineProperties(element)
 
-                if (element.type == 'bpmn:CallActivity') {
-                    var overlays = self.bpmnViewer.get('overlays');
-                    overlays.add(element.id, 'badge', {
-                        position: {
-                            bottom: -10,
-                            left: 0
-                        },
-                        html: self.createOverlayComponent({ element: businessObject })
-                    });
-                }
+               
 
             })
             // eventBus.on('shape.changed', function (e) {
@@ -140,10 +131,20 @@ export default {
             //     self.$emit('removeShape', e.element)
             // });
             // you may hook into any of the following events
-            eventBus.on('element.dblclick', function (e) {
-                // self.openPanel = true;
-                self.$emit('openPanel', e.element.id);
-            });
+            if (self.isViewMode) {
+                eventBus.on('element.dblclick', function (e) {
+                    // self.openPanel = true;
+                    if (e.element.type.includes("CallActivity")) {
+                        self.$emit('openDefinition', e.element.businessObject)
+                    }
+                });
+            } else {
+                eventBus.on('element.dblclick', function (e) {
+                    // self.openPanel = true;
+                    self.$emit('openPanel', e.element.id);
+                });
+            }
+
 
             // var events = ['element.hover', 'element.out', 'element.click', 'element.dblclick', 'element.mousedown', 'element.mouseup'];
             // events.forEach(function (event) {
@@ -188,19 +189,6 @@ export default {
         }
     },
     methods: {
-        createOverlayComponent(propsData) {
-            // 임시 컨테이너 생성
-            const container = document.createElement('div');
-
-            // createApp을 사용하여 앱 인스턴스 생성. propsData를 props로 전달
-            const appInstance = createApp(CallActivityOverlay, propsData);
-
-            // 앱 인스턴스를 임시 컨테이너에 마운트
-            appInstance.mount(container);
-
-            // 마운트된 컴포넌트의 루트 DOM 요소 반환
-            return container.firstChild;
-        },
         extendUEngineProperties(businessObject) {
             let self = this
             //let businessObject = element.businessObject
@@ -211,7 +199,7 @@ export default {
 
             const bpmnFactory = self.bpmnViewer.get('bpmnFactory');
 
-            const uengineParams = bpmnFactory.create('uengine:Uengine-params', {
+            const uengineParams = bpmnFactory.create('uengine:Properties', {
                 role: '',
                 pythonCode: '',
                 description: '',
@@ -223,7 +211,7 @@ export default {
             // uengineParams에 checkpoints와 parameters 추가
             // const parameter = bpmnFactory.create('uengine:Parameter', { key: 'param1', category: 'input' });
             // const parameter2 = bpmnFactory.create('uengine:Parameter', { key: 'param2', category: 'input' });
-            uengineParams.parameters = [];
+            uengineParams.ExtendedProperties = [];
 
             const extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
             extensionElements.get('values').push(uengineParams);

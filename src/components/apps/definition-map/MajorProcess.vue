@@ -1,6 +1,9 @@
 <template>
     <div class="mb-3">
-        <div class="d-flex align-center bg-lightsecondary pa-3">
+        <v-card class="d-flex align-center bg-lightsecondary pa-3"
+            elevation="10"
+            style="border-radius: 10px !important; margin-bottom:5px;"
+        >
             <h6 class="text-subtitle-1 font-weight-semibold">
                 {{ value.label }}
             </h6>
@@ -15,7 +18,7 @@
                     @delete="deleteProcess"
                 />
             </div>
-        </div>
+        </v-card>
 
         <draggable class="dragArea list-group" 
             :list="value.sub_proc_list" 
