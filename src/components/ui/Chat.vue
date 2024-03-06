@@ -135,12 +135,10 @@
 
                                                 <p style="margin-top: 5px" v-if="message.role == 'system' &&
                                                     index == filteredMessages.length - 1 &&
-                                                    message['prompt'] &&
-                                                    userInfo.email == message['prompt'].requestUserEmail
+                                                    message.systemRequest && message.requestUserEmail == userInfo.email
                                                     ">
-                                                    <v-btn style="margin-right: 5px" size="small"
-                                                        @click="processInstance(message)">y</v-btn>
-                                                    <v-btn size="small">n</v-btn>
+                                                    <v-btn style="margin-right: 5px" size="small" @click="startProcess(message)">y</v-btn>
+                                                    <v-btn size="small" @click="cancelProcess()">n</v-btn>
                                                 </p>
                                                 <div style="position: relative;">
                                                     <v-btn v-if="replyIndex === index" @click="beforeReply(message)" icon="mdi-reply"
@@ -291,7 +289,7 @@
 <script>
 import { Icon } from '@iconify/vue';
 import RetrievalBox from '../retrieval/RetrievalBox.vue'
-
+import partialParse from "partial-json-parser";
 import ProgressAnimated from '@/components/ui/ProgressAnimated.vue';
 import ScrollBottomHandle from '@/components/ui/ScrollBottomHandle.vue';
 import AgentsChat from './AgentsChat.vue';
@@ -393,14 +391,14 @@ export default {
         },
         setMessageForUser(content){
             if (content.includes(`"messageForUser":`)) {
-                let contentObj = JSON.parse(content)
+                let contentObj = partialParse(content)
                 return contentObj.messageForUser || content;
             } else {
                 return content
             }
         },
         setTableName(content){
-            let contentObj = JSON.parse(content)
+            let contentObj = partialParse(content)
             return contentObj.content || content;
         },
         viewProcess() {
@@ -412,10 +410,12 @@ export default {
             var timeString = dateString.split(' ')[4].substring(0, 5);
             return timeString;
         },
-        processInstance(messageObj) {
-            this.$emit('sendMessage', JSON.parse(messageObj.content).content.replace('시작하시겠습니까 ?', '시작하겠습니다.'));
-            localStorage.setItem('instancePrompt', JSON.stringify(messageObj.prompt))
-            this.$router.push('/instances/chat')
+        startProcess(messageObj) {
+            console.log(messageObj)
+            this.$emit('startProcess', messageObj)
+        },
+        cancelProcess() {
+            this.$emit('cancelProcess')
         },
         getMoreChat() {
             this.$emit('getMoreChat');
