@@ -8,6 +8,31 @@
     "associations": [],
     "types": [
         {
+            "name": "ProcessVariables",
+            "extends": ["bpmn:RootElement"],
+            "properties": [
+              {
+                "name": "variables",
+                "isMany": true,
+                "type": "ProcessVariable"
+              }
+            ]
+          },
+          {
+            "name": "ProcessVariable",
+            "properties": [
+              {
+                "name": "key",
+                "isAttr": true,
+                "type": "String"
+              },
+              {
+                "name": "value",
+                "type": "String"
+              }
+            ]
+          },
+        {
             "name": "Properties",
             "superClass": ["Element"],
             "properties": [
