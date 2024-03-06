@@ -94,6 +94,8 @@ export default class WorkAssistantGenerator extends AIGenerator {
             현재 날짜: ${this.timeStamp}
             startDateTime, endDateTime 은 추상적인 오늘 또는 내일등 표현이 절대 들어가면 안되고 무조건 현재 날짜를 기준으로한 날짜로 표시해야해 
             // e.g. 현재날짜: 2024-01-24 Wed, 내일: 2024-01-25 Thu, 다음주 월요일: 2024-01-29 Mon(오늘 이후로 가장 가까운 월요일이 표시되어야함)
+            현재 채팅방 정보: {{ 현재 채팅방 정보 }}
+            추가될 할일에 참가자할 사람들은 현재 채팅방의 참가자 목록 중에서만 선택할 수 있으며 누가 할일 참가자인지 대화 내용에서 파악하고 "participants" 배열에 해당 유저 정보 중 'email' 값만 추가되어야함.
             JSON 형식: 
             \`\`\`
             {
@@ -103,7 +105,10 @@ export default class WorkAssistantGenerator extends AIGenerator {
                 "description": 할일에 대한 설명',
                 "start_date": 'yyyy-mm-dd/hh:mm', 
                 "end_date": 'yyyy-mm-dd/hh:mm',
-                "messageForUser": '요청에 대한 요약된 생성 정보' + '할 일 목록에 추가하시겠습니까 ?' // 무조건 생성
+                "messageForUser": '요청에 대한 요약된 생성 정보' + '할 일 목록에 추가하시겠습니까 ?', // 무조건 생성
+                "participants": [
+                    "유저 email",
+                ]
             }
             \`\`\`
 

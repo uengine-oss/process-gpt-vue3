@@ -242,16 +242,23 @@ export default {
                     me.$router.push('/instances/chat')
                 } else if(responseObj.work == 'TodoListRegistration'){
                     systemMsg = `"${responseObj.activity_id}" 할 일이 추가되었습니다.`
-                    let uuid = me.uuid()
-                    console.log(responseObj)
-                    let todoObj = JSON.parse(JSON.stringify(responseObj))
-                    delete todoObj.work
-                    delete todoObj.messageForUser
-                    todoObj.id = uuid
-                    todoObj.user_id = me.userInfo.email
-                    todoObj.proc_inst_id = null
-                    todoObj.proc_def_id = null
-                    await me.putObject('todolist', todoObj);
+
+                    if (!responseObj.participants.includes(me.userInfo.email)) {
+                        responseObj.participants.push(me.userInfo.email);
+                    }
+                    
+                    responseObj.participants.forEach(function (email){
+                        let todoObj = JSON.parse(JSON.stringify(responseObj))
+                        delete todoObj.work
+                        delete todoObj.messageForUser
+                        delete todoObj.participants
+                        todoObj.proc_inst_id = null
+                        todoObj.proc_def_id = null
+                        todoObj.id = me.uuid()
+                        todoObj.user_id = email
+                        me.putObject('todolist', todoObj);
+                    })
+
                 } else if(responseObj.work == 'ScheduleRegistration'){
                     systemMsg = `"${responseObj.title}" 일정이 추가되었습니다.`
                     let start = responseObj.startDateTime.split('/')
