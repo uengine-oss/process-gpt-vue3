@@ -60,8 +60,13 @@
                     <v-icon v-if="editCheckpoint" @click="editCheckpoint = false" style="margin-top:2px;">mdi-close</v-icon>
                 </v-row>
                 <div v-for="(checkpoint, idx) in elementCopy.extensionElements.values[0].checkpoints" :key="idx">
-                    <v-checkbox-btn color="success" :label="checkpoint.checkpoint" hide-details
-                        v-model="checkbox"></v-checkbox-btn>
+                    <div style="float: left">
+                        <v-checkbox-btn color="success" :label="checkpoint.checkpoint" hide-details
+                            v-model="checkbox"></v-checkbox-btn>
+                    </div>
+                    <v-btn icon flat @click="deleteCheckPoint(checkpoint)" v-bind="props">
+                        <TrashIcon stroke-width="1.5" size="20" class="text-error" />
+                    </v-btn>
                 </div>
                 <v-text-field v-if="editCheckpoint" v-model="checkpointMessage.checkpoint"></v-text-field>
                 <v-row class="ma-0 pa-0">
@@ -77,23 +82,29 @@
                 </v-row>
             </div>
             <div>
-                <div>Key/Value Parameter</div>
+                <div>Extended Property</div>
                 <v-spacer></v-spacer>
                 <v-table class="month-table">
                     <thead>
                         <tr>
                             <th class="text-h6">Key</th>
                             <th class="text-h6">Value</th>
+                            <th class="text-h6">Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="param in elementCopy.extensionElements.values[0].parameters" :key="param.key"
+                        <tr v-for="param in elementCopy.extensionElements.values[0].ExtendedProperties" :key="param.key"
                             class="month-item">
                             <td>
                                 {{ param.key }}
                             </td>
                             <td>
                                 {{ param.value }}
+                            </td>
+                            <td>
+                                <v-btn icon flat @click="deleteExtendedProperty(param)" v-bind="props">
+                                    <TrashIcon stroke-width="1.5" size="20" class="text-error" />
+                                </v-btn>
                             </td>
                         </tr>
                     </tbody>
@@ -122,7 +133,7 @@
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
-
+import { Icon } from '@iconify/vue';
 const storage = StorageBaseFactory.getStorage()
 export default {
     name: 'bpmn-property-panel',
@@ -208,14 +219,24 @@ export default {
         }
     },
     methods: {
-        // include() {
-        //     return [document.querySelector('.included')]
-        // },
+        deleteExtendedProperty(item) {
+            const index = this.elementCopy.extensionElements.values[0].ExtendedProperties.findIndex(element => element.key === item.key);
+            if (index > -1) {
+                this.elementCopy.extensionElements.values[0].ExtendedProperties.splice(index, 1);
+            }
+        },
+        deleteCheckPoint(item) {
+            const index = this.elementCopy.extensionElements.values[0].checkpoints.findIndex(element => element.checkpoint === item.checkpoint);
+            if (index > -1) {
+                this.elementCopy.extensionElements.values[0].checkpoints.splice(index, 1);
+            }
+        },
         addParameter() {
             const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
             // this.checkpoints.push(this.checkpointMessage)
-            const parameter = bpmnFactory.create('uengine:Parameter', { key: this.paramKey, value: this.paramValue });
-            this.elementCopy.extensionElements.values[0].parameters.push(parameter)
+            const parameter = bpmnFactory.create('uengine:ExtendedProperty', { key: this.paramKey, value: this.paramValue });
+            if (!this.elementCopy.extensionElements.values[0].ExtendedProperties) this.elementCopy.extensionElements.values[0].ExtendedProperties = []
+            this.elementCopy.extensionElements.values[0].ExtendedProperties.push(parameter)
             this.paramKey = ""
             this.paramValue = ""
         },

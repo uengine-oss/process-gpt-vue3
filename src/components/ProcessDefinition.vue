@@ -13,6 +13,7 @@
                     </v-tooltip>
                     <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
                         :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
+                        v-on:openDefinition="ele => openSubProcess(ele)"
                         v-on:loading="handleLoading" v-on:openPanel="(id) => openPanel(id)"
                         v-on:update-xml="val => $emit('update-xml', val)" v-on:definition="(def) => (definitions = def)"
                         v-on:add-shape="onAddShape" v-on:change-sequence="onChangeSequence"
@@ -227,6 +228,9 @@ export default {
             }
     },
     methods: {
+        openSubProcess(e) {
+            this.$emit('openSubProcess', e)
+        },
         uuid() {
             function s4() {
                 return Math.floor((1 + Math.random()) * 0x10000)

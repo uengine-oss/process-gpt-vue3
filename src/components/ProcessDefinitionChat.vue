@@ -401,14 +401,14 @@ export default {
             let modeler = store.getModeler;
             let xml = await modeler.saveXML({ format: true, preamble: true });
 
-            if(!this.processDefinition && xml){
+            if (!this.processDefinition && xml) {
                 this.processDefinition = this.convertXMLToJSON(xml);
             }
 
-            if(!this.processDefinition.processDefinitionName) 
+            if (!this.processDefinition.processDefinitionName)
                 this.processDefinition.processDefinitionName = prompt("please give a name for the process definition");
 
-            if(!this.processDefinition.processDefinitionId) 
+            if (!this.processDefinition.processDefinitionId)
                 this.processDefinition.processDefinitionId = prompt("please give a name for the process definition");
 
             this.projectName = this.processDefinition.processDefinitionName;
@@ -425,7 +425,7 @@ export default {
                 id: this.processDefinition.processDefinitionId,
                 name: this.processDefinition.processDefinitionName,
                 definition: this.processDefinition,
-               // messages: this.messages,
+                // messages: this.messages,
                 bpmn: xml.xml   //TODO: model --> definition과 구분이 안됨.  bpmn 혹은 xmlDefinition 혹은 xmlModel 등으로 프로퍼티명 변경할것!
             };
 

@@ -17,6 +17,8 @@
                     :type="path"
                     @beforeReply="beforeReply"
                     @sendMessage="beforeSendMessage"
+                    @startProcess="startProcess"
+                    @cancelProcess="cancelProcess"
                     @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage"
                     @getMoreChat="getMoreChat"
@@ -32,7 +34,6 @@
 </template>
 
 <script>
-import { format } from 'date-fns';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
@@ -54,10 +55,8 @@ export default {
         ChatProfile
     },
     data: () => ({
-        prompt: null,
         definitions: [],
         processDefinition: null,
-        // processInstance: {},
         path: "chats",
         organizationChart: [],
         calendarData: null,
@@ -169,22 +168,13 @@ export default {
         },
         async beforeSendMessage(newMessage) {
             if (newMessage && newMessage.text != '') {
-                if(newMessage.text.includes("시작하겠습니다.")){
-                    this.putMessage(this.createMessageObj(newMessage.text, 'system'))
-                } else {
-                    this.putMessage(this.createMessageObj(newMessage.text))
-                    if(!this.generator.contexts) {
-                        let contexts = await this.queryFromVectorDB(newMessage.text);
-                        this.generator.setContexts(contexts);
-                    }
-                    
-                    this.prompt = {
-                        content: newMessage.text,
-                        requestUserEmail: this.userInfo.email,
-                        requestUserName: this.userInfo.name,
-                    }
-                    this.sendMessage(newMessage);
+                this.putMessage(this.createMessageObj(newMessage.text))
+                if(!this.generator.contexts) {
+                    let contexts = await this.queryFromVectorDB(newMessage.text);
+                    this.generator.setContexts(contexts);
                 }
+                
+                this.sendMessage(newMessage);
             }
         },
 
@@ -221,6 +211,64 @@ export default {
             //         console.log(error);
             //     }
             // }
+        },
+        cancelProcess(){
+            this.putMessage(this.createMessageObj("취소되었습니다.", 'system'))
+        },
+        async startProcess(response){
+            if(response.content && response.content.includes("{")){
+                let responseObj = partialParse(response.content)
+                let systemMsg
+                if(responseObj.work == 'StartProcessInstance'){
+                    systemMsg = `"${responseObj.title}" 프로세스를 시작하겠습니다.`
+                    localStorage.setItem('instancePrompt', JSON.stringify(responseObj.prompt))
+                    this.$router.push('/instances/chat')
+                } else if(responseObj.work == 'TodoListRegistration'){
+                    systemMsg = `"${responseObj.activity_id}" 할 일이 추가되었습니다.`
+                    let uuid = this.uuid()
+                    console.log(responseObj)
+                    let todoObj = JSON.parse(JSON.stringify(responseObj))
+                    delete todoObj.work
+                    delete todoObj.messageForUser
+                    todoObj.id = uuid
+                    todoObj.user_id = this.userInfo.email
+                    todoObj.proc_inst_id = null
+                    todoObj.proc_def_id = null
+                    await this.putObject('todolist', todoObj);
+                } else if(responseObj.work == 'ScheduleRegistration'){
+                    systemMsg = `"${responseObj.title}" 일정이 추가되었습니다.`
+                    let start = responseObj.startDateTime.split('/')
+                    let startDate = start[0].split("-")
+                    let startTime = start[1].split("-")
+                    
+                    let end = responseObj.endDateTime.split('/')
+                    let endDate = end[0].split("-")
+                    let endTime = end[1].split("-")
+                    // {
+                    //     start: new Date(y, m, d + 3, 10, 30),
+                    //     end: new Date(y, m, d + 3, 11, 30),
+                    // },
+                    let uuid = this.uuid()
+                    if(!this.calendarData[`${startDate[0]}_${startDate[1]}`]){
+                        this.calendarData[`${startDate[0]}_${startDate[1]}`] = {}
+                    }
+                    this.calendarData[`${startDate[0]}_${startDate[1]}`][uuid] = {
+                        id: uuid,
+                        title: responseObj.title,
+                        description: responseObj.description,
+                        allDay: true,
+                        start: new Date(startDate[0], startDate[1] - 1, startDate[2]),
+                        end: new Date(endDate[0], endDate[1] - 1, endDate[2]),
+                        color: '#615dff',
+                    }
+                    let calendarObj = {
+                        "uid": localStorage.getItem('uid'),
+                        "data": this.calendarData
+                    }
+                    this.putObject(`calendar/${localStorage.getItem('uid')}`, calendarObj);
+                } 
+                this.putMessage(this.createMessageObj(systemMsg, 'system'))
+            }
         },
         afterModelStopped(response) {
             // console.log(response)
@@ -261,55 +309,10 @@ export default {
                             alert(error);
                         }
                     } else if(responseObj.work == 'ScheduleQuery'){
-                       console.log(responseObj)
-                    } else if(responseObj.work == 'ScheduleRegistration'){
-                        let start = responseObj.startDateTime.split('/')
-                        let startDate = start[0].split("-")
-                        let startTime = start[1].split("-")
-                        
-                        let end = responseObj.endDateTime.split('/')
-                        let endDate = end[0].split("-")
-                        let endTime = end[1].split("-")
-                        // {
-                        //     start: new Date(y, m, d + 3, 10, 30),
-                        //     end: new Date(y, m, d + 3, 11, 30),
-                        // },
-                        let uuid = this.uuid()
-                        if(!this.calendarData[`${startDate[0]}_${startDate[1]}`]){
-                            this.calendarData[`${startDate[0]}_${startDate[1]}`] = {}
-                        }
-                        this.calendarData[`${startDate[0]}_${startDate[1]}`][uuid] = {
-                            id: uuid,
-                            title: responseObj.title,
-                            description: responseObj.description,
-                            allDay: true,
-                            start: new Date(startDate[0], startDate[1] - 1, startDate[2]),
-                            end: new Date(endDate[0], endDate[1] - 1, endDate[2]),
-                            color: '#615dff',
-                        }
-                        let calendarObj = {
-                            "uid": localStorage.getItem('uid'),
-                            "data": this.calendarData
-                        }
-                        this.putObject(`calendar/${localStorage.getItem('uid')}`, calendarObj);
-
-                        let putObj = {
-                            id: uuid,
-                            user_id: this.userInfo.email,
-                            proc_inst_id: null,
-                            proc_def_id: null,
-                            activity_id: responseObj.title,
-                            start_date: format(new Date(startDate[0], startDate[1] - 1, startDate[2]), "yyyy-MM-dd HH:mm:ss"),
-                            end_date: format(new Date(endDate[0], endDate[1] - 1, endDate[2], '23', '59'), "yyyy-MM-dd HH:mm:ss"),
-                            status: 'TODO',
-                        }
-                        await this.putObject('todolist', putObj);
-
+                        console.log(responseObj)
                     } else {
-                        if(this.prompt && this.prompt.content){
-                            obj.prompt = this.prompt
-                            this.prompt = null
-                        }
+                        obj.systemRequest = true
+                        obj.requestUserEmail = this.userInfo.email
                     }
                 }
                 this.putMessage(obj)
