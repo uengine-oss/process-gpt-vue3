@@ -60,7 +60,7 @@ export default {
         path: "chats",
         organizationChart: [],
         calendarData: null,
-        currendtChatRoom: null,
+        currentChatRoom: null,
         userList: null,
     }),
     computed: {
@@ -68,6 +68,16 @@ export default {
             return this.chatRoomList.sort((a, b) => new Date(b.message.createdAt) - new Date(a.message.createdAt));
         }
     },
+    watch: {
+        currentChatRoom: {
+            handler(newVal) {
+                if(this.generator){
+                    this.generator.setChatRoomData(newVal);
+                }
+            },
+            deep: true
+        }
+    },  
     async created() {
         // this.init();
         this.generator = new ChatGenerator(this, {
@@ -85,7 +95,7 @@ export default {
             let option = {
                 key: "uid"
             }
-            const res = await this.storage.getObject(`db://calendar/${localStorage.getItem('uid')}`, option);
+            const res = await this.storage.getObject(`db://calendar/${this.userInfo.uid}`, option);
             this.calendarData = res && res.data ? res.data : {};
             this.generator.setCalendarData(this.calendarData);
         },
@@ -103,12 +113,12 @@ export default {
             await me.storage.list(`db://chat_rooms`).then(function (chatRooms) {
                 if (chatRooms) {
                     chatRooms.forEach(function (chatRoom) {
-                        if(chatRoom.participants.find(x => x === me.userInfo.email)){
+                        if(chatRoom.participants.find(x => x.email === me.userInfo.email)){
                             me.chatRoomList.push(chatRoom)
                         }
                     })
                     if(me.chatRoomList.length > 0){
-                        me.currendtChatRoom = me.filteredChatRoomList[0]
+                        me.currentChatRoom = me.filteredChatRoomList[0]
                         me.getChatList(me.filteredChatRoomList[0].id);
                     } else {
                         alert("Create a new chat room")
@@ -119,9 +129,15 @@ export default {
         createChatRoom(chatRoomInfo){
             if(!chatRoomInfo.id){
                 chatRoomInfo.id = this.uuid();
-                chatRoomInfo.participants.push(this.userInfo.email)
+                let userInfo = {
+                    "id": this.userInfo.uid,
+                    "username": this.userInfo.name,
+                    "email": this.userInfo.email,
+                    "profile": this.userInfo.profile
+                }
+                chatRoomInfo.participants.push(userInfo)
                 chatRoomInfo.thumb = "/src/assets/images/profile/user-2.jpg"
-                let currentTimestamp = Date.now().toString();
+                let currentTimestamp = Date.now()
                 chatRoomInfo.message = {
                     "msg": "NEW",
                     "type": "text",
@@ -135,18 +151,18 @@ export default {
                 }
             }
             
-            this.currendtChatRoom = chatRoomInfo
+            this.currentChatRoom = chatRoomInfo
             this.putObject(`chat_rooms`, chatRoomInfo);
         },
         chatRoomSelected(chatRoomInfo){
-            this.currendtChatRoom = chatRoomInfo
+            this.currentChatRoom = chatRoomInfo
             this.getChatList(chatRoomInfo.id);
         },
         putMessage(msg){
             let uuid = this.uuid()
             let message = {
                 "messages": msg,
-                "id": this.currendtChatRoom.id,
+                "id": this.currentChatRoom.id,
                 "uid": uuid,
             }
             this.putObject(`chats/${uuid}`, message);
@@ -156,8 +172,8 @@ export default {
                 "type": "text",
                 "createdAt": msg.timeStamp
             }
-            this.currendtChatRoom.message = chatRoomObj
-            this.putObject(`chat_rooms`, this.currendtChatRoom);
+            this.currentChatRoom.message = chatRoomObj
+            this.putObject(`chat_rooms`, this.currentChatRoom);
         },
         beforeReply(msg){
             if(msg){
@@ -216,25 +232,26 @@ export default {
             this.putMessage(this.createMessageObj("취소되었습니다.", 'system'))
         },
         async startProcess(response){
+            var me = this
             if(response.content && response.content.includes("{")){
                 let responseObj = partialParse(response.content)
                 let systemMsg
                 if(responseObj.work == 'StartProcessInstance'){
                     systemMsg = `"${responseObj.title}" 프로세스를 시작하겠습니다.`
                     localStorage.setItem('instancePrompt', JSON.stringify(responseObj.prompt))
-                    this.$router.push('/instances/chat')
+                    me.$router.push('/instances/chat')
                 } else if(responseObj.work == 'TodoListRegistration'){
                     systemMsg = `"${responseObj.activity_id}" 할 일이 추가되었습니다.`
-                    let uuid = this.uuid()
+                    let uuid = me.uuid()
                     console.log(responseObj)
                     let todoObj = JSON.parse(JSON.stringify(responseObj))
                     delete todoObj.work
                     delete todoObj.messageForUser
                     todoObj.id = uuid
-                    todoObj.user_id = this.userInfo.email
+                    todoObj.user_id = me.userInfo.email
                     todoObj.proc_inst_id = null
                     todoObj.proc_def_id = null
-                    await this.putObject('todolist', todoObj);
+                    await me.putObject('todolist', todoObj);
                 } else if(responseObj.work == 'ScheduleRegistration'){
                     systemMsg = `"${responseObj.title}" 일정이 추가되었습니다.`
                     let start = responseObj.startDateTime.split('/')
@@ -248,11 +265,8 @@ export default {
                     //     start: new Date(y, m, d + 3, 10, 30),
                     //     end: new Date(y, m, d + 3, 11, 30),
                     // },
-                    let uuid = this.uuid()
-                    if(!this.calendarData[`${startDate[0]}_${startDate[1]}`]){
-                        this.calendarData[`${startDate[0]}_${startDate[1]}`] = {}
-                    }
-                    this.calendarData[`${startDate[0]}_${startDate[1]}`][uuid] = {
+                    let uuid = me.uuid()
+                    let scheduleObj = {
                         id: uuid,
                         title: responseObj.title,
                         description: responseObj.description,
@@ -261,13 +275,37 @@ export default {
                         end: new Date(endDate[0], endDate[1] - 1, endDate[2]),
                         color: '#615dff',
                     }
-                    let calendarObj = {
-                        "uid": localStorage.getItem('uid'),
-                        "data": this.calendarData
+                    
+                    // if(!this.calendarData[`${startDate[0]}_${startDate[1]}`]){
+                    //     this.calendarData[`${startDate[0]}_${startDate[1]}`] = {}
+                    // }
+                    // this.calendarData[`${startDate[0]}_${startDate[1]}`][uuid] = scheduleObj
+                    if (!responseObj.participants.includes(me.userInfo.uid)) {
+                        responseObj.participants.push(me.userInfo.uid);
                     }
-                    this.putObject(`calendar/${localStorage.getItem('uid')}`, calendarObj);
+                    responseObj.participants.forEach(async function (participant) {
+                        let calendarData
+                        if(participant == me.userInfo.uid) {
+                            calendarData = me.calendarData
+                        } else {
+                            let option = {
+                                key: "uid"
+                            }
+                            const res = await me.storage.getObject(`db://calendar/${participant}`, option);
+                            calendarData = res && res.data ? res.data : {};
+                        }
+                        if(!calendarData[`${startDate[0]}_${startDate[1]}`]){
+                            calendarData[`${startDate[0]}_${startDate[1]}`] = {}
+                        }
+                        calendarData[`${startDate[0]}_${startDate[1]}`][uuid] = scheduleObj
+                        let calendarObj = {
+                            "uid": participant,
+                            "data": calendarData
+                        }
+                        me.putObject(`calendar/${participant}`, calendarObj);
+                    });
                 } 
-                this.putMessage(this.createMessageObj(systemMsg, 'system'))
+                me.putMessage(me.createMessageObj(systemMsg, 'system'))
             }
         },
         afterModelStopped(response) {

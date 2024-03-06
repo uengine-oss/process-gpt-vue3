@@ -43,7 +43,7 @@
                 </div>
 
                 <div v-for="(subProcess, idx) in subProcessBreadCrumb" :key="idx">
-                    <div class="d-flex align-center">
+                    <div class="d-flex align-center" @click="goHistory(idx)">
                         <v-icon>mdi-chevron-right</v-icon>
                         <h6 class="text-h6 font-weight-semibold">
                             {{ subProcess.processName }}
@@ -120,6 +120,17 @@ export default {
         this.getProcessMap();
     },
     methods: {
+        goHistory(idx) {
+            this.updateBpmn(this.subProcessBreadCrumb[idx].xml);
+            this.removeHistoryAfterIndex(idx)
+        },
+        removeHistoryAfterIndex(index) {
+            if (index < 0 || index >= this.subProcessBreadCrumb.length) {
+                console.error("Invalid index");
+                return;
+            }
+            this.subProcessBreadCrumb.splice(index + 1);
+        },
         updateBpmn(bpmn) {
             this.bpmn = bpmn
             this.defCnt++
