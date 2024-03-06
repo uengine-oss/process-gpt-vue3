@@ -108,7 +108,7 @@ const openEditDialog = (chat) => {
                 closable-chips
                 color="blue-grey-lighten-2"
                 item-title="username"
-                item-value="email"
+                :item-value="item => item"
                 multiple
                 label="참여자 선택"
                 small-chips

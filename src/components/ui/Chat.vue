@@ -133,10 +133,11 @@
                                                 <pre class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
                                                 <!-- <pre class="text-body-1">{{ message.content }}</pre> -->
 
-                                                <p style="margin-top: 5px" v-if="message.role == 'system' &&
-                                                    index == filteredMessages.length - 1 &&
-                                                    message.systemRequest && message.requestUserEmail == userInfo.email
-                                                    ">
+                                                <p style="margin-top: 5px" v-if="message.role == 'system' 
+                                                    && index == filteredMessages.length - 1 
+                                                    && message.systemRequest 
+                                                    && message.requestUserEmail == userInfo.email"
+                                                >
                                                     <v-btn style="margin-right: 5px" size="small" @click="startProcess(message)">y</v-btn>
                                                     <v-btn size="small" @click="cancelProcess()">n</v-btn>
                                                 </p>
@@ -411,7 +412,6 @@ export default {
             return timeString;
         },
         startProcess(messageObj) {
-            console.log(messageObj)
             this.$emit('startProcess', messageObj)
         },
         cancelProcess() {
