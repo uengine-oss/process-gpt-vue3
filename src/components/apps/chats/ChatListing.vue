@@ -76,7 +76,7 @@ const openEditDialog = (chat) => {
                     hide-details
                     density="compact"
                 ></v-text-field>
-                <v-btn icon @click="dialog = true" style="margin-left: 10px;">
+                <v-btn icon @click="dialog = true, inputObj.name = '', inputObj.participants = []" style="margin-left: 10px;">
                     <v-icon>mdi-chat-plus</v-icon>
                 </v-btn>
             </div>
