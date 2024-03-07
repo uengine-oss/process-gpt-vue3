@@ -304,10 +304,13 @@ export default class AIGenerator {
             })
             me.previousMessages = me.client.openAiMessageList;
         } else {
-            me.previousMessages.push({
-                role: 'user',
-                content: me.createPrompt()  + (me.preferredLanguage ? "\n please generate in " + me.preferredLanguage : '')
-            })
+            let prompt = me.createPrompt()
+            if(prompt){
+                me.previousMessages.push({
+                    role: 'user',
+                    content: prompt + (me.preferredLanguage ? "\n please generate in " + me.preferredLanguage : '')
+                })
+            }
         }
         
         return me.previousMessages;
