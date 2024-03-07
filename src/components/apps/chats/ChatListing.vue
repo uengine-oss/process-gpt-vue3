@@ -57,6 +57,14 @@ const confirmDialog = () => {
   // 여기서 서버에 데이터를 보내거나 추가 처리를 할 수 있습니다.
 };
 
+const openDialog = () => {
+    inputObj.value = {
+        name: '',
+        participants: []
+    }
+    editMode.value = false;
+    dialog.value = true;
+};
 const openEditDialog = (chat) => {
     inputObj.value = { ...chat };
     editMode.value = true;
@@ -76,7 +84,7 @@ const openEditDialog = (chat) => {
                     hide-details
                     density="compact"
                 ></v-text-field>
-                <v-btn icon @click="dialog = true, inputObj.name = '', inputObj.participants = [], editMode = false" style="margin-left: 10px;">
+                <v-btn icon @click="openDialog" style="margin-left: 10px;">
                     <v-icon>mdi-chat-plus</v-icon>
                 </v-btn>
             </div>

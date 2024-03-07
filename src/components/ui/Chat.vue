@@ -92,19 +92,20 @@
                                         </div>
                                     </div>
                                 </div>
-
-                                <div v-else class="align-items-start gap-3 mb-1 w-100">
-                                    <v-row class="ma-0 pa-0" style="margin-bottom:10px !important;">
-                                        <v-avatar style="margin-right:10px;">
-                                            <img v-if="message.role == 'system'" src="@/assets/images/chat/chat-icon.png"
-                                                max-height="48" max-width="48" />
-                                            <v-img v-else :src="message.profile" :alt="message.name" height="48" width="48" />
-                                        </v-avatar>
-                                        <div v-if="message.timeStamp" style="font-size:12px; padding-top:20px;">
-                                            {{ message.role == 'system' ? 'System,' : message.name + ',' }}
-                                            {{ formatTime(message.timeStamp) }}
-                                        </div>
-                                    </v-row>
+                                <div v-else :style="shouldDisplayUserInfo(message, index) ? '':'margin-top: -20px;'">
+                                    <div v-if="shouldDisplayUserInfo(message, index)" class="align-items-start gap-3 mb-1 w-100">
+                                        <v-row class="ma-0 pa-0" style="margin-bottom:10px !important;">
+                                            <v-avatar style="margin-right:10px;">
+                                                <img v-if="message.role == 'system'" src="@/assets/images/chat/chat-icon.png"
+                                                    max-height="48" max-width="48" />
+                                                <v-img v-else :src="message.profile" :alt="message.name" height="48" width="48" />
+                                            </v-avatar>
+                                            <div v-if="message.timeStamp" style="font-size:12px; padding-top:20px;">
+                                                {{ message.role == 'system' ? 'System,' : message.name + ',' }}
+                                                {{ formatTime(message.timeStamp) }}
+                                            </div>
+                                        </v-row>
+                                    </div>
 
                                     <div class="w-100 pb-5">
                                         <v-sheet v-if="message.type == 'img'" class="mb-1">
@@ -133,11 +134,7 @@
                                                 <pre class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
                                                 <!-- <pre class="text-body-1">{{ message.content }}</pre> -->
 
-                                                <p style="margin-top: 5px" v-if="message.role == 'system' 
-                                                    && index == filteredMessages.length - 1 
-                                                    && message.systemRequest 
-                                                    && message.requestUserEmail == userInfo.email"
-                                                >
+                                                <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
                                                     <v-btn style="margin-right: 5px" size="small" @click="startProcess(message)">y</v-btn>
                                                     <v-btn size="small" @click="cancelProcess()">n</v-btn>
                                                 </p>
@@ -389,6 +386,30 @@ export default {
         },
     },
     methods: {
+        shouldDisplayButtons(message, index) {
+            if (message.role !== 'system' || !message.systemRequest || message.requestUserEmail !== this.userInfo.email) {
+                return false;
+            }
+            // 현재 메시지 이후로 동일한 userInfo.email을 가진 메시지가 있는지 확인
+            for (let i = index + 1; i < this.filteredMessages.length; i++) {
+                if (this.filteredMessages[i].email === this.userInfo.email) {
+                    return false; // 동일한 email을 가진 메시지가 있다면 버튼을 표시하지 않음
+                }
+            }
+            // 위의 조건들을 모두 통과했다면 버튼을 표시
+            return true;
+        },
+        shouldDisplayUserInfo(message, index) {
+            if (index === 0) return true; // 첫 번째 메시지는 항상 표시
+            const prevMessage = this.filteredMessages[index - 1];
+            if (message.email !== prevMessage.email) return true; // 다른 사용자의 메시지는 표시
+
+            // 시간 차이 계산 (밀리초 단위)
+            const timeDiff = new Date(message.timeStamp) - new Date(prevMessage.timeStamp);
+            if (timeDiff > 60000) return true; // 1분 이상 차이나는 메시지는 표시
+
+            return false; // 그 외의 경우는 표시하지 않음
+        },
         requestDraftAgent(){
             this.$emit('requestDraftAgent', this.newMessage);
         },

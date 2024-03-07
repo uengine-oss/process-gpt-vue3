@@ -188,7 +188,7 @@ export default {
                 
                 chatMsgs.push(chatObj);
                 // this.generator.previousMessages = [...this.generator.previousMessages, ...chatMsgs];
-                if (chatMsgs.length > 70) {
+                if (chatMsgs.length > 60) {
                     const startIndex = chatMsgs.length - 60;
                     this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs.slice(startIndex)];
                 } else {
