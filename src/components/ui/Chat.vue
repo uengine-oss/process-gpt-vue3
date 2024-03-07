@@ -202,6 +202,8 @@
                         <AgentsChat v-if="type=='instances'&& agentInfo.isRunning && filteredMessages.length == 0" class="px-5 py-1" :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="-1"/>
                     </div>
                 </div>
+            </perfect-scrollbar>
+            <div style="position:relative">
                 <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
                     <v-tooltip text="Add image">
                         <template v-slot:activator="{ props }">
@@ -230,7 +232,7 @@
                         </template>
                     </v-tooltip>
                 </v-row>
-            </perfect-scrollbar>
+            </div>
             <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
                 <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
             </div> -->

@@ -91,6 +91,7 @@ export default {
                 self.$emit('shown', warnings);
             }
 
+            console.log(def)
             // self.bpmnViewer.get('canvas').zoom('fit-viewport');
             var canvas = self.bpmnViewer.get('canvas');
             canvas.zoom('fit-viewport');
@@ -118,7 +119,16 @@ export default {
                 console.log(xml)
                 self.extendUEngineProperties(element)
 
-               
+                // const bpmnFactory = self.bpmnViewer.get('bpmnFactory');
+                // console.log(bpmnFactory)
+                const processVariable = this.bpmnViewer.get('moddle').create('uengine:ProcessVariables', {
+                    variables: [
+                        { key: 'variable1', value: 'value1' }
+                    ]
+                });
+                let definitions = self.bpmnViewer.getDefinitions();
+                definitions.get('rootElements').push(processVariable);
+
 
             })
             // eventBus.on('shape.changed', function (e) {
@@ -157,7 +167,7 @@ export default {
         } else if (this.bpmn) {
             this.diagramXML = this.bpmn;
         } else {
-            this.diagramXML = '<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_0bfky9r" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0"><bpmn:process id="Process_1oscmbn" isExecutable="false" /><bpmndi:BPMNDiagram id="BPMNDiagram_1"><bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1oscmbn" /></bpmndi:BPMNDiagram></bpmn:definitions>'
+            this.diagramXML = '<?xml version="1.0" encoding="UTF-8"?> <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_0bfky9r" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0"> <bpmn:process id="Process_1oscmbn" isExecutable="false"> <uengine:ProcessVariables id="ProcessVariables_1"> <uengine:ProcessVariable key="variable1" value="value1"/> <uengine:ProcessVariable key="variable2" value="value2"/> </uengine:ProcessVariables> </bpmn:process> <bpmndi:BPMNDiagram id="BPMNDiagram_1"> <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1oscmbn" /> </bpmndi:BPMNDiagram> </bpmn:definitions>'
         }
     },
     beforeDestroy() {

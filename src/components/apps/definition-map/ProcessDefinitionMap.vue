@@ -15,7 +15,7 @@
                 </v-row>
             </div>
         </v-card>
-        <v-card v-else elevation="10">
+        <v-card v-else elevation="10" style="height:calc(100vh - 155px);">
             <div class="pt-5 pl-6 pr-6 d-flex align-center">
                 <div class="d-flex align-center">
                     <h6 class="text-h6 font-weight-semibold">{{ selectedProc.mega.label }}</h6>
@@ -57,7 +57,7 @@
                     </v-btn>
                 </div>
             </div>
-            <v-card-text style="width: 100%;">
+            <v-card-text style="width: 100%; height: 100%">
                 <ProcessDefinition v-if="onLoad && bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
                     v-on:openSubProcess="ele => openSubProcess(ele)" :processDefinition="processDefinition.definition"
                     :isViewMode="true"></ProcessDefinition>
