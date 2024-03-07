@@ -61,7 +61,7 @@ export default {
         organizationChart: [],
         calendarData: null,
         currentChatRoom: null,
-        userList: null,
+        userList: [],
     }),
     computed: {
         filteredChatRoomList() {
