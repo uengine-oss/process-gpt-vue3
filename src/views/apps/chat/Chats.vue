@@ -243,6 +243,10 @@ export default {
                 } else if(responseObj.work == 'TodoListRegistration'){
                     systemMsg = `"${responseObj.activity_id}" 할 일이 추가되었습니다.`
 
+                    if(!responseObj.participants){
+                        responseObj.participants = []
+                    }
+
                     if (!responseObj.participants.includes(me.userInfo.email)) {
                         responseObj.participants.push(me.userInfo.email);
                     }
@@ -287,6 +291,10 @@ export default {
                     //     this.calendarData[`${startDate[0]}_${startDate[1]}`] = {}
                     // }
                     // this.calendarData[`${startDate[0]}_${startDate[1]}`][uuid] = scheduleObj
+                    if(!responseObj.participants){
+                        responseObj.participants = []
+                    }
+                    
                     if (!responseObj.participants.includes(me.userInfo.uid)) {
                         responseObj.participants.push(me.userInfo.uid);
                     }
