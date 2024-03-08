@@ -4,7 +4,10 @@
             <template v-slot:leftpart>
                 <div class="no-scrollbar">
                 <ChatProfile />
-                <ChatListing :chatRoomList="filteredChatRoomList" :userList="userList" 
+                <ChatListing 
+                    :chatRoomList="filteredChatRoomList" 
+                    :userList="userList" 
+                    :userInfo="userInfo"
                     @chat-selected="chatRoomSelected" 
                     @create-chat-room="createChatRoom"
                 />
@@ -136,7 +139,6 @@ export default {
                     "profile": this.userInfo.profile
                 }
                 chatRoomInfo.participants.push(userInfo)
-                chatRoomInfo.thumb = "/src/assets/images/profile/user-2.jpg"
                 let currentTimestamp = Date.now()
                 chatRoomInfo.message = {
                     "msg": "NEW",
@@ -158,12 +160,30 @@ export default {
             this.currentChatRoom = chatRoomInfo
             this.getChatList(chatRoomInfo.id);
         },
-        putMessage(msg){
-            let uuid = this.uuid()
+        // async addTextToVectorStore(msg){
+        //     const apiToken = this.generator.getToken();
+        //     const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
+        //     try {
+        //     // 메시지 추가
+        //         await vectorStore.addText(JSON.stringify(msg), {
+        //             category: this.currentChatRoom.id
+        //         });
+        //     } catch (error) {
+        //         console.error("Error adding message to vectorStore:", error);
+        //     }
+        // },
+        async putMessage(msg){
+            // this.addTextToVectorStore(msg)
+            let uuid
+            if(msg.uuid){
+                uuid = msg.uuid
+            } else {
+                uuid = this.uuid()
+            }
             let message = {
                 "messages": msg,
                 "id": this.currentChatRoom.id,
-                "uid": uuid,
+                "uuid": uuid,
             }
             this.putObject(`chats/${uuid}`, message);
 
@@ -174,7 +194,23 @@ export default {
             }
             this.currentChatRoom.message = chatRoomObj
             this.putObject(`chat_rooms`, this.currentChatRoom);
+            
+            // let test = await this.queryMsgFromVectorDB(msg.content)
+            // console.log(test)
         },
+        // async queryMsgFromVectorDB(content) {
+        //     const apiToken = this.generator.getToken();
+        //     const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
+
+        //     const results = await vectorStore.similaritySearch({
+        //         query: content,
+        //         category: this.currentChatRoom.id
+        //     });
+
+        //     if (results.similarItems) {
+        //         return results.similarItems.map(item => item.text);
+        //     }
+        // },
         beforeReply(msg){
             if(msg){
                 this.replyUser = msg
@@ -228,8 +264,16 @@ export default {
             //     }
             // }
         },
-        cancelProcess(){
-            this.putMessage(this.createMessageObj("취소되었습니다.", 'system'))
+        deleteSystemMessage(response){
+            if(response.idx){
+                this.messages.splice(response.idx, 1);
+            }
+            this.storage.delete(`chats/${response.uuid}`, {key: 'uuid'});
+        },
+        cancelProcess(response){
+            let systemMsg = `${this.userInfo.name}님의 요청이 취소되었습니다.`
+            this.putMessage(this.createMessageObj(systemMsg, 'system'))
+            this.deleteSystemMessage(response)
         },
         async startProcess(response){
             var me = this
@@ -320,7 +364,9 @@ export default {
                         me.putObject(`calendar/${participant}`, calendarObj);
                     });
                 } 
+                systemMsg = `${me.userInfo.name}님이 요청하신 ${systemMsg}`
                 me.putMessage(me.createMessageObj(systemMsg, 'system'))
+                me.deleteSystemMessage(response)
             }
         },
         afterModelStopped(response) {
@@ -364,6 +410,7 @@ export default {
                     } else if(responseObj.work == 'ScheduleQuery'){
                         console.log(responseObj)
                     } else {
+                        obj.uuid = this.uuid()
                         obj.systemRequest = true
                         obj.requestUserEmail = this.userInfo.email
                     }

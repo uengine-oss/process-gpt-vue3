@@ -135,8 +135,8 @@
                                                 <!-- <pre class="text-body-1">{{ message.content }}</pre> -->
 
                                                 <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
-                                                    <v-btn style="margin-right: 5px" size="small" @click="startProcess(message)">y</v-btn>
-                                                    <v-btn size="small" @click="cancelProcess()">n</v-btn>
+                                                    <v-btn style="margin-right: 5px" size="small" @click="startProcess(message, index)">y</v-btn>
+                                                    <v-btn size="small" @click="cancelProcess(message, index)">n</v-btn>
                                                 </p>
                                                 <div style="position: relative;">
                                                     <v-btn v-if="replyIndex === index" @click="beforeReply(message)" icon="mdi-reply"
@@ -434,11 +434,13 @@ export default {
             var timeString = dateString.split(' ')[4].substring(0, 5);
             return timeString;
         },
-        startProcess(messageObj) {
+        startProcess(messageObj, idx) {
+            messageObj.idx = idx
             this.$emit('startProcess', messageObj)
         },
-        cancelProcess() {
-            this.$emit('cancelProcess')
+        cancelProcess(messageObj, idx) {
+            messageObj.idx = idx
+            this.$emit('cancelProcess', messageObj)
         },
         getMoreChat() {
             this.$emit('getMoreChat');
