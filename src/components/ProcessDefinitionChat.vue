@@ -6,7 +6,7 @@
                     <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :isChanged="true"
                         :userInfo="userInfo" :type="'definitions'" @sendMessage="beforeSendMessage"
                         @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage" @getMoreChat="getMoreChat"
-                        @save="$app.try(saveModel)"></Chat>
+                        @loadBPMN="bpmn => loadBPMN(bpmn)" @save="$app.try(saveModel)"></Chat>
                 </div>
             </template>
             <template v-slot:rightpart>
@@ -18,7 +18,7 @@
                 <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :isChanged="isChanged"
                     :userInfo="userInfo" :type="'definitions'" @sendMessage="beforeSendMessage"
                     @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage" @getMoreChat="getMoreChat"
-                    @save="saveModel"></Chat>
+                    @loadBPMN="bpmn => loadBPMN(bpmn)" @save="$app.try(saveModel)"></Chat>
             </template>
         </AppBaseCard>
     </v-card>
@@ -117,6 +117,10 @@ export default {
         // }
     },
     methods: {
+        loadBPMN(bpmn) {
+            this.bpmn = bpmn
+            this.definitionChangeCount++
+        },
         removePositionKey(obj) {
             // 배열인 경우, 각 요소에 대해 재귀적으로 함수를 호출
             if (Array.isArray(obj)) {

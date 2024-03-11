@@ -2,10 +2,10 @@
     <div style="height: 95%; margin-top: 10px; overflow: auto;">
         <v-card-text>
             <div>{{ $t('BpnmPropertyPanel.name') }}</div>
-            <v-text-field v-model="name"></v-text-field>
+            <v-text-field v-model="name" :disabled="isViewMode"></v-text-field>
             <div>
                 <div>{{ $t('BpnmPropertyPanel.description') }}</div>
-                <v-textarea v-if="!elementCopy.$type.includes('Event')"
+                <v-textarea v-if="!elementCopy.$type.includes('Event')" :disabled="isViewMode"
                     v-model="elementCopy.extensionElements.values[0].description"></v-textarea>
             </div>
             <div v-if="element.$type.includes('Task') && inputData.length > 0" style="margin-bottom:20px;">
@@ -26,7 +26,8 @@
             <div class="included" v-if="element.$type == 'bpmn:CallActivity'" style="margin-bottom: 22px;">
                 <div style="margin-bottom: 8px;">Select Definition</div>
                 <v-autocomplete v-model="elementCopy.extensionElements.values[0].definition" :items="definitions"
-                    item-title="name" color="primary" label="Definition" variant="outlined" hide-details></v-autocomplete>
+                    :disabled="isViewMode" item-title="name" color="primary" label="Definition" variant="outlined"
+                    hide-details></v-autocomplete>
             </div>
             <div v-if="element.$type.includes('Task') && outputData.length > 0" style="margin-bottom:20px;">
                 <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.outputData') }}</div>
@@ -43,14 +44,14 @@
                     </div>
                 </v-row>
             </div>
-            <div v-if="element.$type == 'bpmn:ScriptTask'">
+            <div v-if="element.$type == 'bpmn:ScriptTask'" :disabled="isViewMode">
                 Script (Python)
                 <v-textarea v-model="elementCopy.extensionElements.values[0].pythonCode"></v-textarea>
             </div>
             <div v-if="element.$type.includes('Flow')">
                 Condition
                 <br />
-                <v-text-field
+                <v-text-field :disabled="isViewMode"
                     v-model="elementCopy.extensionElements.values[0].$children[0].$children[0].$body"></v-text-field>
             </div>
             <div v-if="element.$type.includes('Task')">
@@ -61,15 +62,16 @@
                 </v-row>
                 <div v-for="(checkpoint, idx) in elementCopy.extensionElements.values[0].checkpoints" :key="idx">
                     <div style="float: left">
-                        <v-checkbox-btn color="success" :label="checkpoint.checkpoint" hide-details
+                        <v-checkbox-btn color="success" :disabled="isViewMode" :label="checkpoint.checkpoint" hide-details
                             v-model="checkbox"></v-checkbox-btn>
                     </div>
-                    <v-btn icon flat @click="deleteCheckPoint(checkpoint)" v-bind="props">
+                    <v-btn icon flat @click="deleteCheckPoint(checkpoint)" v-if="!isViewMode" v-bind="props">
                         <TrashIcon stroke-width="1.5" size="20" class="text-error" />
                     </v-btn>
                 </div>
-                <v-text-field v-if="editCheckpoint" v-model="checkpointMessage.checkpoint"></v-text-field>
-                <v-row class="ma-0 pa-0">
+                <v-text-field v-if="editCheckpoint" v-model="checkpointMessage.checkpoint"
+                    :disabled="isViewMode"></v-text-field>
+                <v-row class="ma-0 pa-0" v-if="!isViewMode">
                     <v-spacer></v-spacer>
                     <v-btn v-if="editCheckpoint" @click="addCheckpoint" color="primary" rounded="pill" size="small">{{
                         $t('BpnmPropertyPanel.add') }}</v-btn>
@@ -109,7 +111,7 @@
                         </tr>
                     </tbody>
                 </v-table>
-                <v-btn flat color="primary" @click="editParam = !editParam">add Key/Value</v-btn>
+                <v-btn v-if="!isViewMode" flat color="primary" @click="editParam = !editParam">add Key/Value</v-btn>
 
                 <v-card v-if="editParam" style="margin-top: 12px">
                     <v-card-title>Add Parameter</v-card-title>
@@ -125,7 +127,7 @@
             </div>
         </v-card-text>
         <v-card-actions>
-            <v-btn color="primary" @click="onClickOutside">Save</v-btn>
+            <v-btn color="primary" @click="onClickOutside" v-if="!isViewMode">Save</v-btn>
             <v-btn color="error" @click="$emit('close')">Close</v-btn>
         </v-card-actions>
     </div>
@@ -139,7 +141,8 @@ export default {
     name: 'bpmn-property-panel',
     props: {
         element: Object,
-        processDefinitionId: String
+        processDefinitionId: String,
+        isViewMode: Boolean
     },
     created() {
         console.log(this.element)
