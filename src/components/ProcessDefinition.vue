@@ -13,16 +13,16 @@
                     </v-tooltip>
                     <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
                         :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
-                        v-on:openDefinition="ele => openSubProcess(ele)"
-                        v-on:loading="handleLoading" v-on:openPanel="(id) => openPanel(id)"
-                        v-on:update-xml="val => $emit('update-xml', val)" v-on:definition="(def) => (definitions = def)"
-                        v-on:add-shape="onAddShape" v-on:change-sequence="onChangeSequence"
-                        v-on:remove-shape="onRemoveShape" v-on:change-shape="onChangeShape"></vue-bpmn>
+                        v-on:openDefinition="ele => openSubProcess(ele)" v-on:loading="handleLoading"
+                        v-on:openPanel="(id) => openPanel(id)" v-on:update-xml="val => $emit('update-xml', val)"
+                        v-on:definition="(def) => (definitions = def)" v-on:add-shape="onAddShape"
+                        v-on:change-sequence="onChangeSequence" v-on:remove-shape="onRemoveShape"
+                        v-on:change-shape="onChangeShape"></vue-bpmn>
                 </v-card>
             </v-col>
             <v-col v-if="panel" cols="12" sm="12" lg="4" md="6" class="d-flex">
                 <v-card elevation="1">
-                    <bpmn-property-panel :element="element" @close="closePanel"
+                    <bpmn-property-panel :element="element" @close="closePanel" :isViewMode="isViewMode"
                         v-on:updateElement="(val) => updateElement(val)"></bpmn-property-panel>
                     <!-- {{ definition }} -->
                 </v-card>

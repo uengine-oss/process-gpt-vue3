@@ -41,6 +41,7 @@
         "chart.js": "^3.9.1",
         "circular-json": "^0.5.9",
         "date-fns": "^2.29.3",
+        "dotenv": "^16.4.5",
         "eslint-import-resolver-alias": "^1.1.2",
         "file-saver": "^2.0.5",
         "firebase": "^8.0.0",

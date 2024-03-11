@@ -146,6 +146,8 @@ export default {
                     // self.openPanel = true;
                     if (e.element.type.includes("CallActivity")) {
                         self.$emit('openDefinition', e.element.businessObject)
+                    } else {
+                        self.$emit('openPanel', e.element.id);
                     }
                 });
             } else {
