@@ -475,12 +475,12 @@ export default {
                 });
             }
             if (this.isReply) this.isReply = false;
-
-            this.newMessage = "";
-            this.newMessage = this.newMessage.replace(/(?:\r\n|\r|\n)/g, '');
             this.attachedImg = null;
             var imagePreview = document.querySelector("#imagePreview");
             imagePreview.innerHTML = '';
+            setTimeout(() => {
+                this.newMessage = "";
+            }, 100);
         },
         cancel() {
             this.editIndex = -1;

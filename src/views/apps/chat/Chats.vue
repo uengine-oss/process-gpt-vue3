@@ -123,6 +123,7 @@ export default {
                     if(me.chatRoomList.length > 0){
                         me.currentChatRoom = me.filteredChatRoomList[0]
                         me.getChatList(me.filteredChatRoomList[0].id);
+                        me.setReadMessage(0);
                     } else {
                         alert("Create a new chat room")
                     }
@@ -156,9 +157,17 @@ export default {
             this.currentChatRoom = chatRoomInfo
             this.putObject(`chat_rooms`, chatRoomInfo);
         },
+        setReadMessage(idx){
+            let participant = this.chatRoomList[idx].participants.find(participant => participant.email === this.userInfo.email);
+            if(participant) {
+                participant.isExistUnReadMessage = false;
+            }
+            this.putObject(`chat_rooms`, this.chatRoomList[idx]);
+        },
         chatRoomSelected(chatRoomInfo){
             this.currentChatRoom = chatRoomInfo
             this.getChatList(chatRoomInfo.id);
+            this.setReadMessage(this.chatRoomList.findIndex(x => x.id == chatRoomInfo.id));
         },
         // async addTextToVectorStore(msg){
         //     const apiToken = this.generator.getToken();
@@ -193,10 +202,23 @@ export default {
                 "createdAt": msg.timeStamp
             }
             this.currentChatRoom.message = chatRoomObj
+            this.currentChatRoom.participants.forEach(participant => {
+                if(participant.email !== this.userInfo.email) {
+                    participant.isExistUnReadMessage = true
+                }
+            });
             this.putObject(`chat_rooms`, this.currentChatRoom);
             
             // let test = await this.queryMsgFromVectorDB(msg.content)
             // console.log(test)
+        },
+        updateChatRoom(chatRoomIdx){
+            var me = this
+            if(me.chatRoomList[chatRoomIdx].id != me.currentChatRoom.id){
+                const participantWithEmail = me.chatRoomList[chatRoomIdx].participants.find(participant => participant.email === me.userInfo.email);
+                participantWithEmail.isExistUnReadMessage = true
+                
+            }
         },
         // async queryMsgFromVectorDB(content) {
         //     const apiToken = this.generator.getToken();
@@ -373,7 +395,7 @@ export default {
             // console.log(response)
         },
         async afterGenerationFinished(response) {
-            if(response == '.' || response == '.\n') {
+            if(response == '.' || response == '.\n' || response == '{}') {
                 this.messages.splice(this.messages.length - 1, 1)
             } else {
                 let obj = this.createMessageObj(response, 'system')

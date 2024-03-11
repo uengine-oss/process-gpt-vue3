@@ -51,6 +51,7 @@ export default {
                         if(idx != -1){
                             me.chatRoomList[idx].message.msg = data.new.messages.messageForUser ? data.new.messages.messageForUser : data.new.messages.content
                             me.chatRoomList[idx].message.createdAt = data.new.messages.timeStamp
+                            me.updateChatRoom(idx, data.new.messages.email)
                         }
                     }
                 }

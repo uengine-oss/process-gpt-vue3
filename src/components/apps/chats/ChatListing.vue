@@ -1,6 +1,6 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
-import { formatDistanceToNowStrict } from 'date-fns';
+import { ref, onMounted, computed, onUnmounted } from 'vue';
+import { formatDistanceToNowStrict, differenceInSeconds } from 'date-fns';
 import { last } from 'lodash';
 
 const props = defineProps({
@@ -11,10 +11,33 @@ const props = defineProps({
 
 const emit = defineEmits(['chat-selected', 'create-chat-room']);
 
-onMounted(() => {
+const formatTimeOrNow = (createdAt) => {
+  const createdAtDate = new Date(createdAt);
+  const now = new Date();
+  const diffInSeconds = differenceInSeconds(now, createdAtDate);
 
+  if (diffInSeconds < 60) {
+    return 'now';
+  } else {
+    return formatDistanceToNowStrict(createdAtDate, { addSuffix: false });
+  }
+};
+
+const refreshKey = ref(Date.now());
+
+const refreshChatList = () => {
+  refreshKey.value = Date.now();
+};
+
+let intervalId;
+
+onMounted(() => {
+    intervalId = setInterval(refreshChatList, 60000);
 });
 
+onUnmounted(() => {
+  clearInterval(intervalId);
+});
 
 const selectChatRoom = (chat) => {
     emit('chat-selected', chat);
@@ -184,20 +207,6 @@ const openEditDialog = (chat) => {
                             <v-icon icon="mdi-account-multiple" size="large"></v-icon>
                         </template>
                     </v-avatar>
-                    <!-- <v-badge
-                        class="badg-dot"
-                        dot
-                        :color="
-                            chat.status === 'away'
-                                ? 'warning'
-                                : chat.status === 'busy'
-                                ? 'error'
-                                : chat.status === 'online'
-                                ? 'success'
-                                : 'containerBg'
-                        "
-                    >
-                    </v-badge> -->
                 </template>
                 <!---Name-->
                 <v-list-item-title class="text-subtitle-1 textPrimary w-100 font-weight-semibold">{{ chat.name }}</v-list-item-title>
@@ -205,18 +214,25 @@ const openEditDialog = (chat) => {
                 <v-sheet v-if="chat.message.type == 'img'">
                     <small class="textPrimary text-subtitle-2">Sent a Photo</small>
                 </v-sheet>
-                <div class="text-subtitle-2 textPrimary mt-1 text-truncate w-100" v-else>
+                <div v-else 
+                    class="text-subtitle-2 textPrimary mt-1 text-truncate w-100"
+                    :class="{'font-weight-bold': chat.participants.find(participant => participant.email == userInfo.email).isExistUnReadMessage }"
+                >
                     {{ chat.message.msg }}
                 </div>
                 <!---Last seen--->
                 <template v-slot:append>
-                    <div class="d-flex flex-column text-right w-25" style="margin-right: -40px;">
+                    <div :key="refreshKey" class="d-flex flex-column text-right w-25" style="margin-right: -40px;">
                         <small class="textPrimary text-subtitle-2">
-                            {{
-                                formatDistanceToNowStrict(new Date(chat.message.createdAt), {
-                                    addSuffix: false
-                                })
-                            }}
+                            {{ formatTimeOrNow(chat.message.createdAt) }}
+                            <v-badge
+                                v-if="chat.participants.find(participant => participant.email == userInfo.email).isExistUnReadMessage"
+                                style="position: relative; top: 1.5px;"
+                                dot
+                                inline
+                                color="info"
+                            >
+                            </v-badge>
                             <v-btn style="margin-left: 5px; margin-right: -5px;" icon @click="openEditDialog(chat)">
                                 <v-icon>mdi-dots-vertical</v-icon>
                             </v-btn>
@@ -232,12 +248,11 @@ const openEditDialog = (chat) => {
     padding: 16px 24px !important;
     border-bottom: 1px solid rgb(var(--v-theme-inputBorder), 0.1);
 }
-.badg-dot {
-    left: -17px;
-    position: relative;
-    bottom: -10px;
+.font-weight-bold {
+    font-weight: bold;
 }
 .lgScroll {
     height: calc(100vh - 365px);
 }
 </style>
+
