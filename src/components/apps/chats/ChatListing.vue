@@ -5,7 +5,8 @@ import { last } from 'lodash';
 
 const props = defineProps({
   chatRoomList: Array,
-  userList: Array
+  userList: Array,
+  userInfo: Object
 });
 
 const emit = defineEmits(['chat-selected', 'create-chat-room']);
@@ -57,6 +58,14 @@ const confirmDialog = () => {
   // 여기서 서버에 데이터를 보내거나 추가 처리를 할 수 있습니다.
 };
 
+const openDialog = () => {
+    inputObj.value = {
+        name: '',
+        participants: []
+    }
+    editMode.value = false;
+    dialog.value = true;
+};
 const openEditDialog = (chat) => {
     inputObj.value = { ...chat };
     editMode.value = true;
@@ -76,7 +85,7 @@ const openEditDialog = (chat) => {
                     hide-details
                     density="compact"
                 ></v-text-field>
-                <v-btn icon @click="dialog = true" style="margin-left: 10px;">
+                <v-btn icon @click="openDialog" style="margin-left: 10px;">
                     <v-icon>mdi-chat-plus</v-icon>
                 </v-btn>
             </div>
@@ -154,12 +163,26 @@ const openEditDialog = (chat) => {
             >
                 <!---Avatar-->
                 <template v-slot:prepend>
-                    <v-avatar color="#f0f5f9">
-                        <!-- <img :src="chat.thumb" alt="pro" width="50" /> -->
-                        <v-icon
-                            icon="mdi-account-multiple"
-                            size="large"
-                        ></v-icon>
+                    <v-avatar color="#f0f5f9" size="large" style="width: 50px; height: 50px; display: flex; flex-wrap: wrap;">
+                        <template v-if="chat.participants.length">
+                            <template v-if="chat.participants.filter(participant => participant.email !== userInfo.email).length === 1">
+                                <!-- 참가자가 나 이외 한 명만 있는 경우 -->
+                                <img 
+                                    :src="chat.participants.find(participant => participant.email !== userInfo.email).profile" 
+                                    :alt="chat.participants.find(participant => participant.email !== userInfo.email).username" 
+                                    style="width: 100%; height: 100%; object-fit: cover;" 
+                                />
+                            </template>
+                            <template v-else>
+                                <!-- 참가자가 여러 명이며 본인을 제외한 경우 -->
+                                <div v-for="(participant, index) in chat.participants.filter(participant => participant.email !== userInfo.email).slice(0, 4)" :key="participant.id" style="width: 50%; height: 50%; position: relative;">
+                                    <img :src="participant.profile" :alt="participant.username" style="width: 100%; height: 100%; object-fit: cover;" />
+                                </div>
+                            </template>
+                        </template>
+                        <template v-else>
+                            <v-icon icon="mdi-account-multiple" size="large"></v-icon>
+                        </template>
                     </v-avatar>
                     <!-- <v-badge
                         class="badg-dot"
