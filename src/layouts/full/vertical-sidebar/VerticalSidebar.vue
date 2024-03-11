@@ -35,6 +35,10 @@ const customizer = useCustomizerStore();
                     <NavItem :item="item" v-else class="leftPadding" />
                     <!---End Single Item-->
                 </template>
+
+                <template v-if="definition">
+                    <NavItem :item="definition" class="leftPadding" />
+                </template>
                 <!-- Process Definition List -->
                 <template v-if="definitions">
                     <NavCollapse class="leftPadding" :item="definitions" :level="0" />
@@ -79,12 +83,6 @@ export default {
                 BgColor: 'primary',
                 to: "/chats",
             },
-            // {
-            //     title: "proposals.title",
-            //     icon: 'solar:chat-round-unread-line-duotone',
-            //     BgColor: 'primary',
-            //     to: "/proposals",
-            // },
             {
                 header: 'instance.title'
             },
@@ -109,20 +107,24 @@ export default {
                 BgColor: 'primary',
                 to: "/definition-map",
             },
-            {
+        ],
+        // definitions: null,
+        definition: null
+    }),
+    created() {
+        const isAdmin = localStorage.getItem("isAdmin");
+
+        if (isAdmin == 'true') {
+            this.definition = {
                 title: "processDefinition.title",
                 icon: 'carbon:flow-connection',
                 BgColor: 'primary',
                 to: "/definitions/chat",
-            },
-        ],
-        definitions: null,
-    }),
-    created() {
-        this.storage = StorageBaseFactory.getStorage();
-
-        this.getDefinitionList();
-        this.storage.watch(`proc_def`, this.getDefinitionList);
+            }
+            // this.storage = StorageBaseFactory.getStorage();
+            // this.getDefinitionList();
+            // this.storage.watch(`proc_def`, this.getDefinitionList);
+        }
     },
     methods: {
         async getDefinitionList() {

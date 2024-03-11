@@ -6,6 +6,7 @@ const authStore = useAuthStore();
 
 const name = localStorage.getItem("userName");
 const picture = localStorage.getItem("picture");
+const isAdmin = localStorage.getItem("isAdmin");
 </script>
 
 <template>
@@ -16,7 +17,9 @@ const picture = localStorage.getItem("picture");
             </v-avatar>
             <div>
                 <h6 class="text-h6 d-flex align-center font-weight-semibold">{{ name }}</h6>
-                <span class="text-subtitle-2 font-weight-medium text-grey100">Admin</span>
+                <span class="text-subtitle-2 font-weight-medium text-grey100">
+                    {{ isAdmin == 'true' ? 'Admin' : '' }}
+                </span>
             </div>
             <div>
                 <v-tooltip :text="$t('ExtraBox.logOut')">

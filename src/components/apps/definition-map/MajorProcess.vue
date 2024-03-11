@@ -10,7 +10,7 @@
             <div class="ml-auto">
                 <ProcessMenu
                     :size="16"
-                    :type="'major'"
+                    :type="type"
                     :process="value"
                     :storage="storage"
                     @add="addProcess"
@@ -20,7 +20,8 @@
             </div>
         </v-card>
 
-        <draggable class="dragArea list-group" 
+        <draggable v-if="enableEdit"
+            class="dragArea list-group" 
             :list="value.sub_proc_list" 
             :animation="200" 
             ghost-class="ghost-card"
@@ -40,6 +41,18 @@
                 </div>
             </transition-group>
         </draggable>
+        <div v-else>
+            <div v-for="item in value.sub_proc_list"
+                :key="item.id"
+            >
+                <SubProcess 
+                    :value="item" 
+                    :parent="value" 
+                    :storage="storage"
+                    @view="viewProcess"
+                />
+            </div>
+        </div>
     </div>
 </template>
 
@@ -56,6 +69,18 @@ export default {
         value: Object,
         parent: Object,
         storage: Object,
+    },
+    data: () => ({
+        type: 'major',
+        enableEdit: null,
+    }),
+    created() {
+        const isAdmin = localStorage.getItem("isAdmin");
+        if (isAdmin == "true") {
+            this.enableEdit = true;
+        } else {
+            this.enableEdit = false;
+        }
     },
     methods: {
         addProcess(newProcess) {

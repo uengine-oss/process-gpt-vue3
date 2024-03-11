@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div v-if="enableEdit">
         <div class="d-flex">
             <v-btn icon variant="text" :width="size" :height="size">
                 <PlusIcon v-if="type == 'map'" :size="size" />
@@ -131,6 +131,7 @@ export default {
         },
         isNewDef: false,
         definitions: [],
+        enableEdit: null,
     }),
     computed: {
         addType() {
@@ -160,6 +161,13 @@ export default {
         }
     },
     created() {
+        const isAdmin = localStorage.getItem("isAdmin");
+        if (isAdmin == "true") {
+            this.enableEdit = true;
+        } else {
+            this.enableEdit = false;
+        }
+
         this.init();
     },
     methods: {

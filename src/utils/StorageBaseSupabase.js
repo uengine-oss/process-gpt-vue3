@@ -17,6 +17,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
             password: userInfo.password
         });
         if (!result.error) {
+            this.checkAdminStatus(result.data);
             this.writeUserData(result.data);
             return result.data;
         } else {
@@ -36,6 +37,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
         });
 
         if (!result.error) {
+            this.checkAdminStatus(result.data);
             this.writeUserData(result.data);
             return result.data;
         } else {
@@ -50,20 +52,29 @@ export default class StorageBaseSupabase {//extends StorageBase{
         window.localStorage.removeItem("email");
         window.localStorage.removeItem("picture");
         window.localStorage.removeItem("uid");
+        window.localStorage.removeItem("isAdmin");
         return await window.$supabase.auth.signOut();
     }
 
     async getUserInfo() {
         const result = await window.$supabase.auth.getUser();
+        
         if (result && result.data && result.data.user) {
+            const { data } = await window.$supabase
+                .from('users')
+                .select('*')
+                .eq('id', result.data.user.id)
+                .single();
+
             const userInfo = {
                 email: result.data.user.email,
                 name: result.data.user.user_metadata.name,
-                profile: window.localStorage.getItem("picture"),
+                profile: data.profile,
                 uid: result.data.user.id,
                 role: result.data.user.role,
-                last_sign_in_at: result.data.user.last_sign_in_at
+                last_sign_in_at: result.data.user.last_sign_in_at,
             }
+
             return userInfo;
         } else {
             return null;
@@ -525,6 +536,28 @@ export default class StorageBaseSupabase {//extends StorageBase{
         } catch(error) {
             console.log(`GET COUNT: ${error}`);
             return { Error: error }
+        }
+    }
+
+    async checkAdminStatus(value) {
+        const user = value.user;
+        
+        if (user && user.id) {
+            // users 테이블에서 현재 사용자의 is_admin 값을 조회
+            const { data, error } = await window.$supabase
+                .from('users')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+        
+            if (error) {
+                throw new StorageBaseError('error in checkAdminStatus', error, arguments)
+            }
+        
+            window.localStorage.setItem("isAdmin", data.is_admin);
+            
+        } else {
+            console.log('사용자가 로그인하지 않았습니다.')
         }
     }
 }
