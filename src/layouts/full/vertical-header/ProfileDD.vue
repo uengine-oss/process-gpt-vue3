@@ -4,11 +4,9 @@ import { profileDD } from '@/_mockApis/headerData';
 import { useAuthStore } from '@/stores/auth';
 import { Icon } from '@iconify/vue';
 
-const authStore = useAuthStore();
-
 const name = localStorage.getItem("userName");
-const email = localStorage.getItem("email");
 const picture = localStorage.getItem("picture");
+const isAdmin = localStorage.getItem("isAdmin");
 </script>
 
 <template>
@@ -24,7 +22,9 @@ const picture = localStorage.getItem("picture");
                     </v-avatar>
                     <div class="ml-md-4 d-md-block d-none">
                         <h6 class="text-h6 d-flex align-center text-black font-weight-semibold">{{ name }}</h6>
-                        <span class="text-subtitle-2 font-weight-medium text-grey100">Admin</span>
+                        <span class="text-subtitle-2 font-weight-medium text-grey100">
+                            {{ isAdmin == 'true' ? 'Admin' : ''}}
+                        </span>
                     </div>
                 </div>
             </router-link>

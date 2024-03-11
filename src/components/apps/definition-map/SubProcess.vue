@@ -8,7 +8,7 @@
         <div class="ml-auto">
             <ProcessMenu
                 :size="12"
-                :type="'sub'"
+                :type="type"
                 :process="value"
                 :storage="storage"
                 @edit="editProcess"
@@ -32,6 +32,7 @@ export default {
         storage: Object,
     },
     data: () => ({
+        type: 'sub',
         definition: null,
     }),
     async created() {

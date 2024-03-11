@@ -4,7 +4,7 @@
             <div class="pt-5 pl-6 pr-6 d-flex align-center">
                 <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
                 <div class="ml-auto">
-                    <ProcessMenu :size="24" :type="'map'" @add="addProcess" />
+                    <ProcessMenu :size="24" :type="type" @add="addProcess" />
                 </div>
             </div>
             <div class="pa-5">
@@ -94,6 +94,7 @@ export default {
         value: {
             mega_proc_list: []
         },
+        type: 'map',
         // process
         isViewProcess: false,
         onLoad: false,
@@ -102,7 +103,7 @@ export default {
         selectedProc: null,
         selectedSubProcess: null,
         subProcessBreadCrumb: [],
-        defCnt: 0
+        defCnt: 0,
     }),
     watch: {
         //TODO: 변경 후 즉시 저장하면 안됩니다. 검토 완료 후 저장되어야 해서 저장 버튼으로 대체
