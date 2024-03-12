@@ -441,8 +441,8 @@ export default {
         async saveDefinitionToVectorDB() {
             const list = await this.storage.list("proc_def");
             if (list && list.length > 0) {
-                const apiToken = this.generator.getToken();
-                const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
+                // const apiToken = this.generator.getToken();
+                const vectorStore = new VectorStorage({ openAIApiKey: this.openaiToken });
 
                 list.forEach(async (item) => {
                     if (item.definition) {
@@ -456,8 +456,8 @@ export default {
         },
 
         async queryFromVectorDB(messsage) {
-            const apiToken = this.generator.getToken();
-            const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
+            // const apiToken = this.generator.getToken();
+            const vectorStore = new VectorStorage({ openAIApiKey: this.openaiToken });
 
             // Perform a similarity search
             const results = await vectorStore.similaritySearch({
