@@ -12,16 +12,22 @@ export default {
         messages: [],
         userInfo: {},
         disableChat: false,
-        chatRoomList: []
+        chatRoomList: [],
+        openaiToken: null,
     }),
-    created() {
+    async created() {
         var me = this;
         if (!me.$app.try) {
             me.$app = me.$app._component.methods;
         }
         this.storage = StorageBaseFactory.getStorage();
+        this.openaiToken = await this.getToken();
     },
     methods: {
+        async getToken(){
+            const res = await this.storage.getObject('db://tokens');
+            return res?.[0]?.token || window.localStorage.getItem('openAIToken') || null;
+        },
         async init() {
             this.disableChat = false;
             this.userInfo = await this.storage.getUserInfo();
@@ -383,7 +389,11 @@ export default {
         onError(error) {
             if (error.code === 'invalid_api_key') {
                 var apiKey = prompt('API Key 를 입력하세요.');
-                localStorage.setItem('openAIToken', apiKey);
+                let token = {
+                    "type": 'openai',
+                    "token": apiKey
+                }
+                this.putObject('tokens', token)
 
                 this.generator.generate();
             } else {

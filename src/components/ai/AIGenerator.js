@@ -57,10 +57,6 @@ export default class AIGenerator {
         }
     }
 
-    getToken() {
-        return (window.localStorage.getItem("openAIToken"));
-    }
-
     generateHashKey(str) {
         let hash = 0;
         for (let i = 0; i < str.length; i++) {
@@ -171,7 +167,7 @@ export default class AIGenerator {
         if(this.returnCache(messages))
             return
 
-        me.openaiToken = me.getToken();
+        me.openaiToken = me.client.openaiToken
         let responseCnt = 0;
         
         me.gptResponseId = null;

@@ -477,8 +477,8 @@ export default {
         },
 
         async queryFromVectorDB(messsage){
-            const apiToken = this.generator.getToken();
-            const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
+            // const apiToken = this.generator.getToken();
+            const vectorStore = new VectorStorage({ openAIApiKey: this.openaiToken });
 
             // Perform a similarity search
             const results = await vectorStore.similaritySearch({
