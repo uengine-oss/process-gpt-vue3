@@ -188,6 +188,33 @@ export default {
                 data: newSchedule
             };
             this.storage.putObject('calendar', putObj);
+            
+            this.sendNotification(task);
+        },
+        async sendNotification(data) {
+            const options = {
+                match: {
+                    id: this.userInfo.uid,
+                    email: this.userInfo.email,
+                }
+            };
+            const result = await this.storage.getObject('users', options);
+            let notifications = result.notifications;
+            if (!notifications) {
+                notifications = [];
+            }
+            const noti = {
+                id: data.id,
+                type: 'todo',
+                isChecked: false,
+            };
+            notifications.push(noti);
+
+            const obj = {
+                id: this.userInfo.uid,
+                notifications: notifications,
+            };
+            this.storage.putObject('users', obj);
         },
         uuid() {
             function s4() {
