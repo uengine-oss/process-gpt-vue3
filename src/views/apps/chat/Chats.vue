@@ -17,6 +17,7 @@
                 <Chat
                     :messages="messages"
                     :userInfo="userInfo"
+                    :userList="userList"
                     :type="path"
                     @beforeReply="beforeReply"
                     @sendMessage="beforeSendMessage"
@@ -133,11 +134,13 @@ export default {
         createChatRoom(chatRoomInfo){
             if(!chatRoomInfo.id){
                 chatRoomInfo.id = this.uuid();
+                chatRoomInfo.participants.forEach(participant => {
+                    delete participant.profile;
+                });
                 let userInfo = {
                     "id": this.userInfo.uid,
                     "username": this.userInfo.name,
                     "email": this.userInfo.email,
-                    "profile": this.userInfo.profile
                 }
                 chatRoomInfo.participants.push(userInfo)
                 let currentTimestamp = Date.now()

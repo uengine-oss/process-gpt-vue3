@@ -43,7 +43,7 @@ export default {
                 key: "id"
             }
             await this.storage.watch(`db://chats/${chatRoomId}`, async (data) => {
-                if(data && data.new){
+                if(data && data.new && data.eventType != "DELETE"){
                     if(data.new.messages.email != me.userInfo.email){
                         if(data.new.id == me.currentChatRoom.id){
                             if ((me.messages && me.messages.length > 0) 
@@ -59,7 +59,7 @@ export default {
                         if(idx != -1){
                             me.chatRoomList[idx].message.msg = data.new.messages.messageForUser ? data.new.messages.messageForUser : data.new.messages.content
                             me.chatRoomList[idx].message.createdAt = data.new.messages.timeStamp
-                            
+
                             if(me.chatRoomList[idx].id != me.currentChatRoom.id){
                                 const participantWithEmail = me.chatRoomList[idx].participants.find(participant => participant.email === me.userInfo.email);
                                 participantWithEmail.isExistUnReadMessage = true
@@ -147,7 +147,6 @@ export default {
                     replyUserName: this.replyUser.name,
                     replyContent: this.replyUser.content,
                     replyUserEmail: this.replyUser.email,
-                    profile: this.userInfo.profile
                 };
             } else {
                 obj = {
@@ -156,7 +155,6 @@ export default {
                     role: role ? role : 'user',
                     timeStamp: Date.now(),
                     content: message,
-                    profile: this.userInfo.profile
                 };
             }
 
