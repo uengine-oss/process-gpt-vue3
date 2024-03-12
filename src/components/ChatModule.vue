@@ -45,19 +45,26 @@ export default {
             await this.storage.watch(`db://chats/${chatRoomId}`, async (data) => {
                 if(data && data.new){
                     if(data.new.messages.email != me.userInfo.email){
-                        if ((me.messages && me.messages.length > 0) 
-                        && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
-                        &&  me.messages[me.messages.length - 1].content === data.new.messages.content) {
-                            me.messages[me.messages.length - 1] = data.new.messages
-                        } else {
-                            me.messages.push(data.new.messages)
+                        if(data.new.id == me.currentChatRoom.id){
+                            if ((me.messages && me.messages.length > 0) 
+                            && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
+                            &&  me.messages[me.messages.length - 1].content === data.new.messages.content) {
+                                me.messages[me.messages.length - 1] = data.new.messages
+                            } else {
+                                me.messages.push(data.new.messages)
+                            }
                         }
                         
                         let idx = me.chatRoomList.findIndex(x => x.id == data.new.id)
                         if(idx != -1){
                             me.chatRoomList[idx].message.msg = data.new.messages.messageForUser ? data.new.messages.messageForUser : data.new.messages.content
                             me.chatRoomList[idx].message.createdAt = data.new.messages.timeStamp
-                            me.updateChatRoom(idx, data.new.messages.email)
+                            
+                            if(me.chatRoomList[idx].id != me.currentChatRoom.id){
+                                const participantWithEmail = me.chatRoomList[idx].participants.find(participant => participant.email === me.userInfo.email);
+                                participantWithEmail.isExistUnReadMessage = true
+                                
+                            }
                         }
                     }
                 }

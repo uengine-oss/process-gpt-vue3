@@ -212,14 +212,6 @@ export default {
             // let test = await this.queryMsgFromVectorDB(msg.content)
             // console.log(test)
         },
-        updateChatRoom(chatRoomIdx){
-            var me = this
-            if(me.chatRoomList[chatRoomIdx].id != me.currentChatRoom.id){
-                const participantWithEmail = me.chatRoomList[chatRoomIdx].participants.find(participant => participant.email === me.userInfo.email);
-                participantWithEmail.isExistUnReadMessage = true
-                
-            }
-        },
         // async queryMsgFromVectorDB(content) {
         //     const apiToken = this.generator.getToken();
         //     const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
