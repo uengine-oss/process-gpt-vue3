@@ -25,8 +25,11 @@ export default {
     },
     methods: {
         async getToken(){
-            const res = await this.storage.getObject('db://tokens');
-            return res?.[0]?.token || window.localStorage.getItem('openAIToken') || null;
+            let option = {
+                key: "key"
+            }
+            const res = await this.storage.getObject('db://configuration/openai_key', option);
+            return res?.value?.key || window.localStorage.getItem('openAIToken') || null;
         },
         async init() {
             this.disableChat = false;
@@ -395,10 +398,12 @@ export default {
             if (error.code === 'invalid_api_key') {
                 var apiKey = prompt('API Key 를 입력하세요.');
                 let token = {
-                    "type": 'openai',
-                    "token": apiKey
+                    "key": 'openai_key',
+                    "value": {
+                        "key": apiKey
+                    }
                 }
-                this.putObject('tokens', token)
+                this.putObject('configuration', token)
 
                 this.generator.generate();
             } else {
