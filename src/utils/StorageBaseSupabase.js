@@ -17,8 +17,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
             password: userInfo.password
         });
         if (!result.error) {
-            this.checkAdminStatus(result.data);
-            this.writeUserData(result.data);
+            await this.writeUserData(result.data);
             return result.data;
         } else {
             return result.error
@@ -37,8 +36,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
         });
 
         if (!result.error) {
-            this.checkAdminStatus(result.data);
-            this.writeUserData(result.data);
+            await this.writeUserData(result.data);
             return result.data;
         } else {
             return result.error
@@ -88,7 +86,8 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 const { data, error } = await window.$supabase
                     .from(obj.table)
                     .select()
-                    .match(options.match);
+                    .match(options.match)
+                    .single();
 
                 if (error) {
                     return error;
@@ -102,26 +101,24 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 const { data, error } = await window.$supabase
                     .from(obj.table)
                     .select()
-                    .eq(obj.searchKey, obj.searchVal);
+                    .eq(obj.searchKey, obj.searchVal)
+                    .single();
 
                 if (error) {
                     return error;
                 } else {
-                    if (data.length > 0) {
-                        return data[0];
-                    }
-                    return null;
+                    return data;
                 }
             } else {
                 const { data, error } = await window.$supabase
                     .from(obj.table)
-                    .select();
+                    .select()
+                    .single();
 
                 if (error) {
                     return error;
                 } else {
-                    if (data.length > 0) return data;
-                    return null;
+                    return data;
                 }
             }
         } catch(error) {
@@ -137,40 +134,36 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 const { data, error } = await window.$supabase
                     .from(obj.table)
                     .select()
-                    .match(options.match);
+                    .match(options.match)
+                    .single();
 
                 if (error) {
                     return error;
                 } else {
-                    if (data.length > 0) {
-                        return data[0];
-                    }
-                    return null;
+                    return data;
                 }
             } else if (obj.searchVal) {
                 const { data, error } = await window.$supabase
                     .from(obj.table)
                     .select()
-                    .eq(obj.searchKey, obj.searchVal);
+                    .eq(obj.searchKey, obj.searchVal)
+                    .single();
 
                 if (error) {
                     return error;
                 } else {
-                    if (data.length > 0) {
-                        return data[0];
-                    }
-                    return null;
+                    return data;
                 }
             } else {
                 const { data, error } = await window.$supabase
                     .from(obj.table)
-                    .select();
+                    .select()
+                    .single();
                 
                 if (error) {
                     return error;
                 } else {
-                    if (data.length > 0) return data;
-                    return null;
+                    return data;
                 }
             }
         } catch(error) {
@@ -232,7 +225,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .match(options.match);
                 
                 if (error) {
-                    throw new StorageBaseError('error in pushObject', error, arguments);
+                    throw new StorageBaseError('error in putObject', error, arguments);
                 }
             } else if (obj.searchVal) {
                 const { error } = await window.$supabase
@@ -241,7 +234,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .eq(obj.searchKey, obj.searchVal);
 
                 if (error) {
-                    throw new StorageBaseError('error in pushObject', error, arguments);
+                    throw new StorageBaseError('error in putObject', error, arguments);
                 }
             } else {
 
@@ -253,12 +246,12 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .upsert(value);
                 
                 if (error) {
-                    throw new StorageBaseError('error in pushObject', error, arguments);
+                    throw new StorageBaseError('error in putObject', error, arguments);
                 }
             }
         } catch(error) {
 
-            throw new StorageBaseError('error in pushObject', error, arguments);
+            throw new StorageBaseError('error in putObject', error, arguments);
         }
     }
 
@@ -469,13 +462,21 @@ export default class StorageBaseSupabase {//extends StorageBase{
             window.localStorage.setItem("author", value.user.email);
             window.localStorage.setItem("userName", value.user.user_metadata.name);
             window.localStorage.setItem("email", value.user.email);
-            // window.localStorage.setItem("picture", value.user.profile);
             window.localStorage.setItem("uid", value.user.id);
+
+            const { data, error } = await window.$supabase
+                .from('users')
+                .select('*')
+                .eq('id', value.user.id)
+                .single();
+            
+            if (error) {
+                throw new StorageBaseError('error in writeUserData', error, arguments)
+            }
+
+            window.localStorage.setItem("isAdmin", data.is_admin);
+            window.localStorage.setItem("picture", data.profile);
         }
-        var userInfo = await this.getObject(`users/${value.user.id}`, {key: 'id'});
-        if (userInfo) {
-            window.localStorage.setItem("picture", userInfo.profile);
-        }            
     }
 
     formatDataPath(path, options) {
@@ -536,28 +537,6 @@ export default class StorageBaseSupabase {//extends StorageBase{
         } catch(error) {
             console.log(`GET COUNT: ${error}`);
             return { Error: error }
-        }
-    }
-
-    async checkAdminStatus(value) {
-        const user = value.user;
-        
-        if (user && user.id) {
-            // users 테이블에서 현재 사용자의 is_admin 값을 조회
-            const { data, error } = await window.$supabase
-                .from('users')
-                .select('*')
-                .eq('id', user.id)
-                .single();
-        
-            if (error) {
-                throw new StorageBaseError('error in checkAdminStatus', error, arguments)
-            }
-        
-            window.localStorage.setItem("isAdmin", data.is_admin);
-            
-        } else {
-            console.log('사용자가 로그인하지 않았습니다.')
         }
     }
 }

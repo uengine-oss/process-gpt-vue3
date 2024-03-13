@@ -77,7 +77,7 @@
 </template>
 
 <script>
-import StorageBase from '@/utils/StorageBase';
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
 
 export default {
     data: () => ({
@@ -103,7 +103,7 @@ export default {
         },
     },
     async created() {
-        this.storage = StorageBase.getStorage();
+        this.storage = StorageBaseFactory.getStorage();
         this.email = localStorage.getItem("email");
         await this.init();
     },

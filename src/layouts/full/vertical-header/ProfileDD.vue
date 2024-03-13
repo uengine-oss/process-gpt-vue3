@@ -7,6 +7,7 @@ import { Icon } from '@iconify/vue';
 const name = localStorage.getItem("userName");
 const picture = localStorage.getItem("picture");
 const isAdmin = localStorage.getItem("isAdmin");
+console.log(picture, isAdmin)
 </script>
 
 <template>

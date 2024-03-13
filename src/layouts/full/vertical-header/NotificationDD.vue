@@ -30,29 +30,28 @@
             </div>
             <perfect-scrollbar style="height:300px">
                 <v-list class="py-0 theme-list" lines="two">
-                    <v-list-item v-for="item in notifications" 
-                            :key="item.key" 
-                            :value="item.chatId" 
+                    <v-list-item v-for="item in filteredNotiList" 
+                            :key="item.id" 
                             color="primary" 
                             class="py-4 px-8"
                             @click="checkNotification(item)"
                     >
-                        <template v-slot:prepend>
-                            <v-avatar v-for="img in item.participantImgs" size="48" class="mr-3">
-                                <v-img :src="img" width="48" />
-                            </v-avatar>
-                        </template>
                         <div>
-                            <h6 class="text-h6 font-weight-medium mb-1">{{ item.title }}</h6>
+                            <h6 class="text-h6 font-weight-medium mb-1">{{ item.type.toUpperCase() }}</h6>
                         </div>
-                        <p class="text-subtitle-1 font-weight-medium text-grey100">{{ item.subtitle }}</p>
+                        <p v-if="item.type =='todo'" class="text-subtitle-1 font-weight-medium text-grey100">
+                            {{ item.detail.activity_id }}
+                        </p>
+                        <p v-else-if="item.type =='instance'" class="text-subtitle-1 font-weight-medium text-grey100">
+                            {{ item.detail.proc_inst_name }}
+                        </p>
                     </v-list-item>
                     <v-divider></v-divider>
                 </v-list>
             </perfect-scrollbar>
-            <div class="py-4 px-6 text-center">
+            <!-- <div class="py-4 px-6 text-center">
                 <v-btn color="primary" size="large" rounded="pill" block>See all Notifications</v-btn>
-            </div>
+            </div> -->
         </v-sheet>
     </v-menu>
 </template>
@@ -67,21 +66,85 @@ export default {
     },
     data: () => ({
         storage: null,
-        uid: "",
-        notiCount: 0,
+        userInfo: null,
         notifications: [],
     }),
     async created() {
         this.storage = StorageBaseFactory.getStorage("supabase");
+        this.userInfo = await this.storage.getUserInfo();
         this.getNotifications();
+    },
+    computed: {
+        filteredNotiList() {
+            var list = [];
+            if (this.notifications.length > 0) {
+                list = this.notifications.filter(item => !item.isChecked);
+                list = JSON.parse(JSON.stringify(list));
+                if (list.length > 0) {
+                    list.forEach(async item => {
+                        let result;
+                        if (item.type == 'todo') {
+                            const options = {
+                                match: {
+                                    id: item.id,
+                                }
+                            };
+                            result = await this.storage.getObject('todolist', options);
+
+                        } else if (item.type == 'instance') {
+                            const defId = item.id.split('.')[0];
+                            const options = {
+                                match: {
+                                    proc_inst_id: item.id,
+                                }
+                            };
+                            result = await this.storage.getObject(defId, options);
+                        }
+                        item['detail'] = result;
+                    });
+                }
+            }
+            return list;
+        },
+        notiCount() {
+            if (this.filteredNotiList.length > 0) {
+                return this.filteredNotiList.length;
+            }
+            return 0;
+        },
     },
     methods: {
         async getNotifications() {
-            this.uid = localStorage.getItem('uid');
+            const options = {
+                match: {
+                    id: this.userInfo.uid,
+                    email: this.userInfo.email,
+                }
+            };
+            const result = await this.storage.getObject('users', options);
+            this.notifications = result.notifications;
         },
         checkNotification(item) {
-            this.$router.push(`/${item.noti_type}/${item.chatId}`);
+            if (item.type == 'todo') {
+                this.$router.push(`/todolist`);
+            } else if (item.type == 'instance') {
+                this.$router.push(`/instances/chat?id=${item.id}`);
+            } else {
+                //
+            }
+
             item.isChecked = true;
+            this.notifications.forEach(noti => {
+                if (item.id === noti.id) {
+                    noti.isChecked = true;
+                }
+            });
+
+            const obj = {
+                id: this.userInfo.uid,
+                notifications: this.notifications,
+            };
+            this.storage.putObject('users', obj);
         },
     }
 }
