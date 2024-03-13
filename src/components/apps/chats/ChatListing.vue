@@ -51,6 +51,11 @@ const filteredChats = computed(() => {
     });
 });
 
+const getProfile = (email) => {
+    const user = props.userList.find(user => user.email === email);
+    return user ? user.profile : '';
+};
+
 // const items = ref([{ title: 'Sort by time' }, { title: 'Sort by Unread' }, { title: 'Mark all as read' }]);
 
 const dialog = ref(false);
@@ -191,7 +196,7 @@ const openEditDialog = (chat) => {
                             <template v-if="chat.participants.filter(participant => participant.email !== userInfo.email).length === 1">
                                 <!-- 참가자가 나 이외 한 명만 있는 경우 -->
                                 <img 
-                                    :src="chat.participants.find(participant => participant.email !== userInfo.email).profile" 
+                                    :src="getProfile(chat.participants.find(participant => participant.email !== userInfo.email).email)" 
                                     :alt="chat.participants.find(participant => participant.email !== userInfo.email).username" 
                                     style="width: 100%; height: 100%; object-fit: cover;" 
                                 />
@@ -199,7 +204,7 @@ const openEditDialog = (chat) => {
                             <template v-else>
                                 <!-- 참가자가 여러 명이며 본인을 제외한 경우 -->
                                 <div v-for="(participant, index) in chat.participants.filter(participant => participant.email !== userInfo.email).slice(0, 4)" :key="participant.id" style="width: 50%; height: 50%; position: relative;">
-                                    <img :src="participant.profile" :alt="participant.username" style="width: 100%; height: 100%; object-fit: cover;" />
+                                    <img :src="getProfile(participant.email)" :alt="participant.username" style="width: 100%; height: 100%; object-fit: cover;" />
                                 </div>
                             </template>
                         </template>

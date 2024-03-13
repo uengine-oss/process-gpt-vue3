@@ -365,6 +365,7 @@ export default {
                     instObj.user_ids = [...instObj.user_ids, ...user_ids];
                     instObj.messages = this.messages;
                     await this.putObject(this.path, instObj);
+
                 } else {
                     let putObj = {
                         id: data.instanceId,
@@ -373,6 +374,8 @@ export default {
                     }
                     await this.putObject(this.path, putObj);
                 }
+
+                this.sendNotification(data);
             }
         },
         async saveTodolist(data) {
@@ -409,11 +412,37 @@ export default {
             }
         },
 
+        async sendNotification(data) {
+            const options = {
+                match: {
+                    id: this.userInfo.uid,
+                    email: this.userInfo.email,
+                }
+            };
+            const result = await this.getData('users', options);
+            let notifications = result.notifications;
+            if (!notifications) {
+                notifications = [];
+            }
+            const noti = {
+                id: data.instanceId,
+                type: 'instance',
+                isChecked: false,
+            };
+            notifications.push(noti);
+
+            const obj = {
+                id: this.userInfo.uid,
+                notifications: notifications,
+            };
+            this.putObject('users', obj);
+        },
+
         async saveDefinitionToVectorDB() {
             const list = await this.storage.list("proc_def");
             if (list && list.length > 0) {
-                const apiToken = this.generator.getToken();
-                const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
+                // const apiToken = this.generator.getToken();
+                const vectorStore = new VectorStorage({ openAIApiKey: this.openaiToken });
 
                 list.forEach(async (item) => {
                     if (item.definition) {
@@ -427,8 +456,8 @@ export default {
         },
 
         async queryFromVectorDB(messsage) {
-            const apiToken = this.generator.getToken();
-            const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
+            // const apiToken = this.generator.getToken();
+            const vectorStore = new VectorStorage({ openAIApiKey: this.openaiToken });
 
             // Perform a similarity search
             const results = await vectorStore.similaritySearch({

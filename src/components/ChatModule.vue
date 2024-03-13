@@ -12,16 +12,25 @@ export default {
         messages: [],
         userInfo: {},
         disableChat: false,
-        chatRoomList: []
+        chatRoomList: [],
+        openaiToken: null,
     }),
-    created() {
+    async created() {
         var me = this;
         if (!me.$app.try) {
             me.$app = me.$app._component.methods;
         }
         this.storage = StorageBaseFactory.getStorage();
+        this.openaiToken = await this.getToken();
     },
     methods: {
+        async getToken(){
+            let option = {
+                key: "key"
+            }
+            const res = await this.storage.getObject('db://configuration/openai_key', option);
+            return res?.value?.key || window.localStorage.getItem('openAIToken') || null;
+        },
         async init() {
             this.disableChat = false;
             this.userInfo = await this.storage.getUserInfo();
@@ -37,21 +46,28 @@ export default {
                 key: "id"
             }
             await this.storage.watch(`db://chats/${chatRoomId}`, async (data) => {
-                if(data && data.new){
+                if(data && data.new && data.eventType != "DELETE"){
                     if(data.new.messages.email != me.userInfo.email){
-                        if ((me.messages && me.messages.length > 0) 
-                        && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
-                        &&  me.messages[me.messages.length - 1].content === data.new.messages.content) {
-                            me.messages[me.messages.length - 1] = data.new.messages
-                        } else {
-                            me.messages.push(data.new.messages)
+                        if(data.new.id == me.currentChatRoom.id){
+                            if ((me.messages && me.messages.length > 0) 
+                            && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
+                            &&  me.messages[me.messages.length - 1].content === data.new.messages.content) {
+                                me.messages[me.messages.length - 1] = data.new.messages
+                            } else {
+                                me.messages.push(data.new.messages)
+                            }
                         }
                         
                         let idx = me.chatRoomList.findIndex(x => x.id == data.new.id)
                         if(idx != -1){
                             me.chatRoomList[idx].message.msg = data.new.messages.messageForUser ? data.new.messages.messageForUser : data.new.messages.content
                             me.chatRoomList[idx].message.createdAt = data.new.messages.timeStamp
-                            me.updateChatRoom(idx, data.new.messages.email)
+
+                            if(me.chatRoomList[idx].id != me.currentChatRoom.id){
+                                const participantWithEmail = me.chatRoomList[idx].participants.find(participant => participant.email === me.userInfo.email);
+                                participantWithEmail.isExistUnReadMessage = true
+                                
+                            }
                         }
                     }
                 }
@@ -134,7 +150,6 @@ export default {
                     replyUserName: this.replyUser.name,
                     replyContent: this.replyUser.content,
                     replyUserEmail: this.replyUser.email,
-                    profile: this.userInfo.profile
                 };
             } else {
                 obj = {
@@ -143,7 +158,6 @@ export default {
                     role: role ? role : 'user',
                     timeStamp: Date.now(),
                     content: message,
-                    profile: this.userInfo.profile
                 };
             }
 
@@ -383,7 +397,13 @@ export default {
         onError(error) {
             if (error.code === 'invalid_api_key') {
                 var apiKey = prompt('API Key 를 입력하세요.');
-                localStorage.setItem('openAIToken', apiKey);
+                let token = {
+                    "key": 'openai_key',
+                    "value": {
+                        "key": apiKey
+                    }
+                }
+                this.putObject('configuration', token)
 
                 this.generator.generate();
             } else {

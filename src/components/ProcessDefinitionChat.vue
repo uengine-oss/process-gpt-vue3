@@ -469,8 +469,8 @@ export default {
         // },
         async saveToVectorStore(definition) {
             // Create an instance of VectorStorage
-            const apiToken = this.generator.getToken();
-            const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
+            // const apiToken = this.generator.getToken();
+            const vectorStore = new VectorStorage({ openAIApiKey: this.openaiToken });
 
             // Add a text document to the store
             await vectorStore.addText(JSON.stringify(definition), {

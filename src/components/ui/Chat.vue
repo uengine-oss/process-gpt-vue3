@@ -111,7 +111,7 @@
                                             <v-avatar style="margin-right:10px;">
                                                 <img v-if="message.role == 'system'" src="@/assets/images/chat/chat-icon.png"
                                                     max-height="48" max-width="48" />
-                                                <v-img v-else :src="message.profile" :alt="message.name" height="48" width="48" />
+                                                <v-img v-else :src="getProfile(message.email)" :alt="message.name" height="48" width="48" />
                                             </v-avatar>
                                             <div v-if="message.timeStamp" style="font-size:12px; padding-top:20px;">
                                                 {{ message.role == 'system' ? 'System,' : message.name + ',' }}
@@ -294,7 +294,8 @@ export default {
         disableChat: Boolean,
         isChanged: Boolean,
         type: String,
-        agentInfo: Object
+        agentInfo: Object,
+        userList: Array,
         // documentQueryStr: String,
     },
     data() {
@@ -368,6 +369,10 @@ export default {
         },
     },
     methods: {
+        getProfile(email){
+            const user = this.userList.find(user => user.email === email);
+            return user ? user.profile : '';
+        },
         triggerFileInput() {
             this.$refs.fileInput.click();
         },

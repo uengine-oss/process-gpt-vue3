@@ -88,7 +88,8 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 const { data, error } = await window.$supabase
                     .from(obj.table)
                     .select()
-                    .match(options.match);
+                    .match(options.match)
+                    .single();
 
                 if (error) {
                     return error;
@@ -102,26 +103,24 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 const { data, error } = await window.$supabase
                     .from(obj.table)
                     .select()
-                    .eq(obj.searchKey, obj.searchVal);
+                    .eq(obj.searchKey, obj.searchVal)
+                    .single();
 
                 if (error) {
                     return error;
                 } else {
-                    if (data.length > 0) {
-                        return data[0];
-                    }
-                    return null;
+                    return data;
                 }
             } else {
                 const { data, error } = await window.$supabase
                     .from(obj.table)
-                    .select();
+                    .select()
+                    .single();
 
                 if (error) {
                     return error;
                 } else {
-                    if (data.length > 0) return data;
-                    return null;
+                    return data;
                 }
             }
         } catch(error) {
@@ -137,40 +136,36 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 const { data, error } = await window.$supabase
                     .from(obj.table)
                     .select()
-                    .match(options.match);
+                    .match(options.match)
+                    .single();
 
                 if (error) {
                     return error;
                 } else {
-                    if (data.length > 0) {
-                        return data[0];
-                    }
-                    return null;
+                    return data;
                 }
             } else if (obj.searchVal) {
                 const { data, error } = await window.$supabase
                     .from(obj.table)
                     .select()
-                    .eq(obj.searchKey, obj.searchVal);
+                    .eq(obj.searchKey, obj.searchVal)
+                    .single();
 
                 if (error) {
                     return error;
                 } else {
-                    if (data.length > 0) {
-                        return data[0];
-                    }
-                    return null;
+                    return data;
                 }
             } else {
                 const { data, error } = await window.$supabase
                     .from(obj.table)
-                    .select();
+                    .select()
+                    .single();
                 
                 if (error) {
                     return error;
                 } else {
-                    if (data.length > 0) return data;
-                    return null;
+                    return data;
                 }
             }
         } catch(error) {
@@ -232,7 +227,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .match(options.match);
                 
                 if (error) {
-                    throw new StorageBaseError('error in pushObject', error, arguments);
+                    throw new StorageBaseError('error in putObject', error, arguments);
                 }
             } else if (obj.searchVal) {
                 const { error } = await window.$supabase
@@ -241,7 +236,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .eq(obj.searchKey, obj.searchVal);
 
                 if (error) {
-                    throw new StorageBaseError('error in pushObject', error, arguments);
+                    throw new StorageBaseError('error in putObject', error, arguments);
                 }
             } else {
 
@@ -253,12 +248,12 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .upsert(value);
                 
                 if (error) {
-                    throw new StorageBaseError('error in pushObject', error, arguments);
+                    throw new StorageBaseError('error in putObject', error, arguments);
                 }
             }
         } catch(error) {
 
-            throw new StorageBaseError('error in pushObject', error, arguments);
+            throw new StorageBaseError('error in putObject', error, arguments);
         }
     }
 

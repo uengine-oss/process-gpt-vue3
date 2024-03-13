@@ -17,6 +17,7 @@
                 <Chat
                     :messages="messages"
                     :userInfo="userInfo"
+                    :userList="userList"
                     :type="path"
                     @beforeReply="beforeReply"
                     @sendMessage="beforeSendMessage"
@@ -133,11 +134,13 @@ export default {
         createChatRoom(chatRoomInfo){
             if(!chatRoomInfo.id){
                 chatRoomInfo.id = this.uuid();
+                chatRoomInfo.participants.forEach(participant => {
+                    delete participant.profile;
+                });
                 let userInfo = {
                     "id": this.userInfo.uid,
                     "username": this.userInfo.name,
                     "email": this.userInfo.email,
-                    "profile": this.userInfo.profile
                 }
                 chatRoomInfo.participants.push(userInfo)
                 let currentTimestamp = Date.now()
@@ -211,14 +214,6 @@ export default {
             
             // let test = await this.queryMsgFromVectorDB(msg.content)
             // console.log(test)
-        },
-        updateChatRoom(chatRoomIdx){
-            var me = this
-            if(me.chatRoomList[chatRoomIdx].id != me.currentChatRoom.id){
-                const participantWithEmail = me.chatRoomList[chatRoomIdx].participants.find(participant => participant.email === me.userInfo.email);
-                participantWithEmail.isExistUnReadMessage = true
-                
-            }
         },
         // async queryMsgFromVectorDB(content) {
         //     const apiToken = this.generator.getToken();
@@ -477,8 +472,8 @@ export default {
         },
 
         async queryFromVectorDB(messsage){
-            const apiToken = this.generator.getToken();
-            const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
+            // const apiToken = this.generator.getToken();
+            const vectorStore = new VectorStorage({ openAIApiKey: this.openaiToken });
 
             // Perform a similarity search
             const results = await vectorStore.similaritySearch({
