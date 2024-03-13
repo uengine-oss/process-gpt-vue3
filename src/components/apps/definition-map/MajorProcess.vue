@@ -86,7 +86,7 @@ export default {
         addProcess(newProcess) {
             var newSubProc = {
                 id: newProcess.id,
-                label: newProcess.name,
+                label: newProcess.label,
             };
             this.value.sub_proc_list.push(newSubProc);
         },
