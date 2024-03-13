@@ -8,13 +8,15 @@
     },
     data() {
         return {
-            userScrolled: false,
+            isAtBottom: true,
         };
     },
     watch: {
         filteredMessages() {
-            if (!this.userScrolled) {
+            if (this.isAtBottom) {
                 this.scrollToBottom();
+            } else {
+                this.showNewMessage();
             }
         },
     },
@@ -23,16 +25,23 @@
     },
     methods: {
         scrollToBottom() {
-            this.$nextTick(() => {
+            setTimeout(() => {
                 const container = this.$refs.scrollContainer.$el;
                 container.scrollTop = container.scrollHeight;
-            });
+            }, 300);
+            // this.$nextTick(() => {
+            //     const container = this.$refs.scrollContainer.$el;
+            //     container.scrollTop = container.scrollHeight;
+            // });
         },
-        // 사용자가 스크롤을 조작할 때 호출되는 함수
         handleScroll() {
             const container = this.$refs.scrollContainer.$el;
-            // 사용자가 스크롤을 최하단에서 멀어지면 userScrolled를 true로 설정
-            this.userScrolled = container.scrollTop + container.clientHeight < container.scrollHeight;
+            clearTimeout(this.scrollTimeout);
+            this.scrollTimeout = setTimeout(() => {
+                const scrollPosition = Math.round(container.scrollTop + container.clientHeight) + 1;
+                const isAtBottom = scrollPosition >= container.scrollHeight;
+                this.isAtBottom = isAtBottom;
+            }, 200);
         },
     }
 };

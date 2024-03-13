@@ -235,7 +235,18 @@
             </div> -->
         </div>
         <v-divider />
-
+        <div v-if="showNewMessageNoti" style="position: absolute; z-index: 9; max-width: 1000px; left: 50%; transform: translateX(-50%); bottom: 150px;">
+            <v-chip 
+                color="primary"  
+                closable 
+                @click:close="showNewMessageNoti = false"
+                style="cursor: pointer;"
+            >
+                <div @click="clickToScroll">
+                    <span>{{ lastMessage.name }}: {{ lastMessage.content }}</span>
+                </div>
+            </v-chip>
+        </div>
         <div class="text-body-1" v-if="isReply" style="margin-left: 10px">
             {{ replyUser.name }}님에게 답장
             <v-icon @click="cancelReply()">mdi-close</v-icon>
@@ -309,6 +320,9 @@ export default {
             isViewDetail: false,
             isViewJSON: [],
             attachedImg: null,
+            showNewMessageNoti: false,
+            lastMessage: { name: '', content: '' },
+            showNewMessageNotiTimer: null,
         };
     },
     watch: {
@@ -344,6 +358,7 @@ export default {
                     }
                 });
             }
+
             return list;
         },
         // isLoading 상태의 변화를 감시합니다.
@@ -369,6 +384,32 @@ export default {
         },
     },
     methods: {
+        clickToScroll(){
+            this.isAtBottom = true
+            this.scrollToBottom();
+            this.showNewMessageNoti = false
+            this.lastMessage = {
+                name: '',
+                content: ''
+            }
+        },
+        showNewMessage(){
+            if(this.messages.length > 0){
+                this.lastMessage = {
+                    name: this.messages[this.messages.length - 1].name,
+                    content: this.messages[this.messages.length - 1].content.length > 130 ? this.messages[this.messages.length - 1].content.substring(0, 130) + '...' : this.messages[this.messages.length - 1].content
+                };
+                this.showNewMessageNoti = true;
+
+                if (this.showNewMessageNotiTimer) {
+                    clearTimeout(this.showNewMessageNotiTimer);
+                }
+
+                this.showNewMessageNotiTimer = setTimeout(() => {
+                    this.showNewMessageNoti = false;
+                }, 5000); 
+            }
+        },
         getProfile(email){
             const user = this.userList.find(user => user.email === email);
             return user ? user.profile : '';
@@ -484,6 +525,7 @@ export default {
             this.attachedImg = null;
             var imagePreview = document.querySelector("#imagePreview");
             imagePreview.innerHTML = '';
+            this.isAtBottom = true
             setTimeout(() => {
                 this.newMessage = "";
             }, 100);
