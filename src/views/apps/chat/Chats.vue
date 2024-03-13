@@ -390,7 +390,7 @@ export default {
             // console.log(response)
         },
         async afterGenerationFinished(response) {
-            if(response == '.' || response == '.\n' || response == '{}') {
+            if(response == '.' || response == '.\n' || response == '{}' || response == '...') {
                 this.messages.splice(this.messages.length - 1, 1)
             } else {
                 let obj = this.createMessageObj(response, 'system')
