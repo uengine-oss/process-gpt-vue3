@@ -2,6 +2,8 @@
 import jp from 'jsonpath';
 
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import { getEncoding, encodingForModel } from "js-tiktoken";
+import _ from 'lodash';
 
 export default {
     data: () => ({
@@ -22,6 +24,8 @@ export default {
         }
         this.storage = StorageBaseFactory.getStorage();
         this.openaiToken = await this.getToken();
+
+        this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
     },
     methods: {
         async getToken(){
@@ -46,27 +50,34 @@ export default {
                 key: "id"
             }
             await this.storage.watch(`db://chats/${chatRoomId}`, async (data) => {
-                if(data && data.new && data.eventType != "DELETE"){
-                    if(data.new.messages.email != me.userInfo.email){
-                        if(data.new.id == me.currentChatRoom.id){
-                            if ((me.messages && me.messages.length > 0) 
-                            && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
-                            &&  me.messages[me.messages.length - 1].content === data.new.messages.content) {
-                                me.messages[me.messages.length - 1] = data.new.messages
-                            } else {
-                                me.messages.push(data.new.messages)
-                            }
+                if(data && data.new){
+                    if(data.eventType == "DELETE"){
+                        let messageIndex = me.messages.findIndex(msg => msg.uuid === data.old.uuid);
+                        if (messageIndex !== -1) {
+                            me.messages.splice(messageIndex, 1);
                         }
-                        
-                        let idx = me.chatRoomList.findIndex(x => x.id == data.new.id)
-                        if(idx != -1){
-                            me.chatRoomList[idx].message.msg = data.new.messages.messageForUser ? data.new.messages.messageForUser : data.new.messages.content
-                            me.chatRoomList[idx].message.createdAt = data.new.messages.timeStamp
-
-                            if(me.chatRoomList[idx].id != me.currentChatRoom.id){
-                                const participantWithEmail = me.chatRoomList[idx].participants.find(participant => participant.email === me.userInfo.email);
-                                participantWithEmail.isExistUnReadMessage = true
-                                
+                    } else {
+                        if(data.new.messages.email != me.userInfo.email){
+                            if(data.new.id == me.currentChatRoom.id){
+                                if ((me.messages && me.messages.length > 0) 
+                                && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
+                                &&  me.messages[me.messages.length - 1].content === data.new.messages.content) {
+                                    me.messages[me.messages.length - 1] = data.new.messages
+                                } else {
+                                    me.messages.push(data.new.messages)
+                                }
+                            }
+                            
+                            let idx = me.chatRoomList.findIndex(x => x.id == data.new.id)
+                            if(idx != -1){
+                                me.chatRoomList[idx].message.msg = data.new.messages.messageForUser ? data.new.messages.messageForUser : data.new.messages.content
+                                me.chatRoomList[idx].message.createdAt = data.new.messages.timeStamp
+    
+                                if(me.chatRoomList[idx].id != me.currentChatRoom.id){
+                                    const participantWithEmail = me.chatRoomList[idx].participants.find(participant => participant.email === me.userInfo.email);
+                                    participantWithEmail.isExistUnReadMessage = true
+                                    
+                                }
                             }
                         }
                     }
@@ -202,30 +213,51 @@ export default {
                 }
                 
                 chatMsgs.push(chatObj);
-                // this.generator.previousMessages = [...this.generator.previousMessages, ...chatMsgs];
-                if (chatMsgs.length > 60) {
-                    const startIndex = chatMsgs.length - 60;
-                    this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs.slice(startIndex)];
-                } else {
-                    this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs];
-                }
+                this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs];
 
                 chatObj = this.createMessageObj(message.text);
                 if (message.image && message.image != '') {
                     chatObj['image'] = message.image;
                 }
                 this.messages.push(chatObj);
-                
-                this.messages.push({
-                    role: 'system',
-                    content: '...',
-                    isLoading: true
-                });
 
-                await this.generator.generate();
+                if (message.mentionedUsers.length == 0) {
+                    this.debouncedGenerate();
+                } else if(message.mentionedUsers.some(user => user.id === 'system_id')){
+                    this.startGenerate();
+                }
+                
+                // this.messages.push({
+                //     role: 'system',
+                //     content: '...',
+                //     isLoading: true
+                // });
+
+                // await this.generator.generate();
+                // this.debouncedGenerate()
 
                 this.replyUser = null;
             }
+        },
+        async startGenerate() {
+            const encoding = encodingForModel("gpt-4");
+            let stringifiedMessages = JSON.stringify(this.generator.previousMessages);
+            let tokens = encoding.encode(stringifiedMessages);
+            let tokenLength = tokens.length;
+
+            while (tokenLength > 8000 && this.generator.previousMessages.length > 1) {
+                this.generator.previousMessages.splice(1, 1); 
+                stringifiedMessages = JSON.stringify(this.generator.previousMessages);
+                tokens = encoding.encode(stringifiedMessages);
+                tokenLength = tokens.length;
+            }
+            
+            this.messages.push({
+                role: 'system',
+                content: '...',
+                isLoading: true
+            });
+            await this.generator.generate();
         },
         stopMessage() {
             this.generator.stop();
