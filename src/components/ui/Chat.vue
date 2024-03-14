@@ -144,8 +144,8 @@
                                                 <!-- <pre class="text-body-1">{{ message.content }}</pre> -->
 
                                                 <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
-                                                    <v-btn style="margin-right: 5px" size="small" @click="startProcess(message, index)">y</v-btn>
-                                                    <v-btn size="small" @click="cancelProcess(message, index)">n</v-btn>
+                                                    <v-btn style="margin-right: 5px" size="small" @click="startProcess(message)">y</v-btn>
+                                                    <v-btn size="small" @click="cancelProcess(message)">n</v-btn>
                                                 </p>
                                                 <div style="position: relative;">
                                                     <v-btn v-if="replyIndex === index" @click="beforeReply(message)"
@@ -259,7 +259,8 @@
         <form class="d-flex align-center pa-0">
             <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                 class="shadow-none message-input-box" density="compact" :placeholder="$t('chat.inputMessage')" auto-grow
-                rows="1" @keydown.enter="beforeSend" :disabled="disableChat" style="font-size:20px !important;">
+                rows="1" @keydown.enter="beforeSend" :disabled="disableChat" style="font-size:20px !important;"
+                @input="handleTextareaInput">
                 <template v-slot:append-inner>
                     <div style="height: -webkit-fill-available; margin-right: 10px; margin-top: 10px;">
                         <v-btn v-if="!isLoading" icon variant="text" type="submit" @click="beforeSend"
@@ -275,6 +276,15 @@
                     </div>
                 </template>
             </v-textarea>
+            <div v-if="showUserList" class="user-list" style="position: absolute; bottom: 16%; left: 0; background-color: white; z-index: 100;">
+                <div v-for="user in filteredUserList" :key="user.id" @click="selectUser(user)" class="user-item" style="display: flex; align-items: center; padding: 10px; cursor: pointer;">
+                    <img :src="user.profile" alt="profile" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px;">
+                    <div>
+                        <div>{{ user.username }}</div>
+                        <div style="font-size: 0.8em; color: #666;">{{ user.email }}</div>
+                    </div>
+                </div>
+            </div>
         </form>
     </div>
 </template>
@@ -307,6 +317,7 @@ export default {
         type: String,
         agentInfo: Object,
         userList: Array,
+        currentChatRoom: Object,
         // documentQueryStr: String,
     },
     data() {
@@ -323,17 +334,28 @@ export default {
             showNewMessageNoti: false,
             lastMessage: { name: '', content: '' },
             showNewMessageNotiTimer: null,
+            showUserList: false,
+            mentionStartIndex: null,
+            mentionedUsers: [], // Mention된 유저들의 정보를 저장할 배열
         };
     },
-    watch: {
-    },
-    mounted() {
-    },
-
-    beforeUnmount() {
-    },
-
     computed: {
+        filteredUserList() {
+            if (!this.showUserList || this.mentionStartIndex === null || !this.userList) {
+                return [];
+            }
+            let userList = this.userList.filter(user => this.currentChatRoom.participants.some(participant => participant.id === user.id));
+            userList.push({
+                email: "system@uengine.org",
+                id: "system_id",
+                profile: "src/assets/images/chat/chat-icon.png",
+                username: "System",
+            })
+            userList.reverse()
+            const query = this.newMessage.substring(this.mentionStartIndex + 1).toLowerCase();
+            // 이미 mention된 유저는 리스트에서 제외
+            return userList.filter(user => user.username.toLowerCase().includes(query) && !this.mentionedUsers.some(mentionedUser => mentionedUser.id === user.id));
+        },
         filteredAlert() {
             const textObj = {
                 subtitle: '',
@@ -384,6 +406,25 @@ export default {
         },
     },
     methods: {
+        handleTextareaInput(event) {
+            const text = event.target.value;
+            const atIndex = text.lastIndexOf('@');
+            if (atIndex !== -1) {
+                this.showUserList = true;
+                this.mentionStartIndex = atIndex;
+            } else {
+                this.showUserList = false;
+            }
+        },
+        selectUser(user) {
+            const beforeMention = this.newMessage.substring(0, this.mentionStartIndex);
+            this.newMessage = `${beforeMention}@${user.username} `;
+            this.showUserList = false;
+            // Mention된 유저의 정보를 mentionedUsers 배열에 추가
+            if (!this.mentionedUsers.some(mentionedUser => mentionedUser.id === user.id)) {
+                this.mentionedUsers.push(user);
+            }
+        },
         clickToScroll(){
             this.isAtBottom = true
             this.scrollToBottom();
@@ -395,22 +436,25 @@ export default {
         },
         showNewMessage(){
             if(this.messages.length > 0){
-                this.lastMessage = {
-                    name: this.messages[this.messages.length - 1].name,
-                    content: this.messages[this.messages.length - 1].content.length > 130 ? this.messages[this.messages.length - 1].content.substring(0, 130) + '...' : this.messages[this.messages.length - 1].content
-                };
-                this.showNewMessageNoti = true;
-
-                if (this.showNewMessageNotiTimer) {
-                    clearTimeout(this.showNewMessageNotiTimer);
+                if(this.userInfo.email != this.messages[this.messages.length - 1].email){
+                    this.lastMessage = {
+                        name: this.messages[this.messages.length - 1].name,
+                        content: this.messages[this.messages.length - 1].content.length > 130 ? this.messages[this.messages.length - 1].content.substring(0, 130) + '...' : this.messages[this.messages.length - 1].content
+                    };
+                    this.showNewMessageNoti = true;
+    
+                    if (this.showNewMessageNotiTimer) {
+                        clearTimeout(this.showNewMessageNotiTimer);
+                    }
+    
+                    this.showNewMessageNotiTimer = setTimeout(() => {
+                        this.showNewMessageNoti = false;
+                    }, 5000); 
                 }
-
-                this.showNewMessageNotiTimer = setTimeout(() => {
-                    this.showNewMessageNoti = false;
-                }, 5000); 
             }
         },
         getProfile(email){
+            if (!this.userList) return '';
             const user = this.userList.find(user => user.email === email);
             return user ? user.profile : '';
         },
@@ -481,12 +525,10 @@ export default {
             var timeString = dateString.split(' ')[4].substring(0, 5);
             return timeString;
         },
-        startProcess(messageObj, idx) {
-            messageObj.idx = idx
+        startProcess(messageObj) {
             this.$emit('startProcess', messageObj)
         },
-        cancelProcess(messageObj, idx) {
-            messageObj.idx = idx
+        cancelProcess(messageObj) {
             this.$emit('cancelProcess', messageObj)
         },
         getMoreChat() {
@@ -518,7 +560,8 @@ export default {
             } else {
                 this.$emit('sendMessage', {
                     image: this.attachedImg,
-                    text: this.newMessage
+                    text: this.newMessage,
+                    mentionedUsers: this.mentionedUsers
                 });
             }
             if (this.isReply) this.isReply = false;
@@ -528,6 +571,8 @@ export default {
             this.isAtBottom = true
             setTimeout(() => {
                 this.newMessage = "";
+                this.mentionedUsers = [];
+                this.showUserList = false;
             }, 100);
         },
         cancel() {
@@ -657,5 +702,12 @@ pre {
 
 .shadow-none .v-field--no-label {
     --v-field-padding-top: -7px;
+}
+
+.user-list {
+    border: 1px solid #ddd;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 </style>

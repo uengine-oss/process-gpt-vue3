@@ -18,6 +18,7 @@
                     :messages="messages"
                     :userInfo="userInfo"
                     :userList="userList"
+                    :currentChatRoom="currentChatRoom"
                     :type="path"
                     @beforeReply="beforeReply"
                     @sendMessage="beforeSendMessage"
@@ -282,9 +283,6 @@ export default {
             // }
         },
         deleteSystemMessage(response){
-            if(response.idx){
-                this.messages.splice(response.idx, 1);
-            }
             this.storage.delete(`chats/${response.uuid}`, {key: 'uuid'});
         },
         cancelProcess(response){
