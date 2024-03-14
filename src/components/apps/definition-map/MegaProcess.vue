@@ -1,16 +1,14 @@
 <template>
     <div class="w-100">
-        <v-card class="d-flex align-center pa-3 mb-3"
+        <v-card class="d-flex align-center pa-3 mb-3 bg-lightwarning"
             elevation="10"
             style="border-radius: 10px !important;
             background-color:#FFA726;"
         >
-            <h6 class="text-h6 font-weight-semibold"
-                style="color:white"
-            >
+            <h6 class="text-h6 font-weight-semibold">
                 {{ value.label }}
             </h6>
-            <div class="ml-auto" style="color:white;">
+            <div class="ml-auto">
                 <ProcessMenu
                     :size="20"
                     :type="type"
