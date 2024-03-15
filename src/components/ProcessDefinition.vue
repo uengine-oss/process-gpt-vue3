@@ -11,13 +11,20 @@
                             </v-btn>
                         </template>
                     </v-tooltip>
-                    <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
+                    <component :is="`bpmn`+mode" ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
                         :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
                         v-on:openDefinition="ele => openSubProcess(ele)" v-on:loading="handleLoading"
                         v-on:openPanel="(id) => openPanel(id)" v-on:update-xml="val => $emit('update-xml', val)"
                         v-on:definition="(def) => (definitions = def)" v-on:add-shape="onAddShape"
                         v-on:change-sequence="onChangeSequence" v-on:remove-shape="onRemoveShape"
-                        v-on:change-shape="onChangeShape"></vue-bpmn>
+                        v-on:change-shape="onChangeShape"></component>
+                    <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
+                        :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
+                        v-on:openDefinition="ele => openSubProcess(ele)" v-on:loading="handleLoading"
+                        v-on:openPanel="(id) => openPanel(id)" v-on:update-xml="val => $emit('update-xml', val)"
+                        v-on:definition="(def) => (definitions = def)" v-on:add-shape="onAddShape"
+                        v-on:change-sequence="onChangeSequence" v-on:remove-shape="onRemoveShape"
+                        v-on:change-shape="onChangeShape"></vue-bpmn> -->
                 </v-card>
             </v-col>
             <v-col v-if="panel" cols="12" sm="12" lg="4" md="6" class="d-flex">
@@ -31,7 +38,7 @@
         <v-dialog v-model="isViewProcessVariables" max-width="1000">
             <v-card>
                 <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{
-                    $t('processDefinition.editProcessData') }}</v-card-title>
+                        $t('processDefinition.editProcessData') }}</v-card-title>
                 <v-btn icon style="position:absolute; right:5px; top:5px;" @click="isViewProcessVariables = false">
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
@@ -42,12 +49,16 @@
                             <tr>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.name') }}</th>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.type') }}</th>
-                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.description') }}
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.description')
+                                    }}
                                 </th>
-                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.dataSource') }}
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.dataSource')
+                                    }}
                                 </th>
-                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.query') }}</th>
-                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.actions') }}</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.query') }}
+                                </th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.actions') }}
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -58,7 +69,7 @@
                                 </td>
                                 <td class="text-subtitle-1">{{ item.description }}</td>
                                 <td class="text-subtitle-1">{{
-                                    item.datasource ? item.datasource.type : 'None' }}</td>
+                        item.datasource ? item.datasource.type : 'None' }}</td>
                                 <td>
                                     {{ item.datasource ? item.datasource.query : 'None' }}
                                 </td>
@@ -127,7 +138,9 @@
 <script>
 import { Icon } from '@iconify/vue';
 import { VDataTable } from 'vuetify/labs/VDataTable';
-import VueBpmn from './Bpmn.vue';
+// import VueBpmn from './Bpmn-LLM.vue';
+import BpmnLLM from './BpmnLLM.vue';
+import BpmnuEngine from './BpmnUengine.vue';
 import customBpmnModule from './customBpmn';
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/BpmnPropertyPanel.vue';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
@@ -137,7 +150,8 @@ import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable
 export default {
     name: 'ProcessDefinition',
     components: {
-        VueBpmn,
+        BpmnLLM,
+        BpmnuEngine,
         BpmnPropertyPanel,
         ProcessVariable,
         Icon,
@@ -167,7 +181,10 @@ export default {
         lastEditedIndex: 0,
         editComponentKey: 0,
     }),
-    computed() {
+    computed: {
+        mode() {
+            return window.$mode
+        }
     },
     watch: {
         copyProcessDefinition: {

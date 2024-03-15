@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-card v-if="!isViewProcess" elevation="10" style="height:calc(100vh - 155px);">
+        <v-card v-if="!isViewProcess" elevation="10" style="height:calc(100vh - 155px); overflow: auto;">
             <div class="pt-5 pl-6 pr-6 d-flex align-center">
                 <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
                 <div class="ml-auto">
@@ -8,7 +8,29 @@
                 </div>
             </div>
             <div class="pa-5">
-                <v-row>
+                <draggable v-if="enableEdit"
+                    class="v-row dragArea list-group" 
+                    :list="value.mega_proc_list" 
+                    :animation="200" 
+                    ghost-class="ghost-card"
+                    group="megaProcess"
+                >
+                    <transition-group>
+                        <v-col v-for="item in value.mega_proc_list"
+                            :key="item.id" 
+                            class="cursor-pointer"
+                            cols="12" md="2" sm="6"
+                        >
+                            <MegaProcess 
+                                :value="item" 
+                                :parent="value" 
+                                :storage="storage" 
+                                @view="viewProcess"
+                            />
+                        </v-col>
+                    </transition-group>
+                </draggable>
+                <v-row v-else>
                     <v-col v-for="item in value.mega_proc_list" :key="item.id" cols="12" md="2" sm="6">
                         <MegaProcess :value="item" :parent="value" :storage="storage" @view="viewProcess" />
                     </v-col>
@@ -95,6 +117,7 @@ export default {
             mega_proc_list: []
         },
         type: 'map',
+        enableEdit: false,
         // process
         isViewProcess: false,
         onLoad: false,
@@ -119,6 +142,13 @@ export default {
     created() {
         this.storage = StorageBaseFactory.getStorage();
         this.getProcessMap();
+
+        const isAdmin = localStorage.getItem("isAdmin");
+        if (isAdmin == "true") {
+            this.enableEdit = true;
+        } else {
+            this.enableEdit = false;
+        }
     },
     methods: {
         goHistory(idx) {
