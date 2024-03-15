@@ -8,18 +8,21 @@
     "associations": [],
     "types": [
         {
-            "name": "ProcessVariables",
-            "extends": ["bpmn:RootElement"],
+            "name": "data",
+            "extends": [
+                "bpmn:ExtensionElements"
+              ],
             "properties": [
               {
                 "name": "variables",
                 "isMany": true,
-                "type": "ProcessVariable"
+                "type": "Variable"
               }
             ]
           },
           {
-            "name": "ProcessVariable",
+            "name": "Variable",
+            "superClass": ["Element"],
             "properties": [
               {
                 "name": "key",
@@ -37,72 +40,7 @@
             "superClass": ["Element"],
             "properties": [
                 {
-                    "name": "role",
-                    "type": "String"
-                },
-                {
-                    "name": "pythonCode",
-                    "type": "String"
-                },
-                {
-                    "name": "description",
-                    "type": "String"
-                },
-                {
-                    "name": "definition",
-                    "type": "String"
-                },
-                {
-                    "name": "checkpoints",
-                    "isMany": true,
-                    "type": "Checkpoint"
-                },
-                {
-                    "name": "instanceData",
-                    "isMany": true,
-                    "type": "Data"
-                },
-                {
-                    "name": "ExtendedProperties",
-                    "isMany": true,
-                    "type": "ExtendedProperty"
-                }
-            ]
-        },
-        {
-            "name": "Checkpoint",
-            "superClass": ["Element"],
-            "properties": [
-                {
-                    "name": "checkpoint",
-                    "type": "String"
-                }
-            ]
-        },
-        {
-            "name": "ExtendedProperty",
-            "superClass": ["Element"],
-            "properties": [
-                {
-                    "name": "key",
-                    "type": "String"
-                },
-                {
-                    "name": "value",
-                    "type": "String"
-                }
-            ]
-        },
-        {
-            "name": "Data",
-            "superClass": ["Element"],
-            "properties": [
-                {
-                    "name": "key",
-                    "type": "String"
-                },
-                {
-                    "name": "category",
+                    "name": "json",
                     "type": "String"
                 }
             ]
