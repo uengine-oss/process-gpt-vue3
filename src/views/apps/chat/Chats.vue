@@ -18,6 +18,7 @@
                     :messages="messages"
                     :userInfo="userInfo"
                     :userList="userList"
+                    :currentChatRoom="currentChatRoom"
                     :type="path"
                     @beforeReply="beforeReply"
                     @sendMessage="beforeSendMessage"
@@ -282,9 +283,6 @@ export default {
             // }
         },
         deleteSystemMessage(response){
-            if(response.idx){
-                this.messages.splice(response.idx, 1);
-            }
             this.storage.delete(`chats/${response.uuid}`, {key: 'uuid'});
         },
         cancelProcess(response){
@@ -390,7 +388,7 @@ export default {
             // console.log(response)
         },
         async afterGenerationFinished(response) {
-            if(response == '.' || response == '.\n' || response == '{}') {
+            if(response == '.' || response == '.\n' || response == '{}' || response == '...') {
                 this.messages.splice(this.messages.length - 1, 1)
             } else {
                 let obj = this.createMessageObj(response, 'system')
