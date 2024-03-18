@@ -26,6 +26,11 @@
                                 삭제
                             </v-list-item-title>
                         </v-list-item>
+                        <!-- <v-list-item v-if="type != 'map'">
+                            <v-list-item-title @click="deleteProcess">
+                                상세보기
+                            </v-list-item-title>
+                        </v-list-item> -->
                     </v-list>
                 </v-menu>
             </v-btn>

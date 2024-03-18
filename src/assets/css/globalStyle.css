@@ -1,0 +1,76 @@
+.vue-bpmn-diagram-container {
+    height: 100%;
+    width: 100%;
+}
+
+.highlight:not(.djs-connection) .djs-visual> :nth-child(1) {
+    stroke-width: 2px !important;
+    stroke: #5140bd !important;
+    fill: #5140bd !important;
+}
+
+.highlight:not(.djs-connection) .djs-visual> :nth-child(2) {
+    fill: #ffffff !important;
+}
+
+/* 팔레트 커스텀 부분 */
+.vue-bpmn-diagram-container .separator {
+    display: none;
+}
+
+/* .vue-bpmn-diagram-container .djs-direct-editing-parent {
+    width:80px !important;
+    height:60px !important;
+} */
+
+.vue-bpmn-diagram-container .djs-palette {
+    width: 605px !important;
+    height: 50px;
+    margin-left: 35px;
+    background-color: white;
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.1);
+}
+
+.vue-bpmn-diagram-container .djs-context-pad .entry {
+    width: 30px;
+    height: 30px;
+    /* border: solid 1px rgba(124, 124, 124, 0.3); */
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.7);
+}
+
+.vue-bpmn-diagram-container .djs-context-pad .group {
+    min-width: 100px;
+}
+
+.left-part-display-none {
+    display: none;
+    height: 100vh !important;
+}
+.left-part-display-block {
+    display: block;
+}
+
+.canvas-full-layout {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    min-width: 100%;
+    min-height: 100%;
+    z-index:9999;
+
+}
+
+.mainbox {
+    position: relative;
+    overflow: hidden;
+    height: calc(100vh - 155px);
+}
+
+@media only screen and (max-width:800px) {
+    .vue-bpmn-diagram-container .djs-palette {
+        width: 325px !important;
+        height: 94px !important;
+    }
+}

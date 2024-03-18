@@ -10,7 +10,7 @@
                 </div>
             </template>
             <template v-slot:rightpart>
-                <process-definition style="width: 100%; height: 100%" :bpmn="bpmn" :processDefinition="processDefinition"
+                <process-definition class="process-definition-resize" style="" :bpmn="bpmn" :processDefinition="processDefinition"
                     @update="updateDefinition" :key="definitionChangeCount"></process-definition>
             </template>
 
@@ -1218,4 +1218,13 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.process-definition-resize {
+    width: 100%; height:100%;
+}
+@media only screen and (max-width:1279px) {
+    .process-definition-resize {
+        width: 100%; height: calc(100vh - 192px);
+    }
+}
+</style>
