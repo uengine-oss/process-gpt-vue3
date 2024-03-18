@@ -7,7 +7,15 @@ import HorizontalSidebar from './horizontal-sidebar/HorizontalSidebar.vue';
 import Customizer from './customizer/Customizer.vue';
 import { useCustomizerStore } from '../../stores/customizer';
 import { pl, zhHans } from 'vuetify/locale'
+import { ref, computed, getCurrentInstance } from 'vue';
 const customizer = useCustomizerStore();
+
+// 캔버스 full 사이즈 관련 코드
+const instance = getCurrentInstance();
+const globalState = instance?.appContext.config.globalProperties.$globalState;
+const canvasReSize = computed(() => {
+  return globalState?.state.isZoomed ? 'canvas-full-layout' : '';
+});
 </script>
 
 <template>
@@ -66,15 +74,13 @@ const customizer = useCustomizerStore();
             <v-main>
                 <div class=" mb-3 hr-layout">
                 <v-container fluid class="page-wrapper bg-background px-sm-5 pt-12 px-4 rounded-xl">
-                    <div class="">
-                        <!-- 정의관련 maxWidth -->
-                        <div :class="customizer.boxed ? 'maxWidth' : ''">
-                            <RouterView />
-                            <!-- <v-btn class="customizer-btn" size="small" icon text variant="flat" color="primary"
-                                @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
-                                <SettingsIcon />
-                            </v-btn> -->
-                        </div>
+                    <!-- 정의관련 maxWidth -->
+                    <div :class="[customizer.boxed ? 'maxWidth' : '', canvasReSize]">
+                        <RouterView />
+                        <!-- <v-btn class="customizer-btn" size="small" icon text variant="flat" color="primary"
+                            @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
+                            <SettingsIcon />
+                        </v-btn> -->
                     </div>
                 </v-container>
             </div>

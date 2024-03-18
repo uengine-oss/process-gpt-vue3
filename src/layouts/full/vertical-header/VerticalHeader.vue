@@ -58,7 +58,7 @@ function handleScroll() {
                 </v-btn>
                 <v-btn class="hidden-lg-and-up" icon variant="text"
                     @click.stop="customizer.SET_SIDEBAR_DRAWER" size="small">
-                    <Icon icon="solar:list-bold-duotone" height="24" width="24" />
+                    <Icon class="cp-menu-open" icon="solar:list-bold-duotone" height="24" width="24" />
                 </v-btn>
 
                 <!-- ---------------------------------------------- -->

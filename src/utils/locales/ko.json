@@ -75,7 +75,8 @@
         "processVariables" : "프로세스 변수",
         "editProcessData" : "프로세스 데이터 수정",
         "edit" : "수정",
-        "delete" : "삭제"
+        "delete" : "삭제",
+        "zoom" : "캔버스 확대/축소"
     },
     "ProcessVariable" : {
         "name" : "이름",

@@ -60,7 +60,7 @@ function validate(values: any, { setErrors }: any) {
                 <template v-slot:label class="">{{ $t('loginPage.remeber') }}</template>
             </v-checkbox>
         </div>
-        <v-btn size="large" rounded="pill" :loading="isSubmitting" color="primary" block type="submit" flat>{{ $t('loginPage.login') }}</v-btn>
+        <v-btn class="cp-login" size="large" rounded="pill" :loading="isSubmitting" color="primary" block type="submit" flat>{{ $t('loginPage.login') }}</v-btn>
         <div v-if="errors.apiError" class="mt-2">
             <v-alert color="error">{{ errors.apiError }}</v-alert>
         </div>
