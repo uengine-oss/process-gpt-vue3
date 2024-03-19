@@ -31,7 +31,7 @@ const canvasReSize = computed(() => {
             <!---Toggle Button For mobile-->
             <v-btn block @click="sDrawer = !sDrawer" variant="text" class="d-lg-none d-md-flex d-sm-flex"
                 style="z-index:1; background-color:white;">
-                <Menu2Icon size="20" class="mr-2" /> Menu
+                <Menu2Icon size="20" class="mr-2 cp-dialog-open" /> Menu
             </v-btn>
             <v-divider class="d-lg-none d-block" />
             <slot name="rightpart"></slot>

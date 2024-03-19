@@ -67,6 +67,12 @@ const sidebarItem: menu[] = [
         to: "/definitions/chat",
     },
     {
+        title: "화면 정의",
+        icon: 'chat-dots-linear',
+        BgColor: 'primary',
+        to: "/ui-definitions/chat",
+    },
+    {
         title: "프로세스 목록",
         icon: 'list-outline',
         BgColor: 'primary',
