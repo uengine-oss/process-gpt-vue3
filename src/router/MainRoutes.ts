@@ -53,6 +53,11 @@ const MainRoutes = {
             component: () => import('@/components/ProcessDefinitionChat.vue'),
         },
         {
+            name: 'ui-definitions',
+            path: '/ui-definitions/chat',
+            component: () => import('@/components/UIDefinitionChat.vue'),
+        },
+        {
             name: 'Definition Map',
             path: '/definition-map',
             component: () => import('@/components/apps/definition-map/ProcessDefinitionMap.vue'),

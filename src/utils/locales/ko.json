@@ -61,6 +61,9 @@
     "processDefinitionMap" : {
         "title" : "프로세스 정의 체계도"
     },
+    "uiDefinition" : {
+        "title" : "화면 정의"
+    },
     "processDefinition" : {
         "title" : "프로세스 정의",
         "cardTitle" : "프로세스 정의 관리",

@@ -1,7 +1,6 @@
 <script setup>
 import { useCustomizerStore } from '@/stores/customizer';
 
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import Logo from '../logo/Logo.vue';
 import NavCollapse from './NavCollapse/NavCollapse.vue';
 import NavGroup from './NavGroup/index.vue';
@@ -106,6 +105,12 @@ export default {
                 icon: 'carbon:flow-connection',
                 BgColor: 'primary',
                 to: "/definition-map",
+            },
+            {
+                title: "uiDefinition.title",
+                icon: 'carbon:flow-connection',
+                BgColor: 'primary',
+                to: "/ui-definitions/chat",
             },
         ],
         // definitions: null,
