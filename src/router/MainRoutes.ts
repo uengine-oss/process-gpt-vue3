@@ -53,9 +53,29 @@ const MainRoutes = {
             component: () => import('@/components/ProcessDefinitionChat.vue'),
         },
         {
+            name: 'ui-definitions',
+            path: '/ui-definitions/chat',
+            component: () => import('@/components/UIDefinitionChat.vue'),
+        },
+        {
             name: 'Definition Map',
             path: '/definition-map',
             component: () => import('@/components/apps/definition-map/ProcessDefinitionMap.vue'),
+        },
+        {
+            name: 'Mega Process Detail',
+            path: '/definition-map/mega/:id',
+            component: () => import('@/components/apps/definition-map/ProcessDefinitionMap.vue'),
+        },
+        {
+            name: 'Major Process Detail',
+            path: '/definition-map/major/:id',
+            component: () => import('@/components/apps/definition-map/ProcessDefinitionMap.vue'),
+        },
+        {
+            name: 'Sub Process Detail',
+            path: '/definition-map/sub/:id',
+            component: () => import('@/components/apps/definition-map/SubProcessDetail.vue'),
         },
         
 

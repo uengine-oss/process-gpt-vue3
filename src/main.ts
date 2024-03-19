@@ -27,6 +27,14 @@ import setLocale from './plugins/setLocale';
 // icon
 import { Icon } from '@iconify/vue';
 
+// css
+import '@/assets/css/globalStyle.css';
+
+// 전역 관리 ts
+import globalState from '@/stores/globalState';
+
+
+
 //ScrollTop
 import VueScrollTo from 'vue-scrollto';
 const i18n = createI18n({
@@ -45,6 +53,9 @@ app.config.globalProperties.$app = app;
 app.config.globalProperties.EventBus = emitter;
 app.config.globalProperties.OGBus = OpenGraphEmitter;
 app.config.globalProperties.ModelingBus = ModelingEmitter;
+
+// 전역 상태 관리자를 전역 속성으로 추가
+app.config.globalProperties.$globalState = globalState;
 
 import ModelerImageGenerator from '@/components/designer/ModelerImageGenerator.vue'
 app.component('modeler-image-generator', ModelerImageGenerator)

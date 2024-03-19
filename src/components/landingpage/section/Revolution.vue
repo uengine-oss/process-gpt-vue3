@@ -15,7 +15,7 @@
                         data-aos-duration="1000">
 
                         <v-btn to="/dashboard2" color="primary" rounded="pill"
-                            class="mt-sm-0 mt-4 lp-btn-shadow m-btn-full btn-custom-lg mb-sm-0 mb-4" size="large"
+                            class="mt-sm-0 mt-4 lp-btn-shadow m-btn-full btn-custom-lg mb-sm-0 mb-4 cp-start" size="large"
                         >{{ $t('mainPage.start') }}
                         </v-btn>
                         <v-btn target="_blank" rounded="pill" variant="outlined" href="" color="primary" size="large"

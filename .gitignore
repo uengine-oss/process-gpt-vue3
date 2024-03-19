@@ -13,6 +13,8 @@ acebase/mydb.acebase
 *.db
 *.idx
 
+cypress.config.ts
+
 # Compiled Java class files
 *.class
 

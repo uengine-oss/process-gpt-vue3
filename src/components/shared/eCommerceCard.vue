@@ -35,10 +35,6 @@ const sDrawer = ref(false);
 </template>
 
 <style lang="scss">
-.mainbox {
-    position: relative;
-    overflow: hidden;
-}
 .left-part {
     width: 320px;
     border-right: 1px solid rgb(var(--v-theme-borderColor));

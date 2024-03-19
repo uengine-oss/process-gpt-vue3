@@ -26,6 +26,11 @@
                                 삭제
                             </v-list-item-title>
                         </v-list-item>
+                        <!-- <v-list-item v-if="type != 'map'">
+                            <v-list-item-title @click="deleteProcess">
+                                상세보기
+                            </v-list-item-title>
+                        </v-list-item> -->
                     </v-list>
                 </v-menu>
             </v-btn>
@@ -177,7 +182,7 @@ export default {
             }
         },
         addProcess() {
-            if (this.newProcess.id != '' && this.newProcess.label != '') {
+            if (this.newProcess.id != '' && (this.newProcess.name != '' || this.newProcess.label != '')) {
                 this.$emit("add", this.newProcess);
                 this.closeDialog('add');
             }

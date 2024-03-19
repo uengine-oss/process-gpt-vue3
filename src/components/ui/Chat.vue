@@ -258,12 +258,12 @@
         <div id="imagePreview" style="max-width: 200px;"></div>
         <form class="d-flex align-center pa-0">
             <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
-                class="shadow-none message-input-box" density="compact" :placeholder="$t('chat.inputMessage')" auto-grow
+                class="shadow-none message-input-box cp-chat" density="compact" :placeholder="$t('chat.inputMessage')" auto-grow
                 rows="1" @keydown.enter="beforeSend" :disabled="disableChat" style="font-size:20px !important;"
                 @input="handleTextareaInput">
                 <template v-slot:append-inner>
                     <div style="height: -webkit-fill-available; margin-right: 10px; margin-top: 10px;">
-                        <v-btn v-if="!isLoading" icon variant="text" type="submit" @click="beforeSend"
+                        <v-btn v-if="!isLoading" class="cp-send" icon variant="text" type="submit" @click="beforeSend"
                             style="width:30px; height:30px;" :disabled="!newMessage">
                             <Icon icon="teenyicons:send-outline" width="20" height="20" />
                         </v-btn>

@@ -6,8 +6,21 @@
                     <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
                         <template v-slot:activator="{ props }">
                             <v-btn @click="openProcessVariables" icon v-bind="props"
-                                style="position: absolute; right:20px; top:20px; z-index:1">
+                                class="processVariables-btn"
+                            >
                                 <Icon icon="tabler:variable" width="32" height="32" />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+                    <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn icon v-bind="props"
+                                class="processVariables-zoom"
+                                @click="$globalState.methods.toggleZoom()"
+                            >
+                                <Icon v-if="!$globalState.state.isZoomed" icon="material-symbols:pinch-zoom-out-outline" width="32" height="32" />
+                                <Icon v-else icon="material-symbols:pinch-zoom-in-outline-sharp" width="32" height="32" />
+                                
                             </v-btn>
                         </template>
                     </v-tooltip>
@@ -519,3 +532,18 @@ export default {
     }
 };
 </script>
+
+<style scoped>
+.processVariables-zoom {
+    position: absolute;
+    right:20px;
+    top:20px;
+    z-index:1
+}
+.processVariables-btn {
+    position: absolute;
+    left: 5px;
+    top: 20px;
+    z-index: 1;
+}
+</style>

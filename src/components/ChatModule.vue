@@ -221,10 +221,14 @@ export default {
                 }
                 this.messages.push(chatObj);
 
-                if (message.mentionedUsers.length == 0) {
+                if (message.mentionedUsers) {
+                    if (message.mentionedUsers.length == 0) {
+                        this.debouncedGenerate();
+                    } else if(message.mentionedUsers.some(user => user.id === 'system_id')){
+                        this.startGenerate();
+                    }
+                } else {
                     this.debouncedGenerate();
-                } else if(message.mentionedUsers.some(user => user.id === 'system_id')){
-                    this.startGenerate();
                 }
                 
                 // this.messages.push({
@@ -240,12 +244,13 @@ export default {
             }
         },
         async startGenerate() {
-            const encoding = encodingForModel("gpt-4");
+            const encoding = encodingForModel("gpt-3.5-turbo-16k");
             let stringifiedMessages = JSON.stringify(this.generator.previousMessages);
             let tokens = encoding.encode(stringifiedMessages);
             let tokenLength = tokens.length;
 
-            while (tokenLength > 8000 && this.generator.previousMessages.length > 1) {
+            // 16385
+            while (tokenLength > 16000 && this.generator.previousMessages.length > 1) {
                 this.generator.previousMessages.splice(1, 1); 
                 stringifiedMessages = JSON.stringify(this.generator.previousMessages);
                 tokens = encoding.encode(stringifiedMessages);
