@@ -1,0 +1,99 @@
+
+server:
+  port: 8088
+
+---
+
+
+keycloak-client:
+  server-url: http://localhost:9000
+  realm: supabase
+
+spring:
+  config:
+    activate:
+      on-profile: default
+  cloud:
+    gateway:
+      default-filters:
+        - TokenRelay 
+      routes:
+        - id: execution
+          uri: http://localhost:8000
+          predicates:
+            - Path=/complete/**, /vision-complete/**,  
+        - id: frontend
+          uri: http://localhost:5173
+          predicates:
+            - Path=/**
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - "*"
+            allowedMethods:
+              - "*"
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+  security:
+    oauth2:
+      client:
+        provider:
+          keycloak:
+            issuer-uri: ${keycloak-client.server-url}/realms/${keycloak-client.realm}
+            user-name-attribute: preferred_username
+        registration:
+          keycloak:
+            client-id: supabase
+            client-secret: UghyBT78UkmIbD4rIyH6nbgJtD6n8cyj
+            redirect-uri: http://127.0.0.1:8088/login/oauth2/code/supabase
+            authorization-grant-type: authorization_code
+            scope: openid, execution
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${keycloak-client.server-url}/realms/${keycloak-client.realm}/protocol/openid-connect/certs
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: docker
+  cloud:
+    gateway:
+      routes:
+        - id: execution
+          uri: http://localhost:8000
+          predicates:
+            - Path=/complete/**, /vision-complete/**,  
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - "*"
+            allowedMethods:
+              - "*"
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+  security:
+    oauth2:
+      client:
+        provider:
+          keycloak:
+            issuer-uri: ${keycloak-client.server-url}/realms/${keycloak-client.realm}
+            user-name-attribute: preferred_username
+        registration:
+          keycloak:
+            client-id: supabase
+            client-secret: UghyBT78UkmIbD4rIyH6nbgJtD6n8cyj
+            redirect-uri: http://127.0.0.1:8088/login/oauth2/code/supabase
+            authorization-grant-type: authorization_code
+            scope: openid, execution
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${keycloak-client.server-url}/realms/${keycloak-client.realm}/protocol/openid-connect/certs
+
+server:
+  port: 8080

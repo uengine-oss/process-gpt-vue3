@@ -26,13 +26,12 @@ const customizer = useCustomizerStore();
             <v-list class="py-4 px-4 bg-containerBg">
                 <!---Menu Loop -->
                 <template v-for="item in sidebarItem" :key="item.title">
-
                     <!---Item Sub Header -->
-                    <NavGroup :item="item" v-if="item.header" :key="item.title" />
+                    <NavGroup v-if="item.header && !item.disable" :item="item" :key="item.title" />
                     <!---If Has Child -->
-                    <NavCollapse class="leftPadding" :item="item" :level="0" v-else-if="item.children" />
+                    <NavCollapse v-else-if="item.children && !disable" class="leftPadding" :item="item" :level="0" />
                     <!---Single Item-->
-                    <NavItem :item="item" v-else class="leftPadding" />
+                    <NavItem v-else-if="!item.disable" class="leftPadding" :item="item" />
                     <!---End Single Item-->
                 </template>
 
@@ -54,66 +53,72 @@ const customizer = useCustomizerStore();
 
 <script>
 
-
 export default {
     data: () => ({
         storage: null,
         sidebarItem: [
             {
-            title: "dashboard.title",
+                title: "dashboard.title",
                 icon: 'lucide:layout-panel-top',
                 BgColor: 'primary',
                 to: "/dashboard2",
+                disable: true,
             },
             {
                 title: "todoList.title",
                 icon: 'pajamas:overview',
                 BgColor: 'primary',
                 to: "/todolist",
+                disable: true,
             },
             {
                 title: 'calendar.title',
                 icon: 'solar:calendar-line-duotone',
                 BgColor: 'primary',
-                to: '/apps/calendar'
+                to: '/apps/calendar',
+                disable: true,
             },
             {
                 title: "chats.title",
                 icon: 'solar:chat-round-unread-line-duotone',
                 BgColor: 'primary',
                 to: "/chats",
+                disable: true,
             },
             {
-                header: 'instance.title'
+                header: 'instance.title',
+                disable: true,
             },
             {
                 title: "processExecution.title",
                 icon: 'solar:chat-dots-linear',
                 BgColor: 'primary',
                 to: '/instances/chat',
+                disable: true,
             },
             {
-                header: 'definitionManagement.title'
+                header: 'definitionManagement.title',
+                disable: false,
             },
             {
                 title: "organizationChartDefinition.title",
                 icon: 'solar:users-group-rounded-line-duotone',
                 BgColor: 'primary',
                 to: "/organization",
+                disable: true,
             },
             {
                 title: "processDefinitionMap.title",
                 icon: 'carbon:flow-connection',
                 BgColor: 'primary',
                 to: "/definition-map",
+                disable: false,
             },
         ],
-        // definitions: null,
         definition: null
     }),
     created() {
         const isAdmin = localStorage.getItem("isAdmin");
-
         if (isAdmin == 'true') {
             this.definition = {
                 title: "processDefinition.title",
@@ -121,9 +126,15 @@ export default {
                 BgColor: 'primary',
                 to: "/definitions/chat",
             }
-            // this.storage = StorageBaseFactory.getStorage();
-            // this.getDefinitionList();
-            // this.storage.watch(`proc_def`, this.getDefinitionList);
+        }
+
+        const execution = localStorage.getItem("execution");
+        if (execution == 'true') {
+            this.sidebarItem.forEach(item => {
+                if (item.disable) {
+                    item.disable = false;
+                }
+            });
         }
     },
     methods: {
