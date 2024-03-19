@@ -182,7 +182,7 @@ export default {
             }
         },
         addProcess() {
-            if (this.newProcess.id != '' && this.newProcess.label != '') {
+            if (this.newProcess.id != '' && (this.newProcess.name != '' || this.newProcess.label != '')) {
                 this.$emit("add", this.newProcess);
                 this.closeDialog('add');
             }
