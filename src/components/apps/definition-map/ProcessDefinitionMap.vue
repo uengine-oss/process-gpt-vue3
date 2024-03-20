@@ -1,14 +1,21 @@
 <template>
     <div>
         <v-card elevation="10" style="height:calc(100vh - 155px); overflow: auto;">
-            <div class="pt-5 pl-6 pr-6 d-flex align-center">
-                <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
-                <div class="ml-auto">
+            <div class="d-flex mb-6">
+                <div class="ma-2 pa-2 me-auto">
+                    <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
+                </div>
+                <div class="ma-2 pa-2">
+                    <v-btn :size="24" @click="capturePng">
+                        <Icon icon="iconoir:screenshot" width="24" height="24" />
+                    </v-btn>
+                </div>
+                <div class="ma-2 pa-2">
                     <ProcessMenu :size="24" :type="type" @add="addProcess" />
                 </div>
             </div>
             <!-- 스위칭 필요 1 -->
-            <div v-if="!currentRouteId" class="pa-5">
+            <div v-if="!currentRouteId" id="processMap" class="pa-5">
                 <draggable v-if="enableEdit"
                     class="v-row dragArea list-group" 
                     :list="value.mega_proc_list" 
@@ -17,17 +24,9 @@
                     group="megaProcess"
                 >
                     <transition-group>
-                        <v-col v-for="item in value.mega_proc_list"
-                            :key="item.id" 
-                            class="cursor-pointer"
-                            cols="12" md="2" sm="6"
-                        >
-                            <MegaProcess 
-                                :value="item" 
-                                :parent="value" 
-                                :storage="storage" 
-                                @view="goProcess"
-                            />
+                        <v-col v-for="item in value.mega_proc_list" :key="item.id" class="cursor-pointer" cols="12"
+                            md="2" sm="6">
+                            <MegaProcess :value="item" :parent="value" :storage="storage" @view="goProcess" />
                         </v-col>
                     </transition-group>
                 </draggable>
@@ -55,6 +54,7 @@ import MegaProcess from './MegaProcess.vue';
 import ProcessMenu from './ProcessMenu.vue';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import ViewProcessDetails from './ViewProcessDetails.vue'
+import domtoimage from 'dom-to-image';
 
 const storageKey = 'configuration'
 
@@ -101,6 +101,54 @@ export default {
         }
     },
     methods: {
+        capturePng() {
+            var node = document.getElementById('processMap');
+            domtoimage.toPng(node)
+                .then(function (dataUrl) {
+                    const link = document.createElement('a');
+                    // Set the link's href to the data URL of the PNG image
+                    link.href = dataUrl;
+                    // Configure the download attribute of the link
+                    link.download = 'processMap.png';
+                    // Append the link to the body
+                    document.body.appendChild(link);
+                    // Trigger the download by simulating a click on the link
+                    link.click();
+                    // Remove the link from the body
+                    document.body.removeChild(link);
+                })
+                .catch(function (error) {
+                    console.error('oops, something went wrong!', error);
+                });
+        },
+        goHistory(idx) {
+            this.updateBpmn(this.subProcessBreadCrumb[idx].xml);
+            this.removeHistoryAfterIndex(idx)
+        },
+        removeHistoryAfterIndex(index) {
+            if (index < 0 || index >= this.subProcessBreadCrumb.length) {
+                console.error("Invalid index");
+                return;
+            }
+            this.subProcessBreadCrumb.splice(index + 1);
+        },
+        updateBpmn(bpmn) {
+            this.bpmn = bpmn
+            this.defCnt++
+        },
+        async openSubProcess(e) {
+            let me = this;
+            if (e.extensionElements?.values[0]?.definition) {
+                console.log(e.extensionElements.values[0].definition)
+                const defInfo = await this.storage.getObject(`proc_def/${e.extensionElements.values[0].definition}`, { key: "name" });
+                if (defInfo) {
+                    let obj = { processName: e.extensionElements.values[0].definition, xml: defInfo.bpmn }
+                    me.subProcessBreadCrumb.push(obj)
+                    me.selectedSubProcess = e.extensionElements.values[0].definition
+                    me.updateBpmn(defInfo.bpmn)
+                }
+            }
+        },
         async getProcessMap() {
             const procMap = await this.storage.getObject(storageKey + '/proc_map', { key: 'key' });
             if (procMap && procMap.value) {

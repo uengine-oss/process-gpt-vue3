@@ -40,7 +40,7 @@
 </template>
 
 <script>
-    import BpmnPropertyPanel from '../../BpmnPropertyPanel.vue'
+    import BpmnPropertyPanel from '../../panel/BpmnPropertyPanel.vue'
 
     export default {
         mixins: [BpmnPropertyPanel],

@@ -74,7 +74,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="item in copyProcessDefinition.data" :key="item.name">
+                            <tr v-for="item in processVariables" :key="item.name">
                                 <td class="text-subtitle-1">{{ item.name }}</td>
                                 <td>
                                     {{ item.type }}
@@ -154,10 +154,9 @@ import { VDataTable } from 'vuetify/labs/VDataTable';
 import BpmnLLM from './BpmnLLM.vue';
 import BpmnuEngine from './BpmnUengine.vue';
 import customBpmnModule from './customBpmn';
-import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/BpmnPropertyPanel.vue';
+import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
-
-
+import { useBpmnStore } from '@/stores/bpmn';
 
 export default {
     name: 'ProcessDefinition',
@@ -192,10 +191,29 @@ export default {
         editedItem: null,
         lastEditedIndex: 0,
         editComponentKey: 0,
+        bpmnModeler: null
+
     }),
     computed: {
         mode() {
             return window.$mode
+        },
+        processVariables() {
+            let variables = []
+            this.definitions.rootElements.forEach(root => {
+                if (root.$type.includes("Process")) {
+                    if (root.extensionElements.values[0].variables) {
+                        root.extensionElements.values[0].variables.forEach((variable) => {
+                            let obj = {
+                                "name": variable.$attrs.name,
+                                "type": variable.$attrs.type,
+                            }
+                            variables.push(obj)
+                        })
+                    }
+                }
+            })
+            return variables
         }
     },
     watch: {
@@ -235,7 +253,10 @@ export default {
             }
         }
     },
-    created() { },
+    created() {
+        const store = useBpmnStore();
+        this.bpmnModeler = store.getModeler;
+    },
     mounted() {
         // Initial Data
         if (this.processDefinition)
@@ -257,6 +278,38 @@ export default {
             }
     },
     methods: {
+        addUengineVariable(name, type) {
+            // definitions 객체에서 bpmn2:process 요소를 찾습니다.
+            const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
+            const processElement = this.definitions.rootElements.find(element => element.$type === 'bpmn:Process');
+            if (!processElement) {
+                console.error('bpmn:Process element not found');
+                return;
+            }
+
+            // bpmn2:process 요소 내의 bpmn2:extensionElements 요소를 찾거나 새로 생성합니다.
+            let extensionElements = processElement.extensionElements;
+            if (!extensionElements) {
+                extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
+                processElement.extensionElements = extensionElements;
+            }
+
+            // uengine:properties 요소를 찾거나 새로 생성합니다.
+            let uengineProperties = extensionElements.values.find(val => val.$type === 'uengine:properties');
+            if (!uengineProperties) {
+                uengineProperties = bpmnFactory.create('uengine:properties');
+                extensionElements.get('values').push(uengineProperties);
+            }
+
+            // 새로운 uengine:variable 요소를 생성하고 속성을 설정합니다.
+            const newVariable = bpmnFactory.create('uengine:variable', {
+                name: name,
+                type: type
+            });
+
+            // 생성된 uengine:variable 요소를 uengine:properties 요소에 추가합니다.
+            uengineProperties.get('variables').push(newVariable);
+        },
         openSubProcess(e) {
             this.$emit('openSubProcess', e)
         },
@@ -395,16 +448,11 @@ export default {
             this.processVariblesWindow = !this.processVariblesWindow
         },
         updateElement(element) {
-            // let 
-            // this.convertElementToJSON(element);
-            // this.changeElement(this.copyProcessDefinition, 'id', newObj.id, newObj)
-            // obj = newObj
             this.$emit('update')
         },
         openPanel(id) {
             this.panel = true;
             this.element = this.findElement(this.definitions, 'id', id);
-
             this.$refs.bpmnVue.extendUEngineProperties(this.element)
         },
         closePanel() {

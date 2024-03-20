@@ -263,7 +263,7 @@
                 @input="handleTextareaInput">
                 <template v-slot:append-inner>
                     <div style="height: -webkit-fill-available; margin-right: 10px; margin-top: 10px;">
-                        <v-btn v-if="!isLoading" icon variant="text" type="submit" @click="beforeSend"
+                        <v-btn v-if="!isLoading" class="cp-send" icon variant="text" type="submit" @click="beforeSend"
                             style="width:30px; height:30px;" :disabled="!newMessage">
                             <Icon icon="teenyicons:send-outline" width="20" height="20" />
                         </v-btn>
