@@ -1,10 +1,16 @@
 <template>
     <div>
         <v-card elevation="10" style="height:calc(100vh - 155px); overflow: auto;">
-            <div class="pt-5 pl-6 pr-6 d-flex align-center">
-                <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
-                <v-btn @click="capturePng">Capture</v-btn>
-                <div class="ml-auto">
+            <div class="d-flex mb-6">
+                <div class="ma-2 pa-2 me-auto">
+                    <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
+                </div>
+                <div class="ma-2 pa-2">
+                    <v-btn :size="24" @click="capturePng">
+                        <Icon icon="iconoir:screenshot" width="24" height="24" />
+                    </v-btn>
+                </div>
+                <div class="ma-2 pa-2">
                     <ProcessMenu :size="24" :type="type" @add="addProcess" />
                 </div>
             </div>
