@@ -6,31 +6,31 @@
                 <DotsVerticalIcon v-else :size="size" />
                 <v-menu activator="parent">
                     <v-list density="compact" class="cursor-pointer">
-                        <v-list-item v-if="type != 'sub'">
-                            <v-list-item-title @click="openDialog('add')">
-                                {{ addType.toUpperCase() }} 프로세스 추가
+                        <v-list-item v-if="type != 'sub'" @click="openDialog('add')">
+                            <v-list-item-title>
+                                <span v-if="addType != 'sub'">{{ addType.toUpperCase() }}</span> 프로세스 추가
                             </v-list-item-title>
                         </v-list-item>
-                        <v-list-item v-else>
-                            <v-list-item-title @click="editProcess">
+                        <v-list-item v-else @click="editProcess">
+                            <v-list-item-title>
                                 프로세스 편집
                             </v-list-item-title>
                         </v-list-item>
-                        <v-list-item v-if="type != 'map'">
-                            <v-list-item-title @click="openDialog('update')">
+                        <v-list-item v-if="type != 'map'" @click="openDialog('update')">
+                            <v-list-item-title>
                                 수정
                             </v-list-item-title>
                         </v-list-item>
-                        <v-list-item v-if="type != 'map'">
-                            <v-list-item-title @click="deleteProcess">
+                        <v-list-item v-if="type != 'map'" @click="deleteProcess">
+                            <v-list-item-title>
                                 삭제
                             </v-list-item-title>
                         </v-list-item>
-                        <!-- <v-list-item v-if="type != 'map'">
-                            <v-list-item-title @click="deleteProcess">
+                        <v-list-item v-if="type == 'mega'" @click="openViewProcessDetails(process)">
+                            <v-list-item-title>
                                 상세보기
                             </v-list-item-title>
-                        </v-list-item> -->
+                        </v-list-item>
                     </v-list>
                 </v-menu>
             </v-btn>
@@ -134,9 +134,11 @@ export default {
             id: "",
             label: ""
         },
+        selectedProcessId: "",
         isNewDef: false,
         definitions: [],
         enableEdit: null,
+        
     }),
     computed: {
         addType() {
@@ -181,6 +183,9 @@ export default {
                 this.definitions = await this.storage.list(`proc_def`);
             }
         },
+        openViewProcessDetails(process) {
+            this.$router.push(`/definition-map/mega/${process.id}`);
+        },
         addProcess() {
             if (this.newProcess.id != '' && this.newProcess.label != '') {
                 this.$emit("add", this.newProcess);
@@ -196,6 +201,7 @@ export default {
                 };
                 this.addDialog = true;
             } else if(type == 'update') {
+                this.selectedProcessId = this.process.id;
                 this.newProcess.id = this.process.id;
                 this.newProcess.label = this.process.label;
                 this.updateDialog = true;
@@ -203,7 +209,7 @@ export default {
         },
         updateProcess() {
             if (this.newProcess.id != '' && this.newProcess.label != '') {
-                this.$emit("edit", this.newProcess);
+                this.$emit("edit", this.newProcess, this.type, this.selectedProcessId);
                 this.closeDialog('update');
             }
         },

@@ -57,7 +57,7 @@ function validate(values: any, { setErrors }: any) {
         ></VTextField>
         <div class="d-flex flex-wrap align-center my-3 ml-n2">
             <v-checkbox v-model="checkbox" :rules="[(v:any) => !!v || 'You must agree to continue!']" required hide-details color="primary">
-                <template v-slot:label class="">{{ $t('loginPage.remeber') }}</template>
+                <template v-slot:label>{{ $t('loginPage.remeber') }}</template>
             </v-checkbox>
         </div>
         <v-btn class="cp-login" size="large" rounded="pill" :loading="isSubmitting" color="primary" block type="submit" flat>{{ $t('loginPage.login') }}</v-btn>

@@ -1,0 +1,253 @@
+<template>
+    <div>
+        <!-- Mega Process -->
+        <div class="d-flex align-items-center">
+            <v-card class="d-flex justify-center align-center pa-3 mb-3 bg-lightwarning"
+                elevation="10"
+                style="border-radius: 10px; width:200px; flex-shrink: 0;"
+            >
+                <div class="d-flex flex-column justify-content-center align-items-center">
+                    <h6 class="text-h6 font-weight-semibold text-center">
+                        Mega<br>Proces
+                    </h6>
+                </div>
+            </v-card>
+            <div class="line-with-dots d-flex">
+                <div class="dot"></div>
+                <div class="line flex-grow-1"></div>
+                <div class="dot"></div>
+            </div>
+            <v-card class="d-flex align-center pa-3 mb-3 bg-lightwarning"
+                elevation="10"
+                style="border-radius: 10px !important;"
+            >
+                <h6 class="text-h6 font-weight-semibold text-center">{{ filteredProcess.label }}</h6>
+                <div class="ml-auto">
+                    <ProcessMenu
+                        :size="20"
+                        :type="'mega'"
+                        :process="filteredProcess"
+                        :storage="storage"
+                        @add="addProcess"
+                        @edit="editProcess"
+                        @delete="deleteProcess"
+                    />
+                </div>
+            </v-card>
+        </div>
+        <!-- major Process -->
+        <div class="d-flex align-items-center" v-if="filteredProcess && filteredProcess.major_proc_list && filteredProcess.major_proc_list.length > 0">
+            <v-card class="d-flex justify-center align-center pa-3 mb-3 bg-lightsecondary"
+                elevation="10"
+                style="border-radius: 10px; width:200px; flex-shrink: 0;"
+            >
+                <div class="d-flex flex-column justify-content-center align-items-center">
+                    <h6 class="text-h6 font-weight-semibold text-center">
+                        Major<br>Proces
+                    </h6>
+                </div>
+            </v-card>
+            <div class="line-with-dots d-flex">
+                <div class="dot"></div>
+                <div class="line flex-grow-1"></div>
+                <div class="dot"></div>
+            </div>
+            <template v-for="(majorProc, index) in filteredProcess.major_proc_list" :key="index">
+                <v-card 
+                    class="d-flex justify-center align-center pa-3 mb-3 bg-lightsecondary last-no-margin"
+                    elevation="10"
+                    style="border-radius: 10px !important;"
+                >
+                    <div class="d-flex flex-column justify-content-center align-items-center">
+                        <h6 class="text-h6 font-weight-semibold text-center">{{ majorProc.label }}</h6>
+                    </div>
+                    <div class="ml-auto">
+                        <ProcessMenu
+                            :size="20"
+                            :type="'major'"
+                            :process="majorProc"
+                            :storage="storage"
+                            @add="addProcess"
+                            @edit="editProcess"
+                            @delete="deleteProcess"
+                        />
+                    </div>
+                </v-card>
+            </template>
+        </div>
+
+        <!-- sub Process -->
+        <div class="d-flex align-items-center" v-if="filteredProcess && filteredProcess.major_proc_list && filteredProcess.major_proc_list.some(proc => proc.sub_proc_list && proc.sub_proc_list.length > 0)">
+            <v-card class="d-flex justify-center align-center pa-3 mb-3 bg-white"
+                elevation="10"
+                style="border-radius: 10px; width:200px; flex-shrink: 0;"
+            >
+                <div class="justify-content-center align-items-center">
+                    <h6 class="text-h6 font-weight-semibold text-center">
+                        Sub<br>Proces
+                    </h6>
+                </div>
+            </v-card>
+            <div class="line-with-dots d-flex">
+                <div class="dot"></div>
+                <div class="line flex-grow-1"></div>
+                <div class="dot"></div>
+            </div>
+            <template v-for="(subProcRow, subIndex) in filteredProcess.major_proc_list" :key="subIndex">
+                <v-col class="ma-0 pa-0 last-no-margin">
+                    <template v-for="(subProc, index) in subProcRow.sub_proc_list" :key="`sub-${subIndex}-${index}`">
+                        <v-card 
+                            class="d-flex align-center pa-3 mb-3 bg-white"
+                            elevation="10"
+                            style="border-radius: 10px !important;"
+                        >
+                            <div class="d-flex flex-column justify-content-center align-items-center">
+                                <h6 class="text-h6 font-weight-semibold text-center">{{ subProc.label }}</h6>
+                            </div>
+                            <div class="ml-auto">
+                                <ProcessMenu
+                                    :size="20"
+                                    :type="'sub'"
+                                    :process="subProc"
+                                    :storage="storage"
+                                    @add="addProcess"
+                                    @edit="editProcess"
+                                    @delete="deleteProcess"
+                                />
+                            </div>
+                        </v-card>
+                    </template>
+                </v-col>
+            </template>
+        </div>
+    </div>
+</template>
+
+<script>
+import ProcessMenu from './ProcessMenu.vue';
+
+export default {
+    components: {
+        ProcessMenu
+    },
+    props: {
+        value: Object,
+        parent: Object,
+        storage: Object,
+    },
+    data() {
+        return {
+            processDetails: null, // 프로세스 상세 정보를 저장할 변수
+            processPath: null, // 라우트 파라미터에서 받아온 process ID
+        };
+    },
+    created() {
+        this.processPath = this.$route.params.id;
+    },
+    computed: {
+        filteredProcess() {
+            if (!this.parent || !this.parent.mega_proc_list) return null;
+            return this.parent.mega_proc_list.find(process => process.id === this.processPath);
+        }
+    },
+    watch: {
+        '$route.params.id': {
+            immediate: true,
+            handler(newValue, oldValue) {
+                if(newValue !== oldValue && newValue !== undefined) {
+                    this.processPath = newValue;
+                    // 현재 URL이 이미 목표 URL과 동일한지 확인
+                    const targetPath = `/definition-map/mega/${newValue}`;
+                    if (this.$route.path !== targetPath) {
+                        this.$router.push(targetPath);
+                    }
+                }
+            },
+        },
+        'processPath'(newId) {
+            if (newId !== undefined) {
+                // 현재 URL이 이미 목표 URL과 동일한지 확인
+                const targetPath = `/definition-map/mega/${newId}`;
+                if (this.$route.path !== targetPath) {
+                    this.$router.replace(targetPath); // push 대신 replace 사용
+                }
+            }
+        }
+    },
+    methods: {
+        addProcess(newProcess) {
+            var newSubProc = {
+                id: newProcess.id,
+                label: newProcess.label,
+            };
+            this.parent.sub_proc_list.push(newSubProc);
+        },
+        editProcess(process, type, selectedProcessId) {
+            if (type === 'mega') {
+                // this.processId를 사용하여 현재 선택된 Mega Process를 찾습니다.
+                let targetMega = this.parent.mega_proc_list.find(proc => proc.id === selectedProcessId);
+                if (targetMega) {
+                    // 찾은 객체를 process 객체의 값으로 업데이트합니다.
+                    targetMega.id = process.id;
+                    targetMega.label = process.label;
+                    this.processPath = process.label;
+                }
+            } else if (type === 'major') {
+                // Major Process 수정 로직
+                this.parent.mega_proc_list.forEach(megaProc => {
+                    let targetMajor = megaProc.major_proc_list.find(major => major.id === selectedProcessId);
+                    if (targetMajor) {
+                        targetMajor.id = process.id;
+                        targetMajor.label = process.label;
+                    }
+                });
+            } else if (type === 'sub') {
+                // Sub Process 수정 로직
+                this.parent.mega_proc_list.forEach(megaProc => {
+                    megaProc.major_proc_list.forEach(majorProc => {
+                        let targetSub = majorProc.sub_proc_list.find(sub => sub.id === selectedProcessId);
+                        if (targetSub) {
+                            targetSub.id = process.id;
+                            targetSub.label = process.label;
+                        }
+                    });
+                });
+            }
+        },
+        deleteProcess() {
+            this.parent.major_proc_list = this.parent.major_proc_list.filter(item => item.id != this.parent.id);
+        },
+    },
+}
+</script>
+
+<style>
+.text-h6 {
+    text-align: center !important;
+}
+
+.last-no-margin:not(:last-child) {
+    margin-right: 10px !important;
+}
+
+.line-with-dots {
+    display: flex;
+    align-items: center;
+    margin-top:-1%;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: black;
+    opacity: 0.5;
+}
+
+.line {
+    width: 30px;
+    flex-grow: 0.5; /* 선이 남은 공간을 모두 차지하도록 설정 */
+    border-top: 2px dotted black; /* 점선 생성 */
+    height: 2px; /* 선의 높이 설정 */
+}
+</style>

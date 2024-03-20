@@ -7,7 +7,8 @@
                     <ProcessMenu :size="24" :type="type" @add="addProcess" />
                 </div>
             </div>
-            <div class="pa-5">
+            <!-- 스위칭 필요 1 -->
+            <div v-if="!currentRouteId" class="pa-5">
                 <draggable v-if="enableEdit"
                     class="v-row dragArea list-group" 
                     :list="value.mega_proc_list" 
@@ -36,6 +37,14 @@
                     </v-col>
                 </v-row>
             </div>
+            <!-- 스위칭 필요2 -->
+            <router-view v-else>
+                <ViewProcessDetails
+                    class="pa-5"
+                    :parent="value" 
+                    :storage="storage" 
+                />
+            </router-view>
         </v-card>
     </div>
 </template>
@@ -45,6 +54,7 @@ import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import MegaProcess from './MegaProcess.vue';
 import ProcessMenu from './ProcessMenu.vue';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
+import ViewProcessDetails from './ViewProcessDetails.vue'
 
 const storageKey = 'configuration'
 
@@ -52,7 +62,8 @@ export default {
     components: {
         ProcessMenu,
         MegaProcess,
-        ProcessDefinition
+        ProcessDefinition,
+        ViewProcessDetails
     },
     data: () => ({
         storage: null,
@@ -61,6 +72,7 @@ export default {
         },
         type: 'map',
         enableEdit: false,
+        currentRouteId: null,
     }),
     watch: {
         //TODO: 변경 후 즉시 저장하면 안됩니다. 검토 완료 후 저장되어야 해서 저장 버튼으로 대체
@@ -71,6 +83,10 @@ export default {
                     this.saveProcess()
                 }
             }
+        },
+        '$route'(to) {
+            // 라우트가 변경될 때마다 currentRouteId 상태 업데이트
+            this.currentRouteId = to.params.id || null;
         }
     },
     created() {
