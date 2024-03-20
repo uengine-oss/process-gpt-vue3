@@ -226,7 +226,8 @@ export default {
             }
         },
         deleteProcess() {
-            this.$emit("delete");
+            this.selectedProcessId = this.process.id;
+            this.$emit("delete", this.type, this.selectedProcessId);
         },
         editProcess() {
             this.$emit("modeling");

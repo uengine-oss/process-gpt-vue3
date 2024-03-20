@@ -185,7 +185,7 @@ export default {
         editProcess(process, type, selectedProcessId) {
             if (type === 'mega') {
                 // this.processId를 사용하여 현재 선택된 Mega Process를 찾습니다.
-                let targetMega = this.parent.mega_proc_list.find(proc => proc.id === selectedProcessId);
+                let targetMega = this.parent.mega_proc_list.find(mega => mega.id === selectedProcessId);
                 if (targetMega) {
                     // 찾은 객체를 process 객체의 값으로 업데이트합니다.
                     targetMega.id = process.id;
@@ -214,8 +214,23 @@ export default {
                 });
             }
         },
-        deleteProcess() {
-            this.parent.major_proc_list = this.parent.major_proc_list.filter(item => item.id != this.parent.id);
+        deleteProcess(type, selectedProcessId) {
+            if (type === 'mega') {
+                // 'mega' 타입 프로세스 삭제
+                this.parent.mega_proc_list = this.parent.mega_proc_list.filter(proc => proc.id !== selectedProcessId);
+            } else if (type === 'major') {
+                // 'major' 타입 프로세스 삭제
+                this.parent.mega_proc_list.forEach(megaProc => {
+                    megaProc.major_proc_list = megaProc.major_proc_list.filter(major => major.id !== selectedProcessId);
+                });
+            } else if (type === 'sub') {
+                // 'sub' 타입 프로세스 삭제
+                this.parent.mega_proc_list.forEach(megaProc => {
+                    megaProc.major_proc_list.forEach(majorProc => {
+                        majorProc.sub_proc_list = majorProc.sub_proc_list.filter(sub => sub.id !== selectedProcessId);
+                    });
+                });
+            }
         },
     },
 }
