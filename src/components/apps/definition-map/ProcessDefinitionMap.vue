@@ -1,7 +1,7 @@
 <template>
     <div>
         <v-card elevation="10" style="height:calc(100vh - 155px); overflow: auto;">
-            <div class="d-flex mb-6">
+            <div class="d-flex">
                 <div class="ma-2 pa-2 me-auto">
                     <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
                 </div>
