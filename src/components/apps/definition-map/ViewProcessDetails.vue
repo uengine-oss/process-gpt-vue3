@@ -27,6 +27,7 @@
                         :type="'mega'"
                         :process="filteredProcess"
                         :storage="storage"
+                        :lock="lock"
                         @add="addProcess"
                         @edit="editProcess"
                         @delete="deleteProcess"
@@ -65,6 +66,7 @@
                             :type="'major'"
                             :process="majorProc"
                             :storage="storage"
+                            :lock="lock"
                             @add="addProcess"
                             @edit="editProcess"
                             @delete="deleteProcess"
@@ -107,6 +109,7 @@
                                     :type="'sub'"
                                     :process="subProc"
                                     :storage="storage"
+                                    :lock="lock"
                                     @add="addProcess"
                                     @edit="editProcess"
                                     @delete="deleteProcess"
@@ -131,6 +134,7 @@ export default {
         value: Object,
         parent: Object,
         storage: Object,
+        lock: Boolean,
     },
     data() {
         return {

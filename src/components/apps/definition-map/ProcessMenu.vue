@@ -1,9 +1,9 @@
 <template>
-    <div v-if="enableEdit">
+    <div v-if="lock">
         <div class="d-flex">
             <v-btn icon variant="text" :width="size" :height="size">
-                <PlusIcon v-if="type == 'map'" :size="size" />
-                <DotsVerticalIcon v-else :size="size" />
+                <PlusIcon v-if="type == 'map' && lock" :size="size" />
+                <DotsVerticalIcon v-if="type != 'map' && lock" :size="size" />
                 <v-menu activator="parent">
                     <v-list density="compact" class="cursor-pointer">
                         <v-list-item v-if="type != 'sub'" @click="openDialog('add')">
@@ -126,6 +126,7 @@ export default {
         type: String,
         process: Object,
         storage: Object,
+        lock: Boolean,
     },
     data: () => ({
         addDialog: false,
@@ -137,8 +138,6 @@ export default {
         selectedProcessId: "",
         isNewDef: false,
         definitions: [],
-        enableEdit: null,
-        
     }),
     computed: {
         addType() {
@@ -168,13 +167,6 @@ export default {
         }
     },
     created() {
-        const isAdmin = localStorage.getItem("isAdmin");
-        if (isAdmin == "true") {
-            this.enableEdit = true;
-        } else {
-            this.enableEdit = false;
-        }
-
         this.init();
     },
     methods: {
