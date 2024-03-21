@@ -40,7 +40,7 @@
                         class="ml-3"
                         :size="24" 
                         :type="type" 
-                        :enableEdit="lock"
+                        :lock="lock"
                         @add="addProcess" 
                     />
                 </div>
@@ -65,7 +65,7 @@
                                 :value="item" 
                                 :parent="value" 
                                 :storage="storage" 
-                                :enableEdit="lock"
+                                :lock="lock"
                                 @view="goProcess"
                             />
                         </v-col>
@@ -77,7 +77,7 @@
                             :value="item" 
                             :parent="value" 
                             :storage="storage" 
-                            :enableEdit="lock"
+                            :lock="lock"
                             @view="goProcess"
                         />
                     </v-col>
@@ -87,8 +87,9 @@
             <router-view v-else>
                 <ViewProcessDetails
                     class="pa-5"
-                    :parent="value" 
-                    :storage="storage" 
+                    :parent="value"
+                    :storage="storage"
+                    :lock="lock"
                 />
             </router-view>
         </v-card>

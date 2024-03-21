@@ -11,7 +11,7 @@
                 :type="type"
                 :process="value"
                 :storage="storage"
-                :enableEdit="enableEdit"
+                :lock="lock"
                 @edit="editProcess"
                 @delete="deleteProcess"
                 @modeling="editProcessModel"
@@ -31,7 +31,7 @@ export default {
         value: Object,
         parent: Object,
         storage: Object,
-        enableEdit: Boolean,
+        lock: Boolean,
     },
     data: () => ({
         type: 'sub',
