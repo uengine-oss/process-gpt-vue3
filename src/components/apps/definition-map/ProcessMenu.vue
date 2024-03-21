@@ -188,11 +188,12 @@ export default {
         },
         addProcess() {
             if (this.newProcess.id != '' && (this.newProcess.name != '' || this.newProcess.label != '')) {
-                this.$emit("add", this.newProcess);
+                this.$emit("add", this.newProcess, this.type, this.selectedProcessId);
                 this.closeDialog('add');
             }
         },
         openDialog(type) {
+            this.selectedProcessId = this.process.id;
             if (type == 'add') {
                 this.newProcess = {
                     id: "",
@@ -201,7 +202,6 @@ export default {
                 };
                 this.addDialog = true;
             } else if(type == 'update') {
-                this.selectedProcessId = this.process.id;
                 this.newProcess.id = this.process.id;
                 this.newProcess.label = this.process.label;
                 this.updateDialog = true;
@@ -226,7 +226,6 @@ export default {
             }
         },
         deleteProcess() {
-            this.selectedProcessId = this.process.id;
             this.$emit("delete", this.type, this.selectedProcessId);
         },
         editProcess() {

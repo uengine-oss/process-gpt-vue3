@@ -2,9 +2,8 @@
     <div>
         <!-- Mega Process -->
         <div class="d-flex align-items-center">
-            <v-card class="d-flex justify-center align-center pa-3 mb-3 bg-lightwarning"
+            <v-card class="d-flex justify-center align-center pa-3 mb-3 bg-lightwarning details-title-card"
                 elevation="10"
-                style="border-radius: 10px; width:200px; flex-shrink: 0;"
             >
                 <div class="d-flex flex-column justify-content-center align-items-center">
                     <h6 class="text-h6 font-weight-semibold text-center">
@@ -37,9 +36,8 @@
         </div>
         <!-- major Process -->
         <div class="d-flex align-items-center" v-if="filteredProcess && filteredProcess.major_proc_list && filteredProcess.major_proc_list.length > 0">
-            <v-card class="d-flex justify-center align-center pa-3 mb-3 bg-lightsecondary"
+            <v-card class="d-flex justify-center align-center pa-3 mb-3 bg-lightsecondary details-title-card"
                 elevation="10"
-                style="border-radius: 10px; width:200px; flex-shrink: 0;"
             >
                 <div class="d-flex flex-column justify-content-center align-items-center">
                     <h6 class="text-h6 font-weight-semibold text-center">
@@ -78,9 +76,8 @@
 
         <!-- sub Process -->
         <div class="d-flex align-items-center" v-if="filteredProcess && filteredProcess.major_proc_list && filteredProcess.major_proc_list.some(proc => proc.sub_proc_list && proc.sub_proc_list.length > 0)">
-            <v-card class="d-flex justify-center align-center pa-3 mb-3 bg-white"
+            <v-card class="d-flex justify-center align-center pa-3 mb-3 bg-white details-title-card"
                 elevation="10"
-                style="border-radius: 10px; width:200px; flex-shrink: 0;"
             >
                 <div class="justify-content-center align-items-center">
                     <h6 class="text-h6 font-weight-semibold text-center">
@@ -175,12 +172,33 @@ export default {
         }
     },
     methods: {
-        addProcess(newProcess) {
-            var newSubProc = {
-                id: newProcess.id,
-                label: newProcess.label,
-            };
-            this.parent.sub_proc_list.push(newSubProc);
+        addProcess(newProcess, type, selectedProcessId) {
+            if (type === 'mega') {
+                // 'mega' 프로세스에 'major' 프로세스 추가
+                if (!this.filteredProcess.major_proc_list) {
+                    this.filteredProcess.major_proc_list = [];
+                }
+                this.filteredProcess.major_proc_list.push({
+                    id: newProcess.id,
+                    label: newProcess.label,
+                    sub_proc_list: [] // 새로운 'major' 프로세스에는 초기화된 'sub_proc_list' 포함
+                });
+            } else if (type === 'major') {
+                // 'major' 프로세스에 'sub' 프로세스 추가
+                // selectedProcessId를 사용하여 현재 선택된 'major' 프로세스를 찾습니다.
+                const majorProc = this.filteredProcess.major_proc_list.find(major => major.id === selectedProcessId);
+                if (majorProc) {
+                    if (!majorProc.sub_proc_list) {
+                        majorProc.sub_proc_list = [];
+                    }
+                    majorProc.sub_proc_list.push({
+                        id: newProcess.id,
+                        label: newProcess.label
+                    });
+                } else {
+                    console.error('Major process not found for the given selectedProcessId');
+                }
+            }
         },
         editProcess(process, type, selectedProcessId) {
             if (type === 'mega') {
@@ -237,6 +255,11 @@ export default {
 </script>
 
 <style>
+.details-title-card {
+    border-radius: 10px;
+    width:150px;
+    flex-shrink: 0;
+}
 .text-h6 {
     text-align: center !important;
 }
