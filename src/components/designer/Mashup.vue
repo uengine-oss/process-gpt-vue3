@@ -2,6 +2,8 @@
   <div>
     <div id="kEditor1">
     </div>
+
+    <dynamic-form :content="content"></dynamic-form>
   
   </div>
 </template>
@@ -11,6 +13,7 @@
 // import Containers from './Containers';
 
 import axios from 'axios';
+import DynamicForm from './DynamicForm.vue';
 export default {
   name: 'mash-up',
   props: {
@@ -23,8 +26,10 @@ export default {
   },
   data: () => ({
     kEditor: null,
+    content: `<h1>test</h1><text-field></text-field>`
   }),
   components: {
+    DynamicForm
     // "snippets":Snippets,
     // Containers
   },
