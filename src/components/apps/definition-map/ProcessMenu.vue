@@ -2,8 +2,8 @@
     <div v-if="lock">
         <div class="d-flex">
             <v-btn icon variant="text" :width="size" :height="size">
-                <PlusIcon v-if="type == 'map' && lock" :size="size" />
-                <DotsVerticalIcon v-if="type != 'map' && lock" :size="size" />
+                <PlusIcon v-if="type == 'map'" :size="size" />
+                <DotsVerticalIcon v-if="type != 'map'" :size="size" />
                 <v-menu activator="parent">
                     <v-list density="compact" class="cursor-pointer">
                         <v-list-item v-if="type != 'sub'" @click="openDialog('add')">
