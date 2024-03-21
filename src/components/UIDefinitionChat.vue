@@ -10,7 +10,7 @@
                 </div>
             </template>
             <template v-slot:rightpart>
-                <ui-definition style="width: 100%; height: 100%"></ui-definition>
+                <mashup></mashup>
             </template>
 
             <template v-slot:mobileLeftContent>
@@ -25,10 +25,10 @@
 
 <script>
 
-import UIDefinition from '@/components/UIDefinition.vue';
 import ChatDetail from '@/components/apps/chats/ChatDetail.vue';
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
+import Mashup from '@/components/designer/Mashup.vue';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import * as jsondiff from 'jsondiffpatch';
 import ChatModule from './ChatModule.vue';
@@ -49,7 +49,7 @@ export default {
         ChatListing,
         ChatDetail,
         ChatProfile,
-        UIDefinition,
+        Mashup,
         // BpmnModelingCanvas,
         ChatGenerator
     },

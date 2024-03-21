@@ -2,35 +2,35 @@
     <div v-if="enableEdit">
         <div class="d-flex">
             <v-btn icon variant="text" :width="size" :height="size">
-                <PlusIcon v-if="type == 'map'" :size="size" />
-                <DotsVerticalIcon v-else :size="size" />
+                <PlusIcon v-if="type == 'map' && !isViewDetails" :size="size" />
+                <DotsVerticalIcon v-if="type != 'map' && !isViewDetails" :size="size" />
                 <v-menu activator="parent">
                     <v-list density="compact" class="cursor-pointer">
-                        <v-list-item v-if="type != 'sub'">
-                            <v-list-item-title @click="openDialog('add')">
-                                {{ addType.toUpperCase() }} 프로세스 추가
+                        <v-list-item v-if="type != 'sub'" @click="openDialog('add')">
+                            <v-list-item-title>
+                                <span v-if="addType != 'sub'">{{ addType.toUpperCase() }}</span> 프로세스 추가
                             </v-list-item-title>
                         </v-list-item>
-                        <v-list-item v-else>
-                            <v-list-item-title @click="editProcess">
+                        <v-list-item v-else @click="editProcess">
+                            <v-list-item-title>
                                 프로세스 편집
                             </v-list-item-title>
                         </v-list-item>
-                        <v-list-item v-if="type != 'map'">
-                            <v-list-item-title @click="openDialog('update')">
+                        <v-list-item v-if="type != 'map'" @click="openDialog('update')">
+                            <v-list-item-title>
                                 수정
                             </v-list-item-title>
                         </v-list-item>
-                        <v-list-item v-if="type != 'map'">
-                            <v-list-item-title @click="deleteProcess">
+                        <v-list-item v-if="type != 'map'" @click="deleteProcess">
+                            <v-list-item-title>
                                 삭제
                             </v-list-item-title>
                         </v-list-item>
-                        <!-- <v-list-item v-if="type != 'map'">
-                            <v-list-item-title @click="deleteProcess">
+                        <v-list-item v-if="type == 'mega'" @click="openViewProcessDetails(process)">
+                            <v-list-item-title>
                                 상세보기
                             </v-list-item-title>
-                        </v-list-item> -->
+                        </v-list-item>
                     </v-list>
                 </v-menu>
             </v-btn>
@@ -126,7 +126,7 @@ export default {
         type: String,
         process: Object,
         storage: Object,
-        enableEdit: Boolean,
+        isViewDetails: Boolean,
     },
     data: () => ({
         addDialog: false,
@@ -135,6 +135,7 @@ export default {
             id: "",
             label: ""
         },
+        selectedProcessId: "",
         isNewDef: false,
         definitions: [],
     }),
@@ -174,13 +175,17 @@ export default {
                 this.definitions = await this.storage.list(`proc_def`);
             }
         },
+        openViewProcessDetails(process) {
+            this.$router.push(`/definition-map/mega/${process.id}`);
+        },
         addProcess() {
             if (this.newProcess.id != '' && (this.newProcess.name != '' || this.newProcess.label != '')) {
-                this.$emit("add", this.newProcess);
+                this.$emit("add", this.newProcess, this.type, this.selectedProcessId);
                 this.closeDialog('add');
             }
         },
         openDialog(type) {
+            this.selectedProcessId = this.process.id;
             if (type == 'add') {
                 this.newProcess = {
                     id: "",
@@ -196,7 +201,7 @@ export default {
         },
         updateProcess() {
             if (this.newProcess.id != '' && this.newProcess.label != '') {
-                this.$emit("edit", this.newProcess);
+                this.$emit("edit", this.newProcess, this.type, this.selectedProcessId);
                 this.closeDialog('update');
             }
         },
@@ -213,7 +218,7 @@ export default {
             }
         },
         deleteProcess() {
-            this.$emit("delete");
+            this.$emit("delete", this.type, this.selectedProcessId);
         },
         editProcess() {
             this.$emit("modeling");

@@ -85,6 +85,7 @@ app.use(Maska);
 app.use(VueApexCharts);
 app.use(vuetify).mount('#app');
 app.use(setLocale);
+// 예: 'src/components' 폴더 내의 모든 Vue 컴포넌트를 즉시 import
 
 //ScrollTop Use
 // app.use(VueScrollTo);
