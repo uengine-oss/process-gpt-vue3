@@ -132,7 +132,7 @@
         tabTooltipEnabled: true,
         extraTabs: null,
         defaultComponentType: 'blank',
-        snippetsUrl: 'snippets/default/snippets.html',
+        snippetsUrl: 'snippets/default/snippets.vue',
         snippetsListId: 'keditor-snippets-list',
         snippetsTooltipEnabled: true,
         snippetsTooltipPosition: 'left',

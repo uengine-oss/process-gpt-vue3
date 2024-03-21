@@ -2,7 +2,6 @@
   <div>
     <div id="kEditor1">
     </div>
-  
   </div>
 </template>
 
@@ -32,10 +31,10 @@ export default {
     onchangeKEditor(evt, fnNm) {
       let me = this;
       // alert(fnNm);
-      me.value = me.kEditor[0].children[0].innerHTML;
+      let newValue = me.kEditor[0].children[0].innerHTML;
       console.log("save중  ->", fnNm);
-      this.$emit('value', me.value);
-      this.$emit('change', me.value);
+      this.$emit('value', newValue);
+      this.$emit('change', newValue);
     },
     resetStat() {
       let me = this;
@@ -87,7 +86,8 @@ export default {
         }
 
        
-        axios.get(`/snippets/default/snippets.html`, {headers}).then(function (resp) {
+        const baseUrl = "http://localhost:5173"
+        axios.get(`${baseUrl}/snippets/default/snippets.html`, {headers}).then(function (resp) {
           console.log("axios result", resp);
 
           self.renderSnippets(resp.data);
