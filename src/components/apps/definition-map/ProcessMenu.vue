@@ -2,8 +2,8 @@
     <div v-if="enableEdit">
         <div class="d-flex">
             <v-btn icon variant="text" :width="size" :height="size">
-                <PlusIcon v-if="type == 'map'" :size="size" />
-                <DotsVerticalIcon v-else :size="size" />
+                <PlusIcon v-if="type == 'map' && !isViewDetails" :size="size" />
+                <DotsVerticalIcon v-if="type != 'map' && !isViewDetails" :size="size" />
                 <v-menu activator="parent">
                     <v-list density="compact" class="cursor-pointer">
                         <v-list-item v-if="type != 'sub'" @click="openDialog('add')">
@@ -126,6 +126,7 @@ export default {
         type: String,
         process: Object,
         storage: Object,
+        isViewDetails: Boolean,
     },
     data: () => ({
         addDialog: false,

@@ -11,7 +11,7 @@
                     </v-btn>
                 </div>
                 <div class="ma-2 pa-2">
-                    <ProcessMenu :size="24" :type="type" @add="addProcess" />
+                    <ProcessMenu :size="24" :type="type" :isViewDetails="currentRouteId !== null" @add="addProcess" />
                 </div>
             </div>
             <!-- 스위칭 필요 1 -->
