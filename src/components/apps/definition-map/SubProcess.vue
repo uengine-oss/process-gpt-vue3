@@ -11,6 +11,7 @@
                 :type="type"
                 :process="value"
                 :storage="storage"
+                :enableEdit="enableEdit"
                 @edit="editProcess"
                 @delete="deleteProcess"
                 @modeling="editProcessModel"
@@ -30,12 +31,17 @@ export default {
         value: Object,
         parent: Object,
         storage: Object,
+        enableEdit: Boolean,
     },
     data: () => ({
         type: 'sub',
         definition: null,
     }),
     async created() {
+        var me = this;
+        if (!me.$app.try) {
+            me.$app = me.$app._component.methods;
+        }
         this.definition = await this.storage.getObject(`proc_def/${this.value.id}`, {key: 'id'})
     },
     methods: {
@@ -47,11 +53,15 @@ export default {
             this.parent.sub_proc_list = this.parent.sub_proc_list.filter(item => item.id != this.value.id);
         },
         editProcessModel() {
-            if (this.definition && this.definition.id) {
-                this.$router.push(`/definitions/${this.value.id}`);
-            } else {
-                this.$router.push(`/definitions/chat?id=${this.value.id}&name=${this.value.label}`);
-            }
+            this.$app.try({
+                action: () => {
+                    if (this.definition && this.definition.id) {
+                        this.$router.push(`/definitions/${this.value.id}`);
+                    } else {
+                        this.$router.push(`/definitions/chat?id=${this.value.id}&name=${this.value.label}`);
+                    }
+                },
+            });
         },
         viewProcess() {
             this.$emit('view', this.value);

@@ -13,6 +13,7 @@
                     :type="type"
                     :process="value"
                     :storage="storage"
+                    :enableEdit="enableEdit"
                     @add="addProcess"
                     @edit="editProcess"
                     @delete="deleteProcess"
@@ -36,6 +37,7 @@
                         :value="item" 
                         :parent="value" 
                         :storage="storage"
+                        :enableEdit="enableEdit"
                         @view="viewProcess"
                     />
                 </div>
@@ -49,6 +51,7 @@
                     :value="item" 
                     :parent="value" 
                     :storage="storage"
+                    :enableEdit="enableEdit"
                     @view="viewProcess"
                 />
             </div>
@@ -69,19 +72,11 @@ export default {
         value: Object,
         parent: Object,
         storage: Object,
+        enableEdit: Boolean,
     },
     data: () => ({
         type: 'major',
-        enableEdit: null,
     }),
-    created() {
-        const isAdmin = localStorage.getItem("isAdmin");
-        if (isAdmin == "true") {
-            this.enableEdit = true;
-        } else {
-            this.enableEdit = false;
-        }
-    },
     methods: {
         addProcess(newProcess) {
             var newSubProc = {

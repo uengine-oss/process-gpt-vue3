@@ -126,6 +126,7 @@ export default {
         type: String,
         process: Object,
         storage: Object,
+        enableEdit: Boolean,
     },
     data: () => ({
         addDialog: false,
@@ -136,7 +137,6 @@ export default {
         },
         isNewDef: false,
         definitions: [],
-        enableEdit: null,
     }),
     computed: {
         addType() {
@@ -166,13 +166,6 @@ export default {
         }
     },
     created() {
-        const isAdmin = localStorage.getItem("isAdmin");
-        if (isAdmin == "true") {
-            this.enableEdit = true;
-        } else {
-            this.enableEdit = false;
-        }
-
         this.init();
     },
     methods: {
