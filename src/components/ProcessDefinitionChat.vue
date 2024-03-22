@@ -2,16 +2,18 @@
     <v-card elevation="10" style="background-color: rgba(255, 255, 255, 0)">
         <AppBaseCard>
             <template v-slot:leftpart>
+                <process-definition class="process-definition-resize" style="" :bpmn="bpmn"
+                    :processDefinition="processDefinition" @update="updateDefinition"
+                    :key="definitionChangeCount"></process-definition>
+            </template>
+            <template v-slot:rightpart>
                 <div class="no-scrollbar">
                     <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :isChanged="true"
                         :userInfo="userInfo" :type="'definitions'" @sendMessage="beforeSendMessage"
                         @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage" @getMoreChat="getMoreChat"
                         @loadBPMN="bpmn => loadBPMN(bpmn)" @save="$app.try(saveModel)"></Chat>
                 </div>
-            </template>
-            <template v-slot:rightpart>
-                <process-definition class="process-definition-resize" style="" :bpmn="bpmn" :processDefinition="processDefinition"
-                    @update="updateDefinition" :key="definitionChangeCount"></process-definition>
+
             </template>
 
             <template v-slot:mobileLeftContent>
@@ -414,7 +416,7 @@ export default {
                 this.processDefinition.processDefinitionName = prompt("please give a name for the process definition");
 
             if (!this.processDefinition.processDefinitionId)
-                this.processDefinition.processDefinitionId = prompt("please give a name for the process definition");
+                this.processDefinition.processDefinitionId = prompt("please give a ID for the process definition");
 
             this.projectName = this.processDefinition.processDefinitionName;
 
@@ -422,19 +424,31 @@ export default {
             if (!this.processDefinition.processDefinitionId || !this.processDefinition.processDefinitionName) {
                 throw new Error("processDefinitionId or processDefinitionName is missing");
             }
+            if (window.$mode == "uEngine") {
+                // :9093/definition/raw/sales/testProcess.bpmn < definition-samples/testProcess.bpmn
+                await axios.put(`/definition/raw/sales/${this.processDefinition.processDefinitionId}.bpmn`, xml.xml, {
+                    headers: {
+                        'Content-Type': 'application/xml' // 적절한 Content-Type 설정
+                    }
+                }).then(res => {
+                    console.log(res);
+                })
+            } else {
 
 
-            let newPath = `${this.path}/${this.processDefinition.processDefinitionId}`;
+                let newPath = `${this.path}/${this.processDefinition.processDefinitionId}`;
 
-            let putObj = {
-                id: this.processDefinition.processDefinitionId,
-                name: this.processDefinition.processDefinitionName,
-                definition: this.processDefinition,
-                // messages: this.messages,
-                bpmn: xml.xml   //TODO: model --> definition과 구분이 안됨.  bpmn 혹은 xmlDefinition 혹은 xmlModel 등으로 프로퍼티명 변경할것!
-            };
+                let putObj = {
+                    id: this.processDefinition.processDefinitionId,
+                    name: this.processDefinition.processDefinitionName,
+                    definition: this.processDefinition,
+                    // messages: this.messages,
+                    bpmn: xml.xml   //TODO: model --> definition과 구분이 안됨.  bpmn 혹은 xmlDefinition 혹은 xmlModel 등으로 프로퍼티명 변경할것!
+                };
 
-            await this.putObject(newPath, putObj);
+                await this.putObject(newPath, putObj);
+            }
+
 
             // const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
             // let vectorId = await vectorStore.similaritySearch({
@@ -1220,11 +1234,14 @@ export default {
 
 <style scoped>
 .process-definition-resize {
-    width: 100%; height:100%;
+    width: 100%;
+    height: 100%;
 }
+
 @media only screen and (max-width:1279px) {
     .process-definition-resize {
-        width: 100%; height: calc(100vh - 192px);
+        width: 100%;
+        height: calc(100vh - 192px);
     }
 }
 </style>

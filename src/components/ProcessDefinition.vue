@@ -5,22 +5,20 @@
                 <v-card elevation="1" style="border-radius: 0px !important;">
                     <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
                         <template v-slot:activator="{ props }">
-                            <v-btn @click="openProcessVariables" icon v-bind="props"
-                                class="processVariables-btn"
-                            >
+                            <v-btn @click="openProcessVariables" icon v-bind="props" class="processVariables-btn">
                                 <Icon icon="tabler:variable" width="32" height="32" />
                             </v-btn>
                         </template>
                     </v-tooltip>
                     <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
-                            <v-btn icon v-bind="props"
-                                class="processVariables-zoom"
-                                @click="$globalState.methods.toggleZoom()"
-                            >
-                                <Icon v-if="!$globalState.state.isZoomed" icon="material-symbols:pinch-zoom-out-outline" width="32" height="32" />
-                                <Icon v-else icon="material-symbols:pinch-zoom-in-outline-sharp" width="32" height="32" />
-                                
+                            <v-btn icon v-bind="props" class="processVariables-zoom"
+                                @click="$globalState.methods.toggleZoom()">
+                                <Icon v-if="!$globalState.state.isZoomed" icon="material-symbols:pinch-zoom-out-outline"
+                                    width="32" height="32" />
+                                <Icon v-else icon="material-symbols:pinch-zoom-in-outline-sharp" width="32"
+                                    height="32" />
+
                             </v-btn>
                         </template>
                     </v-tooltip>
@@ -40,13 +38,13 @@
                         v-on:change-shape="onChangeShape"></vue-bpmn> -->
                 </v-card>
             </v-col>
-            <v-col v-if="panel" cols="12" sm="12" lg="4" md="6" class="d-flex">
-                <v-card elevation="1">
+            <div v-if="panel" style="position: fixed; z-index:999; right: 0; width: 30%; height: 100%">
+                <v-card elevation="1" style="height: 100%">
                     <bpmn-property-panel :element="element" @close="closePanel" :isViewMode="isViewMode"
                         v-on:updateElement="(val) => updateElement(val)"></bpmn-property-panel>
                     <!-- {{ definition }} -->
                 </v-card>
-            </v-col>
+            </div>
         </v-row>
         <v-dialog v-model="isViewProcessVariables" max-width="1000">
             <v-card>
@@ -75,7 +73,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="item in copyProcessDefinition.data" :key="item.name">
+                            <tr v-for="item in processVariables" :key="item.name">
                                 <td class="text-subtitle-1">{{ item.name }}</td>
                                 <td>
                                     {{ item.type }}
@@ -119,7 +117,7 @@
                         <v-card variant="outlined">
                             <v-card-text class="ma-0 pa-0">
                                 <process-variable mode="add"
-                                    @add-variables="val => copyProcessDefinition.data.push(val)"></process-variable>
+                                    @add-variables="val => addUengineVariable(val)"></process-variable>
                             </v-card-text>
                         </v-card>
                     </div>
@@ -155,10 +153,9 @@ import { VDataTable } from 'vuetify/labs/VDataTable';
 import BpmnLLM from './BpmnLLM.vue';
 import BpmnuEngine from './BpmnUengine.vue';
 import customBpmnModule from './customBpmn';
-import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/BpmnPropertyPanel.vue';
+import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
-
-
+import { useBpmnStore } from '@/stores/bpmn';
 
 export default {
     name: 'ProcessDefinition',
@@ -193,11 +190,13 @@ export default {
         editedItem: null,
         lastEditedIndex: 0,
         editComponentKey: 0,
+        bpmnModeler: null,
+        processVariables: []
     }),
     computed: {
         mode() {
             return window.$mode
-        }
+        },
     },
     watch: {
         copyProcessDefinition: {
@@ -236,7 +235,9 @@ export default {
             }
         }
     },
-    created() { },
+    created() {
+
+    },
     mounted() {
         // Initial Data
         if (this.processDefinition)
@@ -256,8 +257,63 @@ export default {
                 "activities": [],
                 "sequences": []
             }
+        const store = useBpmnStore();
+        this.bpmnModeler = store.getModeler;
+
+        if(this.definitions) {
+            this.definitions.rootElements.forEach(root => {
+                if (root.$type.includes("Process")) {
+                    if (root.extensionElements.values[0].variables) {
+                        root.extensionElements.values[0].variables.forEach((variable) => {
+                            let obj = {
+                                "name": variable.$attrs.name,
+                                "type": variable.$attrs.type,
+                            }
+                            this.processVariables.push(obj)
+                        })
+                    }
+                }
+            })
+        }
     },
     methods: {
+        addUengineVariable(val) {
+            // definitions 객체에서 bpmn2:process 요소를 찾습니다.
+            const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
+            const processElement = this.definitions.rootElements.find(element => element.$type === 'bpmn:Process');
+            if (!processElement) {
+                console.error('bpmn:Process element not found');
+                return;
+            }
+
+            // bpmn2:process 요소 내의 bpmn2:extensionElements 요소를 찾거나 새로 생성합니다.
+            let extensionElements = processElement.extensionElements;
+            if (!extensionElements) {
+                extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
+                processElement.extensionElements = extensionElements;
+            }
+
+            // uengine:properties 요소를 찾거나 새로 생성합니다.
+            let uengineProperties = extensionElements.values.find(val => val.$type === 'uengine:Properties');
+            if (!uengineProperties) {
+                uengineProperties = bpmnFactory.create('uengine:Properties');
+                extensionElements.get('values').push(uengineProperties);
+            }
+
+            // 새로운 uengine:variable 요소를 생성하고 속성을 설정합니다.
+            const newVariable = bpmnFactory.create('uengine:Variable', {
+                name: val.name,
+                type: val.type
+            });
+
+            // 생성된 uengine:variable 요소를 uengine:properties 요소에 추가합니다.
+            uengineProperties.get('variables').push(newVariable);
+            console.log(this.processVariables)
+            this.processVariables.push({
+                "name": val.name,
+                "type": val.type
+            })
+        },
         openSubProcess(e) {
             this.$emit('openSubProcess', e)
         },
@@ -396,16 +452,11 @@ export default {
             this.processVariblesWindow = !this.processVariblesWindow
         },
         updateElement(element) {
-            // let 
-            // this.convertElementToJSON(element);
-            // this.changeElement(this.copyProcessDefinition, 'id', newObj.id, newObj)
-            // obj = newObj
             this.$emit('update')
         },
         openPanel(id) {
             this.panel = true;
             this.element = this.findElement(this.definitions, 'id', id);
-
             this.$refs.bpmnVue.extendUEngineProperties(this.element)
         },
         closePanel() {
@@ -488,10 +539,11 @@ export default {
 <style scoped>
 .processVariables-zoom {
     position: absolute;
-    right:20px;
-    top:20px;
-    z-index:1
+    right: 20px;
+    top: 20px;
+    z-index: 1
 }
+
 .processVariables-btn {
     position: absolute;
     left: 5px;
