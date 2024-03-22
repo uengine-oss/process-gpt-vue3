@@ -1,15 +1,16 @@
 <template>
-    <div style="height: 95%; margin-top: 10px; overflow: auto;">
+    <div style="margin-top: 10px; overflow: auto;">
         <v-card-text>
+            <div style="float: right">Role: {{ uengineProperties.role.name }}</div>
             <div>{{ $t('BpnmPropertyPanel.name') }}</div>
             <v-text-field v-model="name" :disabled="isViewMode"></v-text-field>
+
             <div>
                 <div>{{ $t('BpnmPropertyPanel.description') }}</div>
                 <v-textarea v-if="!elementCopy.$type.includes('Event')" :disabled="isViewMode"
                     v-model="uengineProperties.description"></v-textarea>
             </div>
-            <!-- <UserTaskPanel></UserTaskPanel> -->
-            <component :is="panelName" :element="elementCopy"></component>
+            <component :is="panelName" :isViewMode="isViewMode" :uengine-properties="uengineProperties"></component>
         </v-card-text>
         <v-card-actions>
             <v-btn color="primary" @click="onClickOutside" v-if="!isViewMode">Save</v-btn>
@@ -30,8 +31,6 @@ export default {
         isViewMode: Boolean
     },
     created() {
-        console.log(this.element.$type.split(':')[1])
-        console.log(this.element)
         this.uengineProperties = JSON.parse(this.element.extensionElements.values[0].json)
         // 필수 uEngine Properties의 key가 없다면 작업.
         Object.keys(this.requiredKeyLists).forEach(key => {
@@ -76,7 +75,7 @@ export default {
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
         this.name = this.element.name
-        if (this.element.lanes.length > 0) {
+        if (this.element.lanes?.length > 0) {
             this.uengineProperties.role = { "name": this.element.lanes[0].name }
         }
     },

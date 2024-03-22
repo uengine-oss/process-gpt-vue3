@@ -1,147 +1,149 @@
 {
     "message": "ko",
     "mainPage": {
-        "login" : "로그인",
+        "login": "로그인",
         "logout": "로그아웃",
-        "demo" : "데모",
-        "pricing" : "가격",
-        "documentation" : "사용 설명서",
-        "support" : "고객 지원",
-        "start" : "시작하기",
-        "title" : "AI를 기반한 프로세스 관리에서 실행까지를 손쉽게 시작하세요",
-        "subTitle" : "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
+        "demo": "데모",
+        "pricing": "가격",
+        "documentation": "사용 설명서",
+        "support": "고객 지원",
+        "start": "시작하기",
+        "title": "AI를 기반한 프로세스 관리에서 실행까지를 손쉽게 시작하세요",
+        "subTitle": "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
     },
-    "DashboardTodoList" : {
-        "todo" : "할일",
-        "inProgress" : "진행중",
-        "done" : "완료"
+    "DashboardTodoList": {
+        "todo": "할일",
+        "inProgress": "진행중",
+        "done": "완료"
     },
-    "DashboardUpcomingScheduls" : {
-        "title" : "다가오는 일정",
-        "schedule" : "일정",
-        "dateAndTime" : "일시",
-        "category" : "구분"
+    "DashboardUpcomingScheduls": {
+        "title": "다가오는 일정",
+        "schedule": "일정",
+        "dateAndTime": "일시",
+        "category": "구분"
     },
-    "dashboard" : {
-        "title" : "대시보드"
+    "dashboard": {
+        "title": "대시보드"
     },
-    "todoList" : {
-        "title" : "할 일 목록"
+    "todoList": {
+        "title": "할 일 목록"
     },
-    "calendar" : {
-        "title" : "달력"
+    "calendar": {
+        "title": "달력"
     },
-    "chats" : {
-        "title" : "채팅"
+    "chats": {
+        "title": "채팅"
     },
-    "proposals" : {
-        "title" : "제안서"
+    "proposals": {
+        "title": "제안서"
     },
-    "instance" : {
-        "title" : "인스턴스"
+    "instance": {
+        "title": "인스턴스"
     },
-    "processExecution" : {
-        "title" : "프로세스 실행",
-        "cardTitle" : "프로세스 실행",
-        "processDefinitionExplanation" : "대화형으로 프로세스를 실행하십시오. \n 예를 들어,\n '휴가를 신청할게:\n 1. 사유: 개인사유\n 2. 휴가 시작일: 오늘\n 3. 휴가 복귀일: 금요일' 와 같은 명령을 할 수 있습니다.",
-        "search" : "검색",
-        "newChat" : "새 채팅",
-        "recentChats" : "최근 채팅",
-        "sortByTime" : "시간 순으로 정렬",
-        "sortByCompleted" : "완료 순으로 정렬"
+    "processExecution": {
+        "title": "프로세스 실행",
+        "cardTitle": "프로세스 실행",
+        "processDefinitionExplanation": "대화형으로 프로세스를 실행하십시오. \n 예를 들어,\n '휴가를 신청할게:\n 1. 사유: 개인사유\n 2. 휴가 시작일: 오늘\n 3. 휴가 복귀일: 금요일' 와 같은 명령을 할 수 있습니다.",
+        "search": "검색",
+        "newChat": "새 채팅",
+        "recentChats": "최근 채팅",
+        "sortByTime": "시간 순으로 정렬",
+        "sortByCompleted": "완료 순으로 정렬"
     },
-    "definitionManagement" : {
-        "title" : "정의 관리"
+    "definitionManagement": {
+        "title": "정의 관리"
     },
-    "organizationChartDefinition" : {
-        "title" : "조직도 정의",
-        "cardTitle" : "조직도 관리",
+    "organizationChartDefinition": {
+        "title": "조직도 정의",
+        "cardTitle": "조직도 관리",
         "organizationChartExplanation": "대화형으로 조직도를 관리하십시오.\n 팀(부서) 롤(역할), 직원들을 등록 수정 삭제할 수 있습니다. \n예를 들어, '개발팀, 관리팀을 등록하고, 홍길동님을 신입사원으로 관리팀에 등록해줘. 역할은 개발자로 들어오셨어. 관리팀의 팀장은 아무개 팀장님이야.' 와 같은 명령을 할 수 있습니다."
     },
-    "processDefinitionMap" : {
-        "title" : "프로세스 정의 체계도"
+    "processDefinitionMap": {
+        "title": "프로세스 정의 체계도"
     },
-    "uiDefinition" : {
-        "title" : "화면 정의"
+    "uiDefinition": {
+        "title": "화면 정의"
     },
-    "processDefinition" : {
-        "title" : "프로세스 정의",
-        "cardTitle" : "프로세스 정의 관리",
-        "processDefinitionExplanation" : "대화형으로 프로세스를 관리하십시오. \n 예를 들어,\n '영업관리 프로세스를 다음과 같이 등록해줘:\n 1. 영업기회등 고객명, 예상사업규모, 키맨, 요구사항\n 2. 제안 작성: 제안 내용, 가격\n 3. 수주 혹은 실주\n 4. 수주한 경우, 계약진행' 와 같은 명령을 할 수 있습니다.",
-        "name" : "이름",
-        "type" : "유형",
-        "description" : "설명",
-        "dataSource" : "데이터소스",
-        "query" : "쿼리",
-        "actions" : "작업",
-        "itemsPerPage" : "페이지당 항목 수",
-        "processVariables" : "프로세스 변수",
-        "editProcessData" : "프로세스 데이터 수정",
-        "edit" : "수정",
-        "delete" : "삭제",
-        "zoom" : "캔버스 확대/축소"
+    "processDefinition": {
+        "title": "프로세스 정의",
+        "cardTitle": "프로세스 정의 관리",
+        "processDefinitionExplanation": "대화형으로 프로세스를 관리하십시오. \n 예를 들어,\n '영업관리 프로세스를 다음과 같이 등록해줘:\n 1. 영업기회등 고객명, 예상사업규모, 키맨, 요구사항\n 2. 제안 작성: 제안 내용, 가격\n 3. 수주 혹은 실주\n 4. 수주한 경우, 계약진행' 와 같은 명령을 할 수 있습니다.",
+        "name": "이름",
+        "type": "유형",
+        "description": "설명",
+        "dataSource": "데이터소스",
+        "query": "쿼리",
+        "actions": "작업",
+        "itemsPerPage": "페이지당 항목 수",
+        "processVariables": "프로세스 변수",
+        "editProcessData": "프로세스 데이터 수정",
+        "edit": "수정",
+        "delete": "삭제",
+        "zoom": "캔버스 확대/축소"
     },
-    "ProcessVariable" : {
-        "name" : "이름",
-        "type" : "유형",
-        "description" : "설명",
-        "dataSource" : "데이터소스",
-        "add" : "추가",
-        "edit" : "수정"
+    "ProcessVariable": {
+        "name": "이름",
+        "type": "유형",
+        "description": "설명",
+        "dataSource": "데이터소스",
+        "add": "추가",
+        "edit": "수정"
     },
-    "processList" : {
-        "title" : "프로세스 목록"
+    "processList": {
+        "title": "프로세스 목록"
     },
-    "chat" : {
+    "chat": {
         "inputMessage": "메시지 입력"
     },
-    "accountTab" : {
-        "accountSetting" : "계정 설정",
-        "profileImageChange" : "프로필 이미지 변경",
-        "imageSlect" : "프로필 이미지 선택",
-        "slectImageExplanation" : "JPG, GIF 또는 PNG가 허용됩니다. 최대 크기 800K",
-        "changePassword" : "비밀번호 변경",
-        "changePasswordExplanation" : "비밀번호를 변경하려면 여기에서 확인하세요.",
-        "currentPassword" : "현재 비밀번호",
-        "newPassword" : "새 비밀번호",
-        "confirmPassword" : "비밀번호 확인",
-        "personalDetails" : "개인정보",
-        "personalDetailsExplanation" : "개인 세부정보를 변경하려면 여기에서 수정하고 저장하세요.",
-        "name" : "이름",
-        "email" : "이메일",
-        "phone" : "전화번호",
-        "address" : "주소",
-        "save" : "저장"
+    "accountTab": {
+        "accountSetting": "계정 설정",
+        "profileImageChange": "프로필 이미지 변경",
+        "imageSlect": "프로필 이미지 선택",
+        "slectImageExplanation": "JPG, GIF 또는 PNG가 허용됩니다. 최대 크기 800K",
+        "changePassword": "비밀번호 변경",
+        "changePasswordExplanation": "비밀번호를 변경하려면 여기에서 확인하세요.",
+        "currentPassword": "현재 비밀번호",
+        "newPassword": "새 비밀번호",
+        "confirmPassword": "비밀번호 확인",
+        "personalDetails": "개인정보",
+        "personalDetailsExplanation": "개인 세부정보를 변경하려면 여기에서 수정하고 저장하세요.",
+        "name": "이름",
+        "email": "이메일",
+        "phone": "전화번호",
+        "address": "주소",
+        "save": "저장"
     },
-    "loginPage" : {
-        "title" : "Welcome to Process-GPT",
-        "google" : "구글 로그인",
-        "or" : "또는 다음 계정으로 로그인",
-        "userName" : "계정",
-        "password" : "암호",
-        "remeber" : "이 장치에 기억",
-        "login" : "로그인",
-        "create" : "계정 생성"
+    "loginPage": {
+        "title": "Welcome to Process-GPT",
+        "google": "구글 로그인",
+        "or": "또는 다음 계정으로 로그인",
+        "userName": "계정",
+        "password": "암호",
+        "remeber": "이 장치에 기억",
+        "login": "로그인",
+        "create": "계정 생성"
     },
-    "createAccount" : {
-        "title" : "Welcome to Process-GPT",
-        "already" : "이미 계정이 있으신가요?",
-        "login" : "로그인",
-        "userName" : "계정",
-        "password" : "암호",
-        "email" : "이메일",
-        "google" : "구글 로그인",
-        "or" : "또는 다음 계정으로 로그인"
+    "createAccount": {
+        "title": "Welcome to Process-GPT",
+        "already": "이미 계정이 있으신가요?",
+        "login": "로그인",
+        "userName": "계정",
+        "password": "암호",
+        "email": "이메일",
+        "google": "구글 로그인",
+        "or": "또는 다음 계정으로 로그인"
     },
-    "ExtraBox" : {
-        "logOut" : "로그아웃"
+    "ExtraBox": {
+        "logOut": "로그아웃"
     },
-    "BpnmPropertyPanel" : {
-        "name" : "이름",
-        "description" : "설명",
-        "inputData" : "입력 데이터",
-        "outputData" : "출력 데이터",
-        "checkPoints" : "체크포인트",
-        "add" : "추가"
+    "BpnmPropertyPanel": {
+        "name": "이름",
+        "condition": "조건",
+        "description": "설명",
+        "inputData": "입력 데이터",
+        "outputData": "출력 데이터",
+        "checkPoints": "체크포인트",
+        "script":"스크립트",
+        "add": "추가"
     }
 }

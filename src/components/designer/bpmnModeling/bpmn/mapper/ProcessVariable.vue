@@ -6,8 +6,8 @@
                     <v-label class=" font-weight-medium" for="hbnm">{{ $t('ProcessVariable.name') }}</v-label>
                 </v-col>
                 <v-col cols="12" sm="9">
-                    <v-text-field v-model="processVariable.name" color="primary" variant="outlined" type="text" id="hbnm"
-                        hide-details />
+                    <v-text-field v-model="processVariable.name" color="primary" variant="outlined" type="text"
+                        id="hbnm" hide-details />
                 </v-col>
             </v-row>
             <v-row class="align-center">
@@ -38,10 +38,11 @@
                 </v-col>
                 <v-col cols="12">
                     <v-textarea v-if="processVariable.datasource?.type == 'SQL'"
-                        v-model="processVariable.datasource.sql"
-                    ></v-textarea>
-<v-btn v-if="processVariable.datasource?.type == 'SQL'" variant="outlined" color="primary" rounded="pill"  size="small" @click="generateSql()">generate</v-btn>
-                    <v-btn style="margin-left: 5px;" color="success" variant="outlined" rounded="pill" v-if="processVariable.datasource?.type == 'SQL'" size="small" @click="testSql()">test</v-btn>
+                        v-model="processVariable.datasource.sql"></v-textarea>
+                    <v-btn v-if="processVariable.datasource?.type == 'SQL'" variant="outlined" color="primary"
+                        rounded="pill" size="small" @click="generateSql()">generate</v-btn>
+                    <v-btn style="margin-left: 5px;" color="success" variant="outlined" rounded="pill"
+                        v-if="processVariable.datasource?.type == 'SQL'" size="small" @click="testSql()">test</v-btn>
                     <v-row v-if="processVariable.table" class="my-5">
                         <v-col cols="12">
                             <v-card outlined>
@@ -59,8 +60,9 @@
             </v-row>
             <v-row class="ma-0 mt-2">
                 <v-spacer></v-spacer>
-                <v-btn v-if="mode === 'add'" color="primary" rounded="pill" @click="addVariable">{{ $t('ProcessVariable.add') }}</v-btn>
-                <v-btn v-else color="primary" rounded="pill" >{{ $t('ProcessVariable.edit') }}</v-btn>
+                <v-btn v-if="mode === 'add'" color="primary" rounded="pill" @click="addVariable">{{
+                        $t('ProcessVariable.add') }}</v-btn>
+                <v-btn v-else color="primary" rounded="pill">{{ $t('ProcessVariable.edit') }}</v-btn>
             </v-row>
         </v-col>
     </v-row>
@@ -120,8 +122,9 @@ export default {
             }
         },
         addVariable() {
+            // console.log(this.processVariable)
             this.$emit("addVariables", this.processVariable)
-            this.$emit("updateVariables", this.processVariable)
+            // this.$emit("updateVariables", this.processVariable)
         }
     },
     mounted() {
@@ -142,15 +145,18 @@ export default {
     width: 100%;
     border-collapse: collapse;
 }
+
 .table-responsive th,
 .table-responsive td {
     border: 1px solid #ddd;
     padding: 8px;
     text-align: left;
 }
+
 .table-responsive th {
     background-color: #f2f2f2;
 }
+
 .table-responsive tr:nth-child(even) {
     background-color: #f9f9f9;
 }
