@@ -14,7 +14,7 @@
                         :userInfo="userInfo" :type="'definitions'" :lock="lock" :disableChat="disableChat"
                         @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" 
                         @stopMessage="stopMessage" @getMoreChat="getMoreChat"
-                        @loadBPMN="bpmn => loadBPMN(bpmn)" @complete="beforeSaveModel"
+                        @loadBPMN="bpmn => loadBPMN(bpmn)" @complete="checkedLock"
                     ></Chat>
                 </div>
             </template>
@@ -24,7 +24,7 @@
                     :userInfo="userInfo" :type="'definitions'" :lock="lock" :disableChat="disableChat"
                     @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage" @getMoreChat="getMoreChat"
-                    @loadBPMN="bpmn => loadBPMN(bpmn)" @complete="beforeSaveModel"
+                    @loadBPMN="bpmn => loadBPMN(bpmn)" @complete="checkedLock"
                 ></Chat>
             </template>
         </AppBaseCard>
@@ -421,7 +421,7 @@ export default {
 
         //     return processDefinition;
         // },
-        beforeSaveModel() {
+        checkedLock() {
             var me = this;
             me.$app.try({
                 action: async () => {
@@ -441,6 +441,7 @@ export default {
                         };
                         await me.putObject('lock', lockObj);
                     }
+                    window.location.reload();
                 },
             });
         },

@@ -219,7 +219,7 @@
                     <v-tooltip text="Add image">
                         <template v-slot:activator="{ props }">
                             <v-btn icon variant="text" class="text-medium-emphasis" @click="uploadImage" v-bind="props"
-                                style="width:30px; height:30px; margin-left:5px;">
+                                style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
                                 <Icon icon="iconoir:add-media-image" width="20" height="20" />
                             </v-btn>
                         </template>
@@ -642,9 +642,9 @@ export default {
         openAlertDialog() {
             if (this.type == 'definitions') {
                 if (this.lock) {
-                    this.alertMessage = '저장 및 체크인 하시겠습니까?';
+                    this.alertMessage = '저장 및 체크아웃 하시겠습니까?';
                 } else {
-                    this.alertMessage = '체크아웃 및 프로세스 편집을 시작하시겠습니까?';
+                    this.alertMessage = '체크인 및 프로세스 편집을 시작하시겠습니까?';
                 }
                 this.alertDialog = true;
             }
