@@ -2,6 +2,13 @@
     <v-card elevation="10" style="background-color: rgba(255, 255, 255, 0)">
         <AppBaseCard>
             <template v-slot:leftpart>
+                <process-definition class="process-definition-resize"
+                    :bpmn="bpmn" :processDefinition="processDefinition" :key="definitionChangeCount"
+                    :isViewMode="isViewMode"
+                    @update="updateDefinition"
+                ></process-definition>
+            </template>
+            <template v-slot:rightpart>
                 <div class="no-scrollbar">
                     <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :isChanged="true"
                         :userInfo="userInfo" :type="'definitions'" :lock="lock" :disableChat="disableChat"
@@ -10,13 +17,6 @@
                         @loadBPMN="bpmn => loadBPMN(bpmn)" @complete="beforeSaveModel"
                     ></Chat>
                 </div>
-            </template>
-            <template v-slot:rightpart>
-                <process-definition class="process-definition-resize"
-                    :bpmn="bpmn" :processDefinition="processDefinition" :key="definitionChangeCount"
-                    :isViewMode="isViewMode"
-                    @update="updateDefinition"
-                ></process-definition>
             </template>
 
             <template v-slot:mobileLeftContent>
@@ -45,6 +45,7 @@ import * as jsondiff from 'jsondiffpatch';
 import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/ProcessDefinitionGenerator';
 import Chat from './ui/Chat.vue';
+import axios from 'axios';
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
 var jsondiffpatch = jsondiff.create({
     objectHash: function (obj, index) {
@@ -458,7 +459,7 @@ export default {
                 this.processDefinition.processDefinitionName = prompt("please give a name for the process definition");
 
             if (!this.processDefinition.processDefinitionId)
-                this.processDefinition.processDefinitionId = prompt("please give a name for the process definition");
+                this.processDefinition.processDefinitionId = prompt("please give a ID for the process definition");
 
             this.projectName = this.processDefinition.processDefinitionName;
 
@@ -466,19 +467,31 @@ export default {
             if (!this.processDefinition.processDefinitionId || !this.processDefinition.processDefinitionName) {
                 throw new Error("processDefinitionId or processDefinitionName is missing");
             }
+            if (window.$mode == "uEngine") {
+                // :9093/definition/raw/sales/testProcess.bpmn < definition-samples/testProcess.bpmn
+                await axios.put(`/definition/raw/sales/${this.processDefinition.processDefinitionId}.bpmn`, xml.xml, {
+                    headers: {
+                        'Content-Type': 'application/xml' // 적절한 Content-Type 설정
+                    }
+                }).then(res => {
+                    console.log(res);
+                })
+            } else {
 
 
-            let newPath = `${this.path}/${this.processDefinition.processDefinitionId}`;
+                let newPath = `${this.path}/${this.processDefinition.processDefinitionId}`;
 
-            let putObj = {
-                id: this.processDefinition.processDefinitionId,
-                name: this.processDefinition.processDefinitionName,
-                definition: this.processDefinition,
-                // messages: this.messages,
-                bpmn: xml.xml   //TODO: model --> definition과 구분이 안됨.  bpmn 혹은 xmlDefinition 혹은 xmlModel 등으로 프로퍼티명 변경할것!
-            };
+                let putObj = {
+                    id: this.processDefinition.processDefinitionId,
+                    name: this.processDefinition.processDefinitionName,
+                    definition: this.processDefinition,
+                    // messages: this.messages,
+                    bpmn: xml.xml   //TODO: model --> definition과 구분이 안됨.  bpmn 혹은 xmlDefinition 혹은 xmlModel 등으로 프로퍼티명 변경할것!
+                };
 
-            await this.putObject(newPath, putObj);
+                await this.putObject(newPath, putObj);
+            }
+
 
             // const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
             // let vectorId = await vectorStore.similaritySearch({
@@ -493,18 +506,17 @@ export default {
             //     this.saveDefinition(definition);
             // }
 
-            // const table = this.getObject(definition.processDefinitionId)
+            // const table = await this.getObject(this.processDefinition.processDefinitionId)
             // if (!table) {
-            //     await axios.post('/process-db-schema/invoke', {
-            //         "input": {
-            //             "process_definition_id": this.processDefinition.processDefinitionName
-            //         }
-            //     }).then(async res => {
-            //         console.log(res);
-            //     })
-            //         .catch(error => {
-            //             console.log(error);
-            //         });
+                await axios.post('http://localhost:8001/process-db-schema/invoke', {
+                    "input": {
+                        "process_definition_id": this.processDefinition.processDefinitionId
+                    }
+                }).then(async res => {
+                    console.log(res);
+                }).catch(error => {
+                    console.log(error);
+                });
             // }
         },
         // parseDefinition(model) {
@@ -1265,11 +1277,14 @@ export default {
 
 <style scoped>
 .process-definition-resize {
-    width: 100%; height:100%;
+    width: 100%;
+    height: 100%;
 }
+
 @media only screen and (max-width:1279px) {
     .process-definition-resize {
-        width: 100%; height: calc(100vh - 192px);
+        width: 100%;
+        height: calc(100vh - 192px);
     }
 }
 </style>

@@ -12,8 +12,8 @@ const instance = getCurrentInstance();
 const globalState = instance?.appContext.config.globalProperties.$globalState;
 
 const canvasReSize = computed(() => {
-  // globalState를 사용하여 계산된 속성을 정의합니다.
-  return globalState?.state.isZoomed ? 'left-part-display-none' : 'left-part-display-block';
+    // globalState를 사용하여 계산된 속성을 정의합니다.
+    return globalState?.state.isZoomed ? 'left-part-display-none' : 'left-part-display-block';
 });
 </script>
 
@@ -48,15 +48,14 @@ const canvasReSize = computed(() => {
 </template>
 
 <style lang="scss">
-
 .left-part {
     width: 320px;
     border-right: 1px solid rgb(var(--v-theme-borderColor));
     // min-height: 500px;
     transition: 0.1s ease-in;
     flex-shrink: 0;
-    overflow:auto;
-    background-color:white;
+    overflow: auto;
+    background-color: white;
 }
 
 .v-theme--light {
@@ -71,9 +70,10 @@ const canvasReSize = computed(() => {
     }
 }
 
-.right-part {
-    width: 100%;
+.left-part {
+    width: 80%;
     // min-height: 500px;
     position: relative;
     overflow: auto;
-}</style>
+}
+</style>

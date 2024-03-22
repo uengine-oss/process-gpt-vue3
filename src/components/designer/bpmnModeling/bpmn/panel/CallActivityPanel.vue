@@ -1,12 +1,12 @@
 <template>
     <div style="height: 95%; margin-top: 10px; overflow: auto;">
 
-        <div class="included" v-if="element.$type == 'bpmn:CallActivity'" style="margin-bottom: 22px;">
+        <div class="included" style="margin-bottom: 22px;">
             <div style="margin-bottom: 8px;">Select Definition</div>
-            <v-autocomplete v-model="uengineProperties.definition" :items="definitions" :disabled="isViewMode"
+            <v-autocomplete v-model="copyUengineProperties.definition" :items="definitions" :disabled="isViewMode"
                 item-title="name" color="primary" label="Definition" variant="outlined" hide-details></v-autocomplete>
         </div>
-        <div v-if="element.$type.includes('Task') && inputData.length > 0" style="margin-bottom:20px;">
+        <div v-if="inputData.length > 0" style="margin-bottom:20px;">
             <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.inputData') }}</div>
             <v-row class="ma-0 pa-0">
                 <div v-for="(inputData, idx) in inputData" :key="idx" class="mr-2 mt-2">
@@ -21,7 +21,7 @@
                 </div>
             </v-row>
         </div>
-        <div v-if="element.$type.includes('Task') && inputData.length > 0" style="margin-bottom:20px;">
+        <div v-if="inputData.length > 0" style="margin-bottom:20px;">
             <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.inputData') }}</div>
             <v-row class="ma-0 pa-0">
                 <div v-for="(inputData, idx) in inputData" :key="idx" class="mr-2 mt-2">
@@ -36,7 +36,7 @@
                 </div>
             </v-row>
         </div>
-        <div v-if="element.$type.includes('Task') && outputData.length > 0" style="margin-bottom:20px;">
+        <div v-if="outputData.length > 0" style="margin-bottom:20px;">
             <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.outputData') }}</div>
             <v-row class="ma-0 pa-0">
                 <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
@@ -51,13 +51,13 @@
                 </div>
             </v-row>
         </div>
-        <div v-if="element.$type.includes('Task')">
+        <div>
             <v-row class="ma-0 pa-0">
                 <div>{{ $t('BpnmPropertyPanel.checkPoints') }}</div>
                 <v-spacer></v-spacer>
                 <v-icon v-if="editCheckpoint" @click="editCheckpoint = false" style="margin-top:2px;">mdi-close</v-icon>
             </v-row>
-            <div v-for="(checkpoint, idx) in uengineProperties.checkpoints" :key="idx">
+            <div v-for="(checkpoint, idx) in copyUengineProperties.checkpoints" :key="idx">
                 <div>
                     <v-checkbox-btn color="success" :disabled="isViewMode" :label="checkpoint.checkpoint" hide-details
                         v-model="checkbox"></v-checkbox-btn>
@@ -71,7 +71,7 @@
             <v-row class="ma-0 pa-0" v-if="!isViewMode">
                 <v-spacer></v-spacer>
                 <v-btn v-if="editCheckpoint" @click="addCheckpoint" color="primary" rounded="pill" size="small">{{
-            $t('BpnmPropertyPanel.add') }}</v-btn>
+                $t('BpnmPropertyPanel.add') }}</v-btn>
                 <v-card v-else @click="editCheckpoint = !editCheckpoint" elevation="9" variant="outlined"
                     style="padding: 5px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;">
                     <div style="display: flex; justify-content: center; align-items: center;">
@@ -94,7 +94,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="param in uengineProperties.extendedProperties" :key="param.key" class="month-item">
+                        <tr v-for="param in copyUengineProperties.extendedProperties" :key="param.key"
+                            class="month-item">
                             <td>
                                 {{ param.key }}
                             </td>
@@ -134,13 +135,13 @@ const storage = StorageBaseFactory.getStorage()
 export default {
     name: 'call-activity-panel',
     props: {
-        element: Object,
+        uengineProperties: Object,
         processDefinitionId: String,
         isViewMode: Boolean
     },
     created() {
-        console.log(this.element)
-        this.uengineProperties = JSON.parse(this.element.extensionElements.values[0].json)
+        // console.log(this.element)
+        // this.uengineProperties = JSON.parse(this.element.extensionElements.values[0].json)
         // 필수 uEngine Properties의 key가 없다면 작업.
         Object.keys(this.requiredKeyLists).forEach(key => {
             this.ensureKeyExists(this.uengineProperties, key, this.requiredKeyLists[key])
@@ -156,8 +157,7 @@ export default {
                 "definitionId": ""
             },
             definitions: [],
-            elementCopy: this.element,
-            uengineProperties: {},
+            copyUengineProperties: this.uengineProperties,
             name: "",
             checkpoints: [],
             editCheckpoint: false,
@@ -180,8 +180,8 @@ export default {
         if (!me.$app.try) {
             me.$app = me.$app._component.methods;
         }
-        ㅇㅇ
-        this.name = this.element.name
+        const store = useBpmnStore();
+        this.bpmnModeler = store.getModeler;
         const value = await storage.list('proc_def');
         if (value) {
             this.definitions = value
@@ -189,7 +189,7 @@ export default {
     },
     computed: {
         inputData() {
-            let params = this.uengineProperties.parameters
+            let params = this.copyUengineProperties.parameters
             let result = []
             if (params)
                 params.forEach(element => {
@@ -199,7 +199,7 @@ export default {
             return result
         },
         outputData() {
-            let params = this.uengineProperties.parameters
+            let params = this.copyUengineProperties.parameters
             let result = []
             if (params)
                 params.forEach(element => {
@@ -218,26 +218,23 @@ export default {
             }
         },
         deleteExtendedProperty(item) {
-            const index = this.uengineProperties.extendedProperties.findIndex(element => element.key === item.key);
+            const index = this.copyUengineProperties.extendedProperties.findIndex(element => element.key === item.key);
             if (index > -1) {
-                this.uengineProperties.extendedProperties.splice(index, 1);
+                this.copyUengineProperties.extendedProperties.splice(index, 1);
+                this.$emit('update:uEngineProperties', this.copyUengineProperties)
             }
         },
         deleteCheckPoint(item) {
-            const index = this.uengineProperties.checkpoints.findIndex(element => element.checkpoint === item.checkpoint);
+            const index = this.copyUengineProperties.checkpoints.findIndex(element => element.checkpoint === item.checkpoint);
             if (index > -1) {
-                this.uengineProperties.checkpoints.splice(index, 1);
+                this.copyUengineProperties.checkpoints.splice(index, 1);
+                this.$emit('update:uEngineProperties', this.copyUengineProperties)
             }
         },
         addParameter() {
-            this.uengineProperties.extendedProperties.push({ key: this.paramKey, value: this.paramValue })
-            // const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
-            // // this.checkpoints.push(this.checkpointMessage)
-            // const parameter = bpmnFactory.create('uengine:ExtendedProperty', { key: this.paramKey, value: this.paramValue });
-            // if (!this.elementCopy.extensionElements.values[0].ExtendedProperties) this.elementCopy.extensionElements.values[0].ExtendedProperties = []
-            // this.elementCopy.extensionElements.values[0].ExtendedProperties.push(parameter)
-            // this.paramKey = ""
-            // this.paramValue = ""
+            this.copyUengineProperties.extendedProperties.push({ key: this.paramKey, value: this.paramValue })
+            this.$emit('update:uEngineProperties', this.copyUengineProperties)
+
         },
         async getData(path, options) {
             // let value;
@@ -249,18 +246,9 @@ export default {
             // return value;
         },
         addCheckpoint() {
-            this.uengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint })
+            this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint })
+            this.$emit('update:uEngineProperties', this.copyUengineProperties)
         },
-        onClickOutside() {
-            const modeling = this.bpmnModeler.get('modeling');
-            const elementRegistry = this.bpmnModeler.get('elementRegistry');
-            const task = elementRegistry.get(this.element.id);
-            this.elementCopy.extensionElements.values[0].json = JSON.stringify(this.uengineProperties)
-            this.elementCopy.name = this.name
-            modeling.updateProperties(task, this.elementCopy);
-            this.$emit('close');
-        },
-
     }
 };
 </script>
