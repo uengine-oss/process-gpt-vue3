@@ -1,3 +1,7 @@
+h1, h2, h3, h4, h5, h6 {
+    margin:0px !important;
+}
+
 .vue-bpmn-diagram-container {
     height: 100%;
     width: 100%;

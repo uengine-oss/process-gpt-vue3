@@ -1,36 +1,119 @@
 <template>
     <div>
         <v-card elevation="10" style="height:calc(100vh - 155px); overflow: auto;">
-            <div class="d-flex mb-6">
-                <div class="ma-2 pa-2 me-auto">
-                    <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
-                </div>
-                <div class="ma-2 pa-2">
-                    <v-btn :size="24" @click="capturePng">
-                        <Icon icon="iconoir:screenshot" width="24" height="24" />
+            <div class="pt-5 pl-6 pr-6 d-flex align-center">
+                <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
+                
+                <!-- buttons -->
+                <div class="ml-auto d-flex">
+                    <span v-if="lock && userInfo.email && userInfo.email != editUser" class="pt-1">
+                        {{ editUser }} 님이 수정 중 입니다.
+                    </span>
+                    <v-btn v-if="lock && enableEdit" 
+                        icon variant="text" size="24"
+                        class="ml-3"
+                        @click="openAlertDialog('checkin')"
+                        @mouseenter="hover = true"
+                        @mouseleave="hover = false"
+                    >
+                        <LockIcon v-if="hover" width="24" height="24" />
+                        <LockOpenIcon v-else width="24" height="24" />
                     </v-btn>
-                </div>
-                <div class="ma-2 pa-2">
-                    <ProcessMenu :size="24" :type="type" @add="addProcess" />
+                    
+                    <v-btn v-if="!lock && enableEdit"
+                        icon variant="text" size="24"
+                        @click="openAlertDialog('checkout')"
+                        @mouseenter="hover = true"
+                        @mouseleave="hover = false"
+                    >
+                        <LockOpenIcon v-if="hover" width="24" height="24" />
+                        <LockIcon v-else width="24" height="24" />
+                    </v-btn>
+
+                    <v-btn icon variant="text" class="ml-3" :size="24" @click="capturePng">
+                        <Icon icon="mage:image-download" width="24" height="24" />
+                    </v-btn>
+
+                    <ProcessMenu
+                        class="ml-3"
+                        :size="24" 
+                        :type="type" 
+                        :lock="lock"
+                        @add="addProcess" 
+                    />
                 </div>
             </div>
-            <div id="processMap" class="pa-5" style="background-color: #FFFFFF">
-                <draggable v-if="enableEdit" class="v-row dragArea list-group" :list="value.mega_proc_list"
-                    :animation="200" ghost-class="ghost-card" group="megaProcess">
+            
+            <!-- 스위칭 필요 1 -->
+            <div v-if="!currentRouteId" id="processMap" class="pa-5">
+                <draggable v-if="lock"
+                    class="v-row dragArea list-group" 
+                    :list="value.mega_proc_list" 
+                    :animation="200" 
+                    ghost-class="ghost-card"
+                    group="megaProcess"
+                >
                     <transition-group>
-                        <v-col v-for="item in value.mega_proc_list" :key="item.id" class="cursor-pointer" cols="12"
-                            md="2" sm="6">
-                            <MegaProcess :value="item" :parent="value" :storage="storage" @view="goProcess" />
+                        <v-col v-for="item in value.mega_proc_list"
+                            :key="item.id" 
+                            class="cursor-pointer"
+                            cols="12" md="2" sm="6"
+                        >
+                            <MegaProcess 
+                                :value="item" 
+                                :parent="value" 
+                                :storage="storage" 
+                                :lock="lock"
+                                @view="goProcess"
+                            />
                         </v-col>
                     </transition-group>
                 </draggable>
                 <v-row v-else>
                     <v-col v-for="item in value.mega_proc_list" :key="item.id" cols="12" md="2" sm="6">
-                        <MegaProcess :value="item" :parent="value" :storage="storage" @view="goProcess" />
+                        <MegaProcess 
+                            :value="item" 
+                            :parent="value" 
+                            :storage="storage" 
+                            :lock="lock"
+                            @view="goProcess"
+                        />
                     </v-col>
                 </v-row>
             </div>
+            <!-- 스위칭 필요2 -->
+            <router-view v-else>
+                <ViewProcessDetails
+                    class="pa-5"
+                    :parent="value"
+                    :storage="storage"
+                    :lock="lock"
+                />
+            </router-view>
         </v-card>
+        <v-dialog v-model="alertDialog" max-width="500">
+            <v-card>
+                <v-card-text class="mt-2">
+                    {{ alertMessage }}
+                </v-card-text>
+                <v-card-actions class="justify-center">
+                    <v-btn v-if="alertType =='checkout'" 
+                        color="primary" 
+                        variant="flat" 
+                        @click="checkOut"
+                    >확인</v-btn>
+                    <v-btn v-else-if="alertType =='checkin'" 
+                        color="primary" 
+                        variant="flat" 
+                        @click="checkIn"
+                    >확인</v-btn>
+                    <v-btn color="error" 
+                    variant="flat" 
+                    @click="alertDialog=false"
+                    >닫기</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
@@ -39,14 +122,17 @@ import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import MegaProcess from './MegaProcess.vue';
 import ProcessMenu from './ProcessMenu.vue';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
+import ViewProcessDetails from './ViewProcessDetails.vue'
 import domtoimage from 'dom-to-image';
+
 const storageKey = 'configuration'
 
 export default {
     components: {
         ProcessMenu,
         MegaProcess,
-        ProcessDefinition
+        ProcessDefinition,
+        ViewProcessDetails
     },
     data: () => ({
         storage: null,
@@ -55,30 +141,48 @@ export default {
         },
         type: 'map',
         enableEdit: false,
+        userInfo: {},
+        lock: null,
+        editUser: null,
+        alertType: '',
+        alertDialog: false,
+        alertMessage: '',
+        hover: false,
+        currentRouteId: null,
     }),
-    watch: {
-        //TODO: 변경 후 즉시 저장하면 안됩니다. 검토 완료 후 저장되어야 해서 저장 버튼으로 대체
-        value: {
-            deep: true,
-            handler(newVal) {
-                if (newVal) {
-                    this.saveProcess()
-                }
-            }
+    async created() {
+        var me = this;
+        if (!me.$app.try) {
+            me.$app = me.$app._component.methods;
         }
-    },
-    created() {
         this.storage = StorageBaseFactory.getStorage();
-        this.getProcessMap();
-
-        const isAdmin = localStorage.getItem("isAdmin");
-        if (isAdmin == "true") {
-            this.enableEdit = true;
-        } else {
-            this.enableEdit = false;
+        await this.init();
+    },
+    watch: {
+        '$route'(to) {
+            // 라우트가 변경될 때마다 currentRouteId 상태 업데이트
+            this.currentRouteId = to.params.id || null;
         }
     },
     methods: {
+        async init() {
+            this.getProcessMap();
+            this.userInfo = await this.storage.getUserInfo();
+            const isAdmin = localStorage.getItem("isAdmin");
+            if (isAdmin == "true") {
+                const lockObj =  await this.storage.getObject('lock/process-map', {key: 'id'});
+                if (lockObj && lockObj.id && lockObj.user_id) {
+                    this.lock = true;
+                    this.editUser = lockObj.user_id;
+                    if (this.editUser == this.userInfo.email) {
+                        this.enableEdit = true;
+                    }
+                } else {
+                    this.lock = false;
+                    this.enableEdit = true;
+                }
+            }
+        },
         capturePng() {
             var node = document.getElementById('processMap');
             domtoimage.toPng(node)
@@ -128,7 +232,7 @@ export default {
             }
         },
         async getProcessMap() {
-            const procMap = await this.storage.getObject(storageKey + '/proc_map', { key: 'key' });
+            const procMap = await this.storage.getObject(storageKey + '/proc_map', {key: 'key'});
             if (procMap && procMap.value) {
                 this.value = procMap.value;
             }
@@ -147,9 +251,59 @@ export default {
                 value: this.value
             }
             await this.storage.putObject(storageKey, putObj);
+            this.closeAlertDialog();
         },
         async goProcess(obj) {
             this.$router.push(`/definition-map/sub/${obj.id}`);
+        },
+        checkOut() {
+            this.closeAlertDialog();
+            this.$app.try({
+                action: async () => {
+                    this.lock = true;
+                    this.editUser = this.userInfo.email;
+                    let lockObj = {
+                        id: 'process-map',
+                        user_id: this.editUser,
+                    }
+                    await this.storage.putObject('lock', lockObj);
+                },
+                successMsg: '체크아웃 되었습니다.'
+            });
+        },
+        checkIn() {
+            this.closeAlertDialog();
+            this.$app.try({
+                action: async () => {
+                    this.lock = false;
+                    await this.storage.delete('lock/process-map', {key: 'id'});
+                    this.saveProcess();
+                },
+                successMsg: '저장 및 체크인 되었습니다.'
+            });
+        },
+        openAlertDialog(type) {
+            this.alertType = type;
+            const isAdmin = localStorage.getItem("isAdmin");
+            if (isAdmin == "true") {
+                if (type == 'checkin') {
+                    if (this.editUser == this.userInfo.email) {
+                        this.alertDialog = true;
+                        this.alertMessage = '수정된 내용을 저장 및 체크인 하시겠습니까?';
+                    } else {
+                        this.alertDialog = true;
+                        this.alertMessage = `현재 ${this.editUser} 님께서 수정 중입니다. 체크인 하는 경우 ${this.editUser} 님이 수정한 내용은 저장되지 않습니다. 체크인 하시겠습니까?`;
+                    }
+                } else if (type == 'checkout') {
+                    this.alertDialog = true;
+                    this.alertMessage = `프로세스 정의 체계도를 수정하시겠습니까?`;                    
+                }
+            }
+        },
+        closeAlertDialog() {
+            this.alertDialog = false;
+            this.alertType = '';
+            this.alertMessage = '';
         },
     },
 }
