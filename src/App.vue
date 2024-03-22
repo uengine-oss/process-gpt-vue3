@@ -6,10 +6,14 @@
             {{ snackbar.text }}
         </v-snackbar>
         <v-overlay v-model="overlay">
-            <v-progress-circular
-                color="primary"
-                indeterminate
-            ></v-progress-circular>
+            <div class="d-flex justify-center align-center" 
+                style="min-width: 100vw; min-height: 100vh;">
+                <v-progress-circular
+                    color="primary"
+                    indeterminate
+                    :size="50"
+                ></v-progress-circular>
+            </div>
         </v-overlay>
     </div>
 </template>
@@ -30,11 +34,6 @@ export default {
         },
         overlay: false,
     }),
-    watch: {
-        snackbar(val) {
-            console.log(val)
-        },
-    },
     async created() {
         // window.$supabase = createClient(window._env_.DB_URL, window._env_.DB_PW);
         window.$supabase = createClient("http://127.0.0.1:54321", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0");

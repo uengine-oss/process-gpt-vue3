@@ -31,6 +31,7 @@ export default {
         value: Object,
         parent: Object,
         storage: Object,
+        userInfo: Object,
         lock: Boolean,
     },
     data: () => ({

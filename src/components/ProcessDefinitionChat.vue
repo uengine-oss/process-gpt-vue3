@@ -4,21 +4,28 @@
             <template v-slot:leftpart>
                 <div class="no-scrollbar">
                     <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :isChanged="true"
-                        :userInfo="userInfo" :type="'definitions'" @sendMessage="beforeSendMessage"
-                        @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage" @getMoreChat="getMoreChat"
-                        @loadBPMN="bpmn => loadBPMN(bpmn)" @save="$app.try(saveModel)"></Chat>
+                        :userInfo="userInfo" :type="'definitions'" :lock="lock" :disableChat="disableChat"
+                        @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" 
+                        @stopMessage="stopMessage" @getMoreChat="getMoreChat"
+                        @loadBPMN="bpmn => loadBPMN(bpmn)" @complete="beforeSaveModel"
+                    ></Chat>
                 </div>
             </template>
             <template v-slot:rightpart>
-                <process-definition class="process-definition-resize" style="" :bpmn="bpmn" :processDefinition="processDefinition"
-                    @update="updateDefinition" :key="definitionChangeCount"></process-definition>
+                <process-definition class="process-definition-resize"
+                    :bpmn="bpmn" :processDefinition="processDefinition" :key="definitionChangeCount"
+                    :isViewMode="isViewMode"
+                    @update="updateDefinition"
+                ></process-definition>
             </template>
 
             <template v-slot:mobileLeftContent>
                 <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :isChanged="isChanged"
-                    :userInfo="userInfo" :type="'definitions'" @sendMessage="beforeSendMessage"
-                    @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage" @getMoreChat="getMoreChat"
-                    @loadBPMN="bpmn => loadBPMN(bpmn)" @save="$app.try(saveModel)"></Chat>
+                    :userInfo="userInfo" :type="'definitions'" :lock="lock" :disableChat="disableChat"
+                    @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage"
+                    @stopMessage="stopMessage" @getMoreChat="getMoreChat"
+                    @loadBPMN="bpmn => loadBPMN(bpmn)" @complete="beforeSaveModel"
+                ></Chat>
             </template>
         </AppBaseCard>
     </v-card>
@@ -70,7 +77,10 @@ export default {
             text: "processDefinition.processDefinitionExplanation"
         },
         processDefinitionMap: null,
-        modeler: null
+        modeler: null,
+        lock: false,
+        disableChat: false,
+        isViewMode: false,
     }),
     async created() {
         await this.init();
@@ -158,7 +168,19 @@ export default {
             // this.projectName = this.processDefinition.processDefinitionName;
             // this.definitionChangeCount++;
             if (this.$route.params.id && this.$route.params.id != 'chat') {
-                path = `${this.path}/${this.$route.params.id}`
+                path = `${this.path}/${this.$route.params.id}`;
+
+                // lock
+                const lockObj = await this.getData(`lock/${this.$route.params.id}`, { key: 'id' });
+                if (lockObj && lockObj.id && lockObj.user_id && lockObj.user_id == this.userInfo.email) {
+                    this.lock = true;
+                    this.disableChat = false;
+                    this.isViewMode = false;
+                } else {
+                    this.lock = false;
+                    this.disableChat = true;
+                    this.isViewMode = true;
+                }
             }
             const value = await this.getData(path, { key: "id" });
             if (value) {
@@ -398,6 +420,29 @@ export default {
 
         //     return processDefinition;
         // },
+        beforeSaveModel() {
+            var me = this;
+            me.$app.try({
+                action: async () => {
+                    if (me.lock) {
+                        me.lock = false;
+                        me.disableChat = true;
+                        me.isViewMode = true;
+                        await me.saveModel();
+                        await me.storage.delete(`lock/${this.processDefinition.processDefinitionId}`, {key: 'id'});
+                    } else {
+                        me.lock = true;
+                        me.disableChat = false;
+                        me.isViewMode = false;
+                        const lockObj = {
+                            id: me.processDefinition.processDefinitionId,
+                            user_id: me.userInfo.email
+                        };
+                        await me.putObject('lock', lockObj);
+                    }
+                },
+            });
+        },
         async saveModel() {
             // alert(model);
             console.log(this.changedXML);

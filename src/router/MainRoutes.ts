@@ -61,11 +61,13 @@ const MainRoutes = {
             name: 'Definition Map',
             path: '/definition-map',
             component: () => import('@/components/apps/definition-map/ProcessDefinitionMap.vue'),
+            props: { componentName: 'DefinitionMapList' }
         },
         {
             name: 'Mega Process Detail',
             path: '/definition-map/mega/:id',
             component: () => import('@/components/apps/definition-map/ProcessDefinitionMap.vue'),
+            props: { componentName: 'ViewProcessDetails' }
         },
         {
             name: 'Major Process Detail',
@@ -75,7 +77,8 @@ const MainRoutes = {
         {
             name: 'Sub Process Detail',
             path: '/definition-map/sub/:id',
-            component: () => import('@/components/apps/definition-map/SubProcessDetail.vue'),
+            component: () => import('@/components/apps/definition-map/ProcessDefinitionMap.vue'),
+            props: { componentName: 'SubProcessDetail' }
         },
         
 

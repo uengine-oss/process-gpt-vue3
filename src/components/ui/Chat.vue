@@ -36,9 +36,19 @@
                         </v-btn>
                         <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn"
                             style="display: none;" />
-                        <v-btn v-if="type == 'definitions'" :disabled="!isChanged" icon variant="text"
-                            @click="$emit('save')" class="text-medium-emphasis">
-                            <DeviceFloppyIcon size="24" />
+                        <v-btn v-if="lock && type == 'definitions'"
+                            icon variant="text"
+                            @click="openAlertDialog" 
+                            class="text-medium-emphasis"
+                        >
+                            <LockIcon size="24" />
+                        </v-btn>
+                        <v-btn v-if="!lock && type == 'definitions'"
+                            icon variant="text"
+                            @click="openAlertDialog" 
+                            class="text-medium-emphasis"
+                        >
+                            <LockOpenIcon size="24" />
                         </v-btn>
                         <v-btn v-if="chatInfo" icon variant="text" class="text-medium-emphasis" @click="moreDetail">
                             <Icon icon="material-symbols:info-outline" width="24" height="24" />
@@ -286,6 +296,18 @@
                 </div>
             </div>
         </form>
+
+        <v-dialog v-model="alertDialog" max-width="500" persistent>
+            <v-card>
+                <v-card-text class="mt-2">
+                    {{ alertMessage }}
+                </v-card-text>
+                <v-card-actions class="justify-center">
+                    <v-btn color="primary" variant="flat" @click="complete">확인</v-btn>
+                    <v-btn color="error" variant="flat" @click="alertDialog=false">닫기</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
@@ -319,6 +341,7 @@ export default {
         userList: Array,
         currentChatRoom: Object,
         // documentQueryStr: String,
+        lock: Boolean,
     },
     data() {
         return {
@@ -337,6 +360,8 @@ export default {
             showUserList: false,
             mentionStartIndex: null,
             mentionedUsers: [], // Mention된 유저들의 정보를 저장할 배열
+            alertDialog: false,
+            alertMessage: '',
         };
     },
     computed: {
@@ -613,6 +638,21 @@ export default {
             if (imageFile) {
                 reader.readAsDataURL(imageFile);
             }
+        },
+        openAlertDialog() {
+            if (this.type == 'definitions') {
+                if (this.lock) {
+                    this.alertMessage = '저장 및 체크인 하시겠습니까?';
+                } else {
+                    this.alertMessage = '체크아웃 및 프로세스 편집을 시작하시겠습니까?';
+                }
+                this.alertDialog = true;
+            }
+        },
+        complete() {
+            this.alertDialog = false;
+            this.alertMessage = '';
+            this.$emit('complete');
         },
     }
 };
