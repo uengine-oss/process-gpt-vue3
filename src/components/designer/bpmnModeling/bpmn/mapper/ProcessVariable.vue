@@ -37,11 +37,11 @@
                         variant="outlined" hide-details></v-autocomplete>
                 </v-col>
                 <v-col cols="12">
-                    <v-textarea v-if="processVariable.datasource?.type == 'SQL'"
+                    <v-textarea v-if="processVariable.datasource?.type == 'SQL' || processVariable.datasource?.type == 'database'"
                         v-model="processVariable.datasource.sql"
                     ></v-textarea>
-<v-btn v-if="processVariable.datasource?.type == 'SQL'" variant="outlined" color="primary" rounded="pill"  size="small" @click="generateSql()">generate</v-btn>
-                    <v-btn style="margin-left: 5px;" color="success" variant="outlined" rounded="pill" v-if="processVariable.datasource?.type == 'SQL'" size="small" @click="testSql()">test</v-btn>
+                    <v-btn v-if="processVariable.datasource?.type == 'SQL' || processVariable.datasource?.type == 'database'" variant="outlined" color="primary" rounded="pill"  size="small" @click="generateSql()">generate</v-btn>
+                    <v-btn style="margin-left: 5px;" color="success" variant="outlined" rounded="pill" v-if="processVariable.datasource?.type == 'SQL' || processVariable.datasource?.type == 'database'" size="small" @click="testSql()">test</v-btn>
                     <v-row v-if="processVariable.table" class="my-5">
                         <v-col cols="12">
                             <v-card outlined>
@@ -78,7 +78,7 @@ export default {
     },
     data() {
         return {
-            datasources: ["BPMN", "SQL"],
+            datasources: ["BPMN", "SQL", "database"],
             types: ["Text", "Number", "Date", "Attachment"],
             processVariable: {
                 name: "",
@@ -122,6 +122,17 @@ export default {
         addVariable() {
             this.$emit("addVariables", this.processVariable)
             this.$emit("updateVariables", this.processVariable)
+
+            this.processVariable = {
+                name: "",
+                type: "",
+                description: "",
+                datasource: {
+                    type: "",
+                    sql: ""
+                },
+                table: ""
+            }
         }
     },
     mounted() {

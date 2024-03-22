@@ -38,6 +38,7 @@ import * as jsondiff from 'jsondiffpatch';
 import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/ProcessDefinitionGenerator';
 import Chat from './ui/Chat.vue';
+import axios from 'axios';
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
 var jsondiffpatch = jsondiff.create({
     objectHash: function (obj, index) {
@@ -448,18 +449,17 @@ export default {
             //     this.saveDefinition(definition);
             // }
 
-            // const table = this.getObject(definition.processDefinitionId)
+            // const table = await this.getObject(this.processDefinition.processDefinitionId)
             // if (!table) {
-            //     await axios.post('/process-db-schema/invoke', {
-            //         "input": {
-            //             "process_definition_id": this.processDefinition.processDefinitionName
-            //         }
-            //     }).then(async res => {
-            //         console.log(res);
-            //     })
-            //         .catch(error => {
-            //             console.log(error);
-            //         });
+                await axios.post('http://localhost:8001/process-db-schema/invoke', {
+                    "input": {
+                        "process_definition_id": this.processDefinition.processDefinitionId
+                    }
+                }).then(async res => {
+                    console.log(res);
+                }).catch(error => {
+                    console.log(error);
+                });
             // }
         },
         // parseDefinition(model) {
