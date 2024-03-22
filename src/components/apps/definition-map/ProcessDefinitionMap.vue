@@ -33,7 +33,7 @@
                     </v-btn>
 
                     <v-btn class="ml-3" :size="24" @click="capturePng">
-                        <Icon icon="iconoir:screenshot" width="24" height="24" />
+                        <Icon icon="mage:image-download" width="24" height="24" />
                     </v-btn>
                     
                     <ProcessMenu
