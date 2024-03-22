@@ -38,8 +38,8 @@ const customizer = useCustomizerStore();
                     <NavItem :item="definition" class="leftPadding" />
                 </template>
                 <!-- Process Definition List -->
-                <template v-if="definitions">
-                    <NavCollapse class="leftPadding" :item="definitions" :level="0" />
+                <template v-if="definitionList">
+                    <NavCollapse class="leftPadding" :item="definitionList" :level="0" />
                 </template>
                 <!-- <Moreoption/> -->
             </v-list>
@@ -51,6 +51,9 @@ const customizer = useCustomizerStore();
 </template>
 
 <script>
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
+
+const storageKey = 'proc_def'
 
 export default {
     data: () => ({
@@ -120,9 +123,12 @@ export default {
                 to: "/ui-definitions/chat",
             },
         ],
-        definition: null
+        definition: null,
+        definitionList: null,
     }),
-    created() {
+    async created() {
+        this.storage = await StorageBaseFactory.getStorage();
+
         const isAdmin = localStorage.getItem("isAdmin");
         if (isAdmin == 'true') {
             this.definition = {
@@ -131,6 +137,7 @@ export default {
                 BgColor: 'primary',
                 to: "/definitions/chat",
             }
+            this.getDefinitionList();
         }
 
         const execution = localStorage.getItem("execution");
@@ -144,7 +151,7 @@ export default {
     },
     methods: {
         async getDefinitionList() {
-            let def = await this.storage.getObject(`proc_def`);
+            let def = await this.storage.list(storageKey);
             if (def) {
                 var menu = {
                     title: 'processList.title',
@@ -165,7 +172,7 @@ export default {
                         }
                     });
                 }
-                this.definitions = menu;
+                this.definitionList = menu;
             }
         }
     }
