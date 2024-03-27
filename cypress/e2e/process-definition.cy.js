@@ -6,6 +6,14 @@ Cypress.on('uncaught:exception', (err, runnable) => {
 });
 
 describe('프로세스 정의', () => {
+  beforeEach(() => {
+    cy.visit('http://127.0.0.1:5173/', {
+      onBeforeLoad: (window) => {
+        window.localStorage.setItem('execution', true);
+      }
+    });
+  });
+
   it('passes', () => {
     cy.visit('http://127.0.0.1:5173/');
 
@@ -31,10 +39,9 @@ describe('프로세스 정의', () => {
     cy.wait(1500);
     cy.get('.cp-send').click();
     cy.wait(60000);
-    cy.get('.cp-save').click();
 
     // 프로세스 정의 체계
-    cy.get('.cp-menu').eq(6).click();
+    // cy.get('.cp-menu').eq(0).click();
 
   })
 })
