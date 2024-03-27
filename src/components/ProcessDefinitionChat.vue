@@ -1288,4 +1288,12 @@ export default {
         height: calc(100vh - 192px);
     }
 }
+:deep(.right-part) {
+    width: auto; /* Ignore specific width */
+}
+
+:deep(.left-part) {
+    width: 80%; /* Apply specific width */
+}
+
 </style>

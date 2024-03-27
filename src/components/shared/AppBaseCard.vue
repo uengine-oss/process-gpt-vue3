@@ -70,8 +70,12 @@ const canvasReSize = computed(() => {
     }
 }
 
+.right-part {
+    width: 100%;
+}
+
 .left-part {
-    width: 80%;
+    // width: 80%;
     // min-height: 500px;
     position: relative;
     overflow: auto;
