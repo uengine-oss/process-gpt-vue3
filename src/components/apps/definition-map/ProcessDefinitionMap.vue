@@ -9,7 +9,7 @@
                     <span v-if="lock && userInfo.email && userInfo.email != editUser" class="pt-1">
                         {{ editUser }} 님이 수정 중 입니다.
                     </span>
-                    <v-btn v-if="lock && enableEdit" 
+                    <v-btn v-if="!lock && enableEdit" 
                         icon variant="text" size="24"
                         class="ml-3"
                         @click="openAlertDialog('checkin')"
@@ -20,7 +20,7 @@
                         <LockOpenIcon v-else width="24" height="24" />
                     </v-btn>
                     
-                    <v-btn v-if="!lock && enableEdit"
+                    <v-btn v-if="lock && enableEdit"
                         icon variant="text" size="24"
                         @click="openAlertDialog('checkout')"
                         @mouseenter="hover = true"
@@ -39,6 +39,8 @@
                         :size="24" 
                         :type="type" 
                         :lock="lock"
+                        :process="value"
+                        :storage="storage"
                         @add="addProcess" 
                     />
 
@@ -220,6 +222,17 @@ export default {
             this.closeAlertDialog();
             this.$app.try({
                 action: async () => {
+                    this.lock = false;
+                    await this.saveProcess();
+                    await this.storage.delete('lock/process-map', {key: 'id'});
+                },
+                successMsg: '저장 및 체크아웃 되었습니다.'
+            });
+        },
+        checkIn() {
+            this.closeAlertDialog();
+            this.$app.try({
+                action: async () => {
                     this.lock = true;
                     this.editUser = this.userInfo.email;
                     let lockObj = {
@@ -228,33 +241,22 @@ export default {
                     }
                     await this.storage.putObject('lock', lockObj);
                 },
-                successMsg: '체크아웃 되었습니다.'
-            });
-        },
-        checkIn() {
-            this.closeAlertDialog();
-            this.$app.try({
-                action: async () => {
-                    this.lock = false;
-                    await this.storage.delete('lock/process-map', {key: 'id'});
-                    this.saveProcess();
-                },
-                successMsg: '저장 및 체크인 되었습니다.'
+                successMsg: '체크인 되었습니다.'
             });
         },
         openAlertDialog(type) {
             this.alertType = type;
             const isAdmin = localStorage.getItem("isAdmin");
             if (isAdmin == "true") {
-                if (type == 'checkin') {
+                if (type == 'checkout') {
                     if (this.editUser == this.userInfo.email) {
                         this.alertDialog = true;
-                        this.alertMessage = '수정된 내용을 저장 및 체크인 하시겠습니까?';
+                        this.alertMessage = '수정된 내용을 저장 및 체크아웃 하시겠습니까?';
                     } else {
                         this.alertDialog = true;
-                        this.alertMessage = `현재 ${this.editUser} 님께서 수정 중입니다. 체크인 하는 경우 ${this.editUser} 님이 수정한 내용은 저장되지 않습니다. 체크인 하시겠습니까?`;
+                        this.alertMessage = `현재 ${this.editUser} 님께서 수정 중입니다. 체크아웃 하는 경우 ${this.editUser} 님이 수정한 내용은 저장되지 않습니다. 체크아웃 하시겠습니까?`;
                     }
-                } else if (type == 'checkout') {
+                } else if (type == 'checkin') {
                     this.alertDialog = true;
                     this.alertMessage = `프로세스 정의 체계도를 수정하시겠습니까?`;                    
                 }
