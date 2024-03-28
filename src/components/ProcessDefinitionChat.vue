@@ -2,23 +2,30 @@
     <v-card elevation="10" style="background-color: rgba(255, 255, 255, 0)">
         <AppBaseCard>
             <template v-slot:leftpart>
-                <div class="no-scrollbar">
-                    <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :isChanged="true"
-                        :userInfo="userInfo" :type="'definitions'" @sendMessage="beforeSendMessage"
-                        @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage" @getMoreChat="getMoreChat"
-                        @loadBPMN="bpmn => loadBPMN(bpmn)" @save="$app.try(saveModel)"></Chat>
-                </div>
+                <process-definition class="process-definition-resize"
+                    :bpmn="bpmn" :processDefinition="processDefinition" :key="definitionChangeCount"
+                    :isViewMode="isViewMode"
+                    @update="updateDefinition"
+                ></process-definition>
             </template>
             <template v-slot:rightpart>
-                <process-definition class="process-definition-resize" style="" :bpmn="bpmn" :processDefinition="processDefinition"
-                    @update="updateDefinition" :key="definitionChangeCount"></process-definition>
+                <div class="no-scrollbar">
+                    <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :isChanged="true"
+                        :userInfo="userInfo" :type="'definitions'" :lock="lock" :disableChat="disableChat"
+                        @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" 
+                        @stopMessage="stopMessage" @getMoreChat="getMoreChat"
+                        @loadBPMN="bpmn => loadBPMN(bpmn)" @complete="checkedLock"
+                    ></Chat>
+                </div>
             </template>
 
             <template v-slot:mobileLeftContent>
                 <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :isChanged="isChanged"
-                    :userInfo="userInfo" :type="'definitions'" @sendMessage="beforeSendMessage"
-                    @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage" @getMoreChat="getMoreChat"
-                    @loadBPMN="bpmn => loadBPMN(bpmn)" @save="$app.try(saveModel)"></Chat>
+                    :userInfo="userInfo" :type="'definitions'" :lock="lock" :disableChat="disableChat"
+                    @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage"
+                    @stopMessage="stopMessage" @getMoreChat="getMoreChat"
+                    @loadBPMN="bpmn => loadBPMN(bpmn)" @complete="checkedLock"
+                ></Chat>
             </template>
         </AppBaseCard>
     </v-card>
@@ -38,6 +45,7 @@ import * as jsondiff from 'jsondiffpatch';
 import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/ProcessDefinitionGenerator';
 import Chat from './ui/Chat.vue';
+import axios from 'axios';
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
 var jsondiffpatch = jsondiff.create({
     objectHash: function (obj, index) {
@@ -70,7 +78,10 @@ export default {
             text: "processDefinition.processDefinitionExplanation"
         },
         processDefinitionMap: null,
-        modeler: null
+        modeler: null,
+        lock: false,
+        disableChat: false,
+        isViewMode: false,
     }),
     async created() {
         await this.init();
@@ -158,7 +169,19 @@ export default {
             // this.projectName = this.processDefinition.processDefinitionName;
             // this.definitionChangeCount++;
             if (this.$route.params.id && this.$route.params.id != 'chat') {
-                path = `${this.path}/${this.$route.params.id}`
+                path = `${this.path}/${this.$route.params.id}`;
+
+                // lock
+                const lockObj = await this.getData(`lock/${this.$route.params.id}`, { key: 'id' });
+                if (lockObj && lockObj.id && lockObj.user_id && lockObj.user_id == this.userInfo.email) {
+                    this.lock = true;
+                    this.disableChat = false;
+                    this.isViewMode = false;
+                } else {
+                    this.lock = false;
+                    this.disableChat = true;
+                    this.isViewMode = true;
+                }
             }
             const value = await this.getData(path, { key: "id" });
             if (value) {
@@ -398,6 +421,30 @@ export default {
 
         //     return processDefinition;
         // },
+        checkedLock() {
+            var me = this;
+            me.$app.try({
+                action: async () => {
+                    if (me.lock) {
+                        me.lock = false;
+                        me.disableChat = true;
+                        me.isViewMode = true;
+                        await me.saveModel();
+                        await me.storage.delete(`lock/${this.processDefinition.processDefinitionId}`, {key: 'id'});
+                    } else {
+                        me.lock = true;
+                        me.disableChat = false;
+                        me.isViewMode = false;
+                        const lockObj = {
+                            id: me.processDefinition.processDefinitionId,
+                            user_id: me.userInfo.email
+                        };
+                        await me.putObject('lock', lockObj);
+                    }
+                    window.location.reload();
+                },
+            });
+        },
         async saveModel() {
             // alert(model);
             console.log(this.changedXML);
@@ -413,7 +460,7 @@ export default {
                 this.processDefinition.processDefinitionName = prompt("please give a name for the process definition");
 
             if (!this.processDefinition.processDefinitionId)
-                this.processDefinition.processDefinitionId = prompt("please give a name for the process definition");
+                this.processDefinition.processDefinitionId = prompt("please give a ID for the process definition");
 
             this.projectName = this.processDefinition.processDefinitionName;
 
@@ -422,18 +469,32 @@ export default {
                 throw new Error("processDefinitionId or processDefinitionName is missing");
             }
 
-
             let newPath = `${this.path}/${this.processDefinition.processDefinitionId}`;
 
-            let putObj = {
-                id: this.processDefinition.processDefinitionId,
-                name: this.processDefinition.processDefinitionName,
-                definition: this.processDefinition,
-                // messages: this.messages,
-                bpmn: xml.xml   //TODO: model --> definition과 구분이 안됨.  bpmn 혹은 xmlDefinition 혹은 xmlModel 등으로 프로퍼티명 변경할것!
-            };
+                let putObj = {
+                    id: this.processDefinition.processDefinitionId,
+                    name: this.processDefinition.processDefinitionName,
+                    definition: this.processDefinition,
+                    // messages: this.messages,
+                    bpmn: xml.xml   //TODO: model --> definition과 구분이 안됨.  bpmn 혹은 xmlDefinition 혹은 xmlModel 등으로 프로퍼티명 변경할것!
+                };
 
-            await this.putObject(newPath, putObj);
+                await this.putObject(newPath, putObj);
+            // if (window.$mode == "uEngine") {
+            //     // :9093/definition/raw/sales/testProcess.bpmn < definition-samples/testProcess.bpmn
+            //     await axios.put(`/definition/raw/sales/${this.processDefinition.processDefinitionId}.bpmn`, xml.xml, {
+            //         headers: {
+            //             'Content-Type': 'application/xml' // 적절한 Content-Type 설정
+            //         }
+            //     }).then(res => {
+            //         console.log(res);
+            //     })
+            // } else {
+
+
+                
+            // }
+
 
             // const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
             // let vectorId = await vectorStore.similaritySearch({
@@ -448,18 +509,17 @@ export default {
             //     this.saveDefinition(definition);
             // }
 
-            // const table = this.getObject(definition.processDefinitionId)
+            // const table = await this.getObject(this.processDefinition.processDefinitionId)
             // if (!table) {
-            //     await axios.post('/process-db-schema/invoke', {
-            //         "input": {
-            //             "process_definition_id": this.processDefinition.processDefinitionName
-            //         }
-            //     }).then(async res => {
-            //         console.log(res);
-            //     })
-            //         .catch(error => {
-            //             console.log(error);
-            //         });
+                await axios.post('http://localhost:8001/process-db-schema/invoke', {
+                    "input": {
+                        "process_definition_id": this.processDefinition.processDefinitionId
+                    }
+                }).then(async res => {
+                    console.log(res);
+                }).catch(error => {
+                    console.log(error);
+                });
             // }
         },
         // parseDefinition(model) {
@@ -1220,11 +1280,22 @@ export default {
 
 <style scoped>
 .process-definition-resize {
-    width: 100%; height:100%;
+    width: 100%;
+    height: 100%;
 }
+
 @media only screen and (max-width:1279px) {
     .process-definition-resize {
-        width: 100%; height: calc(100vh - 192px);
+        width: 100%;
+        height: calc(100vh - 192px);
     }
 }
+:deep(.right-part) {
+    width: auto; /* Ignore specific width */
+}
+
+:deep(.left-part) {
+    width: 80%; /* Apply specific width */
+}
+
 </style>

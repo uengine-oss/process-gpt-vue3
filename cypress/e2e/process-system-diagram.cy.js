@@ -1,3 +1,5 @@
+const { eq } = require("lodash");
+
 const email = Cypress.env('EMAIL');
 const password = Cypress.env('PASSWORD');
 
@@ -5,7 +7,7 @@ Cypress.on('uncaught:exception', (err, runnable) => {
   return false;
 });
 
-describe('조직도 정의', () => {
+describe('프로세스 정의', () => {
   beforeEach(() => {
     cy.visit('http://127.0.0.1:5173/', {
       onBeforeLoad: (window) => {
@@ -13,7 +15,7 @@ describe('조직도 정의', () => {
       }
     });
   });
-  
+
   it('passes', () => {
 
     cy.get('.cp-start').click();
@@ -29,13 +31,12 @@ describe('조직도 정의', () => {
     cy.get('.cp-menu-open').click();
     cy.wait(500);
 
-    // 조직도 정의
-    cy.get('.cp-menu').eq(5).click();
+    // 프로세스 정의 체계도
+    cy.get('.cp-menu').eq(6).click();
     cy.wait(3000);
-    cy.get('.cp-dialog-open').click();
-    cy.wait(3000);
-    cy.get('.cp-chat').type('개발팀과 인사팀에 대한 조직도를 각 팀의 팀장 포함 임의의 정보로 생성해줘.');
-    cy.wait(1500);
-    cy.get('.cp-send').click();
+    cy.get('.cp-unlock').click();
+    // cy.wait(60000);
+
+
   })
 })

@@ -6,8 +6,14 @@ Cypress.on('uncaught:exception', (err, runnable) => {
 });
 
 describe('process-gpt', () => {
+  beforeEach(() => {
+    cy.visit('http://127.0.0.1:5173/', {
+      onBeforeLoad: (window) => {
+        window.localStorage.setItem('execution', true);
+      }
+    });
+  });
   it('passes', () => {
-    cy.visit('http://127.0.0.1:5173/');
 
     cy.get('.cp-start').click();
 
@@ -26,6 +32,7 @@ describe('process-gpt', () => {
     cy.get('.cp-menu').eq(4).click();
     cy.wait(3000);
     cy.get('.cp-chat').type('휴가신청 프로세스를 실행해줘.');
+    cy.get('.cp-send').click({force: true});
 
     // // 채팅
     // cy.get('.cp-menu').eq(3).click();

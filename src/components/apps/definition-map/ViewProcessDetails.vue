@@ -7,7 +7,7 @@
             >
                 <div class="d-flex flex-column justify-content-center align-items-center">
                     <h6 class="text-h6 font-weight-semibold text-center">
-                        Mega<br>Proces
+                        Mega<br>Process
                     </h6>
                 </div>
             </v-card>
@@ -42,7 +42,7 @@
             >
                 <div class="d-flex flex-column justify-content-center align-items-center">
                     <h6 class="text-h6 font-weight-semibold text-center">
-                        Major<br>Proces
+                        Major<br>Process
                     </h6>
                 </div>
             </v-card>
@@ -83,7 +83,7 @@
             >
                 <div class="justify-content-center align-items-center">
                     <h6 class="text-h6 font-weight-semibold text-center">
-                        Sub<br>Proces
+                        Sub<br>Process
                     </h6>
                 </div>
             </v-card>
@@ -140,16 +140,28 @@ export default {
         return {
             processDetails: null, // 프로세스 상세 정보를 저장할 변수
             processPath: null, // 라우트 파라미터에서 받아온 process ID
+            filteredProcess: {
+                id: '',
+                label: '',
+                major_proc_list: []
+            },
         };
     },
     created() {
+        var me = this;
+        if (!me.$app.try) {
+            me.$app = me.$app._component.methods;
+        }
         this.processPath = this.$route.params.id;
+        if (this.parent && this.parent.mega_proc_list && this.parent.mega_proc_list.length > 0) {
+            this.filteredProcess = this.parent.mega_proc_list.find(process => process.id === this.processPath);
+        }
     },
     computed: {
-        filteredProcess() {
-            if (!this.parent || !this.parent.mega_proc_list) return null;
-            return this.parent.mega_proc_list.find(process => process.id === this.processPath);
-        }
+        // filteredProcess() {
+        //     if (!this.parent || !this.parent.mega_proc_list) return null;
+        //     return this.parent.mega_proc_list.find(process => process.id === this.processPath);
+        // }
     },
     watch: {
         '$route.params.id': {
@@ -173,7 +185,12 @@ export default {
                     this.$router.replace(targetPath); // push 대신 replace 사용
                 }
             }
-        }
+        },
+        parent(newVal) {
+            if (newVal && newVal.mega_proc_list && newVal.mega_proc_list.length > 0) {
+                this.filteredProcess = newVal.mega_proc_list.find(process => process.id === this.processPath);
+            }
+        },
     },
     methods: {
         addProcess(newProcess, type, selectedProcessId) {

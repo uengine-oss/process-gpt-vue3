@@ -13,6 +13,7 @@
                     :type="type"
                     :process="value"
                     :storage="storage"
+                    :userInfo="userInfo"
                     :lock="lock"
                     @add="addProcess"
                     @edit="editProcess"
@@ -37,6 +38,7 @@
                         :value="item" 
                         :parent="value" 
                         :storage="storage"
+                        :userInfo="userInfo"
                         :lock="lock"
                         @view="viewProcess"
                     />
@@ -72,6 +74,7 @@ export default {
         value: Object,
         parent: Object,
         storage: Object,
+        userInfo: Object,
         lock: Boolean,
     },
     data: () => ({

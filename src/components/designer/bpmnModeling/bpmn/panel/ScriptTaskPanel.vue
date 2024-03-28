@@ -1,35 +1,19 @@
 <template>
-    <div style="height: 95%; margin-top: 10px; overflow: auto;">
-
-        <div class="included" style="margin-bottom: 22px;">
-            <div style="margin-bottom: 8px;">Select Definition</div>
-            <v-autocomplete v-model="copyUengineProperties.definition" :items="definitions" :disabled="isViewMode"
-                item-title="name" color="primary" label="Definition" variant="outlined" hide-details></v-autocomplete>
+    <div>
+        <div style="margin-bottom:20px;">
+            <div>{{ $t('BpnmPropertyPanel.script') }}</div>
+            <v-textarea v-model="copyUengineProperties.script" :disabled="isViewMode" style="width:100%"></v-textarea>
         </div>
         <div v-if="inputData.length > 0" style="margin-bottom:20px;">
             <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.inputData') }}</div>
             <v-row class="ma-0 pa-0">
                 <div v-for="(inputData, idx) in inputData" :key="idx" class="mr-2 mt-2">
-                    <v-chip v-if="inputData.mandatory" color="primary" variant="outlined" class="text-body-2">
+                    <v-chip v-if="inputData.mandatory" color="primary" variant="outlined" class="text-body-2"
+                        @click="deleteInputData(inputData)">
                         {{ inputData.key }}
                         <CircleXIcon class="ml-2" start size="20" />
                     </v-chip>
-                    <v-chip v-else class="text-body-2" variant="outlined">
-                        {{ inputData.key }}
-                        <CircleXIcon class="ml-2" start size="20" />
-                    </v-chip>
-                </div>
-            </v-row>
-        </div>
-        <div v-if="inputData.length > 0" style="margin-bottom:20px;">
-            <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.inputData') }}</div>
-            <v-row class="ma-0 pa-0">
-                <div v-for="(inputData, idx) in inputData" :key="idx" class="mr-2 mt-2">
-                    <v-chip v-if="inputData.mandatory" color="primary" variant="outlined" class="text-body-2">
-                        {{ inputData.key }}
-                        <CircleXIcon class="ml-2" start size="20" />
-                    </v-chip>
-                    <v-chip v-else class="text-body-2" variant="outlined">
+                    <v-chip v-else class="text-body-2" variant="outlined" @click="deleteInputData(inputData)">
                         {{ inputData.key }}
                         <CircleXIcon class="ml-2" start size="20" />
                     </v-chip>
@@ -40,11 +24,12 @@
             <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.outputData') }}</div>
             <v-row class="ma-0 pa-0">
                 <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
-                    <v-chip v-if="output.mandatory" color="primary" class="text-body-2" variant="outlined">
+                    <v-chip v-if="output.mandatory" color="primary" class="text-body-2" variant="outlined"
+                        @click="deleteOutputData(output)">
                         {{ output.variable.name }}
                         <CircleXIcon class="ml-2" start size="20" />
                     </v-chip>
-                    <v-chip v-else class="text-body-2" variant="outlined">
+                    <v-chip v-else class="text-body-2" variant="outlined" @click="deleteOutputData(output)">
                         {{ output.variable.name }}
                         <CircleXIcon class="ml-2" start size="20" />
                     </v-chip>
@@ -120,7 +105,7 @@
                     </v-card-text>
                     <v-card-actions>
                         <v-btn @click="addParameter">add</v-btn>
-                        <v-btn>cancel</v-btn>
+                        <v-btn @click="editParam = !editParam">cancel</v-btn>
                     </v-card-actions>
                 </v-card>
             </v-row>
@@ -133,30 +118,20 @@ import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { Icon } from '@iconify/vue';
 const storage = StorageBaseFactory.getStorage()
 export default {
-    name: 'call-activity-panel',
+    name: 'script-task-panel',
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
         isViewMode: Boolean
     },
     created() {
-        // console.log(this.element)
-        // this.uengineProperties = JSON.parse(this.element.extensionElements.values[0].json)
-        // 필수 uEngine Properties의 key가 없다면 작업.
-        Object.keys(this.requiredKeyLists).forEach(key => {
-            this.ensureKeyExists(this.uengineProperties, key, this.requiredKeyLists[key])
-        })
     },
     data() {
         return {
             requiredKeyLists: {
                 "parameters": [],
-                "checkpoints": [],
-                "extendedProperties": [],
-                "roleBindings": [],
-                "definitionId": ""
+                "checkpoints": []
             },
-            definitions: [],
             copyUengineProperties: this.uengineProperties,
             name: "",
             checkpoints: [],
@@ -182,10 +157,6 @@ export default {
         }
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
-        const value = await storage.list('proc_def');
-        if (value) {
-            this.definitions = value
-        }
     },
     computed: {
         inputData() {
@@ -212,6 +183,20 @@ export default {
     watch: {
     },
     methods: {
+        deleteInputData(inputData) {
+            const index = this.copyUengineProperties.parameters.findIndex(element => element.key === inputData.key);
+            if (index > -1) {
+                this.copyUengineProperties.parameters.splice(index, 1);
+                this.$emit('update:uEngineProperties', this.copyUengineProperties)
+            }
+        },
+        deleteOutputData(outputData) {
+            const index = this.copyUengineProperties.parameters.findIndex(element => element.key === outputData.key);
+            if (index > -1) {
+                this.copyUengineProperties.parameters.splice(index, 1);
+                this.$emit('update:uEngineProperties', this.copyUengineProperties)
+            }
+        },
         ensureKeyExists(obj, key, defaultValue) {
             if (!obj.hasOwnProperty(key)) {
                 obj[key] = defaultValue;
@@ -234,7 +219,13 @@ export default {
         addParameter() {
             this.copyUengineProperties.extendedProperties.push({ key: this.paramKey, value: this.paramValue })
             this.$emit('update:uEngineProperties', this.copyUengineProperties)
-
+            // const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
+            // // this.checkpoints.push(this.checkpointMessage)
+            // const parameter = bpmnFactory.create('uengine:ExtendedProperty', { key: this.paramKey, value: this.paramValue });
+            // if (!this.elementCopy.extensionElements.values[0].ExtendedProperties) this.elementCopy.extensionElements.values[0].ExtendedProperties = []
+            // this.elementCopy.extensionElements.values[0].ExtendedProperties.push(parameter)
+            // this.paramKey = ""
+            // this.paramValue = ""
         },
         async getData(path, options) {
             // let value;
