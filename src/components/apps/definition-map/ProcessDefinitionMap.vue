@@ -44,13 +44,13 @@
                         @add="addProcess" 
                     />
 
-                    <v-btn v-if="componentName != 'DefinitionMapList'"
+                    <!-- <v-btn v-if="componentName != 'DefinitionMapList'"
                         icon variant="text" 
                         class="ml-3"
                         size="24"
                         @click="goProcessMap">
                         <v-icon size="24">mdi-arrow-left</v-icon>
-                    </v-btn>
+                    </v-btn> -->
                 </div>
             </div>
             

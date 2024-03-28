@@ -4,7 +4,8 @@
             <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.inputData') }}</div>
             <v-row class="ma-0 pa-0">
                 <div v-for="(inputData, idx) in inputData" :key="idx" class="mr-2 mt-2">
-                    <v-chip v-if="inputData.mandatory" color="primary" variant="outlined" class="text-body-2" @click="deleteInputData(inputData)">
+                    <v-chip v-if="inputData.mandatory" color="primary" variant="outlined" class="text-body-2"
+                        @click="deleteInputData(inputData)">
                         {{ inputData.key }}
                         <CircleXIcon class="ml-2" start size="20" />
                     </v-chip>
@@ -19,11 +20,12 @@
             <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.outputData') }}</div>
             <v-row class="ma-0 pa-0">
                 <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
-                    <v-chip v-if="output.mandatory" color="primary" class="text-body-2" variant="outlined" @click="deleteOutputData(output)" >
+                    <v-chip v-if="output.mandatory" color="primary" class="text-body-2" variant="outlined"
+                        @click="deleteOutputData(output)">
                         {{ output.variable.name }}
                         <CircleXIcon class="ml-2" start size="20" />
                     </v-chip>
-                    <v-chip v-else class="text-body-2" variant="outlined" @click="deleteOutputData(output)" >
+                    <v-chip v-else class="text-body-2" variant="outlined" @click="deleteOutputData(output)">
                         {{ output.variable.name }}
                         <CircleXIcon class="ml-2" start size="20" />
                     </v-chip>
@@ -97,10 +99,10 @@
                         <v-text-field v-model="paramKey" label="Key"></v-text-field>
                         <v-text-field v-model="paramValue" label="Value"></v-text-field>
                     </v-card-text>
-                    <v-card-action>
+                    <v-card-actions>
                         <v-btn @click="addParameter">add</v-btn>
                         <v-btn @click="editParam = !editParam">cancel</v-btn>
-                    </v-card-action>
+                    </v-card-actions>
                 </v-card>
             </v-row>
         </div>

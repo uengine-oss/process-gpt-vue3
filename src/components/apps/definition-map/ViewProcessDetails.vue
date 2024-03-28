@@ -7,7 +7,7 @@
             >
                 <div class="d-flex flex-column justify-content-center align-items-center">
                     <h6 class="text-h6 font-weight-semibold text-center">
-                        Mega<br>Proces
+                        Mega<br>Process
                     </h6>
                 </div>
             </v-card>
@@ -42,7 +42,7 @@
             >
                 <div class="d-flex flex-column justify-content-center align-items-center">
                     <h6 class="text-h6 font-weight-semibold text-center">
-                        Major<br>Proces
+                        Major<br>Process
                     </h6>
                 </div>
             </v-card>
@@ -83,7 +83,7 @@
             >
                 <div class="justify-content-center align-items-center">
                     <h6 class="text-h6 font-weight-semibold text-center">
-                        Sub<br>Proces
+                        Sub<br>Process
                     </h6>
                 </div>
             </v-card>
