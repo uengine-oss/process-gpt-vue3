@@ -121,13 +121,13 @@ export default {
 
                 // const bpmnFactory = self.bpmnViewer.get('bpmnFactory');
                 // console.log(bpmnFactory)
-                const processVariable = this.bpmnViewer.get('moddle').create('uengine:ProcessVariables', {
-                    variables: [
-                        { key: 'variable1', value: 'value1' }
-                    ]
-                });
-                let definitions = self.bpmnViewer.getDefinitions();
-                definitions.get('rootElements').push(processVariable);
+                // const processVariable = this.bpmnViewer.get('moddle').create('uengine:ProcessVariables', {
+                //     variables: [
+                //         { key: 'variable1', value: 'value1' }
+                //     ]
+                // });
+                // let definitions = self.bpmnViewer.getDefinitions();
+                // definitions.get('rootElements').push(processVariable);
 
 
             })
@@ -410,5 +410,4 @@ export default {
 };
 </script>
 
-<style>
-</style>
+<style></style>
