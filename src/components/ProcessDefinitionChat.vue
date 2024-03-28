@@ -478,19 +478,8 @@ export default {
             if (!this.processDefinition.processDefinitionId || !this.processDefinition.processDefinitionName) {
                 throw new Error("processDefinitionId or processDefinitionName is missing");
             }
-            if (window.$mode == "uEngine") {
-                // :9093/definition/raw/sales/testProcess.bpmn < definition-samples/testProcess.bpmn
-                await axios.put(`/definition/raw/sales/${this.processDefinition.processDefinitionId}.bpmn`, xml.xml, {
-                    headers: {
-                        'Content-Type': 'application/xml' // 적절한 Content-Type 설정
-                    }
-                }).then(res => {
-                    console.log(res);
-                })
-            } else {
 
-
-                let newPath = `${this.path}/${this.processDefinition.processDefinitionId}`;
+            let newPath = `${this.path}/${this.processDefinition.processDefinitionId}`;
 
                 let putObj = {
                     id: this.processDefinition.processDefinitionId,
@@ -501,7 +490,20 @@ export default {
                 };
 
                 await this.putObject(newPath, putObj);
-            }
+            // if (window.$mode == "uEngine") {
+            //     // :9093/definition/raw/sales/testProcess.bpmn < definition-samples/testProcess.bpmn
+            //     await axios.put(`/definition/raw/sales/${this.processDefinition.processDefinitionId}.bpmn`, xml.xml, {
+            //         headers: {
+            //             'Content-Type': 'application/xml' // 적절한 Content-Type 설정
+            //         }
+            //     }).then(res => {
+            //         console.log(res);
+            //     })
+            // } else {
+
+
+                
+            // }
 
 
             // const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
@@ -1297,9 +1299,6 @@ export default {
         width: 100%;
         height: calc(100vh - 192px);
     }
-}
-:deep(.right-part) {
-    width: auto; /* Ignore specific width */
 }
 
 :deep(.left-part) {

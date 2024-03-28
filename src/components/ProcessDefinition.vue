@@ -40,8 +40,8 @@
             </v-col>
             <div v-if="panel" style="position: fixed; z-index:999; right: 0; width: 30%; height: 100%">
                 <v-card elevation="1" style="height: 100%">
-                    <bpmn-property-panel :element="element" @close="closePanel" :isViewMode="isViewMode"
-                        v-on:updateElement="(val) => updateElement(val)"></bpmn-property-panel>
+                    <bpmn-property-panel :element="element" @close="closePanel" :key="element.id"
+                        :isViewMode="isViewMode" v-on:updateElement="(val) => updateElement(val)"></bpmn-property-panel>
                     <!-- {{ definition }} -->
                 </v-card>
             </div>
@@ -260,21 +260,21 @@ export default {
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
 
-        // if(this.definitions) {
-        //     this.definitions.rootElements.forEach(root => {
-        //         if (root.$type.includes("Process")) {
-        //             if (root.extensionElements.values[0].variables) {
-        //                 root.extensionElements.values[0].variables.forEach((variable) => {
-        //                     let obj = {
-        //                         "name": variable.$attrs.name,
-        //                         "type": variable.$attrs.type,
-        //                     }
-        //                     this.processVariables.push(obj)
-        //                 })
-        //             }
-        //         }
-        //     })
-        // }
+        if (this.definitions) {
+            this.definitions.rootElements.forEach(root => {
+                if (root.$type.includes("Process")) {
+                    if (root.extensionElements.values[0].variables) {
+                        root.extensionElements.values[0].variables.forEach((variable) => {
+                            let obj = {
+                                "name": variable.$attrs.name,
+                                "type": variable.$attrs.type,
+                            }
+                            this.processVariables.push(obj)
+                        })
+                    }
+                }
+            })
+        }
 
         this.processVariables = this.copyProcessDefinition.data
     },
@@ -458,6 +458,7 @@ export default {
             this.$emit('update')
         },
         openPanel(id) {
+            console.log(id)
             this.panel = true;
             this.element = this.findElement(this.definitions, 'id', id);
             this.$refs.bpmnVue.extendUEngineProperties(this.element)
