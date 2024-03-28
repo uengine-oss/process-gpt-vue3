@@ -103,10 +103,10 @@
                         <v-text-field v-model="paramKey" label="Key"></v-text-field>
                         <v-text-field v-model="paramValue" label="Value"></v-text-field>
                     </v-card-text>
-                    <v-card-action>
+                    <v-card-actions>
                         <v-btn @click="addParameter">add</v-btn>
                         <v-btn @click="editParam = !editParam">cancel</v-btn>
-                    </v-card-action>
+                    </v-card-actions>
                 </v-card>
             </v-row>
         </div>

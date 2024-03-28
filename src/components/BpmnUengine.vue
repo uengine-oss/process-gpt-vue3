@@ -126,8 +126,8 @@ export default {
                 //         { key: 'variable1', value: 'value1' }
                 //     ]
                 // });
-                let definitions = self.bpmnViewer.getDefinitions();
-                definitions.get('rootElements').push(processVariable);
+                // let definitions = self.bpmnViewer.getDefinitions();
+                // definitions.get('rootElements').push(processVariable);
 
 
             })
