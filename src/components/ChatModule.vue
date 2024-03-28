@@ -219,12 +219,21 @@ export default {
                 if (message.image && message.image != '') {
                     chatObj['image'] = message.image;
                 }
+
+                if(!this.messages){
+                    this.messages = []
+                }
+                
                 this.messages.push(chatObj);
 
-                if (message.mentionedUsers.length == 0) {
+                if (message.mentionedUsers) {
+                    if (message.mentionedUsers.length == 0) {
+                        this.debouncedGenerate();
+                    } else if(message.mentionedUsers.some(user => user.id === 'system_id')){
+                        this.startGenerate();
+                    }
+                } else {
                     this.debouncedGenerate();
-                } else if(message.mentionedUsers.some(user => user.id === 'system_id')){
-                    this.startGenerate();
                 }
                 
                 // this.messages.push({

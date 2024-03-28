@@ -3,56 +3,130 @@
         <v-card elevation="10" style="height:calc(100vh - 155px); overflow: auto;">
             <div class="pt-5 pl-6 pr-6 d-flex align-center">
                 <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
-                <div class="ml-auto">
-                    <ProcessMenu :size="24" :type="type" @add="addProcess" />
+                
+                <!-- buttons -->
+                <div class="ml-auto d-flex">
+                    <span v-if="lock && userInfo.email && userInfo.email != editUser" class="pt-1">
+                        {{ editUser }} 님이 수정 중 입니다.
+                    </span>
+                    <v-btn v-if="!lock && enableEdit" 
+                        icon variant="text" size="24"
+                        class="ml-3"
+                        @click="openAlertDialog('checkin')"
+                        @mouseenter="hover = true"
+                        @mouseleave="hover = false"
+                    >
+                        <LockIcon v-if="hover" width="24" height="24" />
+                        <LockOpenIcon v-else width="24" height="24" />
+                    </v-btn>
+                    
+                    <v-btn v-if="lock && enableEdit"
+                        icon variant="text" size="24"
+                        @click="openAlertDialog('checkout')"
+                        @mouseenter="hover = true"
+                        @mouseleave="hover = false"
+                    >
+                        <LockOpenIcon v-if="hover" width="24" height="24" />
+                        <LockIcon v-else width="24" height="24" />
+                    </v-btn>
+
+                    <v-btn icon variant="text" class="ml-3" :size="24" @click="capturePng">
+                        <Icon icon="mage:image-download" width="24" height="24" />
+                    </v-btn>
+
+                    <ProcessMenu
+                        class="ml-3"
+                        :size="24" 
+                        :type="type" 
+                        :lock="lock"
+                        :process="value"
+                        :storage="storage"
+                        @add="addProcess" 
+                    />
+
+                    <v-btn v-if="componentName != 'DefinitionMapList'"
+                        icon variant="text" 
+                        class="ml-3"
+                        size="24"
+                        @click="goProcessMap">
+                        <v-icon size="24">mdi-arrow-left</v-icon>
+                    </v-btn>
                 </div>
             </div>
-            <div class="pa-5">
-                <draggable v-if="enableEdit"
-                    class="v-row dragArea list-group" 
-                    :list="value.mega_proc_list" 
-                    :animation="200" 
-                    ghost-class="ghost-card"
-                    group="megaProcess"
-                >
-                    <transition-group>
-                        <v-col v-for="item in value.mega_proc_list"
-                            :key="item.id" 
-                            class="cursor-pointer"
-                            cols="12" md="2" sm="6"
-                        >
-                            <MegaProcess 
-                                :value="item" 
-                                :parent="value" 
-                                :storage="storage" 
-                                @view="goProcess"
-                            />
-                        </v-col>
-                    </transition-group>
-                </draggable>
-                <v-row v-else>
-                    <v-col v-for="item in value.mega_proc_list" :key="item.id" cols="12" md="2" sm="6">
-                        <MegaProcess :value="item" :parent="value" :storage="storage" @view="goProcess" />
-                    </v-col>
-                </v-row>
+            
+            <!-- route path 별 컴포넌트 호출 -->
+            <div v-if="componentName == 'ViewProcessDetails'">
+                <ViewProcessDetails
+                    class="pa-5"
+                    :parent="value"
+                    :storage="storage"
+                    :lock="lock"
+                />
+            </div>
+            <div v-else-if="componentName == 'SubProcessDetail'">
+                <SubProcessDetail
+                    :value="value"
+                    :storage="storage"
+                />
+            </div>
+            <div v-else>
+                <DefinitionMapList
+                    :value="value"
+                    :storage="storage"
+                    :lock="lock"
+                    :userInfo="userInfo"
+                    @view="goProcess"
+                />
             </div>
         </v-card>
+        <v-dialog v-model="alertDialog" max-width="500" persistent>
+            <v-card>
+                <v-card-text class="mt-2">
+                    {{ alertMessage }}
+                </v-card-text>
+                <v-card-actions class="justify-center">
+                    <v-btn v-if="alertType =='checkout'" 
+                        color="primary" 
+                        variant="flat" 
+                        @click="checkOut"
+                    >확인</v-btn>
+                    <v-btn v-else-if="alertType =='checkin'" 
+                        color="primary" 
+                        variant="flat" 
+                        @click="checkIn"
+                    >확인</v-btn>
+                    <v-btn color="error" 
+                    variant="flat" 
+                    @click="alertDialog=false"
+                    >닫기</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
 <script>
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
-import MegaProcess from './MegaProcess.vue';
 import ProcessMenu from './ProcessMenu.vue';
-import ProcessDefinition from '@/components/ProcessDefinition.vue';
+import ViewProcessDetails from './ViewProcessDetails.vue'
+import SubProcessDetail from './SubProcessDetail.vue'
+import DefinitionMapList from './DefinitionMapList.vue'
+import domtoimage from 'dom-to-image';
 
 const storageKey = 'configuration'
 
 export default {
     components: {
         ProcessMenu,
-        MegaProcess,
-        ProcessDefinition
+        ViewProcessDetails,
+        SubProcessDetail,
+        DefinitionMapList
+    },
+    props: {
+        componentName: {
+            type: String,
+            required: true
+        },
     },
     data: () => ({
         storage: null,
@@ -61,32 +135,66 @@ export default {
         },
         type: 'map',
         enableEdit: false,
+        userInfo: {},
+        lock: null,
+        editUser: null,
+        alertType: '',
+        alertDialog: false,
+        alertMessage: '',
+        hover: false,
     }),
-    watch: {
-        //TODO: 변경 후 즉시 저장하면 안됩니다. 검토 완료 후 저장되어야 해서 저장 버튼으로 대체
-        value: {
-            deep: true,
-            handler(newVal) {
-                if (newVal) {
-                    this.saveProcess()
-                }
-            }
+    async created() {
+        var me = this;
+        if (!me.$app.try) {
+            me.$app = me.$app._component.methods;
         }
-    },
-    created() {
         this.storage = StorageBaseFactory.getStorage();
-        this.getProcessMap();
-
-        const isAdmin = localStorage.getItem("isAdmin");
-        if (isAdmin == "true") {
-            this.enableEdit = true;
-        } else {
-            this.enableEdit = false;
-        }
+        await this.init();
     },
     methods: {
+        async init() {
+            this.getProcessMap();
+            this.userInfo = await this.storage.getUserInfo();
+            const isAdmin = localStorage.getItem("isAdmin");
+            if (isAdmin == "true") {
+                const lockObj =  await this.storage.getObject('lock/process-map', {key: 'id'});
+                if (lockObj && lockObj.id && lockObj.user_id) {
+                    this.lock = true;
+                    this.editUser = lockObj.user_id;
+                    if (this.editUser == this.userInfo.email) {
+                        this.enableEdit = true;
+                    }
+                } else {
+                    this.lock = false;
+                    this.enableEdit = true;
+                }
+            }
+        },
+        capturePng() {
+            var node = document.getElementById('processMap');
+            domtoimage.toPng(node)
+                .then(function (dataUrl) {
+                    const link = document.createElement('a');
+                    // Set the link's href to the data URL of the PNG image
+                    link.href = dataUrl;
+                    // Configure the download attribute of the link
+                    link.download = 'processMap.png';
+                    // Append the link to the body
+                    document.body.appendChild(link);
+                    // Trigger the download by simulating a click on the link
+                    link.click();
+                    // Remove the link from the body
+                    document.body.removeChild(link);
+                })
+                .catch(function (error) {
+                    console.error('oops, something went wrong!', error);
+                });
+        },
+        goProcessMap() {
+            this.$router.push(`/definition-map`);
+        },
         async getProcessMap() {
-            const procMap = await this.storage.getObject(storageKey + '/proc_map', { key: 'key' });
+            const procMap = await this.storage.getObject(storageKey + '/proc_map', {key: 'key'});
             if (procMap && procMap.value) {
                 this.value = procMap.value;
             }
@@ -105,9 +213,59 @@ export default {
                 value: this.value
             }
             await this.storage.putObject(storageKey, putObj);
+            this.closeAlertDialog();
         },
         async goProcess(obj) {
             this.$router.push(`/definition-map/sub/${obj.id}`);
+        },
+        checkOut() {
+            this.closeAlertDialog();
+            this.$app.try({
+                action: async () => {
+                    this.lock = false;
+                    await this.saveProcess();
+                    await this.storage.delete('lock/process-map', {key: 'id'});
+                },
+                successMsg: '저장 및 체크아웃 되었습니다.'
+            });
+        },
+        checkIn() {
+            this.closeAlertDialog();
+            this.$app.try({
+                action: async () => {
+                    this.lock = true;
+                    this.editUser = this.userInfo.email;
+                    let lockObj = {
+                        id: 'process-map',
+                        user_id: this.editUser,
+                    }
+                    await this.storage.putObject('lock', lockObj);
+                },
+                successMsg: '체크인 되었습니다.'
+            });
+        },
+        openAlertDialog(type) {
+            this.alertType = type;
+            const isAdmin = localStorage.getItem("isAdmin");
+            if (isAdmin == "true") {
+                if (type == 'checkout') {
+                    if (this.editUser == this.userInfo.email) {
+                        this.alertDialog = true;
+                        this.alertMessage = '수정된 내용을 저장 및 체크아웃 하시겠습니까?';
+                    } else {
+                        this.alertDialog = true;
+                        this.alertMessage = `현재 ${this.editUser} 님께서 수정 중입니다. 체크아웃 하는 경우 ${this.editUser} 님이 수정한 내용은 저장되지 않습니다. 체크아웃 하시겠습니까?`;
+                    }
+                } else if (type == 'checkin') {
+                    this.alertDialog = true;
+                    this.alertMessage = `프로세스 정의 체계도를 수정하시겠습니까?`;                    
+                }
+            }
+        },
+        closeAlertDialog() {
+            this.alertDialog = false;
+            this.alertType = '';
+            this.alertMessage = '';
         },
     },
 }

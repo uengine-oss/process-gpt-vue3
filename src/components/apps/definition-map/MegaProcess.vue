@@ -14,6 +14,7 @@
                     :type="type"
                     :process="value"
                     :storage="storage"
+                    :lock="lock"
                     @add="addProcess"
                     @edit="editProcess"
                     @delete="deleteProcess"
@@ -21,7 +22,7 @@
             </div>
         </v-card>
         
-        <draggable v-if="enableEdit"
+        <draggable v-if="lock"
             class="dragArea list-group" 
             :list="value.major_proc_list" 
             :animation="200" 
@@ -37,6 +38,8 @@
                         :value="item" 
                         :parent="value" 
                         :storage="storage" 
+                        :userInfo="userInfo"
+                        :lock="lock"
                         @view="viewProcess"
                     />
                 </div>
@@ -50,6 +53,8 @@
                     :value="item" 
                     :parent="value" 
                     :storage="storage" 
+                    :userInfo="userInfo"
+                    :lock="lock"
                     @view="viewProcess"
                 />
             </div>
@@ -70,18 +75,13 @@ export default {
         value: Object,
         parent: Object,
         storage: Object,
+        userInfo: Object,
+        lock: Boolean,
     },
     data: () => ({
         type: 'mega',
-        enableEdit: null,
     }),
     created() {
-        const isAdmin = localStorage.getItem("isAdmin");
-        if (isAdmin == "true") {
-            this.enableEdit = true;
-        } else {
-            this.enableEdit = false;
-        }
     },
     methods:{
         addProcess(newProcess) {
