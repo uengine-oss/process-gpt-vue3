@@ -56,7 +56,7 @@ export default {
     }),
     methods: {
         viewProcess(process) {
-            this.$emit('view', process);
+            this.$router.push(`/definition-map/sub/${process.id}`)
         }
     },
 }

@@ -1,5 +1,5 @@
 <template>
-    <v-card elevation="10" style="height:calc(100vh - 200px);">
+    <v-card elevation="10" style="height:calc(100vh - 155px);">
         <div class="pt-5 pl-6 pr-6 d-flex align-center">
             <div v-if="selectedProc.mega" class="d-flex align-center cursor-pointer"
                 @click="$app.try($router.push('/definition-map'))">
