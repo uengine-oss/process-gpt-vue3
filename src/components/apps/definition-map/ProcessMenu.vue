@@ -44,7 +44,7 @@
 
                 <v-card-text>
                     <v-autocomplete
-                        v-if="addType == 'sub' && !isNewDef"
+                        v-if="addType == 'sub' && !isNewDef && definitions"
                         v-model="newProcess"
                         :items="definitions"
                         label="프로세스 정의"
@@ -137,7 +137,7 @@ export default {
         },
         selectedProcessId: "",
         isNewDef: false,
-        definitions: [],
+        definitions: null,
     }),
     computed: {
         addType() {
@@ -167,12 +167,28 @@ export default {
         }
     },
     created() {
+        var me = this;
+        if (!me.$app.try) {
+            me.$app = me.$app._component.methods;
+        }
         this.init();
     },
     methods: {
         async init() {
             if (this.addType == 'sub') {
-                this.definitions = await this.storage.list(`proc_def`);
+                this.$app.try({
+                    action: async () => {
+                        const list = await this.storage.list(`proc_def`);
+                        if (list && list.length > 0) {
+                            this.definitions = list;
+                        } else {
+                            this.definitions = null;
+                       }
+                    },
+                    onError: () => {
+                        this.definitions = null;
+                    }
+                });
             }
         },
         openViewProcessDetails(process) {
