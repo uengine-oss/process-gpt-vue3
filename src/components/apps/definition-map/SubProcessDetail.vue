@@ -1,11 +1,13 @@
 <template>
     <v-card elevation="10" style="height:calc(100vh - 200px);">
         <div class="pt-5 pl-6 pr-6 d-flex align-center">
-            <div v-if="selectedProc.mega" class="d-flex align-center">
+            <div v-if="selectedProc.mega" class="d-flex align-center cursor-pointer"
+                @click="$app.try($router.push('/definition-map'))">
                 <h6 class="text-h6 font-weight-semibold">{{ selectedProc.mega.label }}</h6>
                 <v-icon>mdi-chevron-right</v-icon>
             </div>
-            <div v-if="selectedProc.major" class="d-flex align-center">
+            <div v-if="selectedProc.major" class="d-flex align-center"
+                @click="$app.try($router.push(`/definition-map/mega/${selectedProc.mega.id}`))">
                 <h6 class="text-h6 font-weight-semibold">{{ selectedProc.major.label }}</h6>
                 <div>
                     <v-icon class="cursor-pointer">mdi-chevron-right</v-icon>
@@ -77,6 +79,10 @@ export default {
         defCnt: 0,
     }),
     created() {
+        let me = this;
+        if (!me.$app.try) {
+            me.$app = me.$app._component.methods;
+        }
         this.viewProcess(this.$route.params);
     },
     methods: {
