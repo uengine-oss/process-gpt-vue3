@@ -1,6 +1,6 @@
 <template>
     <div >
-        <v-dialog v-model="isOpen" max-width="100%" style="height: -webkit-fill-available;" >
+        <v-dialog v-model="isOpen" max-width="100%" style="height: -webkit-fill-available;" persistent>
             <v-card style="height: 100%;">
                 <v-card-title>Version Management [{{ currentVersionName }}({{ currentVersion }})]
                     <v-progress-circular
@@ -68,6 +68,7 @@
                     <v-btn 
                         text 
                         color="primary" 
+                        :disabled="loading"
                         style="float: inline-end; margin-bottom: 15px; margin-right: 10px;" 
                         @click="changeXML()">해당 버전으로 변경
                     </v-btn>
@@ -92,7 +93,7 @@ export default {
     },
     props: {
         open: Boolean,
-        processId: String
+        process: Object
     },
     data: () => ({
         storage: null, 
@@ -159,11 +160,7 @@ export default {
                         key: 'version, name',
                         sort: 'asc',
                         orderBy: 'timeStamp',
-                        match: {'proc_def_id': me.processId}
-                        // startAt: orderBy key contains values
-                        // endAt: orderBy key contains values
-                        // startAfter:  orderBy key then value
-                        // endBefore: orderBy key then value
+                        match: {'proc_def_id': me.process.processDefinitionId}
                     })
                     me.lists = result.map(item => ({ ...item, xml: null}));
                     me.lists[0].xml = await me.loadXMLOfVer(me.lists[0].version)
@@ -172,7 +169,6 @@ export default {
                 // }
             // })
         },
-       
         async handleBeforeChange(index){
             var me = this
             me.loading = true
@@ -182,7 +178,7 @@ export default {
             me.key++
         },
         changeXML(){
-            this.$emit('changeXML', this.currentXML)
+            this.$emit('changeXML', {"name": this.currentVersionName, "xml": this.currentXML})
         },
         downloadXML() {
             var me = this;
@@ -207,7 +203,7 @@ export default {
                         key: 'snapshot',
                         sort: 'asc',
                         size: 1,
-                        match: {'proc_def_id': me.processId, 'version': version}
+                        match: {'proc_def_id': me.process.processDefinitionId, 'version': version}
                     })
                     if(result[0]){
                         return result[0].snapshot
@@ -235,7 +231,7 @@ export default {
             }
         },
         close(){
-            this.$emit('close')
+            this.$emit('close', false)
         },
        
     }

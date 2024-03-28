@@ -2,7 +2,7 @@
     <div>
         <v-dialog v-model="isOpen" max-width="400">
             <v-card>
-                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">Version Up</v-card-title>
+                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{ isNew ? 'Save' : 'Version Up'}}</v-card-title>
                 <v-btn icon style="position:absolute; right:5px; top:5px;" @click="close()">
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
@@ -24,7 +24,14 @@
 
                 </v-card-text>
                 <v-card-action style="text-align: right;">
-                    <v-btn @click="save()"> save </v-btn>
+                    <v-btn  v-if="!loading" @click="save()"> SAVE </v-btn>
+                    <v-progress-circular
+                        v-if="loading"
+                        color="primary"
+                        :size="25"
+                        indeterminate
+                        style="margin: 5px;"
+                    ></v-progress-circular>
                 </v-card-action>
             </v-card>
         </v-dialog>
@@ -42,12 +49,14 @@ export default {
     components: {},
     props: {
         open: Boolean,
+        process: Object,
         definition: Object,
-        xml: String,
+        loading: Boolean,
     },
     data: () => ({
         storage: null,
         isMajor: false, // default:false (minor)
+        isNew: false,
         information: {
             arcv_id: null,
             version: 0.0,
@@ -57,7 +66,6 @@ export default {
             diff: null,
             timeStamp: null
         },
-        basePath: 'proc_def_arcv',
         isOpen: false, // inner var
     }),
     computed: {
@@ -94,18 +102,17 @@ export default {
             this.$app.try({
                 context: me,
                 action: async () => {
-                    let tempId = 'SalesManagementProcess'; // me.definition.processDefinitionId
-                    let result = await me.storage.list(`${me.basePath}/${tempId}`, { 
+                    let result = await me.storage.list(`proc_def_arcv/${me.process.processDefinitionId}`, { 
                         sort: 'desc',
                         orderBy: 'timeStamp',
                         size: 1,
-                        match: {'proc_def_id': tempId}
-                        // startAt: orderBy key contains values
-                        // endAt: orderBy key contains values
-                        // startAfter:  orderBy key then value
-                        // endBefore: orderBy key then value
+                        match: {'proc_def_id': me.process.processDefinitionId}
                     })
-                    if(result.length > 0) me.information = result[0]
+                    if(result.length > 0) {
+                        me.information = result[0]
+                    } else {
+                        me.isNew = true
+                    }
                     me.isOpen = true
                 }
             })
@@ -115,38 +122,15 @@ export default {
             this.$app.try({
                 context: me,
                 action: async () => {
-                    let tempId = 'SalesManagementProcess' // me.definition.processDefinitionId
-                    let tempName = '영업관리 프로세스' // me.definition.processDefinitionName
-                    const oldValue = me.information.snapshot
-                    const newValue = me.xml
-                    let diffs = null
-
-                    // const xml2js = require('xml2js');
-                    // const parser = new xml2js.Parser({explicitArray: false});
-
-                    // const oldObject = xmljs.xml2js(oldValue, {compact: false});
-                    // const newObject = xmljs.xml2js(newValue, {compact: false});
-                    const dmp = new diffMatchPatch();
-
-                    // let differences = jsondiffpatch.diff(oldObject, newObject)
-                    // let diff = diff(oldValue, newValue);
-                    // diffs = dmp.diff_main(oldValue, newValue);
-
-                    // console.log('!!!!', diffs);
-
-                    // const differences = diff(oldObject, newObject);
-                    // console.log(oldValue, newValue, differences)
-
-
-                    this.storage.putObject(this.basePath, {
-                        arcv_id: `${tempId}_${this.newVersion}`,
-                        version: Number(this.newVersion),
-                        name: tempName,
-                        proc_def_id: tempId,
-                        snapshot: newValue,
-                        diff: diffs,
-                        timeStamp: new Date()
-                    });
+                    me.$emit('save', {
+                        arcv_id: `${me.process.processDefinitionId}_${me.newVersion}`,
+                        version: Number(me.newVersion),
+                        name: me.information.name,
+                        proc_def_id: me.process.processDefinitionId,
+                        prevSnapshot: me.information.snapshot,
+                        prevDiff: me.information.diff,
+                    })
+                
                 }
             })
         },

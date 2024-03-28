@@ -7,6 +7,8 @@
                     :isViewMode="isViewMode"
                     @update="updateDefinition"
                 ></process-definition>
+                <process-definition-version-dialog :process="processDefinition" :loading="loading" :open="versionDialog" @close="closeDefinitionDialog" @save="saveDefinition"></process-definition-version-dialog>
+                <ProcessDefinitionVersionManager   :process="processDefinition" :open="verMangerDialog"  @close="toggleVerMangerDialog" @changeXML="changeXML"></ProcessDefinitionVersionManager>
             </template>
             <template v-slot:rightpart>
                 <div class="no-scrollbar">
@@ -14,7 +16,9 @@
                         :userInfo="userInfo" :type="'definitions'" :lock="lock" :disableChat="disableChat"
                         @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" 
                         @stopMessage="stopMessage" @getMoreChat="getMoreChat"
-                        @loadBPMN="bpmn => loadBPMN(bpmn)" @complete="checkedLock"
+                        @loadBPMN="bpmn => loadBPMN(bpmn)"
+                        @openVerMangerDialog="toggleVerMangerDialog"
+                        @toggleLock="toggleLock"
                     ></Chat>
                 </div>
             </template>
@@ -24,7 +28,9 @@
                     :userInfo="userInfo" :type="'definitions'" :lock="lock" :disableChat="disableChat"
                     @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage" @getMoreChat="getMoreChat"
-                    @loadBPMN="bpmn => loadBPMN(bpmn)" @complete="checkedLock"
+                    @loadBPMN="bpmn => loadBPMN(bpmn)"
+                    @openVerMangerDialog="toggleVerMangerDialog"
+                    @toggleLock="toggleLock"
                 ></Chat>
             </template>
         </AppBaseCard>
@@ -46,6 +52,9 @@ import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/ProcessDefinitionGenerator';
 import Chat from './ui/Chat.vue';
 import axios from 'axios';
+import ProcessDefinitionVersionDialog from '@/components/ProcessDefinitionVersionDialog.vue';
+import ProcessDefinitionVersionManager from '@/components/ProcessDefinitionVersionManager.vue';
+
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
 var jsondiffpatch = jsondiff.create({
     objectHash: function (obj, index) {
@@ -63,7 +72,9 @@ export default {
         ChatProfile,
         ProcessDefinition,
         // BpmnModelingCanvas,
-        ChatGenerator
+        ChatGenerator,
+        ProcessDefinitionVersionDialog,
+        ProcessDefinitionVersionManager
     },
     data: () => ({
         processDefinition: null,
@@ -79,9 +90,13 @@ export default {
         },
         processDefinitionMap: null,
         modeler: null,
-        lock: false,
+        lock: true,
         disableChat: false,
         isViewMode: false,
+        // version
+        versionDialog: false,
+        verMangerDialog: false,
+        loading: false,
     }),
     async created() {
         await this.init();
@@ -128,6 +143,77 @@ export default {
         // }
     },
     methods: {
+        toggleLock(){
+            var me = this
+            me.$app.try({
+                context: me,
+                action: async () => {
+                    me.lock = !me.lock
+                    // lock : true: 나는 수정 가능/타사용자 수정 불가 | 닫힘 아이콘 
+                    // lock : false: 읽기모드 : 열림 아이콘
+                    if(me.lock){
+                        // lock true -> 나는 수정 가능/타사용자 수정 불가 | 열림-수정 가능(편집)
+                        me.disableChat = false;
+                        me.isViewMode = false;
+                        await me.storage.putObject('lock', {
+                            id: me.processDefinition.processDefinitionId,
+                            user_id: me.userInfo.email
+                        });
+                    } else {
+                        // lock false-> 읽기모드 | 잠금-수정 불가(저장) 
+                        me.toggleVersionDialog(true);
+                    }
+                    me.definitionChangeCount++;
+                    // window.location.reload();
+                }
+            })
+        },
+        toggleVerMangerDialog(open){
+            this.verMangerDialog = open
+        },
+        toggleVersionDialog(open){
+            this.versionDialog = open
+        },
+        closeDefinitionDialog(){
+            var me = this
+            me.lock = true; // 수정 가능 : 닫힘 아이콘
+            me.disableChat = false;
+            me.isViewMode = false;
+            me.toggleVersionDialog(false)
+        },
+        saveDefinition(info){
+            var me = this
+            me.$app.try({
+                context: me,
+                action: async () => {
+                    me.loading = true
+                    if(info){
+                        // await me.saveVersion(info, xml);
+                        await me.saveModel(info);   
+                    }
+
+                    if(me.processDefinition) await me.storage.delete(`lock/${me.processDefinition.processDefinitionId}`, {key: 'id'});
+                    me.disableChat = true;
+                    me.isViewMode = true;
+                    me.loading = false
+                    me.toggleVersionDialog(false)
+                }
+            })
+        
+        },
+        changeXML(info){
+            var me = this
+            me.$app.try({
+                context: me,
+                action: async () => {
+                    await me.storage.putObject(`${me.path}/${me.processDefinition.processDefinitionId}`, {
+                        name: info.name,
+                        definition: null,
+                        bpmn: info.xml
+                    });
+                }
+            })
+        },
         loadBPMN(bpmn) {
             this.bpmn = bpmn
             this.definitionChangeCount++
@@ -174,11 +260,11 @@ export default {
                 // lock
                 const lockObj = await this.getData(`lock/${this.$route.params.id}`, { key: 'id' });
                 if (lockObj && lockObj.id && lockObj.user_id && lockObj.user_id == this.userInfo.email) {
-                    this.lock = true;
+                    this.lock = true; // 수정 가능 : 닫힘 아이콘
                     this.disableChat = false;
                     this.isViewMode = false;
                 } else {
-                    this.lock = false;
+                    this.lock = false; // 읽기모드 : 열림 아이콘
                     this.disableChat = true;
                     this.isViewMode = true;
                 }
@@ -421,31 +507,51 @@ export default {
 
         //     return processDefinition;
         // },
-        checkedLock() {
-            var me = this;
+        saveVersion(info, currentXML){
+            var me = this
             me.$app.try({
+                context: me,
                 action: async () => {
-                    if (me.lock) {
-                        me.lock = false;
-                        me.disableChat = true;
-                        me.isViewMode = true;
-                        await me.saveModel();
-                        await me.storage.delete(`lock/${this.processDefinition.processDefinitionId}`, {key: 'id'});
-                    } else {
-                        me.lock = true;
-                        me.disableChat = false;
-                        me.isViewMode = false;
-                        const lockObj = {
-                            id: me.processDefinition.processDefinitionId,
-                            user_id: me.userInfo.email
-                        };
-                        await me.putObject('lock', lockObj);
-                    }
-                    window.location.reload();
-                },
-            });
+                    const prevSnapshot = info.prevSnapshot
+                    const prevDiff = info.prevDiff
+                    let diffs = null
+
+                    // let tempId = 'SalesManagementProcess' // me.process.processDefinitionId
+                    // let tempName = '영업관리 프로세스' // me.definition.processDefinitionName
+                    // const oldValue = me.information.snapshot
+                    // const newValue = me.xml
+                    // let diffs = null
+
+                    // // const xml2js = require('xml2js');
+                    // // const parser = new xml2js.Parser({explicitArray: false});
+
+                    // // const oldObject = xmljs.xml2js(oldValue, {compact: false});
+                    // // const newObject = xmljs.xml2js(newValue, {compact: false});
+                    // const dmp = new diffMatchPatch();
+
+                    // // let differences = jsondiffpatch.diff(oldObject, newObject)
+                    // // let diff = diff(oldValue, newValue);
+                    // // diffs = dmp.diff_main(oldValue, newValue);
+
+                    // // console.log('!!!!', diffs);
+
+                    // // const differences = diff(oldObject, newObject);
+                    // // console.log(oldValue, newValue, differences)
+
+     
+                    me.storage.putObject('proc_def_arcv', {
+                        arcv_id: info.arcv_id,
+                        version: info.version,
+                        name: info.name,
+                        proc_def_id: info.proc_def_id,
+                        snapshot: currentXML.xml,
+                        diff: diffs,
+                        timeStamp: new Date()
+                    });
+                }
+            })
         },
-        async saveModel() {
+        async saveModel(info) {
             // alert(model);
             console.log(this.changedXML);
             const store = useBpmnStore();
@@ -455,10 +561,15 @@ export default {
             if (!this.processDefinition && xml) {
                 this.processDefinition = this.convertXMLToJSON(xml);
             }
-
-            if (!this.processDefinition.processDefinitionName)
-                this.processDefinition.processDefinitionName = prompt("please give a name for the process definition");
-
+            
+            if (!this.processDefinition.processDefinitionName){
+                if(info.name)  {
+                    this.processDefinition.processDefinitionName = info.name
+                } else {
+                    this.processDefinition.processDefinitionName = prompt("please give a name for the process definition");
+                }
+            }
+        
             if (!this.processDefinition.processDefinitionId)
                 this.processDefinition.processDefinitionId = prompt("please give a ID for the process definition");
 
