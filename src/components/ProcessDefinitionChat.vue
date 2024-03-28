@@ -206,12 +206,22 @@ export default {
             this.sendMessage(newMessage);
         },
         extractPropertyNameAndIndex(jsonPath) {
-            const match = jsonPath.match(/^\$\.(\w+)\[(\d+)\]$/);
-            return match ? { propertyName: match[1], index: parseInt(match[2], 10) } : null;
+            let match
+            match = jsonPath.match(/^\$\.(\w+)\[(\d+)\]$/);
+            if(!match){
+                match = jsonPath.match(/^\$\.(\w+)\[\?(.*)\]$/)
+                return match ? { propertyName: match[1], index: match.index } : null;
+            } else {
+                return { propertyName: match[1], index: parseInt(match[2], 10) }
+            }
         },
         modificationAdd(modification) {
             let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath)
-            this.processDefinition[obj.propertyName].splice(obj.index, 0, modification.value)
+            if(obj){
+                this.processDefinition[obj.propertyName].splice(obj.index, 0, modification.value)
+            } else if(this.processDefinition[modification.targetJsonPath.replace('$.', '')]){
+                this.processDefinition[modification.targetJsonPath.replace('$.', '')].push(modification.value)
+            }
         },
         modificationReplace(modification) {
             let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath)
@@ -453,7 +463,7 @@ export default {
             let xml = await modeler.saveXML({ format: true, preamble: true });
 
             if (!this.processDefinition && xml) {
-                this.processDefinition = this.convertXMLToJSON(xml);
+                this.processDefinition = this.convertXMLToJSON(xml.xml);
             }
 
             if (!this.processDefinition.processDefinitionName)

@@ -260,21 +260,23 @@ export default {
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
 
-        if(this.definitions) {
-            this.definitions.rootElements.forEach(root => {
-                if (root.$type.includes("Process")) {
-                    if (root.extensionElements.values[0].variables) {
-                        root.extensionElements.values[0].variables.forEach((variable) => {
-                            let obj = {
-                                "name": variable.$attrs.name,
-                                "type": variable.$attrs.type,
-                            }
-                            this.processVariables.push(obj)
-                        })
-                    }
-                }
-            })
-        }
+        // if(this.definitions) {
+        //     this.definitions.rootElements.forEach(root => {
+        //         if (root.$type.includes("Process")) {
+        //             if (root.extensionElements.values[0].variables) {
+        //                 root.extensionElements.values[0].variables.forEach((variable) => {
+        //                     let obj = {
+        //                         "name": variable.$attrs.name,
+        //                         "type": variable.$attrs.type,
+        //                     }
+        //                     this.processVariables.push(obj)
+        //                 })
+        //             }
+        //         }
+        //     })
+        // }
+
+        this.processVariables = this.copyProcessDefinition.data
     },
     methods: {
         addUengineVariable(val) {
@@ -294,7 +296,11 @@ export default {
             }
 
             // uengine:properties 요소를 찾거나 새로 생성합니다.
-            let uengineProperties = extensionElements.values.find(val => val.$type === 'uengine:Properties');
+            let uengineProperties
+            if(extensionElements.values){
+                uengineProperties = extensionElements.values.find(val => val.$type === 'uengine:Properties');
+            }
+
             if (!uengineProperties) {
                 uengineProperties = bpmnFactory.create('uengine:Properties');
                 extensionElements.get('values').push(uengineProperties);
@@ -308,11 +314,8 @@ export default {
 
             // 생성된 uengine:variable 요소를 uengine:properties 요소에 추가합니다.
             uengineProperties.get('variables').push(newVariable);
+            this.processVariables.push(val)
             console.log(this.processVariables)
-            this.processVariables.push({
-                "name": val.name,
-                "type": val.type
-            })
         },
         openSubProcess(e) {
             this.$emit('openSubProcess', e)
@@ -439,7 +442,7 @@ export default {
             }
         },
         updateVariable(val) {
-            this.copyProcessDefinition.data[editedIndex] = val;
+            this.copyProcessDefinition.data[this.editedIndex] = val;
             this.editDialog = false
         },
         openProcessVariables() {
