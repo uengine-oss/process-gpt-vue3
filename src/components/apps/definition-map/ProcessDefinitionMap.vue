@@ -6,10 +6,10 @@
                 
                 <!-- buttons -->
                 <div class="ml-auto d-flex">
-                    <span v-if="lock && userInfo.email && userInfo.email != editUser" class="pt-1">
+                    <span v-if="lock && userInfo.email && userInfo.email != editUser" class="text-body-1 pt-1 mr-1">
                         {{ editUser }} 님이 수정 중 입니다.
                     </span>
-                    <v-btn v-if="!lock && enableEdit" 
+                    <v-btn v-if="!lock && isAdmin" 
                         icon variant="text" size="24"
                         class="ml-3 cp-lock"
                         @click="openAlertDialog('checkout')"
@@ -19,7 +19,7 @@
                         <LockIcon width="24" height="24" />
                     </v-btn>
                     
-                    <v-btn v-if="lock && enableEdit"
+                    <v-btn v-if="lock && isAdmin"
                         icon variant="text" size="24"
                         class="cp-unlock"
                         @click="openAlertDialog('checkin')"
@@ -37,7 +37,7 @@
                         class="ml-3 cp-add-process"
                         :size="24" 
                         :type="type" 
-                        :lock="lock"
+                        :enableEdit="enableEdit"
                         :process="value"
                         :storage="storage"
                         @add="addProcess"
@@ -59,7 +59,7 @@
                     class="pa-5"
                     :parent="value"
                     :storage="storage"
-                    :lock="lock"
+                    :enableEdit="enableEdit"
                 />
             </div>
             <div v-else-if="componentName == 'SubProcessDetail'">
@@ -73,7 +73,7 @@
                 <DefinitionMapList
                     :value="value"
                     :storage="storage"
-                    :lock="lock"
+                    :enableEdit="enableEdit"
                     :userInfo="userInfo"
                 />
             </div>
@@ -154,6 +154,7 @@ export default {
         alertDialog: false,
         alertMessage: '',
         overlay: false,
+        isAdmin: false,
     }),
     async created() {
         var me = this;
@@ -175,18 +176,20 @@ export default {
             this.userInfo = await this.storage.getUserInfo();
             const isAdmin = localStorage.getItem("isAdmin");
             if (isAdmin == "true") {
+                this.isAdmin = true;
+                this.enableEdit = false;
                 const lockObj =  await this.storage.getObject('lock/process-map', {key: 'id'});
                 if (lockObj && lockObj.id && lockObj.user_id) {
                     this.lock = true;
                     this.editUser = lockObj.user_id;
-                    if (this.editUser == this.userInfo.email) {
+                    if (this.userInfo.email == this.editUser) {
                         this.enableEdit = true;
                     }
                 } else {
                     this.lock = false;
-                    this.enableEdit = true;
                 }
             }
+            console.log(this.enableEdit)
         },
         capturePng() {
             var node = document.getElementById('processMap');

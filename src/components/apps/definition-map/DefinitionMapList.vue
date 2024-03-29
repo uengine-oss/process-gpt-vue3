@@ -1,6 +1,6 @@
 <template>
     <div class="pa-5">
-        <draggable v-if="lock"
+        <draggable v-if="enableEdit"
             class="v-row dragArea list-group" 
             :list="value.mega_proc_list" 
             :animation="200" 
@@ -18,7 +18,7 @@
                         :parent="value" 
                         :storage="storage"
                         :userInfo="userInfo"
-                        :lock="lock"
+                        :enableEdit="enableEdit"
                         @view="viewProcess"
                     />
                 </v-col>
@@ -34,7 +34,7 @@
                     :parent="value" 
                     :storage="storage" 
                     :userInfo="userInfo"
-                    :lock="lock"
+                    :enableEdit="enableEdit"
                     @view="viewProcess"
                     @dblclick="viewProcessDetail(item)"
                 />
@@ -54,7 +54,7 @@ export default {
         value: Object,
         storage: Object,
         userInfo: Object,
-        lock: Boolean,
+        enableEdit: Boolean,
     },
     data: () => ({
     }),
