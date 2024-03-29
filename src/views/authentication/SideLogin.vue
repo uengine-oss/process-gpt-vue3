@@ -21,10 +21,10 @@ import LoginForm from '@/components/auth/LoginForm.vue';
                                 <div class="mt-xl-0 mt-5 mw-100">
                                     <h2 class="text-h2 font-weight-bold mb-4">{{ $t('loginPage.title') }}</h2>
                                     <LoginForm />
-                                    <!-- <h6 class="text-subtitle-1  text-grey100 d-flex align-center mt-6 font-weight-medium">
+                                    <h6 class="text-subtitle-1  text-grey100 d-flex align-center mt-6 font-weight-medium">
                                         <v-btn class="pl-0 text-primary text-body-1 opacity-1 pl-2 font-weight-medium"
                                             height="auto" to="/auth/register" variant="plain">{{ $t('loginPage.create') }}</v-btn>
-                                    </h6> -->
+                                    </h6>
                                 </div>
                             </v-col>
                         </v-row>

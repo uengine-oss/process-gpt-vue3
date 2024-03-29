@@ -2,18 +2,31 @@
   <div>
     <div id="kEditor1">
     </div>
-
     <dynamic-form :content="content"></dynamic-form>
-  
+    
+    <v-dialog v-model="editNameAndValue">
+        <v-card
+          title="Edit name / value"
+          width="400"
+        >
+          <v-text-field label="Name" v-model="inputName"></v-text-field>
+          <v-text-field label="Value" v-model="inputValue"></v-text-field>
+          <v-btn @click="setNameAndValue">
+            save
+          </v-btn>
+        </v-card>
+    </v-dialog>
   </div>
 </template>
 
 <script>
 // import Snippets from '@/components/Snippets';
 // import Containers from './Containers';
-
+import { createApp } from 'vue';
+import TextField from '../ui/TextField.vue';
 import axios from 'axios';
 import DynamicForm from './DynamicForm.vue';
+import { Vue } from 'vue-demi';
 export default {
   name: 'mash-up',
   props: {
@@ -26,10 +39,14 @@ export default {
   },
   data: () => ({
     kEditor: null,
-    content: `<h1>test</h1><text-field></text-field>`
+    editNameAndValue: false,
+    inputName: '',
+    inputValue: '',
+    content: `<div id="kEditor1"></div>`
   }),
   components: {
-    DynamicForm
+    DynamicForm,
+    TextField
     // "snippets":Snippets,
     // Containers
   },
@@ -37,16 +54,59 @@ export default {
     onchangeKEditor(evt, fnNm) {
       let me = this;
       // alert(fnNm);
-      me.value = me.kEditor[0].children[0].innerHTML;
+      let newValue = me.kEditor[0].children[0].innerHTML;
+
+      let parser = new DOMParser();
+      let doc = parser.parseFromString(newValue, 'text/html');
+
+      if(evt.type === 'dblclick'){
+        doc.querySelectorAll('[placeholder]').forEach(el => {
+          me.inputName = el.name;
+          me.inputValue = el.value;
+        });
+        me.editNameAndValue = true;
+      }
+
+      // doc.querySelectorAll('[placeholder]').forEach(el => el.remove());
+
+      this.content = doc.body.innerHTML;
+
+      // this.content = newValue;
+      // me.value = newValue
       console.log("save중  ->", fnNm);
-      this.$emit('value', me.value);
-      this.$emit('change', me.value);
+      this.$emit('value', newValue);
+      this.$emit('change', newValue);
     },
     resetStat() {
       let me = this;
       me.kEditor[0].children[0].innerHTML="";
       this.$emit('value', "");
       this.$emit('change', "");
+    },
+    setNameAndValue(){
+      let me = this;
+
+      let newValue = me.kEditor[0].children[0].innerHTML;
+
+      let parser = new DOMParser();
+      let doc = parser.parseFromString(newValue, 'text/html');
+
+      doc.querySelectorAll('[placeholder]').forEach(el => {
+        // Update the name and value of the element with the values from me.inputName and me.inputValue
+        el.setAttribute('name', me.inputName);
+        el.setAttribute('value', me.inputValue);
+        el.textContent = me.inputName;
+        el.removeAttribute('placeholder')
+
+        if (el.tagName.toLowerCase() === 'input' && el.nextSibling && el.nextSibling.nodeType === Node.TEXT_NODE) {
+          el.nextSibling.nodeValue = me.inputName;
+        }
+      });
+
+      // Update the innerHTML of kEditor with the modified HTML
+      newValue = doc.body.innerHTML;
+      me.kEditor[0].children[0].innerHTML = newValue;
+      me.editNameAndValue = false;
     }
   },
   mounted() {
@@ -92,7 +152,8 @@ export default {
         }
 
        
-        axios.get(`/snippets/default/snippets.html`, {headers}).then(function (resp) {
+        const baseUrl = "http://localhost:5173"
+        axios.get(`${baseUrl}/snippets/default/snippets.html`, {headers}).then(function (resp) {
           console.log("axios result", resp);
 
           self.renderSnippets(resp.data);
@@ -116,7 +177,11 @@ export default {
         })
       },
       onReady: function () {
-
+        // Vue.createApp({
+        //     components: {
+        //       'text-field': TextField
+        //     }
+        //   }).mount('#kEditor1')
       },
       containerSettingInitFunction: function (form, keditor) {
         $("#resetBtn").on("click", function (e) {

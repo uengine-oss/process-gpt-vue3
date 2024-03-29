@@ -7,7 +7,7 @@
             <h6 class="text-subtitle-1 font-weight-semibold">
                 {{ value.label }}
             </h6>
-            <div class="ml-auto">
+            <div class="ml-auto add-sub-process">
                 <ProcessMenu
                     :size="16"
                     :type="type"

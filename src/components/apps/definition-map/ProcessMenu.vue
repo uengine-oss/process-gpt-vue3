@@ -7,7 +7,7 @@
                 <v-menu activator="parent">
                     <v-list density="compact" class="cursor-pointer">
                         <v-list-item v-if="type != 'sub'" @click="openDialog('add')">
-                            <v-list-item-title>
+                            <v-list-item-title class="cp-process">
                                 <span v-if="addType != 'sub'">{{ addType.toUpperCase() }}</span> 프로세스 추가
                             </v-list-item-title>
                         </v-list-item>
@@ -62,6 +62,7 @@
 
                     <v-text-field
                         v-if="addType != 'sub' || isNewDef"
+                        class="cp-process-id"
                         v-model="newProcess.id"
                         label="프로세스 ID"
                         autofocus
@@ -70,6 +71,7 @@
                     <v-text-field
                         v-if="addType != 'sub' || isNewDef"
                         v-model="newProcess.label"
+                        class="cp-process-name"
                         label="프로세스명"
                     ></v-text-field>
                 </v-card-text>
@@ -77,6 +79,7 @@
                 <v-card-actions class="justify-center">
                     <v-btn color="primary" 
                         variant="flat"
+                        class="cp-process-save"
                         :disabled="newProcess.id == '' && newProcess.label == ''"
                         @click="addProcess"
                     >저장</v-btn>
@@ -167,28 +170,17 @@ export default {
         }
     },
     created() {
-        var me = this;
-        if (!me.$app.try) {
-            me.$app = me.$app._component.methods;
-        }
         this.init();
     },
     methods: {
         async init() {
             if (this.addType == 'sub') {
-                this.$app.try({
-                    action: async () => {
-                        const list = await this.storage.list(`proc_def`);
-                        if (list && list.length > 0) {
-                            this.definitions = list;
-                        } else {
-                            this.definitions = null;
-                       }
-                    },
-                    onError: () => {
-                        this.definitions = null;
-                    }
-                });
+                const list = await this.storage.list(`proc_def`);
+                if (list && list.length > 0) {
+                    this.definitions = list;
+                } else {
+                    this.definitions = null;
+                }
             }
         },
         openViewProcessDetails(process) {
