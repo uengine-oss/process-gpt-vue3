@@ -1,5 +1,4 @@
 // import StorageBase from "./StorageBase";
-
 class StorageBaseError extends Error{
     constructor(message, cause, args) {
         super(message, {cause: cause});
@@ -411,42 +410,80 @@ export default class StorageBaseSupabase {//extends StorageBase{
 
     async list(path, options) {
         try {
-            let obj = this.formatDataPath(path, options);
-            if (options && options.match) {
-                const { data, error } = await window.$supabase
-                    .from(obj.table)
-                    .select()
-                    .match(options.match);
 
-                if (error) {
-                    return error;
-                } else {
-                    if (data.length > 0) return data;
-                    return null;
-                }
-            } else if (obj.searchVal) {
-                const { data, error } = await window.$supabase
-                    .from(obj.table)
-                    .select()
-                    .eq(obj.searchKey, obj.searchVal);
-                
-                if (error) {
-                    return error;
-                } else {
-                    if (data.length > 0) return data;
-                    return null;
-                }
+            // options: { 
+            //     key: 'key:value' // default key:'orderBy:Field'  First filtering
+            //     sort: "desc", // default "asc"
+            //     orderBy: 'when',
+            //     size: 10,
+            //     startAt: orderBy key contains values
+            //     endAt: orderBy key contains values
+            //     startAfter:  orderBy key then value
+            //     endBefore: orderBy key then value
+            //     snapshot: true // return snapshot
+            // }
+
+            if(!options) options = {}
+            const orderByField = options.orderBy || 'id';
+            const isAscending = !options.sort || !options.sort.includes('desc');
+            let query = window.$supabase.from(path)
+            // let obj = this.formatDataPath(path, options);
+            // let query = window.$supabase.from(obj.table)
+            
+            // key 처리 - 컬럼명
+            if(options.key){
+                query = query.select(options.key);
             } else {
-                const { data, error } = await window.$supabase
-                    .from(obj.table)
-                    .select();
-                
-                if (error) {
-                    return error;
+                query = query.select();
+            }
+           
+            // orderBy 처리
+            if(options.orderBy){
+                query = query.order(orderByField, { ascending: isAscending });          
+            }
+
+            // 범위 쿼리 처리
+            if (options.startAt && !options.endAt && !options.endBefore) {
+                query = query.gte(orderByField, options.startAt);
+            } else if (options.startAt && options.endAt) {
+                if(options.startAt == options.endAt){
+                    query = query.eq(orderByField, options.startAt);
                 } else {
-                    if (data.length > 0) return data;
-                    return null;
+                    query = query.gte(orderByField, options.startAt).lte(orderByField, options.endAt);
                 }
+            } else if (options.endAt && !options.startAt && !options.startAfter) {
+                query = query.lte(orderByField, options.endAt);
+            } else if (options.startAfter && !options.endBefore && !options.endAt) {
+                query = query.gt(orderByField, options.startAfter);
+            } else if (options.startAfter && options.endBefore) {
+                if(options.startAfter == options.endBefore){
+                    query = query.eq(orderByField, options.startAfter);
+                } else {
+                    query = query.gt(orderByField, options.startAfter).lt(orderByField, options.endBefore);
+                }
+            } else if (options.endBefore && !options.startAfter && !options.startAt) {
+                query = query.lt(orderByField, options.endBefore);
+            } else if (options.startAt && options.endBefore && !options.endAt) {
+                query = query.gte(orderByField, options.startAt).lt(orderByField, options.endBefore);
+            } else if (options.startAfter && options.endAt && !options.startAt) {
+                query = query.gt(orderByField, options.startAfter).lte(orderByField, options.endAt);
+            } 
+            
+            // 일치 처리 
+            if( options.match ){
+                query = query.match(options.match)
+            }
+
+            // size 처리
+            if (options.size) {
+                query = query.limit(options.size);
+            }
+
+            const { data, error } = await query;
+            if (error) {
+                throw error;
+            } else {
+                return data;
             }
         } catch(error) {
             console.log(`GET OBJECT: ${error}`);
