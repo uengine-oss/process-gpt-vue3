@@ -91,7 +91,7 @@ export default {
                 startAt: chatRoomId,
                 endAt: chatRoomId
             }
-            await this.storage.list(`db://chats`, options).then(function (messages) {
+            await this.storage.list(`chats`, options).then(function (messages) {
                 if (messages) {
                     let allMessages = messages.map(message => message.messages);
                     allMessages.sort((a, b) => {
@@ -111,7 +111,7 @@ export default {
         //         startAt: null,
         //         endAt: this.messages[0].timeStamp
         //     };
-        //     let messages = await this.storage.list(`db://chats/1/messages`, option);
+        //     let messages = await this.storage.list(`chats/1/messages`, option);
         //     if (messages) {
         //         messages.splice(0, 1);
         //         this.messages = messages.reverse().concat(this.messages);
@@ -230,7 +230,7 @@ export default {
                 if(!this.messages){
                     this.messages = []
                 }
-                
+
                 this.messages.push(chatObj);
 
                 if (message.mentionedUsers) {

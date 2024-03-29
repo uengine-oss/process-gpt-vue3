@@ -106,7 +106,7 @@ export default {
         },
         async getUserList(){
             var me = this
-            await me.storage.list(`db://users`).then(function (users) {
+            await me.storage.list(`users`).then(function (users) {
                 if (users) {
                     users = users.filter(user => user.email !== me.userInfo.email);
                     me.userList = users
@@ -115,7 +115,7 @@ export default {
         },
         async getChatRoomList(){
             var me = this
-            await me.storage.list(`db://chat_rooms`).then(function (chatRooms) {
+            await me.storage.list(`chat_rooms`).then(function (chatRooms) {
                 if (chatRooms) {
                     chatRooms.forEach(function (chatRoom) {
                         if(chatRoom.participants.find(x => x.email === me.userInfo.email)){
