@@ -1,7 +1,7 @@
 <template>
     <div>
         <v-card elevation="10" style="height:calc(100vh - 155px); overflow: auto;">
-            <div class="pt-5 pl-6 pr-6 d-flex align-center">
+            <div v-if="componentName != 'SubProcessDetail'" class="pt-5 pl-6 pr-6 d-flex align-center">
                 <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
                 
                 <!-- buttons -->
@@ -45,13 +45,13 @@
                         @add="addProcess"
                     />
 
-                    <v-btn v-if="componentName != 'DefinitionMapList'"
+                    <!-- <v-btn v-if="componentName != 'DefinitionMapList'"
                         icon variant="text" 
                         class="ml-3"
                         size="24"
                         @click="goProcessMap">
                         <v-icon size="24">mdi-arrow-left</v-icon>
-                    </v-btn>
+                    </v-btn> -->
                 </div>
             </div>
             
@@ -76,7 +76,6 @@
                     :storage="storage"
                     :lock="lock"
                     :userInfo="userInfo"
-                    @view="goProcess"
                 />
             </div>
         </v-card>
@@ -151,12 +150,15 @@ export default {
         if (!me.$app.try) {
             me.$app = me.$app._component.methods;
         }
-        this.storage = StorageBaseFactory.getStorage();
-        await this.init();
+        this.$app.try({
+            action: async () => {
+                this.storage = StorageBaseFactory.getStorage();
+                await this.init();
+            },
+        });
     },
     methods: {
         async init() {
-            this.getProcessMap();
             this.userInfo = await this.storage.getUserInfo();
             const isAdmin = localStorage.getItem("isAdmin");
             if (isAdmin == "true") {
@@ -172,6 +174,7 @@ export default {
                     this.enableEdit = true;
                 }
             }
+            await this.getProcessMap();
         },
         capturePng() {
             var node = document.getElementById('processMap');
@@ -217,9 +220,6 @@ export default {
             }
             await this.storage.putObject(storageKey, putObj);
             this.closeAlertDialog();
-        },
-        async goProcess(obj) {
-            this.$router.push(`/definition-map/sub/${obj.id}`);
         },
         checkOut() {
             this.closeAlertDialog();

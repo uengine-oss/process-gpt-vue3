@@ -206,12 +206,22 @@ export default {
             this.sendMessage(newMessage);
         },
         extractPropertyNameAndIndex(jsonPath) {
-            const match = jsonPath.match(/^\$\.(\w+)\[(\d+)\]$/);
-            return match ? { propertyName: match[1], index: parseInt(match[2], 10) } : null;
+            let match
+            match = jsonPath.match(/^\$\.(\w+)\[(\d+)\]$/);
+            if(!match){
+                match = jsonPath.match(/^\$\.(\w+)\[\?(.*)\]$/)
+                return match ? { propertyName: match[1], index: match.index } : null;
+            } else {
+                return { propertyName: match[1], index: parseInt(match[2], 10) }
+            }
         },
         modificationAdd(modification) {
             let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath)
-            this.processDefinition[obj.propertyName].splice(obj.index, 0, modification.value)
+            if(obj){
+                this.processDefinition[obj.propertyName].splice(obj.index, 0, modification.value)
+            } else if(this.processDefinition[modification.targetJsonPath.replace('$.', '')]){
+                this.processDefinition[modification.targetJsonPath.replace('$.', '')].push(modification.value)
+            }
         },
         modificationReplace(modification) {
             let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath)
@@ -453,7 +463,7 @@ export default {
             let xml = await modeler.saveXML({ format: true, preamble: true });
 
             if (!this.processDefinition && xml) {
-                this.processDefinition = this.convertXMLToJSON(xml);
+                this.processDefinition = this.convertXMLToJSON(xml.xml);
             }
 
             if (!this.processDefinition.processDefinitionName)
@@ -468,19 +478,8 @@ export default {
             if (!this.processDefinition.processDefinitionId || !this.processDefinition.processDefinitionName) {
                 throw new Error("processDefinitionId or processDefinitionName is missing");
             }
-            if (window.$mode == "uEngine") {
-                // :9093/definition/raw/sales/testProcess.bpmn < definition-samples/testProcess.bpmn
-                await axios.put(`/definition/raw/sales/${this.processDefinition.processDefinitionId}.bpmn`, xml.xml, {
-                    headers: {
-                        'Content-Type': 'application/xml' // 적절한 Content-Type 설정
-                    }
-                }).then(res => {
-                    console.log(res);
-                })
-            } else {
 
-
-                let newPath = `${this.path}/${this.processDefinition.processDefinitionId}`;
+            let newPath = `${this.path}/${this.processDefinition.processDefinitionId}`;
 
                 let putObj = {
                     id: this.processDefinition.processDefinitionId,
@@ -491,7 +490,20 @@ export default {
                 };
 
                 await this.putObject(newPath, putObj);
-            }
+            // if (window.$mode == "uEngine") {
+            //     // :9093/definition/raw/sales/testProcess.bpmn < definition-samples/testProcess.bpmn
+            //     await axios.put(`/definition/raw/sales/${this.processDefinition.processDefinitionId}.bpmn`, xml.xml, {
+            //         headers: {
+            //             'Content-Type': 'application/xml' // 적절한 Content-Type 설정
+            //         }
+            //     }).then(res => {
+            //         console.log(res);
+            //     })
+            // } else {
+
+
+                
+            // }
 
 
             // const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
@@ -1287,9 +1299,6 @@ export default {
         width: 100%;
         height: calc(100vh - 192px);
     }
-}
-:deep(.right-part) {
-    width: auto; /* Ignore specific width */
 }
 
 :deep(.left-part) {

@@ -132,7 +132,7 @@
         tabTooltipEnabled: true,
         extraTabs: null,
         defaultComponentType: 'blank',
-        snippetsUrl: 'snippets/default/snippets.html',
+        snippetsUrl: 'snippets/default/snippets.vue',
         snippetsListId: 'keditor-snippets-list',
         snippetsTooltipEnabled: true,
         snippetsTooltipPosition: 'left',
@@ -1596,6 +1596,35 @@
                         options.onContentChanged.call(contentArea, e);
                     }
                 }
+            });
+
+            body.on('dblclick', '.keditor-component', function (e) {
+                e.preventDefault();
+                
+                // var component = $(this);
+                flog('Double click on .keditor-component', component);
+                
+                var component = $(this).closest('.keditor-component');
+                var inputType = component.find('input').attr('type');
+    
+                if (inputType === 'checkbox' || inputType === 'radio') {
+                    flog('Double click on .keditor-component with input type', inputType);
+                    
+                    // Add placeholder attribute to the input element
+                    component.find('input').attr('placeholder', '');
+                    
+                    var container = component.closest('.keditor-container');
+                    var contentArea = container.parent();
+                    
+                    if (typeof options.onContainerChanged === 'function') {
+                        options.onContainerChanged.call(contentArea, e, container);
+                    }
+                    
+                    if (typeof options.onContentChanged === 'function') {
+                        options.onContentChanged.call(contentArea, e);
+                    }
+                }
+                
             });
         },
         

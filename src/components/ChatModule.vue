@@ -219,6 +219,11 @@ export default {
                 if (message.image && message.image != '') {
                     chatObj['image'] = message.image;
                 }
+
+                if(!this.messages){
+                    this.messages = []
+                }
+                
                 this.messages.push(chatObj);
 
                 if (message.mentionedUsers) {

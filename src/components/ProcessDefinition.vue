@@ -40,8 +40,8 @@
             </v-col>
             <div v-if="panel" style="position: fixed; z-index:999; right: 0; width: 30%; height: 100%">
                 <v-card elevation="1" style="height: 100%">
-                    <bpmn-property-panel :element="element" @close="closePanel" :isViewMode="isViewMode"
-                        v-on:updateElement="(val) => updateElement(val)"></bpmn-property-panel>
+                    <bpmn-property-panel :element="element" @close="closePanel" :key="element.id"
+                        :isViewMode="isViewMode" v-on:updateElement="(val) => updateElement(val)"></bpmn-property-panel>
                     <!-- {{ definition }} -->
                 </v-card>
             </div>
@@ -260,7 +260,7 @@ export default {
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
 
-        if(this.definitions) {
+        if (this.definitions) {
             this.definitions.rootElements.forEach(root => {
                 if (root.$type.includes("Process")) {
                     if (root.extensionElements.values[0].variables) {
@@ -275,6 +275,8 @@ export default {
                 }
             })
         }
+
+        this.processVariables = this.copyProcessDefinition.data
     },
     methods: {
         addUengineVariable(val) {
@@ -294,7 +296,11 @@ export default {
             }
 
             // uengine:properties 요소를 찾거나 새로 생성합니다.
-            let uengineProperties = extensionElements.values.find(val => val.$type === 'uengine:Properties');
+            let uengineProperties
+            if(extensionElements.values){
+                uengineProperties = extensionElements.values.find(val => val.$type === 'uengine:Properties');
+            }
+
             if (!uengineProperties) {
                 uengineProperties = bpmnFactory.create('uengine:Properties');
                 extensionElements.get('values').push(uengineProperties);
@@ -308,11 +314,8 @@ export default {
 
             // 생성된 uengine:variable 요소를 uengine:properties 요소에 추가합니다.
             uengineProperties.get('variables').push(newVariable);
+            this.processVariables.push(val)
             console.log(this.processVariables)
-            this.processVariables.push({
-                "name": val.name,
-                "type": val.type
-            })
         },
         openSubProcess(e) {
             this.$emit('openSubProcess', e)
@@ -439,7 +442,7 @@ export default {
             }
         },
         updateVariable(val) {
-            this.copyProcessDefinition.data[editedIndex] = val;
+            this.copyProcessDefinition.data[this.editedIndex] = val;
             this.editDialog = false
         },
         openProcessVariables() {
@@ -455,6 +458,7 @@ export default {
             this.$emit('update')
         },
         openPanel(id) {
+            console.log(id)
             this.panel = true;
             this.element = this.findElement(this.definitions, 'id', id);
             this.$refs.bpmnVue.extendUEngineProperties(this.element)

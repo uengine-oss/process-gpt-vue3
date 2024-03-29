@@ -6,6 +6,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
         super(client, language);
 
         const processDefinitionMap = JSON.stringify(client.processDefinitionMap);
+        const processDefinition = JSON.stringify(client.processDefinition);
         
         this.previousMessages = [{
             role: 'system', 
@@ -16,8 +17,9 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
 
             - 프로세스 레벨: 우리 회사 프로세스는 Mega Process, Major Process, Sub Process 로 총 3 Level 로 이루어져 있어. 사용자가 정의하는 프로세스는 Sub Process 이고, 프로세스를 정의 할 때 Mega, Major Process 의 정보가 없다면 우리 회사의 기존 프로세스를 참고해서 Mega, Major Process 의 정보도 함께 리턴해줘.
 
-            기존 프로세스:
-            ${processDefinitionMap}
+            기존 프로세스 정보:
+            ${processDefinition}, 
+            ${processDefinitionMap} 
             
             결과는 프로세스에 대한 설명과 함께 valid 한 json 으로 표현해줘. markdown 으로, three backticks 로 감싸. 예를 들면 :
             checkPoints가 없으면 비어있는 Array로 생성해줘.
@@ -59,7 +61,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
               "sequences": [
                 {
                     "source": "activity id of source activity",
-                    "target": "activity id of target activity"
+                    "target": "activity id of target activity",
+                    "condition": "기존 프로세스 정보중 "data" 내에 존재하는 값만을 사용하여 condition 을 생성해야한다. "data" 목록을 보고 condition 생성에 필요한 "data" 의 "name" 만으로 생성해야함." // 기존 프로세스 정보가 존재하는 경우에만 생성해야하며, 생성시 기존 프로세스 정보를 참고하여 컨디션을 생성해야한다.
                 }
               ]
             }
@@ -72,6 +75,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                1.  {modifications: [..]} 내에 여러개의 항목으로 넣어줘.
                2.  액티비티 추가인 경우는 시퀀스도 꼭 연결해줘.
                3.  액티비티가 삭제되는 경우는 나와 연결된 앞뒤 액티비티 간의 시퀀스도 삭제하되, 삭제된 액티비티의 이전 단계와 다음단계의 액티비티를 시퀀스로 다시 연결해줘.
+               4.  생성될 모든 값들은 기존 프로세스의 정보를 참고하여 생성해야한다.
             
             \`\`\`
               { 
@@ -79,7 +83,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   
                   {
                     "action": "replace" | "add" | "delete",
-                    "targetJsonPath": "$.activities[?(@.id=='request_vacation')]",
+                    "targetJsonPath": "$.activities[?(@.id=='request_vacation')]", // action 이 add 인 경우 "$.activities" 만 리턴. e.g. "$.sequences", action 이 add 가 아닌 경우 "$.activities[?(@.id=='request_vacation')]" 와 같이 수정, 삭제될 Path 의 상위 목록("activities", "sequences" 등...)을 참고하여 "$.activities" 뒤에 수정, 삭제될 값을 찾을 수 있는 필터("[?(@.id=='request_vacation')]") 를 반드시 포함하여 리턴.  // e.g. "$.sequences[?(@.source=='leave_request_activity' && @.target=='leave_approval_activity')].condition"
                     "value": {...} //delete 인 경우는 불필요, replace의 경우 기존 value에서 변경된 부분을 수정하여 생략 하지 않고 value로 리턴
                   }   
                   
