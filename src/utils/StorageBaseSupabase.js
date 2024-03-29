@@ -19,7 +19,14 @@ export default class StorageBaseSupabase {//extends StorageBase{
             await this.writeUserData(result.data);
             return result.data;
         } else {
-            return result.error
+            const users = await this.list('users');
+            const checkedId = users.some(user => user.email == userInfo.email)
+            if (checkedId) {
+                result.errorMsg = "비밀번호가 틀렸습니다.";
+            } else {
+                result.errorMsg = "아이디가 틀렸습니다.";
+            }
+            return result;
         }
     }
 
@@ -38,7 +45,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
             await this.writeUserData(result.data);
             return result.data;
         } else {
-            return result.error
+            return result;
         }
     }
 

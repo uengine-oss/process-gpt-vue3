@@ -1,6 +1,6 @@
 <template>
     <div class="pa-5">
-        <draggable v-if="lock"
+        <draggable v-if="enableEdit"
             class="v-row dragArea list-group" 
             :list="value.mega_proc_list" 
             :animation="200" 
@@ -18,21 +18,25 @@
                         :parent="value" 
                         :storage="storage"
                         :userInfo="userInfo"
-                        :lock="lock"
+                        :enableEdit="enableEdit"
                         @view="viewProcess"
                     />
                 </v-col>
             </transition-group>
         </draggable>
         <v-row v-else>
-            <v-col v-for="item in value.mega_proc_list" :key="item.id" cols="12" md="2" sm="6">
+            <v-col v-for="item in value.mega_proc_list"
+                :key="item.id" 
+                class="cursor-pointer"
+                cols="12" md="2" sm="6">
                 <MegaProcess 
                     :value="item" 
                     :parent="value" 
                     :storage="storage" 
                     :userInfo="userInfo"
-                    :lock="lock"
+                    :enableEdit="enableEdit"
                     @view="viewProcess"
+                    @dblclick="viewProcessDetail(item)"
                 />
             </v-col>
         </v-row>
@@ -50,13 +54,16 @@ export default {
         value: Object,
         storage: Object,
         userInfo: Object,
-        lock: Boolean,
+        enableEdit: Boolean,
     },
     data: () => ({
     }),
     methods: {
         viewProcess(process) {
-            this.$emit('view', process);
+            this.$router.push(`/definition-map/sub/${process.id}`)
+        },
+        viewProcessDetail(process) {
+            this.$router.push(`/definition-map/mega/${process.id}`)
         }
     },
 }

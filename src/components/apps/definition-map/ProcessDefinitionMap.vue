@@ -6,29 +6,27 @@
                 
                 <!-- buttons -->
                 <div class="ml-auto d-flex">
-                    <span v-if="lock && userInfo.email && userInfo.email != editUser" class="pt-1">
+                    <span v-if="lock && userInfo.email && userInfo.email != editUser" class="text-body-1 pt-1 mr-1">
                         {{ editUser }} 님이 수정 중 입니다.
                     </span>
-                    <v-btn v-if="!lock && enableEdit" 
+                    <v-btn v-if="!lock && isAdmin" 
                         icon variant="text" size="24"
-                        class="ml-3 cp-unlock"
-                        @click="openAlertDialog('checkin')"
-                        @mouseenter="hover = true"
-                        @mouseleave="hover = false"
-                    >
-                        <LockIcon v-if="hover" width="24" height="24" />
-                        <LockOpenIcon v-else width="24" height="24" />
-                    </v-btn>
-                    
-                    <v-btn v-if="lock && enableEdit"
-                        icon variant="text" size="24"
-                        class="cp-lock"
+                        class="ml-3 cp-lock"
                         @click="openAlertDialog('checkout')"
                         @mouseenter="hover = true"
                         @mouseleave="hover = false"
                     >
-                        <LockOpenIcon v-if="hover" width="24" height="24" />
-                        <LockIcon  v-else width="24" height="24" />
+                        <LockIcon width="24" height="24" />
+                    </v-btn>
+                    
+                    <v-btn v-if="lock && isAdmin"
+                        icon variant="text" size="24"
+                        class="cp-unlock"
+                        @click="openAlertDialog('checkin')"
+                        @mouseenter="hover = true"
+                        @mouseleave="hover = false"
+                    >
+                        <LockOpenIcon width="24" height="24" />
                     </v-btn>
 
                     <v-btn icon variant="text" class="ml-3" :size="24" @click="capturePng">
@@ -39,7 +37,7 @@
                         class="ml-3 cp-add-process"
                         :size="24" 
                         :type="type" 
-                        :lock="lock"
+                        :enableEdit="enableEdit"
                         :process="value"
                         :storage="storage"
                         @add="addProcess"
@@ -61,20 +59,21 @@
                     class="pa-5"
                     :parent="value"
                     :storage="storage"
-                    :lock="lock"
+                    :enableEdit="enableEdit"
                 />
             </div>
             <div v-else-if="componentName == 'SubProcessDetail'">
                 <SubProcessDetail
                     :value="value"
                     :storage="storage"
+                    @capture="capturePng"
                 />
             </div>
             <div v-else>
                 <DefinitionMapList
                     :value="value"
                     :storage="storage"
-                    :lock="lock"
+                    :enableEdit="enableEdit"
                     :userInfo="userInfo"
                 />
             </div>
@@ -104,6 +103,17 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+
+        <v-overlay v-model="overlay">
+            <div class="d-flex justify-center align-center" 
+                style="min-width: 100vw; min-height: 100vh;">
+                <v-progress-circular
+                    color="primary"
+                    indeterminate
+                    :size="50"
+                ></v-progress-circular>
+            </div>
+        </v-overlay>
     </div>
 </template>
 
@@ -143,7 +153,8 @@ export default {
         alertType: '',
         alertDialog: false,
         alertMessage: '',
-        hover: false,
+        overlay: false,
+        isAdmin: false,
     }),
     async created() {
         var me = this;
@@ -152,8 +163,11 @@ export default {
         }
         this.$app.try({
             action: async () => {
+                this.overlay = true;
                 this.storage = StorageBaseFactory.getStorage();
+                await this.getProcessMap();
                 await this.init();
+                this.overlay = false;
             },
         });
     },
@@ -162,19 +176,20 @@ export default {
             this.userInfo = await this.storage.getUserInfo();
             const isAdmin = localStorage.getItem("isAdmin");
             if (isAdmin == "true") {
+                this.isAdmin = true;
+                this.enableEdit = false;
                 const lockObj =  await this.storage.getObject('lock/process-map', {key: 'id'});
                 if (lockObj && lockObj.id && lockObj.user_id) {
                     this.lock = true;
                     this.editUser = lockObj.user_id;
-                    if (this.editUser == this.userInfo.email) {
+                    if (this.userInfo.email == this.editUser) {
                         this.enableEdit = true;
                     }
                 } else {
                     this.lock = false;
-                    this.enableEdit = true;
                 }
             }
-            await this.getProcessMap();
+            console.log(this.enableEdit)
         },
         capturePng() {
             var node = document.getElementById('processMap');
@@ -221,45 +236,35 @@ export default {
             await this.storage.putObject(storageKey, putObj);
             this.closeAlertDialog();
         },
-        checkOut() {
+        async checkIn() {
+            this.lock = false;
+            await this.saveProcess();
+            await this.storage.delete('lock/process-map', {key: 'id'});
             this.closeAlertDialog();
-            this.$app.try({
-                action: async () => {
-                    this.lock = false;
-                    await this.saveProcess();
-                    await this.storage.delete('lock/process-map', {key: 'id'});
-                },
-                successMsg: '저장 및 체크아웃 되었습니다.'
-            });
         },
-        checkIn() {
+        async checkOut() {
+            this.lock = true;
+            this.editUser = this.userInfo.email;
+            let lockObj = {
+                id: 'process-map',
+                user_id: this.editUser,
+            }
+            await this.storage.putObject('lock', lockObj);
             this.closeAlertDialog();
-            this.$app.try({
-                action: async () => {
-                    this.lock = true;
-                    this.editUser = this.userInfo.email;
-                    let lockObj = {
-                        id: 'process-map',
-                        user_id: this.editUser,
-                    }
-                    await this.storage.putObject('lock', lockObj);
-                },
-                successMsg: '체크인 되었습니다.'
-            });
         },
         openAlertDialog(type) {
             this.alertType = type;
             const isAdmin = localStorage.getItem("isAdmin");
             if (isAdmin == "true") {
-                if (type == 'checkout') {
+                if (type == 'checkin') {
                     if (this.editUser == this.userInfo.email) {
                         this.alertDialog = true;
-                        this.alertMessage = '수정된 내용을 저장 및 체크아웃 하시겠습니까?';
+                        this.alertMessage = '수정된 내용을 저장 및 체크인 하시겠습니까?';
                     } else {
                         this.alertDialog = true;
-                        this.alertMessage = `현재 ${this.editUser} 님께서 수정 중입니다. 체크아웃 하는 경우 ${this.editUser} 님이 수정한 내용은 저장되지 않습니다. 체크아웃 하시겠습니까?`;
+                        this.alertMessage = `현재 ${this.editUser} 님께서 수정 중입니다. 체크인 하는 경우 ${this.editUser} 님이 수정한 내용은 저장되지 않습니다. 체크인 하시겠습니까?`;
                     }
-                } else if (type == 'checkin') {
+                } else if (type == 'checkout') {
                     this.alertDialog = true;
                     this.alertMessage = `프로세스 정의 체계도를 수정하시겠습니까?`;                    
                 }

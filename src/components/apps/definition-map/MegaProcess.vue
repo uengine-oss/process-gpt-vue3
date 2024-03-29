@@ -14,7 +14,7 @@
                     :type="type"
                     :process="value"
                     :storage="storage"
-                    :lock="lock"
+                    :enableEdit="enableEdit"
                     @add="addProcess"
                     @edit="editProcess"
                     @delete="deleteProcess"
@@ -22,7 +22,7 @@
             </div>
         </v-card>
         
-        <draggable v-if="lock"
+        <draggable v-if="enableEdit"
             class="dragArea list-group" 
             :list="value.major_proc_list" 
             :animation="200" 
@@ -39,7 +39,7 @@
                         :parent="value" 
                         :storage="storage" 
                         :userInfo="userInfo"
-                        :lock="lock"
+                        :enableEdit="enableEdit"
                         @view="viewProcess"
                     />
                 </div>
@@ -54,7 +54,7 @@
                     :parent="value" 
                     :storage="storage" 
                     :userInfo="userInfo"
-                    :lock="lock"
+                    :enableEdit="enableEdit"
                     @view="viewProcess"
                 />
             </div>
@@ -76,7 +76,7 @@ export default {
         parent: Object,
         storage: Object,
         userInfo: Object,
-        lock: Boolean,
+        enableEdit: Boolean,
     },
     data: () => ({
         type: 'mega',

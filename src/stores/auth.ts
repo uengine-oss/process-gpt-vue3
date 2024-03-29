@@ -27,9 +27,11 @@ export const useAuthStore = defineStore({
                         password: password
                     };
                     var result: any = await storage?.signIn(userInfo);
-
-                    if (result) {
+                    
+                    if (!result.error) {
                         router.push('/dashboard2');
+                    } else {
+                        alert(result.errorMsg);
                     }
                 }
             } catch (e) {
@@ -46,7 +48,7 @@ export const useAuthStore = defineStore({
                     }
                     var result: any = await storage?.signUp(userInfo);
 
-                    if (result) {
+                    if (!result.error) {
                         router.push('/auth/login');
                     }
                 }
