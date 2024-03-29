@@ -189,7 +189,6 @@ export default {
                     this.lock = false;
                 }
             }
-            console.log(this.enableEdit)
         },
         capturePng() {
             var node = document.getElementById('processMap');
@@ -238,6 +237,7 @@ export default {
         },
         async checkIn() {
             this.lock = false;
+            this.enableEdit = false;
             await this.saveProcess();
             await this.storage.delete('lock/process-map', {key: 'id'});
             this.closeAlertDialog();
