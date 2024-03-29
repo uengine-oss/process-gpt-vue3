@@ -40,9 +40,6 @@
                             <Icon v-if="lock" icon="f7:lock" width="24" height="24" ></Icon>    
                             <Icon v-else  icon="f7:lock-open" width="24" height="24" ></Icon>
                         </v-btn>
-                        <v-btn v-if="chatInfo" icon variant="text" class="text-medium-emphasis" @click="moreDetail">
-                            <Icon icon="material-symbols:info-outline" width="24" height="24" />
-                        </v-btn>
                         <v-btn v-if="type == 'definitions'"
                             icon variant="text"
                             @click="openVerMangerDialog" 
@@ -361,7 +358,6 @@ export default {
             editIndex: -1,
             replyIndex: -1,
             replyUser: null,
-            isViewDetail: false,
             isViewJSON: [],
             attachedImg: null,
             showNewMessageNoti: false,
@@ -623,9 +619,6 @@ export default {
                 this.editIndex = -1;
             }
             this.editIndex = index;
-        },
-        moreDetail() {
-            this.isViewDetail = !this.isViewDetail;
         },
         viewJSON(index) {
             if (!this.isViewJSON.includes(index)) {
