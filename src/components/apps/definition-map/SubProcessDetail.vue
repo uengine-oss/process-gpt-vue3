@@ -6,7 +6,7 @@
                 <h6 class="text-h6 font-weight-semibold">{{ selectedProc.mega.label }}</h6>
                 <v-icon>mdi-chevron-right</v-icon>
             </div>
-            <div v-if="selectedProc.major" class="d-flex align-center"
+            <div v-if="selectedProc.major" class="d-flex align-center cursor-pointer"
                 @click="$app.try($router.push(`/definition-map/mega/${selectedProc.mega.id}`))">
                 <h6 class="text-h6 font-weight-semibold">{{ selectedProc.major.label }}</h6>
                 <div>
@@ -36,20 +36,27 @@
                     </h6>
                 </div>
             </div>
+
+            <div class="ml-auto d-flex">
+                <v-btn icon variant="text" class="ml-3" :size="24" @click="capture">
+                    <Icon icon="mage:image-download" width="24" height="24" />
+                </v-btn>
+            </div>
         </div>
 
         <v-card-text style="width: 100%; height: 90%">
-            <ProcessDefinition v-if="onLoad && bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
-                v-on:openSubProcess="ele => openSubProcess(ele)" :processDefinition="processDefinition.definition"
-                :isViewMode="true"></ProcessDefinition>
-            <div v-else-if="onLoad && !bpmn" style="height: 90%; text-align: center">
+            <ProcessDefinition v-if="bpmn" 
+                style="width: 100%; height: 100%;" 
+                :bpmn="bpmn" :key="defCnt"
+                :processDefinition="processDefinition.definition"
+                :isViewMode="true"
+                v-on:openSubProcess="ele => openSubProcess(ele)"
+            ></ProcessDefinition>
+            <div v-else-if="!bpmn" style="height: 90%; text-align: center">
                 <h6 class="text-h6">정의된 프로세스 모델이 없습니다.</h6>
                 <v-btn color="primary" variant="flat" class="mt-4" @click="editProcessModel">
                     프로세스 편집
                 </v-btn>
-            </div>
-            <div v-else style="height: 100%; text-align: center">
-                <v-progress-circular style="top: 40%" indeterminate color="primary"></v-progress-circular>
             </div>
         </v-card-text>
     </v-card>
@@ -78,6 +85,11 @@ export default {
         subProcessBreadCrumb: [],
         defCnt: 0,
     }),
+    watch: {
+        value(newVal) {
+            this.viewProcess(this.$route.params);
+        }
+    },
     created() {
         let me = this;
         if (!me.$app.try) {
@@ -120,7 +132,6 @@ export default {
         },
         async viewProcess(obj) {
             const def_id = obj.id;
-            this.onLoad = false;
 
             this.value.mega_proc_list.forEach(mega => {
                 mega.major_proc_list.forEach(major => {
@@ -137,17 +148,18 @@ export default {
             if (defInfo) {
                 this.processDefinition = defInfo;
                 this.bpmn = defInfo.bpmn
-                this.onLoad = true;
             } else {
                 this.processDefinition = obj;
                 this.bpmn = null;
-                this.onLoad = true;
             }
         },
         editProcessModel() {
             if (this.processDefinition && this.processDefinition.id) {
                 this.$router.push(`/definitions/chat?id=${this.processDefinition.id}&name=${this.processDefinition.label}`);
             }
+        },
+        capture() {
+            this.$emit('capture')
         },
     },
 }

@@ -12,22 +12,20 @@
                     <v-btn v-if="!lock && enableEdit" 
                         icon variant="text" size="24"
                         class="ml-3"
-                        @click="openAlertDialog('checkin')"
-                        @mouseenter="hover = true"
-                        @mouseleave="hover = false"
-                    >
-                        <LockIcon v-if="hover" width="24" height="24" />
-                        <LockOpenIcon v-else width="24" height="24" />
-                    </v-btn>
-                    
-                    <v-btn v-if="lock && enableEdit"
-                        icon variant="text" size="24"
                         @click="openAlertDialog('checkout')"
                         @mouseenter="hover = true"
                         @mouseleave="hover = false"
                     >
-                        <LockOpenIcon v-if="hover" width="24" height="24" />
-                        <LockIcon v-else width="24" height="24" />
+                        <LockIcon width="24" height="24" />
+                    </v-btn>
+                    
+                    <v-btn v-if="lock && enableEdit"
+                        icon variant="text" size="24"
+                        @click="openAlertDialog('checkin')"
+                        @mouseenter="hover = true"
+                        @mouseleave="hover = false"
+                    >
+                        <LockOpenIcon width="24" height="24" />
                     </v-btn>
 
                     <v-btn icon variant="text" class="ml-3" :size="24" @click="capturePng">
@@ -67,6 +65,7 @@
                 <SubProcessDetail
                     :value="value"
                     :storage="storage"
+                    @capture="capturePng"
                 />
             </div>
             <div v-else>
@@ -101,6 +100,17 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+
+        <v-overlay v-model="overlay">
+            <div class="d-flex justify-center align-center" 
+                style="min-width: 100vw; min-height: 100vh;">
+                <v-progress-circular
+                    color="primary"
+                    indeterminate
+                    :size="50"
+                ></v-progress-circular>
+            </div>
+        </v-overlay>
     </div>
 </template>
 
@@ -140,7 +150,7 @@ export default {
         alertType: '',
         alertDialog: false,
         alertMessage: '',
-        hover: false,
+        overlay: false,
     }),
     async created() {
         var me = this;
@@ -149,8 +159,11 @@ export default {
         }
         this.$app.try({
             action: async () => {
+                this.overlay = true;
                 this.storage = StorageBaseFactory.getStorage();
+                await this.getProcessMap();
                 await this.init();
+                this.overlay = false;
             },
         });
     },
@@ -171,7 +184,6 @@ export default {
                     this.enableEdit = true;
                 }
             }
-            await this.getProcessMap();
         },
         capturePng() {
             var node = document.getElementById('processMap');
@@ -218,45 +230,35 @@ export default {
             await this.storage.putObject(storageKey, putObj);
             this.closeAlertDialog();
         },
-        checkOut() {
+        async checkIn() {
+            this.lock = false;
+            await this.saveProcess();
+            await this.storage.delete('lock/process-map', {key: 'id'});
             this.closeAlertDialog();
-            this.$app.try({
-                action: async () => {
-                    this.lock = false;
-                    await this.saveProcess();
-                    await this.storage.delete('lock/process-map', {key: 'id'});
-                },
-                successMsg: '저장 및 체크아웃 되었습니다.'
-            });
         },
-        checkIn() {
+        async checkOut() {
+            this.lock = true;
+            this.editUser = this.userInfo.email;
+            let lockObj = {
+                id: 'process-map',
+                user_id: this.editUser,
+            }
+            await this.storage.putObject('lock', lockObj);
             this.closeAlertDialog();
-            this.$app.try({
-                action: async () => {
-                    this.lock = true;
-                    this.editUser = this.userInfo.email;
-                    let lockObj = {
-                        id: 'process-map',
-                        user_id: this.editUser,
-                    }
-                    await this.storage.putObject('lock', lockObj);
-                },
-                successMsg: '체크인 되었습니다.'
-            });
         },
         openAlertDialog(type) {
             this.alertType = type;
             const isAdmin = localStorage.getItem("isAdmin");
             if (isAdmin == "true") {
-                if (type == 'checkout') {
+                if (type == 'checkin') {
                     if (this.editUser == this.userInfo.email) {
                         this.alertDialog = true;
-                        this.alertMessage = '수정된 내용을 저장 및 체크아웃 하시겠습니까?';
+                        this.alertMessage = '수정된 내용을 저장 및 체크인 하시겠습니까?';
                     } else {
                         this.alertDialog = true;
-                        this.alertMessage = `현재 ${this.editUser} 님께서 수정 중입니다. 체크아웃 하는 경우 ${this.editUser} 님이 수정한 내용은 저장되지 않습니다. 체크아웃 하시겠습니까?`;
+                        this.alertMessage = `현재 ${this.editUser} 님께서 수정 중입니다. 체크인 하는 경우 ${this.editUser} 님이 수정한 내용은 저장되지 않습니다. 체크인 하시겠습니까?`;
                     }
-                } else if (type == 'checkin') {
+                } else if (type == 'checkout') {
                     this.alertDialog = true;
                     this.alertMessage = `프로세스 정의 체계도를 수정하시겠습니까?`;                    
                 }
