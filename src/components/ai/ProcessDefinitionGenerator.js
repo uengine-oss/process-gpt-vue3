@@ -62,7 +62,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                 {
                     "source": "activity id of source activity",
                     "target": "activity id of target activity",
-                    "condition": "condition" // 기존 프로세스 정보가 존재하는 경우 해당 프로세스 변수의 정보를 참고하여 컨디션을 생성해야한다.
+                    "condition": "기존 프로세스 정보중 "data" 내에 존재하는 값만을 사용하여 condition 을 생성해야한다. "data" 목록을 보고 condition 생성에 필요한 "data" 의 "name" 만으로 생성해야함." // 기존 프로세스 정보가 존재하는 경우에만 생성해야하며, 생성시 기존 프로세스 정보를 참고하여 컨디션을 생성해야한다.
                 }
               ]
             }
@@ -83,7 +83,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   
                   {
                     "action": "replace" | "add" | "delete",
-                    "targetJsonPath": "$.activities[?(@.id=='request_vacation')]",
+                    "targetJsonPath": "$.activities[?(@.id=='request_vacation')]", // action 이 add 인 경우 "$.activities" 만 리턴. e.g. "$.sequences", action 이 add 가 아닌 경우 "$.activities[?(@.id=='request_vacation')]" 와 같이 수정, 삭제될 Path 의 상위 목록("activities", "sequences" 등...)을 참고하여 "$.activities" 뒤에 수정, 삭제될 값을 찾을 수 있는 필터("[?(@.id=='request_vacation')]") 를 반드시 포함하여 리턴.  // e.g. "$.sequences[?(@.source=='leave_request_activity' && @.target=='leave_approval_activity')].condition"
                     "value": {...} //delete 인 경우는 불필요, replace의 경우 기존 value에서 변경된 부분을 수정하여 생략 하지 않고 value로 리턴
                   }   
                   

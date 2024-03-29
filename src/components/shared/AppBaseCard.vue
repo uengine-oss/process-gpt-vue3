@@ -72,6 +72,7 @@ const canvasReSize = computed(() => {
 
 .right-part {
     width: 100%;
+    overflow: auto;
 }
 
 .left-part {
