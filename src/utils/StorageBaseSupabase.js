@@ -426,9 +426,10 @@ export default class StorageBaseSupabase {//extends StorageBase{
             if(!options) options = {}
             const orderByField = options.orderBy || 'id';
             const isAscending = !options.sort || !options.sort.includes('desc');
-            let obj = this.formatDataPath(path, options);
-            let query = window.$supabase.from(obj.table)
-
+            let query = window.$supabase.from(path)
+            // let obj = this.formatDataPath(path, options);
+            // let query = window.$supabase.from(obj.table)
+            
             // key 처리 - 컬럼명
             if(options.key){
                 query = query.select(options.key);
@@ -484,43 +485,6 @@ export default class StorageBaseSupabase {//extends StorageBase{
             } else {
                 return data;
             }
-            
-            // if (options && options.match) {
-            //     const { data, error } = await window.$supabase
-            //         .from(obj.table)
-            //         .select()
-            //         .match(options.match);
-
-            //     if (error) {
-            //         return error;
-            //     } else {
-            //         if (data.length > 0) return data;
-            //         return null;
-            //     }
-            // } else if (obj.searchVal) {
-            //     const { data, error } = await window.$supabase
-            //         .from(obj.table)
-            //         .select()
-            //         .eq(obj.searchKey, obj.searchVal);
-                
-            //     if (error) {
-            //         return error;
-            //     } else {
-            //         if (data.length > 0) return data;
-            //         return null;
-            //     }
-            // } else {
-            //     const { data, error } = await window.$supabase
-            //         .from(obj.table)
-            //         .select();
-                
-            //     if (error) {
-            //         return error;
-            //     } else {
-            //         if (data.length > 0) return data;
-            //         return null;
-            //     }
-            // }
         } catch(error) {
             console.log(`GET OBJECT: ${error}`);
             return { Error: error }

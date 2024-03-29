@@ -7,7 +7,7 @@
                     :isViewMode="isViewMode"
                     @update="updateDefinition"
                 ></process-definition>
-                <process-definition-version-dialog :process="processDefinition" :loading="loading" :open="versionDialog" @close="closeDefinitionDialog" @save="saveDefinition"></process-definition-version-dialog>
+                <process-definition-version-dialog :process="processDefinition" :loading="loading" :open="versionDialog" @close="toggleVersionDialog" @save="saveDefinition"></process-definition-version-dialog>
                 <ProcessDefinitionVersionManager   :process="processDefinition" :open="verMangerDialog"  @close="toggleVerMangerDialog" @changeXML="changeXML"></ProcessDefinitionVersionManager>
             </template>
             <template v-slot:rightpart>
@@ -90,7 +90,7 @@ export default {
         },
         processDefinitionMap: null,
         modeler: null,
-        lock: true,
+        lock: false,
         disableChat: false,
         isViewMode: false,
         // version
@@ -148,38 +148,30 @@ export default {
             me.$app.try({
                 context: me,
                 action: async () => {
-                    me.lock = !me.lock
-                    // lock : true: 나는 수정 가능/타사용자 수정 불가 | 닫힘 아이콘 
-                    // lock : false: 읽기모드 : 열림 아이콘
                     if(me.lock){
-                        // lock true -> 나는 수정 가능/타사용자 수정 불가 | 열림-수정 가능(편집)
-                        me.disableChat = false;
-                        me.isViewMode = false;
-                        await me.storage.putObject('lock', {
+                        // 잠금 > 수정가능 하도록
+                        if(me.processDefinition) await me.storage.putObject('lock', {
                             id: me.processDefinition.processDefinitionId,
                             user_id: me.userInfo.email
                         });
+                        me.disableChat = false;
+                        me.isViewMode = false;
+                        me.lock = false
+                        me.definitionChangeCount++;
                     } else {
-                        // lock false-> 읽기모드 | 잠금-수정 불가(저장) 
+                        // 현재 수정가능 > 잠금 상태로 (저장)
                         me.toggleVersionDialog(true);
                     }
-                    me.definitionChangeCount++;
-                    // window.location.reload();
                 }
             })
         },
         toggleVerMangerDialog(open){
+            // Version Manager Dialog
             this.verMangerDialog = open
         },
         toggleVersionDialog(open){
+            // Version Dialog
             this.versionDialog = open
-        },
-        closeDefinitionDialog(){
-            var me = this
-            me.lock = true; // 수정 가능 : 닫힘 아이콘
-            me.disableChat = false;
-            me.isViewMode = false;
-            me.toggleVersionDialog(false)
         },
         saveDefinition(info){
             var me = this
@@ -187,16 +179,20 @@ export default {
                 context: me,
                 action: async () => {
                     me.loading = true
-                    if(info){
-                        // await me.saveVersion(info, xml);
-                        await me.saveModel(info);   
-                    }
 
-                    if(me.processDefinition) await me.storage.delete(`lock/${me.processDefinition.processDefinitionId}`, {key: 'id'});
+                    const store = useBpmnStore();
+                    const modeler = store.getModeler;
+                    const xml = await modeler.saveXML({ format: true, preamble: true });
+                    await me.saveModel(info, xml.xml); 
+
+                    await me.storage.delete(`lock/${info.proc_def_id}`, {key: 'id'});
                     me.disableChat = true;
                     me.isViewMode = true;
+                    me.lock = true // 잠금처리 ( 수정 불가 )
+
                     me.loading = false
                     me.toggleVersionDialog(false)
+                    me.definitionChangeCount++
                 }
             })
         
@@ -206,11 +202,17 @@ export default {
             me.$app.try({
                 context: me,
                 action: async () => {
-                    await me.storage.putObject(`${me.path}/${me.processDefinition.processDefinitionId}`, {
+                    if(!info) return;
+                    if(!info.id) return;
+
+                    await me.storage.putObject(`${me.path}`, {
+                        id: info.id,
                         name: info.name,
-                        definition: null,
                         bpmn: info.xml
                     });
+                    me.bpmn = info.xml
+                    me.definitionChangeCount++
+                    me.toggleVerMangerDialog(false)
                 }
             })
         },
@@ -260,11 +262,11 @@ export default {
                 // lock
                 const lockObj = await this.getData(`lock/${this.$route.params.id}`, { key: 'id' });
                 if (lockObj && lockObj.id && lockObj.user_id && lockObj.user_id == this.userInfo.email) {
-                    this.lock = true; // 수정 가능 : 닫힘 아이콘
+                    this.lock = false; 
                     this.disableChat = false;
                     this.isViewMode = false;
                 } else {
-                    this.lock = false; // 읽기모드 : 열림 아이콘
+                    this.lock = true; 
                     this.disableChat = true;
                     this.isViewMode = true;
                 }
@@ -514,124 +516,99 @@ export default {
                 action: async () => {
                     const prevSnapshot = info.prevSnapshot
                     const prevDiff = info.prevDiff
+
+                    // diff Logic
                     let diffs = null
-
-                    // let tempId = 'SalesManagementProcess' // me.process.processDefinitionId
-                    // let tempName = '영업관리 프로세스' // me.definition.processDefinitionName
-                    // const oldValue = me.information.snapshot
-                    // const newValue = me.xml
-                    // let diffs = null
-
-                    // // const xml2js = require('xml2js');
-                    // // const parser = new xml2js.Parser({explicitArray: false});
-
-                    // // const oldObject = xmljs.xml2js(oldValue, {compact: false});
-                    // // const newObject = xmljs.xml2js(newValue, {compact: false});
-                    // const dmp = new diffMatchPatch();
-
-                    // // let differences = jsondiffpatch.diff(oldObject, newObject)
-                    // // let diff = diff(oldValue, newValue);
-                    // // diffs = dmp.diff_main(oldValue, newValue);
-
-                    // // console.log('!!!!', diffs);
-
-                    // // const differences = diff(oldObject, newObject);
-                    // // console.log(oldValue, newValue, differences)
-
-     
+    
+    
                     me.storage.putObject('proc_def_arcv', {
                         arcv_id: info.arcv_id,
                         version: info.version,
                         name: info.name,
                         proc_def_id: info.proc_def_id,
-                        snapshot: currentXML.xml,
+                        snapshot: currentXML,
                         diff: diffs,
                         timeStamp: new Date()
                     });
                 }
             })
         },
-        async saveModel(info) {
-            // alert(model);
-            console.log(this.changedXML);
-            const store = useBpmnStore();
-            let modeler = store.getModeler;
-            let xml = await modeler.saveXML({ format: true, preamble: true });
+        async saveModel(info, xml) {
+            var me = this
+            me.$app.try({
+                context: me,
+                action: async () => {
+                    // alert(model);
+                    // console.log(this.changedXML);
+                    // const store = useBpmnStore();
+                    // let modeler = store.getModeler;
+                    // let xml = await modeler.saveXML({ format: true, preamble: true });
 
-            if (!this.processDefinition && xml) {
-                this.processDefinition = this.convertXMLToJSON(xml);
-            }
-            
-            if (!this.processDefinition.processDefinitionName){
-                if(info.name)  {
-                    this.processDefinition.processDefinitionName = info.name
-                } else {
-                    this.processDefinition.processDefinitionName = prompt("please give a name for the process definition");
-                }
-            }
-        
-            if (!this.processDefinition.processDefinitionId)
-                this.processDefinition.processDefinitionId = prompt("please give a ID for the process definition");
-
-            this.projectName = this.processDefinition.processDefinitionName;
-
-
-            if (!this.processDefinition.processDefinitionId || !this.processDefinition.processDefinitionName) {
-                throw new Error("processDefinitionId or processDefinitionName is missing");
-            }
-
-            let newPath = `${this.path}/${this.processDefinition.processDefinitionId}`;
-
-                let putObj = {
-                    id: this.processDefinition.processDefinitionId,
-                    name: this.processDefinition.processDefinitionName,
-                    definition: this.processDefinition,
-                    // messages: this.messages,
-                    bpmn: xml.xml   //TODO: model --> definition과 구분이 안됨.  bpmn 혹은 xmlDefinition 혹은 xmlModel 등으로 프로퍼티명 변경할것!
-                };
-
-                await this.putObject(newPath, putObj);
-            // if (window.$mode == "uEngine") {
-            //     // :9093/definition/raw/sales/testProcess.bpmn < definition-samples/testProcess.bpmn
-            //     await axios.put(`/definition/raw/sales/${this.processDefinition.processDefinitionId}.bpmn`, xml.xml, {
-            //         headers: {
-            //             'Content-Type': 'application/xml' // 적절한 Content-Type 설정
-            //         }
-            //     }).then(res => {
-            //         console.log(res);
-            //     })
-            // } else {
-
-
-                
-            // }
-
-
-            // const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
-            // let vectorId = await vectorStore.similaritySearch({
-            //     query: this.projectName,
-            //     k: 1
-            // });
-            // if (vectorId) {
-            //     console.log(vectorId);
-            //     // let path = `proc_def/${this.processDefinition.processDefinitionId ? this.processDefinition.processDefinitionId : this.$route.params.id}/model`;
-            //     // this.pushObject(path, definition);
-            //     this.deleteVectorStorage(vectorId.similarItems[0].id);
-            //     this.saveDefinition(definition);
-            // }
-
-            // const table = await this.getObject(this.processDefinition.processDefinitionId)
-            // if (!table) {
-                await axios.post('http://localhost:8001/process-db-schema/invoke', {
-                    "input": {
-                        "process_definition_id": this.processDefinition.processDefinitionId
+                    if (!me.processDefinition && xml) {
+                        me.processDefinition = me.convertXMLToJSON(xml);
                     }
-                }).then(async res => {
-                    console.log(res);
-                }).catch(error => {
-                    console.log(error);
-                });
-            // }
+                    
+                    me.processDefinition.processDefinitionName = info.name ? info.name : prompt("please give a name for the process definition");
+                    me.processDefinition.processDefinitionId = info.proc_def_id ?  info.proc_def_id : prompt("please give a ID for the process definition");
+                    
+                    
+                    me.projectName = me.processDefinition.processDefinitionName;
+                    if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
+                        throw new Error("processDefinitionId or processDefinitionName is missing");
+                    }
+
+                    await me.putObject(`${me.path}/${me.processDefinition.processDefinitionId}`, {
+                        id: me.processDefinition.processDefinitionId,
+                        name: me.processDefinition.processDefinitionName,
+                        definition: me.processDefinition,
+                        // messages: this.messages,
+                        bpmn: xml   //TODO: model --> definition과 구분이 안됨.  bpmn 혹은 xmlDefinition 혹은 xmlModel 등으로 프로퍼티명 변경할것!
+                    });
+
+                    await me.saveVersion(info, xml)
+                    // if (window.$mode == "uEngine") {
+                    //     // :9093/definition/raw/sales/testProcess.bpmn < definition-samples/testProcess.bpmn
+                    //     await axios.put(`/definition/raw/sales/${this.processDefinition.processDefinitionId}.bpmn`, xml.xml, {
+                    //         headers: {
+                    //             'Content-Type': 'application/xml' // 적절한 Content-Type 설정
+                    //         }
+                    //     }).then(res => {
+                    //         console.log(res);
+                    //     })
+                    // } else {
+
+
+                        
+                    // }
+
+
+                    // const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
+                    // let vectorId = await vectorStore.similaritySearch({
+                    //     query: this.projectName,
+                    //     k: 1
+                    // });
+                    // if (vectorId) {
+                    //     console.log(vectorId);
+                    //     // let path = `proc_def/${this.processDefinition.processDefinitionId ? this.processDefinition.processDefinitionId : this.$route.params.id}/model`;
+                    //     // this.pushObject(path, definition);
+                    //     this.deleteVectorStorage(vectorId.similarItems[0].id);
+                    //     this.saveDefinition(definition);
+                    // }
+
+                    // const table = await this.getObject(this.processDefinition.processDefinitionId)
+                    // if (!table) {
+                        await axios.post('http://localhost:8001/process-db-schema/invoke', {
+                            "input": {
+                                "process_definition_id": me.processDefinition.processDefinitionId
+                            }
+                        }).then(async res => {
+                            console.log(res);
+                        }).catch(error => {
+                            console.log(error);
+                        });
+                    // }
+                }
+            })
         },
         // parseDefinition(model) {
         //     let definition = {};

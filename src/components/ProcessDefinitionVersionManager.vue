@@ -102,7 +102,7 @@ export default {
         
         // xml
         showXML: false, // xml or bpmn
-        key: 0,
+        key: 0, // update component
 
         // slider
         currentIndex: 0,
@@ -138,6 +138,7 @@ export default {
     watch: {
         "open": function(newVal) {
             if (newVal) {
+                this.currentIndex = 0 // init
                 this.load();
             } else {
                 this.isOpen = false
@@ -178,7 +179,7 @@ export default {
             me.key++
         },
         changeXML(){
-            this.$emit('changeXML', {"name": this.currentVersionName, "xml": this.currentXML})
+            this.$emit('changeXML', {"id": this.process.processDefinitionId, "name": this.currentVersionName, "xml": this.currentXML})
         },
         downloadXML() {
             var me = this;

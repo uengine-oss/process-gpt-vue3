@@ -2,7 +2,7 @@
     <div>
         <v-dialog v-model="isOpen" max-width="400">
             <v-card>
-                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{ isNew ? 'Save' : 'Version Up'}}</v-card-title>
+                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{ isNew ? 'New Definition' : 'Version Up'}}</v-card-title>
                 <v-btn icon style="position:absolute; right:5px; top:5px;" @click="close()">
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
@@ -12,12 +12,20 @@
                             v-model="isMajor"
                             :label="this.isMajor ? `Major Update: ${newVersion}`: `Minor Update: ${newVersion}`"
                             color="primary"
+                            :disabled="isNew"
                             hide-details
                         ></v-switch>
                         <v-text-field
+                            v-if="isNew"
+                            v-model="information.proc_def_id"
+                            label="ID"
+                            :rules="[v => !!v || 'ID is required']"
+                            required
+                        ></v-text-field>
+                        <v-text-field
                             v-model="information.name"
-                            label="Version Name"
-                            :rules="[v => !!v || 'Version name is required']"
+                            label="Name"
+                            :rules="[v => !!v || 'Name is required']"
                             required
                         ></v-text-field>
                     </v-col>  
@@ -72,7 +80,7 @@ export default {
         newVersion(){
             // 4.13
             let major = Math.floor(this.information.version); // 4
-            let minor = Number(this.information.version.toString().split('.')[1]); // 13
+            let minor = this.information.version.toString().includes('.') ? Number(this.information.version.toString().split('.')[1]) : 0; // 13
 
             if(this.isMajor){
                 major+= 1;
@@ -102,14 +110,17 @@ export default {
             this.$app.try({
                 context: me,
                 action: async () => {
-                    let result = await me.storage.list(`proc_def_arcv/${me.process.processDefinitionId}`, { 
+                    if(me.process){
+                        me.isNew = false
+                        let result = await me.storage.list(`proc_def_arcv`, { 
                         sort: 'desc',
                         orderBy: 'timeStamp',
                         size: 1,
                         match: {'proc_def_id': me.process.processDefinitionId}
-                    })
-                    if(result.length > 0) {
-                        me.information = result[0]
+                        })
+                        if(result.length > 0) {
+                            me.information = result[0]
+                        }
                     } else {
                         me.isNew = true
                     }
@@ -122,11 +133,12 @@ export default {
             this.$app.try({
                 context: me,
                 action: async () => {
+                    if(!(me.information.proc_def_id && me.information.name)) return;
                     me.$emit('save', {
-                        arcv_id: `${me.process.processDefinitionId}_${me.newVersion}`,
+                        arcv_id: me.process ? `${me.process.processDefinitionId}_${me.newVersion}`: `${me.information.proc_def_id}_${me.newVersion}`,
                         version: Number(me.newVersion),
                         name: me.information.name,
-                        proc_def_id: me.process.processDefinitionId,
+                        proc_def_id: me.process ? me.process.processDefinitionId : me.information.proc_def_id,
                         prevSnapshot: me.information.snapshot,
                         prevDiff: me.information.diff,
                     })
@@ -135,7 +147,7 @@ export default {
             })
         },
         close(){
-            this.$emit('close')
+            this.$emit('close', false)
         }
     }
 };
