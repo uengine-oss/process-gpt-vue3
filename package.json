@@ -16,6 +16,7 @@
         "@dicebear/collection": "^5.3.5",
         "@dicebear/core": "^5.3.5",
         "@floating-ui/dom": "1.0.0",
+        "@fullcalendar/core": "6.1.8",
         "@fullcalendar/daygrid": "6.1.8",
         "@fullcalendar/interaction": "6.1.8",
         "@fullcalendar/timegrid": "6.1.8",
@@ -98,7 +99,7 @@
     },
     "devDependencies": {
         "@antfu/eslint-config-vue": "^0.25.2",
-        "@fullcalendar/core": "^6.1.11",
+        "@fullcalendar/core": "^5.11.3",
         "@fullcalendar/daygrid": "^5.11.3",
         "@fullcalendar/interaction": "^5.11.3",
         "@fullcalendar/list": "^5.11.3",
