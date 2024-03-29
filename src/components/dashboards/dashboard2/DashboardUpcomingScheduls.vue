@@ -85,7 +85,7 @@ export default {
     },
     methods: {
         goToCalendar() {
-            this.$router.push('/apps/calendar');
+            this.$router.push('/calendar');
         },
         formatDateTime(datetime) {
             if (!datetime) return '';

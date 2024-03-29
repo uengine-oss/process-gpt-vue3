@@ -77,7 +77,7 @@ export default {
                 title: 'calendar.title',
                 icon: 'solar:calendar-line-duotone',
                 BgColor: 'primary',
-                to: '/apps/calendar',
+                to: '/calendar',
                 disable: true,
             },
             {
