@@ -38,22 +38,23 @@
                         </v-btn>
                         <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn"
                             style="display: none;" />
-                        <v-btn v-if="lock && type == 'definitions'"
+                        <v-btn v-if="type == 'definitions'"
                             icon variant="text"
                             @click="openAlertDialog" 
                             class="text-medium-emphasis"
                         >
-                            <LockIcon size="24" />
-                        </v-btn>
-                        <v-btn v-if="!lock && type == 'definitions'"
-                            icon variant="text"
-                            @click="openAlertDialog" 
-                            class="text-medium-emphasis"
-                        >
-                            <LockOpenIcon size="24" />
+                            <Icon v-if="lock" icon="f7:lock" width="24" height="24" ></Icon>    
+                            <Icon v-else  icon="f7:lock-open" width="24" height="24" ></Icon>
                         </v-btn>
                         <v-btn v-if="chatInfo" icon variant="text" class="text-medium-emphasis" @click="moreDetail">
                             <Icon icon="material-symbols:info-outline" width="24" height="24" />
+                        </v-btn>
+                        <v-btn v-if="type == 'definitions'"
+                            icon variant="text"
+                            @click="openVerMangerDialog" 
+                            class="text-medium-emphasis"
+                        >
+                            <HistoryIcon size="24" />
                         </v-btn>
                     </div>
 
@@ -319,6 +320,7 @@ import partialParse from "partial-json-parser";
 import ProgressAnimated from '@/components/ui/ProgressAnimated.vue';
 import ScrollBottomHandle from '@/components/ui/ScrollBottomHandle.vue';
 import AgentsChat from './AgentsChat.vue';
+import { HistoryIcon } from 'vue-tabler-icons';
 
 export default {
     components: {
@@ -432,6 +434,9 @@ export default {
         },
     },
     methods: {
+        openVerMangerDialog(){
+            this.$emit('openVerMangerDialog', true)
+        },
         handleTextareaInput(event) {
             const text = event.target.value;
             const atIndex = text.lastIndexOf('@');
@@ -642,12 +647,13 @@ export default {
         },
         openAlertDialog() {
             if (this.type == 'definitions') {
-                if (this.lock) {
-                    this.alertMessage = '저장 및 체크아웃 하시겠습니까?';
-                } else {
-                    this.alertMessage = '체크인 및 프로세스 편집을 시작하시겠습니까?';
-                }
-                this.alertDialog = true;
+                this.$emit('toggleLock')
+                // if (this.lock) {
+                //     this.alertMessage = '저장 및 체크아웃 하시겠습니까?';
+                // } else {
+                //     this.alertMessage = '체크인 및 프로세스 편집을 시작하시겠습니까?';
+                // }
+                // this.alertDialog = true;
             }
         },
         complete() {

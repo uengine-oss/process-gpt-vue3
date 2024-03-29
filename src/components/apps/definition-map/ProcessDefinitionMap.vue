@@ -11,7 +11,7 @@
                     </span>
                     <v-btn v-if="!lock && enableEdit" 
                         icon variant="text" size="24"
-                        class="ml-3"
+                        class="ml-3 cp-unlock"
                         @click="openAlertDialog('checkin')"
                         @mouseenter="hover = true"
                         @mouseleave="hover = false"
@@ -22,12 +22,13 @@
                     
                     <v-btn v-if="lock && enableEdit"
                         icon variant="text" size="24"
+                        class="cp-lock"
                         @click="openAlertDialog('checkout')"
                         @mouseenter="hover = true"
                         @mouseleave="hover = false"
                     >
                         <LockOpenIcon v-if="hover" width="24" height="24" />
-                        <LockIcon v-else width="24" height="24" />
+                        <LockIcon  v-else width="24" height="24" />
                     </v-btn>
 
                     <v-btn icon variant="text" class="ml-3" :size="24" @click="capturePng">
@@ -35,13 +36,13 @@
                     </v-btn>
 
                     <ProcessMenu
-                        class="ml-3"
+                        class="ml-3 cp-add-process"
                         :size="24" 
                         :type="type" 
                         :lock="lock"
                         :process="value"
                         :storage="storage"
-                        @add="addProcess" 
+                        @add="addProcess"
                     />
 
                     <!-- <v-btn v-if="componentName != 'DefinitionMapList'"
@@ -86,11 +87,13 @@
                 <v-card-actions class="justify-center">
                     <v-btn v-if="alertType =='checkout'" 
                         color="primary" 
+                        class="cp-lock-check"
                         variant="flat" 
                         @click="checkOut"
                     >확인</v-btn>
                     <v-btn v-else-if="alertType =='checkin'" 
-                        color="primary" 
+                        color="primary"
+                        class="cp-unlock-check" 
                         variant="flat" 
                         @click="checkIn"
                     >확인</v-btn>

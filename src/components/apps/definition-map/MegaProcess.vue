@@ -8,7 +8,7 @@
             <h6 class="text-h6 font-weight-semibold">
                 {{ value.label }}
             </h6>
-            <div class="ml-auto">
+            <div class="ml-auto add-major-process">
                 <ProcessMenu
                     :size="20"
                     :type="type"

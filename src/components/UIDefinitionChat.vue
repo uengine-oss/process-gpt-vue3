@@ -10,14 +10,14 @@
                 </div>
             </template>
             <template v-slot:rightpart>
-                <mashup></mashup>
+                <mashup v-model="src" @change="checkHTML"/>
             </template>
 
             <template v-slot:mobileLeftContent>
                 <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :isChanged="isChanged"
                     :userInfo="userInfo" :type="'definitions'" @sendMessage="beforeSendMessage"
                     @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage" @getMoreChat="getMoreChat"
-                    @save="saveModel"></Chat>
+                    @save="$app.try(saveModel)"></Chat>
             </template>
         </AppBaseCard>
     </v-card>
@@ -64,7 +64,8 @@ export default {
             text: "processDefinition.processDefinitionExplanation"
         },
         processDefinitionMap: null,
-        modeler: null
+        modeler: null,
+        src:null,
     }),
     async created() {
         await this.init();
@@ -72,6 +73,10 @@ export default {
             isStream: true,
             preferredLanguage: 'Korean'
         });
+        this.src = localStorage["keditor.editing.content"]
+    },
+    beforeDestroy() {
+        this.src = null;
     },
     mounted() {
         // if (this.$route.query && this.$route.query.id) {
@@ -101,7 +106,9 @@ export default {
         
     },
     methods: {
-       
+        checkHTML(html) {
+            localStorage["keditor.editing.content"] = html;
+        },
   
     }
 };

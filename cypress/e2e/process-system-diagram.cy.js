@@ -1,5 +1,3 @@
-const { eq } = require("lodash");
-
 const email = Cypress.env('EMAIL');
 const password = Cypress.env('PASSWORD');
 
@@ -35,7 +33,38 @@ describe('프로세스 정의', () => {
     cy.get('.cp-menu').eq(6).click();
     cy.wait(3000);
     cy.get('.cp-unlock').click();
-    // cy.wait(60000);
+    cy.wait(1000);
+    cy.get('.cp-unlock-check').click();
+    cy.wait(1000);
+    cy.get('.cp-add-process').click();
+    cy.wait(1000);
+    cy.get('.cp-process').click();
+    cy.wait(1000);
+    cy.get('.cp-process-id').type("MEGA-1");
+    cy.get('.cp-process-name').type("고객");
+    cy.wait(1000);
+    cy.get('.cp-process-save').click();
+    cy.wait(1000);
+
+    cy.get('.add-major-process').click();
+    cy.get('.cp-process').click();
+    cy.get('.cp-process-id').type("MAJOR-1");
+    cy.get('.cp-process-name').type("고객정보 기획");
+    cy.wait(1000);
+    cy.get('.cp-process-save').click();
+    cy.wait(1000);
+    
+    // cy.get('.add-sub-process').click();
+    // cy.get('.cp-process').click();
+    // cy.get('.cp-process-id').type("SUB-1");
+    // cy.get('.cp-process-name').type("고객정보 관리기준 수립");
+    // cy.wait(1000);
+    // cy.get('.cp-process-save').click();
+    // cy.wait(1000);
+
+    cy.get('.cp-lock').click();
+    cy.wait(1000);
+    cy.get('.cp-lock-check').click();
 
 
   })
