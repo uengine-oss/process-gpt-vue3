@@ -26,7 +26,7 @@
                                 삭제
                             </v-list-item-title>
                         </v-list-item>
-                        <v-list-item v-if="type == 'mega'" @click="openViewProcessDetails(process)">
+                        <v-list-item class="cp-mega-datail" v-if="type == 'mega'" @click="openViewProcessDetails(process)">
                             <v-list-item-title>
                                 상세보기
                             </v-list-item-title>
@@ -55,6 +55,7 @@
                     <v-checkbox
                         v-if="addType == 'sub'"
                         v-model="isNewDef"
+                        class="cp-custom-sub"
                         label="새로운 프로세스 정의 추가"
                         color="primary"
                         density="compact"
