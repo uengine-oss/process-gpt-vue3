@@ -32,10 +32,14 @@ describe('프로세스 정의', () => {
     // 프로세스 정의 체계도
     cy.get('.cp-menu').eq(6).click();
     cy.wait(10000);
+   
+    // check-out 
     cy.get('.cp-unlock').click();
     cy.wait(1000);
     cy.get('.cp-check-out').click();
     cy.wait(1000);
+   
+    // Mega process
     cy.get('.cp-add-process').click();
     cy.wait(1000);
     cy.get('.cp-process').click();
@@ -46,22 +50,117 @@ describe('프로세스 정의', () => {
     cy.get('.cp-process-save').click();
     cy.wait(1000);
 
+    // Major process
     cy.get('.add-major-process').click();
     cy.get('.cp-process').click();
-    cy.get('.cp-process-id').type("MAJOR-1");
+    cy.get('.cp-process-id').type("MAJOR-1.1");
     cy.get('.cp-process-name').type("고객정보 기획");
     cy.wait(1000);
     cy.get('.cp-process-save').click();
     cy.wait(1000);
-    
-    // cy.get('.add-sub-process').click();
-    // cy.get('.cp-process').click();
-    // cy.get('.cp-process-id').type("SUB-1");
-    // cy.get('.cp-process-name').type("고객정보 관리기준 수립");
-    // cy.wait(1000);
-    // cy.get('.cp-process-save').click();
-    // cy.wait(1000);
 
+    cy.get('.add-major-process').click();
+    cy.get('.cp-process').click();
+    cy.get('.cp-process-id').type("MAJOR-1.2");
+    cy.get('.cp-process-name').type("고객정보 관리");
+    cy.wait(1000);
+    cy.get('.cp-process-save').click();
+    cy.wait(1000);
+
+    cy.get('.add-major-process').click();
+    cy.get('.cp-process').click();
+    cy.get('.cp-process-id').type("MAJOR-1.3");
+    cy.get('.cp-process-name').type("고객 상담관리");
+    cy.wait(1000);
+    cy.get('.cp-process-save').click();
+    cy.wait(1000);
+
+    cy.get('.add-major-process').click();
+    cy.get('.cp-process').click();
+    cy.get('.cp-process-id').type("MAJOR-1.4");
+    cy.get('.cp-process-name').type("통합안내 관리");
+    cy.wait(1000);
+    cy.get('.cp-process-save').click();
+    cy.wait(1000);
+    
+    // Sub process
+    cy.get('.add-sub-process').eq(0).click();
+    cy.get('.cp-process').click();
+    cy.get('.cp-custom-sub').click();
+    cy.get('.cp-process-id').type("SUB-1.1.1");
+    cy.get('.cp-process-name').type("고객정보 관리기준 수립");
+    cy.wait(1000);
+    cy.get('.cp-process-save').click();
+    cy.wait(1000);
+
+    cy.get('.add-sub-process').eq(1).click();
+    cy.get('.cp-process').click();
+    cy.get('.cp-custom-sub').click();
+    cy.get('.cp-process-id').type("SUB-1.2.1");
+    cy.get('.cp-process-name').type("고객정보 관리");
+    cy.wait(1000);
+    cy.get('.cp-process-save').click();
+    cy.wait(1000);
+
+    cy.get('.add-sub-process').eq(1).click();
+    cy.get('.cp-process').click();
+    cy.get('.cp-custom-sub').click();
+    cy.get('.cp-process-id').type("SUB-1.2.2");
+    cy.get('.cp-process-name').type("외부 고객정보 관리");
+    cy.wait(1000);
+    cy.get('.cp-process-save').click();
+    cy.wait(1000);
+
+    cy.get('.add-sub-process').eq(1).click();
+    cy.get('.cp-process').click();
+    cy.get('.cp-custom-sub').click();
+    cy.get('.cp-process-id').type("SUB-1.2.3");
+    cy.get('.cp-process-name').type("멤버쉽 관리");
+    cy.wait(1000);
+    cy.get('.cp-process-save').click();
+    cy.wait(1000);
+    
+
+    cy.get('.add-sub-process').eq(2).click();
+    cy.get('.cp-process').click();
+    cy.get('.cp-custom-sub').click();
+    cy.get('.cp-process-id').type("SUB-1.3.1");
+    cy.get('.cp-process-name').type("챗봇 상담");
+    cy.wait(1000);
+    cy.get('.cp-process-save').click();
+    cy.wait(1000);
+    
+    cy.get('.add-sub-process').eq(2).click();
+    cy.get('.cp-process').click();
+    cy.get('.cp-custom-sub').click();
+    cy.get('.cp-process-id').type("SUB-1.3.2");
+    cy.get('.cp-process-name').type("고객센터 관리");
+    cy.wait(1000);
+    cy.get('.cp-process-save').click();
+    cy.wait(1000);
+
+    cy.get('.add-sub-process').eq(3).click();
+    cy.get('.cp-process').click();
+    cy.get('.cp-custom-sub').click();
+    cy.get('.cp-process-id').type("SUB-1.4.1");
+    cy.get('.cp-process-name').type("발송(반송) 관리");
+    cy.wait(1000);
+    cy.get('.cp-process-save').click();
+    cy.wait(1000);
+
+    cy.get('.add-sub-process').eq(3).click();
+    cy.get('.cp-process').click();
+    cy.get('.cp-custom-sub').click();
+    cy.get('.cp-process-id').type("SUB-1.4.2");
+    cy.get('.cp-process-name').type("제증명서 관리");
+    cy.wait(1000);
+    cy.get('.cp-process-save').click();
+    cy.wait(1000);
+
+    cy.get('.add-major-process').click();
+    cy.get('.cp-mega-datail').click();
+
+    // check-in
     cy.get('.cp-lock').click();
     cy.wait(1000);
     cy.get('.cp-check-in').click();
