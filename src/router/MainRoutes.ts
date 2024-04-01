@@ -11,11 +11,6 @@ const MainRoutes = {
             path: '/todolist',
             component: () => import('@/components/apps/todolist/TodolistCard.vue'),
         },
-        // {
-        //     name: 'Calendar',
-        //     path: '/calendar',
-        //     component: () => import('@/views/apps/calendar/Calendar.vue')
-        // },
         {
             name: 'Chats',
             path: '/chats',
@@ -187,7 +182,7 @@ const MainRoutes = {
         },
         {
             name: 'Calendar',
-            path: '/apps/calendar',
+            path: '/calendar',
             component: () => import('@/views/apps/calendar/Calendar.vue')
         },
         {

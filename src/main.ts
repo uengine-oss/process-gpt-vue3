@@ -33,7 +33,11 @@ import '@/assets/css/globalStyle.css';
 // 전역 관리 ts
 import globalState from '@/stores/globalState';
 
-
+// diff viewer
+import VueDiff from 'vue-diff';
+import 'vue-diff/dist/index.css';
+import xml from 'highlight.js/lib/languages/xml';
+VueDiff.hljs.registerLanguage('xml', xml);
 
 //ScrollTop
 import VueScrollTo from 'vue-scrollto';
@@ -85,8 +89,6 @@ app.use(Maska);
 app.use(VueApexCharts);
 app.use(vuetify).mount('#app');
 app.use(setLocale);
-// 예: 'src/components' 폴더 내의 모든 Vue 컴포넌트를 즉시 import
-
 //ScrollTop Use
 // app.use(VueScrollTo);
 app.use(VueScrollTo, {
@@ -94,3 +96,6 @@ app.use(VueScrollTo, {
     easing: "ease",
     offset:-50,
 })
+app.use(VueDiff, {
+    componentName: 'vuediff',
+});

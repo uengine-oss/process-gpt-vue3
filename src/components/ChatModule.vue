@@ -45,10 +45,8 @@ export default {
         async getChatList(chatRoomId) {
             var me = this;
             me.messages = []
-            this.userInfo = await this.storage.getUserInfo();
-            let option = {
-                key: "id"
-            }
+            me.userInfo = await this.storage.getUserInfo();
+           
             await this.storage.watch(`db://chats/${chatRoomId}`, async (data) => {
                 if(data && data.new){
                     if(data.eventType == "DELETE"){
@@ -84,7 +82,16 @@ export default {
                 }
             });
 
-            await this.storage.list(`db://chats/${chatRoomId}`, option).then(function (messages) {
+            // `db://chats/${chatRoomId}`, options
+            // let option = {
+            //     key: "id"
+            // }
+            let options = { 
+                orderBy: 'id',
+                startAt: chatRoomId,
+                endAt: chatRoomId
+            }
+            await this.storage.list(`chats`, options).then(function (messages) {
                 if (messages) {
                     let allMessages = messages.map(message => message.messages);
                     allMessages.sort((a, b) => {
@@ -104,7 +111,7 @@ export default {
         //         startAt: null,
         //         endAt: this.messages[0].timeStamp
         //     };
-        //     let messages = await this.storage.list(`db://chats/1/messages`, option);
+        //     let messages = await this.storage.list(`chats/1/messages`, option);
         //     if (messages) {
         //         messages.splice(0, 1);
         //         this.messages = messages.reverse().concat(this.messages);
@@ -223,7 +230,7 @@ export default {
                 if(!this.messages){
                     this.messages = []
                 }
-                
+
                 this.messages.push(chatObj);
 
                 if (message.mentionedUsers) {

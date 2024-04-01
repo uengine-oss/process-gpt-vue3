@@ -1,5 +1,5 @@
 <template>
-    <div v-if="lock">
+    <div v-if="enableEdit">
         <div class="d-flex">
             <v-btn icon variant="text" :width="size" :height="size">
                 <PlusIcon v-if="type == 'map'" :size="size" />
@@ -7,7 +7,7 @@
                 <v-menu activator="parent">
                     <v-list density="compact" class="cursor-pointer">
                         <v-list-item v-if="type != 'sub'" @click="openDialog('add')">
-                            <v-list-item-title>
+                            <v-list-item-title class="cp-process">
                                 <span v-if="addType != 'sub'">{{ addType.toUpperCase() }}</span> 프로세스 추가
                             </v-list-item-title>
                         </v-list-item>
@@ -62,6 +62,7 @@
 
                     <v-text-field
                         v-if="addType != 'sub' || isNewDef"
+                        class="cp-process-id"
                         v-model="newProcess.id"
                         label="프로세스 ID"
                         autofocus
@@ -70,6 +71,7 @@
                     <v-text-field
                         v-if="addType != 'sub' || isNewDef"
                         v-model="newProcess.label"
+                        class="cp-process-name"
                         label="프로세스명"
                     ></v-text-field>
                 </v-card-text>
@@ -77,6 +79,7 @@
                 <v-card-actions class="justify-center">
                     <v-btn color="primary" 
                         variant="flat"
+                        class="cp-process-save"
                         :disabled="newProcess.id == '' && newProcess.label == ''"
                         @click="addProcess"
                     >저장</v-btn>
@@ -126,7 +129,7 @@ export default {
         type: String,
         process: Object,
         storage: Object,
-        lock: Boolean,
+        enableEdit: Boolean,
     },
     data: () => ({
         addDialog: false,

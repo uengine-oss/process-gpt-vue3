@@ -7,14 +7,14 @@
             <h6 class="text-subtitle-1 font-weight-semibold">
                 {{ value.label }}
             </h6>
-            <div class="ml-auto">
+            <div class="ml-auto add-sub-process">
                 <ProcessMenu
                     :size="16"
                     :type="type"
                     :process="value"
                     :storage="storage"
                     :userInfo="userInfo"
-                    :lock="lock"
+                    :enableEdit="enableEdit"
                     @add="addProcess"
                     @edit="editProcess"
                     @delete="deleteProcess"
@@ -22,7 +22,7 @@
             </div>
         </v-card>
 
-        <draggable v-if="lock"
+        <draggable v-if="enableEdit"
             class="dragArea list-group" 
             :list="value.sub_proc_list" 
             :animation="200" 
@@ -39,7 +39,7 @@
                         :parent="value" 
                         :storage="storage"
                         :userInfo="userInfo"
-                        :lock="lock"
+                        :enableEdit="enableEdit"
                         @view="viewProcess"
                     />
                 </div>
@@ -53,7 +53,7 @@
                     :value="item" 
                     :parent="value" 
                     :storage="storage"
-                    :lock="lock"
+                    :enableEdit="enableEdit"
                     @view="viewProcess"
                 />
             </div>
@@ -75,7 +75,7 @@ export default {
         parent: Object,
         storage: Object,
         userInfo: Object,
-        lock: Boolean,
+        enableEdit: Boolean,
     },
     data: () => ({
         type: 'major',
