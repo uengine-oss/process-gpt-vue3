@@ -244,13 +244,14 @@ export default {
         },
         async checkOut() {
             this.lock = true;
+            this.enableEdit = true;
             this.editUser = this.userInfo.email;
+            this.closeAlertDialog();
             let lockObj = {
                 id: 'process-map',
                 user_id: this.editUser,
             }
             await this.storage.putObject('lock', lockObj);
-            this.closeAlertDialog();
         },
         openAlertDialog(type) {
             this.alertType = type;
