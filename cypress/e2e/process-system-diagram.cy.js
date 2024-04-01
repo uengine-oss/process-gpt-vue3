@@ -19,9 +19,9 @@ describe('프로세스 정의', () => {
     cy.get('.cp-start').click();
 
     // Login
-    cy.get('#input-161').clear().type(email);
+    cy.get('#input-32').clear().type(email);
     cy.wait(1000);
-    cy.get('#input-163').clear().type(password);
+    cy.get('#input-34').clear().type(password);
     cy.get('.cp-login').click();
     cy.wait(1000);
 
@@ -31,10 +31,10 @@ describe('프로세스 정의', () => {
 
     // 프로세스 정의 체계도
     cy.get('.cp-menu').eq(6).click();
-    cy.wait(3000);
+    cy.wait(10000);
     cy.get('.cp-unlock').click();
     cy.wait(1000);
-    cy.get('.cp-unlock-check').click();
+    cy.get('.cp-check-out').click();
     cy.wait(1000);
     cy.get('.cp-add-process').click();
     cy.wait(1000);
@@ -64,7 +64,7 @@ describe('프로세스 정의', () => {
 
     cy.get('.cp-lock').click();
     cy.wait(1000);
-    cy.get('.cp-lock-check').click();
+    cy.get('.cp-check-in').click();
 
 
   })

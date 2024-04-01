@@ -11,7 +11,7 @@
                     </span>
                     <v-btn v-if="!lock && isAdmin" 
                         icon variant="text" size="24"
-                        class="ml-3 cp-lock"
+                        class="ml-3 cp-unlock"
                         @click="openAlertDialog('checkout')"
                         @mouseenter="hover = true"
                         @mouseleave="hover = false"
@@ -21,7 +21,7 @@
                     
                     <v-btn v-if="lock && isAdmin"
                         icon variant="text" size="24"
-                        class="cp-unlock"
+                        class="cp-lock"
                         @click="openAlertDialog('checkin')"
                         @mouseenter="hover = true"
                         @mouseleave="hover = false"
@@ -86,13 +86,13 @@
                 <v-card-actions class="justify-center">
                     <v-btn v-if="alertType =='checkout'" 
                         color="primary" 
-                        class="cp-lock-check"
+                        class="cp-check-out"
                         variant="flat" 
                         @click="checkOut"
                     >확인</v-btn>
                     <v-btn v-else-if="alertType =='checkin'" 
                         color="primary"
-                        class="cp-unlock-check" 
+                        class="cp-check-in" 
                         variant="flat" 
                         @click="checkIn"
                     >확인</v-btn>
@@ -244,13 +244,14 @@ export default {
         },
         async checkOut() {
             this.lock = true;
+            this.enableEdit = true;
             this.editUser = this.userInfo.email;
+            this.closeAlertDialog();
             let lockObj = {
                 id: 'process-map',
                 user_id: this.editUser,
             }
             await this.storage.putObject('lock', lockObj);
-            this.closeAlertDialog();
         },
         openAlertDialog(type) {
             this.alertType = type;
