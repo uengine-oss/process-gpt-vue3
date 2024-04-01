@@ -7,7 +7,6 @@ import ProductSales from "@/components/dashboards/dashboard2/ProductSales.vue";
 import TraficDistribution from "@/components/dashboards/dashboard2/TrafficDistribution.vue";
 import ProfileCards from "@/components/dashboards/dashboard2/ProfileCards.vue";
 import FigmaCard from "@/components/dashboards/dashboard2/FigmaCard.vue";
-import PayingTable from "@/components/dashboards/dashboard2/PayingTable.vue";
 import UpcommingSchedule from "@/components/dashboards/dashboard2/UpcommingSchedule.vue";
 import DashboardUpcomingScheduls from '@/components/dashboards/dashboard2/DashboardUpcomingScheduls.vue'
 </script>
@@ -51,7 +50,6 @@ import DashboardUpcomingScheduls from '@/components/dashboards/dashboard2/Dashbo
     </v-col> -->
     <!---Paying Table-->
     <v-col cols="12" sm="12" lg="8" >
-      <PayingTable/>
     </v-col>
   </v-row>
 </template>
