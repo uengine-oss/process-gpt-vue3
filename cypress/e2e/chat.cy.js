@@ -5,7 +5,7 @@ Cypress.on('uncaught:exception', (err, runnable) => {
   return false;
 });
 
-describe('process-gpt', () => {
+describe('채팅', () => {
   beforeEach(() => {
     cy.visit('http://127.0.0.1:5173/', {
       onBeforeLoad: (window) => {
@@ -13,6 +13,7 @@ describe('process-gpt', () => {
       }
     });
   });
+  
   it('passes', () => {
 
     cy.get('.cp-start').click();
@@ -28,22 +29,11 @@ describe('process-gpt', () => {
     cy.get('.cp-menu-open').click();
     cy.wait(500);
 
-    // 프로세스 실행
-    cy.get('.cp-menu').eq(4).click();
-    cy.wait(3000);
-    cy.get('.cp-chat').type('휴가신청 프로세스를 실행해줘.');
-    cy.get('.cp-send').click({force: true});
-
-    // // 채팅
-    // cy.get('.cp-menu').eq(3).click();
-    // cy.wait(3000);
-
-    // // 할 일 목록
-    // cy.get('.cp-menu').eq(1).click();
-    // cy.wait(3000);
-
-    // // 달력
-    // cy.get('.cp-menu').eq(2).click();
-    // cy.wait(3000);
+    // 채팅
+    cy.get('.cp-menu').eq(3).click();
+    cy.wait(5000);
+    cy.get('.cp-chat').type('4월 10일 휴가일정 등록해줘.');
+    cy.wait(1500);
+    cy.get('.cp-send').click();
   })
 })
