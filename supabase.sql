@@ -106,3 +106,15 @@ create table public.chat_rooms (
   name text null,
   constraint chat_rooms_pkey primary key (id)
 ) tablespace pg_default;
+
+create table
+  public.proc_def_arcv (
+    arcv_id text not null,
+    proc_def_id text not null,
+    version double precision not null,
+    name character varying(255) not null,
+    snapshot text null,
+    "timeStamp" timestamp without time zone null default current_timestamp,
+    diff text null,
+    constraint proc_def_arcv_pkey primary key (arcv_id)
+  ) tablespace pg_default;
