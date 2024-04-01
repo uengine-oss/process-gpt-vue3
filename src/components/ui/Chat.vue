@@ -393,11 +393,13 @@ export default {
                 detail: ''
             };
             // 국제화된 문자열을 가져옵니다.
-            const translatedText = this.$t(this.chatInfo.text);
-            if (translatedText.includes('\n')) {
-                const arr = translatedText.split('\n');
-                textObj.subtitle = arr[0];
-                textObj.detail = arr.slice(1).join('\n'); // 첫 번째 이후의 모든 텍스트를 detail로 결합
+            if(this.chatInfo){
+                const translatedText = this.$t(this.chatInfo.text);
+                if (translatedText.includes('\n')) {
+                    const arr = translatedText.split('\n');
+                    textObj.subtitle = arr[0];
+                    textObj.detail = arr.slice(1).join('\n'); // 첫 번째 이후의 모든 텍스트를 detail로 결합
+                }
             }
             return textObj;
         },
