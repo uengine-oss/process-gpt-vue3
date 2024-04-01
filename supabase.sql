@@ -118,3 +118,10 @@ create table
     diff text null,
     constraint proc_def_arcv_pkey primary key (arcv_id)
   ) tablespace pg_default;
+
+create table
+  public.lock (
+    id text not null,
+    user_id text null,
+    constraint lock_pkey primary key (id)
+  ) tablespace pg_default;
