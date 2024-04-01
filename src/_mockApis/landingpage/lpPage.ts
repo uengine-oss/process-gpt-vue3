@@ -27,36 +27,6 @@ import img16 from '@/assets/images/landingpage/apps/app-product-detail.jpg';
 import img17 from '@/assets/images/landingpage/apps/app-kanban.jpg';
 
 const productsSlider: ProductsSliderTypes[] = [
-     {
-        type:true,
-        img: img1,
-        name: 'Main',
-        link: 'https://spike-vue-main.netlify.app/dashboard1'
-    },
-    {
-        type:true,
-        img: img2,
-        name: 'Dark',
-        link: 'https://spike-vue-dark.netlify.app/dashboard1'
-    },
-    {
-        type:true,
-        img: img3,
-        name: 'Horizontal',
-        link: 'https://spike-vue-horizontal.netlify.app/dashboard1'
-    },
-    {
-        type:true,
-        img: img4,
-        name: 'Minisidebar',
-        link: 'https://spike-vue-minisidebar.netlify.app/dashboard1'
-    },
-    {
-        type:true,
-        img: img5,
-        name: 'RTL',
-        link: 'https://spike-vue-rtl.netlify.app/dashboard1'
-    },
     {
         type:false,
         img: img6,
@@ -281,31 +251,6 @@ const listFeature: ListFeatureTypes[] = [
 
 /*Demos Megamenu*/
 const demosMegamenu: DemosMegaMenuTypes[] = [
-    {
-        img: img1,
-        name: 'Main',
-        link: 'https://spike-vue-main.netlify.app/dashboard1'
-    },
-    {
-        img: img2,
-        name: 'Dark',
-        link: 'https://spike-vue-dark.netlify.app/dashboard1'
-    },
-    {
-        img: img3,
-        name: 'Horizontal',
-        link: 'https://spike-vue-horizontal.netlify.app/dashboard1'
-    },
-    {
-        img: img4,
-        name: 'Minisidebar',
-        link: 'https://spike-vue-minisidebar.netlify.app/dashboard1'
-    },
-    {
-        img: img5,
-        name: 'RTL',
-        link: 'https://spike-vue-rtl.netlify.app/dashboard1'
-    }
 ];
 const appsMegamenu: AppsMegaMenuTypes[] = [
     {
