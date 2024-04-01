@@ -5,15 +5,15 @@
             <div>{{ $t('BpnmPropertyPanel.name') }}</div>
             <v-text-field v-model="name" :disabled="isViewMode"></v-text-field>
 
-            <div>
+            <!-- <div>
                 <div>{{ $t('BpnmPropertyPanel.description') }}</div>
                 <v-textarea v-if="!elementCopy.$type.includes('Event')" :disabled="isViewMode"
                     v-model="uengineProperties.description"></v-textarea>
-            </div>
+            </div> -->
             <component :is="panelName" :isViewMode="isViewMode" :uengine-properties="uengineProperties"></component>
         </v-card-text>
         <v-card-actions>
-            <v-btn color="primary" @click="onClickOutside" v-if="!isViewMode">Save</v-btn>
+            <v-btn color="primary" @click="save" v-if="!isViewMode">Save</v-btn>
             <v-btn color="error" @click="$emit('close')">Close</v-btn>
         </v-card-actions>
     </div>
@@ -41,10 +41,14 @@ export default {
     },
     data() {
         return {
+            // requiredKeyLists: {
+            //     "description": "",
+            //     "role": { "name": "" },
+            //     "parameters": []
+            // },
             requiredKeyLists: {
-                "description": "",
                 "role": { "name": "" },
-                "extendedProperties": []
+                "parameters": []
             },
             definitions: [],
             elementCopy: this.element,
@@ -112,10 +116,10 @@ export default {
                 obj[key] = defaultValue;
             }
         },
-        deleteExtendedProperty(item) {
-            const index = this.uengineProperties.extendedProperties.findIndex(element => element.key === item.key);
+        deleteParameters(item) {
+            const index = this.uengineProperties.parameters.findIndex(element => element.key === item.key);
             if (index > -1) {
-                this.uengineProperties.extendedProperties.splice(index, 1);
+                this.uengineProperties.parameters.splice(index, 1);
             }
         },
         deleteCheckPoint(item) {
@@ -125,14 +129,7 @@ export default {
             }
         },
         addParameter() {
-            this.uengineProperties.extendedProperties.push({ key: this.paramKey, value: this.paramValue })
-            // const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
-            // // this.checkpoints.push(this.checkpointMessage)
-            // const parameter = bpmnFactory.create('uengine:ExtendedProperty', { key: this.paramKey, value: this.paramValue });
-            // if (!this.elementCopy.extensionElements.values[0].ExtendedProperties) this.elementCopy.extensionElements.values[0].ExtendedProperties = []
-            // this.elementCopy.extensionElements.values[0].ExtendedProperties.push(parameter)
-            // this.paramKey = ""
-            // this.paramValue = ""
+            this.uengineProperties.parameters.push({ key: this.paramKey, value: this.paramValue })
         },
         async getData(path, options) {
             // let value;
@@ -146,7 +143,7 @@ export default {
         addCheckpoint() {
             this.uengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint })
         },
-        onClickOutside() {
+        save() {
             const modeling = this.bpmnModeler.get('modeling');
             const elementRegistry = this.bpmnModeler.get('elementRegistry');
             const task = elementRegistry.get(this.element.id);
