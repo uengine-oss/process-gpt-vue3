@@ -45,7 +45,7 @@
                         @add="addProcess"
                     />
                     
-                    <!-- 프로세스 정의 체계도 캔버스 확대 축소 버튼 -->
+                    <!-- 프로세스 정의 체계도 캔버스 확대 축소 버튼 및 아이콘 -->
                     <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" class="ml-3 processVariables-zoom"
