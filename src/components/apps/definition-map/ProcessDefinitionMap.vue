@@ -1,6 +1,8 @@
 <template>
     <div>
-        <v-card elevation="10" style="height:calc(100vh - 155px); overflow: auto;">
+        <v-card elevation="10" :style="!$globalState.state.isZoomed ? 'height:calc(100vh - 155px)' :'height:100vh;'"
+            style="overflow: auto;"
+        >
             <div v-if="componentName != 'SubProcessDetail'" class="pt-5 pl-6 pr-6 d-flex align-center">
                 <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
                 
@@ -42,6 +44,25 @@
                         :storage="storage"
                         @add="addProcess"
                     />
+                    
+                    <!-- 캔버스 확대 축소 버튼 -->
+                    <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" class="ml-3 processVariables-zoom"
+                                @click="$globalState.methods.toggleZoom()"
+                                icon variant="text" :size="24"    
+                            >
+                                <!-- 캔버스 확대 -->
+                                <Icon v-if="!$globalState.state.isZoomed" icon="material-symbols:zoom-out-map-rounded"
+                                    width="24" height="24"
+                                />
+                                <!-- 캔버스 축소 -->
+                                <Icon v-else icon="material-symbols:zoom-in-map-rounded"
+                                    width="24" height="24"
+                                />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
 
                     <!-- <v-btn v-if="componentName != 'DefinitionMapList'"
                         icon variant="text" 
