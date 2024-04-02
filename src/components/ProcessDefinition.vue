@@ -14,11 +14,12 @@
                         <template v-slot:activator="{ props }">
                             <v-btn icon v-bind="props" class="processVariables-zoom"
                                 @click="$globalState.methods.toggleZoom()">
-                                <Icon v-if="!$globalState.state.isZoomed" icon="material-symbols:pinch-zoom-out-outline"
+                                <!-- 캔버스 확대 -->
+                                <Icon v-if="!$globalState.state.isZoomed" icon="material-symbols:zoom-out-map-rounded"
                                     width="32" height="32" />
-                                <Icon v-else icon="material-symbols:pinch-zoom-in-outline-sharp" width="32"
+                                <!-- 캔버스 축소 -->
+                                <Icon v-else icon="material-symbols:zoom-in-map-rounded" width="32"
                                     height="32" />
-
                             </v-btn>
                         </template>
                     </v-tooltip>

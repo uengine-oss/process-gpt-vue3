@@ -11,16 +11,20 @@ const instance = getCurrentInstance();
 // 인스턴스의 context를 통해 전역 속성에 접근합니다.
 const globalState = instance?.appContext.config.globalProperties.$globalState;
 
-const canvasReSize = computed(() => {
+const chatReSizeDisplay = computed(() => {
     // globalState를 사용하여 계산된 속성을 정의합니다.
-    return globalState?.state.isZoomed ? 'left-part-display-none' : 'left-part-display-block';
+    return globalState?.state.isZoomed ? 'chat-display-none' : 'chat-display-block';
+});
+const canvasReSize = computed(() => {
+    // globalState의 isZoomed 상태에 따라 width 스타일 속성을 반환합니다.
+    return globalState?.state.isZoomed ? 'width: 100%;' : '';
 });
 </script>
 
 <template>
     <!---/Left chat list -->
-    <div class="d-flex mainbox" :class="canvasReSize">
-        <div class="left-part" v-if="lgAndUp" :class="canvasReSize">
+    <div class="d-flex mainbox" :class="chatReSizeDisplay">
+        <div class="left-part" v-if="lgAndUp" :style="canvasReSize">
             <!-- <perfect-scrollbar style="height: calc(100vh - 290px)"> -->
             <slot name="leftpart"></slot>
             <!-- </perfect-scrollbar> -->

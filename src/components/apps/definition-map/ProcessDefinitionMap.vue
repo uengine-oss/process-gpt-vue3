@@ -1,6 +1,8 @@
 <template>
     <div>
-        <v-card elevation="10" style="height:calc(100vh - 155px); overflow: auto;">
+        <v-card elevation="10" :style="!$globalState.state.isZoomed ? 'height:calc(100vh - 155px)' :'height:100vh;'"
+            style="overflow: auto;"
+        >
             <div v-if="componentName != 'SubProcessDetail'" class="pt-5 pl-6 pr-6 d-flex align-center">
                 <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
                 
@@ -11,7 +13,7 @@
                     </span>
                     <v-btn v-if="!lock && isAdmin" 
                         icon variant="text" size="24"
-                        class="ml-3 cp-lock"
+                        class="ml-3 cp-unlock"
                         @click="openAlertDialog('checkout')"
                         @mouseenter="hover = true"
                         @mouseleave="hover = false"
@@ -21,7 +23,7 @@
                     
                     <v-btn v-if="lock && isAdmin"
                         icon variant="text" size="24"
-                        class="cp-unlock"
+                        class="cp-lock"
                         @click="openAlertDialog('checkin')"
                         @mouseenter="hover = true"
                         @mouseleave="hover = false"
@@ -42,6 +44,25 @@
                         :storage="storage"
                         @add="addProcess"
                     />
+                    
+                    <!-- 프로세스 정의 체계도 캔버스 확대 축소 버튼 및 아이콘 -->
+                    <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" class="ml-3 processVariables-zoom"
+                                @click="$globalState.methods.toggleZoom()"
+                                icon variant="text" :size="24"    
+                            >
+                                <!-- 캔버스 확대 -->
+                                <Icon v-if="!$globalState.state.isZoomed" icon="material-symbols:zoom-out-map-rounded"
+                                    width="24" height="24"
+                                />
+                                <!-- 캔버스 축소 -->
+                                <Icon v-else icon="material-symbols:zoom-in-map-rounded"
+                                    width="24" height="24"
+                                />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
 
                     <!-- <v-btn v-if="componentName != 'DefinitionMapList'"
                         icon variant="text" 
@@ -86,13 +107,13 @@
                 <v-card-actions class="justify-center">
                     <v-btn v-if="alertType =='checkout'" 
                         color="primary" 
-                        class="cp-lock-check"
+                        class="cp-check-out"
                         variant="flat" 
                         @click="checkOut"
                     >확인</v-btn>
                     <v-btn v-else-if="alertType =='checkin'" 
                         color="primary"
-                        class="cp-unlock-check" 
+                        class="cp-check-in" 
                         variant="flat" 
                         @click="checkIn"
                     >확인</v-btn>
@@ -243,13 +264,14 @@ export default {
         },
         async checkOut() {
             this.lock = true;
+            this.enableEdit = true;
             this.editUser = this.userInfo.email;
+            this.closeAlertDialog();
             let lockObj = {
                 id: 'process-map',
                 user_id: this.editUser,
             }
             await this.storage.putObject('lock', lockObj);
-            this.closeAlertDialog();
         },
         openAlertDialog(type) {
             this.alertType = type;

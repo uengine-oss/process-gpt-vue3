@@ -26,7 +26,7 @@
                                 삭제
                             </v-list-item-title>
                         </v-list-item>
-                        <v-list-item v-if="type == 'mega'" @click="openViewProcessDetails(process)">
+                        <v-list-item class="cp-mega-datail" v-if="type == 'mega'" @click="openViewProcessDetails(process)">
                             <v-list-item-title>
                                 상세보기
                             </v-list-item-title>
@@ -46,8 +46,14 @@
                     <v-autocomplete v-if="addType == 'sub' && !isNewDef && definitions" v-model="newProcess"
                         :items="definitions" label="프로세스 정의" item-title="name" return-object></v-autocomplete>
 
-                    <v-checkbox v-if="addType == 'sub'" v-model="isNewDef" label="새로운 프로세스 정의 추가" color="primary"
-                        density="compact"></v-checkbox>
+                    <v-checkbox
+                        v-if="addType == 'sub'"
+                        v-model="isNewDef"
+                        class="cp-custom-sub"
+                        label="새로운 프로세스 정의 추가"
+                        color="primary"
+                        density="compact"
+                    ></v-checkbox>
 
                     <v-text-field v-if="addType != 'sub' || isNewDef" class="cp-process-id" v-model="newProcess.id"
                         label="프로세스 ID" autofocus></v-text-field>

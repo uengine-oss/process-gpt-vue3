@@ -50,7 +50,37 @@ export default {
     // "snippets":Snippets,
     // Containers
   },
+  watch: {
+    // $route 객체를 감시
+    '$route'(to, from) {
+      this.removeStylesForKEditor();
+      // 경로가 'ui-definitions/'를 포함하는지 확인 후 다시 로드
+      if (to.path.includes('ui-definitions/')) {
+        this.loadStylesForKEditor();
+      }
+    }
+  },
   methods: {
+    loadStylesForKEditor() {
+      const cssFiles = [
+        '/css/keditor.css',
+        '/css/keditor-component-text.css'
+      ];
+
+      cssFiles.forEach(cssFile => {
+        const styleLink = document.createElement('link');
+        styleLink.rel = 'stylesheet';
+        styleLink.href = cssFile;
+        styleLink.classList.add('keditor-stylesheet'); // 고유 클래스 추가
+        document.head.appendChild(styleLink);
+      });
+    },
+    removeStylesForKEditor() {
+      // 'keditor-style' 클래스를 가진 모든 <link> 태그를 찾아 제거
+      document.querySelectorAll('.keditor-stylesheet').forEach(link => {
+        document.head.removeChild(link);
+      });
+    },
     onchangeKEditor(evt, fnNm) {
       let me = this;
       // alert(fnNm);
@@ -111,6 +141,9 @@ export default {
   },
   mounted() {
     let me = this;
+    if (this.$route.path.includes('ui-definitions/')) {
+      this.loadStylesForKEditor();
+    }
     // let content = localStorage["keditor.editing.content"];
     // console.log("document   ::   ",document.getElementById("keditor-snippets-list"));
     // if (this.value) $('#kEditor1').innerHTML = this.value;
@@ -214,6 +247,10 @@ export default {
       }
     });
     // }
+  },
+  beforeUnmount() {
+    // 컴포넌트가 파괴되기 전에 CSS 제거
+    this.removeStylesForKEditor();
   }
 }
 </script>
