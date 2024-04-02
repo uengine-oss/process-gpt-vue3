@@ -2,15 +2,9 @@
     <div style="margin-top: 10px; overflow: auto;">
         <v-row class="pa-0 ma-0 mr-7">
             <v-spacer></v-spacer>
-            <Icon icon="ic:baseline-save" width="24" height="24"
-                @click="onClickOutside" v-if="!isViewMode"
-                class="cursor-pointer"
-                style="margin-right:10px;"
-            />
-            <Icon icon="mdi:close" width="24" height="24"
-                @click="$emit('close')"
-                class="cursor-pointer"
-            />
+            <Icon icon="ic:baseline-save" width="24" height="24" @click="onClickOutside" v-if="!isViewMode"
+                class="cursor-pointer" style="margin-right:10px;" />
+            <Icon icon="mdi:close" width="24" height="24" @click="$emit('close')" class="cursor-pointer" />
         </v-row>
         <v-card-text>
             <div style="float: right">Role: {{ uengineProperties.role.name }}</div>

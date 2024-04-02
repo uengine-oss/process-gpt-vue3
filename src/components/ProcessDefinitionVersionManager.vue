@@ -1,15 +1,10 @@
 <template>
-    <div >
+    <div>
         <v-dialog v-model="isOpen" max-width="100%" style="height: -webkit-fill-available;" persistent>
             <v-card style="height: 100%;">
                 <v-card-title>Version Management [{{ currentVersionName }}({{ currentVersion }})]
-                    <v-progress-circular
-                        v-if="loading"
-                        color="primary"
-                        :size="25"
-                        indeterminate
-                        style="margin-left: 5px;"
-                    ></v-progress-circular>
+                    <v-progress-circular v-if="loading" color="primary" :size="25" indeterminate
+                        style="margin-left: 5px;"></v-progress-circular>
                 </v-card-title>
                 <v-btn icon style="position:absolute; right:5px; top:5px;" @click="close()">
                     <v-icon>mdi-close</v-icon>
@@ -17,11 +12,12 @@
 
                 <v-card-text style="padding: 0;">
                     <v-row style=" align-items: center;width: 96%; margin-left: 2%;">
-                        <v-switch v-model="showXML" :label="showXML ? 'XML': 'BPMN'" hide-details style="max-width: 6%;" color="primary"></v-switch>
+                        <v-switch v-model="showXML" :label="showXML ? 'XML' : 'BPMN'" hide-details style="max-width: 6%;"
+                            color="primary"></v-switch>
                         <v-tooltip top>
                             <template v-slot:activator="{ on, attrs }">
                                 <v-btn v-bind="attrs" v-on="on" @click="downloadXML()" text>
-                                    <Icon icon="ic:baseline-file-download" width="20" height="20"/>
+                                    <Icon icon="ic:baseline-file-download" width="20" height="20" />
                                 </v-btn>
                             </template>
                             <span>다운로드</span>
@@ -43,36 +39,27 @@
                             </div>
                         </div>
                         <div v-if="currentXML && beforeXML">
-                            <vuediff :prev="beforeXML" :current="currentXML" mode="split" theme="light" language="xml" />    
+                            <vuediff :prev="beforeXML" :current="currentXML" mode="split" theme="light"
+                                language="xml" />
                         </div>
                         <div v-else style="margin-top: 15px;">
                             <pre><code class="xml">{{ currentXML }}</code></pre>
                         </div>
                     </div>
                     <div v-else style="height: 100%;">
-                        <process-definition class="process-definition-resize" :bpmn="currentXML" :isViewMode="true" :key="key"></process-definition>
+                        <process-definition class="process-definition-resize" :bpmn="currentXML" :isViewMode="true"
+                            :key="key"></process-definition>
                     </div>
                 </v-card-text>
-                <v-card-action>
-                    <v-slider
-                        v-model="currentIndex"
-                        step="1"
-                        min="0"
-                        :max="lists.length-1"
-                        show-ticks="always"
-                        tick-size="4"
-                        @end="handleBeforeChange"
-                        :hide-details="true"
-                        style="padding: 0; margin-right: 20px; margin-left: 30px;"
-                    ></v-slider>
-                    <v-btn 
-                        text 
-                        color="primary" 
-                        :disabled="loading"
-                        style="float: inline-end; margin-bottom: 15px; margin-right: 10px;" 
-                        @click="changeXML()">해당 버전으로 변경
+                <v-card-actions>
+                    <v-slider v-model="currentIndex" step="1" min="0" :max="lists.length - 1" show-ticks="always"
+                        tick-size="4" @end="handleBeforeChange" :hide-details="true"
+                        style="padding: 0; margin-right: 20px; margin-left: 30px;"></v-slider>
+                    <v-btn text color="primary" :disabled="loading"
+                        style="float: inline-end; margin-bottom: 15px; margin-right: 10px;" @click="changeXML()">해당 버전으로
+                        변경
                     </v-btn>
-                </v-card-action>
+                </v-card-actions>
             </v-card>
         </v-dialog>
     </div>
@@ -96,10 +83,10 @@ export default {
         process: Object
     },
     data: () => ({
-        storage: null, 
+        storage: null,
         basePath: 'proc_def_arcv',
         isOpen: false, // inner var
-        
+
         // xml
         showXML: false, // xml or bpmn
         key: 0, // update component
@@ -109,34 +96,34 @@ export default {
         lists: [],
         loading: false,
     }),
-    computed:{
-        beforeXML(){
-            if(this.lists.length > 0 && this.lists[this.currentIndex-1] ){
-                return this.lists[this.currentIndex-1].xml
+    computed: {
+        beforeXML() {
+            if (this.lists.length > 0 && this.lists[this.currentIndex - 1]) {
+                return this.lists[this.currentIndex - 1].xml
             }
             return null;
         },
-        currentXML(){
-            if(this.lists.length > 0 && this.lists[this.currentIndex] ){
+        currentXML() {
+            if (this.lists.length > 0 && this.lists[this.currentIndex]) {
                 return this.lists[this.currentIndex].xml
             }
             return null;
         },
-        currentVersionName(){
-            if(this.lists.length > 0 && this.lists[this.currentIndex] ){
+        currentVersionName() {
+            if (this.lists.length > 0 && this.lists[this.currentIndex]) {
                 return this.lists[this.currentIndex].name
             }
-           return null;
+            return null;
         },
-        currentVersion(){
-            if(this.lists.length > 0 && this.lists[this.currentIndex] ){
+        currentVersion() {
+            if (this.lists.length > 0 && this.lists[this.currentIndex]) {
                 return this.lists[this.currentIndex].version
             }
-           return null;
+            return null;
         },
     },
     watch: {
-        "open": function(newVal) {
+        "open": function (newVal) {
             if (newVal) {
                 this.currentIndex = 0 // init
                 this.load();
@@ -145,41 +132,41 @@ export default {
             }
         },
     },
-    created() { 
+    created() {
         var me = this
         if (!me.$app.try) me.$app = me.$app._component.methods;
         me.storage = StorageBaseFactory.getStorage();
     },
     methods: {
-        async load(){
+        async load() {
             var me = this
             // this.$app.try({
             //     context: me,
             //     action: async () => {
-                    me.loading = true
-                    let result = await me.storage.list(`${me.basePath}`,{ 
-                        key: 'version, name',
-                        sort: 'asc',
-                        orderBy: 'timeStamp',
-                        match: {'proc_def_id': me.process.processDefinitionId}
-                    })
-                    me.lists = result.map(item => ({ ...item, xml: null}));
-                    me.lists[0].xml = await me.loadXMLOfVer(me.lists[0].version)
-                    me.isOpen = true
-                    me.loading = false
-                // }
+            me.loading = true
+            let result = await me.storage.list(`${me.basePath}`, {
+                key: 'version, name',
+                sort: 'asc',
+                orderBy: 'timeStamp',
+                match: { 'proc_def_id': me.process.processDefinitionId }
+            })
+            me.lists = result.map(item => ({ ...item, xml: null }));
+            me.lists[0].xml = await me.loadXMLOfVer(me.lists[0].version)
+            me.isOpen = true
+            me.loading = false
+            // }
             // })
         },
-        async handleBeforeChange(index){
+        async handleBeforeChange(index) {
             var me = this
             me.loading = true
-            if(!me.lists[index]) return;
-            if(!me.lists[index].xml) me.lists[index].xml = await me.loadXMLOfVer(me.lists[index].version)
+            if (!me.lists[index]) return;
+            if (!me.lists[index].xml) me.lists[index].xml = await me.loadXMLOfVer(me.lists[index].version)
             me.loading = false
             me.key++
         },
-        changeXML(){
-            this.$emit('changeXML', {"id": this.process.processDefinitionId, "name": this.currentVersionName, "xml": this.currentXML})
+        changeXML() {
+            this.$emit('changeXML', { "id": this.process.processDefinitionId, "name": this.currentVersionName, "xml": this.currentXML })
         },
         downloadXML() {
             var me = this;
@@ -195,21 +182,21 @@ export default {
                 alert('선택된 버전의 XML 데이터가 없습니다.');
             }
         },
-        async loadXMLOfVer(version){
+        async loadXMLOfVer(version) {
             var me = this
             // me.$app.try({
             //     context: me,
             //     action: async () => {
-                    let result = await me.storage.list(`${me.basePath}`,{ 
-                        key: 'snapshot',
-                        sort: 'asc',
-                        size: 1,
-                        match: {'proc_def_id': me.process.processDefinitionId, 'version': version}
-                    })
-                    if(result[0]){
-                        return result[0].snapshot
-                    }
-                    return null
+            let result = await me.storage.list(`${me.basePath}`, {
+                key: 'snapshot',
+                sort: 'asc',
+                size: 1,
+                match: { 'proc_def_id': me.process.processDefinitionId, 'version': version }
+            })
+            if (result[0]) {
+                return result[0].snapshot
+            }
+            return null
             //     }
             // })
         },
@@ -231,33 +218,41 @@ export default {
                 alert('클립보드에 복사되었습니다.'); // 성공 메시지
             }
         },
-        close(){
+        close() {
             this.$emit('close', false)
         },
-       
+
     }
 };
 </script>
 
 <style scoped>
+.process-definition-resize {
+    width: 100%;
+    height: 100%;
+}
+
+@media only screen and (max-width:1279px) {
     .process-definition-resize {
-        width: 100%; height:100%;
+        width: 100%;
+        height: calc(100vh - 192px);
     }
-    @media only screen and (max-width:1279px) {
-        .process-definition-resize {
-            width: 100%; height: calc(100vh - 192px);
-        }
-    }
-    .diff-titles {
+}
+
+.diff-titles {
     display: flex;
     justify-content: space-between;
-    }
-    .diff-title {
-        font-size: 16px;
-        font-weight: bold;
-    }
-    .current-xml-title {
-        text-align: left; /* 텍스트를 좌측 정렬 */
-        width: 50%; /* 부모 요소의 전체 너비를 차지하도록 설정 */
-    }
+}
+
+.diff-title {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.current-xml-title {
+    text-align: left;
+    /* 텍스트를 좌측 정렬 */
+    width: 50%;
+    /* 부모 요소의 전체 너비를 차지하도록 설정 */
+}
 </style>
