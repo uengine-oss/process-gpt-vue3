@@ -1,6 +1,10 @@
 <template>
     <div v-if="enableEdit">
         <div class="d-flex">
+            <!--openFormMapperDialog의 v-if는 보여줬을때 모양이 이상하기 때문에 일단 숨김처리함-->
+            <v-btn v-if="false" icon variant="text" :width="size" :height="size" @click="openFormMapperDialog()">
+                <PlusIcon :size="size" />
+            </v-btn>
             <v-btn icon variant="text" :width="size" :height="size">
                 <PlusIcon v-if="type == 'map'" :size="size" />
                 <DotsVerticalIcon v-if="type != 'map'" :size="size" />
@@ -35,6 +39,10 @@
                 </v-menu>
             </v-btn>
         </div>
+
+        <v-dialog v-model="formMapperDialog"  max-width="90vw" max-height="90vh" fullscreen>
+            <FormMapper />
+        </v-dialog>
 
         <v-dialog v-model="addDialog" max-width="500">
             <v-card>
@@ -92,7 +100,11 @@
 </template>
 
 <script>
+import FormMapper from '@/components/designer/mapper/FormMapper.vue'; 
 export default {
+    components: {
+        FormMapper,
+    },
     props: {
         size: Number,
         type: String,
@@ -103,6 +115,7 @@ export default {
     data: () => ({
         addDialog: false,
         updateDialog: false,
+        formMapperDialog: false,
         newProcess: {
             id: "",
             label: ""
