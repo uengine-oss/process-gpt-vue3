@@ -17,7 +17,7 @@
                 <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :isChanged="isChanged"
                     :userInfo="userInfo" :type="'definitions'" @sendMessage="beforeSendMessage"
                     @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage" @getMoreChat="getMoreChat"
-                    @save="saveModel"></Chat>
+                    @save="$app.try(saveModel)"></Chat>
             </template>
         </AppBaseCard>
     </v-card>

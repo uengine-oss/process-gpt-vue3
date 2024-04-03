@@ -3,7 +3,6 @@ import { ref } from 'vue';
 import { useEditor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import UiParentCard from '@/components/shared/UiParentCard.vue';
-import EditorMenubar from '@/components/forms/plugins/editor/EditorMenubar.vue';
 // common components
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 

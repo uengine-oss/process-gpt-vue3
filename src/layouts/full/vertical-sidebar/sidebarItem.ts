@@ -28,7 +28,7 @@ const sidebarItem: menu[] = [
         title: 'Calendar',
         icon: 'calendar-line-duotone',
         BgColor: 'primary',
-        to: '/apps/calendar'
+        to: '/calendar'
     },
     {
         title: "Chats",

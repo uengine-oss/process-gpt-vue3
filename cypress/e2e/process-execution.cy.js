@@ -18,9 +18,9 @@ describe('process-gpt', () => {
     cy.get('.cp-start').click();
 
     // Login
-    cy.get('#input-161').clear().type(email);
+    cy.get('#input-32').clear().type(email);
     cy.wait(1000);
-    cy.get('#input-163').clear().type(password);
+    cy.get('#input-34').clear().type(password);
     cy.get('.cp-login').click();
     cy.wait(1000);
 

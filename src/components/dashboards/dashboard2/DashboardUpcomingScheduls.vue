@@ -53,39 +53,48 @@ export default {
     },
     async created() {
         const storage = await StorageBaseFactory.getStorage();
-        const calendarsData = await storage?.getObject('calendar/data');
         let userId = localStorage.getItem('uid');
-
-        // userInfo.uid와 일치하는 uid를 가진 calendarData만 필터링
-        const userCalendarData = calendarsData.filter(calendar => calendar.uid === userId);
-
-        let calendars = [];
-        if (userCalendarData.length > 0) {
-            // 가정: 하나의 유저에 대한 데이터만 취급. 첫 번째 일치하는 데이터 사용
-            const calendarData = userCalendarData[0].data;
-            const firstKey = Object.keys(calendarData)[0];
-            calendars = Object.values(calendarData[firstKey]);
+        let option = {
+            key: "uid"
         }
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // 시간 정보 초기화
+        const calendarsData = await storage.getObject(`db://calendar/${userId}`, option);
 
-        calendars = calendars
-            .filter(calendar => {
-                const calendarDate = new Date(calendar.start);
-                return calendarDate >= today; // 오늘 날짜 이후인 일정만 필터링
-            })
-            .sort((a, b) => {
-                const dateA = new Date(a.start), dateB = new Date(b.start);
-                return dateA - dateB; // 날짜 순으로 정렬
-            })
-            .slice(0, 7); // 결과 배열에서 처음 7개의 요소만 가져옵니다.
+        let calendars = [];
+        
+        if (calendarsData) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // 시간 정보 초기화
 
-        this.calendars = calendars;
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const currentYearAndMonth = `${year}_${month}`;
+
+            Object.keys(calendarsData.data).forEach(key => {
+                if (key >= currentYearAndMonth && calendars.length < 8) {
+                    calendars = [...calendars, ...Object.values(calendarsData.data[key])];
+                }
+            });
+
+            // 이후 필터링, 정렬, 슬라이싱 로직은 유지
+            calendars = calendars
+                .filter(calendar => {
+                    const calendarDate = new Date(calendar.start);
+                    return calendarDate >= today; // 오늘 날짜 이후인 일정만 필터링
+                })
+                .sort((a, b) => {
+                    const dateA = new Date(a.start), dateB = new Date(b.start);
+                    return dateA - dateB; // 날짜 순으로 정렬
+                })
+                .slice(0, 7); // 결과 배열에서 처음 7개의 요소만 가져옵니다.
+
+            this.calendars = calendars;
+        }
+
     },
     methods: {
         goToCalendar() {
-            this.$router.push('/apps/calendar');
+            this.$router.push('/calendar');
         },
         formatDateTime(datetime) {
             if (!datetime) return '';

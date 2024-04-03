@@ -1,13 +1,17 @@
 <template>
-    <div v-if="lock">
+    <div v-if="enableEdit">
         <div class="d-flex">
+            <!--openFormMapperDialog의 v-if는 보여줬을때 모양이 이상하기 때문에 일단 숨김처리함-->
+            <v-btn v-if="false" icon variant="text" :width="size" :height="size" @click="openFormMapperDialog()">
+                <PlusIcon :size="size" />
+            </v-btn>
             <v-btn icon variant="text" :width="size" :height="size">
                 <PlusIcon v-if="type == 'map'" :size="size" />
                 <DotsVerticalIcon v-if="type != 'map'" :size="size" />
                 <v-menu activator="parent">
                     <v-list density="compact" class="cursor-pointer">
                         <v-list-item v-if="type != 'sub'" @click="openDialog('add')">
-                            <v-list-item-title>
+                            <v-list-item-title class="cp-process">
                                 <span v-if="addType != 'sub'">{{ addType.toUpperCase() }}</span> 프로세스 추가
                             </v-list-item-title>
                         </v-list-item>
@@ -26,7 +30,7 @@
                                 삭제
                             </v-list-item-title>
                         </v-list-item>
-                        <v-list-item v-if="type == 'mega'" @click="openViewProcessDetails(process)">
+                        <v-list-item class="cp-mega-datail" v-if="type == 'mega'" @click="openViewProcessDetails(process)">
                             <v-list-item-title>
                                 상세보기
                             </v-list-item-title>
@@ -35,7 +39,11 @@
                 </v-menu>
             </v-btn>
         </div>
-        
+
+        <v-dialog v-model="formMapperDialog"  max-width="90vw" max-height="90vh" fullscreen>
+            <FormMapper />
+        </v-dialog>
+
         <v-dialog v-model="addDialog" max-width="500">
             <v-card>
                 <v-card-title>
@@ -43,47 +51,29 @@
                 </v-card-title>
 
                 <v-card-text>
-                    <v-autocomplete
-                        v-if="addType == 'sub' && !isNewDef && definitions"
-                        v-model="newProcess"
-                        :items="definitions"
-                        label="프로세스 정의"
-                        item-title="name"
-                        return-object
-                    ></v-autocomplete>
+                    <v-autocomplete v-if="addType == 'sub' && !isNewDef && definitions" v-model="newProcess"
+                        :items="definitions" label="프로세스 정의" item-title="name" return-object></v-autocomplete>
 
                     <v-checkbox
                         v-if="addType == 'sub'"
                         v-model="isNewDef"
+                        class="cp-custom-sub"
                         label="새로운 프로세스 정의 추가"
                         color="primary"
                         density="compact"
                     ></v-checkbox>
 
-                    <v-text-field
-                        v-if="addType != 'sub' || isNewDef"
-                        v-model="newProcess.id"
-                        label="프로세스 ID"
-                        autofocus
-                    ></v-text-field>
-                    
-                    <v-text-field
-                        v-if="addType != 'sub' || isNewDef"
-                        v-model="newProcess.label"
-                        label="프로세스명"
-                    ></v-text-field>
+                    <v-text-field v-if="addType != 'sub' || isNewDef" class="cp-process-id" v-model="newProcess.id"
+                        label="프로세스 ID" autofocus></v-text-field>
+
+                    <v-text-field v-if="addType != 'sub' || isNewDef" v-model="newProcess.label" class="cp-process-name"
+                        label="프로세스명"></v-text-field>
                 </v-card-text>
-                
+
                 <v-card-actions class="justify-center">
-                    <v-btn color="primary" 
-                        variant="flat"
-                        :disabled="newProcess.id == '' && newProcess.label == ''"
-                        @click="addProcess"
-                    >저장</v-btn>
-                    <v-btn color="error" 
-                        variant="flat" 
-                        @click="closeDialog('add')"
-                    >닫기</v-btn>
+                    <v-btn color="primary" variant="flat" class="cp-process-save"
+                        :disabled="newProcess.id == '' && newProcess.label == ''" @click="addProcess">저장</v-btn>
+                    <v-btn color="error" variant="flat" @click="closeDialog('add')">닫기</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -93,25 +83,15 @@
                 <v-card-title>
                     {{ type.toUpperCase() }} 프로세스 수정
                 </v-card-title>
-                
+
                 <v-card-text>
-                    <v-text-field
-                        v-model="newProcess.id"
-                        label="프로세스 ID"
-                        autofocus
-                    ></v-text-field>
-                    <v-text-field
-                        v-model="newProcess.label"
-                        label="프로세스명"
-                    ></v-text-field>
+                    <v-text-field v-model="newProcess.id" label="프로세스 ID" autofocus></v-text-field>
+                    <v-text-field v-model="newProcess.label" label="프로세스명"></v-text-field>
                 </v-card-text>
-                
+
                 <v-card-actions class="justify-center">
-                    <v-btn color="primary" 
-                        variant="flat"
-                        :disabled="newProcess.id == '' && newProcess.label == ''"
-                        @click="updateProcess"
-                    >저장</v-btn>
+                    <v-btn color="primary" variant="flat" :disabled="newProcess.id == '' && newProcess.label == ''"
+                        @click="updateProcess">저장</v-btn>
                     <v-btn color="error" variant="flat" @click="closeDialog('update')">닫기</v-btn>
                 </v-card-actions>
             </v-card>
@@ -120,17 +100,22 @@
 </template>
 
 <script>
+import FormMapper from '@/components/designer/mapper/FormMapper.vue'; 
 export default {
+    components: {
+        FormMapper,
+    },
     props: {
         size: Number,
         type: String,
         process: Object,
         storage: Object,
-        lock: Boolean,
+        enableEdit: Boolean,
     },
     data: () => ({
         addDialog: false,
         updateDialog: false,
+        formMapperDialog: false,
         newProcess: {
             id: "",
             label: ""
@@ -198,7 +183,7 @@ export default {
                     name: ""
                 };
                 this.addDialog = true;
-            } else if(type == 'update') {
+            } else if (type == 'update') {
                 this.newProcess.id = this.process.id;
                 this.newProcess.label = this.process.label;
                 this.updateDialog = true;
@@ -218,7 +203,7 @@ export default {
             this.isNewDef = false;
             if (type == 'add') {
                 this.addDialog = false;
-            } else if(type == 'update') {
+            } else if (type == 'update') {
                 this.updateDialog = false;
             }
         },

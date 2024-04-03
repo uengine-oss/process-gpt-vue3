@@ -7,6 +7,8 @@
                     :isViewMode="isViewMode"
                     @update="updateDefinition"
                 ></process-definition>
+                <process-definition-version-dialog :process="processDefinition" :loading="loading" :open="versionDialog" @close="toggleVersionDialog" @save="saveDefinition"></process-definition-version-dialog>
+                <ProcessDefinitionVersionManager   :process="processDefinition" :open="verMangerDialog"  @close="toggleVerMangerDialog" @changeXML="changeXML"></ProcessDefinitionVersionManager>
             </template>
             <template v-slot:rightpart>
                 <div class="no-scrollbar">
@@ -14,7 +16,9 @@
                         :userInfo="userInfo" :type="'definitions'" :lock="lock" :disableChat="disableChat"
                         @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" 
                         @stopMessage="stopMessage" @getMoreChat="getMoreChat"
-                        @loadBPMN="bpmn => loadBPMN(bpmn)" @complete="checkedLock"
+                        @loadBPMN="bpmn => loadBPMN(bpmn)"
+                        @openVerMangerDialog="toggleVerMangerDialog"
+                        @toggleLock="toggleLock"
                     ></Chat>
                 </div>
             </template>
@@ -24,7 +28,9 @@
                     :userInfo="userInfo" :type="'definitions'" :lock="lock" :disableChat="disableChat"
                     @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage" @getMoreChat="getMoreChat"
-                    @loadBPMN="bpmn => loadBPMN(bpmn)" @complete="checkedLock"
+                    @loadBPMN="bpmn => loadBPMN(bpmn)"
+                    @openVerMangerDialog="toggleVerMangerDialog"
+                    @toggleLock="toggleLock"
                 ></Chat>
             </template>
         </AppBaseCard>
@@ -46,6 +52,9 @@ import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/ProcessDefinitionGenerator';
 import Chat from './ui/Chat.vue';
 import axios from 'axios';
+import ProcessDefinitionVersionDialog from '@/components/ProcessDefinitionVersionDialog.vue';
+import ProcessDefinitionVersionManager from '@/components/ProcessDefinitionVersionManager.vue';
+
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
 var jsondiffpatch = jsondiff.create({
     objectHash: function (obj, index) {
@@ -63,7 +72,9 @@ export default {
         ChatProfile,
         ProcessDefinition,
         // BpmnModelingCanvas,
-        ChatGenerator
+        ChatGenerator,
+        ProcessDefinitionVersionDialog,
+        ProcessDefinitionVersionManager
     },
     data: () => ({
         processDefinition: null,
@@ -82,6 +93,10 @@ export default {
         lock: false,
         disableChat: false,
         isViewMode: false,
+        // version
+        versionDialog: false,
+        verMangerDialog: false,
+        loading: false,
     }),
     async created() {
         await this.init();
@@ -128,6 +143,79 @@ export default {
         // }
     },
     methods: {
+        toggleLock(){
+            var me = this
+            me.$app.try({
+                context: me,
+                action: async () => {
+                    if(me.lock){
+                        // 잠금 > 수정가능 하도록
+                        if(me.processDefinition) await me.storage.putObject('lock', {
+                            id: me.processDefinition.processDefinitionId,
+                            user_id: me.userInfo.email
+                        });
+                        me.disableChat = false;
+                        me.isViewMode = false;
+                        me.lock = false
+                        me.definitionChangeCount++;
+                    } else {
+                        // 현재 수정가능 > 잠금 상태로 (저장)
+                        me.toggleVersionDialog(true);
+                    }
+                }
+            })
+        },
+        toggleVerMangerDialog(open){
+            // Version Manager Dialog
+            this.verMangerDialog = open
+        },
+        toggleVersionDialog(open){
+            // Version Dialog
+            this.versionDialog = open
+        },
+        saveDefinition(info){
+            var me = this
+            me.$app.try({
+                context: me,
+                action: async () => {
+                    me.loading = true
+
+                    const store = useBpmnStore();
+                    const modeler = store.getModeler;
+                    const xml = await modeler.saveXML({ format: true, preamble: true });
+                    await me.saveModel(info, xml.xml); 
+
+                    await me.storage.delete(`lock/${info.proc_def_id}`, {key: 'id'});
+                    me.disableChat = true;
+                    me.isViewMode = true;
+                    me.lock = true // 잠금처리 ( 수정 불가 )
+
+                    me.loading = false
+                    me.toggleVersionDialog(false)
+                    me.definitionChangeCount++
+                }
+            })
+        
+        },
+        changeXML(info){
+            var me = this
+            me.$app.try({
+                context: me,
+                action: async () => {
+                    if(!info) return;
+                    if(!info.id) return;
+
+                    await me.storage.putObject(`${me.path}`, {
+                        id: info.id,
+                        name: info.name,
+                        bpmn: info.xml
+                    });
+                    me.bpmn = info.xml
+                    me.definitionChangeCount++
+                    me.toggleVerMangerDialog(false)
+                }
+            })
+        },
         loadBPMN(bpmn) {
             this.bpmn = bpmn
             this.definitionChangeCount++
@@ -174,11 +262,11 @@ export default {
                 // lock
                 const lockObj = await this.getData(`lock/${this.$route.params.id}`, { key: 'id' });
                 if (lockObj && lockObj.id && lockObj.user_id && lockObj.user_id == this.userInfo.email) {
-                    this.lock = true;
+                    this.lock = false; 
                     this.disableChat = false;
                     this.isViewMode = false;
                 } else {
-                    this.lock = false;
+                    this.lock = true; 
                     this.disableChat = true;
                     this.isViewMode = true;
                 }
@@ -431,106 +519,106 @@ export default {
 
         //     return processDefinition;
         // },
-        checkedLock() {
-            var me = this;
+        saveVersion(info, currentXML){
+            var me = this
             me.$app.try({
+                context: me,
                 action: async () => {
-                    if (me.lock) {
-                        me.lock = false;
-                        me.disableChat = true;
-                        me.isViewMode = true;
-                        await me.saveModel();
-                        await me.storage.delete(`lock/${this.processDefinition.processDefinitionId}`, {key: 'id'});
-                    } else {
-                        me.lock = true;
-                        me.disableChat = false;
-                        me.isViewMode = false;
-                        const lockObj = {
-                            id: me.processDefinition.processDefinitionId,
-                            user_id: me.userInfo.email
-                        };
-                        await me.putObject('lock', lockObj);
-                    }
-                    window.location.reload();
-                },
-            });
+                    const prevSnapshot = info.prevSnapshot
+                    const prevDiff = info.prevDiff
+
+                    // diff Logic
+                    let diffs = null
+    
+    
+                    me.storage.putObject('proc_def_arcv', {
+                        arcv_id: info.arcv_id,
+                        version: info.version,
+                        name: info.name,
+                        proc_def_id: info.proc_def_id,
+                        snapshot: currentXML,
+                        diff: diffs,
+                        timeStamp: new Date()
+                    });
+                }
+            })
         },
-        async saveModel() {
-            // alert(model);
-            console.log(this.changedXML);
-            const store = useBpmnStore();
-            let modeler = store.getModeler;
-            let xml = await modeler.saveXML({ format: true, preamble: true });
+        async saveModel(info, xml) {
+            var me = this
+            me.$app.try({
+                context: me,
+                action: async () => {
+                    // alert(model);
+                    // console.log(this.changedXML);
+                    // const store = useBpmnStore();
+                    // let modeler = store.getModeler;
+                    // let xml = await modeler.saveXML({ format: true, preamble: true });
 
-            if (!this.processDefinition && xml) {
-                this.processDefinition = this.convertXMLToJSON(xml.xml);
-            }
-
-            if (!this.processDefinition.processDefinitionName)
-                this.processDefinition.processDefinitionName = prompt("please give a name for the process definition");
-
-            if (!this.processDefinition.processDefinitionId)
-                this.processDefinition.processDefinitionId = prompt("please give a ID for the process definition");
-
-            this.projectName = this.processDefinition.processDefinitionName;
-
-
-            if (!this.processDefinition.processDefinitionId || !this.processDefinition.processDefinitionName) {
-                throw new Error("processDefinitionId or processDefinitionName is missing");
-            }
-
-            let newPath = `${this.path}/${this.processDefinition.processDefinitionId}`;
-
-                let putObj = {
-                    id: this.processDefinition.processDefinitionId,
-                    name: this.processDefinition.processDefinitionName,
-                    definition: this.processDefinition,
-                    // messages: this.messages,
-                    bpmn: xml.xml   //TODO: model --> definition과 구분이 안됨.  bpmn 혹은 xmlDefinition 혹은 xmlModel 등으로 프로퍼티명 변경할것!
-                };
-
-                await this.putObject(newPath, putObj);
-            // if (window.$mode == "uEngine") {
-            //     // :9093/definition/raw/sales/testProcess.bpmn < definition-samples/testProcess.bpmn
-            //     await axios.put(`/definition/raw/sales/${this.processDefinition.processDefinitionId}.bpmn`, xml.xml, {
-            //         headers: {
-            //             'Content-Type': 'application/xml' // 적절한 Content-Type 설정
-            //         }
-            //     }).then(res => {
-            //         console.log(res);
-            //     })
-            // } else {
-
-
-                
-            // }
-
-
-            // const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
-            // let vectorId = await vectorStore.similaritySearch({
-            //     query: this.projectName,
-            //     k: 1
-            // });
-            // if (vectorId) {
-            //     console.log(vectorId);
-            //     // let path = `proc_def/${this.processDefinition.processDefinitionId ? this.processDefinition.processDefinitionId : this.$route.params.id}/model`;
-            //     // this.pushObject(path, definition);
-            //     this.deleteVectorStorage(vectorId.similarItems[0].id);
-            //     this.saveDefinition(definition);
-            // }
-
-            // const table = await this.getObject(this.processDefinition.processDefinitionId)
-            // if (!table) {
-                await axios.post('http://localhost:8001/process-db-schema/invoke', {
-                    "input": {
-                        "process_definition_id": this.processDefinition.processDefinitionId
+                    if (!me.processDefinition && xml) {
+                        me.processDefinition = me.convertXMLToJSON(xml);
                     }
-                }).then(async res => {
-                    console.log(res);
-                }).catch(error => {
-                    console.log(error);
-                });
-            // }
+                    
+                    me.processDefinition.processDefinitionName = info.name ? info.name : prompt("please give a name for the process definition");
+                    me.processDefinition.processDefinitionId = info.proc_def_id ?  info.proc_def_id : prompt("please give a ID for the process definition");
+                    
+                    
+                    me.projectName = me.processDefinition.processDefinitionName;
+                    if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
+                        throw new Error("processDefinitionId or processDefinitionName is missing");
+                    }
+
+                    await me.putObject(`${me.path}/${me.processDefinition.processDefinitionId}`, {
+                        id: me.processDefinition.processDefinitionId,
+                        name: me.processDefinition.processDefinitionName,
+                        definition: me.processDefinition,
+                        // messages: this.messages,
+                        bpmn: xml   //TODO: model --> definition과 구분이 안됨.  bpmn 혹은 xmlDefinition 혹은 xmlModel 등으로 프로퍼티명 변경할것!
+                    });
+
+                    await me.saveVersion(info, xml)
+                    // if (window.$mode == "uEngine") {
+                    //     // :9093/definition/raw/sales/testProcess.bpmn < definition-samples/testProcess.bpmn
+                    //     await axios.put(`/definition/raw/sales/${this.processDefinition.processDefinitionId}.bpmn`, xml.xml, {
+                    //         headers: {
+                    //             'Content-Type': 'application/xml' // 적절한 Content-Type 설정
+                    //         }
+                    //     }).then(res => {
+                    //         console.log(res);
+                    //     })
+                    // } else {
+
+
+                        
+                    // }
+
+
+                    // const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
+                    // let vectorId = await vectorStore.similaritySearch({
+                    //     query: this.projectName,
+                    //     k: 1
+                    // });
+                    // if (vectorId) {
+                    //     console.log(vectorId);
+                    //     // let path = `proc_def/${this.processDefinition.processDefinitionId ? this.processDefinition.processDefinitionId : this.$route.params.id}/model`;
+                    //     // this.pushObject(path, definition);
+                    //     this.deleteVectorStorage(vectorId.similarItems[0].id);
+                    //     this.saveDefinition(definition);
+                    // }
+
+                    // const table = await this.getObject(this.processDefinition.processDefinitionId)
+                    // if (!table) {
+                        await axios.post('http://localhost:8001/process-db-schema/invoke', {
+                            "input": {
+                                "process_definition_id": me.processDefinition.processDefinitionId
+                            }
+                        }).then(async res => {
+                            console.log(res);
+                        }).catch(error => {
+                            console.log(error);
+                        });
+                    // }
+                }
+            })
         },
         // parseDefinition(model) {
         //     let definition = {};

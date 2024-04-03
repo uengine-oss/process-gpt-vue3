@@ -62,7 +62,7 @@
                 <v-spacer></v-spacer>
                 <v-btn v-if="mode === 'add'" color="primary" rounded="pill" @click="addVariable">{{
                         $t('ProcessVariable.add') }}</v-btn>
-                <v-btn v-else color="primary" rounded="pill">{{ $t('ProcessVariable.edit') }}</v-btn>
+                <v-btn v-else color="primary" rounded="pill" @click="editVariable">{{ $t('ProcessVariable.edit') }}</v-btn>
             </v-row>
         </v-col>
     </v-row>
@@ -120,6 +120,9 @@ export default {
             } catch (error) {
                 console.error('Error testing SQL:', error);
             }
+        },
+        editVariable() {
+            this.$emit("updateVariables", this.processVariable)
         },
         addVariable() {
             // console.log(this.processVariable)

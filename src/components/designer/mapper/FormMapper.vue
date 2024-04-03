@@ -1,0 +1,290 @@
+<template>
+    <div>
+        <v-toolbar extended>
+            <v-toolbar-title>Form Mapper</v-toolbar-title>
+
+            <v-spacer></v-spacer>
+            <v-btn icon @click="openJsonDialog()">
+                <v-icon>mdi-script-outline</v-icon>
+            </v-btn>
+            <v-btn icon @click="openFunctionMenu()">
+                <v-icon>mdi-function</v-icon>
+            </v-btn>
+        </v-toolbar>
+    </div>
+    <div id="app" class="treeviews-container" @contextmenu.prevent="openFunctionMenu($event)">
+        <v-treeview :config="config" :nodes="nodes" class="left-treeview">
+            <template #after-input="item">
+                <v-btn class="after" small @click.stop="onButtonClickLeft(item, 'Source')">▶</v-btn>
+            </template>
+        </v-treeview>
+
+        <v-menu v-model="menu" :position-x="menu_x" :position-y="menu_y" absolute :style="menuPositionStyle">
+            <v-list class="form-menu" style="max-height: 300px; overflow-y: auto">
+                <v-list-item v-for="(item, index) in filterTransformItems(blockTemplates)" :key="index" @click="menuItemSelected(item)">
+                    <v-list-item-title>{{ item }}</v-list-item-title>
+                </v-list-item>
+            </v-list>
+        </v-menu>
+
+        <v-dialog v-model="jsonDialog" max-width="600px">
+            <v-card>
+                <v-card-title>
+                    Transformers JSON
+                    <v-spacer></v-spacer>
+                </v-card-title>
+                <v-card-text style="max-height: 600px; overflow-y: auto">
+                    <pre style="user-select: text">{{ jsonString }}</pre>
+                </v-card-text>
+            </v-card>
+        </v-dialog>
+
+        <svg id="formArea" ref="svgElement" @mousemove="updateMousePos" @mouseup="onMouseUp">
+            <block-component
+                v-for="(block, name) in blocks_"
+                :key="name"
+                :pos="block.pos"
+                :size="block.size"
+                :name="block.name"
+                :start-block-drag="startBlockDrag"
+                :delete-block="deleteBlock"
+            ></block-component>
+            <connector-component
+                v-for="(conn, index) in connectors"
+                :key="index"
+                :start-pos="conn.startPos"
+                :end-pos="conn.endPos"
+                :is-new="conn.isNew"
+                :onclick="() => removeConnection(index)"
+            ></connector-component>
+
+            <port-component
+                v-for="port in ports"
+                :key="port.blockName + ',' + port.name"
+                :pos="port.pos"
+                :name="port.name"
+                :block-name="port.blockName"
+                :direction="port.direction"
+                :onmousedown="newConnection(port.blockName, port.name, port.direction)"
+                :onmouseup="completeConnection(port.blockName, port.name, port.direction)"
+            ></port-component>
+            <attribute-component
+                v-for="attribute in attributes"
+                :key="attribute.blockName + ',' + attribute.name"
+                :pos="attribute.pos"
+                :name="attribute.name"
+                :block-name="attribute.blockName"
+                :func="attribute.func"
+            ></attribute-component>
+        </svg>
+
+        
+        <v-treeview :config="config" :nodes="nodes" class="right-treeview">
+            <template #after-input="item">
+                <v-btn class="after" small @click.stop="onButtonClickRight(item, 'Target')">▶</v-btn>
+            </template>
+        </v-treeview>
+        <!-- <div id="sidebar">
+      <h4>Blocks:</h4>
+      <pre>{{ JSON.stringify(blocks, null, "  ") }}</pre>
+      <h4>Connections:</h4>
+      <pre>{{ JSON.stringify(connections, null, "  ") }}</pre>
+    </div> -->
+    </div>
+</template>
+
+<script>
+import BlockComponent from './BlockComponent.vue';
+import PortComponent from './PortComponent.vue';
+import ConnectorComponent from './ConnectorComponent.vue';
+import AttributeComponent from './AttributeComponent.vue';
+import FormMapper from './scripts/formMapper';
+import VTreeview from 'vue3-treeview';
+export default {
+    mixins: [FormMapper],
+    components: {
+        BlockComponent,
+        PortComponent,
+        ConnectorComponent,
+        AttributeComponent,
+        VTreeview
+    },
+    data() {
+        return {
+            jsonDialog: false,
+            jsonString: '',
+            menu: false,
+            menu_x: 0,
+            menu_y: 0,
+            component_x: 0,
+            component_y: 0,
+            nodes: {
+                id1: {
+                text: "text1",
+                children: ["id11", "id12"],
+                },
+                id11: {
+                text: "text11",
+                },
+                id12: {
+                text: "text12",
+                },
+                id2: {
+                text: "text2",
+                },
+            },
+            config: {
+                roots: ["id1", "id2"],
+            },
+        };
+    },
+    methods: {
+        openFunctionMenu(event) {
+            console.log('click menu');
+            if (event) {
+                const svgElement = this.$refs.svgElement;
+
+                const svgRect = svgElement.getBoundingClientRect();
+
+                const mouseX = event.clientX;
+                const mouseY = event.clientY;
+
+                this.menu_x = mouseX;
+                this.menu_y = mouseY;
+                this.component_x = this.menu_x;
+                this.component_y = this.menu_y;
+            } else {
+                this.menu_x = 1550;
+                this.menu_y = 350;
+                this.component_x = 500;
+                this.component_y = 500;
+            }
+            this.menu = true;
+        },
+        openJsonDialog() {
+            console.log('open json');
+            this.jsonString = JSON.stringify(this.transformers, null, 2);
+            this.jsonDialog = true; // 다이얼로그 열기
+        },
+        menuItemSelected(item) {
+            console.log('Selected:', item);
+            this.menu = false;
+            this.newBlock(item, { x: this.component_x, y: this.component_y });
+        },
+        onButtonClickLeft(item, type) {
+            console.log('Button clicked:', item.node.text, type);
+            this.newBlock(type, { x: 200, y: 200 }, item.node.text);
+        },
+        onButtonClickRight(item, type) {
+            console.log('Button clicked:', item.node.text, type);
+            this.newBlock(type, { x: 1500, y: 200 }, item.node.text);
+        }
+    },
+    computed: {
+        menuPositionStyle() {
+            return {
+                position: 'absolute',
+                left: `${this.menu_x}px`,
+                top: `${this.menu_y}px`,
+                transform: 'translate(0, -50%)'
+            };
+        }
+    }
+};
+</script>
+
+<style>
+#app {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: white;
+    user-select: none;
+}
+#formArea {
+    width: 100%;
+}
+.block > rect {
+    fill: rgba(127, 127, 127, 1);
+}
+.block > text {
+    font-size: 11px;
+    fill: #fff;
+    text-anchor: middle;
+    alignment-baseline: middle;
+    pointer-events: none;
+}
+.block > .delete-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.port > text {
+    font-size: 11px;
+    fill: rgb(255, 255, 255);
+    alignment-baseline: middle;
+}
+.port > rect {
+    fill: #060;
+}
+.port > rect.background {
+    fill: rgba(63, 63, 63, 0);
+    width: 50px;
+    height: 20px;
+}
+.port:hover > text {
+    fill: #6a6;
+}
+.port:hover > rect {
+    fill: #282;
+    stroke-width: 3px;
+    stroke: #282;
+}
+.port:hover > rect.background {
+    fill: rgba(63, 63, 63, 0.5);
+    stroke-width: 0;
+}
+
+.connector {
+    stroke: #888;
+    stroke-width: 3;
+    fill: none;
+}
+.connector:hover {
+    stroke: #f88;
+    stroke-width: 4;
+}
+.connector.isNew,
+.connector.isNew:hover {
+    stroke: #4c4;
+    stroke-width: 3;
+}
+
+.treeviews-container {
+    display: flex;
+    justify-content: space-between;
+}
+
+.right-treeview .node-wrapper{
+    transform: scaleX(-1);
+}
+
+.right-treeview .input-wrapper {
+    transform: scaleX(-1);
+}
+
+.form-menu {
+    max-height: 300px;
+    overflow-y: auto;
+}
+</style>

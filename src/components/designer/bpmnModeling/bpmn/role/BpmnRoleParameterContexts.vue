@@ -1,132 +1,100 @@
 <template>
     <div>
-    <!-- definition id 가 없어도 데이터가 있다면 최선을 다하여 출력하자 -->
-    <!--<div v-if="calleeDefinitionId">-->
-        <md-layout v-for="(parameterContext, idx) in data.parameterContexts" :key="idx">
-            <md-layout md-flex="30">
-                <md-input-container>
-                    <label>Callee Roles</label>
-                    <md-select v-if="calleeDefinition.loaded" name="input" id="input" v-model="parameterContext.argument">
-                        <md-option v-for="role in calleeDefinition.roles"
-                                :key="role.name"
-                                :value="role.name">
-                            {{ role.name }}
-                        </md-option>
-                    </md-select>
-                    <md-input v-else v-model="parameterContext.argument"></md-input>
-                </md-input-container>
-            </md-layout>
-            <md-layout md-flex="30">
-                <md-input-container>
-                    <label>Caller Roles</label>
-                    <md-select v-model="parameterContext.role.name">
-                        <md-option v-for="role in definition.roles"
-                                :key="role.name"
-                                :value="role.name">
-                            {{ role.name }}
-                        </md-option>
-                    </md-select>
-                </md-input-container>
-            </md-layout>
-            <md-layout md-flex="30">
-                <md-input-container>
-                    <label>연결 방향</label>
-                    <md-select v-model="parameterContext.direction">
-                        <md-option value="in-out">IN-OUT</md-option>
-                        <md-option value="in">IN</md-option>
-                        <md-option value="out">OUT</md-option>
-                    </md-select>
-                </md-input-container>
-            </md-layout>
+        <!-- definition id 가 없어도 데이터가 있다면 최선을 다하여 출력하자 -->
+        <!--<div v-if="calleeDefinitionId">-->
+        <div v-for="(roleBinding, idx) in copyRoleBindings" :key="idx">
+            <v-row>
+                <v-col cols="3">
+                    <div>
+                        <label>Callee Roles</label>
+                        <v-select name="input" id="input" v-model="roleBinding.argument">
+                            <!-- <v-option v-for="role in calleeDefinition.roles" :key="role.name" :value="role.name">
+                                {{ role.name }}
+                            </v-option> -->
+                        </v-select>
+                        <v-input v-model="roleBinding.argument"></v-input>
+                    </div>
+                </v-col>
 
-            <md-layout md-flex="20">
-                <md-checkbox v-model="parameterContext.multipleInput">Multi</md-checkbox>
-            </md-layout>
+                <v-col cols="3">
+                    <div>
+                        <label>연결 방향</label>
+                        <v-select v-model="roleBinding.direction" :items="['IN-OUT', 'IN', 'OUT']">
+                            <!-- <md-option value="in-out">IN-OUT</md-option>
+                            <md-option value="in">IN</md-option>
+                            <md-option value="out">OUT</md-option> -->
+                        </v-select>
+                    </div>
+                </v-col>
+                <v-col cols="3">
+                    <div>
+                        <label>Caller Roles</label>
+                        <v-select v-model="roleBinding.role.name" :items="definitionRoles" item-title="name"
+                            item-value="name">
+                            <!-- <md-option v-for="role in definition.roles" :key="role.name" :value="role.name">
+                                {{ role.name }}
+                            </md-option> -->
+                        </v-select>
+                    </div>
+                </v-col>
+                <v-col>
+                    <v-checkbox v-model="roleBinding.split">Split</v-checkbox>
+                </v-col>
 
-            <md-layout md-flex="20">
-                <md-icon v-on:click.native="remove(parameterContext)"
-                        class="md-primary"
-                        style="cursor: pointer"
-                >delete</md-icon>
-            </md-layout>
-        </md-layout>
+                <v-col>
+                    <v-btn icon flat v-on:click="remove(roleBinding)">
+                        <TrashIcon stroke-width="1.5" size="20" class="text-error" />
+                    </v-btn>
+                </v-col>
+            </v-row>
+        </div>
 
-        <md-button v-on:click.native="add">매핑 추가</md-button>
+        <v-btn v-on:click="add">매핑 추가</v-btn>
     </div>
-  <!--</div>-->
+    <!--</div>-->
 </template>
 
 <script>
 
-    export default {
-        name: "bpmn-role-parameter-contexts",
-        props: {
-            parameterContexts: Array,
-            definition: Object,
-            calleeDefinitionId: String
-        },
-        data: function () {
-            return {
-                data: {
-                    parameterContexts: this.parameterContexts,
+export default {
+    name: "bpmn-role-parameter-contexts",
+    props: {
+        roleBindings: Array,
+        definitionRoles: Array,
+        // calleeDefinitionId: String
+    },
+    data: function () {
+        return {
+            copyRoleBindings: this.roleBindings ? this.roleBindings : []
+        };
+    },
+    watch: {
+        // copyRoleBindings: {
+        //     handler: function (after, before) {
+        //         this.$emit('update:roleBindings', after);
+        //     },
+        //     deep: true
+        // },
+    },
+    created: function () {
+
+    },
+    methods: {
+        add: function () {
+            this.copyRoleBindings.push({
+                direction: 'IN-OUT',
+                role: {
+                    _type: "org.uengine.kernel.Role",
+                    name: ''
                 },
-                calleeDefinition: {
-                    loaded: false,
-                    roles: [
-                        { name: '-- not loaded -- ' },
-                    ]
-                }
-            };
+                argument: ''  //TODO: object path differ from ParameterContext
+            })
         },
-        watch: {
-            calleeDefinitionId: function () {
-                console.log('calleeDefinitionId changed!!');
-            },
-            data: {
-                handler: function (after, before) {
-                    this.$emit('update:parameterContexts', after);
-                },
-                deep: true
-            },
-            calleeDefinitionId: function(val) {
-                console.log("========>" + val)
-                this.refreshCalleeDefinition();
-            }
-        },
-        created: function() {
-            if(this.data) {
-                this.data.parameterContexts.forEach(function(parameterContext){
-                    if(!parameterContext.role) {
-                        parameterContext.role = {};
-                    }
-                });
-            }
-        },
-        methods: {
-            refreshCalleeDefinition: function() {
-                var me = this;
-                // this.$root.codi('definition/' + this.calleeDefinitionId + ".json").get()
-                //     .then(function (response) {
-                //         me.calleeDefinition = response.data.definition;
-                //     })
-            },
-            add: function() {
-                this.data.parameterContexts.push({
-                    direction: 'IN-OUT',
-                    role: {
-                        _type: "org.uengine.kernel.Role",
-                        name: ''
-                    },
-                    argument: ''  //TODO: object path differ from ParameterContext
-                })
-            },
-            remove: function (parameterContext) {
-                //TODO: find and remove
-                this.parameterContexts.splice(this.parameterContexts.indexOf(parameterContext), 1);
-            }
+        remove: function (parameterContext) {
+            //TODO: find and remove
+            this.copyRoleBindings.splice(this.copyRoleBindings.indexOf(parameterContext), 1);
         }
     }
+}
 
 </script>
-
-
