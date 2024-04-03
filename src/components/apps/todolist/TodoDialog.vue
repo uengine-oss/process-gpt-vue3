@@ -6,38 +6,16 @@
             </v-card-title>
 
             <v-card-text>
-                <v-text-field
-                    v-model="newTask.activity_id" 
-                    label="할일명"
-                    outlined
-                ></v-text-field>
-                <v-text-field
-                    v-model="newTask.start_date"
-                    label="시작일"
-                    outlined
-                    type="datetime-local"
-                ></v-text-field>
-                <v-text-field
-                    v-model="newTask.end_date"
-                    label="종료일"
-                    outlined
-                    type="datetime-local"
-                ></v-text-field>
-                <v-select 
-                    v-model="newTask.status"
-                    :items="['TODO', 'IN_PROGRESS', 'PENDING', 'DONE']"
-                    label="진행 상태"
-                    variant="outlined"
-                ></v-select>
-                <v-textarea
-                    v-model="newTask.description"
-                    label="설명"
-                    outlined
-                ></v-textarea>
+                <v-text-field v-model="newTask.activity_id" label="할일명" outlined></v-text-field>
+                <v-text-field v-model="newTask.start_date" label="시작일" outlined type="datetime-local"></v-text-field>
+                <v-text-field v-model="newTask.end_date" label="종료일" outlined type="datetime-local"></v-text-field>
+                <v-select v-model="newTask.status" :items="['TODO', 'IN_PROGRESS', 'PENDING', 'DONE']" label="진행 상태"
+                    variant="outlined"></v-select>
+                <v-textarea v-model="newTask.description" label="설명" outlined></v-textarea>
             </v-card-text>
 
             <v-card-actions class="justify-center pt-0">
-                <v-btn :disabled="newTask.activity_id==''" color="success" variant="flat" @click="add">저장</v-btn>
+                <v-btn :disabled="newTask.activity_id == ''" color="success" variant="flat" @click="add">저장</v-btn>
                 <v-btn color="error" variant="flat" @click="close">닫기</v-btn>
             </v-card-actions>
         </v-card>
@@ -45,44 +23,22 @@
         <v-card v-else-if="type == 'edit'">
             <v-card-title class="d-flex align-center justify-space-between pt-3 pl-5">
                 <h4 class="text-h4">할 일 수정</h4>
-                <v-btn class="edit-button" @click="type='view'">
+                <v-btn class="edit-button" @click="type = 'view'">
                     <v-icon>mdi-arrow-left</v-icon>
                 </v-btn>
             </v-card-title>
 
             <v-card-text class="mt-3">
-                <v-text-field
-                    v-model="task.activity_id" 
-                    label="할일명"
-                    outlined
-                ></v-text-field>
-                <v-text-field
-                    v-model="task.start_date"
-                    label="시작일"
-                    outlined
-                    type="datetime-local"
-                ></v-text-field>
-                <v-text-field
-                    v-model="task.end_date"
-                    label="종료일"
-                    outlined
-                    type="datetime-local"
-                ></v-text-field>
-                <v-select 
-                    v-model="task.status"
-                    :items="['TODO', 'IN_PROGRESS', 'PENDING', 'DONE']"
-                    label="진행 상태"
-                    variant="outlined"
-                ></v-select>
-                <v-textarea
-                    v-model="task.description"
-                    label="설명"
-                    outlined
-                ></v-textarea>
+                <v-text-field v-model="task.activity_id" label="할일명" outlined></v-text-field>
+                <v-text-field v-model="task.start_date" label="시작일" outlined type="datetime-local"></v-text-field>
+                <v-text-field v-model="task.end_date" label="종료일" outlined type="datetime-local"></v-text-field>
+                <v-select v-model="task.status" :items="['TODO', 'IN_PROGRESS', 'PENDING', 'DONE']" label="진행 상태"
+                    variant="outlined"></v-select>
+                <v-textarea v-model="task.description" label="설명" outlined></v-textarea>
             </v-card-text>
 
             <v-card-actions class="justify-center pt-0">
-                <v-btn :disabled="task.activity_id==''" color="success" variant="flat" @click="edit">저장</v-btn>
+                <v-btn :disabled="task.activity_id == ''" color="success" variant="flat" @click="edit">저장</v-btn>
                 <v-btn color="error" variant="flat" @click="close">닫기</v-btn>
             </v-card-actions>
         </v-card>
@@ -90,7 +46,7 @@
         <v-card v-else-if="type == 'view'">
             <v-card-title class="d-flex align-center justify-space-between pt-3 pl-5">
                 <h4 class="text-h4">할 일</h4>
-                <v-btn class="edit-button" @click="type='edit'">
+                <v-btn class="edit-button" @click="type = 'edit'">
                     <v-icon>mdi-pencil</v-icon>
                 </v-btn>
             </v-card-title>
@@ -160,7 +116,7 @@ export default {
             }
         }
     },
-    methods:{
+    methods: {
         add() {
             this.$emit('add', this.newTask)
         },

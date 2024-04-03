@@ -78,8 +78,11 @@ export default {
         //     console.log("render  complete")
         //     self.$emit('openPanel', e.element.id);
         // });
+        eventBus.on('import.done', async function(evt) {
+            console.log("import.done")
+            self.$emit('done')
+        })
         eventBus.on('import.render.complete', async function (event) {
-            console.log("complete?")
             var error = event.error;
             var warnings = event.warnings;
             let def = self.bpmnViewer.getDefinitions();

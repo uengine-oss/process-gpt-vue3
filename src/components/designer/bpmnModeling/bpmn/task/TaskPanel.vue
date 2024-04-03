@@ -28,7 +28,7 @@
                         ></bpmn-parameter-contexts>
     
                         <label>연결 역할 매핑</label>
-                        <bpmn-role-parameter-contexts
+                        <bpmn-role-parameter-contexts   
                                 :parameter-contexts="value.roleBindings"
                                 :callee-definition-id="value.definitionId"
                                 :definition="definition">

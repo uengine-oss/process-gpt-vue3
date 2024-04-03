@@ -1,34 +1,15 @@
 <template>
     <div class="canvas-panel">
-        <opengraph
-            focus-canvas-on-select
-            wheelScalable
-            :dragPageMovable="dragPageMovable"
-            :enableContextmenu="false"
-            :enableRootContextmenu="false"
-            :enableHotkeyCtrlC="false"
-            :enableHotkeyCtrlV="false"
-            :enableHotkeyDelete="false"
-            :slider="false"
-            :movable="!monitor"
-            :resizable="!monitor"
-            :selectable="!monitor"
-            :connectable="!monitor"
-            :width="100000"
-            :imageBase="imageBase"
-            :height="100000"
-            v-if="modelValue"
-            v-on:canvasReady="bindEvents"
-            v-on:connectShape="onConnectShape"
-            v-on:divideLane="onDivideLane"
-        >
+        <opengraph focus-canvas-on-select wheelScalable :dragPageMovable="dragPageMovable" :enableContextmenu="false"
+            :enableRootContextmenu="false" :enableHotkeyCtrlC="false" :enableHotkeyCtrlV="false"
+            :enableHotkeyDelete="false" :slider="false" :movable="!monitor" :resizable="!monitor" :selectable="!monitor"
+            :connectable="!monitor" :width="100000" :imageBase="imageBase" :height="100000" v-if="modelValue"
+            v-on:canvasReady="bindEvents" v-on:connectShape="onConnectShape" v-on:divideLane="onDivideLane">
             <!--롤은 Lane 형식의 큰 틀-->
             <div v-for="roleId in Object.keys(value.elements)" :key="'role' + roleId">
                 <bpmn-role
                     v-if="roleId && value.elements[roleId] && value.elements[roleId]._type == 'org.uengine.kernel.Role'"
-                    :value="value.elements[roleId]"
-                    :ref="roleId"
-                ></bpmn-role>
+                    :value="value.elements[roleId]" :ref="roleId"></bpmn-role>
             </div>
 
             <!--액티비티는 각 활동 요소-->
@@ -39,25 +20,17 @@
                 <!--ex) :status="???"-->
                 <!--그러기 위해서는 SvgGraph(데이터 불러오는 부분) 에서, definition 가져온 이후에, definition 안에 있는 childActivities 를 까서-->
                 <!--그 안에 tracingTag 가 동일한 것들에 대해 status 를 매핑시켜주어야 한다.-->
-                <component
-                    v-if="elementId && value.elements[elementId] != null"
-                    :is="getComponentByClassName(value.elements[elementId]._type)"
-                    :value="value.elements[elementId]"
-                    :definition="value"
-                    :ref="elementId"
-                    :status="value.elements[elementId].status ? value.elements[elementId].status : null"
-                ></component>
+                <component v-if="elementId && value.elements[elementId] != null"
+                    :is="getComponentByClassName(value.elements[elementId]._type)" :value="value.elements[elementId]"
+                    :definition="value" :ref="elementId"
+                    :status="value.elements[elementId].status ? value.elements[elementId].status : null"></component>
             </div>
 
             <!--릴레이션은 액티비티간 연결선(흐름)-->
             <div v-for="relationId in Object.keys(value.relations)" :key="relationId">
-                <component
-                    v-if="relationId && value.relations[relationId] != null"
+                <component v-if="relationId && value.relations[relationId] != null"
                     :is="getComponentByClassName(value.relations[relationId]._type)"
-                    :value="value.relations[relationId]"
-                    :definition="value"
-                    :ref="relationId"
-                ></component>
+                    :value="value.relations[relationId]" :definition="value" :ref="relationId"></component>
                 <!-- <bpmn-message-flow
                     v-if="
                         relationId &&
@@ -99,11 +72,8 @@
                             </v-icon>
                         </v-btn>
                     </template>
-                    <v-menu offset-y
-                        open-on-hover
-                        left
-                    >
-                        <template v-slot:activator="{ on }">
+<v-menu offset-y open-on-hover left>
+    <template v-slot:activator="{ on }">
                             <v-btn
                                 text
                                 style="margin-right: 15px; margin-top: 15px;"
@@ -116,13 +86,10 @@
                                 <div>Settings</div>
                             </v-btn>
                         </template>
-                    </v-menu>
+</v-menu>
 
-                    <v-menu offset-y
-                        open-on-hover
-                        left
-                    >
-                        <template v-slot:activator="{ on }">
+<v-menu offset-y open-on-hover left>
+    <template v-slot:activator="{ on }">
                             <v-btn
                                 text
                                 style="margin-right: 15px; margin-top: 15px;"
@@ -135,14 +102,10 @@
                                 <div>Vars</div>
                             </v-btn>
                         </template>
-                    </v-menu>
-                    
-                    <v-menu offset-y
-                        open-on-hover
-                        left
-                        style="z-index:999 !important; position:relative;"
-                    >
-                        <template v-slot:activator="{ on }">
+</v-menu>
+
+<v-menu offset-y open-on-hover left style="z-index:999 !important; position:relative;">
+    <template v-slot:activator="{ on }">
                             <v-btn
                                 v-if="readOnly"
                                 style="margin-right: 5px; margin-top: 15px;"
@@ -165,58 +128,37 @@
                                 <div>SAVE</div>
                             </v-btn>
                         </template>
-                        <v-list v-if="!isClazzModeling">
-                            <v-list-item
-                                    v-for="item in saveItems" :key="item.title"
-                                    @click="functionSelect(item.title)">
-                                <v-list-item-title>{{ item.title }}</v-list-item-title>
-                            </v-list-item>
-                        </v-list>
-                    </v-menu>
-                    <div v-if="isOwnModel && isServerModel && !readOnly">
-                        <v-btn text
-                                style="margin-right: 15px; margin-top: 15px;"
-                                color="primary"
-                                :disabled="!initLoad"
-                                @click="openInviteUsers()">
-                            <v-icon>{{icon.share}}</v-icon>
-                            <div class="bpmn-btn-text">SHARE</div>
-                            <v-avatar v-if="requestCount" 
-                                    size="25" color="red"
-                                    style="margin-left: 2px;"
-                            >{{ requestCount }}</v-avatar>
-                        </v-btn>
-                    </div>
+    <v-list v-if="!isClazzModeling">
+        <v-list-item v-for="item in saveItems" :key="item.title" @click="functionSelect(item.title)">
+            <v-list-item-title>{{ item.title }}</v-list-item-title>
+        </v-list-item>
+    </v-list>
+</v-menu>
+<div v-if="isOwnModel && isServerModel && !readOnly">
+    <v-btn text style="margin-right: 15px; margin-top: 15px;" color="primary" :disabled="!initLoad"
+        @click="openInviteUsers()">
+        <v-icon>{{icon.share}}</v-icon>
+        <div class="bpmn-btn-text">SHARE</div>
+        <v-avatar v-if="requestCount" size="25" color="red" style="margin-left: 2px;">{{ requestCount }}</v-avatar>
+    </v-btn>
+</div>
 
-                    <div v-if="versions" style="margin-right: 10px;">
-                        <v-select v-for="version in versions.slice().reverse()" 
-                                :key="version"
-                                v-on="on"
-                                v-model="selectedVersion" 
-                                @change="changeVersion" 
-                                :value="version"
-                                style="margin-top: 10px; margin-right: 15px; max-width: 150px;">
-                            <v-chip v-if="productionVersionId == version.versionId">production</v-chip>
-                        </v-select>
-                    </div>
+<div v-if="versions" style="margin-right: 10px;">
+    <v-select v-for="version in versions.slice().reverse()" :key="version" v-on="on" v-model="selectedVersion"
+        @change="changeVersion" :value="version" style="margin-top: 10px; margin-right: 15px; max-width: 150px;">
+        <v-chip v-if="productionVersionId == version.versionId">production</v-chip>
+    </v-select>
+</div>
 
-                    <div v-if="value" style="margin-right: 10px;">
-                        <v-select class="bpmn-language-select"
-                            v-model="selectedLocale" 
-                            :items="languageItems" 
-                            item-value="value" 
-                            item-text="title"
-                            @change="changeLocale" 
-                            label="Language"
-                            style="margin-top: 10px; margin-right: 15px; max-width: 150px;"
-                        ></v-select>
-                    </div>
+<div v-if="value" style="margin-right: 10px;">
+    <v-select class="bpmn-language-select" v-model="selectedLocale" :items="languageItems" item-value="value"
+        item-text="title" @change="changeLocale" label="Language"
+        style="margin-top: 10px; margin-right: 15px; max-width: 150px;"></v-select>
+</div>
 
-                    <div>
-                        <v-menu offset-y
-                                open-on-hover
-                                left>
-                            <template v-slot:activator="{ on }">
+<div>
+    <v-menu offset-y open-on-hover left>
+        <template v-slot:activator="{ on }">
                                 <v-btn style="margin-right: 15px; margin-top: 15px;"
                                         color="primary"
                                         dark fab small
@@ -225,11 +167,9 @@
                                     <v-icon>play_arrow</v-icon>
                                 </v-btn>
                             </template>
-                        </v-menu>
-                        <v-menu offset-y
-                                open-on-hover
-                                left>
-                            <template v-slot:activator="{ on }">
+    </v-menu>
+    <v-menu offset-y open-on-hover left>
+        <template v-slot:activator="{ on }">
                                 <v-btn style="margin-right: 15px; margin-top: 15px;"
                                         color="orange"
                                         dark fab small
@@ -239,38 +179,25 @@
                                     <v-icon v-else>history</v-icon>
                                 </v-btn>
                             </template>
-                        </v-menu>
-                    </div>
-                </v-speed-dial>
-            </div> -->
+    </v-menu>
+</div>
+</v-speed-dial>
+</div> -->
 
         <div class="tools">
             <v-card v-if="!monitor" variant="outlined" style="background-color: white">
                 <v-tooltip location="top">
                     <template v-slot:activator="{ props }">
-                        <span
-                            class="bpmn-icon-hand-tool hands"
-                            _width="30"
-                            _height="30"
-                            v-bind:style="handsStyle"
-                            v-bind="props"
-                            @click="changeMultiple"
-                        ></span>
+                        <span class="bpmn-icon-hand-tool hands" _width="30" _height="30" v-bind:style="handsStyle"
+                            v-bind="props" @click="changeMultiple"></span>
                     </template>
                     <span>Drag On/Off</span>
                 </v-tooltip>
                 <v-tooltip location="top" v-for="(item, idx) in dragItems" :key="idx">
                     <template v-slot:activator="{ props }">
                         <!-- <v-btn> -->
-                        <span
-                            class="icons draggable"
-                            align="center"
-                            :class="item.icon"
-                            :_component="item.component"
-                            :_width="item.width"
-                            :_height="item.height"
-                            v-bind="props"
-                        ></span>
+                        <span class="icons draggable" align="center" :class="item.icon" :_component="item.component"
+                            :_width="item.width" :_height="item.height" v-bind="props"></span>
                         <!-- </v-btn> -->
                     </template>
                     <span>{{ item.label }}</span>
@@ -2597,6 +2524,7 @@ export default {
         margin-left: 20px;
     }
 }
+
 @media only screen and (max-width: 1279px) {
     .canvas-panel {
         top: 37px !important;

@@ -1,8 +1,6 @@
 <template>
     <v-card>
-        <v-tabs v-model="tab"
-                align-tabs="center"
-        >
+        <v-tabs v-model="tab" align-tabs="center">
             <v-tab value="main">{{ $t('mainPage.login') }}</v-tab>
             <v-tab value="signUp">Sign Up</v-tab>
         </v-tabs>
@@ -13,22 +11,13 @@
                     <span>
                         ※ Please ensure 3rd party cookies are enabled if login fails.
                     </span>
-                    <v-text-field
-                            v-model="userInfo.email"
-                            :rules="[rules.emailRequired, rules.emailMatch]"
-                            label="Email"
-                            class="my-3"
-                    ></v-text-field>
+                    <v-text-field v-model="userInfo.email" :rules="[rules.emailRequired, rules.emailMatch]"
+                        label="Email" class="my-3"></v-text-field>
 
-                    <v-text-field
-                            v-model="userInfo.password"
-                            label="Password"
-                            :append-icon="passwordShow ? 'mdi-eye' : 'mdi-eye-off'"
-                            :rules="[rules.required]"
-                            :type="passwordShow ? 'text' : 'password'"
-                            @click:append="passwordShow = !passwordShow"
-                            @keydown.enter="signInAcebase()"
-                    ></v-text-field>
+                    <v-text-field v-model="userInfo.password" label="Password"
+                        :append-icon="passwordShow ? 'mdi-eye' : 'mdi-eye-off'" :rules="[rules.required]"
+                        :type="passwordShow ? 'text' : 'password'" @click:append="passwordShow = !passwordShow"
+                        @keydown.enter="signInAcebase()"></v-text-field>
 
                     <div v-if="loginText.length > 0" class="mt-3">
                         {{ loginText }}
@@ -44,34 +33,21 @@
 
             <v-window-item value="signUp">
                 <v-card-text>
-                    <v-text-field
-                            v-model="userInfo.username"
-                            label="NAME"
-                            class="mb-3"
-                    ></v-text-field>
+                    <v-text-field v-model="userInfo.username" label="NAME" class="mb-3"></v-text-field>
 
-                    <v-text-field
-                            v-model="userInfo.email"
-                            :rules="[rules.emailRequired, rules.emailMatch]"
-                            label="Email"
-                            class="mb-3"
-                    ></v-text-field>
+                    <v-text-field v-model="userInfo.email" :rules="[rules.emailRequired, rules.emailMatch]"
+                        label="Email" class="mb-3"></v-text-field>
 
-                    <v-text-field
-                            v-model="userInfo.password"
-                            label="PASSWORD"
-                            :append-icon="passwordShow ? 'mdi-eye' : 'mdi-eye-off'"
-                            :rules="[rules.required]"
-                            :type="passwordShow ? 'text' : 'password'"
-                            @click:append="passwordShow = !passwordShow"
-                            @keydown.enter="signUpAcebase()"
-                    ></v-text-field>
+                    <v-text-field v-model="userInfo.password" label="PASSWORD"
+                        :append-icon="passwordShow ? 'mdi-eye' : 'mdi-eye-off'" :rules="[rules.required]"
+                        :type="passwordShow ? 'text' : 'password'" @click:append="passwordShow = !passwordShow"
+                        @keydown.enter="signUpAcebase()"></v-text-field>
 
                     <div v-if="loginText.length > 0" class="mt-3">
                         {{ loginText }}
                     </div>
                 </v-card-text>
-                
+
                 <v-card-actions>
                     <v-btn @click="signUpAcebase()" block>
                         Sign Up
@@ -124,7 +100,7 @@ export default {
             try {
                 if (this.userInfo.email && this.userInfo.password) {
                     var result = await this.storage.signIn('db://login', this.userInfo);
-                    if(result){
+                    if (result) {
                         window.localStorage.setItem("author", result.user.email);
                         window.localStorage.setItem("userName", result.user.username);
                         window.localStorage.setItem("email", result.user.email);
@@ -195,7 +171,7 @@ export default {
             };
 
             this.storage.putObject(`db://users/${userId}`, obj);
-            
+
             //새로운 로그인 유저
             if (email) {
                 var convertEmail = email.replace(/\./gi, '_');
@@ -207,4 +183,3 @@ export default {
 
 }
 </script>
-

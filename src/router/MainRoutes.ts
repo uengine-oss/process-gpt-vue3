@@ -144,11 +144,6 @@ const MainRoutes = {
             component: () => import('@/views/apps/kanban/Kanban.vue')
         },
         {
-            name: 'Pricing',
-            path: '/pages/pricing',
-            component: () => import('@/views/pages/pricing/Pricing.vue')
-        },
-        {
             name: 'Account Setting',
             path: '/pages/account-settings',
             component: () => import('@/views/pages/account-settings/AccountSettings.vue')

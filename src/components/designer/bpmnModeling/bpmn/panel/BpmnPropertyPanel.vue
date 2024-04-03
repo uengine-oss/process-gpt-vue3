@@ -2,26 +2,20 @@
     <div style="margin-top: 10px; overflow: auto;">
         <v-row class="pa-0 ma-0 mr-7">
             <v-spacer></v-spacer>
-            <Icon icon="ic:baseline-save" width="24" height="24"
-                @click="onClickOutside" v-if="!isViewMode"
-                class="cursor-pointer"
-                style="margin-right:10px;"
-            />
-            <Icon icon="mdi:close" width="24" height="24"
-                @click="$emit('close')"
-                class="cursor-pointer"
-            />
+            <Icon icon="ic:baseline-save" width="24" height="24" @click="onClickOutside" v-if="!isViewMode"
+                class="cursor-pointer" style="margin-right:10px;" />
+            <Icon icon="mdi:close" width="24" height="24" @click="$emit('close')" class="cursor-pointer" />
         </v-row>
         <v-card-text>
             <div style="float: right">Role: {{ uengineProperties.role.name }}</div>
             <div>{{ $t('BpnmPropertyPanel.name') }}</div>
             <v-text-field v-model="name" :disabled="isViewMode"></v-text-field>
 
-            <div>
+            <!-- <div>
                 <div>{{ $t('BpnmPropertyPanel.description') }}</div>
                 <v-textarea v-if="!elementCopy.$type.includes('Event')" :disabled="isViewMode"
                     v-model="uengineProperties.description"></v-textarea>
-            </div>
+            </div> -->
             <component :is="panelName" :isViewMode="isViewMode" :uengine-properties="uengineProperties"></component>
         </v-card-text>
     </div>
@@ -49,10 +43,14 @@ export default {
     },
     data() {
         return {
+            // requiredKeyLists: {
+            //     "description": "",
+            //     "role": { "name": "" },
+            //     "parameters": []
+            // },
             requiredKeyLists: {
-                "description": "",
                 "role": { "name": "" },
-                "extendedProperties": []
+                "parameters": []
             },
             definitions: [],
             elementCopy: this.element,
@@ -120,10 +118,10 @@ export default {
                 obj[key] = defaultValue;
             }
         },
-        deleteExtendedProperty(item) {
-            const index = this.uengineProperties.extendedProperties.findIndex(element => element.key === item.key);
+        deleteParameters(item) {
+            const index = this.uengineProperties.parameters.findIndex(element => element.key === item.key);
             if (index > -1) {
-                this.uengineProperties.extendedProperties.splice(index, 1);
+                this.uengineProperties.parameters.splice(index, 1);
             }
         },
         deleteCheckPoint(item) {
@@ -133,14 +131,7 @@ export default {
             }
         },
         addParameter() {
-            this.uengineProperties.extendedProperties.push({ key: this.paramKey, value: this.paramValue })
-            // const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
-            // // this.checkpoints.push(this.checkpointMessage)
-            // const parameter = bpmnFactory.create('uengine:ExtendedProperty', { key: this.paramKey, value: this.paramValue });
-            // if (!this.elementCopy.extensionElements.values[0].ExtendedProperties) this.elementCopy.extensionElements.values[0].ExtendedProperties = []
-            // this.elementCopy.extensionElements.values[0].ExtendedProperties.push(parameter)
-            // this.paramKey = ""
-            // this.paramValue = ""
+            this.uengineProperties.parameters.push({ key: this.paramKey, value: this.paramValue })
         },
         async getData(path, options) {
             // let value;
@@ -154,7 +145,7 @@ export default {
         addCheckpoint() {
             this.uengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint })
         },
-        onClickOutside() {
+        save() {
             const modeling = this.bpmnModeler.get('modeling');
             const elementRegistry = this.bpmnModeler.get('elementRegistry');
             const task = elementRegistry.get(this.element.id);
