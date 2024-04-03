@@ -78,7 +78,6 @@
             ></attribute-component>
         </svg>
 
-        
         <v-treeview :config="config" :nodes="nodes" class="right-treeview" :key="renderKey">
             <template #after-input="item">
                 <v-btn class="after" small @click.stop="onButtonClickRight(item, 'Target')">▶</v-btn>
@@ -125,47 +124,54 @@ export default {
             component_y: 0,
             nodes: {
                 id1: {
-                text: "text1",
-                children: ["id11", "id12"],
+                    text: 'text1',
+                    children: ['id11', 'id12']
                 },
                 id11: {
-                text: "text11",
+                    text: 'text11'
                 },
                 id12: {
-                text: "text12",
+                    text: 'text12',
+                    children: ['id123']
                 },
                 id2: {
-                text: "text2",
+                    text: 'text2'
                 },
+                id123: {
+                    text: 'text123'
+                }
             },
             config: {
-                roots: ["id1", "id2"],
-            },
+                roots: ['id1', 'id2']
+            }
         };
     },
     async created() {
-        var me = this
+        var me = this;
 
-        me.storage = StorageBaseFactory.getStorage("supabase")
-        let formDefs = await me.storage.list('form_def')
+        me.storage = StorageBaseFactory.getStorage('supabase');
+        let formDefs = await me.storage.list('form_def');
 
-        me.nodes = {}
+        me.nodes = {};
         me.config = {
             roots: []
-        }
+        };
 
-        formDefs.forEach(async form => {
-            me.config.roots.push(form.id)
+        formDefs.forEach(async (form) => {
+            me.config.roots.push(form.id);
             me.nodes[form.id] = {
                 text: form.name,
                 children: []
-            }
+            };
 
-            form.fields.forEach(field => {
-                me.nodes[form.id].children.push(field.name+'_'+field.alias)
-            })
-        })
-        
+            form.fields.forEach((field) => {
+                me.nodes[form.id].children.push(field.name + '_' + field.alias);
+                me.nodes[field.name + '_' + field.alias] = {
+                    text: field.name
+                };
+            });
+        });
+
         me.renderKey++;
     },
     methods: {
@@ -305,7 +311,7 @@ export default {
     justify-content: space-between;
 }
 
-.right-treeview .node-wrapper{
+.right-treeview .node-wrapper {
     transform: scaleX(-1);
 }
 
