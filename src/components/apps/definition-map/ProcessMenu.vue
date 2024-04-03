@@ -2,7 +2,7 @@
     <div v-if="enableEdit">
         <div class="d-flex">
             <!--openFormMapperDialog의 v-if는 보여줬을때 모양이 이상하기 때문에 일단 숨김처리함-->
-            <v-btn v-if="false" icon variant="text" :width="size" :height="size" @click="openFormMapperDialog()">
+            <v-btn v-if="true" icon variant="text" :width="size" :height="size" @click="formMapperDialog=!formMapperDialog">
                 <PlusIcon :size="size" />
             </v-btn>
             <v-btn icon variant="text" :width="size" :height="size">

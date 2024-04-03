@@ -79,7 +79,7 @@
         </svg>
 
         
-        <v-treeview :config="config" :nodes="nodes" class="right-treeview">
+        <v-treeview :config="config" :nodes="nodes" class="right-treeview" :key="renderKey">
             <template #after-input="item">
                 <v-btn class="after" small @click.stop="onButtonClickRight(item, 'Target')">▶</v-btn>
             </template>
@@ -100,6 +100,9 @@ import ConnectorComponent from './ConnectorComponent.vue';
 import AttributeComponent from './AttributeComponent.vue';
 import FormMapper from './scripts/formMapper';
 import VTreeview from 'vue3-treeview';
+
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
+
 export default {
     mixins: [FormMapper],
     components: {
@@ -111,6 +114,8 @@ export default {
     },
     data() {
         return {
+            storage: null,
+            renderKey: 0,
             jsonDialog: false,
             jsonString: '',
             menu: false,
@@ -137,6 +142,31 @@ export default {
                 roots: ["id1", "id2"],
             },
         };
+    },
+    async created() {
+        var me = this
+
+        me.storage = StorageBaseFactory.getStorage("supabase")
+        let formDefs = await me.storage.list('form_def')
+
+        me.nodes = {}
+        me.config = {
+            roots: []
+        }
+
+        formDefs.forEach(async form => {
+            me.config.roots.push(form.id)
+            me.nodes[form.id] = {
+                text: form.name,
+                children: []
+            }
+
+            form.fields.forEach(field => {
+                me.nodes[form.id].children.push(field.name+'_'+field.alias)
+            })
+        })
+        
+        me.renderKey++;
     },
     methods: {
         openFunctionMenu(event) {

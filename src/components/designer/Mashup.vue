@@ -150,7 +150,8 @@ export default {
       });
 
 
-      var path = `form_def/${putObj.name+"_"+putObj.alias}`;
+      // var path = `form_def/${putObj.name+"_"+putObj.alias}`;
+      var path = 'form_def';
       await me.putObject(path, putObj);
     },
     editFormDefinition(newValue) {
