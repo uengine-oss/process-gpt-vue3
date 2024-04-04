@@ -144,8 +144,11 @@
         contentAreasWrapper: '<div class="keditor-ui keditor-content-areas-wrapper"></div>',
         containerSettingEnabled: false,
         containerSettingInitFunction: null,
+        componentSettingInitFunction: null,
         containerSettingShowFunction: null,
         containerSettingHideFunction: null,
+        componentSettingShowFunction: null,
+        componentSettingHideFunction: null,
         onReady: function () {
             console.log("onReady");
         },
@@ -191,6 +194,7 @@
         onComponentDeleted: function (event, selectedComponent) {
         },
         onComponentChanged: function (event, changedComponent) {
+            console.log(changedComponent)
         },
         onComponentDuplicated: function (event, originalComponent, newComponent) {
         },
@@ -884,6 +888,11 @@
                     }
                     settingForm.addClass('active');
                 }
+
+                if (typeof options.componentSettingShowFunction === 'function') {
+                    var settingForm = body.find('#keditor-component-setting');
+                    options.componentSettingShowFunction.call(self, settingForm, target, self);
+                }
             } else {
                 self.setSettingContainer(target);
                 self.setSettingComponent(null);
@@ -899,7 +908,7 @@
                 }
                 settingForm.addClass('active');
             }
-            
+
             self.toggleSidebar(true);
             body.addClass('opened-keditor-setting');
         },
@@ -935,6 +944,10 @@
                 }
                 
                 activeForm.removeClass('active');
+            }
+
+            if (typeof options.componentSettingHideFunction === 'function') {
+                options.componentSettingHideFunction.call(self, activeForm, self);
             }
             
             body.removeClass('opened-keditor-setting');
@@ -1308,9 +1321,10 @@
                 var componentData = KEditor.components[componentType];
                 var isSettingEnabled = componentData.settingEnabled;
                 var settingBtn = '';
-                if (isSettingEnabled) {
-                    settingBtn = '<a href="javascript:void(0);" class="keditor-ui btn-component-setting">' + options.btnSettingComponentText + '</a>';
-                }
+                // if (isSettingEnabled) {
+                //     settingBtn = '<a href="javascript:void(0);" class="keditor-ui btn-component-setting">' + options.btnSettingComponentText + '</a>';
+                // }
+                settingBtn = '<a href="javascript:void(0);" class="keditor-ui btn-component-setting">' + options.btnSettingComponentText + '</a>';
                 
                 flog('Render KEditor toolbar for component', component);
                 component.append(

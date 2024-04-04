@@ -145,7 +145,6 @@ import ViewProcessDetails from './ViewProcessDetails.vue'
 import SubProcessDetail from './SubProcessDetail.vue'
 import DefinitionMapList from './DefinitionMapList.vue'
 import domtoimage from 'dom-to-image';
-
 const storageKey = 'configuration'
 
 export default {

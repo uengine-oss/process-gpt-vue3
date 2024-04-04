@@ -19,9 +19,9 @@ describe('채팅', () => {
     cy.get('.cp-start').click();
 
     // Login
-    cy.get('#input-32').clear().type(email);
+    cy.get('#input-27').clear().type(email);
     cy.wait(1000);
-    cy.get('#input-34').clear().type(password);
+    cy.get('#input-29').clear().type(password);
     cy.get('.cp-login').click();
     cy.wait(1000);
 
@@ -32,7 +32,7 @@ describe('채팅', () => {
     // 채팅
     cy.get('.cp-menu').eq(3).click();
     cy.wait(5000);
-    cy.get('.cp-chat').type('4월 10일 휴가일정 등록해줘.');
+    cy.get('.cp-chat').type('휴가 일정을 등록하려고해 4월 10일에 시작해서 4월 13일에 휴가 복귀로 해서 일정 등록해줘.');
     cy.wait(1500);
     cy.get('.cp-send').click();
   })

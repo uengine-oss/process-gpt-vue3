@@ -1,0 +1,88 @@
+import AIGenerator from "@/components/ai/AIGenerator";
+import promptSnippetData from "./FormDesignGeneratorPromptSnipptsData";
+
+// '화면 정의' 메뉴에서 AI를 통한 폼 생성을 위한 생성기 클래스
+export default class FormDesignGenerator extends AIGenerator{
+
+    constructor(client, language){
+        super(client, language);
+        
+
+        // 컨테이너 조합, 컴포넌트 정보, 예시를 프롬프트에 적용하기 위한 문자열을 생성하기 위해서
+        const containerSpaceSetsPromptStr = 
+          promptSnippetData.containerSpaceSets.map((containerSpaceSet) => "{" + containerSpaceSet.join(", ") + "}").join(", ")
+
+        const componentInfosPromptStr = "[" +
+          promptSnippetData.componentInfos.map(
+            (componentInfo) => `{태그: '${componentInfo.tag}', 목적: ${componentInfo.purpose}${(componentInfo.limit) ? `, 주의사항: ${componentInfo.limit}` : ""}}`)
+            .join(",") + "]"
+        
+        const examplePromptStr = (promptSnippetData.examples && (promptSnippetData.examples.length > 0)) ? ("예시를 들어줄께.\n" + 
+          promptSnippetData.examples.map((example) => `- ${example.title}\n${example.description}\n${example.result}`).join("\n")) : ""
+
+        // 이전에 이미 만들어 놓은 HTML 폼 데이터가 있을 경우, 불러오기 위해서
+        const prevFormOutput = (client.prevFormOutput ? (
+          "이전에 만들어진 폼이 있고, 현재 수정하려고 해. 이전에 만들어진 폼은 다음과 같아.\n" + client.prevFormOutput
+        ) : "")
+
+
+        this.previousMessages = [{
+            role: 'system', 
+            content: `
+            너는 프로세스를 진행하기 위한 HTML 폼을 만들어주는 도우미야.
+            단, 너는 주어진 메뉴얼에 있는 태그만을 활용해서 폼을 만들어야 해.
+
+            메뉴얼:
+            - 레이아웃 구성
+            맨 처음에는 각 컴포넌트를 넣기 위한 레이아웃을 만들어줘야 해.
+            레이아웃의 구성 예는 다음과 같아.
+            """
+            <div class='row'>
+                <div class='col-sm-6'>
+                </div>
+                <div class='col-sm-6'>
+                </div>
+            </div>
+            """
+            다음과 같이 "class='row'"가 선언된 div안에 "class='col-sm-{숫자}'"로 지정된 div들을 생성해서 각 칼럼이 차지하는 공간을 각각 만들어주면 돼.
+            모든 "class='col-sm-{숫자}'"의 총합은 12가 되어야 하고, 반드시 아래에 제시되는 숫자 조합 중에 하나를 사용해야 해.
+            > 허용되는 숫자 조합: ${containerSpaceSetsPromptStr}
+
+            - 컴포넌트 추가
+            레이아웃을 만들었다면, 이제 각 컴포넌트를 추가해 줘야 해.
+            컴포넌트에는 다음과 같은 주의 사항이 있어.
+            1. 만약에 태그의 속성이 "<>"로 감싸져 있다면, 너는 그 속성을 "<>"에 적혀있는 지시를 따라서 교체해 줘야 해.
+            2. 만약에 태그의 속성이 "<>"로 감싸져 있지 않다면, 너는 그것이 상수라고 생각하고 그 속성을 그대로 적어줘야 해.
+            3. "<>" 안에 값이 '|'로 나열된 경우, 너는 그 값 중 하나를 선택해서 적어줘야 해.(예 : "<값1>|<값2>|<값3>")
+            3. 모든 컴포넌트는 반드시 'col-sm-{숫자}'로 지정된 div 안에 들어가야 해.
+            4. 여기서 제시한 태그의 속성만을 적어야 하고, 반드시 전부 다 적어줘야 해.
+
+            사용해야 하는 컴포넌트는 다음과 같아.
+            ${componentInfosPromptStr}
+
+            반환 형식은 다음과 같은 Json 형태를 따라주고, 맨 마지막에 결과를 적어주면 돼.
+            마지막 결과는 markdown 으로, three backticks 로 감싸줘야 내가 이 결과를 사용해야 한다는 걸 알 수 있으니까 명심해.
+            \`\`\`
+            {
+              "htmlOutput": "생성된 폼 HTML 코드"
+            }
+            \`\`\`
+
+            차근차근 생각해 보자.
+            먼저 어떤 입력값이 들어갈지 생각하고, 그에 대한 레이아웃을 만들고, 그 안에 각 입력값에 따라서 적합한 컴포넌트들을 메뉴얼의 주의 사항들을 따르면서 추가하는 순으로 순차적으로 문제를 해결하는 거야.
+            물론 뭔가 더 창의적으로 속성을 변경해야 한다고 생각할 수 있어. 하지만 메뉴얼에 위반하지 않는 선에서 그 작업을 수행해야 해.
+            
+            ${examplePromptStr}
+
+            ${prevFormOutput}
+`
+            }];
+            
+          console.log(this.previousMessages)
+    }
+
+    createPrompt(){
+       return this.client.newMessage
+    }
+
+}

@@ -3,14 +3,14 @@
         <div v-if="inputData.length > 0" style="margin-bottom:20px;">
             <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.inputData') }}</div>
             <v-row class="ma-0 pa-0">
-                <div v-for="(inputData, idx) in inputData" :key="idx" class="mr-2 mt-2">
-                    <v-chip v-if="inputData.mandatory" color="primary" variant="outlined" class="text-body-2"
-                        @click="deleteInputData(inputData)">
-                        {{ inputData.key }}
+                <div v-for="(input, idx) in inputData" :key="idx" class="mr-2 mt-2">
+                    <v-chip v-if="input.mandatory" color="primary" variant="outlined" class="text-body-2"
+                        @click="deleteInputData(input)">
+                        {{ input.argument.text }}
                         <CircleXIcon class="ml-2" start size="20" />
                     </v-chip>
                     <v-chip v-else class="text-body-2" variant="outlined" @click="deleteInputData(inputData)">
-                        {{ inputData.key }}
+                        {{ input.argument.text }}
                         <CircleXIcon class="ml-2" start size="20" />
                     </v-chip>
                 </div>
@@ -33,6 +33,14 @@
             </v-row>
         </div>
         <div>
+            <v-row class="ma-0 pa-0">
+                <div>Parameter Context</div>
+                <v-spacer></v-spacer>
+                <bpmn-parameter-contexts
+                    :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
+            </v-row>
+        </div>
+        <!-- <div>
             <v-row class="ma-0 pa-0">
                 <div>{{ $t('BpnmPropertyPanel.checkPoints') }}</div>
                 <v-spacer></v-spacer>
@@ -60,8 +68,8 @@
                     </div>
                 </v-card>
             </v-row>
-        </div>
-        <div>
+        </div> -->
+        <!-- <div>
             <v-row class="ma-0 pa-0">
                 <div>Extended Property</div>
             </v-row>
@@ -105,7 +113,7 @@
                     </v-card-actions>
                 </v-card>
             </v-row>
-        </div>
+        </div> -->
     </div>
 </template>
 <script>
@@ -113,8 +121,12 @@ import { useBpmnStore } from '@/stores/bpmn';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { Icon } from '@iconify/vue';
 const storage = StorageBaseFactory.getStorage()
+import BpmnParameterContexts from '@/components/designer/bpmnModeling/bpmn/variable/BpmnParameterContexts.vue'
 export default {
     name: 'user-task-panel',
+    components: {
+        BpmnParameterContexts
+    },
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
@@ -124,9 +136,12 @@ export default {
     },
     data() {
         return {
+            // requiredKeyLists: {
+            //     "parameters": [],
+            //     "checkpoints": []
+            // },
             requiredKeyLists: {
                 "parameters": [],
-                "checkpoints": []
             },
             copyUengineProperties: this.uengineProperties,
             name: "",
@@ -160,7 +175,7 @@ export default {
             let result = []
             if (params)
                 params.forEach(element => {
-                    if (element.direction == 'IN')
+                    if (element.direction == 'IN' || element.direction == 'IN-OUT')
                         result.push(element)
                 });
             return result
@@ -170,7 +185,7 @@ export default {
             let result = []
             if (params)
                 params.forEach(element => {
-                    if (element.direction == 'OUT')
+                    if (element.direction == 'OUT' || element.direction == 'IN-OUT')
                         result.push(element)
                 });
             return result

@@ -19,9 +19,9 @@ describe('프로세스 정의', () => {
     cy.get('.cp-start').click();
 
     // Login
-    cy.get('#input-32').clear().type(email);
+    cy.get('#input-27').clear().type(email);
     cy.wait(1000);
-    cy.get('#input-34').clear().type(password);
+    cy.get('#input-29').clear().type(password);
     cy.get('.cp-login').click();
     cy.wait(1000);
 

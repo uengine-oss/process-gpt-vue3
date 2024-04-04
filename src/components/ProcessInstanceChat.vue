@@ -44,9 +44,9 @@
             </v-dialog>
 
             <Chat :messages="messages" :agentInfo="agentInfo" :draftAgentPrompt="draftAgentPrompt" :chatInfo="chatInfo"
-                :userInfo="userInfo" :disableChat="disableChat" :type="'instances'" @requestDraftAgent="requestDraftAgent"
-                @sendMessage="beforeSendMessage" @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
-                @viewProcess="viewProcess">
+                :userInfo="userInfo" :disableChat="disableChat" :type="'instances'"
+                @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
+                @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage" @viewProcess="viewProcess">
             </Chat>
         </template>
 

@@ -4,29 +4,29 @@ import { formatDistanceToNowStrict, differenceInSeconds } from 'date-fns';
 import { last } from 'lodash';
 
 const props = defineProps({
-  chatRoomList: Array,
-  userList: Array,
-  userInfo: Object
+    chatRoomList: Array,
+    userList: Array,
+    userInfo: Object
 });
 
 const emit = defineEmits(['chat-selected', 'create-chat-room']);
 
 const formatTimeOrNow = (createdAt) => {
-  const createdAtDate = new Date(createdAt);
-  const now = new Date();
-  const diffInSeconds = differenceInSeconds(now, createdAtDate);
+    const createdAtDate = new Date(createdAt);
+    const now = new Date();
+    const diffInSeconds = differenceInSeconds(now, createdAtDate);
 
-  if (diffInSeconds < 60) {
-    return 'now';
-  } else {
-    return formatDistanceToNowStrict(createdAtDate, { addSuffix: false });
-  }
+    if (diffInSeconds < 60) {
+        return 'now';
+    } else {
+        return formatDistanceToNowStrict(createdAtDate, { addSuffix: false });
+    }
 };
 
 const refreshKey = ref(Date.now());
 
 const refreshChatList = () => {
-  refreshKey.value = Date.now();
+    refreshKey.value = Date.now();
 };
 
 let intervalId;
@@ -36,7 +36,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  clearInterval(intervalId);
+    clearInterval(intervalId);
 });
 
 const selectChatRoom = (chat) => {
@@ -68,22 +68,22 @@ const editMode = ref(false);
 
 // 이름 입력 필드에 대한 검증 규칙
 const nameRules = [
-  v => !!v || '채팅방 이름을 입력해주세요.',
+    v => !!v || '채팅방 이름을 입력해주세요.',
 ];
 
 // 참여자 선택 필드에 대한 검증 규칙
 const participantsRules = [
-  v => (v && v.length > 0) || '참여자를 하나 이상 선택해주세요.',
+    v => (v && v.length > 0) || '참여자를 하나 이상 선택해주세요.',
 ];
 
 const confirmDialog = () => {
-  if (!inputObj.value.name || !inputObj.value.participants.length) {
-    console.log('Invalid input');
-    return;
-  }
-  emit('create-chat-room', inputObj.value);
-  dialog.value = false;
-  // 여기서 서버에 데이터를 보내거나 추가 처리를 할 수 있습니다.
+    if (!inputObj.value.name || !inputObj.value.participants.length) {
+        console.log('Invalid input');
+        return;
+    }
+    emit('create-chat-room', inputObj.value);
+    dialog.value = false;
+    // 여기서 서버에 데이터를 보내거나 추가 처리를 할 수 있습니다.
 };
 
 const openDialog = () => {
@@ -105,14 +105,8 @@ const openEditDialog = (chat) => {
     <v-sheet>
         <div class="px-6 pt-3">
             <div class="d-flex">
-                <v-text-field
-                    variant="outlined"
-                    v-model="searchValue"
-                    append-inner-icon="mdi-magnify"
-                    placeholder="Search Contact"
-                    hide-details
-                    density="compact"
-                ></v-text-field>
+                <v-text-field variant="outlined" v-model="searchValue" append-inner-icon="mdi-magnify"
+                    placeholder="Search Contact" hide-details density="compact"></v-text-field>
                 <v-btn icon @click="openDialog" style="margin-left: 10px;">
                     <v-icon>mdi-chat-plus</v-icon>
                 </v-btn>
@@ -123,88 +117,64 @@ const openEditDialog = (chat) => {
                         >Recent Chats <ChevronDownIcon size="18" class="ml-2" />
                     </v-btn>
                 </template>
-                <v-list class="elevation-10">
-                    <v-list-item v-for="(item, index) in items" :key="index" :value="index">
-                        <v-list-item-title>{{ item.title }}</v-list-item-title>
-                    </v-list-item>
-                </v-list>
-            </v-menu> -->
+<v-list class="elevation-10">
+    <v-list-item v-for="(item, index) in items" :key="index" :value="index">
+        <v-list-item-title>{{ item.title }}</v-list-item-title>
+    </v-list-item>
+</v-list>
+</v-menu> -->
         </div>
     </v-sheet>
     <v-dialog v-model="dialog" persistent max-width="600px">
-      <v-card>
-        <v-card-title>
-            채팅방 설정
-        </v-card-title>
-        <v-card-text>
-          <v-text-field label="채팅방 이름" v-model="inputObj.name" :rules="nameRules"></v-text-field>
-          <v-autocomplete
-                v-model="inputObj.participants"
-                :items="userList"
-                chips
-                closable-chips
-                color="blue-grey-lighten-2"
-                item-title="username"
-                :item-value="item => item"
-                multiple
-                label="참여자 선택"
-                small-chips
-                :item-avatar="'image'"
-                :rules="participantsRules"
-            >
-              <template v-slot:chip="{ props, item }">
-                <v-chip
-                  v-bind="props"
-                  :prepend-avatar="item.raw.profile"
-                  :text="item.raw.username"
-                ></v-chip>
-              </template>
+        <v-card>
+            <v-card-title>
+                채팅방 설정
+            </v-card-title>
+            <v-card-text>
+                <v-text-field label="채팅방 이름" v-model="inputObj.name" :rules="nameRules"></v-text-field>
+                <v-autocomplete v-model="inputObj.participants" :items="userList" chips closable-chips
+                    color="blue-grey-lighten-2" item-title="username" :item-value="item => item" multiple label="참여자 선택"
+                    small-chips :item-avatar="'image'" :rules="participantsRules">
+                    <template v-slot:chip="{ props, item }">
+                        <v-chip v-bind="props" :prepend-avatar="item.raw.profile" :text="item.raw.username"></v-chip>
+                    </template>
 
-              <template v-slot:item="{ props, item }">
-                <v-list-item
-                  v-bind="props"
-                  :prepend-avatar="item.raw.profile"
-                  :title="item.raw.username"
-                  :subtitle="item.raw.email"
-                ></v-list-item>
-              </template>
-            </v-autocomplete>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="blue darken-1" text @click="dialog = false">취소</v-btn>
-          <v-btn color="blue darken-1" text @click="confirmDialog">{{ editMode ? '수정' : '생성' }}</v-btn>
-        </v-card-actions>
-      </v-card>
+                    <template v-slot:item="{ props, item }">
+                        <v-list-item v-bind="props" :prepend-avatar="item.raw.profile" :title="item.raw.username"
+                            :subtitle="item.raw.email"></v-list-item>
+                    </template>
+                </v-autocomplete>
+            </v-card-text>
+            <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn color="blue darken-1" text @click="dialog = false">취소</v-btn>
+                <v-btn color="blue darken-1" text @click="confirmDialog">{{ editMode ? '수정' : '생성' }}</v-btn>
+            </v-card-actions>
+        </v-card>
     </v-dialog>
     <perfect-scrollbar class="lgScroll">
         <v-list>
             <!---Single Item-->
-            <v-list-item
-                :value="chat.id"
-                color="secondary"
-                class="text-no-wrap chatItem"
-                v-for="chat in filteredChats"
-                :key="chat.id"
-                lines="two"
-                @click="selectChatRoom(chat)"
-            >
+            <v-list-item :value="chat.id" color="secondary" class="text-no-wrap chatItem" v-for="chat in filteredChats"
+                :key="chat.id" lines="two" @click="selectChatRoom(chat)">
                 <!---Avatar-->
                 <template v-slot:prepend>
-                    <v-avatar color="#f0f5f9" size="large" style="width: 50px; height: 50px; display: flex; flex-wrap: wrap;">
+                    <v-avatar color="#f0f5f9" size="large"
+                        style="width: 50px; height: 50px; display: flex; flex-wrap: wrap;">
                         <template v-if="chat.participants.length">
-                            <template v-if="chat.participants.filter(participant => participant.email !== userInfo.email).length === 1">
+                            <template
+                                v-if="chat.participants.filter(participant => participant.email !== userInfo.email).length === 1">
                                 <!-- 참가자가 나 이외 한 명만 있는 경우 -->
-                                <img 
-                                    :src="getProfile(chat.participants.find(participant => participant.email !== userInfo.email).email)" 
-                                    :alt="chat.participants.find(participant => participant.email !== userInfo.email).username" 
-                                    style="width: 100%; height: 100%; object-fit: cover;" 
-                                />
+                                <img :src="getProfile(chat.participants.find(participant => participant.email !== userInfo.email).email)"
+                                    :alt="chat.participants.find(participant => participant.email !== userInfo.email).username"
+                                    style="width: 100%; height: 100%; object-fit: cover;" />
                             </template>
                             <template v-else>
                                 <!-- 참가자가 여러 명이며 본인을 제외한 경우 -->
-                                <div v-for="(participant, index) in chat.participants.filter(participant => participant.email !== userInfo.email).slice(0, 4)" :key="participant.id" style="width: 50%; height: 50%; position: relative;">
-                                    <img :src="getProfile(participant.email)" :alt="participant.username" style="width: 100%; height: 100%; object-fit: cover;" />
+                                <div v-for="(participant, index) in chat.participants.filter(participant => participant.email !== userInfo.email).slice(0, 4)"
+                                    :key="participant.id" style="width: 50%; height: 50%; position: relative;">
+                                    <img :src="getProfile(participant.email)" :alt="participant.username"
+                                        style="width: 100%; height: 100%; object-fit: cover;" />
                                 </div>
                             </template>
                         </template>
@@ -214,15 +184,14 @@ const openEditDialog = (chat) => {
                     </v-avatar>
                 </template>
                 <!---Name-->
-                <v-list-item-title class="text-subtitle-1 textPrimary w-100 font-weight-semibold">{{ chat.name }}</v-list-item-title>
+                <v-list-item-title class="text-subtitle-1 textPrimary w-100 font-weight-semibold">{{ chat.name
+                    }}</v-list-item-title>
                 <!---Subtitle-->
                 <v-sheet v-if="chat.message.type == 'img'">
                     <small class="textPrimary text-subtitle-2">Sent a Photo</small>
                 </v-sheet>
-                <div v-else 
-                    class="text-subtitle-2 textPrimary mt-1 text-truncate w-100"
-                    :class="{'font-weight-bold': chat.participants.find(participant => participant.email == userInfo.email).isExistUnReadMessage }"
-                >
+                <div v-else class="text-subtitle-2 textPrimary mt-1 text-truncate w-100"
+                    :class="{ 'font-weight-bold': chat.participants.find(participant => participant.email == userInfo.email).isExistUnReadMessage }">
                     {{ chat.message.msg }}
                 </div>
                 <!---Last seen--->
@@ -232,11 +201,7 @@ const openEditDialog = (chat) => {
                             {{ formatTimeOrNow(chat.message.createdAt) }}
                             <v-badge
                                 v-if="chat.participants.find(participant => participant.email == userInfo.email).isExistUnReadMessage"
-                                style="position: relative; top: 1.5px;"
-                                dot
-                                inline
-                                color="info"
-                            >
+                                style="position: relative; top: 1.5px;" dot inline color="info">
                             </v-badge>
                             <v-btn style="margin-left: 5px; margin-right: -5px;" icon @click="openEditDialog(chat)">
                                 <v-icon>mdi-dots-vertical</v-icon>
@@ -253,11 +218,12 @@ const openEditDialog = (chat) => {
     padding: 16px 24px !important;
     border-bottom: 1px solid rgb(var(--v-theme-inputBorder), 0.1);
 }
+
 .font-weight-bold {
     font-weight: bold;
 }
+
 .lgScroll {
     height: calc(100vh - 365px);
 }
 </style>
-

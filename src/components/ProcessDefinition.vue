@@ -28,8 +28,8 @@
                         v-on:openDefinition="ele => openSubProcess(ele)" v-on:loading="handleLoading"
                         v-on:openPanel="(id) => openPanel(id)" v-on:update-xml="val => $emit('update-xml', val)"
                         v-on:definition="(def) => (definitions = def)" v-on:add-shape="onAddShape"
-                        v-on:change-sequence="onChangeSequence" v-on:remove-shape="onRemoveShape"
-                        v-on:change-shape="onChangeShape"></component>
+                        v-on:done="setDefinition" v-on:change-sequence="onChangeSequence"
+                        v-on:remove-shape="onRemoveShape" v-on:change-shape="onChangeShape"></component>
                     <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
                         :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
                         v-on:openDefinition="ele => openSubProcess(ele)" v-on:loading="handleLoading"
@@ -107,14 +107,14 @@
                         </tbody>
                     </VDataTable>
                     <v-row class="ma-0" style="margin:10px 0px 10px 0px !important;">
-                        <v-card @click="addProcessVaribles" elevation="9" variant="outlined"
+                        <v-card @click="addProcessVariables" elevation="9" variant="outlined"
                             style="padding: 10px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;">
                             <div style="display: flex; justify-content: center; align-items: center;">
                                 <Icon icon="streamline:add-1-solid" width="24" height="24" style="color: #5EB2E8" />
                             </div>
                         </v-card>
                     </v-row>
-                    <div v-if="processVariblesWindow">
+                    <div v-if="processVariablesWindow">
                         <v-card variant="outlined">
                             <v-card-text class="ma-0 pa-0">
                                 <process-variable mode="add"
@@ -185,7 +185,7 @@ export default {
         definitions: null,
         isViewProcessVariables: false,
         copyProcessDefinition: null,
-        processVariblesWindow: false,
+        processVariablesWindow: false,
         editDialog: false,
         editedIndex: null,
         editedItem: null,
@@ -260,61 +260,81 @@ export default {
             }
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
-
-        if (this.definitions) {
-            this.definitions.rootElements.forEach(root => {
-                if (root.$type.includes("Process")) {
-                    if (root.extensionElements.values[0].variables) {
-                        root.extensionElements.values[0].variables.forEach((variable) => {
-                            let obj = {
-                                "name": variable.$attrs.name,
-                                "type": variable.$attrs.type,
-                            }
-                            this.processVariables.push(obj)
-                        })
-                    }
-                }
-            })
-        }
-
-        this.processVariables = this.copyProcessDefinition.data
+        // const def = this.bpmnModeler.getDefinitions();
+        // console.log(this.definitions)
+        // LLM과 uEngine 각각 처리 필요.
+        // this.processVariables = this.copyProcessDefinition.data
     },
     methods: {
-        addUengineVariable(val) {
-            // definitions 객체에서 bpmn2:process 요소를 찾습니다.
-            // const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
-            // const processElement = this.definitions.rootElements.find(element => element.$type === 'bpmn:Process');
-            // if (!processElement) {
-            //     console.error('bpmn:Process element not found');
-            //     return;
-            // }
+        setDefinition() {
+            let self = this
+            const def = this.bpmnModeler.getDefinitions();
+            const processElement = def.rootElements.find(element => element.$type === 'bpmn:Process');
+            if (!processElement) {
+                console.error('bpmn:Process element not found');
+                return;
+            }
 
             // // bpmn2:process 요소 내의 bpmn2:extensionElements 요소를 찾거나 새로 생성합니다.
-            // let extensionElements = processElement.extensionElements;
-            // if (!extensionElements) {
-            //     extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
-            //     processElement.extensionElements = extensionElements;
-            // }
+            let extensionElements = processElement.extensionElements;
+            if (!extensionElements) {
+                extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
+                processElement.extensionElements = extensionElements;
+            }
 
             // // uengine:properties 요소를 찾거나 새로 생성합니다.
-            // let uengineProperties
-            // if(extensionElements.values){
-            //     uengineProperties = extensionElements.values.find(val => val.$type === 'uengine:Properties');
-            // }
+            let uengineProperties
+            if (extensionElements.values) {
+                uengineProperties = extensionElements.values.find(val => val.$type === 'uengine:Properties');
+            }
 
-            // if (!uengineProperties) {
-            //     uengineProperties = bpmnFactory.create('uengine:Properties');
-            //     extensionElements.get('values').push(uengineProperties);
-            // }
+            if (!uengineProperties) {
+                uengineProperties = bpmnFactory.create('uengine:Properties');
+                extensionElements.get('values').push(uengineProperties);
+            }
 
-            // // 새로운 uengine:variable 요소를 생성하고 속성을 설정합니다.
-            // const newVariable = bpmnFactory.create('uengine:Variable', {
-            //     name: val.name,
-            //     type: val.type
-            // });
+            uengineProperties?.variables?.forEach(function (variable) {
+                self.processVariables.push({
+                    name: variable.$attrs.name,
+                    type: variable.$attrs.type
+                })
+            })
+        },
+        addUengineVariable(val) {
+            // definitions 객체에서 bpmn2:process 요소를 찾습니다.
+            const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
+            const processElement = this.definitions.rootElements.find(element => element.$type === 'bpmn:Process');
+            if (!processElement) {
+                console.error('bpmn:Process element not found');
+                return;
+            }
+
+            // // bpmn2:process 요소 내의 bpmn2:extensionElements 요소를 찾거나 새로 생성합니다.
+            let extensionElements = processElement.extensionElements;
+            if (!extensionElements) {
+                extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
+                processElement.extensionElements = extensionElements;
+            }
+
+            // // uengine:properties 요소를 찾거나 새로 생성합니다.
+            let uengineProperties
+            if (extensionElements.values) {
+                uengineProperties = extensionElements.values.find(val => val.$type === 'uengine:Properties');
+            }
+
+            if (!uengineProperties) {
+                uengineProperties = bpmnFactory.create('uengine:Properties');
+                extensionElements.get('values').push(uengineProperties);
+            }
+
+            // 새로운 uengine:variable 요소를 생성하고 속성을 설정합니다.
+            const newVariable = bpmnFactory.create('uengine:Variable', {
+                name: val.name,
+                type: val.type
+            });
 
             // 생성된 uengine:variable 요소를 uengine:properties 요소에 추가합니다.
-            // uengineProperties.get('variables').push(newVariable);
+            uengineProperties.get('variables').push(newVariable);
             this.processVariables.push(val)
             // console.log(this.processVariables)
         },
@@ -404,8 +424,8 @@ export default {
             this.editedIndex = this.copyProcessDefinition.data.indexOf(item);
             this.editedItem = Object.assign({}, item);
 
-            if (this.processVariblesWindow == true) {
-                this.processVariblesWindow = false;
+            if (this.processVariablesWindow == true) {
+                this.processVariablesWindow = false;
             }
             this.editComponentKey ^= 1; // ProcessVariable 컴포넌트 새로고침용 변수
 
@@ -449,11 +469,11 @@ export default {
         openProcessVariables() {
             this.isViewProcessVariables = !this.isViewProcessVariables
         },
-        addProcessVaribles() {
+        addProcessVariables() {
             if (this.editDialog == true) {
                 this.editDialog = false
             }
-            this.processVariblesWindow = !this.processVariblesWindow
+            this.processVariablesWindow = !this.processVariablesWindow
         },
         updateElement(element) {
             this.$emit('update')
