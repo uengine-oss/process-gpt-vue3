@@ -48,7 +48,8 @@
             :processType="processType"
             :type="type"
             @add="addProcess"
-            @edit="editProcess"
+            @edit="updateProcess"
+            @closeProcessDialog="closeProcessDialog"
         />
     </div>
 </template>
@@ -127,7 +128,10 @@ export default {
         updateProcess(newProcess) {
             this.$emit("edit", newProcess);
             this.processDialogStatus = false;
-        }
+        },
+        closeProcessDialog() {
+            this.processDialogStatus = false;
+        },
     },
 }
 </script>

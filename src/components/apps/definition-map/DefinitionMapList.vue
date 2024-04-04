@@ -26,9 +26,9 @@
                 <!-- 실제 카드가 들어가야 할 위치 -->
                 <v-col class="cursor-pointer"
                     cols="12" md="2" sm="3"
-                    @click="addMegaProcess('add')"
                 >
-                    <v-card class="add-process-card-hover"
+                    <v-card @click="addMegaProcess('add')"
+                        class="add-process-card-hover"
                         elevation="9" variant="outlined"
                         style="padding: 10px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;"
                     >
@@ -63,7 +63,6 @@
             :processType="processType"
             :type="'map'"
             @add="addProcess"
-            @edit="updateProcess"
             @closeProcessDialog="closeProcessDialog"
         />
     </div>

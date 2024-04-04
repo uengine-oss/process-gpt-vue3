@@ -27,6 +27,19 @@ h1, h2, h3, h4, h5, h6 {
     height:60px !important;
 } */
 
+/* bpm .bpmn-icon-screw-wrench 아이콘 나타나지 않아 넣어둔 부분 */
+.bpmn-icon-screw-wrench {
+    background: url(../images/bpmn/icon/support.png) !important;
+    background-size: 20px 20px !important; /* 이미지를 요소 안에 맞춤, 이미지가 잘릴 수 있음 */
+    background-repeat: no-repeat !important; /* 이미지 반복 없음 */
+    background-position: center !important;
+}
+
+.bpmn-icon-screw-wrench:hover {
+    background-color:rgba(0, 0, 0, 0.05) !important;
+}
+/* bpm .bpmn-icon-screw-wrench 아이콘 나타나지 않아 넣어둔 부분 */
+
 .vue-bpmn-diagram-container .djs-palette {
     width: 605px !important;
     height: 50px;
