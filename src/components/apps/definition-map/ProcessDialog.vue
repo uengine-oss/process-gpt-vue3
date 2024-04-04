@@ -118,27 +118,27 @@ export default {
     },
     watch: {
         isNewDef(val) {
-            if (val) {
-                this.newProcess = {
-                    id: "",
-                    label: "",
-                };
-            } else {
-                this.newProcess = {
-                    id: "",
-                    label: "",
-                    name: ""
-                };
-            }
+            // if (val) {
+            //     this.newProcess = {
+            //         id: "",
+            //         label: "",
+            //     };
+            // } else {
+            //     this.newProcess = {
+            //         id: "",
+            //         label: "",
+            //         name: ""
+            //     };
+            // }
         },
         processDialogStatus(val) {
             if(!val) return
             if (this.processType == 'add') {
-                this.newProcess = {
-                    id: "",
-                    label: "",
-                    name: ""
-                };
+                // this.newProcess = {
+                //     id: "",
+                //     label: "",
+                //     name: ""
+                // };
                 this.addDialog = true
             } else if(this.processType == 'update') {
                 this.newProcess.id = this.process.id;
@@ -151,10 +151,10 @@ export default {
     },
     methods: {
         closeDialog(type) {
-            this.newProcess = {
-                id: "",
-                label: ""
-            };
+            // this.newProcess = {
+            //     id: "",
+            //     label: ""
+            // };
             this.isNewDef = false;
             if (type == 'add') {
                 this.addDialog = false;
