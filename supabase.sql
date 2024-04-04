@@ -4,8 +4,7 @@ create table configuration (
   key text primary key,
   value jsonb
 );
-insert into configuration (key, value)
-values ('proc_map', null)
+insert into configuration (key, value) values ('proc_map', null);
 
 -- table todolist
 drop table todolist;
@@ -29,7 +28,7 @@ create table public.users (
     profile text null,
     email text null,
     is_admin boolean not null default false,
-    notifications jsonb null,
+    notifications jsonb null
 );
 -- inserts a row into public.users
 create or replace function public.handle_new_user() 

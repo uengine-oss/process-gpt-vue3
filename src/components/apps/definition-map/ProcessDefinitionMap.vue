@@ -75,28 +75,30 @@
             </div>
             
             <!-- route path 별 컴포넌트 호출 -->
-            <div v-if="componentName == 'ViewProcessDetails'">
-                <ViewProcessDetails
-                    class="pa-5"
-                    :parent="value"
-                    :storage="storage"
-                    :enableEdit="enableEdit"
-                />
-            </div>
-            <div v-else-if="componentName == 'SubProcessDetail'">
-                <SubProcessDetail
-                    :value="value"
-                    :storage="storage"
-                    @capture="capturePng"
-                />
-            </div>
-            <div v-else>
-                <DefinitionMapList
-                    :value="value"
-                    :storage="storage"
-                    :enableEdit="enableEdit"
-                    :userInfo="userInfo"
-                />
+            <div id="processMap">
+                <div v-if="componentName == 'ViewProcessDetails'">
+                    <ViewProcessDetails
+                        class="pa-5"
+                        :parent="value"
+                        :storage="storage"
+                        :enableEdit="enableEdit"
+                    />
+                </div>
+                <div v-else-if="componentName == 'SubProcessDetail'">
+                    <SubProcessDetail
+                        :value="value"
+                        :storage="storage"
+                        @capture="capturePng"
+                    />
+                </div>
+                <div v-else>
+                    <DefinitionMapList
+                        :value="value"
+                        :storage="storage"
+                        :enableEdit="enableEdit"
+                        :userInfo="userInfo"
+                    />
+                </div>
             </div>
         </v-card>
         <v-dialog v-model="alertDialog" max-width="500" persistent>
