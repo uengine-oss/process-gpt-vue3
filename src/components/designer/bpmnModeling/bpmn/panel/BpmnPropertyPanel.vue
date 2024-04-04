@@ -2,7 +2,7 @@
     <div style="margin-top: 10px; overflow: auto;">
         <v-row class="pa-0 ma-0 mr-7">
             <v-spacer></v-spacer>
-            <Icon icon="ic:baseline-save" width="24" height="24" @click="onClickOutside" v-if="!isViewMode"
+            <Icon icon="ic:baseline-save" width="24" height="24" @click="save" v-if="!isViewMode"
                 class="cursor-pointer" style="margin-right:10px;" />
             <Icon icon="mdi:close" width="24" height="24" @click="$emit('close')" class="cursor-pointer" />
         </v-row>
@@ -16,7 +16,13 @@
                 <v-textarea v-if="!elementCopy.$type.includes('Event')" :disabled="isViewMode"
                     v-model="uengineProperties.description"></v-textarea>
             </div> -->
-            <component :is="panelName" :isViewMode="isViewMode" :uengine-properties="uengineProperties"></component>
+            <component :is="panelName" 
+                :isViewMode="isViewMode" 
+                :uengine-properties="uengineProperties" 
+                :name="name"
+                ref="panelComponent"
+                @update:name="val => name = val"
+            ></component>
         </v-card-text>
     </div>
 </template>
@@ -146,6 +152,9 @@ export default {
             this.uengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint })
         },
         save() {
+            if (this.$refs.panelComponent && this.$refs.panelComponent.beforeSave) {
+                this.$refs.panelComponent.beforeSave();
+            }
             const modeling = this.bpmnModeler.get('modeling');
             const elementRegistry = this.bpmnModeler.get('elementRegistry');
             const task = elementRegistry.get(this.element.id);
