@@ -1,3 +1,5 @@
+import axios from '@/utils/axios';
+
 // import StorageBase from "./StorageBase";
 class StorageBaseError extends Error{
     constructor(message, cause, args) {
@@ -57,6 +59,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
         window.localStorage.removeItem("picture");
         window.localStorage.removeItem("uid");
         window.localStorage.removeItem("isAdmin");
+        window.localStorage.removeItem("execution");
         return await window.$supabase.auth.signOut();
     }
 
@@ -96,12 +99,9 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .single();
 
                 if (error) {
-                    return error;
+                    throw new StorageBaseError('error in getString', error, arguments)
                 } else {
-                    if (data.length > 0) {
-                        return data[0];
-                    }
-                    return null;
+                    return data;
                 }
             } else if (obj.searchVal) {
                 const { data, error } = await window.$supabase
@@ -111,7 +111,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .single();
 
                 if (error) {
-                    return error;
+                    throw new StorageBaseError('error in getString', error, arguments)
                 } else {
                     return data;
                 }
@@ -122,14 +122,13 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .single();
 
                 if (error) {
-                    return error;
+                    throw new StorageBaseError('error in getString', error, arguments)
                 } else {
                     return data;
                 }
             }
         } catch(error) {
-            console.log(`GET STRING: ${error}`);
-            return { Error: error }
+            throw new StorageBaseError('error in getString', error, arguments)
         }
     }
 
@@ -144,7 +143,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .single();
 
                 if (error) {
-                    return error;
+                    throw new StorageBaseError('error in getObject', error, arguments)
                 } else {
                     return data;
                 }
@@ -156,7 +155,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .single();
 
                 if (error) {
-                    return error;
+                    throw new StorageBaseError('error in getObject', error, arguments)
                 } else {
                     return data;
                 }
@@ -167,14 +166,13 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .single();
                 
                 if (error) {
-                    return error;
+                    throw new StorageBaseError('error in getObject', error, arguments)
                 } else {
                     return data;
                 }
             }
         } catch(error) {
-            console.log(`GET OBJECT: ${error}`);
-            return { Error: error }
+            throw new StorageBaseError('error in getObject', error, arguments)
         }
     }
 
@@ -188,10 +186,8 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .upsert(value)
                     .match(options.match);
                 
-                if (!error) {
-                    return true;
-                } else {
-                    return error;
+                if (error) {
+                    throw new StorageBaseError('error in putString', error, arguments)
                 }
             } else if (obj.searchVal) {
                 const { error } = await window.$supabase
@@ -199,25 +195,20 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .upsert(value)
                     .eq(obj.searchKey, obj.searchVal);
 
-                if (!error) {
-                    return true;
-                } else {
-                    return error;
+                if (error) {
+                    throw new StorageBaseError('error in putString', error, arguments)
                 }
             } else {
                 const { error } = await window.$supabase
                     .from(obj.table)
                     .upsert(value);
                 
-                if (!error) {
-                    return true;
-                } else {
-                    return error;
+                if (error) {
+                    throw new StorageBaseError('error in putString', error, arguments)
                 }
             }
         } catch(error) {
-            console.log(`PUT STRING: ${error}`);
-            return { Error: error }
+            throw new StorageBaseError('error in putString', error, arguments)
         }
     }
 
@@ -271,10 +262,8 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .upsert(value)
                     .match(options.match);
                 
-                if (!error) {
-                    return true;
-                } else {
-                    return error;
+                if (error) {
+                    throw new StorageBaseError('error in pushString', error, arguments);
                 }
             } else if (obj.searchVal) {
                 const { error } = await window.$supabase
@@ -282,24 +271,20 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .upsert(value)
                     .eq(obj.searchKey, obj.searchVal);
 
-                if (!error) {
-                    return true;
-                } else {
-                    return error;
+                if (error) {
+                    throw new StorageBaseError('error in pushString', error, arguments);
                 }
             } else {
                 const { error } = await window.$supabase
                     .from(obj.table)
                     .upsert(value);
                 
-                if (!error) {
-                    return true;
-                } else {
-                    return error;
+                if (error) {
+                    throw new StorageBaseError('error in pushString', error, arguments);
                 }
             }
         } catch(error) {
-            throw new Error('error in pushObject', {cause: error, args: arguments});
+            throw new Error('error in pushString', {cause: error, args: arguments});
         }
     }
 
@@ -348,10 +333,8 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .delete()
                     .match(options.match);
 
-                if (!error) {
-                    return true;
-                } else {
-                    return error;
+                if (error) {
+                    throw new StorageBaseError('error in delete', error, arguments);
                 }
             } else if (obj.searchVal) {
                 const { error } = await window.$supabase
@@ -359,17 +342,14 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .delete()
                     .eq(obj.searchKey, obj.searchVal);
                 
-                if (!error) {
-                    return true;
-                } else {
-                    return error;
+                if (error) {
+                    throw new StorageBaseError('error in delete', error, arguments);
                 }
             }
 
             return false;
         } catch(error) {
-            console.log(`DELETE: ${error}`);
-            return { Error: error }
+            throw new StorageBaseError('error in delete', error, arguments);
         }
     }
 
@@ -389,8 +369,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 .subscribe();
             
         } catch(error) {
-            console.log(`WATCH: ${error}`);
-            return { Error: error }
+            throw new StorageBaseError('error in watch', error, arguments);
         }
     }
 
@@ -410,8 +389,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 .subscribe();
             
         } catch(error) {
-            console.log(`WATCH ADDED: ${error}`);
-            return { Error: error }
+            throw new StorageBaseError('error in watch_added', error, arguments);
         }
     }
 
@@ -493,8 +471,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 return data;
             }
         } catch(error) {
-            console.log(`GET OBJECT: ${error}`);
-            return { Error: error }
+            throw new StorageBaseError('error in list', error, arguments);
         }
     }
 
@@ -521,6 +498,18 @@ export default class StorageBaseSupabase {//extends StorageBase{
             window.localStorage.setItem("isAdmin", data.is_admin);
             window.localStorage.setItem("picture", data.profile);
         }
+
+        const options = {
+            headers: {
+                Authorization: 'bearer ' + localStorage.getItem("accessToken")
+            }
+        }
+        await axios.get('/test/execution', options).then(res => {
+            window.localStorage.setItem("execution", "true");
+        })
+        .catch(error => {
+            console.log(error);
+        });
     }
 
     formatDataPath(path, options) {
@@ -552,7 +541,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .match(options.match);
 
                 if (error) {
-                    return error;
+                    throw new StorageBaseError('error in getCount', error, arguments)
                 } else {
                     return count;
                 }
@@ -563,7 +552,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .eq(obj.searchKey, obj.searchVal);
 
                 if (error) {
-                    return error;
+                    throw new StorageBaseError('error in getCount', error, arguments)
                 } else {
                     return count;
                 }
@@ -573,14 +562,13 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .select('*', { count: 'exact' });
 
                 if (error) {
-                    return error;
+                    throw new StorageBaseError('error in getCount', error, arguments)
                 } else {
                     return count;
                 }
             }
         } catch(error) {
-            console.log(`GET COUNT: ${error}`);
-            return { Error: error }
+            throw new StorageBaseError('error in getCount', error, arguments)
         }
     }
 }
