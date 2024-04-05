@@ -68,7 +68,7 @@ const sidebarItem: menu[] = [
     },
     {
         title: "화면 정의",
-        icon: 'layout-window-2-solid',
+        icon: 'chat-dots-linear',
         BgColor: 'primary',
         to: "/ui-definitions/chat",
     },
