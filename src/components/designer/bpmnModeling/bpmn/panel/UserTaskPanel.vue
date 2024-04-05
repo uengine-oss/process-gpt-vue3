@@ -130,7 +130,8 @@ export default {
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
-        isViewMode: Boolean
+        isViewMode: Boolean,
+        role: String
     },
     created() {
     },
@@ -141,6 +142,7 @@ export default {
             //     "checkpoints": []
             // },
             requiredKeyLists: {
+                "role": { "name": "" },
                 "parameters": [],
             },
             copyUengineProperties: this.uengineProperties,
@@ -168,6 +170,11 @@ export default {
         }
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
+        if (me.role?.length > 0) {
+            this.copyUengineProperties.role = { "name": me.role }
+        }
+        if (!this.copyUengineProperties.parameters)
+            this.copyUengineProperties.parameters = []
     },
     computed: {
         inputData() {

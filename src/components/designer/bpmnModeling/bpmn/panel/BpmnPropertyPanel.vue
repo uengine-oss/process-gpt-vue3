@@ -2,21 +2,23 @@
     <div style="margin-top: 10px; overflow: auto;">
         <v-row class="pa-0 ma-0 mr-7">
             <v-spacer></v-spacer>
-            <Icon icon="ic:baseline-save" width="24" height="24" @click="onClickOutside" v-if="!isViewMode"
-                class="cursor-pointer" style="margin-right:10px;" />
-            <Icon icon="mdi:close" width="24" height="24" @click="$emit('close')" class="cursor-pointer" />
+            <v-btn @click="save">
+                <Icon icon="mdi:close" width="24" height="24" class="cursor-pointer" />
+            </v-btn>
+
+            <!-- <Icon icon="mdi:close" width="24" height="24" @click="$emit('close')" class="cursor-pointer" /> -->
         </v-row>
         <v-card-text>
-            <div style="float: right">Role: {{ uengineProperties.role.name }}</div>
+            <div style="float: right">Role: {{ role }}</div>
             <div>{{ $t('BpnmPropertyPanel.name') }}</div>
             <v-text-field v-model="name" :disabled="isViewMode"></v-text-field>
-
             <!-- <div>
                 <div>{{ $t('BpnmPropertyPanel.description') }}</div>
                 <v-textarea v-if="!elementCopy.$type.includes('Event')" :disabled="isViewMode"
                     v-model="uengineProperties.description"></v-textarea>
             </div> -->
-            <component :is="panelName" :isViewMode="isViewMode" :uengine-properties="uengineProperties"></component>
+            <component :is="panelName" :role="role" :isViewMode="isViewMode" :uengine-properties="uengineProperties">
+            </component>
         </v-card-text>
     </div>
 </template>
@@ -34,10 +36,13 @@ export default {
     },
     created() {
         this.uengineProperties = JSON.parse(this.element.extensionElements.values[0].json)
+        if (this.element.lanes?.length > 0) {
+            this.role = this.element.lanes[0].name
+        }
         // 필수 uEngine Properties의 key가 없다면 작업.
-        Object.keys(this.requiredKeyLists).forEach(key => {
-            this.ensureKeyExists(this.uengineProperties, key, this.requiredKeyLists[key])
-        })
+        // Object.keys(this.requiredKeyLists).forEach(key => {
+        //     this.ensureKeyExists(this.uengineProperties, key, this.requiredKeyLists[key])
+        // })
     },
     components: {
     },
@@ -48,10 +53,10 @@ export default {
             //     "role": { "name": "" },
             //     "parameters": []
             // },
-            requiredKeyLists: {
-                "role": { "name": "" },
-                "parameters": []
-            },
+            // requiredKeyLists: {
+
+            //     "parameters": []
+            // },
             definitions: [],
             elementCopy: this.element,
             uengineProperties: {},
@@ -69,7 +74,8 @@ export default {
             stroage: null,
             editParam: false,
             paramKey: "",
-            paramValue: ""
+            paramValue: "",
+            role: ""
         };
     },
     async mounted() {
@@ -81,9 +87,7 @@ export default {
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
         this.name = this.element.name
-        if (this.element.lanes?.length > 0) {
-            this.uengineProperties.role = { "name": this.element.lanes[0].name }
-        }
+
     },
     computed: {
         panelName() {
@@ -146,13 +150,23 @@ export default {
             this.uengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint })
         },
         save() {
-            const modeling = this.bpmnModeler.get('modeling');
-            const elementRegistry = this.bpmnModeler.get('elementRegistry');
-            const task = elementRegistry.get(this.element.id);
-            this.elementCopy.extensionElements.values[0].json = JSON.stringify(this.uengineProperties)
-            this.elementCopy.name = this.name
-            modeling.updateProperties(task, this.elementCopy);
-            this.$emit('close');
+            let me = this
+
+            me.$app.try({
+                context: me,
+                action: async () => {
+                    if (!me.isViewMode) {
+                        const modeling = me.bpmnModeler.get('modeling');
+                        const elementRegistry = me.bpmnModeler.get('elementRegistry');
+                        const task = elementRegistry.get(me.element.id);
+                        me.elementCopy.extensionElements.values[0].json = JSON.stringify(me.uengineProperties)
+                        me.elementCopy.name = me.name
+                        modeling.updateProperties(task, me.elementCopy);
+                    }
+                    me.$emit('close');
+                }
+            })
+
         },
 
     }
