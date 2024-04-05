@@ -34,6 +34,10 @@
                 {
                     "name": "value",
                     "type": "String"
+                },
+                {
+                    "name": "json",
+                    "type": "String"
                 }
             ]
         }

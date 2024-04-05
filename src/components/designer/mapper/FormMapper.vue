@@ -99,17 +99,21 @@ import ConnectorComponent from './ConnectorComponent.vue';
 import AttributeComponent from './AttributeComponent.vue';
 import FormMapper from './scripts/formMapper';
 import VTreeview from 'vue3-treeview';
+import { useBpmnStore } from '@/stores/bpmn';
 
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import ProcessDefinition from '@/components/ProcessDefinition.vue'
 
 export default {
-    mixins: [FormMapper],
+    name: "form-mapper",
+    mixins: [FormMapper, ProcessDefinition],
+    props: {},
     components: {
         BlockComponent,
         PortComponent,
         ConnectorComponent,
         AttributeComponent,
-        VTreeview
+        VTreeview,
     },
     data() {
         return {
@@ -143,36 +147,99 @@ export default {
             },
             config: {
                 roots: ['id1', 'id2']
-            }
+            },
+            processVariableDescriptors: [],
         };
     },
     async created() {
-        var me = this;
+        let me = this
 
-        me.storage = StorageBaseFactory.getStorage('supabase');
-        let formDefs = await me.storage.list('form_def');
+        this.modeler = useBpmnStore();
+        const modeler = this.modeler.getModeler;
+        let def = modeler.getDefinitions();
+        const processElement = def.rootElements.find(element => element.$type === 'bpmn:Process');
+        if (!processElement) {
+            console.error('bpmn:Process element not found');
+            return;
+        }
+
+        // // bpmn2:process 요소 내의 bpmn2:extensionElements 요소를 찾거나 새로 생성합니다.
+        let extensionElements = processElement.extensionElements;
+        if (!extensionElements) {
+            extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
+            processElement.extensionElements = extensionElements;
+        }
+
+        // // uengine:properties 요소를 찾거나 새로 생성합니다.
+        let uengineProperties
+        if (extensionElements.values) {
+            uengineProperties = extensionElements.values.find(val => val.$type === 'uengine:Properties');
+        }
+
+        if (!uengineProperties) {
+            uengineProperties = bpmnFactory.create('uengine:Properties');
+            extensionElements.get('values').push(uengineProperties);
+        }
+
+        uengineProperties?.variables?.forEach(function (variable) {
+            me.processVariableDescriptors.push({
+                name: variable.$attrs.name,
+                type: variable.$attrs.type
+            })
+        })
 
         me.nodes = {};
         me.config = {
             roots: []
         };
 
-        formDefs.forEach(async (form) => {
-            me.config.roots.push(form.id);
-            me.nodes[form.id] = {
-                text: form.name,
-                children: []
-            };
-
-            form.fields.forEach((field) => {
-                me.nodes[form.id].children.push(field.name + '_' + field.alias);
-                me.nodes[field.name + '_' + field.alias] = {
-                    text: field.name
+        me.processVariableDescriptors.forEach(async (variable) => {
+            if (!me.config.roots.includes(variable.type)) {
+                me.config.roots.push(variable.type);
+            }
+            if (!me.nodes[variable.type]) {
+                me.nodes[variable.type] = {
+                    text: variable.type,
+                    children: []
                 };
-            });
+            }
+
+            if(me.nodes[variable.type]){
+                me.nodes[variable.type].children.push(variable.name);
+                me.nodes[variable.name] = {
+                    text: variable.name
+                };
+            }
+
+            // form.fields.forEach((field) => {
+            //     me.nodes[form.id].children.push(field.name + '_' + field.alias);
+            //     me.nodes[field.name + '_' + field.alias] = {
+            //         text: field.name + '_' + field.alias
+            //     };
+            // });
         });
 
+
+        me.storage = StorageBaseFactory.getStorage('supabase');
+        let formDefs = await me.storage.list('form_def');
+
         me.renderKey++;
+    },
+    mounted() {
+        let me = this
+
+        // processVariables가 준비되었는지 확인
+        if (this.processVariables && this.processVariables.length > 0) {
+            // processVariables 사용
+            console.log(this.processVariables);
+        } else {
+            // 데이터가 준비되지 않았다면, watch를 사용하거나 다른 방법으로 처리
+            this.$watch('processVariables', (newVal) => {
+                if (newVal && newVal.length > 0) {
+                    console.log(newVal);
+                }
+            });
+        }
     },
     methods: {
         openFunctionMenu(event) {
@@ -214,7 +281,7 @@ export default {
         onButtonClickRight(item, type) {
             console.log('Button clicked:', item.node.text, type);
             this.newBlock(type, { x: 1500, y: 200 }, item.node.text);
-        }
+        },
     },
     computed: {
         menuPositionStyle() {
