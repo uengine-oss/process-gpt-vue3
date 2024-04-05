@@ -61,6 +61,7 @@
                             <tr>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.name') }}</th>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.type') }}</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.form') }}</th>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.description')
                                     }}
                                 </th>
@@ -79,6 +80,7 @@
                                 <td>
                                     {{ item.type }}
                                 </td>
+                                <td class="text-subtitle-1">{{ item.form }}</td>
                                 <td class="text-subtitle-1">{{ item.description }}</td>
                                 <td class="text-subtitle-1">{{
                         item.datasource ? item.datasource.type : 'None' }}</td>
