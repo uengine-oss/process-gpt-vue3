@@ -39,70 +39,29 @@
                 </v-menu>
             </v-btn>
         </div>
-
-        <v-dialog v-model="formMapperDialog"  max-width="90vw" max-height="90vh" fullscreen>
-            <FormMapper />
-        </v-dialog>
-
-        <v-dialog v-model="addDialog" max-width="500">
-            <v-card>
-                <v-card-title>
-                    {{ addType.toUpperCase() }} 프로세스 추가
-                </v-card-title>
-
-                <v-card-text>
-                    <v-autocomplete v-if="addType == 'sub' && !isNewDef && definitions" v-model="newProcess"
-                        :items="definitions" label="프로세스 정의" item-title="name" return-object></v-autocomplete>
-
-                    <v-checkbox
-                        v-if="addType == 'sub'"
-                        v-model="isNewDef"
-                        class="cp-custom-sub"
-                        label="새로운 프로세스 정의 추가"
-                        color="primary"
-                        density="compact"
-                    ></v-checkbox>
-
-                    <v-text-field v-if="addType != 'sub' || isNewDef" class="cp-process-id" v-model="newProcess.id"
-                        label="프로세스 ID" autofocus></v-text-field>
-
-                    <v-text-field v-if="addType != 'sub' || isNewDef" v-model="newProcess.label" class="cp-process-name"
-                        label="프로세스명"></v-text-field>
-                </v-card-text>
-
-                <v-card-actions class="justify-center">
-                    <v-btn color="primary" variant="flat" class="cp-process-save"
-                        :disabled="newProcess.id == '' && newProcess.label == ''" @click="addProcess">저장</v-btn>
-                    <v-btn color="error" variant="flat" @click="closeDialog('add')">닫기</v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
-
-        <v-dialog v-model="updateDialog" max-width="500">
-            <v-card>
-                <v-card-title>
-                    {{ type.toUpperCase() }} 프로세스 수정
-                </v-card-title>
-
-                <v-card-text>
-                    <v-text-field v-model="newProcess.id" label="프로세스 ID" autofocus></v-text-field>
-                    <v-text-field v-model="newProcess.label" label="프로세스명"></v-text-field>
-                </v-card-text>
-
-                <v-card-actions class="justify-center">
-                    <v-btn color="primary" variant="flat" :disabled="newProcess.id == '' && newProcess.label == ''"
-                        @click="updateProcess">저장</v-btn>
-                    <v-btn color="error" variant="flat" @click="closeDialog('update')">닫기</v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
+        
+        <ProcessDialog
+            :enableEdit="enableEdit"
+            :process="process"
+            :processDialogStatus="processDialogStatus"
+            :definitions="definitions"
+            :processType="processType"
+            :type="type"
+            @add="addProcess"
+            @edit="updateProcess"
+            @closeProcessDialog="closeProcessDialog"
+        />
     </div>
 </template>
 
 <script>
+import ProcessDialog from './ProcessDialog.vue'
 import FormMapper from '@/components/designer/mapper/FormMapper.vue'; 
+
+
 export default {
     components: {
+        ProcessDialog,
         FormMapper,
     },
     props: {
@@ -113,16 +72,14 @@ export default {
         enableEdit: Boolean,
     },
     data: () => ({
-        addDialog: false,
-        updateDialog: false,
         formMapperDialog: false,
         newProcess: {
             id: "",
             label: ""
         },
-        selectedProcessId: "",
-        isNewDef: false,
         definitions: null,
+        processDialogStatus: false,
+        processType:"",
     }),
     computed: {
         addType() {
@@ -136,20 +93,6 @@ export default {
         },
     },
     watch: {
-        isNewDef(val) {
-            if (val) {
-                this.newProcess = {
-                    id: "",
-                    label: "",
-                };
-            } else {
-                this.newProcess = {
-                    id: "",
-                    label: "",
-                    name: ""
-                };
-            }
-        }
     },
     created() {
         this.init();
@@ -168,51 +111,27 @@ export default {
         openViewProcessDetails(process) {
             this.$router.push(`/definition-map/mega/${process.id}`);
         },
-        addProcess() {
-            if (this.newProcess.id != '' && (this.newProcess.name != '' || this.newProcess.label != '')) {
-                this.$emit("add", this.newProcess, this.type, this.selectedProcessId);
-                this.closeDialog('add');
-            }
-        },
-        openDialog(type) {
-            this.selectedProcessId = this.process.id;
-            if (type == 'add') {
-                this.newProcess = {
-                    id: "",
-                    label: "",
-                    name: ""
-                };
-                this.addDialog = true;
-            } else if (type == 'update') {
-                this.newProcess.id = this.process.id;
-                this.newProcess.label = this.process.label;
-                this.updateDialog = true;
-            }
-        },
-        updateProcess() {
-            if (this.newProcess.id != '' && this.newProcess.label != '') {
-                this.$emit("edit", this.newProcess, this.type, this.selectedProcessId);
-                this.closeDialog('update');
-            }
-        },
-        closeDialog(type) {
-            this.newProcess = {
-                id: "",
-                label: ""
-            };
-            this.isNewDef = false;
-            if (type == 'add') {
-                this.addDialog = false;
-            } else if (type == 'update') {
-                this.updateDialog = false;
-            }
+        openDialog(processType) {
+            this.processType = processType;
+            this.processDialogStatus = true;
         },
         deleteProcess() {
-            this.$emit("delete", this.type, this.selectedProcessId);
+            this.$emit("delete");
         },
         editProcess() {
             this.$emit("modeling");
-        }
+        },
+        addProcess(newProcess) {
+            this.$emit("add", newProcess);
+            this.processDialogStatus = false;
+        },
+        updateProcess(newProcess) {
+            this.$emit("edit", newProcess);
+            this.processDialogStatus = false;
+        },
+        closeProcessDialog() {
+            this.processDialogStatus = false;
+        },
     },
 }
 </script>

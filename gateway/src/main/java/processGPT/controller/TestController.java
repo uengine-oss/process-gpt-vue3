@@ -43,6 +43,14 @@ public class TestController {
         );
     }
 
+    @PreAuthorize("hasAuthority('SCOPE_execution')")
+    @RequestMapping(value = "/execution", method = RequestMethod.GET)
+    public ResponseEntity<String> scopeExecutionOnly() {
+        return ResponseEntity.ok(
+            "OK! Only Users with scope_execution can access this resource.\n"
+        );
+    }
+
     @GetMapping("/token")
     public String getToken(
         @RegisteredOAuth2AuthorizedClient OAuth2AuthorizedClient authorizedClient

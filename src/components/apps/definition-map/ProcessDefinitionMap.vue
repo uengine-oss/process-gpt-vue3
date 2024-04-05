@@ -3,7 +3,7 @@
         <v-card elevation="10" :style="!$globalState.state.isZoomed ? 'height:calc(100vh - 155px)' :'height:100vh;'"
             style="overflow: auto;"
         >
-            <div v-if="componentName != 'SubProcessDetail'" class="pt-5 pl-6 pr-6 d-flex align-center">
+            <div v-if="componentName != 'SubProcessDetail'" class="pa-3 d-flex align-center" style="position: sticky; top: 0; z-index:2; background-color:white">
                 <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
                 
                 <!-- buttons -->
@@ -35,7 +35,7 @@
                         <Icon icon="mage:image-download" width="24" height="24" />
                     </v-btn>
 
-                    <ProcessMenu
+                    <!-- <ProcessMenu
                         class="ml-3 cp-add-process"
                         :size="24" 
                         :type="type" 
@@ -43,7 +43,7 @@
                         :process="value"
                         :storage="storage"
                         @add="addProcess"
-                    />
+                    /> -->
                     
                     <!-- 프로세스 정의 체계도 캔버스 확대 축소 버튼 및 아이콘 -->
                     <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
@@ -75,28 +75,30 @@
             </div>
             
             <!-- route path 별 컴포넌트 호출 -->
-            <div v-if="componentName == 'ViewProcessDetails'">
-                <ViewProcessDetails
-                    class="pa-5"
-                    :parent="value"
-                    :storage="storage"
-                    :enableEdit="enableEdit"
-                />
-            </div>
-            <div v-else-if="componentName == 'SubProcessDetail'">
-                <SubProcessDetail
-                    :value="value"
-                    :storage="storage"
-                    @capture="capturePng"
-                />
-            </div>
-            <div v-else>
-                <DefinitionMapList
-                    :value="value"
-                    :storage="storage"
-                    :enableEdit="enableEdit"
-                    :userInfo="userInfo"
-                />
+            <div id="processMap">
+                <div v-if="componentName == 'ViewProcessDetails'">
+                    <ViewProcessDetails
+                        class="pa-5"
+                        :parent="value"
+                        :storage="storage"
+                        :enableEdit="enableEdit"
+                    />
+                </div>
+                <div v-else-if="componentName == 'SubProcessDetail'">
+                    <SubProcessDetail
+                        :value="value"
+                        :storage="storage"
+                        @capture="capturePng"
+                    />
+                </div>
+                <div v-else>
+                    <DefinitionMapList
+                        :value="value"
+                        :storage="storage"
+                        :enableEdit="enableEdit"
+                        :userInfo="userInfo"
+                    />
+                </div>
             </div>
         </v-card>
         <v-dialog v-model="alertDialog" max-width="500" persistent>

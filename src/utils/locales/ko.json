@@ -62,7 +62,9 @@
         "title": "프로세스 정의 체계도"
     },
     "uiDefinition": {
-        "title": "화면 정의"
+        "title": "화면 정의",
+        "cardTitle": "화면 정의 관리",
+        "uiDefinitionExplanation": "대화형으로 화면을 관리하십시오.\n 예를 들어, '유저 정보를 입력 받는 폼을 만들고 싶어. 유저 정보에는 유저명, 이메일, 성별, 유저 프로필 이미지를 입력받아야 해.'와 같은 명령을 할 수 있습니다."
     },
     "processDefinition": {
         "title": "프로세스 정의",
