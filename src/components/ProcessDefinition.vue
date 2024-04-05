@@ -47,7 +47,7 @@
                 </v-card>
             </div>
         </v-row>
-        <v-dialog v-model="isViewProcessVariables" max-width="1000">
+        <v-dialog v-model="isViewProcessVariables" max-width="1000" style="z-index:9999;">
             <v-card>
                 <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{
                         $t('processDefinition.editProcessData') }}</v-card-title>
