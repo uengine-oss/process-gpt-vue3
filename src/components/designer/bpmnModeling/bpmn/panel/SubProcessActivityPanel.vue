@@ -42,7 +42,7 @@ const storage = StorageBaseFactory.getStorage()
 
 import { Icon } from '@iconify/vue';
 export default {
-    name: 'call-activity-panel',
+    name: 'sub-process-activity-panel',
     props: {
         uengineProperties: Object,
         processDefinitionId: String,

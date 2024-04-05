@@ -1,13 +1,13 @@
 <template>
-    <div>
+    <div div style="width: 100%">
         <!-- definition id 가 없어도 데이터가 있다면 최선을 다하여 출력하자 -->
         <!--<div v-if="calleeDefinitionId">-->
         <div v-for="(roleBinding, idx) in copyRoleBindings" :key="idx">
             <v-row>
                 <v-col cols="3">
                     <div>
-                        <label>Callee Roles</label>
-                        <v-select name="input" id="input" v-model="roleBinding.argument">
+                        <v-select label="Callee Roles" name="input" id="input" v-model="roleBinding.argument"
+                            :items="calleeDefinitionRoles">
                             <!-- <v-option v-for="role in calleeDefinition.roles" :key="role.name" :value="role.name">
                                 {{ role.name }}
                             </v-option> -->
@@ -18,19 +18,23 @@
 
                 <v-col cols="3">
                     <div>
-                        <label>연결 방향</label>
-                        <v-select v-model="roleBinding.direction" :items="['IN-OUT', 'IN', 'OUT']">
-                            <!-- <md-option value="in-out">IN-OUT</md-option>
-                            <md-option value="in">IN</md-option>
-                            <md-option value="out">OUT</md-option> -->
+                        <v-select v-model="roleBinding.direction" style="min-width: 20px;" :items="connectDirections"
+                            item-props label="연결방향">
+                            <template v-slot:selection="{ item }">
+                                <v-icon>{{ iconForDirection(item.value) }}</v-icon>
+                            </template>
+                            <template v-slot:item="{ item }">
+                                <v-list-item @click="roleBinding.direction = item.value">
+                                    <v-icon>{{ iconForDirection(item.value) }}</v-icon>
+                                </v-list-item>
+                            </template>
                         </v-select>
                     </div>
                 </v-col>
                 <v-col cols="3">
                     <div>
-                        <label>Caller Roles</label>
-                        <v-select v-model="roleBinding.role.name" :items="definitionRoles" item-title="name"
-                            item-value="name">
+                        <v-select label="Caller Roles" v-model="roleBinding.role.name" :items="definitionRoles"
+                            item-title="name" item-value="name">
                             <!-- <md-option v-for="role in definition.roles" :key="role.name" :value="role.name">
                                 {{ role.name }}
                             </md-option> -->
@@ -61,11 +65,14 @@ export default {
     props: {
         roleBindings: Array,
         definitionRoles: Array,
+        calleeDefinitionRoles: Array,
+        isViewMode: Boolean
         // calleeDefinitionId: String
     },
     data: function () {
         return {
-            copyRoleBindings: this.roleBindings ? this.roleBindings : []
+            copyRoleBindings: this.roleBindings ? this.roleBindings : [],
+            connectDirections: ['IN-OUT', 'IN', 'OUT']
         };
     },
     watch: {
@@ -77,14 +84,20 @@ export default {
         // },
     },
     created: function () {
-
     },
     methods: {
+        iconForDirection: function (direction) {
+            if (direction == "IN")
+                return "mdi-arrow-left";
+            else if (direction == "OUT" || direction == "OUT ")
+                return "mdi-arrow-right";
+            else
+                return "mdi-arrow-left-right";
+        },
         add: function () {
             this.copyRoleBindings.push({
                 direction: 'IN-OUT',
                 role: {
-                    _type: "org.uengine.kernel.Role",
                     name: ''
                 },
                 argument: ''  //TODO: object path differ from ParameterContext

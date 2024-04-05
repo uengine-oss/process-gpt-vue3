@@ -19,13 +19,13 @@ export default {
     },
     methods: {
         async try(options, parameters) {
-            if(options && !options.action) {
+            if (options && !options.action) {
                 options = {
                     parameters: parameters,
                     action: options
                 }
             }
-            
+
             try {
                 await options.action(options.parameters)
 
