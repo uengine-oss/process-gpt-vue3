@@ -13,8 +13,11 @@
                     <v-icon class="cursor-pointer">mdi-chevron-right</v-icon>
                     <v-menu activator="parent">
                         <v-list v-if="selectedProc.major.sub_proc_list" density="compact" class="cursor-pointer">
-                            <v-list-item v-for="sub in selectedProc.major.sub_proc_list" :key="sub.id">
-                                <v-list-item-title @click="goProcess(sub)">
+                            <v-list-item v-for="sub in selectedProc.major.sub_proc_list"
+                                :key="sub.id"
+                                @click="goProcess(sub)"
+                            >
+                                <v-list-item-title>
                                     {{ sub.label }}
                                 </v-list-item-title>
                             </v-list-item>
@@ -25,7 +28,7 @@
             <div v-if="processDefinition" class="d-flex align-center"
                 @click="updateBpmn(processDefinition.bpmn); subProcessBreadCrumb = []">
                 <h6 class="text-h6 font-weight-semibold">
-                    {{ processDefinition ? processDefinition.name : processDefinition.label }}
+                    {{ processDefinition && processDefinition.name ? processDefinition.name : processDefinition.label }}
                 </h6>
             </div>
             <div v-for="(subProcess, idx) in subProcessBreadCrumb" :key="idx">
@@ -49,7 +52,7 @@
                 style="width: 100%; height: 100%;" 
                 :bpmn="bpmn" :key="defCnt"
                 :processDefinition="processDefinition.definition"
-                :isViewMode="true"
+                :isViewMode="isViewMode"
                 v-on:openSubProcess="ele => openSubProcess(ele)"
             ></ProcessDefinition>
             <div v-else-if="!bpmn" style="height: 90%; text-align: center">
@@ -84,12 +87,8 @@ export default {
         selectedSubProcess: null,
         subProcessBreadCrumb: [],
         defCnt: 0,
+        isViewMode: true,
     }),
-    watch: {
-        value(newVal) {
-            this.viewProcess(this.$route.params);
-        }
-    },
     created() {
         let me = this;
         if (!me.$app.try) {
@@ -116,7 +115,6 @@ export default {
         async openSubProcess(e) {
             let me = this;
             if (e.extensionElements?.values[0]?.definition) {
-                console.log(e.extensionElements.values[0].definition)
                 const defInfo = await this.storage.getObject(`proc_def/${e.extensionElements.values[0].definition}`, { key: "name" });
                 if (defInfo) {
                     let obj = { processName: e.extensionElements.values[0].definition, xml: defInfo.bpmn }
@@ -137,6 +135,7 @@ export default {
                 mega.major_proc_list.forEach(major => {
                     major.sub_proc_list.forEach(sub => {
                         if (sub.id == def_id) {
+                            obj = sub;
                             this.selectedProc.mega = mega;
                             this.selectedProc.major = major;
                         }
@@ -145,7 +144,7 @@ export default {
             })
 
             const defInfo = await this.storage.getObject(`proc_def/${def_id}`, { key: "id" });
-            if (defInfo) {
+            if (defInfo && !defInfo.code) {
                 this.processDefinition = defInfo;
                 this.bpmn = defInfo.bpmn
             } else {

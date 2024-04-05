@@ -17,8 +17,15 @@
                 <v-textarea v-if="!elementCopy.$type.includes('Event')" :disabled="isViewMode"
                     v-model="uengineProperties.description"></v-textarea>
             </div> -->
-            <component :is="panelName" :role="role" :isViewMode="isViewMode" :uengine-properties="uengineProperties">
-            </component>
+            <component :is="panelName" 
+                :isViewMode="isViewMode" 
+                :uengine-properties="uengineProperties" 
+                :name="name"
+                :role="role"
+                ref="panelComponent"
+                @update:name="val => name = val"
+                :definition="definition"
+            ></component>
         </v-card-text>
     </div>
 </template>
@@ -32,7 +39,8 @@ export default {
     props: {
         element: Object,
         processDefinitionId: String,
-        isViewMode: Boolean
+        isViewMode: Boolean,
+        definition: Object
     },
     created() {
         this.uengineProperties = JSON.parse(this.element.extensionElements.values[0].json)
@@ -150,23 +158,16 @@ export default {
             this.uengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint })
         },
         save() {
-            let me = this
-
-            me.$app.try({
-                context: me,
-                action: async () => {
-                    if (!me.isViewMode) {
-                        const modeling = me.bpmnModeler.get('modeling');
-                        const elementRegistry = me.bpmnModeler.get('elementRegistry');
-                        const task = elementRegistry.get(me.element.id);
-                        me.elementCopy.extensionElements.values[0].json = JSON.stringify(me.uengineProperties)
-                        me.elementCopy.name = me.name
-                        modeling.updateProperties(task, me.elementCopy);
-                    }
-                    me.$emit('close');
-                }
-            })
-
+            if (this.$refs.panelComponent && this.$refs.panelComponent.beforeSave) {
+                this.$refs.panelComponent.beforeSave();
+            }
+            const modeling = this.bpmnModeler.get('modeling');
+            const elementRegistry = this.bpmnModeler.get('elementRegistry');
+            const task = elementRegistry.get(this.element.id);
+            this.elementCopy.extensionElements.values[0].json = JSON.stringify(this.uengineProperties)
+            this.elementCopy.name = this.name
+            modeling.updateProperties(task, this.elementCopy);
+            this.$emit('close');
         },
 
     }

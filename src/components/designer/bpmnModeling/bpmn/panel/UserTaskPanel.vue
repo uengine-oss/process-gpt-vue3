@@ -40,6 +40,16 @@
                     :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
             </v-row>
         </div>
+        <div>
+            <v-row  class="ma-0 pa-0">
+                <v-btn text color="primary" class="my-3" @click="oepnFieldMapper = !oepnFieldMapper">
+                    Field Mapping
+                </v-btn>
+            </v-row>
+        </div>
+        <v-dialog v-model="oepnFieldMapper"  max-width="90vw" max-height="90vh" fullscreen>
+            <form-mapper :definition="definition" />
+        </v-dialog>
         <!-- <div>
             <v-row class="ma-0 pa-0">
                 <div>{{ $t('BpnmPropertyPanel.checkPoints') }}</div>
@@ -117,21 +127,23 @@
     </div>
 </template>
 <script>
+import BpmnParameterContexts from '@/components/designer/bpmnModeling/bpmn/variable/BpmnParameterContexts.vue';
+import FormMapper from '@/components/designer/mapper/FormMapper.vue';
 import { useBpmnStore } from '@/stores/bpmn';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
-import { Icon } from '@iconify/vue';
 const storage = StorageBaseFactory.getStorage()
-import BpmnParameterContexts from '@/components/designer/bpmnModeling/bpmn/variable/BpmnParameterContexts.vue'
 export default {
     name: 'user-task-panel',
     components: {
-        BpmnParameterContexts
+        BpmnParameterContexts,
+        FormMapper
     },
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
         isViewMode: Boolean,
-        role: String
+        role: String,
+        definition: Object
     },
     created() {
     },
@@ -160,7 +172,8 @@ export default {
             stroage: null,
             editParam: false,
             paramKey: "",
-            paramValue: ""
+            paramValue: "",
+            oepnFieldMapper: false
         };
     },
     async mounted() {

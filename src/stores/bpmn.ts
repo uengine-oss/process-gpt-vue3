@@ -1,14 +1,17 @@
 import { defineStore } from 'pinia';
-import { router } from '@/router';
 
 export const useBpmnStore = defineStore({
     id: 'bpmn',
     state: () => ({
         bpmnModeler: null,
+        processDefinition: null
       }),
     actions: {
         setModeler(modeler: any) {
             this.bpmnModeler = modeler
+        },
+        setProcessDefinition(definition: any) {
+            this.processDefinition = definition
         }
     },
     getters: {
