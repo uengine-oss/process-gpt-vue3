@@ -64,7 +64,6 @@ export default {
         modeler: null,
         src:``,
 
-        formOutput: "", // 폼 디자이너에서 생성된 결과물을 보여주기 위해서
         prevFormOutput: "", // 폼 디자이너에게 이미 이전에 생성된 HTML 결과물을 전달하기 위해서
         mashupKey: 0 // src가 변경되었을 경우, Mashup 컴포넌트를 다시 렌더링하기 위해서
     }),
@@ -74,15 +73,6 @@ export default {
             isStream: true,
             preferredLanguage: 'Korean'
         });
-
-        this.applyNewSrcToMashup(
-            this.aiResultToKEditorContent(`
-                <div class="row">\n        
-        <div class="col-sm-12">\n
-            <input type="text" id="id" name="nameUpg" data-alias="aliasUpg"></input>
-        </div>
-        </div>\n`
-        ))
     },
     beforeDestroy() {
         this.src = null;
@@ -167,8 +157,11 @@ export default {
                 messageWriting.content = messageWriting.content.replace(messageWriting.jsonContent, "")
 
                 // 생성된 HTML을 보여주기 위해서
-                if(messageWriting.jsonContent) 
-                    this.formOutput = messageWriting.jsonContent.htmlOutput
+                if(messageWriting.jsonContent) {
+                    this.applyNewSrcToMashup(
+                        this.aiResultToKEditorContent(messageWriting.jsonContent.htmlOutput)
+                    )
+                }
 
             } catch (error) {
                 console.log(error);
@@ -185,8 +178,16 @@ export default {
                 const textFragment = textFragments[i]
                 if((!textFragment.includes("{")) || (!textFragment.includes("}")) || (!textFragment.includes("htmlOutput"))) continue
 
-                const processedFragment = textFragment.match(/\{[\s\S]*\}/)[0].replaceAll("\n", "").replaceAll("`", `"`)
-                return JSON.parse(processedFragment)
+                try {
+
+                    const processedFragment = textFragment.match(/\{[\s\S]*\}/)[0].replaceAll("\n", "").replaceAll("`", `"`)
+                    return JSON.parse(processedFragment)
+
+                } catch (error) {
+                    console.log("유효 문자열 JSON 파싱 과정에서 오류 발생!")
+                    console.log(error)
+                    console.log(textFragment)
+                }
             }
 
             return null
