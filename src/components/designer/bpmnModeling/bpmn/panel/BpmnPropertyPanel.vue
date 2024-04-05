@@ -22,6 +22,7 @@
                 :name="name"
                 ref="panelComponent"
                 @update:name="val => name = val"
+                :definition="definition"
             ></component>
         </v-card-text>
     </div>
@@ -36,7 +37,8 @@ export default {
     props: {
         element: Object,
         processDefinitionId: String,
-        isViewMode: Boolean
+        isViewMode: Boolean,
+        definition: Object
     },
     created() {
         this.uengineProperties = JSON.parse(this.element.extensionElements.values[0].json)

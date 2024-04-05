@@ -93,21 +93,26 @@
 </template>
 
 <script>
-import BlockComponent from './BlockComponent.vue';
-import PortComponent from './PortComponent.vue';
-import ConnectorComponent from './ConnectorComponent.vue';
-import AttributeComponent from './AttributeComponent.vue';
-import FormMapper from './scripts/formMapper';
-import VTreeview from 'vue3-treeview';
 import { useBpmnStore } from '@/stores/bpmn';
+import VTreeview from 'vue3-treeview';
+import AttributeComponent from './AttributeComponent.vue';
+import BlockComponent from './BlockComponent.vue';
+import ConnectorComponent from './ConnectorComponent.vue';
+import PortComponent from './PortComponent.vue';
+import FormMapper from './scripts/formMapper';
 
+import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
-import ProcessDefinition from '@/components/ProcessDefinition.vue'
 
 export default {
     name: "form-mapper",
     mixins: [FormMapper, ProcessDefinition],
-    props: {},
+    props: {
+        definition: {
+            type: Object,
+            required: true,
+        },
+    },
     components: {
         BlockComponent,
         PortComponent,
@@ -154,8 +159,12 @@ export default {
     async created() {
         let me = this
 
-        this.modeler = useBpmnStore();
-        const modeler = this.modeler.getModeler;
+        const definition = this.definition;
+        console.log(definition.processVariables)
+        
+
+        const store = useBpmnStore();
+        this.modeler = store.getModeler;
         let def = modeler.getDefinitions();
         const processElement = def.rootElements.find(element => element.$type === 'bpmn:Process');
         if (!processElement) {

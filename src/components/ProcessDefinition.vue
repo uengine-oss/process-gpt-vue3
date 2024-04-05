@@ -42,7 +42,7 @@
             <div v-if="panel" style="position: fixed; z-index:999; right: 0; width: 30%; height: 100%">
                 <v-card elevation="1" style="height: 100%">
                     <bpmn-property-panel :element="element" @close="closePanel" :key="element.id"
-                        :isViewMode="isViewMode" v-on:updateElement="(val) => updateElement(val)"></bpmn-property-panel>
+                        :isViewMode="isViewMode" v-on:updateElement="(val) => updateElement(val)" :definition="thisDefinition"></bpmn-property-panel>
                     <!-- {{ definition }} -->
                 </v-card>
             </div>
@@ -153,12 +153,12 @@
 import { Icon } from '@iconify/vue';
 import { VDataTable } from 'vuetify/labs/VDataTable';
 // import VueBpmn from './Bpmn-LLM.vue';
+import { useBpmnStore } from '@/stores/bpmn';
 import BpmnLLM from './BpmnLLM.vue';
 import BpmnuEngine from './BpmnUengine.vue';
 import customBpmnModule from './customBpmn';
-import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
-import { useBpmnStore } from '@/stores/bpmn';
+import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 
 export default {
     name: 'ProcessDefinition',
@@ -175,6 +175,7 @@ export default {
         bpmn: String,
         isViewMode: Boolean,
         currentActivities: Array,
+        definitionChat: Object
     },
     data: () => ({
         panel: false,
@@ -194,12 +195,19 @@ export default {
         lastEditedIndex: 0,
         editComponentKey: 0,
         bpmnModeler: null,
-        processVariables: []
+        processVariables: [],
+        test: "test"
     }),
     computed: {
         mode() {
             return window.$mode
         },
+        thisDefinition() {
+            return {
+                processVariables: this.processVariables,
+
+            }
+        }
     },
     watch: {
         copyProcessDefinition: {

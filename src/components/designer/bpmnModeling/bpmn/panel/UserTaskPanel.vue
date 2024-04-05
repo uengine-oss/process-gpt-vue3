@@ -48,7 +48,7 @@
             </v-row>
         </div>
         <v-dialog v-model="oepnFieldMapper"  max-width="90vw" max-height="90vh" fullscreen>
-            <form-mapper />
+            <form-mapper :definition="definition" />
         </v-dialog>
         <!-- <div>
             <v-row class="ma-0 pa-0">
@@ -127,12 +127,11 @@
     </div>
 </template>
 <script>
+import BpmnParameterContexts from '@/components/designer/bpmnModeling/bpmn/variable/BpmnParameterContexts.vue';
+import FormMapper from '@/components/designer/mapper/FormMapper.vue';
 import { useBpmnStore } from '@/stores/bpmn';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
-import { Icon } from '@iconify/vue';
 const storage = StorageBaseFactory.getStorage()
-import BpmnParameterContexts from '@/components/designer/bpmnModeling/bpmn/variable/BpmnParameterContexts.vue'
-import FormMapper from '@/components/designer/mapper/FormMapper.vue'; 
 export default {
     name: 'user-task-panel',
     components: {
@@ -142,7 +141,8 @@ export default {
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
-        isViewMode: Boolean
+        isViewMode: Boolean,
+        definition: Object
     },
     created() {
     },
