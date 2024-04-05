@@ -42,12 +42,12 @@
             <div v-if="panel" style="position: fixed; z-index:999; right: 0; width: 30%; height: 100%">
                 <v-card elevation="1" style="height: 100%">
                     <bpmn-property-panel :element="element" @close="closePanel" :key="element.id"
-                        :isViewMode="isViewMode" v-on:updateElement="(val) => updateElement(val)"></bpmn-property-panel>
+                        :isViewMode="isViewMode" v-on:updateElement="(val) => updateElement(val)" :definition="thisDefinition"></bpmn-property-panel>
                     <!-- {{ definition }} -->
                 </v-card>
             </div>
         </v-row>
-        <v-dialog v-model="isViewProcessVariables" max-width="1000">
+        <v-dialog v-model="isViewProcessVariables" max-width="1000" style="z-index:9999;">
             <v-card>
                 <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{
                         $t('processDefinition.editProcessData') }}</v-card-title>
@@ -61,6 +61,7 @@
                             <tr>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.name') }}</th>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.type') }}</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.form') }}</th>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.description')
                                     }}
                                 </th>
@@ -79,6 +80,7 @@
                                 <td>
                                     {{ item.type }}
                                 </td>
+                                <td class="text-subtitle-1">{{ item.form }}</td>
                                 <td class="text-subtitle-1">{{ item.description }}</td>
                                 <td class="text-subtitle-1">{{
                         item.datasource ? item.datasource.type : 'None' }}</td>
@@ -151,12 +153,12 @@
 import { Icon } from '@iconify/vue';
 import { VDataTable } from 'vuetify/labs/VDataTable';
 // import VueBpmn from './Bpmn-LLM.vue';
+import { useBpmnStore } from '@/stores/bpmn';
 import BpmnLLM from './BpmnLLM.vue';
 import BpmnuEngine from './BpmnUengine.vue';
 import customBpmnModule from './customBpmn';
-import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
-import { useBpmnStore } from '@/stores/bpmn';
+import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 
 export default {
     name: 'ProcessDefinition',
@@ -173,6 +175,7 @@ export default {
         bpmn: String,
         isViewMode: Boolean,
         currentActivities: Array,
+        definitionChat: Object
     },
     data: () => ({
         panel: false,
@@ -192,12 +195,19 @@ export default {
         lastEditedIndex: 0,
         editComponentKey: 0,
         bpmnModeler: null,
-        processVariables: []
+        processVariables: [],
+        test: "test"
     }),
     computed: {
         mode() {
             return window.$mode
         },
+        thisDefinition() {
+            return {
+                processVariables: this.processVariables,
+
+            }
+        }
     },
     watch: {
         copyProcessDefinition: {
@@ -259,7 +269,9 @@ export default {
                 "sequences": []
             }
         const store = useBpmnStore();
+        store.setProcessDefinition(this);
         this.bpmnModeler = store.getModeler;
+        
         // const def = this.bpmnModeler.getDefinitions();
         // console.log(this.definitions)
         // LLM과 uEngine 각각 처리 필요.

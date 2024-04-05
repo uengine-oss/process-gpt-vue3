@@ -16,6 +16,15 @@
                 </v-col>
                 <v-col cols="12" sm="9">
                     <v-autocomplete v-model="processVariable.type" :items="types" color="primary" variant="outlined"
+                        hide-details @change="changedType"></v-autocomplete>
+                </v-col>
+            </v-row>
+            <v-row class="align-center" v-if="forms.length>0">
+                <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
+                    <v-label class=" font-weight-medium" for="hcpm">폼 지정</v-label>
+                </v-col>
+                <v-col cols="12" sm="9">
+                    <v-autocomplete v-model="processVariable.form" :items="forms" color="primary" variant="outlined"
                         hide-details></v-autocomplete>
                 </v-col>
             </v-row>
@@ -69,6 +78,8 @@
 </template>
 <script>
 import axios from 'axios';
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
+
 export default {
     name: 'ProcessVariable',
     props: {
@@ -81,10 +92,12 @@ export default {
     data() {
         return {
             datasources: ["BPMN", "SQL", "database"],
-            types: ["Text", "Number", "Date", "Attachment"],
+            types: ["Text", "Number", "Date", "Attachment", "Form"],
+            forms: [],
             processVariable: {
                 name: "",
                 type: "",
+                form: "",
                 description: "",
                 datasource: {
                     type: "",
@@ -92,7 +105,8 @@ export default {
                 },
                 // table: '<table><tr><th>Name</th><th>Position</th></tr><tr><td>John Doe</td><td>Developer</td></tr><tr><td>Jane Doe</td><td>Designer</td></tr></table>'
                 table: ""
-            }
+            },
+            storage: null
         }
     },
     methods: {
@@ -139,9 +153,30 @@ export default {
                 },
                 table: ""
             }
+        },
+        async changedType(type) {
+            var me = this
+        }
+    },
+    watch: {
+        'processVariable.type': async function (newVal, oldVal) {
+            var me = this
+
+            if (newVal == "Form") {
+                me.forms = []
+
+                let formDefs = await me.storage.list('form_def');
+                formDefs.forEach(async (form) => {
+                    me.forms.push(form.name+'_'+form.alias)
+                })
+            }else {
+                me.forms = []
+            }
         }
     },
     mounted() {
+        this.storage = StorageBaseFactory.getStorage('supabase');
+
         if (this.variable) {
             if (!this.variable.datasource) {
                 this.variable.datasource = {

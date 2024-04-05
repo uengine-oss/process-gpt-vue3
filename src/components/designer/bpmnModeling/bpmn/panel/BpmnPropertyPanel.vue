@@ -2,15 +2,16 @@
     <div style="margin-top: 10px; overflow: auto;">
         <v-row class="pa-0 ma-0 mr-7">
             <v-spacer></v-spacer>
-            <Icon icon="ic:baseline-save" width="24" height="24" @click="save" v-if="!isViewMode"
-                class="cursor-pointer" style="margin-right:10px;" />
-            <Icon icon="mdi:close" width="24" height="24" @click="$emit('close')" class="cursor-pointer" />
+            <v-btn @click="save">
+                <Icon icon="mdi:close" width="24" height="24" class="cursor-pointer" />
+            </v-btn>
+
+            <!-- <Icon icon="mdi:close" width="24" height="24" @click="$emit('close')" class="cursor-pointer" /> -->
         </v-row>
         <v-card-text>
-            <div style="float: right">Role: {{ uengineProperties.role.name }}</div>
+            <div style="float: right">Role: {{ role }}</div>
             <div>{{ $t('BpnmPropertyPanel.name') }}</div>
             <v-text-field v-model="name" :disabled="isViewMode"></v-text-field>
-
             <!-- <div>
                 <div>{{ $t('BpnmPropertyPanel.description') }}</div>
                 <v-textarea v-if="!elementCopy.$type.includes('Event')" :disabled="isViewMode"
@@ -20,8 +21,10 @@
                 :isViewMode="isViewMode" 
                 :uengine-properties="uengineProperties" 
                 :name="name"
+                :role="role"
                 ref="panelComponent"
                 @update:name="val => name = val"
+                :definition="definition"
             ></component>
         </v-card-text>
     </div>
@@ -36,14 +39,18 @@ export default {
     props: {
         element: Object,
         processDefinitionId: String,
-        isViewMode: Boolean
+        isViewMode: Boolean,
+        definition: Object
     },
     created() {
         this.uengineProperties = JSON.parse(this.element.extensionElements.values[0].json)
+        if (this.element.lanes?.length > 0) {
+            this.role = this.element.lanes[0].name
+        }
         // 필수 uEngine Properties의 key가 없다면 작업.
-        Object.keys(this.requiredKeyLists).forEach(key => {
-            this.ensureKeyExists(this.uengineProperties, key, this.requiredKeyLists[key])
-        })
+        // Object.keys(this.requiredKeyLists).forEach(key => {
+        //     this.ensureKeyExists(this.uengineProperties, key, this.requiredKeyLists[key])
+        // })
     },
     components: {
     },
@@ -54,10 +61,10 @@ export default {
             //     "role": { "name": "" },
             //     "parameters": []
             // },
-            requiredKeyLists: {
-                "role": { "name": "" },
-                "parameters": []
-            },
+            // requiredKeyLists: {
+
+            //     "parameters": []
+            // },
             definitions: [],
             elementCopy: this.element,
             uengineProperties: {},
@@ -75,7 +82,8 @@ export default {
             stroage: null,
             editParam: false,
             paramKey: "",
-            paramValue: ""
+            paramValue: "",
+            role: ""
         };
     },
     async mounted() {
@@ -87,9 +95,7 @@ export default {
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
         this.name = this.element.name
-        if (this.element.lanes?.length > 0) {
-            this.uengineProperties.role = { "name": this.element.lanes[0].name }
-        }
+
     },
     computed: {
         panelName() {
