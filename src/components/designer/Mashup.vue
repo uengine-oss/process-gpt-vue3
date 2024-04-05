@@ -35,12 +35,7 @@ export default {
   name: 'mash-up',
   mixins: [ChatModule],
   props: {
-    // value:String,
-    value: {
-      required: true,
-      type: String,
-      default: ''
-    }
+    modelValue: String
   },
   data: () => ({
     kEditor: null,
@@ -210,8 +205,8 @@ export default {
     //   tempDivElement.innerHTML = this.value;
     //   me.kEditor.keditor(tempDivElement);
     // } else {
-    if (this.value) {
-      $(me.kEditor)[0].innerHTML = this.value;
+    if (this.modelValue) {
+      $(me.kEditor)[0].innerHTML = this.modelValue;
     }
 
     me.kEditor.keditor({
