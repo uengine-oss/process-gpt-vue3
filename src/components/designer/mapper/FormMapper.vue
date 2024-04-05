@@ -164,6 +164,8 @@ export default {
         
 
         const store = useBpmnStore();
+        console.log(store.processDefinition)
+        
         this.modeler = store.getModeler;
         let def = modeler.getDefinitions();
         const processElement = def.rootElements.find(element => element.$type === 'bpmn:Process');

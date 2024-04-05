@@ -269,7 +269,9 @@ export default {
                 "sequences": []
             }
         const store = useBpmnStore();
+        store.setProcessDefinition(this);
         this.bpmnModeler = store.getModeler;
+        
         // const def = this.bpmnModeler.getDefinitions();
         // console.log(this.definitions)
         // LLM과 uEngine 각각 처리 필요.
