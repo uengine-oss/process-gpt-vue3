@@ -51,7 +51,7 @@
 
                 <div class="d-flex w-100" style="height: calc(100vh - 307px);">
                     <v-col>
-                        <v-alert color="#2196F3" variant="outlined">
+                        <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
                             <template v-slot:title>
                                 <Icon style="margin-left:-6px;" icon="clarity:info-line" width="32" height="32" />
                             </template>
