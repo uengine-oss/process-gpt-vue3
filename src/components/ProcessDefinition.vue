@@ -281,6 +281,7 @@ export default {
         setDefinition() {
             let self = this
             const def = this.bpmnModeler.getDefinitions();
+            let bpmnFactory = this.bpmnModeler.get('bpmnFactory')
             const processElement = def.rootElements.find(element => element.$type === 'bpmn:Process');
             if (!processElement) {
                 console.error('bpmn:Process element not found');
