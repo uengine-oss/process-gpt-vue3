@@ -9,7 +9,7 @@
                 </div>
             </template>
             <template v-slot:rightpart>
-                <mashup v-model="src" @change="checkHTML"/>
+                <mashup v-model="src" @change="checkHTML" :key="mashupKey"/>
             </template>
 
             <template v-slot:mobileLeftContent>
@@ -62,10 +62,10 @@ export default {
         },
         processDefinitionMap: null,
         modeler: null,
-        src:null,
+        src:``,
 
-        formOutput: "", // 폼 디자이너에서 생성된 결과물을 보여주기 위해서
-        prevFormOutput: "" // 폼 디자이너에게 이미 이전에 생성된 HTML 결과물을 전달하기 위해서
+        prevFormOutput: "", // 폼 디자이너에게 이미 이전에 생성된 HTML 결과물을 전달하기 위해서
+        mashupKey: 0 // src가 변경되었을 경우, Mashup 컴포넌트를 다시 렌더링하기 위해서
     }),
     async created() {
         await this.init();
@@ -73,7 +73,6 @@ export default {
             isStream: true,
             preferredLanguage: 'Korean'
         });
-        this.src = localStorage["keditor.editing.content"]
     },
     beforeDestroy() {
         this.src = null;
@@ -158,8 +157,11 @@ export default {
                 messageWriting.content = messageWriting.content.replace(messageWriting.jsonContent, "")
 
                 // 생성된 HTML을 보여주기 위해서
-                if(messageWriting.jsonContent) 
-                    this.formOutput = messageWriting.jsonContent.htmlOutput
+                if(messageWriting.jsonContent) {
+                    this.applyNewSrcToMashup(
+                        this.aiResultToKEditorContent(messageWriting.jsonContent.htmlOutput)
+                    )
+                }
 
             } catch (error) {
                 console.log(error);
@@ -176,11 +178,58 @@ export default {
                 const textFragment = textFragments[i]
                 if((!textFragment.includes("{")) || (!textFragment.includes("}")) || (!textFragment.includes("htmlOutput"))) continue
 
-                const processedFragment = textFragment.match(/\{[\s\S]*\}/)[0].replaceAll("\n", "").replaceAll("`", `"`)
-                return JSON.parse(processedFragment)
+                try {
+
+                    const processedFragment = textFragment.match(/\{[\s\S]*\}/)[0].replaceAll("\n", "").replaceAll("`", `"`)
+                    return JSON.parse(processedFragment)
+
+                } catch (error) {
+                    console.log("유효 문자열 JSON 파싱 과정에서 오류 발생!")
+                    console.log(error)
+                    console.log(textFragment)
+                }
             }
 
             return null
+        },
+
+        /**
+         * AI가 생성한 결과물을 KEditor에 적합한 Html 형식으로 변환하기 위해서
+         * @param {*} aiResult AI가 생성한 결과물
+         */
+        aiResultToKEditorContent(aiResult) {
+            const dom = new DOMParser().parseFromString(aiResult, 'text/html')
+
+            // 컨테이너인 경우, data-type 속성을 추가해서 KEditor에서 인식할 수 있도록 만들기 위해서서
+            const nodes = dom.querySelectorAll('[class^="col-sm-"]')
+            nodes.forEach(node => {
+                node.setAttribute('data-type', 'container-content')
+            })
+
+            // 컴포넌트인 경우, formDesigner 태그로 감싸서 KEditor가 속성을 편집할 수 있도록 만들기
+            const components = dom.querySelectorAll('[data-alias], [alias], label, [type="submit"]')
+            components.forEach(component => {
+                const parent = document.createElement('div')
+                parent.setAttribute('name', 'formDesigner')
+
+                component.parentNode.insertBefore(parent, component)
+                parent.appendChild(component)
+            })
+
+            // 기본 HTML 구조를 KEditor 컨테이너 section으로 감싸서 KEditor가 인식할 수 있도록 만들기
+            const section = document.createElement('section')
+            section.setAttribute('class', 'keditor-ui keditor-container-inner')
+            section.innerHTML = dom.body.innerHTML
+
+            return section.outerHTML
+        },
+
+        /**
+         * mashup에 새로운 src를 제공해서 재랜더링하기 위해서
+         */
+        applyNewSrcToMashup(src) {
+            this.src = src
+            this.mashupKey += 1
         }
     }
 };

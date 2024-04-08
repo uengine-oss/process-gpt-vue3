@@ -21,10 +21,10 @@
             </v-row>
             <v-row class="align-center" v-if="forms.length>0">
                 <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
-                    <v-label class=" font-weight-medium" for="hcpm">폼 지정</v-label>
+                    <v-label class=" font-weight-medium" for="hcpm">{{ $t('ProcessVariable.defaultValue') }}</v-label>
                 </v-col>
                 <v-col cols="12" sm="9">
-                    <v-autocomplete v-model="processVariable.form" :items="forms" color="primary" variant="outlined"
+                    <v-autocomplete v-model="processVariable.defaultValue" :items="forms" color="primary" variant="outlined"
                         hide-details></v-autocomplete>
                 </v-col>
             </v-row>
@@ -97,7 +97,7 @@ export default {
             processVariable: {
                 name: "",
                 type: "",
-                form: "",
+                defaultValue: "",
                 description: "",
                 datasource: {
                     type: "",

@@ -59,7 +59,9 @@
         "organizationChartExplanation": "대화형으로 조직도를 관리하십시오.\n 팀(부서) 롤(역할), 직원들을 등록 수정 삭제할 수 있습니다. \n예를 들어, '개발팀, 관리팀을 등록하고, 홍길동님을 신입사원으로 관리팀에 등록해줘. 역할은 개발자로 들어오셨어. 관리팀의 팀장은 아무개 팀장님이야.' 와 같은 명령을 할 수 있습니다."
     },
     "processDefinitionMap": {
-        "title": "프로세스 정의 체계도"
+        "title": "프로세스 정의 체계도",
+        "lock" : "체크인(저장)하려면 자물쇠를 눌러 자물쇠를 닫으십시",
+        "unlock" : "체크아웃(편집)하려면 자물쇠를 눌러 자물쇠를 여십시오"
     },
     "uiDefinition": {
         "title": "화면 정의",
@@ -72,7 +74,7 @@
         "processDefinitionExplanation": "대화형으로 프로세스를 관리하십시오. \n 예를 들어,\n '영업관리 프로세스를 다음과 같이 등록해줘:\n 1. 영업기회등 고객명, 예상사업규모, 키맨, 요구사항\n 2. 제안 작성: 제안 내용, 가격\n 3. 수주 혹은 실주\n 4. 수주한 경우, 계약진행' 와 같은 명령을 할 수 있습니다.",
         "name": "이름",
         "type": "유형",
-        "form": "폼",
+        "defaultValue": "폼",
         "description": "설명",
         "dataSource": "데이터소스",
         "query": "쿼리",
@@ -87,6 +89,7 @@
     "ProcessVariable": {
         "name": "이름",
         "type": "유형",
+        "defaultValue": "폼",
         "description": "설명",
         "dataSource": "데이터소스",
         "add": "추가",

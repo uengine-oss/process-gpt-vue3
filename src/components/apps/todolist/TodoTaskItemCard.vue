@@ -11,7 +11,7 @@
                 <DotsVerticalIcon size="15" />
                 <v-menu activator="parent">
                     <v-list density="compact">
-                        <v-list-item @click="deleteTask(task.id)">
+                        <v-list-item @click="deleteTask(task)">
                             <v-list-item-title >
                                 삭제
                             </v-list-item-title>
@@ -63,6 +63,7 @@ export default {
         task: Object,
         storage: Object,
     },
+    emits: ['onDeleteTask'],
     data: () => ({
         instance: null,
         dialog: false,
@@ -116,8 +117,8 @@ export default {
                 this.dialog = true;
             }
         },
-        deleteTask(id) {
-            this.storage.delete(`todolist/${id}`, {key: 'id'});
+        deleteTask(task) {
+            this.$emit('onDeleteTask', task);
         },
         async editTask() {
             await this.storage.putObject('todolist', this.task);

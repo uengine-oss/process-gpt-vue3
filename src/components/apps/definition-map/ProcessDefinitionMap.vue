@@ -11,25 +11,43 @@
                     <span v-if="lock && userInfo.email && userInfo.email != editUser" class="text-body-1 pt-1 mr-1">
                         {{ editUser }} 님이 수정 중 입니다.
                     </span>
-                    <v-btn v-if="!lock && isAdmin" 
-                        icon variant="text" size="24"
-                        class="ml-3 cp-unlock"
-                        @click="openAlertDialog('checkout')"
-                        @mouseenter="hover = true"
-                        @mouseleave="hover = false"
-                    >
-                        <LockIcon width="24" height="24" />
-                    </v-btn>
                     
-                    <v-btn v-if="lock && isAdmin"
-                        icon variant="text" size="24"
-                        class="cp-lock"
-                        @click="openAlertDialog('checkin')"
-                        @mouseenter="hover = true"
-                        @mouseleave="hover = false"
-                    >
-                        <LockOpenIcon width="24" height="24" />
-                    </v-btn>
+                    <v-tooltip location="bottom" v-if="!lock && isAdmin" >
+                        <template v-slot:activator="{ props }">
+                            <v-btn 
+                                v-bind="props"
+                                icon variant="text" size="24"
+                                class="ml-3 cp-unlock"
+                                @click="openAlertDialog('checkout')"
+                            >
+                                <LockIcon width="24" height="24" />
+                            </v-btn>
+                        </template>
+                        <span>{{ $t('processDefinitionMap.unlock') }}</span>
+                    </v-tooltip>
+
+                    <v-tooltip location="bottom" v-if="lock && isAdmin">
+                        <template v-slot:activator="{ props }">
+                            <v-btn 
+                                v-if="userInfo.email && userInfo.email == editUser"
+                                v-bind="props"
+                                icon variant="text" size="24"
+                                class="cp-lock"
+                                @click="openAlertDialog('checkin')"
+                            >
+                                <LockOpenIcon width="24" height="24" />
+                            </v-btn>
+                            <v-btn 
+                                v-if="userInfo.email && userInfo.email != editUser"
+                                v-bind="props"
+                                icon variant="text" size="24"
+                                @click="openAlertDialog('checkin')"
+                            >
+                                <LockIcon width="24" height="24" />
+                            </v-btn>
+                        </template>
+                        <span>{{ $t('processDefinitionMap.lock') }}</span>
+                    </v-tooltip>
 
                     <v-btn icon variant="text" class="ml-3" :size="24" @click="capturePng">
                         <Icon icon="mage:image-download" width="24" height="24" />
@@ -126,17 +144,6 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
-
-        <v-overlay v-model="overlay">
-            <div class="d-flex justify-center align-center" 
-                style="min-width: 100vw; min-height: 100vh;">
-                <v-progress-circular
-                    color="primary"
-                    indeterminate
-                    :size="50"
-                ></v-progress-circular>
-            </div>
-        </v-overlay>
     </div>
 </template>
 
@@ -175,7 +182,6 @@ export default {
         alertType: '',
         alertDialog: false,
         alertMessage: '',
-        overlay: false,
         isAdmin: false,
     }),
     async created() {
@@ -185,11 +191,9 @@ export default {
         }
         this.$app.try({
             action: async () => {
-                this.overlay = true;
                 this.storage = StorageBaseFactory.getStorage();
                 await this.getProcessMap();
                 await this.init();
-                this.overlay = false;
             },
         });
     },

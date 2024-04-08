@@ -101,12 +101,11 @@ import ConnectorComponent from './ConnectorComponent.vue';
 import PortComponent from './PortComponent.vue';
 import FormMapper from './scripts/formMapper';
 
-import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 
 export default {
     name: "form-mapper",
-    mixins: [FormMapper, ProcessDefinition],
+    mixins: [FormMapper],
     props: {
         definition: {
             type: Object,
@@ -159,80 +158,101 @@ export default {
     async created() {
         let me = this
 
+        me.storage = StorageBaseFactory.getStorage('supabase');
+
         const definition = this.definition;
-        console.log(definition.processVariables)
-        
-
-        const store = useBpmnStore();
-        console.log(store.processDefinition)
-        
-        this.modeler = store.getModeler;
-        let def = modeler.getDefinitions();
-        const processElement = def.rootElements.find(element => element.$type === 'bpmn:Process');
-        if (!processElement) {
-            console.error('bpmn:Process element not found');
-            return;
-        }
-
-        // // bpmn2:process 요소 내의 bpmn2:extensionElements 요소를 찾거나 새로 생성합니다.
-        let extensionElements = processElement.extensionElements;
-        if (!extensionElements) {
-            extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
-            processElement.extensionElements = extensionElements;
-        }
-
-        // // uengine:properties 요소를 찾거나 새로 생성합니다.
-        let uengineProperties
-        if (extensionElements.values) {
-            uengineProperties = extensionElements.values.find(val => val.$type === 'uengine:Properties');
-        }
-
-        if (!uengineProperties) {
-            uengineProperties = bpmnFactory.create('uengine:Properties');
-            extensionElements.get('values').push(uengineProperties);
-        }
-
-        uengineProperties?.variables?.forEach(function (variable) {
-            me.processVariableDescriptors.push({
-                name: variable.$attrs.name,
-                type: variable.$attrs.type
-            })
-        })
 
         me.nodes = {};
         me.config = {
             roots: []
         };
 
-        me.processVariableDescriptors.forEach(async (variable) => {
-            if (!me.config.roots.includes(variable.type)) {
-                me.config.roots.push(variable.type);
+        var test = [
+                {'name': "장애신고",
+                'type': "Form",
+                'defaultValue': "form11_장애신고",
+                'description': "",
+                'datasource': {
+                    'type': "",
+                    'sql': ""
+                },
+                'table': ""},
+                {'name': "장애처리",
+                'type': "Form",
+                'defaultValue': "form22_장애처리",
+                'description': "",
+                'datasource': {
+                    'type': "",
+                    'sql': ""
+                },
+                'table': ""},
+                {'name': "처리알림",
+                'type': "Form",
+                'defaultValue': "form33_처리알림",
+                'description': "",
+                'datasource': {
+                    'type': "",
+                    'sql': ""
+                },
+                'table': ""},
+                {'name': "비고",
+                'type': "Text",
+                'defaultValue': "",
+                'description': "",
+                'datasource': {
+                    'type': "",
+                    'sql': ""
+                },
+                'table': ""}
+        ]
+
+        test.forEach(async (variable) => {
+            if (!me.config.roots.includes("Variables")) {
+                me.config.roots.push("Variables");
             }
-            if (!me.nodes[variable.type]) {
-                me.nodes[variable.type] = {
-                    text: variable.type,
+
+            if (!me.nodes["Variables"]) {
+                me.nodes["Variables"] = {
+                    text: "Variables",
                     children: []
                 };
             }
 
-            if(me.nodes[variable.type]){
-                me.nodes[variable.type].children.push(variable.name);
+            if(me.nodes["Variables"]){
+                me.nodes["Variables"].children.push(variable.name);
                 me.nodes[variable.name] = {
-                    text: variable.name
+                    text: variable.name,
+                    children: []
                 };
             }
 
-            // form.fields.forEach((field) => {
+            let formDefs = await me.storage.list('form_def');
+            let [formName, formAlias] = variable.defaultValue.split('_');
+            let matchingForm = formDefs.find(form => form.name === formName && form.alias === formAlias)
+
+            if (matchingForm) {
+                matchingForm.fields.forEach(field => {
+                    if (!me.nodes[variable.name]) {
+                        me.nodes[variable.name] = {
+                            text: variable.name,
+                            children: []
+                        };
+                    }
+                    let fieldNameAlias = field.name + '_' + field.alias;
+                    me.nodes[variable.name].children.push(field.name);
+                    me.nodes[field.name] = {
+                        text: field.name
+                    };
+                });
+            }
+
+            // form.fields.forEach(async (field) => {
             //     me.nodes[form.id].children.push(field.name + '_' + field.alias);
             //     me.nodes[field.name + '_' + field.alias] = {
             //         text: field.name + '_' + field.alias
             //     };
             // });
         });
-
-
-        me.storage = StorageBaseFactory.getStorage('supabase');
-        let formDefs = await me.storage.list('form_def');
 
         me.renderKey++;
     },
