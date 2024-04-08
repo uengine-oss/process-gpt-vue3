@@ -1,15 +1,21 @@
 <template>
-    <div v-if="enableEdit">
+    <div>
         <div class="d-flex">
             <!--openFormMapperDialog의 v-if는 보여줬을때 모양이 이상하기 때문에 일단 숨김처리함-->
-            <v-btn v-if="true" icon variant="text" :width="size" :height="size" @click="formMapperDialog=!formMapperDialog">
+            <!-- <v-btn v-if="true" icon variant="text" :width="size" :height="size"
+                @click="formMapperDialog = !formMapperDialog">
                 <PlusIcon :size="size" />
-            </v-btn>
+            </v-btn> -->
             <v-btn icon variant="text" :width="size" :height="size">
-                <PlusIcon v-if="type == 'map'" :size="size" />
-                <DotsVerticalIcon v-if="type != 'map'" :size="size" />
-                <v-menu activator="parent">
+                <!-- <PlusIcon v-if="type == 'map' && enableEdit" :size="size" /> -->
+                <DotsVerticalIcon v-if="type == 'map' && (enableEdit || enableExecution)" :size="size" />
+                <v-menu v-if="type == 'map' && enableEdit" activator="parent">
                     <v-list density="compact" class="cursor-pointer">
+                        <v-list-item @click="editProcess">
+                            <v-list-item-title>
+                                프로세스 실행
+                            </v-list-item-title>
+                        </v-list-item>
                         <v-list-item v-if="type != 'sub'" @click="openDialog('add')">
                             <v-list-item-title class="cp-process">
                                 <span v-if="addType != 'sub'">{{ addType.toUpperCase() }}</span> 프로세스 추가
@@ -30,7 +36,43 @@
                                 삭제
                             </v-list-item-title>
                         </v-list-item>
-                        <v-list-item class="cp-mega-datail" v-if="type == 'mega'" @click="openViewProcessDetails(process)">
+                        <v-list-item class="cp-mega-datail" v-if="type == 'mega'"
+                            @click="openViewProcessDetails(process)">
+                            <v-list-item-title>
+                                상세보기
+                            </v-list-item-title>
+                        </v-list-item>
+                    </v-list>
+                </v-menu>
+                <v-menu v-if="type == 'map' && enableExecution" activator="parent">
+                    <v-list density="compact" class="cursor-pointer">
+                        <v-list-item v-if="type != 'sub'" @click="openDialog('add')">
+                            <v-list-item-title class="cp-process">
+                                <span v-if="addType != 'sub'">{{ addType.toUpperCase() }}</span> 프로세스 추가
+                            </v-list-item-title>
+                        </v-list-item>
+                        <v-list-item v-else @click="editProcess">
+                            <v-list-item-title>
+                                프로세스 실행
+                            </v-list-item-title>
+                        </v-list-item>
+                        <v-list-item v-else @click="editProcess">
+                            <v-list-item-title>
+                                프로세스 편집
+                            </v-list-item-title>
+                        </v-list-item>
+                        <v-list-item v-if="type != 'map'" @click="openDialog('update')">
+                            <v-list-item-title>
+                                수정
+                            </v-list-item-title>
+                        </v-list-item>
+                        <v-list-item v-if="type != 'map'" @click="deleteProcess">
+                            <v-list-item-title>
+                                삭제
+                            </v-list-item-title>
+                        </v-list-item>
+                        <v-list-item class="cp-mega-datail" v-if="type == 'mega'"
+                            @click="openViewProcessDetails(process)">
                             <v-list-item-title>
                                 상세보기
                             </v-list-item-title>
@@ -39,24 +81,16 @@
                 </v-menu>
             </v-btn>
         </div>
-        
-        <ProcessDialog
-            :enableEdit="enableEdit"
-            :process="process"
-            :processDialogStatus="processDialogStatus"
-            :definitions="definitions"
-            :processType="processType"
-            :type="type"
-            @add="addProcess"
-            @edit="updateProcess"
-            @closeProcessDialog="closeProcessDialog"
-        />
+
+        <ProcessDialog :enableEdit="enableEdit" :process="process" :processDialogStatus="processDialogStatus"
+            :definitions="definitions" :processType="processType" :type="type" @add="addProcess" @edit="updateProcess"
+            @closeProcessDialog="closeProcessDialog" />
     </div>
 </template>
 
 <script>
 import ProcessDialog from './ProcessDialog.vue'
-import FormMapper from '@/components/designer/mapper/FormMapper.vue'; 
+import FormMapper from '@/components/designer/mapper/FormMapper.vue';
 
 
 export default {
@@ -70,6 +104,7 @@ export default {
         process: Object,
         storage: Object,
         enableEdit: Boolean,
+        enableExecution: Boolean,
     },
     data: () => ({
         formMapperDialog: false,
@@ -79,7 +114,7 @@ export default {
         },
         definitions: null,
         processDialogStatus: false,
-        processType:"",
+        processType: "",
     }),
     computed: {
         addType() {

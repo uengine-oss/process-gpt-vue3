@@ -172,6 +172,7 @@ export default {
         },
         type: 'map',
         enableEdit: false,
+        enableExecution: true,
         userInfo: {},
         lock: null,
         editUser: null,
@@ -203,6 +204,7 @@ export default {
             if (isAdmin == "true") {
                 this.isAdmin = true;
                 this.enableEdit = false;
+                this.enableExecution = true;
                 const lockObj =  await this.storage.getObject('lock/process-map', {key: 'id'});
                 if (lockObj && lockObj.id && lockObj.user_id) {
                     this.lock = true;

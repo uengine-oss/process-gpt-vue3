@@ -1,5 +1,5 @@
 interface Backend {
-    listDefinition(basePath): Promise<any>;
+    listDefinition(basePath: string): Promise<any>;
     listVersionDefinitions(version: string, basePath: string): Promise<any>;
     listVersions(): Promise<any>;
     versionUp(version: string, major: boolean, makeProduction: boolean): Promise<any>;
@@ -11,8 +11,6 @@ interface Backend {
     createFolder(newResource: any, requestPath: string): Promise<any>;
     deleteDefinition(requestPath: string): Promise<any>;
     putRawDefinition(definition: any, requestPath: string): Promise<any>;
-    getRawDefinition(defPath: string): Promise<any>;
-    getXMLDefinition(defPath: string, production: boolean): Promise<any>;
     start(command: any): Promise<any>;
     stop(instanceId: string): Promise<any>;
     suspend(instanceId: string): Promise<any>;
@@ -32,4 +30,5 @@ interface Backend {
     getWorkList(): Promise<any>;
 }
 
-export { Backend };
+export type { Backend }
+

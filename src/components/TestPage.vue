@@ -3,6 +3,7 @@
         <AppBaseCard>
             <template v-slot:leftpart>
                 <v-btn @click="listDefinition">listDefinition</v-btn>
+                <v-btn @click="start">start</v-btn>
             </template>
             <template v-slot:rightpart>
                 <div class="no-scrollbar">
@@ -22,7 +23,7 @@
 </template>
 
 <script>
-import { UEngineBackend } from '@/components/api/UEngineBackend';
+import BackendFactory from '@/components/api/BackendFactory';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 export default {
     name: 'TestPage',
@@ -33,7 +34,7 @@ export default {
         uengine: null
     }),
     async created() {
-        this.uengine = new UEngineBackend();
+        this.uengine = BackendFactory.createBackend('uengine');
     },
     mounted() {
 
@@ -47,6 +48,29 @@ export default {
     methods: {
         listDefinition() {
             this.uengine.listDefinition();
+        },
+        start() {
+            // private String processDefinitionId;
+            // private String instanceName;
+            // private boolean isSimulation;
+            // private RoleMapping[] roleMappings;
+            // private ProcessVariableValue[] processVariableValues;
+
+            let command = {
+                "processDefinitionId": "sales/simpleProcess.xml",
+                "roleMappings": [
+                    {
+                        "name": "initiator",
+                        "endpoints": ["initiator@uengine.org"],
+                        "resourceNames": ["Initiator"]
+                    }
+                ]
+            }
+
+            this.uengine.start(command);
+        },
+        putRawDefinition(){
+            this.uengine.putRawDefinition();
         }
     }
 };
