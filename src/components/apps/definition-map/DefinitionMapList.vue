@@ -51,7 +51,7 @@
                     :userInfo="userInfo"
                     :enableEdit="enableEdit"
                     @view="viewProcess"
-                    @dblclick="viewProcessDetail(item)"
+                    @click="viewProcessDetail(item)"
                 />
             </v-col>
         </v-row>

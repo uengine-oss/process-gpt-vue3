@@ -141,10 +141,8 @@
                                             </template>
                                             <v-sheet class="bg-lightsecondary rounded-md px-3 py-2"
                                                 @mouseover="replyIndex = index" @mouseleave="replyIndex = -1">
-                                                <pre class="text-body-1" v-if="message.replyUserName">{{ message.replyUserName }}
-                        </pre>
-                                                <pre class="text-body-1" v-if="message.replyContent">{{ message.replyContent }}
-                        </pre>
+                                                <pre class="text-body-1" v-if="message.replyUserName">{{ message.replyUserName }}</pre>
+                                                <pre class="text-body-1" v-if="message.replyContent">{{ message.replyContent }}</pre>
                                                 <v-divider v-if="message.replyContent"></v-divider>
 
                                                 <pre class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
@@ -189,8 +187,7 @@
                                                                         text-color="primary"
                                                                         style="margin-bottom: 1px;">
                                                                         <v-icon start icon="mdi-label" x-small></v-icon>
-                                                                        {{
-                        source.file_name }}
+                                                                        {{source.file_name }}
                                                                     </v-chip>
                                                                 </div>
                                                             </v-card-text>
@@ -679,10 +676,6 @@ export default {
 .message-input-box .v-field__append-inner,
 .v-field__prepend-inner {
     padding: 0px !important;
-}
-
-.my-progress-linear .v-progress-linear__indeterminate {
-    background: linear-gradient(to right, #E1F5FE, #80DEEA, #1565C0) !important;
 }
 
 .prompt-edit-textarea textarea {

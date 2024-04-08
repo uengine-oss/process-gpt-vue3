@@ -3,6 +3,11 @@
         <v-card elevation="10" :style="!$globalState.state.isZoomed ? 'height:calc(100vh - 155px)' :'height:100vh;'"
             style="overflow: auto;"
         >
+            <v-progress-linear
+                v-if="overlay"
+                indeterminate
+                class="my-progress-linear"
+            ></v-progress-linear>
             <div v-if="componentName != 'SubProcessDetail'" class="pa-3 d-flex align-center" style="position: sticky; top: 0; z-index:2; background-color:white">
                 <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
                 
@@ -11,25 +16,34 @@
                     <span v-if="lock && userInfo.email && userInfo.email != editUser" class="text-body-1 pt-1 mr-1">
                         {{ editUser }} 님이 수정 중 입니다.
                     </span>
-                    <v-btn v-if="!lock && isAdmin" 
-                        icon variant="text" size="24"
-                        class="ml-3 cp-unlock"
-                        @click="openAlertDialog('checkout')"
-                        @mouseenter="hover = true"
-                        @mouseleave="hover = false"
-                    >
-                        <LockIcon width="24" height="24" />
-                    </v-btn>
                     
-                    <v-btn v-if="lock && isAdmin"
-                        icon variant="text" size="24"
-                        class="cp-lock"
-                        @click="openAlertDialog('checkin')"
-                        @mouseenter="hover = true"
-                        @mouseleave="hover = false"
-                    >
-                        <LockOpenIcon width="24" height="24" />
-                    </v-btn>
+                    <v-tooltip location="bottom" v-if="!lock && isAdmin" >
+                        <template v-slot:activator="{ props }">
+                            <v-btn 
+                                v-bind="props"
+                                icon variant="text" size="24"
+                                class="ml-3 cp-unlock"
+                                @click="openAlertDialog('checkout')"
+                            >
+                                <LockIcon width="24" height="24" />
+                            </v-btn>
+                        </template>
+                        <span>{{ $t('processDefinitionMap.unlock') }}</span>
+                    </v-tooltip>
+
+                    <v-tooltip location="bottom" v-if="lock && isAdmin">
+                        <template v-slot:activator="{ props }">
+                            <v-btn 
+                                v-bind="props"
+                                icon variant="text" size="24"
+                                class="cp-lock"
+                                @click="openAlertDialog('checkin')"
+                            >
+                                <LockOpenIcon width="24" height="24" />
+                            </v-btn>
+                        </template>
+                        <span>{{ $t('processDefinitionMap.lock') }}</span>
+                    </v-tooltip>
 
                     <v-btn icon variant="text" class="ml-3" :size="24" @click="capturePng">
                         <Icon icon="mage:image-download" width="24" height="24" />
@@ -126,17 +140,6 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
-
-        <v-overlay v-model="overlay">
-            <div class="d-flex justify-center align-center" 
-                style="min-width: 100vw; min-height: 100vh;">
-                <v-progress-circular
-                    color="primary"
-                    indeterminate
-                    :size="50"
-                ></v-progress-circular>
-            </div>
-        </v-overlay>
     </div>
 </template>
 
