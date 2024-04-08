@@ -68,7 +68,7 @@
                     </v-btn>
                 </v-row>
             </div>
-            <v-dialog v-model="oepnFieldMapper"  max-width="90vw" max-height="90vh" fullscreen>
+            <v-dialog v-model="oepnFieldMapper"  max-width="80%" max-height="80%">
                 <form-mapper :definition="definition" />
             </v-dialog>
         </div>
