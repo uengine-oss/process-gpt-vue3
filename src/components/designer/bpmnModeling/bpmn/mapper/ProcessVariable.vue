@@ -95,7 +95,7 @@ export default {
             types: ["Text", "Number", "Date", "Attachment", "Form"],
             forms: [],
             processVariable: {
-                name: "test",
+                name: "",
                 type: "",
                 defaultValue: null,
                 description: "",
