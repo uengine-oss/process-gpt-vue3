@@ -7,9 +7,6 @@
     <div id="kEditor1">
     </div>
     <dynamic-form :content="content"></dynamic-form>
-    <div id="evaluatingDiv"><dynamic-form :content="editing"></dynamic-form></div>
-
-    
     
     <v-dialog v-model="openPanel">
         <form-definition-panel
@@ -331,7 +328,6 @@ export default {
       }
     });
 
-    replace(console.log($("#evaluatingDiv")) + originalVueTag)
     // }
   },
   beforeUnmount() {
