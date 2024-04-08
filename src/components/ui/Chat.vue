@@ -49,7 +49,7 @@
                 <!-- <v-btn v-if="type == 'chats' && filteredMessages.length > 0" style="position: absolute; left: 45%"
                     @click="getMoreChat()">get more chat</v-btn> -->
 
-                <div class="d-flex w-100" style="height: calc(100vh - 307px);">
+                <div class="d-flex w-100" style="height: calc(100vh - 284px);">
                     <v-col>
                         <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
                             <template v-slot:title>
@@ -390,12 +390,7 @@ export default {
             };
             // 국제화된 문자열을 가져옵니다.
             if(this.chatInfo){
-                const translatedText = this.$t(this.chatInfo.text);
-                if (translatedText.includes('\n')) {
-                    const arr = translatedText.split('\n');
-                    textObj.subtitle = arr[0];
-                    textObj.detail = arr.slice(1).join('\n'); // 첫 번째 이후의 모든 텍스트를 detail로 결합
-                }
+                textObj.detail = this.$t(this.chatInfo.text);
             }
             return textObj;
         },

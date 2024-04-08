@@ -3,11 +3,6 @@
         <v-card elevation="10" :style="!$globalState.state.isZoomed ? 'height:calc(100vh - 155px)' :'height:100vh;'"
             style="overflow: auto;"
         >
-            <v-progress-linear
-                v-if="overlay"
-                indeterminate
-                class="my-progress-linear"
-            ></v-progress-linear>
             <div v-if="componentName != 'SubProcessDetail'" class="pa-3 d-flex align-center" style="position: sticky; top: 0; z-index:2; background-color:white">
                 <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
                 
@@ -178,7 +173,6 @@ export default {
         alertType: '',
         alertDialog: false,
         alertMessage: '',
-        overlay: false,
         isAdmin: false,
     }),
     async created() {
@@ -188,11 +182,9 @@ export default {
         }
         this.$app.try({
             action: async () => {
-                this.overlay = true;
                 this.storage = StorageBaseFactory.getStorage();
                 await this.getProcessMap();
                 await this.init();
-                this.overlay = false;
             },
         });
     },
