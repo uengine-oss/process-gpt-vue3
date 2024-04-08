@@ -61,7 +61,7 @@
                             <tr>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.name') }}</th>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.type') }}</th>
-                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.defaultValue') }}</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.form') }}</th>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.description')
                                     }}
                                 </th>
@@ -195,8 +195,7 @@ export default {
         lastEditedIndex: 0,
         editComponentKey: 0,
         bpmnModeler: null,
-        processVariables: [],
-        test: "test"
+        processVariables: []
     }),
     computed: {
         mode() {

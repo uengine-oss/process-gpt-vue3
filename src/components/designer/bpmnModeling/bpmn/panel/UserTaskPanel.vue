@@ -40,16 +40,38 @@
                     :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
             </v-row>
         </div>
-        <div>
-            <v-row  class="ma-0 pa-0">
-                <v-btn text color="primary" class="my-3" @click="oepnFieldMapper = !oepnFieldMapper">
-                    Field Mapping
-                </v-btn>
-            </v-row>
+        <v-spacer></v-spacer>
+        <v-checkbox v-model="isFormActivity" label="폼 기반 업무"></v-checkbox>
+        <div v-if="isFormActivity">
+            <div>
+                <v-row cclass="ma-0 pa-0">
+                    <!-- <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
+                        <v-label class=" font-weight-medium" for="hcpm">{{ $t('ProcessVariable.defaultValue') }}</v-label>
+                    </v-col> -->
+                    <v-col cols="12" sm="9">
+                        <v-autocomplete 
+                            v-model="selectedForm"
+                            :items="definition.processVariables
+                                        .filter(item => item.type === 'Form' && item.defaultValue && item.defaultValue.name && item.defaultValue.alias)
+                                        .map(item => item.defaultValue.name + '_' + item.defaultValue.alias)" 
+                            color="primary" 
+                            variant="outlined"
+                            hide-details>
+                        </v-autocomplete>
+                    </v-col>
+                </v-row>
+            </div>
+            <div>
+                <v-row  class="ma-0 pa-0">
+                    <v-btn text color="primary" class="my-3" @click="oepnFieldMapper = !oepnFieldMapper">
+                        Field Mapping
+                    </v-btn>
+                </v-row>
+            </div>
+            <v-dialog v-model="oepnFieldMapper"  max-width="90vw" max-height="90vh" fullscreen>
+                <form-mapper :definition="definition" />
+            </v-dialog>
         </div>
-        <v-dialog v-model="oepnFieldMapper"  max-width="90vw" max-height="90vh" fullscreen>
-            <form-mapper :definition="definition" />
-        </v-dialog>
         <!-- <div>
             <v-row class="ma-0 pa-0">
                 <div>{{ $t('BpnmPropertyPanel.checkPoints') }}</div>
@@ -143,9 +165,11 @@ export default {
         processDefinitionId: String,
         isViewMode: Boolean,
         role: String,
+        variableForHtmlFormContext: Object,
         definition: Object
     },
     created() {
+        
     },
     data() {
         return {
@@ -173,7 +197,9 @@ export default {
             editParam: false,
             paramKey: "",
             paramValue: "",
-            oepnFieldMapper: false
+            oepnFieldMapper: false,
+            isFormActivity: false,
+            selectedForm: ""
         };
     },
     async mounted() {
@@ -188,6 +214,10 @@ export default {
         }
         if (!this.copyUengineProperties.parameters)
             this.copyUengineProperties.parameters = []
+
+        if(this.variableForHtmlFormContext)
+            this.isFormActivity = true
+            this.selectedForm = `${this.variableForHtmlFormContext.name}_${this.variableForHtmlFormContext.alias}`
     },
     computed: {
         inputData() {
@@ -212,6 +242,11 @@ export default {
         }
     },
     watch: {
+        selectedForm(newVal){
+            const [formName, formAlias] = newVal.split('_');
+            const formItem = this.definition.processVariables.find(item => item.type === 'Form' && item.defaultValue.name === formName && item.defaultValue.alias === formAlias);
+            this.$emit('setVariableForHtmlFormContext', formItem.defaultValue)
+        }
     },
     methods: {
         deleteInputData(inputData) {

@@ -241,7 +241,8 @@ export default {
                     let fieldNameAlias = field.name + '_' + field.alias;
                     me.nodes[variable.name].children.push(field.name);
                     me.nodes[field.name] = {
-                        text: field.name
+                        text: field.name,
+                        object: field
                     };
                 });
             }
