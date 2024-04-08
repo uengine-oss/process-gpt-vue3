@@ -326,15 +326,9 @@ export default {
                     systemMsg = `"${responseObj.title}" 일정이 추가되었습니다.`
                     let start = responseObj.startDateTime.split('/')
                     let startDate = start[0].split("-")
-                    let startTime = start[1].split("-")
-                    
                     let end = responseObj.endDateTime.split('/')
                     let endDate = end[0].split("-")
-                    let endTime = end[1].split("-")
-                    // {
-                    //     start: new Date(y, m, d + 3, 10, 30),
-                    //     end: new Date(y, m, d + 3, 11, 30),
-                    // },
+
                     let uuid = me.uuid()
                     let scheduleObj = {
                         id: uuid,

@@ -5,6 +5,7 @@
                 <process-definition class="process-definition-resize"
                     :bpmn="bpmn" :processDefinition="processDefinition" :key="definitionChangeCount"
                     :isViewMode="isViewMode"
+                    :definitionChat="this"
                     @update="updateDefinition"
                 ></process-definition>
                 <process-definition-version-dialog :process="processDefinition" :loading="loading" :open="versionDialog" @close="toggleVersionDialog" @save="saveDefinition"></process-definition-version-dialog>
@@ -42,18 +43,18 @@ import partialParse from 'partial-json-parser';
 import { VectorStorage } from 'vector-storage';
 
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
+import ProcessDefinitionVersionDialog from '@/components/ProcessDefinitionVersionDialog.vue';
+import ProcessDefinitionVersionManager from '@/components/ProcessDefinitionVersionManager.vue';
 import ChatDetail from '@/components/apps/chats/ChatDetail.vue';
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import { useBpmnStore } from '@/stores/bpmn';
+import axios from 'axios';
 import * as jsondiff from 'jsondiffpatch';
 import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/ProcessDefinitionGenerator';
 import Chat from './ui/Chat.vue';
-import axios from 'axios';
-import ProcessDefinitionVersionDialog from '@/components/ProcessDefinitionVersionDialog.vue';
-import ProcessDefinitionVersionManager from '@/components/ProcessDefinitionVersionManager.vue';
 
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
 var jsondiffpatch = jsondiff.create({

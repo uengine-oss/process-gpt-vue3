@@ -1,4 +1,7 @@
 {
+    "module": "esnext",
+    "target": "ESNext",
+    "moduleResolution": "Node",
   "extends": "@vue/tsconfig/tsconfig.web.json",
   "include": ["env.d.ts", "src/**/*", "src/**/*.vue", "public/plugins/keditor.js"],
   "compilerOptions": {

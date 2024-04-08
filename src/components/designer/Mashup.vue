@@ -7,6 +7,9 @@
     <div id="kEditor1">
     </div>
     <dynamic-form :content="content"></dynamic-form>
+    <div id="evaluatingDiv"><dynamic-form :content="editing"></dynamic-form></div>
+
+    
     
     <v-dialog v-model="openPanel">
         <form-definition-panel
@@ -22,14 +25,11 @@
 <script>
 // import Snippets from '@/components/Snippets';
 // import Containers from './Containers';
-import { createApp } from 'vue';
-import TextField from '../ui/TextField.vue';
-import axios from 'axios';
-import DynamicForm from './DynamicForm.vue';
 import ChatModule from "@/components/ChatModule.vue";
-import { Vue } from 'vue-demi';
-import { diffDates } from '@fullcalendar/vue3';
 import FormDefinitionPanel from '@/components/designer/modeling/FormDefinitionPanel.vue';
+import axios from 'axios';
+import TextField from '../ui/TextField.vue';
+import DynamicForm from './DynamicForm.vue';
 
 export default {
   name: 'mash-up',
@@ -42,6 +42,7 @@ export default {
     inputName: '',
     inputValue: '',
     content: `<div id="kEditor1"></div>`,
+    editing: `<text-field></text-field>`,
     formValue: {
       id: '',
       type: '',
@@ -329,6 +330,8 @@ export default {
         console.log('initContentAreas', self, contentAreas)
       }
     });
+
+    replace(console.log($("#evaluatingDiv")) + originalVueTag)
     // }
   },
   beforeUnmount() {

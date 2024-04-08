@@ -93,23 +93,31 @@
 </template>
 
 <script>
-import BlockComponent from './BlockComponent.vue';
-import PortComponent from './PortComponent.vue';
-import ConnectorComponent from './ConnectorComponent.vue';
-import AttributeComponent from './AttributeComponent.vue';
-import FormMapper from './scripts/formMapper';
+import { useBpmnStore } from '@/stores/bpmn';
 import VTreeview from 'vue3-treeview';
+import AttributeComponent from './AttributeComponent.vue';
+import BlockComponent from './BlockComponent.vue';
+import ConnectorComponent from './ConnectorComponent.vue';
+import PortComponent from './PortComponent.vue';
+import FormMapper from './scripts/formMapper';
 
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 
 export default {
+    name: "form-mapper",
     mixins: [FormMapper],
+    props: {
+        definition: {
+            type: Object,
+            required: true,
+        },
+    },
     components: {
         BlockComponent,
         PortComponent,
         ConnectorComponent,
         AttributeComponent,
-        VTreeview
+        VTreeview,
     },
     data() {
         return {
@@ -143,36 +151,126 @@ export default {
             },
             config: {
                 roots: ['id1', 'id2']
-            }
+            },
+            processVariableDescriptors: [],
         };
     },
     async created() {
-        var me = this;
+        let me = this
 
         me.storage = StorageBaseFactory.getStorage('supabase');
-        let formDefs = await me.storage.list('form_def');
+
+        const definition = this.definition;
 
         me.nodes = {};
         me.config = {
             roots: []
         };
 
-        formDefs.forEach(async (form) => {
-            me.config.roots.push(form.id);
-            me.nodes[form.id] = {
-                text: form.name,
-                children: []
-            };
+        var test = [
+                {'name': "장애신고",
+                'type': "Form",
+                'defaultValue': "form11_장애신고",
+                'description': "",
+                'datasource': {
+                    'type': "",
+                    'sql': ""
+                },
+                'table': ""},
+                {'name': "장애처리",
+                'type': "Form",
+                'defaultValue': "form22_장애처리",
+                'description': "",
+                'datasource': {
+                    'type': "",
+                    'sql': ""
+                },
+                'table': ""},
+                {'name': "처리알림",
+                'type': "Form",
+                'defaultValue': "form33_처리알림",
+                'description': "",
+                'datasource': {
+                    'type': "",
+                    'sql': ""
+                },
+                'table': ""},
+                {'name': "비고",
+                'type': "Text",
+                'defaultValue': "",
+                'description': "",
+                'datasource': {
+                    'type': "",
+                    'sql': ""
+                },
+                'table': ""}
+        ]
 
-            form.fields.forEach((field) => {
-                me.nodes[form.id].children.push(field.name + '_' + field.alias);
-                me.nodes[field.name + '_' + field.alias] = {
-                    text: field.name
+        test.forEach(async (variable) => {
+            if (!me.config.roots.includes("Variables")) {
+                me.config.roots.push("Variables");
+            }
+
+            if (!me.nodes["Variables"]) {
+                me.nodes["Variables"] = {
+                    text: "Variables",
+                    children: []
                 };
-            });
+            }
+
+            if(me.nodes["Variables"]){
+                me.nodes["Variables"].children.push(variable.name);
+                me.nodes[variable.name] = {
+                    text: variable.name,
+                    children: []
+                };
+            }
+
+            let formDefs = await me.storage.list('form_def');
+            let [formName, formAlias] = variable.defaultValue.split('_');
+            let matchingForm = formDefs.find(form => form.name === formName && form.alias === formAlias)
+
+            if (matchingForm) {
+                matchingForm.fields.forEach(field => {
+                    if (!me.nodes[variable.name]) {
+                        me.nodes[variable.name] = {
+                            text: variable.name,
+                            children: []
+                        };
+                    }
+                    let fieldNameAlias = field.name + '_' + field.alias;
+                    me.nodes[variable.name].children.push(field.name);
+                    me.nodes[field.name] = {
+                        text: field.name
+                    };
+                });
+            }
+
+            // form.fields.forEach(async (field) => {
+            //     me.nodes[form.id].children.push(field.name + '_' + field.alias);
+            //     me.nodes[field.name + '_' + field.alias] = {
+            //         text: field.name + '_' + field.alias
+            //     };
+            // });
         });
 
         me.renderKey++;
+    },
+    mounted() {
+        let me = this
+
+        // processVariables가 준비되었는지 확인
+        if (this.processVariables && this.processVariables.length > 0) {
+            // processVariables 사용
+            console.log(this.processVariables);
+        } else {
+            // 데이터가 준비되지 않았다면, watch를 사용하거나 다른 방법으로 처리
+            this.$watch('processVariables', (newVal) => {
+                if (newVal && newVal.length > 0) {
+                    console.log(newVal);
+                }
+            });
+        }
     },
     methods: {
         openFunctionMenu(event) {
@@ -214,7 +312,7 @@ export default {
         onButtonClickRight(item, type) {
             console.log('Button clicked:', item.node.text, type);
             this.newBlock(type, { x: 1500, y: 200 }, item.node.text);
-        }
+        },
     },
     computed: {
         menuPositionStyle() {

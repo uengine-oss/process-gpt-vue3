@@ -258,11 +258,15 @@ const MainRoutes = {
             path: "/school-pages/attendance",
             component: () => import("@/views/school-pages/attendence/index.vue"),
         },
-
         {
             name: 'Class Detail',
             path: '/school-pages/classes/details/:id',
             component: () => import('@/views/school-pages/classes/ClassDetail.vue')
+        },
+        {
+            name: 'API Test',
+            path: '/api/test',
+            component: () => import('@/components/TestPage.vue')
         },
     ]
 };

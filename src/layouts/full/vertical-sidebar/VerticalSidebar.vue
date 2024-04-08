@@ -118,7 +118,7 @@ export default {
             },
             {
                 title: "uiDefinition.title",
-                icon: 'carbon:flow-connection',
+                icon: 'icon-park-outline:layout-five',
                 BgColor: 'primary',
                 to: "/ui-definitions/chat",
             },
@@ -133,7 +133,7 @@ export default {
         if (isAdmin == 'true') {
             this.definition = {
                 title: "processDefinition.title",
-                icon: 'carbon:flow-connection',
+                icon: 'tabler:device-imac-cog',
                 BgColor: 'primary',
                 to: "/definitions/chat",
             }

@@ -23,7 +23,12 @@
                     <v-select v-model="parameterContext.direction" style="min-width: 20px;"
                         @change="directionChanged(parameterContext)" :items="connectDirections" label="연결방향">
                         <template v-slot:selection="{ item }">
-                            <v-icon>{{ iconForDirection(item.direction) }}</v-icon>
+                            <v-icon>{{ iconForDirection(item.value) }}</v-icon>
+                        </template>
+                        <template v-slot:item="{ item }">
+                            <v-list-item @click="parameterContext.direction = item.value">
+                                <v-icon>{{ iconForDirection(item.value) }}</v-icon>
+                            </v-list-item>
                         </template>
                     </v-select>
                 </v-col>
@@ -59,7 +64,8 @@ export default {
     props: {
         parameterContexts: Array,
         forSubProcess: Boolean,
-        definitionVariables: Array
+        definitionVariables: Array,
+        isViewMode: Boolean
     },
     data: function () {
         return {
@@ -99,11 +105,11 @@ export default {
         },
         iconForDirection: function (direction) {
             if (direction == "IN")
-                return "arrow_back";
+                return "mdi-arrow-left";
             else if (direction == "OUT" || direction == "OUT ")
-                return "arrow_forward";
+                return "mdi-arrow-right";
             else
-                return "settings_ethernet";
+                return "mdi-arrow-left-right";
         },
         refreshCalleeDefinition: function () {
             if (!this.forSubProcess) return;
@@ -120,14 +126,11 @@ export default {
         },
         addMapping() {
             this.parameterContexts.push({
-                _type: "org.uengine.kernel.ParameterContext",
                 direction: 'IN-OUT',
                 variable: {
-                    _type: "org.uengine.kernel.ProcessVariable",
                     name: 'name'
                 },
                 argument: {
-                    _type: "org.uengine.contexts.TextContext",
                     text: 'arg'
                 }
             })
