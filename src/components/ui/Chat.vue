@@ -49,9 +49,9 @@
                 <!-- <v-btn v-if="type == 'chats' && filteredMessages.length > 0" style="position: absolute; left: 45%"
                     @click="getMoreChat()">get more chat</v-btn> -->
 
-                <div class="d-flex w-100" style="height: calc(100vh - 307px);">
+                <div class="d-flex w-100" style="height: calc(100vh - 284px);">
                     <v-col>
-                        <v-alert color="#2196F3" variant="outlined">
+                        <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
                             <template v-slot:title>
                                 <Icon style="margin-left:-6px;" icon="clarity:info-line" width="32" height="32" />
                             </template>
@@ -141,10 +141,8 @@
                                             </template>
                                             <v-sheet class="bg-lightsecondary rounded-md px-3 py-2"
                                                 @mouseover="replyIndex = index" @mouseleave="replyIndex = -1">
-                                                <pre class="text-body-1" v-if="message.replyUserName">{{ message.replyUserName }}
-                        </pre>
-                                                <pre class="text-body-1" v-if="message.replyContent">{{ message.replyContent }}
-                        </pre>
+                                                <pre class="text-body-1" v-if="message.replyUserName">{{ message.replyUserName }}</pre>
+                                                <pre class="text-body-1" v-if="message.replyContent">{{ message.replyContent }}</pre>
                                                 <v-divider v-if="message.replyContent"></v-divider>
 
                                                 <pre class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
@@ -189,8 +187,7 @@
                                                                         text-color="primary"
                                                                         style="margin-bottom: 1px;">
                                                                         <v-icon start icon="mdi-label" x-small></v-icon>
-                                                                        {{
-                        source.file_name }}
+                                                                        {{source.file_name }}
                                                                     </v-chip>
                                                                 </div>
                                                             </v-card-text>
@@ -393,12 +390,7 @@ export default {
             };
             // 국제화된 문자열을 가져옵니다.
             if(this.chatInfo){
-                const translatedText = this.$t(this.chatInfo.text);
-                if (translatedText.includes('\n')) {
-                    const arr = translatedText.split('\n');
-                    textObj.subtitle = arr[0];
-                    textObj.detail = arr.slice(1).join('\n'); // 첫 번째 이후의 모든 텍스트를 detail로 결합
-                }
+                textObj.detail = this.$t(this.chatInfo.text);
             }
             return textObj;
         },
@@ -679,10 +671,6 @@ export default {
 .message-input-box .v-field__append-inner,
 .v-field__prepend-inner {
     padding: 0px !important;
-}
-
-.my-progress-linear .v-progress-linear__indeterminate {
-    background: linear-gradient(to right, #E1F5FE, #80DEEA, #1565C0) !important;
 }
 
 .prompt-edit-textarea textarea {

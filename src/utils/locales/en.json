@@ -56,7 +56,9 @@
         "organizationChartExplanation": "Manage the organization chart interactively.\nYou can register, modify, and delete teams (departments), roles, and employees.\nFor example, you can issue commands like: 'Register the development and management teams, and add Mr. Hong Gil-dong as a new employee to the management team. His role is a developer. The team leader of the management team is Team Leader Amuge.'"
     },
     "processDefinitionMap" : {
-        "title" : "Process Definition Map"
+        "title" : "Process Definition Map",
+        "lock": "Please press the lock to lock it in order to check in (save).",
+        "unlock": "Please press the lock to unlock it in order to check out (edit)."
     },
     "processDefinition" : {
         "title" : "Process Definition",

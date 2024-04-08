@@ -215,8 +215,4 @@ pre {
 .shadow-none .v-field--no-label {
     --v-field-padding-top: -7px;
 }
-
-.my-progress-linear .v-progress-linear__indeterminate {
-    background: linear-gradient(to right, #E1F5FE, #80DEEA, #1565C0) !important;
-}
 </style>

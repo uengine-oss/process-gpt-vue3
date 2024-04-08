@@ -148,6 +148,7 @@ export default {
             task.id = this.uuid();
             task.user_id = this.userInfo.email;
             if (task.activity_id != '' && task.user_id != '') {
+                this.todolist.find(item => item.id === task.status).tasks.push(task);
                 this.storage.putObject(this.path, task);
             }
             this.closeDialog();
