@@ -19,22 +19,12 @@ export default {
     }
   },
   render() {
-
-    let parser = new DOMParser()
-    let doc = parser.parseFromString(this.content, 'text/html')
-    doc.querySelectorAll("div[name='formDesigner']").forEach((formDesignerNode) => {
-
-      formDesignerNode.children[1].setAttribute('target_section_id', formDesignerNode.parentElement.id)
-      formDesignerNode.removeChild(formDesignerNode.children[0])
-
-    })
-    
     const r = {
       components: {
         TextField,
         
       },
-      template: `<div class="content">${doc.body.innerHTML || ''}</div>`,
+      template: `<div class="content">${this.content || ''}</div>`,
       methods: {
         hello() {
           // method "hello" is also available here

@@ -6,7 +6,9 @@
 
     <div id="kEditor1">
     </div>
-    <dynamic-form :content="content"></dynamic-form>
+
+
+
     
     <v-dialog v-model="openPanel">
         <form-definition-panel
@@ -27,6 +29,9 @@ import FormDefinitionPanel from '@/components/designer/modeling/FormDefinitionPa
 import axios from 'axios';
 import TextField from '../ui/TextField.vue';
 import DynamicForm from './DynamicForm.vue';
+
+import vuetify from "@/plugins/vuetify";
+import { createApp } from 'vue';
 
 export default {
   name: 'mash-up',
@@ -210,6 +215,7 @@ export default {
     me.kEditor.keditor({
       // iframeMode: true,
       // snippetsUrl:'./Snippets',
+      vueDivSeq: 0,
       tabContainersText: '<i class="fa fa-th-list"></i>',
       tabComponentsText: '<i class="fa fa-file"></i>',
       extraTabs: {
@@ -317,8 +323,11 @@ export default {
       componentSettingHideFunction: function (form, keditor) {
         console.log("containerSettingHideFunction : ", form, keditor);
       },
-      onContentChanged: function (event) {
+      onContentChanged: function (event, snippetContent, divSeq) {
         me.onchangeKEditor(event, 'onContentChanged');
+        
+        createApp(DynamicForm, {content:snippetContent}).use(vuetify).mount('#vuemount'+divSeq);
+        
       },
       onComponentChanged: function (event) {
         me.onchangeKEditor(event, 'onComponentChanged');
@@ -328,7 +337,6 @@ export default {
       }
     });
 
-    // }
   },
   beforeUnmount() {
     // 컴포넌트가 파괴되기 전에 CSS 제거

@@ -146,7 +146,7 @@ export default {
     methods: {
         toggleLock(){
             var me = this
-            me.$app.try({
+            me.$try({
                 context: me,
                 action: async () => {
                     if(me.lock){
@@ -176,7 +176,7 @@ export default {
         },
         saveDefinition(info){
             var me = this
-            me.$app.try({
+            me.$try({
                 context: me,
                 action: async () => {
                     me.loading = true
@@ -200,7 +200,7 @@ export default {
         },
         changeXML(info){
             var me = this
-            me.$app.try({
+            me.$try({
                 context: me,
                 action: async () => {
                     if(!info) return;
@@ -522,7 +522,7 @@ export default {
         // },
         saveVersion(info, currentXML){
             var me = this
-            me.$app.try({
+            me.$try({
                 context: me,
                 action: async () => {
                     const prevSnapshot = info.prevSnapshot
@@ -546,7 +546,7 @@ export default {
         },
         async saveModel(info, xml) {
             var me = this
-            me.$app.try({
+            me.$try({
                 context: me,
                 action: async () => {
                     // alert(model);

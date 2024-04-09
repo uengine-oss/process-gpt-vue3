@@ -61,15 +61,15 @@ import { format } from 'date-fns';
 
 import { VectorStorage } from 'vector-storage';
 
-import ChatGenerator from './ai/ProcessInstanceGenerator.js';
 import ChatModule from '@/components/ChatModule.vue';
+import ChatGenerator from './ai/ProcessInstanceGenerator.js';
 
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 
+import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import Chat from "@/components/ui/Chat.vue";
 import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
-import ProcessDefinition from '@/components/ProcessDefinition.vue';
-import { VDataTable } from 'vuetify/labs/VDataTable'
+import { VDataTable } from 'vuetify/labs/VDataTable';
 import GeneratorAgent from './GeneratorAgent.vue';
 
 
@@ -170,7 +170,7 @@ export default {
     methods: {
         requestDraftAgent(newVal) {
             var me = this
-            me.$app.try({
+            me.$try({
                 context: me,
                 action(me) {
                     if (newVal) me.agentInfo.draftPrompt = newVal

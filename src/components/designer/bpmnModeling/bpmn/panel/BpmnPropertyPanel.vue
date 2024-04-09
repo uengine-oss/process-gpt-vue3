@@ -91,9 +91,7 @@ export default {
     async mounted() {
 
         let me = this
-        if (!me.$app.try) {
-            me.$app = me.$app._component.methods;
-        }
+
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
         this.name = this.element.name
