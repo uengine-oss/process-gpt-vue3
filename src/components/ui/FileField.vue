@@ -17,8 +17,14 @@ export default {
         
     ],
     props: {
-        label: String,
+        name: String,
+        alias: String,
         accept: String
+    },
+    computed: {
+        label() {
+            return this.alias || this.name;
+        }
     },
     data() {
         return {

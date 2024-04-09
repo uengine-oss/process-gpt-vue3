@@ -1,5 +1,6 @@
 <template>
     <div>
+        <label>{{ label }}</label>
         <v-radio-group v-model="selected">
             <div v-for="(item, index) in viewItems" :key="index">
                 <div v-for="(value, key) in item" :key="key">
@@ -20,7 +21,14 @@ export default {
         
     ],
     props: {
+        name: String,
+        alias: String,
         items: String
+    },
+    computed: {
+        label() {
+            return this.alias || this.name;
+        }
     },
     data() {
         return {
