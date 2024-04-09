@@ -1,6 +1,20 @@
 <template>
-    <div v-if="mode">YES</div>
-    <RouterView></RouterView>
+    <div>
+        <v-progress-linear v-if="loading"
+            style="position: absolute; z-index:999;"
+            indeterminate
+            class="my-progress-linear"
+        ></v-progress-linear>
+        <v-snackbar class="custom-snackbar"
+            v-model="snackbar"
+            :timeout="2000"
+            :color="snackbarColor"
+            elevation="24"
+        >
+            {{ snackbarMessage }}
+        </v-snackbar>
+        <RouterView></RouterView>
+    </div>
 </template>
 
 <script>
@@ -12,7 +26,10 @@ export default {
         RouterView
     },
     data: () => ({
-        mode: false
+        loading: false,
+        snackbarMessage : String,
+        snackbar: false,
+        snackbarColor : null,
     }),
     async created() {
         // window.$supabase = createClient(window._env_.DB_URL, window._env_.DB_PW);
@@ -32,13 +49,15 @@ export default {
             }
 
             try {
-                window.$app_.mode = true
+                window.$app_.loading = true
                 await options.action(options.parameters)
 
                 if (options.successMsg) {
                     // console.log(options.successMsg)
+                    window.$app_.snackbarMessage = options.successMsg
+                    window.$app_.snackbarColor = 'success'
+                    window.$app_.snackbar = true;
                 }
-                console.log('successfully done');
 
             } catch (e) {
                 if (options.onFail) {
@@ -53,10 +72,33 @@ export default {
                 }
                 if (errorMessage) {
                     // alert(errorMessage)
+                    window.$app_.snackbarMessage = errorMessage
+                    window.$app_.snackbarColor = 'error'
+                    window.$app_.snackbar = true;
                 }
                 console.log(e);
+            }
+            finally {
+                window.$app_.loading = false
             }
         },
     }
 }
 </script>
+
+<style>
+.custom-snackbar {
+    position: fixed !important;
+    bottom: auto !important;
+    top: 50px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 1010 !important;
+}
+
+.custom-snackbar .v-snackbar__content {
+    text-align: center;
+    font-size:16px !important;
+    font-weight: 500 !important;
+}
+</style>

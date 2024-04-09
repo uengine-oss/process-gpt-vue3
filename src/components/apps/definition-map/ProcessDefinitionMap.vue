@@ -5,14 +5,14 @@
             <div v-if="componentName != 'SubProcessDetail'" class="pa-3 d-flex align-center"
                 style="position: sticky; top: 0; z-index:2; background-color:white">
                 <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
-
+                <v-btn v-if="$route.path !== '/definition-map'" style="margin-left: 3px; margin-top: 1px;" icon variant="text" size="24">
+                    <Icon @click="goProcessMap" icon="humbleicons:arrow-go-back" width="24" height="24" />
+                </v-btn>
+                
                 <!-- buttons -->
                 <div class="ml-auto d-flex">
-                    <span v-if="lock && userInfo.email && userInfo.email != editUser" class="text-body-1 pt-1 mr-1">
-                        {{ editUser }} 님이 수정 중 입니다.
-                    </span>
-
-                    <v-tooltip location="bottom" v-if="!lock && isAdmin">
+                    
+                    <v-tooltip location="bottom" v-if="!lock && isAdmin" >
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" icon variant="text" size="24" class="ml-3 cp-unlock"
                                 @click="openAlertDialog('checkout')">
@@ -22,7 +22,7 @@
                         <span>{{ $t('processDefinitionMap.unlock') }}</span>
                     </v-tooltip>
 
-                    <v-tooltip location="bottom" v-if="lock && isAdmin">
+                    <v-tooltip location="bottom" v-if="lock && isAdmin && userInfo.email && userInfo.email == editUser">
                         <template v-slot:activator="{ props }">
                             <v-btn 
                                 v-bind="props"
@@ -35,6 +35,24 @@
                         </template>
                         <span>{{ $t('processDefinitionMap.lock') }}</span>
                     </v-tooltip>
+
+                    <v-tooltip location="bottom" v-if="lock && isAdmin && userInfo.email && userInfo.email != editUser">
+                        <template v-slot:activator="{ props }">
+                            <v-btn 
+                                v-bind="props"
+                                icon variant="text" size="24"
+                                class="cp-lock"
+                                @click="openAlertDialog('checkin')"
+                            >
+                                <LockIcon width="24" height="24" />
+                            </v-btn>
+                        </template>
+                        <span>{{ $t('processDefinitionMap.lock') }}</span>
+                    </v-tooltip>
+
+                    <span v-if="lock && userInfo.email && userInfo.email != editUser" class="text-body-1 pt-1 mr-1">
+                        {{ editUser }} 님이 수정 중 입니다.
+                    </span>
 
                     <v-btn icon variant="text" class="ml-3" :size="24" @click="capturePng">
                         <Icon icon="mage:image-download" width="24" height="24" />
@@ -94,11 +112,29 @@
                     {{ alertMessage }}
                 </v-card-text>
                 <v-card-actions class="justify-center">
-                    <v-btn v-if="alertType == 'checkout'" color="primary" class="cp-check-out" variant="flat"
-                        @click="checkOut">확인</v-btn>
-                    <v-btn v-else-if="alertType == 'checkin'" color="primary" class="cp-check-in" variant="flat"
-                        @click="checkIn">확인</v-btn>
-                    <v-btn color="error" variant="flat" @click="alertDialog = false">닫기</v-btn>
+                    <v-btn v-if="alertType =='checkout'" 
+                        color="primary" 
+                        class="cp-check-out"
+                        variant="flat" 
+                        @click="checkOut"
+                    >확인</v-btn>
+                    <v-btn v-else-if="alertType =='checkin' && userInfo.email && userInfo.email == editUser " 
+                        color="primary"
+                        class="cp-check-in" 
+                        variant="flat" 
+                        @click="checkIn"
+                    >확인</v-btn>
+                    <v-btn v-else-if="alertType =='checkin' && userInfo.email && userInfo.email != editUser " 
+                        color="primary"
+                        class="cp-check-in" 
+                        variant="flat" 
+                        @click="checkOut"
+                    >확인</v-btn>
+                   
+                    <v-btn color="error" 
+                    variant="flat" 
+                    @click="alertDialog=false"
+                    >닫기</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -145,12 +181,11 @@ export default {
     }),
     async created() {
         var me = this;
-
-        this.$try({
+        me.$try({
             action: async () => {
                 this.storage = StorageBaseFactory.getStorage();
-                await this.getProcessMap();
-                await this.init();
+                await me.getProcessMap();
+                await me.init();
             },
         });
     },
@@ -248,7 +283,7 @@ export default {
                         this.alertMessage = '수정된 내용을 저장 및 체크인 하시겠습니까?';
                     } else {
                         this.alertDialog = true;
-                        this.alertMessage = `현재 ${this.editUser} 님께서 수정 중입니다. 체크인 하는 경우 ${this.editUser} 님이 수정한 내용은 저장되지 않습니다. 체크인 하시겠습니까?`;
+                        this.alertMessage = `현재 ${this.editUser} 님께서 수정 중입니다. 체크인 하는 경우 ${this.editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크인 하시겠습니까?`;
                     }
                 } else if (type == 'checkout') {
                     this.alertDialog = true;

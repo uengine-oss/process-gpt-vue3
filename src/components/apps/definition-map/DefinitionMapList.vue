@@ -9,10 +9,14 @@
                         :enableEdit="enableEdit" :enableExecution="enableExecution" @view="viewProcess" />
                 </v-col>
                 <!-- 실제 카드가 들어가야 할 위치 -->
-                <v-col class="cursor-pointer" cols="12" md="2" sm="3">
-                    <v-card @click="addMegaProcess('add')" class="add-process-card-hover" elevation="9"
-                        variant="outlined"
-                        style="padding: 10px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;">
+                <v-col class="cursor-pointer"
+                    cols="12" md="2" sm="3"
+                >
+                    <v-card @click="addMegaProcess('add')"
+                        class="add-process-card-hover cp-add-mega"
+                        elevation="9" variant="outlined"
+                        style="padding: 10px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;"
+                    >
                         <div style="display: flex; justify-content: center; align-items: center;">
                             <Icon icon="streamline:add-1-solid" width="24" height="24" style="color: #5EB2E8" />
                         </div>

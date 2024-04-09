@@ -6,9 +6,7 @@
 
     <div id="kEditor1">
     </div>
-    <dynamic-form :content="content"></dynamic-form>
-    <div id="evaluatingDiv"><dynamic-form :content="editing"></dynamic-form></div>
-    <div id="targetDiv"></div>
+
 
 
     
@@ -31,6 +29,9 @@ import FormDefinitionPanel from '@/components/designer/modeling/FormDefinitionPa
 import axios from 'axios';
 import TextField from '../ui/TextField.vue';
 import DynamicForm from './DynamicForm.vue';
+
+import vuetify from "@/plugins/vuetify";
+import { createApp } from 'vue';
 
 export default {
   name: 'mash-up',
@@ -321,14 +322,11 @@ export default {
       componentSettingHideFunction: function (form, keditor) {
         console.log("containerSettingHideFunction : ", form, keditor);
       },
-      onContentChanged: function (event, snippetContent) {
+      onContentChanged: function (event, snippetContent, vueRenderUUID) {  
+        if(vueRenderUUID && vueRenderUUID.includes("vuemount_"))
+          createApp(DynamicForm, {content:snippetContent}).use(vuetify).mount('#'+vueRenderUUID);
+
         me.onchangeKEditor(event, 'onContentChanged');
-        me.editing = snippetContent
-
-        var vueRenderedHtml = $("#evaluatingDiv").html()
-
-
-        
       },
       onComponentChanged: function (event) {
         me.onchangeKEditor(event, 'onComponentChanged');
@@ -338,12 +336,6 @@ export default {
       }
     });
 
-
-    const evaluatingDiv = $("#evaluatingDiv")[0]
-    const targetDiv = $("#targetDiv")[0]
-    targetDiv.innerHTML = evaluatingDiv.innerHTML
-    evaluatingDiv.innerHTML = ""
-    // }
   },
   beforeUnmount() {
     // 컴포넌트가 파괴되기 전에 CSS 제거
