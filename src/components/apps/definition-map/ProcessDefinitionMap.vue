@@ -185,12 +185,11 @@ export default {
     }),
     async created() {
         var me = this;
-
-        this.$try({
+        me.$try({
             action: async () => {
                 this.storage = StorageBaseFactory.getStorage();
-                await this.getProcessMap();
-                await this.init();
+                await me.getProcessMap();
+                await me.init();
             },
         });
     },

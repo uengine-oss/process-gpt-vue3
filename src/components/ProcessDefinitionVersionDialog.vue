@@ -122,8 +122,8 @@ export default {
                         prevSnapshot: me.information.snapshot,
                         prevDiff: me.information.diff,
                     })
-
-                }
+                },
+                successMsg: '저장되었습니다.'
             })
         },
         close() {
