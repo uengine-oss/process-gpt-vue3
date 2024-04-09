@@ -1,8 +1,9 @@
 import UEngineBackend from './UEngineBackend';
 
-class BackendFactory {
-    static createBackend(backendType: string) {
-        switch (backendType) {
+class BackendFactory extends Window {
+    static createBackend() {
+        console.log((window as any).$mode);
+        switch ((window as any).$mode) {
             case 'uengine':
                 return new UEngineBackend();
             default:

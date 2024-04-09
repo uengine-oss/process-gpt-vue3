@@ -40,6 +40,7 @@
                         :storage="storage" 
                         :userInfo="userInfo"
                         :enableEdit="enableEdit"
+                        :enableExecution="enableExecution"
                         @view="viewProcess"
                     />
                 </div>
@@ -55,6 +56,7 @@
                     :storage="storage" 
                     :userInfo="userInfo"
                     :enableEdit="enableEdit"
+                    :enableExecution="enableExecution"
                     @view="viewProcess"
                 />
             </div>
@@ -77,6 +79,7 @@ export default {
         storage: Object,
         userInfo: Object,
         enableEdit: Boolean,
+        enableExecution: Boolean
     },
     data: () => ({
         type: 'mega',

@@ -1,15 +1,10 @@
 <template>
     <div>
         <div class="d-flex">
-            <!--openFormMapperDialog의 v-if는 보여줬을때 모양이 이상하기 때문에 일단 숨김처리함-->
-            <!-- <v-btn v-if="true" icon variant="text" :width="size" :height="size"
-                @click="formMapperDialog = !formMapperDialog">
-                <PlusIcon :size="size" />
-            </v-btn> -->
-            <v-btn icon variant="text" :width="size" :height="size">
-                <!-- <PlusIcon v-if="type == 'map' && enableEdit" :size="size" /> -->
-                <DotsVerticalIcon v-if="type == 'map' && (enableEdit || enableExecution)" :size="size" />
-                <v-menu v-if="type == 'map' && enableEdit" activator="parent">
+            <v-btn v-if="enableEdit" icon variant="text" :width="size" :height="size">
+                <!-- <PlusIcon v-if="type == 'map'" :size="size" /> -->
+                <DotsVerticalIcon v-if="type != 'map'" :size="size" />
+                <v-menu activator="parent">
                     <v-list density="compact" class="cursor-pointer">
                         <v-list-item @click="editProcess">
                             <v-list-item-title>
@@ -44,37 +39,15 @@
                         </v-list-item>
                     </v-list>
                 </v-menu>
-                <v-menu v-if="type == 'map' && enableExecution" activator="parent">
+            </v-btn>
+            <v-btn v-else-if="enableExecution" icon variant="text" :width="size" :height="size">
+                <!-- <PlusIcon v-if="type == 'map'" :size="size" /> -->
+                <DotsVerticalIcon v-if="type != 'map'" :size="size" />
+                <v-menu activator="parent">
                     <v-list density="compact" class="cursor-pointer">
-                        <v-list-item v-if="type != 'sub'" @click="openDialog('add')">
-                            <v-list-item-title class="cp-process">
-                                <span v-if="addType != 'sub'">{{ addType.toUpperCase() }}</span> 프로세스 추가
-                            </v-list-item-title>
-                        </v-list-item>
-                        <v-list-item v-else @click="editProcess">
+                        <v-list-item @click="executeProcessDialog">
                             <v-list-item-title>
                                 프로세스 실행
-                            </v-list-item-title>
-                        </v-list-item>
-                        <v-list-item v-else @click="editProcess">
-                            <v-list-item-title>
-                                프로세스 편집
-                            </v-list-item-title>
-                        </v-list-item>
-                        <v-list-item v-if="type != 'map'" @click="openDialog('update')">
-                            <v-list-item-title>
-                                수정
-                            </v-list-item-title>
-                        </v-list-item>
-                        <v-list-item v-if="type != 'map'" @click="deleteProcess">
-                            <v-list-item-title>
-                                삭제
-                            </v-list-item-title>
-                        </v-list-item>
-                        <v-list-item class="cp-mega-datail" v-if="type == 'mega'"
-                            @click="openViewProcessDetails(process)">
-                            <v-list-item-title>
-                                상세보기
                             </v-list-item-title>
                         </v-list-item>
                     </v-list>
@@ -115,6 +88,7 @@ export default {
         definitions: null,
         processDialogStatus: false,
         processType: "",
+        executeProcessDialog: false
     }),
     computed: {
         addType() {
@@ -142,6 +116,9 @@ export default {
                     this.definitions = null;
                 }
             }
+        },
+        executeProcessDialog() {
+            this.executeProcessDialog = true;
         },
         openViewProcessDetails(process) {
             this.$router.push(`/definition-map/mega/${process.id}`);
