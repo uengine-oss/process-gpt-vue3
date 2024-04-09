@@ -6,9 +6,7 @@
 
     <div id="kEditor1">
     </div>
-    <dynamic-form :content="content"></dynamic-form>
-    <div id="evaluatingDiv"><dynamic-form :content="editing"></dynamic-form></div>
-    <div id="targetDiv"></div>
+
 
 
     
@@ -217,6 +215,7 @@ export default {
     me.kEditor.keditor({
       // iframeMode: true,
       // snippetsUrl:'./Snippets',
+      vueDivSeq: 0,
       tabContainersText: '<i class="fa fa-th-list"></i>',
       tabComponentsText: '<i class="fa fa-file"></i>',
       extraTabs: {
@@ -338,12 +337,6 @@ export default {
       }
     });
 
-
-    const evaluatingDiv = $("#evaluatingDiv")[0]
-    const targetDiv = $("#targetDiv")[0]
-    targetDiv.innerHTML = evaluatingDiv.innerHTML
-    evaluatingDiv.innerHTML = ""
-    // }
   },
   beforeUnmount() {
     // 컴포넌트가 파괴되기 전에 CSS 제거

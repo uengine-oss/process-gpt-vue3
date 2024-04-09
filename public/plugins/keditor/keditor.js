@@ -1187,7 +1187,7 @@
                         var dataAttributes = self.getDataAttributes(snippetContentElement, null, true);
                         var component = $(
                             '<section class="keditor-ui keditor-component" data-type="' + componentType + '" ' + dataAttributes.join(' ') + '>' +
-                            '   <section class="keditor-ui keditor-component-content"><div id="vuemount'+(++self.vueDivSeq)+'"></div></section>' +
+                            '   <section class="keditor-ui keditor-component-content"><div id="vuemount'+(event.target.id)+'"></div></section>' +
                             '</section>'
                         );
                         helper.replaceWith(component);
@@ -1209,11 +1209,11 @@
                     }
                     
                     if (typeof options.onContainerChanged === 'function') {
-                        options.onContainerChanged.call(contentArea, event, container, this.vueDivSeq);
+                        options.onContainerChanged.call(contentArea, event, container);
                     }
                     
                     if (typeof options.onContentChanged === 'function') {
-                        options.onContentChanged.call(contentArea, event, snippetContent);
+                        options.onContentChanged.call(contentArea, event, snippetContent, event.target.id);
                     }
                 }
             });
