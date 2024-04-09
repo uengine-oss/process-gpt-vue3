@@ -5,6 +5,9 @@
         >
             <div v-if="componentName != 'SubProcessDetail'" class="pa-3 d-flex align-center" style="position: sticky; top: 0; z-index:2; background-color:white">
                 <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
+                <!-- <v-btn v-if="$route.path !== '/definition-map'" style="margin-left: 3px; margin-top: 1px;" icon variant="text" size="24">
+                    <Icon @click="goProcessMap" icon="humbleicons:arrow-go-back" width="24" height="24" />
+                </v-btn> -->
                 
                 <!-- buttons -->
                 <div class="ml-auto d-flex">
@@ -23,7 +26,7 @@
                         <span>{{ $t('processDefinitionMap.unlock') }}</span>
                     </v-tooltip>
 
-                    <v-tooltip location="bottom" v-if="lock && isAdmin">
+                    <v-tooltip location="bottom" v-if="lock && isAdmin && userInfo.email && userInfo.email == editUser">
                         <template v-slot:activator="{ props }">
                             <v-btn 
                                 v-bind="props"
@@ -32,6 +35,20 @@
                                 @click="openAlertDialog('checkin')"
                             >
                                 <LockOpenIcon width="24" height="24" />
+                            </v-btn>
+                        </template>
+                        <span>{{ $t('processDefinitionMap.lock') }}</span>
+                    </v-tooltip>
+
+                    <v-tooltip location="bottom" v-if="lock && isAdmin && userInfo.email && userInfo.email != editUser">
+                        <template v-slot:activator="{ props }">
+                            <v-btn 
+                                v-bind="props"
+                                icon variant="text" size="24"
+                                class="cp-lock"
+                                @click="openAlertDialog('checkin')"
+                            >
+                                <LockIcon width="24" height="24" />
                             </v-btn>
                         </template>
                         <span>{{ $t('processDefinitionMap.lock') }}</span>
