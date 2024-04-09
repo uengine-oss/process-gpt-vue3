@@ -8,6 +8,7 @@
     </div>
     <dynamic-form :content="content"></dynamic-form>
     <div id="evaluatingDiv"><dynamic-form :content="editing"></dynamic-form></div>
+    <div id="targetDiv"></div>
 
 
     
@@ -337,6 +338,11 @@ export default {
       }
     });
 
+
+    const evaluatingDiv = $("#evaluatingDiv")[0]
+    const targetDiv = $("#targetDiv")[0]
+    targetDiv.innerHTML = evaluatingDiv.innerHTML
+    evaluatingDiv.innerHTML = ""
     // }
   },
   beforeUnmount() {
