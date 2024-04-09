@@ -29,21 +29,12 @@
                     <v-tooltip location="bottom" v-if="lock && isAdmin">
                         <template v-slot:activator="{ props }">
                             <v-btn 
-                                v-if="userInfo.email && userInfo.email == editUser"
                                 v-bind="props"
                                 icon variant="text" size="24"
                                 class="cp-lock"
                                 @click="openAlertDialog('checkin')"
                             >
                                 <LockOpenIcon width="24" height="24" />
-                            </v-btn>
-                            <v-btn 
-                                v-if="userInfo.email && userInfo.email != editUser"
-                                v-bind="props"
-                                icon variant="text" size="24"
-                                @click="openAlertDialog('checkin')"
-                            >
-                                <LockIcon width="24" height="24" />
                             </v-btn>
                         </template>
                         <span>{{ $t('processDefinitionMap.lock') }}</span>
@@ -185,10 +176,6 @@ export default {
         isAdmin: false,
     }),
     async created() {
-        var me = this;
-        if (!me.$app.try) {
-            me.$app = me.$app._component.methods;
-        }
         this.$app.try({
             action: async () => {
                 this.storage = StorageBaseFactory.getStorage();
