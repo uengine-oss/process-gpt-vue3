@@ -1,6 +1,10 @@
 <script>
 import { getCurrentInstance, h } from 'vue';
 import TextField from '../ui/TextField.vue';
+import SelectField from '../ui/SelectField.vue';
+import CheckboxField from '../ui/CheckBoxField.vue';
+import RadioField from '../ui/RadioField.vue';
+import FileField from '../ui/FileField.vue';
 
 export default {
   props: {
@@ -22,7 +26,10 @@ export default {
     const r = {
       components: {
         TextField,
-        
+        SelectField,
+        CheckboxField,
+        RadioField,
+        FileField
       },
       template: `<div class="content">${this.content || ''}</div>`,
       methods: {
