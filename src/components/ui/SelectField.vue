@@ -2,7 +2,7 @@
     <div>
         <v-select
             :label="label"
-            :items="viewItems"
+            :items="viewKeys"
         ></v-select>
     </div>
 </template>
@@ -28,7 +28,9 @@ export default {
     },
     data() {
         return {
-            viewItems: []
+            viewItems: [],
+            viewValues: [],
+            viewKeys: []
         };
     },
     created() {
@@ -37,6 +39,11 @@ export default {
             this.viewItems = JSON.parse(this.items.replace(/'/g, '"'))
         else
             this.viewItems = this.items
+
+        this.viewItems.forEach((item) => {
+            this.viewKeys.push(Object.keys(item)[0])
+            this.viewValues.push(Object.values(item)[0])
+        })
     },
     methods: {
  
