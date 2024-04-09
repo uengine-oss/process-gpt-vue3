@@ -13,9 +13,6 @@
                 
                 <!-- buttons -->
                 <div class="ml-auto d-flex">
-                    <span v-if="lock && userInfo.email && userInfo.email != editUser" class="text-body-1 pt-1 mr-1">
-                        {{ editUser }} 님이 수정 중 입니다.
-                    </span>
                     
                     <v-tooltip location="bottom" v-if="!lock && isAdmin" >
                         <template v-slot:activator="{ props }">
@@ -53,6 +50,10 @@
                         </template>
                         <span>{{ $t('processDefinitionMap.lock') }}</span>
                     </v-tooltip>
+
+                    <span v-if="lock && userInfo.email && userInfo.email != editUser" class="text-body-1 pt-1 mr-1">
+                        {{ editUser }} 님이 수정 중 입니다.
+                    </span>
 
                     <v-btn icon variant="text" class="ml-3" :size="24" @click="capturePng">
                         <Icon icon="mage:image-download" width="24" height="24" />
@@ -136,12 +137,19 @@
                         variant="flat" 
                         @click="checkOut"
                     >확인</v-btn>
-                    <v-btn v-else-if="alertType =='checkin'" 
+                    <v-btn v-else-if="alertType =='checkin' && userInfo.email && userInfo.email == editUser " 
                         color="primary"
                         class="cp-check-in" 
                         variant="flat" 
                         @click="checkIn"
                     >확인</v-btn>
+                    <v-btn v-else-if="alertType =='checkin' && userInfo.email && userInfo.email != editUser " 
+                        color="primary"
+                        class="cp-check-in" 
+                        variant="flat" 
+                        @click="checkOut"
+                    >확인</v-btn>
+                   
                     <v-btn color="error" 
                     variant="flat" 
                     @click="alertDialog=false"
@@ -297,7 +305,7 @@ export default {
                         this.alertMessage = '수정된 내용을 저장 및 체크인 하시겠습니까?';
                     } else {
                         this.alertDialog = true;
-                        this.alertMessage = `현재 ${this.editUser} 님께서 수정 중입니다. 체크인 하는 경우 ${this.editUser} 님이 수정한 내용은 저장되지 않습니다. 체크인 하시겠습니까?`;
+                        this.alertMessage = `현재 ${this.editUser} 님께서 수정 중입니다. 체크인 하는 경우 ${this.editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크인 하시겠습니까?`;
                     }
                 } else if (type == 'checkout') {
                     this.alertDialog = true;
