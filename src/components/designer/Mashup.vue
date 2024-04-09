@@ -32,6 +32,9 @@ import axios from 'axios';
 import TextField from '../ui/TextField.vue';
 import DynamicForm from './DynamicForm.vue';
 
+import vuetify from "@/plugins/vuetify";
+import { createApp } from 'vue';
+
 export default {
   name: 'mash-up',
   mixins: [ChatModule],
@@ -321,13 +324,10 @@ export default {
       componentSettingHideFunction: function (form, keditor) {
         console.log("containerSettingHideFunction : ", form, keditor);
       },
-      onContentChanged: function (event, snippetContent) {
+      onContentChanged: function (event, snippetContent, divSeq) {
         me.onchangeKEditor(event, 'onContentChanged');
-        me.editing = snippetContent
-
-        var vueRenderedHtml = $("#evaluatingDiv").html()
-
-
+        
+        createApp(DynamicForm, {content:snippetContent}).use(vuetify).mount('#vuemount'+divSeq);
         
       },
       onComponentChanged: function (event) {

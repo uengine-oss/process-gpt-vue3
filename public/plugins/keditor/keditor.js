@@ -220,6 +220,7 @@
     // Export log methods;
     KEditor.log = flog;
     KEditor.error = error;
+    KEditor.vueDivSeq = 0;
     
     KEditor.prototype = {
         init: function (target) {
@@ -1175,6 +1176,7 @@
                     var helper = ui.helper;
                     var item = ui.item;
                     var container;
+                    var snippetContent; 
                     
                     if (item.is('.keditor-snippet')) {
                         var snippetContentElement = body.find(item.attr('data-snippet'));
@@ -1185,7 +1187,7 @@
                         var dataAttributes = self.getDataAttributes(snippetContentElement, null, true);
                         var component = $(
                             '<section class="keditor-ui keditor-component" data-type="' + componentType + '" ' + dataAttributes.join(' ') + '>' +
-                            '   <section class="keditor-ui keditor-component-content">' + snippetContent + '</section>' +
+                            '   <section class="keditor-ui keditor-component-content"><div id="vuemount'+(++self.vueDivSeq)+'"></div></section>' +
                             '</section>'
                         );
                         helper.replaceWith(component);
@@ -1207,11 +1209,11 @@
                     }
                     
                     if (typeof options.onContainerChanged === 'function') {
-                        options.onContainerChanged.call(contentArea, event, container);
+                        options.onContainerChanged.call(contentArea, event, container, this.vueDivSeq);
                     }
                     
                     if (typeof options.onContentChanged === 'function') {
-                        options.onContentChanged.call(contentArea, event);
+                        options.onContentChanged.call(contentArea, event, snippetContent);
                     }
                 }
             });
