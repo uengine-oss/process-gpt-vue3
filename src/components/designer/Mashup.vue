@@ -215,7 +215,6 @@ export default {
     me.kEditor.keditor({
       // iframeMode: true,
       // snippetsUrl:'./Snippets',
-      vueDivSeq: 0,
       tabContainersText: '<i class="fa fa-th-list"></i>',
       tabComponentsText: '<i class="fa fa-file"></i>',
       extraTabs: {
@@ -323,10 +322,11 @@ export default {
       componentSettingHideFunction: function (form, keditor) {
         console.log("containerSettingHideFunction : ", form, keditor);
       },
-      onContentChanged: function (event, snippetContent, divSeq) {
+      onContentChanged: function (event, snippetContent, vueRenderUUID) {  
+        if(vueRenderUUID && vueRenderUUID.includes("vuemount_"))
+          createApp(DynamicForm, {content:snippetContent}).use(vuetify).mount('#'+vueRenderUUID);
+
         me.onchangeKEditor(event, 'onContentChanged');
-        
-        createApp(DynamicForm, {content:snippetContent}).use(vuetify).mount('#vuemount'+divSeq);
       },
       onComponentChanged: function (event) {
         me.onchangeKEditor(event, 'onComponentChanged');
