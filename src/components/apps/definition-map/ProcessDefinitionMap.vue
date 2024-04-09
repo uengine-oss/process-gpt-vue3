@@ -176,6 +176,10 @@ export default {
         isAdmin: false,
     }),
     async created() {
+        var me = this;
+        if (!me.$app.try) {
+            me.$app = me.$app._component.methods;
+        }
         this.$app.try({
             action: async () => {
                 this.storage = StorageBaseFactory.getStorage();
