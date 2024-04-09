@@ -71,17 +71,9 @@ class UEngineBackend implements Backend {
             alert(e);
         }
     }
-    async createFolder(newResource, requestPath) {
-        try {
-            const response = await axiosInstance.post(`/definition/requestPath`, newResource);
-            return response.data;
-        } catch (e) {
-            alert(e);
-        }
-    }
     async deleteDefinition(requestPath) {
         try {
-            const response = await axiosInstance.delete(requestPath);
+            const response = await axiosInstance.delete('/definition/' + requestPath);
             return response.data;
         } catch (e) {
             alert(e);
@@ -89,7 +81,16 @@ class UEngineBackend implements Backend {
     }
     async putRawDefinition(definition, requestPath) {
         try {
-            const response = await axiosInstance.put(requestPath, definition);
+            let req = {
+                definition: definition
+            };
+            var config = {
+                headers: {
+                    'Content-Type': 'text/plain'
+                },
+                responseType: 'text'
+            };
+            const response = await axiosInstance.put('/definition/raw/' + requestPath + '.xml', definition, config);
             return response.data;
         } catch (e) {
             alert(e);
@@ -97,7 +98,7 @@ class UEngineBackend implements Backend {
     }
     async getRawDefinition(defPath) {
         try {
-            const response = await axiosInstance.get(`/definition_raw/${defPath}`);
+            const response = await axiosInstance.get(`/definition/raw/${defPath}`);
             return response.data;
         } catch (e) {
             alert(e);

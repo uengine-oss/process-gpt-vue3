@@ -68,7 +68,7 @@
                     </v-btn>
                 </v-row>
             </div>
-            <v-dialog v-model="oepnFieldMapper"  max-width="90vw" max-height="90vh" fullscreen>
+            <v-dialog v-model="oepnFieldMapper"  max-width="80%" max-height="80%">
                 <form-mapper :definition="definition" />
             </v-dialog>
         </div>
@@ -204,9 +204,7 @@ export default {
     },
     async mounted() {
         let me = this
-        if (!me.$app.try) {
-            me.$app = me.$app._component.methods;
-        }
+
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
         if (me.role?.length > 0) {

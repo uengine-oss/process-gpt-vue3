@@ -149,9 +149,7 @@ export default {
     },
     created() {
         var me = this;
-        if (!me.$app.try) {
-            me.$app = me.$app._component.methods;
-        }
+
         this.processPath = this.$route.params.id;
         if (this.parent && this.parent.mega_proc_list && this.parent.mega_proc_list.length > 0) {
             this.filteredProcess = this.parent.mega_proc_list.find(process => process.id === this.processPath);

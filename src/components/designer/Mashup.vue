@@ -7,6 +7,10 @@
     <div id="kEditor1">
     </div>
     <dynamic-form :content="content"></dynamic-form>
+    <div id="evaluatingDiv"><dynamic-form :content="editing"></dynamic-form></div>
+    <div id="targetDiv"></div>
+
+
     
     <v-dialog v-model="openPanel">
         <form-definition-panel
@@ -317,8 +321,14 @@ export default {
       componentSettingHideFunction: function (form, keditor) {
         console.log("containerSettingHideFunction : ", form, keditor);
       },
-      onContentChanged: function (event) {
+      onContentChanged: function (event, snippetContent) {
         me.onchangeKEditor(event, 'onContentChanged');
+        me.editing = snippetContent
+
+        var vueRenderedHtml = $("#evaluatingDiv").html()
+
+
+        
       },
       onComponentChanged: function (event) {
         me.onchangeKEditor(event, 'onComponentChanged');
@@ -328,6 +338,11 @@ export default {
       }
     });
 
+
+    const evaluatingDiv = $("#evaluatingDiv")[0]
+    const targetDiv = $("#targetDiv")[0]
+    targetDiv.innerHTML = evaluatingDiv.innerHTML
+    evaluatingDiv.innerHTML = ""
     // }
   },
   beforeUnmount() {
