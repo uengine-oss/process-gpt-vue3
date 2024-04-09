@@ -1,6 +1,12 @@
 <template>
-    <div v-if="mode">YES</div>
-    <RouterView></RouterView>
+    <div>
+        <v-progress-linear v-if="loading"
+            style="position: absolute; z-index:999;"
+            indeterminate
+            class="my-progress-linear"
+        ></v-progress-linear>
+        <RouterView></RouterView>
+    </div>
 </template>
 
 <script>
@@ -12,7 +18,7 @@ export default {
         RouterView
     },
     data: () => ({
-        mode: false
+        loading: false
     }),
     async created() {
         // window.$supabase = createClient(window._env_.DB_URL, window._env_.DB_PW);
@@ -55,6 +61,9 @@ export default {
                     // alert(errorMessage)
                 }
                 console.log(e);
+            }
+            finally {
+                this.loading = false
             }
         },
     }
