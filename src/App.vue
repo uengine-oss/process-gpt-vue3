@@ -18,12 +18,14 @@ export default {
         window.$mode = 'uEngine'
     },
     methods: {
-        async try(options, parameters) {
+        async try(options, parameters, options_) {
             if (options && !options.action) {
                 options = {
                     parameters: parameters,
                     action: options
                 }
+
+                Object.assign(options, options_);
             }
 
             try {
