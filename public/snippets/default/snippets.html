@@ -73,40 +73,34 @@
 <!-------------------------------------------------------------------------------------------------->
 <!-- Components -->
 <!-------------------------------------------------------------------------------------------------->
-<div data-type="component-object-form" data-preview="/snippets/default/preview/input-text.png" data-preview-style="width:50px;" data-keditor-title="Vue" data-categories="Vue">
+<div data-type="component-object-form" data-preview="/snippets/default/preview/input-text.png" data-preview-style="width:50px;" data-keditor-title="text-field" data-categories="Vue">
     <div name="formDesigner">
-        <div class="view"></div>
-        <text-field></text-field>
+        <text-field label="test"></text-field>
     </div>
 </div>
 
-<div data-type="component-object-form" data-preview="/snippets/default/preview/input-select.png" data-preview-style="width:50px;" data-keditor-title="Vue" data-categories="Vue">
+<div data-type="component-object-form" data-preview="/snippets/default/preview/input-select.png" data-preview-style="width:50px;" data-keditor-title="select-field" data-categories="Vue">
     <div name="formDesigner">
-        <select id="id" data-alias="alias">
-            <option name="" value="">Text</option>
-        </select>
-        <select-field options="[{label: 'Text', value: 'text'}, {label: 'Number', value: 'number'}]"></select-field>
+        <select-field label="test" items="['test1', 'test2', 'test3']"></select-field>
     </div>
 </div>
 
-<div data-type="component-object-form" data-preview="/snippets/default/preview/input-checkbox.png" data-preview-style="width:50px;" data-keditor-title="Vue" data-categories="Vue">
+<div data-type="component-object-form" data-preview="/snippets/default/preview/input-checkbox.png" data-preview-style="width:50px;" data-keditor-title="checkbox-field" data-categories="Vue">
     <div name="formDesigner">
-        <div id="id" data-alias="alias">
-            <input type="checkbox" name="" value="">
-        </div>
+        <checkbox-field items="[{'label1': 'test1'}, {'label2': 'test2'}]"></checkbox-field>
     </div>
 </div>
 
 
-<div data-type="component-object-form" data-preview="/snippets/default/preview/input-radio.png" data-preview-style="width:50px;" data-keditor-title="Vue" data-categories="Vue">
+<div data-type="component-object-form" data-preview="/snippets/default/preview/input-radio.png" data-preview-style="width:50px;" data-keditor-title="radio-field" data-categories="Vue">
     <div name="formDesigner">
-        <input type="radio" id="" name="" value="" alias="">
+        <radio-field items="[{'label1': 'test1'}, {'label2': 'test2'}]"></radio-field>
     </div>
 </div>
 
 <div data-type="component-object-form" data-preview="/snippets/default/preview/input-file.png" data-preview-style="width:50px;" data-keditor-title="Vue" data-categories="Vue">
     <div name="formDesigner">
-        <input type="file" id="" name="" alias="" accept="" />
+        <file-field label="test" accept="image/*"></file-field>
     </div>
 </div>
 

@@ -1,6 +1,9 @@
 <template>
     <div>
-        <v-text-field :label="label"></v-text-field>
+        <v-file-input
+            :label="label"
+            :accept="accept"
+        ></v-file-input>
     </div>
 </template>
 
@@ -14,7 +17,8 @@ export default {
         
     ],
     props: {
-        label: String
+        label: String,
+        accept: String
     },
     data() {
         return {

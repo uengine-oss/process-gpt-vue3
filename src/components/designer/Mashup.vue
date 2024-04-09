@@ -327,7 +327,6 @@ export default {
         me.onchangeKEditor(event, 'onContentChanged');
         
         createApp(DynamicForm, {content:snippetContent}).use(vuetify).mount('#vuemount'+divSeq);
-        
       },
       onComponentChanged: function (event) {
         me.onchangeKEditor(event, 'onComponentChanged');
