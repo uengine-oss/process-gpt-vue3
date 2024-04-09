@@ -336,6 +336,9 @@ export default {
       }
     });
 
+    // 처음에 modelValue로 Html 태그 정보가 전달되었을때, 이를 렌더링시키기 위해서
+    if(this.modelValue)
+      createApp(DynamicForm, {content:this.modelValue}).use(vuetify).mount('#kEditor1')
   },
   beforeUnmount() {
     // 컴포넌트가 파괴되기 전에 CSS 제거
