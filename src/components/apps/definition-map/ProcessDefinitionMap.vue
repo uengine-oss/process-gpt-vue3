@@ -3,11 +3,6 @@
         <v-card elevation="10" :style="!$globalState.state.isZoomed ? 'height:calc(100vh - 155px)' :'height:100vh;'"
             style="overflow: auto;"
         >
-            <v-progress-linear
-                v-if="overlay"
-                indeterminate
-                class="my-progress-linear"
-            ></v-progress-linear>
             <div v-if="componentName != 'SubProcessDetail'" class="pa-3 d-flex align-center" style="position: sticky; top: 0; z-index:2; background-color:white">
                 <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
                 
@@ -31,21 +26,12 @@
                     <v-tooltip location="bottom" v-if="lock && isAdmin">
                         <template v-slot:activator="{ props }">
                             <v-btn 
-                                v-if="userInfo.email && userInfo.email == editUser"
                                 v-bind="props"
                                 icon variant="text" size="24"
                                 class="cp-lock"
                                 @click="openAlertDialog('checkin')"
                             >
                                 <LockOpenIcon width="24" height="24" />
-                            </v-btn>
-                            <v-btn 
-                                v-if="userInfo.email && userInfo.email != editUser"
-                                v-bind="props"
-                                icon variant="text" size="24"
-                                @click="openAlertDialog('checkin')"
-                            >
-                                <LockIcon width="24" height="24" />
                             </v-btn>
                         </template>
                         <span>{{ $t('processDefinitionMap.lock') }}</span>
@@ -162,11 +148,11 @@
 
 <script>
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
-import ProcessMenu from './ProcessMenu.vue';
-import ViewProcessDetails from './ViewProcessDetails.vue'
-import SubProcessDetail from './SubProcessDetail.vue'
-import DefinitionMapList from './DefinitionMapList.vue'
 import domtoimage from 'dom-to-image';
+import DefinitionMapList from './DefinitionMapList.vue';
+import ProcessMenu from './ProcessMenu.vue';
+import SubProcessDetail from './SubProcessDetail.vue';
+import ViewProcessDetails from './ViewProcessDetails.vue';
 const storageKey = 'configuration'
 
 export default {
@@ -195,21 +181,16 @@ export default {
         alertType: '',
         alertDialog: false,
         alertMessage: '',
-        overlay: false,
         isAdmin: false,
     }),
     async created() {
         var me = this;
-        if (!me.$app.try) {
-            me.$app = me.$app._component.methods;
-        }
-        this.$app.try({
+
+        this.$try({
             action: async () => {
-                this.overlay = true;
                 this.storage = StorageBaseFactory.getStorage();
                 await this.getProcessMap();
                 await this.init();
-                this.overlay = false;
             },
         });
     },

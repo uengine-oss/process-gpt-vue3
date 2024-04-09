@@ -16,15 +16,15 @@
                 </v-col>
                 <v-col cols="12" sm="9">
                     <v-autocomplete v-model="processVariable.type" :items="types" color="primary" variant="outlined"
-                        hide-details @change="changedType"></v-autocomplete>
+                        hide-details></v-autocomplete>
                 </v-col>
             </v-row>
             <v-row class="align-center" v-if="forms.length>0">
                 <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
-                    <v-label class=" font-weight-medium" for="hcpm">{{ $t('ProcessVariable.defaultValue') }}</v-label>
+                    <v-label class=" font-weight-medium" >{{ $t('ProcessVariable.defaultValue') }}</v-label>
                 </v-col>
                 <v-col cols="12" sm="9">
-                    <v-autocomplete v-model="processVariable.defaultValue" :items="forms" color="primary" variant="outlined"
+                    <v-autocomplete v-model="processVariable.defaultValue" :items="forms.map(item => item.name+'_'+item.alias)" color="primary" variant="outlined"
                         hide-details></v-autocomplete>
                 </v-col>
             </v-row>
@@ -97,7 +97,7 @@ export default {
             processVariable: {
                 name: "",
                 type: "",
-                defaultValue: "",
+                defaultValue: null,
                 description: "",
                 datasource: {
                     type: "",
@@ -153,9 +153,6 @@ export default {
                 },
                 table: ""
             }
-        },
-        async changedType(type) {
-            var me = this
         }
     },
     watch: {
@@ -167,7 +164,7 @@ export default {
 
                 let formDefs = await me.storage.list('form_def');
                 formDefs.forEach(async (form) => {
-                    me.forms.push(form.name+'_'+form.alias)
+                    me.forms.push(form)
                 })
             }else {
                 me.forms = []
@@ -175,8 +172,6 @@ export default {
         }
     },
     mounted() {
-        this.storage = StorageBaseFactory.getStorage('supabase');
-
         if (this.variable) {
             if (!this.variable.datasource) {
                 this.variable.datasource = {
@@ -186,6 +181,8 @@ export default {
             }
             this.processVariable = Object.assign({}, this.variable)
         }
+
+        this.storage = StorageBaseFactory.getStorage('supabase');
     }
 }
 </script>

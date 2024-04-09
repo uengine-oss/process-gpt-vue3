@@ -2,7 +2,7 @@
 import jp from 'jsonpath';
 
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
-import { getEncoding, encodingForModel } from "js-tiktoken";
+import { encodingForModel } from "js-tiktoken";
 import _ from 'lodash';
 
 export default {
@@ -19,9 +19,6 @@ export default {
     }),
     async created() {
         var me = this;
-        if (!me.$app.try) {
-            me.$app = me.$app._component.methods;
-        }
         this.storage = StorageBaseFactory.getStorage();
         this.openaiToken = await this.getToken();
 
@@ -389,7 +386,7 @@ export default {
         },
 
         onModelCreated(response) {
-            this.$app.try({
+            this.$try({
                 context: this,
                 action: async () => { // Changed to arrow function
                     let messageWriting = this.messages[this.messages.length - 1];

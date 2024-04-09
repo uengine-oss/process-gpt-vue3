@@ -1,27 +1,27 @@
-import { createApp } from 'vue';
-import { createPinia } from 'pinia';
-import App from './App.vue';
-import { router } from './router';
-import vuetify from './plugins/vuetify';
 import '@/scss/style.scss';
-import PerfectScrollbar from 'vue3-perfect-scrollbar';
-import VueApexCharts from 'vue3-apexcharts';
-import VueTablerIcons from 'vue-tabler-icons';
 import { fakeBackend } from '@/utils/helpers/fake-backend';
+import { createPinia } from 'pinia';
+import { createApp } from 'vue';
+import VueTablerIcons from 'vue-tabler-icons';
+import VueApexCharts from 'vue3-apexcharts';
 import 'vue3-carousel/dist/carousel.css';
+import PerfectScrollbar from 'vue3-perfect-scrollbar';
+import App from './App.vue';
+import vuetify from './plugins/vuetify';
+import { router } from './router';
 //Mock Api data
-import './_mockApis';
+import Maska from 'maska';
 import VCalendar from 'v-calendar';
 import VueRecaptcha from 'vue3-recaptcha-v2';
-import Maska from 'maska';
+import './_mockApis';
 // print
 // import print from 'vue3-print-nb';
 // Table
 import Vue3EasyDataTable from 'vue3-easy-data-table';
 import 'vue3-easy-data-table/dist/style.css';
 //i18
-import { createI18n } from 'vue-i18n';
 import messages from '@/utils/locales/messages';
+import { createI18n } from 'vue-i18n';
 import setLocale from './plugins/setLocale';
 
 // icon
@@ -34,9 +34,9 @@ import '@/assets/css/globalStyle.css';
 import globalState from '@/stores/globalState';
 
 // diff viewer
+import xml from 'highlight.js/lib/languages/xml';
 import VueDiff from 'vue-diff';
 import 'vue-diff/dist/index.css';
-import xml from 'highlight.js/lib/languages/xml';
 VueDiff.hljs.registerLanguage('xml', xml);
 
 //ScrollTop
@@ -53,20 +53,22 @@ const OpenGraphEmitter = mitt();
 const ModelingEmitter = mitt();
 
 const app = createApp(App);
-app.config.globalProperties.$app = app;
+app.config.globalProperties.$try = app._component.methods.try;
 app.config.globalProperties.EventBus = emitter;
 app.config.globalProperties.OGBus = OpenGraphEmitter;
 app.config.globalProperties.ModelingBus = ModelingEmitter;
 
+
+
 // 전역 상태 관리자를 전역 속성으로 추가
 app.config.globalProperties.$globalState = globalState;
 
-import ModelerImageGenerator from '@/components/designer/ModelerImageGenerator.vue'
+import ModelerImageGenerator from '@/components/designer/ModelerImageGenerator.vue';
 app.component('modeler-image-generator', ModelerImageGenerator)
 // modeler-image-generator
 // Use plugins
-import loadOpengraphComponents from './opengraph'
-import loadbpmnComponents from './components/designer/bpmnModeling/bpmn'
+import loadbpmnComponents from './components/designer/bpmnModeling/bpmn';
+import loadOpengraphComponents from './opengraph';
 
 loadOpengraphComponents(app)
 loadbpmnComponents(app)

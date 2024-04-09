@@ -22,8 +22,10 @@
                 :uengine-properties="uengineProperties" 
                 :name="name"
                 :role="role"
+                :variableForHtmlFormContext="element.variableForHtmlFormContext"
                 ref="panelComponent"
                 @update:name="val => name = val"
+                @setVariableForHtmlFormContext="val => element.variableForHtmlFormContext = val"
                 :definition="definition"
             ></component>
         </v-card-text>
@@ -83,15 +85,13 @@ export default {
             editParam: false,
             paramKey: "",
             paramValue: "",
-            role: ""
+            role: "",
         };
     },
     async mounted() {
 
         let me = this
-        if (!me.$app.try) {
-            me.$app = me.$app._component.methods;
-        }
+
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
         this.name = this.element.name

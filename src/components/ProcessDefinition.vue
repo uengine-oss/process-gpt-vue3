@@ -47,7 +47,7 @@
                 </v-card>
             </div>
         </v-row>
-        <v-dialog v-model="isViewProcessVariables" max-width="1000" style="z-index:9999;">
+        <v-dialog v-model="isViewProcessVariables" max-width="1000">
             <v-card>
                 <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{
                         $t('processDefinition.editProcessData') }}</v-card-title>
@@ -61,7 +61,7 @@
                             <tr>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.name') }}</th>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.type') }}</th>
-                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.defaultValue') }}</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.form') }}</th>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.description')
                                     }}
                                 </th>
@@ -195,8 +195,7 @@ export default {
         lastEditedIndex: 0,
         editComponentKey: 0,
         bpmnModeler: null,
-        processVariables: [],
-        test: "test"
+        processVariables: []
     }),
     computed: {
         mode() {

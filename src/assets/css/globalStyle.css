@@ -82,7 +82,7 @@ h1, h2, h3, h4, h5, h6 {
     left: 0px;
     min-width: 100%;
     min-height: 100%;
-    z-index:9999 !important;
+    z-index:1007 !important;
 }
 
 .mainbox {
