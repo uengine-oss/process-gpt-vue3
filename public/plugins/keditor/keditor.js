@@ -1029,9 +1029,10 @@
                     
                     var helper = ui.helper;
                     var item = ui.item;
+                    var snippetContent; 
                     
                     if (item.is('.keditor-snippet')) {
-                        var snippetContent = body.find(item.attr('data-snippet')).html();
+                        snippetContent = body.find(item.attr('data-snippet')).html();
                         flog('Snippet content', snippetContent);
                         
                         var container = $(
@@ -1056,7 +1057,7 @@
                     self.hideSettingPanel();
                     
                     if (typeof options.onContentChanged === 'function') {
-                        options.onContentChanged.call(contentArea, event);
+                        options.onContentChanged.call(contentArea, event, snippetContent);
                     }
                 }
             });
