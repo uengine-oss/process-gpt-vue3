@@ -40,7 +40,6 @@ import { useBpmnStore } from '@/stores/bpmn';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage()
 
-import { Icon } from '@iconify/vue';
 export default {
     name: 'sub-process-activity-panel',
     props: {
@@ -87,9 +86,7 @@ export default {
     },
     async mounted() {
         let me = this
-        if (!me.$app.try) {
-            me.$app = me.$app._component.methods;
-        }
+
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
         let def = this.bpmnModeler.getDefinitions();

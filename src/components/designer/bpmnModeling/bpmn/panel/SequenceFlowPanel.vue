@@ -15,7 +15,6 @@
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
-import { Icon } from '@iconify/vue';
 import ConditionField from './ConditionField.vue';
 
 const storage = StorageBaseFactory.getStorage()
@@ -44,9 +43,7 @@ export default {
     },
     async mounted() {
         let me = this
-        if (!me.$app.try) {
-            me.$app = me.$app._component.methods;
-        }
+
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
         

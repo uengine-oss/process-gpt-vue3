@@ -32,7 +32,6 @@
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 // import xmljs from 'xml-js';
 // import diff from 'deep-diff';
-import diffMatchPatch from 'diff-match-patch';
 
 export default {
     name: 'ProcessDefinitionVersionDialog',
@@ -83,13 +82,12 @@ export default {
     },
     created() {
         var me = this
-        if (!me.$app.try) me.$app = me.$app._component.methods;
         me.storage = StorageBaseFactory.getStorage();
     },
     methods: {
         load() {
             var me = this
-            this.$app.try({
+            this.$try({
                 context: me,
                 action: async () => {
                     if (me.process) {
@@ -112,7 +110,7 @@ export default {
         },
         save() {
             var me = this
-            this.$app.try({
+            this.$try({
                 context: me,
                 action: async () => {
                     if (!(me.information.proc_def_id && me.information.name)) return;
