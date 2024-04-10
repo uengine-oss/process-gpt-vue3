@@ -207,7 +207,7 @@ export default {
             })
 
             // 컴포넌트인 경우, formDesigner 태그로 감싸서 KEditor가 속성을 편집할 수 있도록 만들기
-            const components = dom.querySelectorAll('[data-alias], [alias], label, [type="submit"]')
+            const components = Array.from(dom.querySelectorAll('*')).filter(el => el.tagName.toLowerCase().endsWith('-field'));
             components.forEach(component => {
                 const parent = document.createElement('div')
                 parent.setAttribute('name', 'formDesigner')
