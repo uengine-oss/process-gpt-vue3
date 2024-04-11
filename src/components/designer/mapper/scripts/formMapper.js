@@ -307,6 +307,8 @@ export default {
       },
       connections: [
       ],
+      tempConnections: [
+      ],
       attributes: {
 
       },
@@ -494,7 +496,7 @@ export default {
         if (!this.checkGlobalType(conn.to[0])) return;
         var block = this.blocks[conn.from[0]];
         var blockData = this.blockTemplates[block.type];
-        var mappingElement = this.createMappingElement(block, blockData);
+        var mappingElement = this.createMappingElement(conn.from[0], block, blockData, conn.to[1]);
         var connections = this.connections.filter(childConn => childConn.to[0] === conn.from[0]);
         var argumentSourceMap = this.createArgumentSourceMap(connections);
         mappingElement.transformerMapping.transformer.argumentSourceMap = argumentSourceMap;
@@ -556,14 +558,14 @@ export default {
     checkGlobalType(type) {
       return type == "Source" || type == "Target" || type == "Direct";
     },
-    createMappingElement(block, blockData) {
+    createMappingElement(blockName, block, blockData, argument) {
       return {
         "_type": "org.uengine.kernel.MappingElement",
-        "argument": {},
+        "argument": argument,
         "transformerMapping": {
           "transformer": {
             "_type": blockData.class,
-            "name": block.type,
+            "name": blockName,
             "location": block.pos,
             "argumentSourceMap": {}
           },
@@ -580,31 +582,163 @@ export default {
       }
     },
     renderFormMapperFromMappingElementJson(json) {
-      if (!json) {
-        console.error("JSON 데이터가 제공되지 않았습니다.");
-        return;
-      }
+      // if (!json) {
+      //   console.error("JSON 데이터가 제공되지 않았습니다.");
+      //   return;
+      // }
       try {
-        const mappingElements = JSON.parse(json);
-        if (!Array.isArray(mappingElements)) {
-          console.error("JSON 형식이 올바르지 않습니다. 배열 형태여야 합니다.");
-          return;
-        }
-        mappingElements.forEach(element => {
-          const { _type, argument, transformerMapping, isKey } = element;
-          if (_type !== "org.uengine.kernel.MappingElement") {
-            console.warn("지원하지 않는 매핑 요소 타입입니다:", _type);
-            return;
-          }
-          // 매핑 요소를 처리하는 로직
-          this.createMappingElementFromJson(argument, transformerMapping, isKey);
+        // const mappingContent = JSON.parse(json);
+
+
+        const mappingContent = {
+          mappingElements: [
+            {
+              "_type": "org.uengine.kernel.MappingElement",
+              "argument": "Variables",
+              "transformerMapping": {
+                "transformer": {
+                  "_type": "org.uengine.processdesigner.mapper.transformers.MinTransformer",
+                  "name": "Min 2",
+                  "location": {
+                    "x": 803.5,
+                    "y": 276.09375
+                  },
+                  "argumentSourceMap": {
+                    "value1": {
+                      "_type": "org.uengine.kernel.TransformerMapping",
+                      "transformer": {
+                        "_type": "org.uengine.processdesigner.mapper.transformers.MaxTransformer",
+                        "name": "Max",
+                        "location": {
+                          "x": 400.5,
+                          "y": 189.09375
+                        },
+                        "argumentSourceMap": {
+                          "value1": "Variables",
+                          "value2": "test1"
+                        }
+                      },
+                      "linkedArgumentName": "out"
+                    },
+                    "value2": {
+                      "_type": "org.uengine.kernel.TransformerMapping",
+                      "transformer": {
+                        "_type": "org.uengine.processdesigner.mapper.transformers.MinTransformer",
+                        "name": "Min",
+                        "location": {
+                          "x": 395.5,
+                          "y": 318.09375
+                        },
+                        "argumentSourceMap": {
+                          "value1": "test2",
+                          "value2": "test3"
+                        }
+                      },
+                      "linkedArgumentName": "out"
+                    }
+                  }
+                },
+                "linkedArgumentName": "out"
+              },
+              "isKey": false
+            },
+            {
+              "_type": "org.uengine.kernel.MappingElement",
+              "argument": "test1",
+              "transformerMapping": {
+                "transformer": {
+                  "_type": "org.uengine.processdesigner.mapper.transformers.MinTransformer",
+                  "name": "Min 2",
+                  "location": {
+                    "x": 803.5,
+                    "y": 276.09375
+                  },
+                  "argumentSourceMap": {
+                    "value1": {
+                      "_type": "org.uengine.kernel.TransformerMapping",
+                      "transformer": {
+                        "_type": "org.uengine.processdesigner.mapper.transformers.MaxTransformer",
+                        "name": "Max",
+                        "location": {
+                          "x": 400.5,
+                          "y": 189.09375
+                        },
+                        "argumentSourceMap": {
+                          "value1": "Variables",
+                          "value2": "test1"
+                        }
+                      },
+                      "linkedArgumentName": "out"
+                    },
+                    "value2": {
+                      "_type": "org.uengine.kernel.TransformerMapping",
+                      "transformer": {
+                        "_type": "org.uengine.processdesigner.mapper.transformers.MinTransformer",
+                        "name": "Min",
+                        "location": {
+                          "x": 395.5,
+                          "y": 318.09375
+                        },
+                        "argumentSourceMap": {
+                          "value1": "test2",
+                          "value2": "test3"
+                        }
+                      },
+                      "linkedArgumentName": "out"
+                    }
+                  }
+                },
+                "linkedArgumentName": "out"
+              },
+              "isKey": false
+            }
+          ]
+        };
+
+        mappingContent.mappingElements.forEach(element => {
+          this.createMappingElementFromJson(element);
         });
       } catch (error) {
         console.error("JSON 파싱 중 오류가 발생했습니다:", error);
       }
     },
-    createMappingElementFromJson(argument, transformerMapping, isKey) {
+    createMappingElementFromJson(element) {
+      console.log(element);
+
+      var transformerMapping = element.transformerMapping;
+
+      this.addBlockFromJson(transformerMapping);
+      // this.connections = this.tempConnections;
     },
+    addBlockFromJson(transformerMapping) {
+      var blockName = transformerMapping.transformer.name;
+      var transformerType = transformerMapping.transformer._type;
+      var filteredEntries = Object.entries(this.blockTemplates).filter(([key, block]) => block.class === transformerType);
+      var keyOfMatchingBlock = filteredEntries.length > 0 ? filteredEntries[0][0] : undefined;
+       
+      var newBlock = {
+        type: keyOfMatchingBlock,
+        pos: transformerMapping.transformer.location,
+        attributes: {},
+      };
+ 
+      Object.keys(transformerMapping.transformer.argumentSourceMap).forEach(key => {
+        var argumentSourceMap = transformerMapping.transformer.argumentSourceMap[key];
+        var  connection = {};
+        if (argumentSourceMap != null && typeof argumentSourceMap === 'object') {
+          this.addBlockFromJson(argumentSourceMap);
+          connection = {
+            from: [blockName, "in value1"],
+            to: [blockName, "out"],
+          }
+        } else {
+        }
+        this.tempConnections.push(connection);
+      });
+
+
+      this.blocks[blockName] = newBlock;
+    }
   },
   computed: {
     offset() {
