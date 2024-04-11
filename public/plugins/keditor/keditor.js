@@ -220,7 +220,6 @@
     // Export log methods;
     KEditor.log = flog;
     KEditor.error = error;
-    KEditor.vueDivSeq = 0;
     
     KEditor.prototype = {
         init: function (target) {
@@ -1170,6 +1169,7 @@
                 sort: function () {
                     $(this).removeClass('ui-state-default');
                 },
+/// >>> 수정된 영역
                 receive: function (event, ui) {
                     flog('On received snippet', event, ui);
                     
@@ -1177,6 +1177,7 @@
                     var item = ui.item;
                     var container;
                     var snippetContent; 
+                    const vueRenderUUID = `vuemount_${crypto.randomUUID()}`
                     
                     if (item.is('.keditor-snippet')) {
                         var snippetContentElement = body.find(item.attr('data-snippet'));
@@ -1187,7 +1188,7 @@
                         var dataAttributes = self.getDataAttributes(snippetContentElement, null, true);
                         var component = $(
                             '<section class="keditor-ui keditor-component" data-type="' + componentType + '" ' + dataAttributes.join(' ') + '>' +
-                            '   <section class="keditor-ui keditor-component-content"><div id="vuemount'+(event.target.id)+'"></div></section>' +
+                            `   <section class="keditor-ui keditor-component-content"><div id="${vueRenderUUID}"></div></section>` +
                             '</section>'
                         );
                         helper.replaceWith(component);
@@ -1213,7 +1214,7 @@
                     }
                     
                     if (typeof options.onContentChanged === 'function') {
-                        options.onContentChanged.call(contentArea, event, snippetContent, event.target.id);
+                        options.onContentChanged.call(contentArea, event, snippetContent, vueRenderUUID);
                     }
                 }
             });
@@ -1225,7 +1226,7 @@
                 self.convertToComponent(contentArea, container, content, true);
             });
         },
-        
+// >>>
         convertToComponent: function (contentArea, container, target, isExisting) {
             flog('convertToComponent', contentArea, container, target, isExisting);
             

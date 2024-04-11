@@ -24,23 +24,51 @@
                             @click="viewProcess">
                             <Icon icon="fluent:flowchart-16-regular" :style="{ fontSize: '28px' }" />
                         </v-btn>
-                        <v-btn v-if="type == 'definitions'" :disabled="!isChanged" icon variant="text" type="file"
-                            @click="triggerFileInput" class="text-medium-emphasis">
-                            <Icon icon="material-symbols:upload" width="24" height="24" />
-                        </v-btn>
+                        <v-tooltip v-if="type == 'definitions'"
+                            :disabled="!isChanged"
+                            location="bottom"
+                        >
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props"
+                                    icon variant="text" 
+                                    type="file"
+                                    class="text-medium-emphasis"
+                                    @click="triggerFileInput"
+                                >
+                                    <Icon icon="material-symbols:upload" width="24" height="24" />
+                                </v-btn>
+                            </template>
+                            <span>{{ $t('chat.import') }}</span>
+                        </v-tooltip>
                         <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn"
                             style="display: none;" />
-                        <v-btn v-if="type == 'definitions'" icon variant="text" @click="openAlertDialog"
-                            class="text-medium-emphasis">
-                            <Icon v-if="lock" icon="f7:lock" width="24" height="24"></Icon>
-                            <Icon v-else icon="f7:lock-open" width="24" height="24"></Icon>
-                        </v-btn>
-                        <v-btn v-if="type == 'definitions'" icon variant="text" @click="openVerMangerDialog"
-                            class="text-medium-emphasis">
-                            <HistoryIcon size="24" />
-                        </v-btn>
+                        <v-tooltip v-if="type == 'definitions'" location="bottom">
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props"
+                                    icon variant="text" 
+                                    class="text-medium-emphasis"
+                                    @click="openAlertDialog"
+                                >
+                                    <Icon v-if="lock" icon="f7:lock" width="24" height="24"></Icon>
+                                    <Icon v-else icon="f7:lock-open" width="24" height="24"></Icon>
+                                </v-btn>
+                            </template>
+                            <span v-if="lock">{{ $t('chat.unlock') }}</span>
+                            <span v-else>{{ $t('chat.lock') }}</span>
+                        </v-tooltip>
+                        <v-tooltip v-if="type == 'definitions'" location="bottom">
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props"
+                                    icon variant="text"
+                                    class="text-medium-emphasis"
+                                    @click="openVerMangerDialog"
+                                >
+                                    <HistoryIcon size="24" />
+                                </v-btn>
+                            </template>
+                            <span>{{ $t('chat.history') }}</span>
+                        </v-tooltip>
                     </div>
-
                 </div>
                 <v-divider style="margin:0px;" />
             </div>

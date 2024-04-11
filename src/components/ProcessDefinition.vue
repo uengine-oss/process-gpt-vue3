@@ -2,7 +2,7 @@
     <div>
         <v-row style="height: 100%" class="ma-0">
             <v-col class="d-flex ma-0 pa-0">
-                <v-card elevation="1" style="border-radius: 0px !important;">
+                <v-card style="border-radius: 0px !important; border: none;" flat>
                     <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
                         <template v-slot:activator="{ props }">
                             <v-btn @click="openProcessVariables" icon v-bind="props" class="processVariables-btn">
@@ -280,6 +280,7 @@ export default {
         setDefinition() {
             let self = this
             const def = this.bpmnModeler.getDefinitions();
+            let bpmnFactory = this.bpmnModeler.get('bpmnFactory')
             const processElement = def.rootElements.find(element => element.$type === 'bpmn:Process');
             if (!processElement) {
                 console.error('bpmn:Process element not found');

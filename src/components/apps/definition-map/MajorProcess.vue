@@ -40,6 +40,7 @@
                         :storage="storage"
                         :userInfo="userInfo"
                         :enableEdit="enableEdit"
+                        :enableExecution="enableExecution"
                         @view="viewProcess"
                     />
                 </div>
@@ -54,6 +55,7 @@
                     :parent="value" 
                     :storage="storage"
                     :enableEdit="enableEdit"
+                    :enableExecution="enableExecution"
                     @view="viewProcess"
                 />
             </div>
@@ -76,6 +78,7 @@ export default {
         storage: Object,
         userInfo: Object,
         enableEdit: Boolean,
+        enableExecution: Boolean
     },
     data: () => ({
         type: 'major',

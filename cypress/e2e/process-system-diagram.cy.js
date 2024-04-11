@@ -40,9 +40,7 @@ describe('프로세스 정의', () => {
     cy.wait(1000);
    
     // Mega process
-    cy.get('.cp-add-process').click();
-    cy.wait(1000);
-    cy.get('.cp-process').click();
+    cy.get('.cp-add-mega').click();
     cy.wait(1000);
     cy.get('.cp-process-id').type("MEGA-1");
     cy.get('.cp-process-name').type("고객");

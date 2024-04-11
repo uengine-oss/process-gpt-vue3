@@ -1,11 +1,16 @@
 <template>
     <div>
         <div class="d-flex">
-            <v-btn icon variant="text" :width="size" :height="size">
+            <v-btn v-if="enableEdit" icon variant="text" :width="size" :height="size">
                 <!-- <PlusIcon v-if="type == 'map'" :size="size" /> -->
-                <DotsVerticalIcon v-if="enableEdit && type != 'map'" :size="size" />
+                <DotsVerticalIcon v-if="type != 'map'" :size="size" />
                 <v-menu activator="parent">
                     <v-list density="compact" class="cursor-pointer">
+                        <v-list-item @click="editProcess">
+                            <v-list-item-title>
+                                프로세스 실행
+                            </v-list-item-title>
+                        </v-list-item>
                         <v-list-item v-if="type != 'sub'" @click="openDialog('add')">
                             <v-list-item-title class="cp-process">
                                 <span v-if="addType != 'sub'">{{ addType.toUpperCase() }}</span> 프로세스 추가
@@ -26,38 +31,39 @@
                                 삭제
                             </v-list-item-title>
                         </v-list-item>
-                        <v-list-item class="cp-mega-datail" v-if="type == 'mega'" @click="openViewProcessDetails(process)">
+                        <v-list-item class="cp-mega-datail" v-if="type == 'mega'"
+                            @click="openViewProcessDetails(process)">
                             <v-list-item-title>
                                 상세보기
                             </v-list-item-title>
                         </v-list-item>
-                        <v-list-item class="cp-mega-datail" v-if="type == 'mega'" @click="openViewProcessDetails(process)">
+                    </v-list>
+                </v-menu>
+            </v-btn>
+            <v-btn v-else-if="enableExecution" icon variant="text" :width="size" :height="size">
+                <!-- <PlusIcon v-if="type == 'map'" :size="size" /> -->
+                <DotsVerticalIcon v-if="type != 'map'" :size="size" />
+                <v-menu activator="parent">
+                    <v-list density="compact" class="cursor-pointer">
+                        <v-list-item @click="executeProcessDialog">
                             <v-list-item-title>
-                                실행
+                                프로세스 실행
                             </v-list-item-title>
                         </v-list-item>
                     </v-list>
                 </v-menu>
             </v-btn>
         </div>
-        
-        <ProcessDialog
-            :enableEdit="enableEdit"
-            :process="process"
-            :processDialogStatus="processDialogStatus"
-            :definitions="definitions"
-            :processType="processType"
-            :type="type"
-            @add="addProcess"
-            @edit="updateProcess"
-            @closeProcessDialog="closeProcessDialog"
-        />
+
+        <ProcessDialog :enableEdit="enableEdit" :process="process" :processDialogStatus="processDialogStatus"
+            :definitions="definitions" :processType="processType" :type="type" @add="addProcess" @edit="updateProcess"
+            @closeProcessDialog="closeProcessDialog" />
     </div>
 </template>
 
 <script>
 import ProcessDialog from './ProcessDialog.vue'
-import FormMapper from '@/components/designer/mapper/FormMapper.vue'; 
+import FormMapper from '@/components/designer/mapper/FormMapper.vue';
 
 
 export default {
@@ -71,6 +77,7 @@ export default {
         process: Object,
         storage: Object,
         enableEdit: Boolean,
+        enableExecution: Boolean,
     },
     data: () => ({
         formMapperDialog: false,
@@ -80,7 +87,8 @@ export default {
         },
         definitions: null,
         processDialogStatus: false,
-        processType:"",
+        processType: "",
+        executeProcessDialog: false
     }),
     computed: {
         addType() {
@@ -108,6 +116,9 @@ export default {
                     this.definitions = null;
                 }
             }
+        },
+        executeProcessDialog() {
+            this.executeProcessDialog = true;
         },
         openViewProcessDetails(process) {
             this.$router.push(`/definition-map/mega/${process.id}`);

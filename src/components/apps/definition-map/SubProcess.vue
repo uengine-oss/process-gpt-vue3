@@ -12,6 +12,7 @@
                 :process="value"
                 :storage="storage"
                 :enableEdit="enableEdit"
+                :enableExecution="enableExecution"
                 @edit="editProcess"
                 @delete="deleteProcess"
                 @modeling="editProcessModel"
@@ -33,6 +34,7 @@ export default {
         storage: Object,
         userInfo: Object,
         enableEdit: Boolean,
+        enableExecution: Boolean
     },
     data: () => ({
         type: 'sub',

@@ -215,7 +215,6 @@ export default {
     me.kEditor.keditor({
       // iframeMode: true,
       // snippetsUrl:'./Snippets',
-      vueDivSeq: 0,
       tabContainersText: '<i class="fa fa-th-list"></i>',
       tabComponentsText: '<i class="fa fa-file"></i>',
       extraTabs: {
@@ -323,11 +322,11 @@ export default {
       componentSettingHideFunction: function (form, keditor) {
         console.log("containerSettingHideFunction : ", form, keditor);
       },
-      onContentChanged: function (event, snippetContent, divSeq) {
+      onContentChanged: function (event, snippetContent, vueRenderUUID) {  
+        if(vueRenderUUID && vueRenderUUID.includes("vuemount_"))
+          createApp(DynamicForm, {content:snippetContent}).use(vuetify).mount('#'+vueRenderUUID);
+
         me.onchangeKEditor(event, 'onContentChanged');
-        
-        createApp(DynamicForm, {content:snippetContent}).use(vuetify).mount('#vuemount'+divSeq);
-        
       },
       onComponentChanged: function (event) {
         me.onchangeKEditor(event, 'onComponentChanged');
@@ -337,6 +336,9 @@ export default {
       }
     });
 
+    // 처음에 modelValue로 Html 태그 정보가 전달되었을때, 이를 렌더링시키기 위해서
+    if(this.modelValue)
+      createApp(DynamicForm, {content:this.modelValue}).use(vuetify).mount('#kEditor1')
   },
   beforeUnmount() {
     // 컴포넌트가 파괴되기 전에 CSS 제거

@@ -71,7 +71,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 .from('users')
                 .select('*')
                 .eq('id', result.data.user.id)
-                .single();
+                .maybeSingle()
 
             const userInfo = {
                 email: result.data.user.email,
@@ -96,7 +96,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .from(obj.table)
                     .select()
                     .match(options.match)
-                    .single();
+                    .maybeSingle()
 
                 if (error) {
                     throw error;
@@ -108,7 +108,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .from(obj.table)
                     .select()
                     .eq(obj.searchKey, obj.searchVal)
-                    .single();
+                    .maybeSingle()
 
                 if (error) {
                     throw error;
@@ -119,7 +119,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 const { data, error } = await window.$supabase
                     .from(obj.table)
                     .select()
-                    .single();
+                    .maybeSingle()
 
                 if (error) {
                     throw error;
@@ -144,7 +144,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .from(obj.table)
                     .select()
                     .match(options.match)
-                    .single();
+                    .maybeSingle()
 
                 if (error) {
                     throw error;
@@ -156,7 +156,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .from(obj.table)
                     .select()
                     .eq(obj.searchKey, obj.searchVal)
-                    .single();
+                    .maybeSingle()
 
                 if (error) {
                     throw error;
@@ -167,7 +167,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 const { data, error } = await window.$supabase
                     .from(obj.table)
                     .select()
-                    .single();
+                    .maybeSingle()
                 
                 if (error) {
                     throw error;
@@ -518,7 +518,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 .from('users')
                 .select('*')
                 .eq('id', value.user.id)
-                .single();
+                .maybeSingle()
             
             if (error) {
                 throw new StorageBaseError('error in writeUserData', error, arguments)
