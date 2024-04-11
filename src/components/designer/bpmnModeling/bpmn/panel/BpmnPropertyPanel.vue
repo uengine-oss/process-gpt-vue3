@@ -26,6 +26,7 @@
                 ref="panelComponent"
                 @update:name="val => name = val"
                 @setVariableForHtmlFormContext="val => element.variableForHtmlFormContext = val"
+                @setMappingContext="val => element.mappingContext = val"
                 :definition="definition"
             ></component>
         </v-card-text>
