@@ -6,9 +6,6 @@
 
     <div id="kEditor1">
     </div>
-
-
-
     
     <v-dialog v-model="openPanel">
         <form-definition-panel
@@ -53,6 +50,8 @@ export default {
       html: ''
     },
     openPanel: false,
+
+    componentRefs: {} // createApp으로 생성된 컴포넌트들에 직접적으로 접근하기 위해서
   }),
   components: {
     DynamicForm,
@@ -116,68 +115,58 @@ export default {
       this.$emit('value', "");
       this.$emit('change', "");
     },
+
     async saveFormDefinition(){
       let me = this;
 
-      var formName = "test1";
-      var alias = "alias1"
 
       let formContent = me.kEditor[0].children[0].innerHTML;
 
       let parser = new DOMParser();
       let doc = parser.parseFromString(formContent, 'text/html');
 
-      var putObj = {}
 
-      putObj.id = me.uuid();
-      putObj.name = formName;
-      putObj.alias = alias;
-      putObj.html = doc.documentElement.outerHTML
-      putObj.fields = [];
+      // 렌더링된 Vue 컴포넌트를 찾아서 다시 vue 태그로 되돌리기 위해서
+      doc.querySelectorAll("div[id^='vuemount_']").forEach(vueRenderElement => {
+        const vueRenderUUID = vueRenderElement.id
+        const componentRef = me.componentRefs[vueRenderUUID]
 
-      // name이 formDesigner인 div 내의 요소 Get
-      let formDesignerElements = doc.querySelectorAll('div[name="formDesigner"] > *');
-      formDesignerElements.forEach(element => {
-        putObj.fields.push({
-          id: element.id || '',
-          type: element.type || '',
-          name: element.name || '',
-          alias: element.getAttribute('data-alias') || '',
-          html: element.outerHTML || ''
-        });
+        const newElement = document.createElement(componentRef.tagName)
+        newElement.setAttribute('name', componentRef.localName)
+        newElement.setAttribute('alias', componentRef.localAlias)
+        newElement.setAttribute('items', JSON.stringify(componentRef.localItems))
+
+        vueRenderElement.innerHTML = newElement.outerHTML
+      })
+
+      // 칼럼이 되는 class를 찾아서 불필요한 클래스 및 속성들을 제거시키기 위해서
+      doc.querySelectorAll('[class^="col-sm-"]').forEach(node => {
+        const components = Array.from(node.querySelectorAll('*')).filter(el => el.tagName.toLowerCase().endsWith('-field'))
+        node.innerHTML = components.map(el => el.outerHTML).join('');
+
+        node.setAttribute("class", node.getAttribute("class").split(" ").filter((className) => className.includes("col-sm-")).join(" "))
+        node.removeAttribute('id')
+        node.removeAttribute('data-type')
       });
 
+      // Row들을 찾아서 조합시키고 section으로 감싸서 최종적인 저장 형태를 생성하기 위해서
+      const formContentHTML = Array.from(doc.querySelectorAll('.row')).map(row => row.outerHTML).join('').replace(/&quot;/g, `'`);
+      const sectionHTML = `<section>${formContentHTML}</section>`
 
-      // var path = `form_def/${putObj.name+"_"+putObj.alias}`;
-      var path = 'form_def';
-      await me.putObject(path, putObj);
+
+      var putObj = {
+        id: me.uuid(),
+        name: "test1",
+        alias: "alias1",
+        html: sectionHTML
+      }
+      await me.putObject("form_def", putObj);
     },
     editFormDefinition(newValue) {
-      let domHtml = this.kEditor[0].children[0].innerHTML
-    
-      // DOMParser를 사용하여 HTML 문자열을 DOM 객체로 변환
-      let parser = new DOMParser();
-      let doc = parser.parseFromString(domHtml, 'text/html');
-
-      // id가 newValue.id인 section 태그 내의 name이 formDesigner인 div를 찾음
-      let formDesignerDiv = doc.querySelector(`section#${newValue.id} div[name="formDesigner"]`);
-
-      if (formDesignerDiv) {
-        // formDesignerDiv 내의 요소들을 찾아 name과 alias를 newValue의 값으로 변경
-        formDesignerDiv.querySelectorAll('*').forEach(element => {
-          if (element.name) {
-            element.id = newValue.id
-            element.name = newValue.name;
-            element.setAttribute('data-alias', newValue.alias); // alias는 표준 속성이 아니므로 setAttribute 사용
-          }
-        });
-
-        // 변경된 DOM 객체를 다시 HTML 문자열로 변환
-        let newDomHtml = doc.body.innerHTML;
-
-        // kEditor의 HTML을 업데이트
-        this.kEditor[0].children[0].innerHTML = newDomHtml;
-      }
+      const componentRef = this.componentRefs[newValue.id]
+      componentRef.localName = newValue.name
+      componentRef.localAlias = newValue.alias
+      componentRef.localItems = newValue.items
 
       this.formValue = { ...newValue }
       this.openPanel = false
@@ -290,42 +279,59 @@ export default {
       containerSettingHideFunction: function (form, keditor) {
         console.log("containerSettingHideFunction : ", form, keditor);
       },
+
+      /**
+       * 유저가 컴포넌트 세팅 버튼을 누를 경우, 편집과 관련된 다이얼로그를 보여주기 위해서
+       * @param {*} container 선택된 영역에 해당하는 keditor-component section 선택자
+       */
       componentSettingShowFunction: function (form, container, keditor) {
-        console.log("containerSettingShowFunction : ", form, container, keditor);
+        console.log("containerSettingShowFunction : ", form, container, keditor)
 
-        let formHtml = container[0].innerHTML
+        try
+        {
 
-        let parser = new DOMParser();
-        let doc = parser.parseFromString(formHtml, 'text/html');
+          const doc = (new DOMParser()).parseFromString(container[0].innerHTML, 'text/html')
 
-        // name이 formDesigner인 div 내의 요소 Get
-        let formDesignerElements = doc.querySelectorAll('div[name="formDesigner"] > *');
-        
-        let formValue = {
-          id: doc.querySelector('section.keditor-ui.keditor-component-content').id,
-          type: '',
-          name: '',
-          alias: '',
-          html: ''
+
+          const vueRenderElement = doc.querySelectorAll("div[id^='vuemount_']")
+          if(vueRenderElement.length == 0)
+          {
+            alert("선택된 컴포넌트가 없습니다.")
+            return
+          }
+
+          const vueRenderUUID = vueRenderElement[0].id
+          const componentRef = me.componentRefs[vueRenderUUID]
+
+
+          const formValue = {
+            id: componentRef.vueRenderUUID, // 추후에 고유값을 통해서 값을 찾기 위해서
+            type: componentRef.tagName,
+            name: componentRef.localName,
+            alias: componentRef.localAlias,
+            items: componentRef.localItems
+          }
+
+          window.mashup.formValue = { ...formValue }
+          window.mashup.openPanel = true
+
         }
-
-        if (formDesignerElements) {
-          formValue.type = formDesignerElements[0].type
-          formValue.name = formDesignerElements[0].name
-          formValue.alias = formDesignerElements[0].getAttribute('data-alias')
-          formValue.html = formDesignerElements[0].outerHTML
-        } 
-
-        window.mashup.formValue = { ...formValue }
-        window.mashup.openPanel = true
+        catch(e)
+        {
+          console.error(e);
+        }
       },
+
       componentSettingHideFunction: function (form, keditor) {
         console.log("containerSettingHideFunction : ", form, keditor);
       },
       onContentChanged: function (event, snippetContent, vueRenderUUID) {  
         if(vueRenderUUID && vueRenderUUID.includes("vuemount_"))
-          createApp(DynamicForm, {content:snippetContent}).use(vuetify).mount('#'+vueRenderUUID);
-
+        {
+          const app = createApp(DynamicForm, {content:snippetContent, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
+          me.componentRefs[vueRenderUUID] = app.componentRef;
+        }
+          
         me.onchangeKEditor(event, 'onContentChanged');
       },
       onComponentChanged: function (event) {
