@@ -2,7 +2,7 @@
     <div>
         <v-row style="height: 100%" class="ma-0">
             <v-col class="d-flex ma-0 pa-0">
-                <v-card elevation="1" style="border-radius: 0px !important;">
+                <v-card style="border-radius: 0px !important; border: none;" flat>
                     <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
                         <template v-slot:activator="{ props }">
                             <v-btn @click="openProcessVariables" icon v-bind="props" class="processVariables-btn">
@@ -47,7 +47,7 @@
                 </v-card>
             </div>
         </v-row>
-        <v-dialog v-model="isViewProcessVariables" max-width="1000" style="z-index:9999;">
+        <v-dialog v-model="isViewProcessVariables" max-width="1000">
             <v-card>
                 <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{
                         $t('processDefinition.editProcessData') }}</v-card-title>
@@ -61,7 +61,7 @@
                             <tr>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.name') }}</th>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.type') }}</th>
-                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.defaultValue') }}</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.form') }}</th>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.description')
                                     }}
                                 </th>
@@ -195,8 +195,7 @@ export default {
         lastEditedIndex: 0,
         editComponentKey: 0,
         bpmnModeler: null,
-        processVariables: [],
-        test: "test"
+        processVariables: []
     }),
     computed: {
         mode() {
@@ -281,6 +280,7 @@ export default {
         setDefinition() {
             let self = this
             const def = this.bpmnModeler.getDefinitions();
+            let bpmnFactory = this.bpmnModeler.get('bpmnFactory')
             const processElement = def.rootElements.find(element => element.$type === 'bpmn:Process');
             if (!processElement) {
                 console.error('bpmn:Process element not found');

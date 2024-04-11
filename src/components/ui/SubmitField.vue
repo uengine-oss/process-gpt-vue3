@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-text-field :label="label"></v-text-field>
+        <input type="submit" value="Submit">
     </div>
 </template>
 
@@ -14,16 +14,10 @@ export default {
         
     ],
     props: {
-        name: String,
-        alias: String
-    },
-    computed: {
-        label() {
-            return this.alias || this.name;
-        }
     },
     data() {
         return {
+         
         };
     },
     created() {

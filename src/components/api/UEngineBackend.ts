@@ -1,7 +1,7 @@
 import axios from 'axios';
 const axiosInstance = axios.create();
-import type { Backend } from './Backend'; // Import the interface instead of the namespace
-export class UEngineBackend implements Backend {
+import type { Backend } from './Backend';
+class UEngineBackend implements Backend {
     // constructor() {
     //     super();
     // }
@@ -49,194 +49,215 @@ export class UEngineBackend implements Backend {
     }
     async getProduction() {
         try {
-
+            const response = await axiosInstance.get('/version/production');
+            return response.data;
         } catch (e) {
-
+            alert(e);
         }
-        const response = await axiosInstance.get('/version/production');
-        return response.data;
     }
     async getVersion(version: string) {
         try {
-
+            const response = await axiosInstance.get(`/version/${version}`);
+            return response.data;
         } catch (e) {
-            
+            alert(e);
         }
-        const response = await axiosInstance.get(`/version/${version}`);
-        return response.data;
-    }
-    async getDefinition(defPath: string) {
-        try {
-
-        } catch (e) {
-            
-        }
-        const response = await axiosInstance.get(`/definition/${defPath}`);
-        return response.data;
     }
     async renameOrMove(definition: any, requestPath: string) {
         try {
-
+            const response = await axiosInstance.put(requestPath, definition);
+            return response.data;
         } catch (e) {
-            
+            alert(e);
         }
-        const response = await axiosInstance.put(requestPath, definition);
-        return response.data;
-    }
-    async createFolder(newResource: any, requestPath: string) {
-        try {
-
-        } catch (e) {
-            
-        }
-        const response = await axiosInstance.post(`/definition/requestPath`, newResource);
-        return response.data;
     }
     async deleteDefinition(requestPath: string) {
         try {
-
+            const response = await axiosInstance.delete('/definition/' + requestPath);
+            return response.data;
         } catch (e) {
-            
+            alert(e);
         }
-        const response = await axiosInstance.delete(requestPath);
-        return response.data;
     }
     async putRawDefinition(definition: any, requestPath: string) {
         try {
-
+            let req = {
+                definition: definition
+            };
+            var config = {
+                headers: {
+                    'Content-Type': 'text/plain'
+                },
+                responseType: 'text' as const
+            };
+            const response = await axiosInstance.put('/definition/raw/' + requestPath + '.xml', definition, config);
+            return response.data;
         } catch (e) {
-            
+            alert(e);
         }
-        const response = await axiosInstance.put(requestPath, definition);
-        return response.data;
     }
     async getRawDefinition(defPath: string) {
         try {
-
+            const response = await axiosInstance.get(`/definition/raw/${defPath}`);
+            return response.data;
         } catch (e) {
-            
+            alert(e);
         }
-        const response = await axiosInstance.get(`/definition_raw/${defPath}`);
-        return response.data;
-    }
-    async getXMLDefinition(defPath: string, production: boolean) {
-        try {
-
-        } catch (e) {
-            
-        }
-        const response = await axiosInstance.get(`/definition/xml/${defPath}?production=${production}`);
-        return response.data;
     }
 
     // Process Service Impl API
-    async start(command: any) {
+    async start(command: object) {
         try {
-
+            const response = await axiosInstance.post('/instance', command);
+            return response.data;
         } catch (e) {
-            
+            alert(e);
         }
-        const response = await axiosInstance.post('/instance', command);
-        return response.data;
     }
 
     async stop(instanceId: string) {
         try {
-
+            const response = await axiosInstance.post(`/instance/${instanceId}/stop`);
+            return response.data;
         } catch (e) {
-            
+            alert(e);
         }
-        const response = await axiosInstance.post(`/instance/${instanceId}/stop`);
-        return response.data;
     }
 
     async suspend(instanceId: string) {
         try {
-
+            const response = await axiosInstance.post(`/instance/${instanceId}/suspend`);
+            return response.data;
         } catch (e) {
-            
+            alert(e);
         }
-        const response = await axiosInstance.post(`/instance/${instanceId}/suspend`);
-        return response.data;
     }
 
     async resume(instanceId: string) {
         try {
-
+            const response = await axiosInstance.post(`/instance/${instanceId}/resume`);
+            return response.data;
         } catch (e) {
-            
+            alert(e);
         }
-        const response = await axiosInstance.post(`/instance/${instanceId}/resume`);
-        return response.data;
     }
 
     async getInstance(instanceId: string) {
         try {
-
+            const response = await axiosInstance.get(`/instance/${instanceId}`);
+            return response.data;
         } catch (e) {
-            
+            alert(e);
         }
-        const response = await axiosInstance.get(`/instance/${instanceId}`);
-        return response.data;
     }
 
     async backToHere(instanceId: string, tracingTag: string) {
-        const response = await axiosInstance.post(`/instance/${instanceId}/activity/${tracingTag}/backToHere`);
-        return response.data;
+        try {
+            const response = await axiosInstance.post(`/instance/${instanceId}/activity/${tracingTag}/backToHere`);
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
     }
 
     async getProcessVariables(instanceId: string) {
-        const response = await axiosInstance.get(`/instance/${instanceId}/variables`);
-        return response.data;
+        try {
+            const response = await axiosInstance.get(`/instance/${instanceId}/variables`);
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
     }
 
     async getVariable(instId: string, varName: string) {
-        const response = await axiosInstance.get(`/instance/${instId}/variable/${varName}`);
-        return response.data;
+        try {
+            const response = await axiosInstance.get(`/instance/${instId}/variable/${varName}`);
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
     }
 
     async setVariable(instanceId: string, varName: string, varValue: any) {
-        const response = await axiosInstance.post(`/instance/${instanceId}/variable/${varName}`, null, { params: { varValue } });
-        return response.data;
+        try {
+            const response = await axiosInstance.post(`/instance/${instanceId}/variable/${varName}`, null, { params: { varValue } });
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
     }
 
     async getRoleMapping(instId: string, roleName: string) {
-        const response = await axiosInstance.get(`/instance/${instId}/role-mapping/${roleName}`);
-        return response.data;
+        try {
+            const response = await axiosInstance.get(`/instance/${instId}/role-mapping/${roleName}`);
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
     }
 
     async setRoleMapping(instanceId: string, roleName: string, roleMapping: any) {
-        const response = await axiosInstance.post(`/instance/${instanceId}/role-mapping/${roleName}`, roleMapping);
-        return response.data;
+        try {
+            const response = await axiosInstance.post(`/instance/${instanceId}/role-mapping/${roleName}`, roleMapping);
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
     }
 
     async signal(instanceId: string, signal: string) {
-        const response = await axiosInstance.post(`/instance/${instanceId}/signal/${signal}`);
-        return response.data;
+        try {
+            const response = await axiosInstance.post(`/instance/${instanceId}/signal/${signal}`);
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
     }
 
     async serviceMessage(requestPath: string) {
-        const response = await axiosInstance.post(requestPath);
-        return response.data;
+        try {
+            const response = await axiosInstance.post(requestPath);
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
     }
 
     async getWorkItem(taskId: string) {
-        const response = await axiosInstance.get(`/work-item/${taskId}`);
-        return response.data;
+        try {
+            const response = await axiosInstance.get(`/work-item/${taskId}`);
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
     }
 
     async putWorkItem(taskId: string, workItem: any) {
-        const response = await axiosInstance.post(`/work-item/${taskId}`, workItem);
-        return response.data;
+        try {
+            const response = await axiosInstance.post(`/work-item/${taskId}`, workItem);
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
     }
 
     async postMessage(instanceId: string, message: any) {
-        const response = await axiosInstance.post(`/instance/${instanceId}/message`, message);
-        return response.data;
+        try {
+            const response = await axiosInstance.post(`/instance/${instanceId}/message`, message);
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
     }
     // WorkListRepository API
     async getWorkList() {
-        const response = await axiosInstance.get(`/worklist/search/findTodo`);
-        return response.data;
+        try {
+            const response = await axiosInstance.get(`/worklist/search/findTodo`);
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
     }
 }
+
+export default UEngineBackend;

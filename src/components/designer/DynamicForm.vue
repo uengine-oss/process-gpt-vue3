@@ -1,6 +1,12 @@
 <script>
 import { getCurrentInstance, h } from 'vue';
 import TextField from '../ui/TextField.vue';
+import SelectField from '../ui/SelectField.vue';
+import CheckboxField from '../ui/CheckBoxField.vue';
+import RadioField from '../ui/RadioField.vue';
+import FileField from '../ui/FileField.vue';
+import LabelField from '../ui/LabelField.vue';
+import SubmitField from '../ui/SubmitField.vue';
 
 export default {
   props: {
@@ -19,22 +25,17 @@ export default {
     }
   },
   render() {
-
-    let parser = new DOMParser()
-    let doc = parser.parseFromString(this.content, 'text/html')
-    doc.querySelectorAll("div[name='formDesigner']").forEach((formDesignerNode) => {
-
-      formDesignerNode.children[1].setAttribute('target_section_id', formDesignerNode.parentElement.id)
-      formDesignerNode.removeChild(formDesignerNode.children[0])
-
-    })
-    
     const r = {
       components: {
         TextField,
-        
+        SelectField,
+        CheckboxField,
+        RadioField,
+        FileField,
+        LabelField,
+        SubmitField
       },
-      template: `<div class="content">${doc.body.innerHTML || ''}</div>`,
+      template: `<div class="content">${this.content || ''}</div>`,
       methods: {
         hello() {
           // method "hello" is also available here

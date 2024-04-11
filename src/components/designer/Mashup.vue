@@ -6,7 +6,9 @@
 
     <div id="kEditor1">
     </div>
-    <dynamic-form :content="content"></dynamic-form>
+
+
+
     
     <v-dialog v-model="openPanel">
         <form-definition-panel
@@ -27,6 +29,9 @@ import FormDefinitionPanel from '@/components/designer/modeling/FormDefinitionPa
 import axios from 'axios';
 import TextField from '../ui/TextField.vue';
 import DynamicForm from './DynamicForm.vue';
+
+import vuetify from "@/plugins/vuetify";
+import { createApp } from 'vue';
 
 export default {
   name: 'mash-up',
@@ -317,7 +322,10 @@ export default {
       componentSettingHideFunction: function (form, keditor) {
         console.log("containerSettingHideFunction : ", form, keditor);
       },
-      onContentChanged: function (event) {
+      onContentChanged: function (event, snippetContent, vueRenderUUID) {  
+        if(vueRenderUUID && vueRenderUUID.includes("vuemount_"))
+          createApp(DynamicForm, {content:snippetContent}).use(vuetify).mount('#'+vueRenderUUID);
+
         me.onchangeKEditor(event, 'onContentChanged');
       },
       onComponentChanged: function (event) {
@@ -328,7 +336,9 @@ export default {
       }
     });
 
-    // }
+    // 처음에 modelValue로 Html 태그 정보가 전달되었을때, 이를 렌더링시키기 위해서
+    if(this.modelValue)
+      createApp(DynamicForm, {content:this.modelValue}).use(vuetify).mount('#kEditor1')
   },
   beforeUnmount() {
     // 컴포넌트가 파괴되기 전에 CSS 제거

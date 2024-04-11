@@ -1029,9 +1029,10 @@
                     
                     var helper = ui.helper;
                     var item = ui.item;
+                    var snippetContent; 
                     
                     if (item.is('.keditor-snippet')) {
-                        var snippetContent = body.find(item.attr('data-snippet')).html();
+                        snippetContent = body.find(item.attr('data-snippet')).html();
                         flog('Snippet content', snippetContent);
                         
                         var container = $(
@@ -1056,7 +1057,7 @@
                     self.hideSettingPanel();
                     
                     if (typeof options.onContentChanged === 'function') {
-                        options.onContentChanged.call(contentArea, event);
+                        options.onContentChanged.call(contentArea, event, snippetContent);
                     }
                 }
             });
@@ -1168,12 +1169,15 @@
                 sort: function () {
                     $(this).removeClass('ui-state-default');
                 },
+/// >>> 수정된 영역
                 receive: function (event, ui) {
                     flog('On received snippet', event, ui);
                     
                     var helper = ui.helper;
                     var item = ui.item;
                     var container;
+                    var snippetContent; 
+                    const vueRenderUUID = `vuemount_${crypto.randomUUID()}`
                     
                     if (item.is('.keditor-snippet')) {
                         var snippetContentElement = body.find(item.attr('data-snippet'));
@@ -1184,7 +1188,7 @@
                         var dataAttributes = self.getDataAttributes(snippetContentElement, null, true);
                         var component = $(
                             '<section class="keditor-ui keditor-component" data-type="' + componentType + '" ' + dataAttributes.join(' ') + '>' +
-                            '   <section class="keditor-ui keditor-component-content">' + snippetContent + '</section>' +
+                            `   <section class="keditor-ui keditor-component-content"><div id="${vueRenderUUID}"></div></section>` +
                             '</section>'
                         );
                         helper.replaceWith(component);
@@ -1210,7 +1214,7 @@
                     }
                     
                     if (typeof options.onContentChanged === 'function') {
-                        options.onContentChanged.call(contentArea, event);
+                        options.onContentChanged.call(contentArea, event, snippetContent, vueRenderUUID);
                     }
                 }
             });
@@ -1222,7 +1226,7 @@
                 self.convertToComponent(contentArea, container, content, true);
             });
         },
-        
+// >>>
         convertToComponent: function (contentArea, container, target, isExisting) {
             flog('convertToComponent', contentArea, container, target, isExisting);
             

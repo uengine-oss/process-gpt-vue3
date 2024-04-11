@@ -1,34 +1,17 @@
 <template>
     <div>
-        <draggable
-            class="list-group cursor-pointer"
-            :list="condition" 
-            :animation="0" 
-            ghost-class="ghost-card" 
-            group="condition"
-        >
+        <draggable class="list-group cursor-pointer" :list="condition" :animation="0" ghost-class="ghost-card"
+            group="condition">
             <template v-for="(item, idx) in condition" :key="idx">
                 <div v-if="item._type.includes('Evaluate')" class="d-flex">
-                    <v-combobox
-                        v-model="item.expression.key"
-                        :items="varItems"
-                        variant="outlined"
-                        style="max-width: 100px; overflow-x: hidden;"
-                    ></v-combobox>
+                    <v-combobox v-model="item.expression.key" :items="varItems" variant="outlined"
+                        style="max-width: 100px; overflow-x: hidden;"></v-combobox>
 
-                    <v-select 
-                        v-model="item.expression.comparator"
-                        :items="comparatorList"
-                        class="mx-1"
-                        style="max-width: 100px; overflow-x: hidden;"
-                    ></v-select>
+                    <v-select v-model="item.expression.comparator" :items="comparatorList" class="mx-1"
+                        style="max-width: 100px; overflow-x: hidden;"></v-select>
 
-                    <v-combobox
-                        v-model="item.expression.value"
-                        :items="varItems"
-                        variant="outlined"
-                        style="max-width: 100px; overflow-x: hidden;"
-                    ></v-combobox>
+                    <v-combobox v-model="item.expression.value" :items="varItems" variant="outlined"
+                        style="max-width: 100px; overflow-x: hidden;"></v-combobox>
 
                     <v-btn icon variant="text">
                         <DotsVerticalIcon />
@@ -60,9 +43,9 @@
         </draggable>
     </div>
 </template>
-  
+
 <script>
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import { useBpmnStore } from '@/stores/bpmn';
 
 export default {
     name: 'ConditionField',
@@ -81,7 +64,8 @@ export default {
                 '<',
                 '<=',
             ],
-            menuList: [ "AND", "OR", "NOT" ],
+            menuList: ["AND", "OR", "NOT"],
+            modeler: null
         };
     },
     watch: {
@@ -107,18 +91,36 @@ export default {
             }];
         }
 
-        const storage = StorageBaseFactory.getStorage();
-        const options = {
-            match: {
-                id: this.$route.params.id
-            }
-        }
-        const process = await storage.getObject('proc_def', options);
-        if (process && process.definition && process.definition.data) {
-            this.varItems = process.definition.data.map(item => item.name);
-        }
+        // const storage = StorageBaseFactory.getStorage();
+        // const options = {
+        //     match: {
+        //         id: this.$route.params.id
+        //     }
+        // }
+
+        // const process = await storage.getObject('proc_def', options);
+        // if (process && process.definition && process.definition.data) {
+        //     this.varItems = process.definition.data.map(item => item.name);
+        // }
     },
-    methods:{
+    mounted() {
+        const bpmnStore = useBpmnStore();
+        const modeler = bpmnStore.getModeler;
+        const def = modeler.getDefinitions()
+        console.log(def)
+        def.rootElements.forEach((ele) => {
+            if (ele.$type == "bpmn:Process") {
+                ele.extensionElements?.values?.forEach(props => {
+                    if (props.$type == "uengine:Properties") {
+                        props.variables?.forEach(val => {
+                            this.varItems.push(val.$attrs.name)
+                        })
+                    }
+                })
+            }
+        })
+    },
+    methods: {
         changeCondition(item, type) {
             const child = JSON.parse(JSON.stringify(item));
 

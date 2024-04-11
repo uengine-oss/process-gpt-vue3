@@ -11,8 +11,6 @@ interface Backend {
     createFolder(newResource: any, requestPath: string): Promise<any>;
     deleteDefinition(requestPath: string): Promise<any>;
     putRawDefinition(definition: any, requestPath: string): Promise<any>;
-    getRawDefinition(defPath: string): Promise<any>;
-    getXMLDefinition(defPath: string, production: boolean): Promise<any>;
     start(command: any): Promise<any>;
     stop(instanceId: string): Promise<any>;
     suspend(instanceId: string): Promise<any>;
@@ -32,4 +30,4 @@ interface Backend {
     getWorkList(): Promise<any>;
 }
 
-export type { Backend };
+export type { Backend }

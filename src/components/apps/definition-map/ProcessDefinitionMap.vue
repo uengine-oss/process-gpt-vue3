@@ -1,35 +1,30 @@
 <template>
     <div>
-        <v-card elevation="10" :style="!$globalState.state.isZoomed ? 'height:calc(100vh - 155px)' :'height:100vh;'"
-            style="overflow: auto;"
-        >
-            <div v-if="componentName != 'SubProcessDetail'" class="pa-3 d-flex align-center" style="position: sticky; top: 0; z-index:2; background-color:white">
+        <v-card elevation="10" :style="!$globalState.state.isZoomed ? 'height:calc(100vh - 155px)' : 'height:100vh;'"
+            style="overflow: auto;">
+            <div v-if="componentName != 'SubProcessDetail'" class="pa-3 d-flex align-center"
+                style="position: sticky; top: 0; z-index:2; background-color:white">
                 <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
+                <v-btn v-if="$route.path !== '/definition-map'" style="margin-left: 3px; margin-top: 1px;" icon variant="text" size="24">
+                    <Icon @click="goProcessMap" icon="humbleicons:arrow-go-back" width="24" height="24" />
+                </v-btn>
                 
                 <!-- buttons -->
                 <div class="ml-auto d-flex">
-                    <span v-if="lock && userInfo.email && userInfo.email != editUser" class="text-body-1 pt-1 mr-1">
-                        {{ editUser }} 님이 수정 중 입니다.
-                    </span>
                     
                     <v-tooltip location="bottom" v-if="!lock && isAdmin" >
                         <template v-slot:activator="{ props }">
-                            <v-btn 
-                                v-bind="props"
-                                icon variant="text" size="24"
-                                class="ml-3 cp-unlock"
-                                @click="openAlertDialog('checkout')"
-                            >
+                            <v-btn v-bind="props" icon variant="text" size="24" class="ml-3 cp-unlock"
+                                @click="openAlertDialog('checkout')">
                                 <LockIcon width="24" height="24" />
                             </v-btn>
                         </template>
                         <span>{{ $t('processDefinitionMap.unlock') }}</span>
                     </v-tooltip>
 
-                    <v-tooltip location="bottom" v-if="lock && isAdmin">
+                    <v-tooltip location="bottom" v-if="lock && isAdmin && userInfo.email && userInfo.email == editUser">
                         <template v-slot:activator="{ props }">
                             <v-btn 
-                                v-if="userInfo.email && userInfo.email == editUser"
                                 v-bind="props"
                                 icon variant="text" size="24"
                                 class="cp-lock"
@@ -37,10 +32,16 @@
                             >
                                 <LockOpenIcon width="24" height="24" />
                             </v-btn>
+                        </template>
+                        <span>{{ $t('processDefinitionMap.lock') }}</span>
+                    </v-tooltip>
+
+                    <v-tooltip location="bottom" v-if="lock && isAdmin && userInfo.email && userInfo.email != editUser">
+                        <template v-slot:activator="{ props }">
                             <v-btn 
-                                v-if="userInfo.email && userInfo.email != editUser"
                                 v-bind="props"
                                 icon variant="text" size="24"
+                                class="cp-lock"
                                 @click="openAlertDialog('checkin')"
                             >
                                 <LockIcon width="24" height="24" />
@@ -48,6 +49,10 @@
                         </template>
                         <span>{{ $t('processDefinitionMap.lock') }}</span>
                     </v-tooltip>
+
+                    <span v-if="lock && userInfo.email && userInfo.email != editUser" class="text-body-1 pt-1 mr-1">
+                        {{ editUser }} 님이 수정 중 입니다.
+                    </span>
 
                     <v-btn icon variant="text" class="ml-3" :size="24" @click="capturePng">
                         <Icon icon="mage:image-download" width="24" height="24" />
@@ -62,22 +67,17 @@
                         :storage="storage"
                         @add="addProcess"
                     /> -->
-                    
+
                     <!-- 프로세스 정의 체계도 캔버스 확대 축소 버튼 및 아이콘 -->
                     <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" class="ml-3 processVariables-zoom"
-                                @click="$globalState.methods.toggleZoom()"
-                                icon variant="text" :size="24"    
-                            >
+                                @click="$globalState.methods.toggleZoom()" icon variant="text" :size="24">
                                 <!-- 캔버스 확대 -->
                                 <Icon v-if="!$globalState.state.isZoomed" icon="material-symbols:zoom-out-map-rounded"
-                                    width="24" height="24"
-                                />
+                                    width="24" height="24" />
                                 <!-- 캔버스 축소 -->
-                                <Icon v-else icon="material-symbols:zoom-in-map-rounded"
-                                    width="24" height="24"
-                                />
+                                <Icon v-else icon="material-symbols:zoom-in-map-rounded" width="24" height="24" />
                             </v-btn>
                         </template>
                     </v-tooltip>
@@ -91,31 +91,18 @@
                     </v-btn> -->
                 </div>
             </div>
-            
+
             <!-- route path 별 컴포넌트 호출 -->
             <div id="processMap">
                 <div v-if="componentName == 'ViewProcessDetails'">
-                    <ViewProcessDetails
-                        class="pa-5"
-                        :parent="value"
-                        :storage="storage"
-                        :enableEdit="enableEdit"
-                    />
+                    <ViewProcessDetails class="pa-5" :parent="value" :storage="storage" :enableEdit="enableEdit" />
                 </div>
                 <div v-else-if="componentName == 'SubProcessDetail'">
-                    <SubProcessDetail
-                        :value="value"
-                        :storage="storage"
-                        @capture="capturePng"
-                    />
+                    <SubProcessDetail :value="value" :storage="storage" @capture="capturePng" />
                 </div>
                 <div v-else>
-                    <DefinitionMapList
-                        :value="value"
-                        :storage="storage"
-                        :enableEdit="enableEdit"
-                        :userInfo="userInfo"
-                    />
+                    <DefinitionMapList :value="value" :storage="storage" :enableEdit="enableEdit"
+                        :enableExecution="enableExecution" :userInfo="userInfo" />
                 </div>
             </div>
         </v-card>
@@ -131,12 +118,19 @@
                         variant="flat" 
                         @click="checkOut"
                     >확인</v-btn>
-                    <v-btn v-else-if="alertType =='checkin'" 
+                    <v-btn v-else-if="alertType =='checkin' && userInfo.email && userInfo.email == editUser " 
                         color="primary"
                         class="cp-check-in" 
                         variant="flat" 
                         @click="checkIn"
                     >확인</v-btn>
+                    <v-btn v-else-if="alertType =='checkin' && userInfo.email && userInfo.email != editUser " 
+                        color="primary"
+                        class="cp-check-in" 
+                        variant="flat" 
+                        @click="checkOut"
+                    >확인</v-btn>
+                   
                     <v-btn color="error" 
                     variant="flat" 
                     @click="alertDialog=false"
@@ -149,11 +143,11 @@
 
 <script>
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
-import ProcessMenu from './ProcessMenu.vue';
-import ViewProcessDetails from './ViewProcessDetails.vue'
-import SubProcessDetail from './SubProcessDetail.vue'
-import DefinitionMapList from './DefinitionMapList.vue'
 import domtoimage from 'dom-to-image';
+import DefinitionMapList from './DefinitionMapList.vue';
+import ProcessMenu from './ProcessMenu.vue';
+import SubProcessDetail from './SubProcessDetail.vue';
+import ViewProcessDetails from './ViewProcessDetails.vue';
 const storageKey = 'configuration'
 
 export default {
@@ -176,6 +170,7 @@ export default {
         },
         type: 'map',
         enableEdit: false,
+        enableExecution: true,
         userInfo: {},
         lock: null,
         editUser: null,
@@ -186,14 +181,11 @@ export default {
     }),
     async created() {
         var me = this;
-        if (!me.$app.try) {
-            me.$app = me.$app._component.methods;
-        }
-        this.$app.try({
+        me.$try({
             action: async () => {
                 this.storage = StorageBaseFactory.getStorage();
-                await this.getProcessMap();
-                await this.init();
+                await me.getProcessMap();
+                await me.init();
             },
         });
     },
@@ -201,10 +193,12 @@ export default {
         async init() {
             this.userInfo = await this.storage.getUserInfo();
             const isAdmin = localStorage.getItem("isAdmin");
+            this.enableExecution = true;
             if (isAdmin == "true") {
                 this.isAdmin = true;
                 this.enableEdit = false;
-                const lockObj =  await this.storage.getObject('lock/process-map', {key: 'id'});
+
+                const lockObj = await this.storage.getObject('lock/process-map', { key: 'id' });
                 if (lockObj && lockObj.id && lockObj.user_id) {
                     this.lock = true;
                     this.editUser = lockObj.user_id;
@@ -240,7 +234,7 @@ export default {
             this.$router.push(`/definition-map`);
         },
         async getProcessMap() {
-            const procMap = await this.storage.getObject(storageKey + '/proc_map', {key: 'key'});
+            const procMap = await this.storage.getObject(storageKey + '/proc_map', { key: 'key' });
             if (procMap && procMap.value) {
                 this.value = procMap.value;
             }
@@ -265,7 +259,7 @@ export default {
             this.lock = false;
             this.enableEdit = false;
             await this.saveProcess();
-            await this.storage.delete('lock/process-map', {key: 'id'});
+            await this.storage.delete('lock/process-map', { key: 'id' });
             this.closeAlertDialog();
         },
         async checkOut() {
@@ -289,11 +283,11 @@ export default {
                         this.alertMessage = '수정된 내용을 저장 및 체크인 하시겠습니까?';
                     } else {
                         this.alertDialog = true;
-                        this.alertMessage = `현재 ${this.editUser} 님께서 수정 중입니다. 체크인 하는 경우 ${this.editUser} 님이 수정한 내용은 저장되지 않습니다. 체크인 하시겠습니까?`;
+                        this.alertMessage = `현재 ${this.editUser} 님께서 수정 중입니다. 체크인 하는 경우 ${this.editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크인 하시겠습니까?`;
                     }
                 } else if (type == 'checkout') {
                     this.alertDialog = true;
-                    this.alertMessage = `프로세스 정의 체계도를 수정하시겠습니까?`;                    
+                    this.alertMessage = `프로세스 정의 체계도를 수정하시겠습니까?`;
                 }
             }
         },

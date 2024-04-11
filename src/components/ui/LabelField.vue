@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-text-field :label="label"></v-text-field>
+        <label :for="for_id"><slot></slot></label>
     </div>
 </template>
 
@@ -14,16 +14,11 @@ export default {
         
     ],
     props: {
-        name: String,
-        alias: String
-    },
-    computed: {
-        label() {
-            return this.alias || this.name;
-        }
+        for_id: String
     },
     data() {
         return {
+         
         };
     },
     created() {

@@ -66,8 +66,8 @@
 </template>
 
 <script>
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { Icon } from '@iconify/vue';
 
 // import 'vue-diff/dist/index.css';
@@ -134,13 +134,12 @@ export default {
     },
     created() {
         var me = this
-        if (!me.$app.try) me.$app = me.$app._component.methods;
         me.storage = StorageBaseFactory.getStorage();
     },
     methods: {
         async load() {
             var me = this
-            // this.$app.try({
+            // this.$try({
             //     context: me,
             //     action: async () => {
             me.loading = true
@@ -184,7 +183,7 @@ export default {
         },
         async loadXMLOfVer(version) {
             var me = this
-            // me.$app.try({
+            // me.$try({
             //     context: me,
             //     action: async () => {
             let result = await me.storage.list(`${me.basePath}`, {
