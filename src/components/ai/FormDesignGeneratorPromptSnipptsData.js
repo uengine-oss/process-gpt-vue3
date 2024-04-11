@@ -63,12 +63,20 @@ const formDesignGeneratorPromptSnipptsData = {
     // AI에게 참조할만한 예시를 안내해주기 위해서 {title: "제목", description: "설명", result: "결과(Json 객체)"}
     examples: [
         {
-            title: "로그인 폼",
+            title: "도서 정보 입력 폼",
             description: `먼저, 유효한 레이아웃을 생각해 봐야 해.
-            로그인은 아이디, 비밀번호, 제출 버튼이 필요한데 크게 나눌 필요는 없기 때문에 12의 공간을 차지하는 하나의 col-sm-12로 만들어주면 돼.
-            그리고, 아이디 라벨과 입력창, 비밀번호 라벨과 입력창, 그리고 제출 버튼을 추가해 주면 돼.
-            비밀번호는 type='password'로 해야될 것 같지만, 메뉴얼을 보니까 따로 쓸만한 컴포넌트가 없으니까 그냥 text-field를 써야 겠네.
-            제출 버튼은 하나만 추가하라는 제약사항이 있으니까 하나만 추가하면 되겠네.
+            도서 정보 입력 폼은 책 제목, 저자, 책 장르, 책 표지 이미지, 그리고 제출 버튼 정도가 필요하겠네.
+            현재 정보가 그리 많지는 않기 때문에 12의 공간을 차지하는 하나의 col-sm-12로 만들어주면 돼.
+
+            책 제목, 저자는 텍스트로 입력 받으면 되니까 text-field를 사용하면 되겠네.
+
+            책 장르는 여러 개의 옵션 중 하나를 선택해야 하니까 select-field를 사용하면 되겠네.
+            책 장르인 경우에는 간단하게 '소설', '시', '에세이' 정도로 한다면 items에 들어갈 내용은 '[{"소설": "novel"}, {"시": "poem"}, {"에세이": "essay"}]'로 하면 되겠네.
+
+            책 표지 이미지는 파일을 입력받아야 하니까 file-field를 사용하면 되겠네.
+            이미지를 입력 받으니까 accept에서 유효한 문자열을 선택하면 'image/*'를 넣어주면 되겠네.
+
+            제출 버튼은 하나만 추가하라는 제약사항이 있으니까 하나만 마지막에 추가하면 되겠네.
             마지막으로 '\`\`\`'로 감싸진 코드에 JSON 형식으로 "htmlOutput" 속성에 추가만 해주면 되겠네.`,
             result: `
             \`\`\`
@@ -76,8 +84,10 @@ const formDesignGeneratorPromptSnipptsData = {
                 "htmlOutput": 
                 "<div class='row'>
                     <div class='col-sm-12'>
-                        <text-field name="ID" alias="아이디"></text-field>
-                        <text-field name="PW" alias="비밀번호"></text-field>
+                        <text-field name='book_title' alias='책 제목'></text-field>
+                        <text-field name='book_author' alias='저자'></text-field>
+                        <select-field name='book_genre' alias='책 장르' items='[{"소설": "novel"}, {"시": "poem"}, {"에세이": "essay"}]'></select-field>
+                        <file-field name='book_cover' alias='책 표지 이미지' accept='image/*'></file-field>
                         <submit-field></submit-field>
                     </div>
                 </div>"
