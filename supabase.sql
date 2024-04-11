@@ -123,3 +123,13 @@ create table
     user_id text null,
     constraint lock_pkey primary key (id)
   ) tablespace pg_default;
+
+
+-- 폼 UI 정보 저장을 위해서 사용되는 테이블
+drop table if exists form_def;
+create table form_def (
+  id uuid not null primary key,
+  name text not null,
+  alias text not null,
+  html text not null
+) tablespace pg_default;
