@@ -99,7 +99,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .single();
 
                 if (error) {
-                    throw new StorageBaseError('error in getString', error, arguments)
+                    throw error;
                 } else {
                     return data;
                 }
@@ -111,7 +111,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .single();
 
                 if (error) {
-                    throw new StorageBaseError('error in getString', error, arguments)
+                    throw error;
                 } else {
                     return data;
                 }
@@ -122,12 +122,16 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .single();
 
                 if (error) {
-                    throw new StorageBaseError('error in getString', error, arguments)
+                    throw error;
                 } else {
                     return data;
                 }
             }
         } catch(error) {
+            if (error.code === 'PGRST116') {
+                console.log(error.message);
+                return "";
+            }
             throw new StorageBaseError('error in getString', error, arguments)
         }
     }
@@ -143,7 +147,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .single();
 
                 if (error) {
-                    throw new StorageBaseError('error in getObject', error, arguments)
+                    throw error;
                 } else {
                     return data;
                 }
@@ -155,7 +159,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .single();
 
                 if (error) {
-                    throw new StorageBaseError('error in getObject', error, arguments)
+                    throw error;
                 } else {
                     return data;
                 }
@@ -166,13 +170,18 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .single();
                 
                 if (error) {
-                    throw new StorageBaseError('error in getObject', error, arguments)
+                    throw error;
                 } else {
                     return data;
                 }
             }
         } catch(error) {
-            throw new StorageBaseError('error in getObject', error, arguments)
+            if (error.code === 'PGRST116') {
+                console.log(error.message);
+                return {};
+            } else {
+                throw new StorageBaseError('error in getObject', error.message)
+            }
         }
     }
 
@@ -208,7 +217,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 }
             }
         } catch(error) {
-            throw new StorageBaseError('error in putString', error, arguments)
+            throw new StorageBaseError('error in putString', error.message, arguments)
         }
     }
 
@@ -247,8 +256,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 }
             }
         } catch(error) {
-
-            throw new StorageBaseError('error in putObject', error, arguments);
+            throw new StorageBaseError('error in putObject', error.message, arguments);
         }
     }
 
@@ -367,9 +375,30 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     callback(payload)
                 })
                 .subscribe();
-            
+    
         } catch(error) {
             throw new StorageBaseError('error in watch', error, arguments);
+        }
+    }
+
+    async unwatch(path) {
+        try {
+            let obj = this.formatDataPath(path);
+            const subscription = await window.$supabase
+                .channel('room1')
+                .on('postgres_changes', {
+                    event: '*', 
+                    schema: 'public', 
+                    table: obj.table
+                }, payload => {
+                    console.log('Change received!', payload);
+                })
+                .subscribe();
+    
+            await window.$supabase.removeSubscription(subscription);
+    
+        } catch(error) {
+            throw new StorageBaseError('error in unwatch', error, arguments);
         }
     }
 
