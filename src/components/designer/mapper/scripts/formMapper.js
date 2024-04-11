@@ -25,7 +25,6 @@ export function d({ x, y }) {
 export default {
   data() {
     return {
-      offset: { x: 30, y: 30 },
       blockTemplates: {
         Abs: {
           size: { width: 150, height: 50 },
@@ -288,16 +287,18 @@ export default {
           isTransform: true,
         },
         Source: {//소스
-          size: { width: 150, height: 50 },
+          size: { width: 0, height: 0 },
           ports: {
-            out: { x: 75, y: 0, direction: "out" },
+            // out: { x: 5, y: 0, direction: "out" },
+            // out1: { x: 5, y: 25, direction: "out" },
           },
           isTransform: false,
         },
         Target: {//타겟
-          size: { width: 150, height: 50 },
+          size: { width: 0, height: 0 },
           ports: {
-            in: { x: -75, y: 0, direction: "in" },
+            // in: { x: -5, y: 0, direction: "in" },
+            // in1: { x: -5, y: 25, direction: "in" },
           },
           isTransform: false,
         },
@@ -474,7 +475,7 @@ export default {
                 active: false,
                 submenu: []
               };
-              items.push(parentItem); 
+              items.push(parentItem);
             }
             parentItem.submenu.push(item);
           } else {
@@ -483,9 +484,132 @@ export default {
         }
       });
       return items;
-    }
+    },
+    getMappingElementsJson() {
+      var computedTransformers = {
+        "mappingElements": []
+      };
+
+      this.connections.forEach(conn => {
+        if (!this.checkGlobalType(conn.to[0])) return;
+        var block = this.blocks[conn.from[0]];
+        var blockData = this.blockTemplates[block.type];
+        var mappingElement = this.createMappingElement(block, blockData);
+        var connections = this.connections.filter(childConn => childConn.to[0] === conn.from[0]);
+        var argumentSourceMap = this.createArgumentSourceMap(connections);
+        mappingElement.transformerMapping.transformer.argumentSourceMap = argumentSourceMap;
+        computedTransformers.mappingElements.push(mappingElement);
+      });
+      // Object.entries(this.blocks).forEach(([blockName, block]) => {
+      //   if (this.shouldSkipBlock(block)) return; 
+      //   const blockData = this.blockTemplates[block.type];
+      //   const mappingElement = this.createMappingElement(block, blockData, blockName); 
+      //   const connections = this.connections.filter(conn => conn.to[0] === blockName);
+      //   let shouldReturn = false;
+      //   const argumentSourceMap = connections.reduce((acc, conn) => {
+      //     const { shouldSkip, updatedAcc } = this.processConnection(conn, blockName); 
+      //     if (shouldSkip) {
+      //       shouldReturn = true;
+      //       return acc;
+      //     }
+      //     return updatedAcc;
+      //   }, {});
+      //   if (shouldReturn) return;
+
+      //   this.updateMappingElementForReplaceType(block, mappingElement); 
+
+      //   mappingElement.transformerMapping.transformer.argumentSourceMap = argumentSourceMap;
+      //   computedTransformers["mappingElements"].push(mappingElement);
+      // });
+      return computedTransformers;
+    },
+    createArgumentSourceMap(connections) {
+      var argumentSourceMap = {};
+      connections.forEach(conn => {
+        var argument = conn.to[1].replace("in ", "");
+        if (this.checkGlobalType(conn.from[0])) {
+          argumentSourceMap[argument] = "" + conn.from[1];
+        } else {
+          argumentSourceMap[argument] = this.createFormMappingData(conn);
+        }
+      });
+      return argumentSourceMap;
+    },
+    createFormMappingData(conn) {
+      var block = this.blocks[conn.from[0]];
+      var blockData = this.blockTemplates[block.type];
+      var transformerMapping = {
+        "_type": "org.uengine.kernel.TransformerMapping",
+        "transformer": {
+          "_type": blockData.class,
+          "name": block.type,
+          "location": block.pos,
+          "argumentSourceMap": {}
+        },
+        "linkedArgumentName": "out"
+      }
+      var connections = this.connections.filter(childConn => childConn.to[0] === conn.from[0]);
+      var argumentSourceMap = this.createArgumentSourceMap(connections);
+      transformerMapping.transformer.argumentSourceMap = argumentSourceMap;
+      return transformerMapping;
+    },
+    checkGlobalType(type) {
+      return type == "Source" || type == "Target" || type == "Direct";
+    },
+    createMappingElement(block, blockData) {
+      return {
+        "_type": "org.uengine.kernel.MappingElement",
+        "argument": {},
+        "transformerMapping": {
+          "transformer": {
+            "_type": blockData.class,
+            "name": block.type,
+            "location": block.pos,
+            "argumentSourceMap": {}
+          },
+          "linkedArgumentName": "out"
+        },
+        "isKey": false
+      };
+    },
+    updateMappingElementForReplaceType(block, mappingElement) {
+      if (block.type == "Replace") {
+        mappingElement.transformerMapping.transformer["oldString"] = block.attributes["from"];
+        mappingElement.transformerMapping.transformer["newString"] = block.attributes["to"];
+        mappingElement.transformerMapping.transformer["isRegularExp"] = false;
+      }
+    },
+    renderFormMapperFromMappingElementJson(json) {
+      if (!json) {
+        console.error("JSON 데이터가 제공되지 않았습니다.");
+        return;
+      }
+      try {
+        const mappingElements = JSON.parse(json);
+        if (!Array.isArray(mappingElements)) {
+          console.error("JSON 형식이 올바르지 않습니다. 배열 형태여야 합니다.");
+          return;
+        }
+        mappingElements.forEach(element => {
+          const { _type, argument, transformerMapping, isKey } = element;
+          if (_type !== "org.uengine.kernel.MappingElement") {
+            console.warn("지원하지 않는 매핑 요소 타입입니다:", _type);
+            return;
+          }
+          // 매핑 요소를 처리하는 로직
+          this.createMappingElementFromJson(argument, transformerMapping, isKey);
+        });
+      } catch (error) {
+        console.error("JSON 파싱 중 오류가 발생했습니다:", error);
+      }
+    },
+    createMappingElementFromJson(argument, transformerMapping, isKey) {
+    },
   },
   computed: {
+    offset() {
+      return { x: $("#formArea")[0].getBoundingClientRect().x, y: $("#formArea")[0].getBoundingClientRect().y };
+    },
     transform() {
       return `translate(${d(this.offset)})`;
     },
@@ -506,13 +630,14 @@ export default {
     ports() {
       return _.flatMap(this.blocks, ({ type, pos }, blockName) => {
         const template = this.blockTemplates[type];
-        return _.map(template.ports, (port, name) => ({
+        var portsTemp = _.map(template.ports, (port, name) => ({
           ...port,
           direction: port.direction || "in",
           name,
           blockName,
           pos: add(pos, port),
         }));
+        return portsTemp;
       });
     },
     attributes_() {
@@ -528,52 +653,5 @@ export default {
         }));
       });
     },
-    transformers() {
-      var computedTransformers = {
-        "mappingElements": []
-      };
-      Object.values(this.blocks).forEach(block => {
-        if (block.type == "Source") return;
-        if (block.type == "Target") return;
-        if (block.type.indexOf("Direct") != -1) return;
-        const blockData = this.blockTemplates[block.type];
-        const mappingElement = {
-          "_type": "org.uengine.kernel.MappingElement",
-          "argument": {},
-          "transformerMapping": {
-            "transformer": {
-              "_type": blockData.class,
-              "name": block.type,
-              "location": block.pos,
-              "argumentSourceMap": {}
-            },
-            "linkedArgumentName": "out"
-          },
-          "isKey": false
-        };
-        const connections = this.connections.filter(conn => conn.to[0] === block.type);
-        const argumentSourceMap = {};
-        connections.forEach(conn => {
-          var argument = conn.to[1].replace("in ", "");
-          // argumentSourceMap[argument] = "[instance]." + conn.from[0];
-          argumentSourceMap[argument] = "" + conn.from[0];
-        });
-
-        if (block.type == "Replace") {
-          mappingElement.transformerMapping.transformer["oldString"] = block.attributes["from"];
-          mappingElement.transformerMapping.transformer["newString"] = block.attributes["to"];
-          mappingElement.transformerMapping.transformer["isRegularExp"] = false;
-        }
-
-        mappingElement.transformerMapping.transformer.argumentSourceMap = argumentSourceMap;
-
-        computedTransformers["mappingElements"].push(mappingElement);
-      });
-
-
-
-
-      return computedTransformers;
-    }
   },
 };

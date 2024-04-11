@@ -2,7 +2,7 @@
     <div class="customHeight" style="background-color: rgba( 255, 255, 255, 1 );">
         <div>
             <div style="position: sticky; top:0px; z-index:1; background-color:white;">
-                <div class="align-right gap-3 pa-4 justify-space-between" style="padding-bottom:0px !important;">
+                <div class="align-right gap-3 pa-4 justify-space-between">
                     <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
                         <div>
                             <h5 class="text-h5 mb-n1">{{ name }}</h5>
@@ -77,7 +77,7 @@
                 <!-- <v-btn v-if="type == 'chats' && filteredMessages.length > 0" style="position: absolute; left: 45%"
                     @click="getMoreChat()">get more chat</v-btn> -->
 
-                <div class="d-flex w-100" style="height: calc(100vh - 284px);">
+                <div class="d-flex w-100" style="height: calc(100vh - 300px);">
                     <v-col>
                         <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
                             <template v-slot:title>

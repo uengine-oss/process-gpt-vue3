@@ -71,7 +71,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 .from('users')
                 .select('*')
                 .eq('id', result.data.user.id)
-                .single();
+                .maybeSingle()
 
             const userInfo = {
                 email: result.data.user.email,
@@ -96,10 +96,10 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .from(obj.table)
                     .select()
                     .match(options.match)
-                    .single();
+                    .maybeSingle()
 
                 if (error) {
-                    throw new StorageBaseError('error in getString', error, arguments)
+                    throw error;
                 } else {
                     return data;
                 }
@@ -108,10 +108,10 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .from(obj.table)
                     .select()
                     .eq(obj.searchKey, obj.searchVal)
-                    .single();
+                    .maybeSingle()
 
                 if (error) {
-                    throw new StorageBaseError('error in getString', error, arguments)
+                    throw error;
                 } else {
                     return data;
                 }
@@ -119,15 +119,19 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 const { data, error } = await window.$supabase
                     .from(obj.table)
                     .select()
-                    .single();
+                    .maybeSingle()
 
                 if (error) {
-                    throw new StorageBaseError('error in getString', error, arguments)
+                    throw error;
                 } else {
                     return data;
                 }
             }
         } catch(error) {
+            if (error.code === 'PGRST116' || error.code === '42703') {
+                console.log(error.message);
+                return "";
+            }
             throw new StorageBaseError('error in getString', error, arguments)
         }
     }
@@ -140,10 +144,10 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .from(obj.table)
                     .select()
                     .match(options.match)
-                    .single();
+                    .maybeSingle()
 
                 if (error) {
-                    throw new StorageBaseError('error in getObject', error, arguments)
+                    throw error;
                 } else {
                     return data;
                 }
@@ -152,10 +156,10 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     .from(obj.table)
                     .select()
                     .eq(obj.searchKey, obj.searchVal)
-                    .single();
+                    .maybeSingle()
 
                 if (error) {
-                    throw new StorageBaseError('error in getObject', error, arguments)
+                    throw error;
                 } else {
                     return data;
                 }
@@ -163,16 +167,21 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 const { data, error } = await window.$supabase
                     .from(obj.table)
                     .select()
-                    .single();
+                    .maybeSingle()
                 
                 if (error) {
-                    throw new StorageBaseError('error in getObject', error, arguments)
+                    throw error;
                 } else {
                     return data;
                 }
             }
         } catch(error) {
-            throw new StorageBaseError('error in getObject', error, arguments)
+            if (error.code === 'PGRST116' || error.code === '42703') {
+                console.log(error.message);
+                return {};
+            } else {
+                throw new StorageBaseError('error in getObject', error.message)
+            }
         }
     }
 
@@ -208,7 +217,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 }
             }
         } catch(error) {
-            throw new StorageBaseError('error in putString', error, arguments)
+            throw new StorageBaseError('error in putString', error.message, arguments)
         }
     }
 
@@ -247,8 +256,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 }
             }
         } catch(error) {
-
-            throw new StorageBaseError('error in putObject', error, arguments);
+            throw new StorageBaseError('error in putObject', error.message, arguments);
         }
     }
 
@@ -367,9 +375,30 @@ export default class StorageBaseSupabase {//extends StorageBase{
                     callback(payload)
                 })
                 .subscribe();
-            
+    
         } catch(error) {
             throw new StorageBaseError('error in watch', error, arguments);
+        }
+    }
+
+    async unwatch(path) {
+        try {
+            let obj = this.formatDataPath(path);
+            const subscription = await window.$supabase
+                .channel('room1')
+                .on('postgres_changes', {
+                    event: '*', 
+                    schema: 'public', 
+                    table: obj.table
+                }, payload => {
+                    console.log('Change received!', payload);
+                })
+                .subscribe();
+    
+            await window.$supabase.removeSubscription(subscription);
+    
+        } catch(error) {
+            throw new StorageBaseError('error in unwatch', error, arguments);
         }
     }
 
@@ -489,7 +518,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 .from('users')
                 .select('*')
                 .eq('id', value.user.id)
-                .single();
+                .maybeSingle()
             
             if (error) {
                 throw new StorageBaseError('error in writeUserData', error, arguments)

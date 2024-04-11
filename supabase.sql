@@ -111,7 +111,6 @@ create table
     arcv_id text not null,
     proc_def_id text not null,
     version double precision not null,
-    name character varying(255) not null,
     snapshot text null,
     "timeStamp" timestamp without time zone null default current_timestamp,
     diff text null,

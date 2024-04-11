@@ -1,4 +1,5 @@
 import UEngineBackend from './UEngineBackend';
+import ProcessGPTBackend from './ProcessGPTBackend';
 
 class BackendFactory extends Window {
     static createBackend() {
@@ -6,6 +7,8 @@ class BackendFactory extends Window {
         switch ((window as any).$mode) {
             case 'uengine':
                 return new UEngineBackend();
+            case 'ProcessGPT':
+                return new ProcessGPTBackend();
             default:
                 throw new Error('Invalid backend type');
         }
