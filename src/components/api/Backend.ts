@@ -10,7 +10,7 @@ interface Backend {
     renameOrMove(definition: any, requestPath: string): Promise<any>;
     createFolder(newResource: any, requestPath: string): Promise<any>;
     deleteDefinition(requestPath: string): Promise<any>;
-    putRawDefinition(definition: any, requestPath: string): Promise<any>;
+    putRawDefinition(definition: any, requestPath: string, options: any): Promise<any>;
     start(command: any): Promise<any>;
     stop(instanceId: string): Promise<any>;
     suspend(instanceId: string): Promise<any>;
