@@ -134,7 +134,7 @@ export default {
         const newElement = document.createElement(componentRef.tagName)
         newElement.setAttribute('name', componentRef.localName)
         newElement.setAttribute('alias', componentRef.localAlias)
-        newElement.setAttribute('items', JSON.stringify(componentRef.localItems))
+        if(componentRef.localItems) newElement.setAttribute('items', JSON.stringify(componentRef.localItems))
 
         vueRenderElement.innerHTML = newElement.outerHTML
       })
