@@ -129,12 +129,20 @@
                         class="cp-check-in" 
                         variant="flat" 
                         @click="checkOut"
-                    >확인</v-btn>
+                    >체크인</v-btn>
                    
-                    <v-btn color="error" 
+                    <v-btn 
+                    v-if="userInfo.email && userInfo.email == editUser"
+                    color="error" 
                     variant="flat" 
                     @click="alertDialog=false"
                     >닫기</v-btn>
+
+                    <v-btn v-else 
+                    color="error" 
+                    variant="flat" 
+                    @click="alertDialog=false"
+                    >취소</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>

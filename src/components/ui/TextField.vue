@@ -14,22 +14,26 @@ export default {
         
     ],
     props: {
+        vueRenderUUID: String,
+        tagName: String,
         name: String,
         alias: String
     },
-    computed: {
-        label() {
-            return this.alias || this.name;
-        }
-    },
     data() {
         return {
+            localName: this.name,
+            localAlias: this.alias
         };
+    },
+    computed: {
+        label() {
+            return this.localAlias || this.localName;
+        }
     },
     created() {
     },
     methods: {
- 
+        
     }
 };
 </script>

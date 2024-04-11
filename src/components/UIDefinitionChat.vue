@@ -200,6 +200,7 @@ export default {
         aiResultToKEditorContent(aiResult) {
             const dom = new DOMParser().parseFromString(aiResult, 'text/html')
 
+
             // 컨테이너인 경우, data-type 속성을 추가해서 KEditor에서 인식할 수 있도록 만들기 위해서서
             const nodes = dom.querySelectorAll('[class^="col-sm-"]')
             nodes.forEach(node => {
@@ -207,7 +208,7 @@ export default {
             })
 
             // 컴포넌트인 경우, formDesigner 태그로 감싸서 KEditor가 속성을 편집할 수 있도록 만들기
-            const components = dom.querySelectorAll('[data-alias], [alias], label, [type="submit"]')
+            const components = Array.from(dom.querySelectorAll('*')).filter(el => el.tagName.toLowerCase().endsWith('-field'));
             components.forEach(component => {
                 const parent = document.createElement('div')
                 parent.setAttribute('name', 'formDesigner')
@@ -221,7 +222,9 @@ export default {
             section.setAttribute('class', 'keditor-ui keditor-container-inner')
             section.innerHTML = dom.body.innerHTML
 
-            return section.outerHTML
+
+            // 최종적으로 변환된 HTML 코드를 반환하면서 인코딩된 문자를 적합한 문자로 변환시키기
+            return section.outerHTML.replace(/&quot;/g, `'`)
         },
 
         /**

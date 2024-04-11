@@ -12,7 +12,7 @@
       @mousedown="startDrag"
     >
     </rect>
-    <text v-if="name != 'Source' && name != 'Target'">{{ name }}</text>
+    <text v-if="name != 'Source' && name != 'Target'" style="user-select: none;">{{ name }}</text>
     <foreignObject
       v-if="name != 'Source' && name != 'Target'"
       :x="size.width / 2 - 24"
