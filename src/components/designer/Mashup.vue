@@ -49,9 +49,7 @@ export default {
       alias: '',
       html: ''
     },
-    openPanel: false,
-
-    componentRefs: {} // createApp으로 생성된 컴포넌트들에 직접적으로 접근하기 위해서
+    openPanel: false
   }),
   components: {
     DynamicForm,
@@ -129,7 +127,7 @@ export default {
       // 렌더링된 Vue 컴포넌트를 찾아서 다시 vue 태그로 되돌리기 위해서
       doc.querySelectorAll("div[id^='vuemount_']").forEach(vueRenderElement => {
         const vueRenderUUID = vueRenderElement.id
-        const componentRef = me.componentRefs[vueRenderUUID]
+        const componentRef = window.componentRefs[vueRenderUUID]
 
         const newElement = document.createElement(componentRef.tagName)
         newElement.setAttribute('name', componentRef.localName)
@@ -163,7 +161,7 @@ export default {
       await me.putObject("form_def", putObj);
     },
     editFormDefinition(newValue) {
-      const componentRef = this.componentRefs[newValue.id]
+      const componentRef = window.componentRefs[newValue.id]
       componentRef.localName = newValue.name
       componentRef.localAlias = newValue.alias
       componentRef.localItems = newValue.items
@@ -253,11 +251,6 @@ export default {
         })
       },
       onReady: function () {
-        // Vue.createApp({
-        //     components: {
-        //       'text-field': TextField
-        //     }
-        //   }).mount('#kEditor1')
       },
       containerSettingInitFunction: function (form, keditor) {
         $("#resetBtn").on("click", function (e) {
@@ -301,7 +294,7 @@ export default {
           }
 
           const vueRenderUUID = vueRenderElement[0].id
-          const componentRef = me.componentRefs[vueRenderUUID]
+          const componentRef = window.componentRefs[vueRenderUUID]
 
 
           const formValue = {
@@ -329,7 +322,7 @@ export default {
         if(vueRenderUUID && vueRenderUUID.includes("vuemount_"))
         {
           const app = createApp(DynamicForm, {content:snippetContent, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
-          me.componentRefs[vueRenderUUID] = app.componentRef;
+          window.componentRefs[vueRenderUUID] = app.componentRef;
         }
           
         me.onchangeKEditor(event, 'onContentChanged');
@@ -342,9 +335,17 @@ export default {
       }
     });
 
-    // 처음에 modelValue로 Html 태그 정보가 전달되었을때, 이를 렌더링시키기 위해서
-    if(this.modelValue)
-      createApp(DynamicForm, {content:this.modelValue}).use(vuetify).mount('#kEditor1')
+    window.componentRefs = {}
+    if (this.modelValue) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(this.modelValue, 'text/html');
+
+      doc.querySelectorAll("div[id^='vuemount_']").forEach(vueRenderElement => {
+        const vueRenderUUID = vueRenderElement.id
+        const app = createApp(DynamicForm, {content:vueRenderElement.innerHTML, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
+        window.componentRefs[vueRenderUUID] = app.componentRef;
+      })
+    }
   },
   beforeUnmount() {
     // 컴포넌트가 파괴되기 전에 CSS 제거
@@ -366,5 +367,4 @@ export default {
   overflow-y: auto; /* 내용이 넘칠 경우 스크롤바 표시 */
   z-index: 999999;
 }
-
 </style>

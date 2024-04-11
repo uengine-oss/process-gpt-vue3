@@ -78,6 +78,17 @@ export default {
         this.src = null;
     },
     mounted() {
+//         this.applyNewSrcToMashup(
+//             this.loadHTMLToKEditorContent(`<section>
+//    <div class="row">
+//       <div class="col-sm-12">
+//          <text-field name="nameUp1" alias="aliasUp1"></text-field>
+//          <select-field name="nameUp2" alias="aliasUp2" items="[{'key1':'value1'},{'key2':'value2'}]"></select-field>
+//       </div>
+//    </div>
+// </section>`)
+//         )
+
         // if (this.$route.query && this.$route.query.id) {
         //     this.processDefinition = {
         //         processDefinitionId: this.$route.query.id
@@ -159,7 +170,7 @@ export default {
                 // 생성된 HTML을 보여주기 위해서
                 if(messageWriting.jsonContent) {
                     this.applyNewSrcToMashup(
-                        this.aiResultToKEditorContent(messageWriting.jsonContent.htmlOutput)
+                        this.loadHTMLToKEditorContent(messageWriting.jsonContent.htmlOutput)
                     )
                 }
 
@@ -197,7 +208,7 @@ export default {
          * AI가 생성한 결과물을 KEditor에 적합한 Html 형식으로 변환하기 위해서
          * @param {*} aiResult AI가 생성한 결과물
          */
-        aiResultToKEditorContent(aiResult) {
+        loadHTMLToKEditorContent(aiResult) {
             const dom = new DOMParser().parseFromString(aiResult, 'text/html')
 
 
@@ -207,30 +218,38 @@ export default {
                 node.setAttribute('data-type', 'container-content')
             })
 
-            // 컴포넌트인 경우, formDesigner 태그로 감싸서 KEditor가 속성을 편집할 수 있도록 만들기
+            // 컴포넌트인 경우, `vuemount_${crypto.randomUUID()}`를 id를 가지는 div로 감싸도록 만들기
+            // 해당 div마다 추후에 createApp으로 렌더링의 대상이되고, ref를 통해서 접근할 수 있도록 함
             const components = Array.from(dom.querySelectorAll('*')).filter(el => el.tagName.toLowerCase().endsWith('-field'));
             components.forEach(component => {
                 const parent = document.createElement('div')
-                parent.setAttribute('name', 'formDesigner')
+                parent.setAttribute('id', `vuemount_${crypto.randomUUID()}`)
 
                 component.parentNode.insertBefore(parent, component)
                 parent.appendChild(component)
             })
 
-            // 기본 HTML 구조를 KEditor 컨테이너 section으로 감싸서 KEditor가 인식할 수 있도록 만들기
-            const section = document.createElement('section')
-            section.setAttribute('class', 'keditor-ui keditor-container-inner')
-            section.innerHTML = dom.body.innerHTML
+            // Section이 없는 경우, Section으로 감싸서 새로 생성하고, 있는 경우 그대로 사용함
+            let targetSection = null
+            if(dom.body.children.length === 1 && dom.body.children[0].tagName.toLowerCase() !== 'section') {
+                const section = document.createElement('section')
+                section.innerHTML = dom.body.innerHTML
+                targetSection = section
+            }
+            else 
+                targetSection = dom.body.children[0]
+
+            // KEdtior에서 인식할 수 있도록 클래스 추가하기
+            targetSection.setAttribute('class', 'keditor-ui keditor-container-inner')
 
 
-            // 최종적으로 변환된 HTML 코드를 반환하면서 인코딩된 문자를 적합한 문자로 변환시키기
-            return section.outerHTML.replace(/&quot;/g, `'`)
+            return targetSection.outerHTML.replace(/&quot;/g, `'`)
         },
 
         /**
          * mashup에 새로운 src를 제공해서 재랜더링하기 위해서
          */
-        applyNewSrcToMashup(src) {
+         applyNewSrcToMashup(src) {
             this.src = src
             this.mashupKey += 1
         }
