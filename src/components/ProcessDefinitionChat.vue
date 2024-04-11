@@ -56,8 +56,8 @@ import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/ProcessDefinitionGenerator';
 import Chat from './ui/Chat.vue';
 
-import BackendFactory from "@/components/api/BackendFactory";
-const backend = BackendFactory.createBackend();
+// import BackendFactory from "@/components/api/BackendFactory";
+// const backend = BackendFactory.createBackend();
 
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
 var jsondiffpatch = jsondiff.create({
@@ -196,10 +196,10 @@ export default {
                         info.definition = me.processDefinition;
                     }
                     
-                    info.snapshot = xml.xml;
-                    await backend.putRawDefinition(xml.xml, info.proc_def_id, info);
-                    // await me.saveModel(info, xml.xml); 
-                    // await me.storage.delete(`lock/${info.proc_def_id}`, {key: 'id'});
+                    // info.snapshot = xml.xml;
+                    // await backend.putRawDefinition(xml.xml, info.proc_def_id, info);
+                    await me.saveModel(info, xml.xml); 
+                    await me.storage.delete(`lock/${info.proc_def_id}`, {key: 'id'});
                     me.disableChat = true;
                     me.isViewMode = true;
                     me.lock = true // 잠금처리 ( 수정 불가 )
