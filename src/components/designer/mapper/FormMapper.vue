@@ -1,89 +1,91 @@
 <template>
     <div>
-        <v-toolbar>
-            <v-toolbar-title>Form Mapper - {{ name }}</v-toolbar-title>
+        <v-card>
+            <v-row class="ma-0 pa-0">
+                <!-- {{$t('processDefinition.editProcessData') }} -->
+                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important"> Form Mapper </v-card-title>
+                <v-spacer></v-spacer>
+                <v-btn icon @click="openJsonDialog()">
+                    <v-icon>mdi-content-save-outline</v-icon>
+                </v-btn>
+                <!-- <v-btn icon @click="openFunctionMenu()">
+                    <v-icon>mdi-function</v-icon>
+                </v-btn> -->
+            </v-row>
+            <div id="app" class="treeviews-container" @contextmenu.prevent="showContextMenu($event)">
+                <v-treeview :config="config" :nodes="nodes" class="left-treeview">
+                    <template #after-input="item">
+                        <v-btn class="after" small @click.stop="onButtonClickLeft(item, 'Source')"></v-btn>
+                    </template>
+                </v-treeview>
 
-            <v-btn icon @click="openJsonDialog()">
-                <v-icon style="color: #eee">mdi-content-save-outline</v-icon>
-            </v-btn>
-            <!-- <v-btn icon @click="openFunctionMenu()">
-                <v-icon>mdi-function</v-icon>
-            </v-btn> -->
-        </v-toolbar>
-    </div>
-    <div id="app" class="treeviews-container" @contextmenu.prevent="showContextMenu($event)">
-        <v-treeview :config="config" :nodes="nodes" class="left-treeview elevation-1">
-            <template #after-input="item">
-                <v-btn class="after" small @click.stop="onButtonClickLeft(item, 'Source')">▶</v-btn>
-            </template>
-        </v-treeview>
+                <ContextMenu
+                    ref="contextMenu"
+                    :menu-items="filterTransformItems(blockTemplates)"
+                    :style="menuPositionStyle"
+                    :position-x="x"
+                    :position-y="y"
+                    @menu_item_selected="menuItemSelected"
+                />
 
-        <ContextMenu
-            ref="contextMenu"
-            :menu-items="filterTransformItems(blockTemplates)"
-            :style="menuPositionStyle"
-            :position-x="x"
-            :position-y="y"
-            @menu_item_selected="menuItemSelected"
-        />
-        
-        <v-dialog v-model="jsonDialog" max-width="600px">
-            <v-card>
-                <v-card-title>
-                    Transformers JSON
-                    <v-spacer></v-spacer>
-                </v-card-title>
-                <v-card-text style="max-height: 600px; overflow-y: auto">
-                    <pre style="user-select: text">{{ jsonString }}</pre>
-                </v-card-text>
-            </v-card>
-        </v-dialog>
+                <v-dialog v-model="jsonDialog" max-width="600px">
+                    <v-card>
+                        <v-card-title>
+                            Transformers JSON
+                            <v-spacer></v-spacer>
+                        </v-card-title>
+                        <v-card-text style="max-height: 600px; overflow-y: auto">
+                            <pre style="user-select: text">{{ jsonString }}</pre>
+                        </v-card-text>
+                    </v-card>
+                </v-dialog>
 
-        <svg id="formArea" ref="svgElement" @mousemove="updateMousePos" @mouseup="onMouseUp">
-            <block-component
-                v-for="(block, name) in blocks_"
-                :key="name"
-                :pos="block.pos"
-                :size="block.size"
-                :name="block.name"
-                :start-block-drag="startBlockDrag"
-                :delete-block="deleteBlock"
-            ></block-component>
-            <connector-component
-                v-for="(conn, index) in connectors"
-                :key="index"
-                :start-pos="conn.startPos"
-                :end-pos="conn.endPos"
-                :is-new="conn.isNew"
-                :onclick="() => removeConnection(index)"
-            ></connector-component>
+                <svg id="formArea" ref="svgElement" @mousemove="updateMousePos" @mouseup="onMouseUp">
+                    <block-component
+                        v-for="(block, name) in blocks_"
+                        :key="name"
+                        :pos="block.pos"
+                        :size="block.size"
+                        :name="block.name"
+                        :start-block-drag="startBlockDrag"
+                        :delete-block="deleteBlock"
+                    ></block-component>
+                    <connector-component
+                        v-for="(conn, index) in connectors"
+                        :key="index"
+                        :start-pos="conn.startPos"
+                        :end-pos="conn.endPos"
+                        :is-new="conn.isNew"
+                        :onclick="() => removeConnection(index)"
+                    ></connector-component>
+                    <port-component
+                        v-for="port in ports"
+                        :key="port.blockName + ',' + port.name"
+                        :pos="port.pos"
+                        :name="port.name"
+                        :block-name="port.blockName"
+                        :direction="port.direction"
+                        :onmousedown="newConnection(port.blockName, port.name, port.direction)"
+                        :onmouseup="completeConnection(port.blockName, port.name, port.direction)"
+                    ></port-component>
+                    <attribute-component
+                        v-for="attribute in attributes_"
+                        :key="attribute.blockName + ',' + attribute.name"
+                        :pos="attribute.pos"
+                        :name="attribute.name"
+                        :block-name="attribute.blockName"
+                        :func="attribute.func"
+                        @onChangeAttribute="onChangeAttribute"
+                    ></attribute-component>
+                </svg>
 
-            <port-component
-                v-for="port in ports"
-                :key="port.blockName + ',' + port.name"
-                :pos="port.pos"
-                :name="port.name"
-                :block-name="port.blockName"
-                :direction="port.direction"
-                :onmousedown="newConnection(port.blockName, port.name, port.direction)"
-                :onmouseup="completeConnection(port.blockName, port.name, port.direction)"
-            ></port-component>
-            <attribute-component
-                v-for="attribute in attributes_"
-                :key="attribute.blockName + ',' + attribute.name"
-                :pos="attribute.pos"
-                :name="attribute.name"
-                :block-name="attribute.blockName"
-                :func="attribute.func"
-                @onChangeAttribute="onChangeAttribute"
-            ></attribute-component>
-        </svg>
-
-        <v-treeview :config="config" :nodes="nodes" class="right-treeview elevation-1" :key="renderKey">
-            <template #after-input="item">
-                <v-btn class="after" small @click.stop="onButtonClickRight(item, 'Target')">▶</v-btn>
-            </template>
-        </v-treeview>
+                <v-treeview :config="config" :nodes="nodes" class="right-treeview" :key="renderKey">
+                    <template #after-input="item">
+                        <v-btn class="after" small @click.stop="onButtonClickRight(item, 'Target')"></v-btn>
+                    </template>
+                </v-treeview>
+            </div>
+        </v-card>
     </div>
 </template>
 
@@ -224,6 +226,14 @@ export default {
     mounted() {
         let me = this;
 
+        Object.keys(me.nodes).forEach((key, index) => {
+            var node = me.nodes[key];
+            this.blockTemplates.Source.ports[node.text] = { x: 5, y: 36 * index, direction: 'out' };
+            this.blockTemplates.Target.ports[node.text] = { x: -5, y: 36 * index, direction: 'in' };
+        });
+        this.addTreeViewPort();
+
+        window.addEventListener('resize', this.addTreeViewPort);
         // processVariables가 준비되었는지 확인
         if (this.processVariables && this.processVariables.length > 0) {
             // processVariables 사용
@@ -238,6 +248,21 @@ export default {
         }
     },
     methods: {
+        addTreeViewPort() {
+            const formAreaRect = document.getElementById('formArea').getBoundingClientRect();
+
+            this.blocks['Source'] = {
+                type: 'Source',
+                pos: { x: 0, y: 20 },
+                attributes: {}
+            };
+
+            this.blocks['Target'] = {
+                type: 'Target',
+                pos: { x: formAreaRect.width, y: 20 },
+                attributes: {}
+            };
+        },
         openFunctionMenu(event) {
             console.log('click menu');
             if (event) {
@@ -257,7 +282,7 @@ export default {
         },
         openJsonDialog() {
             console.log('open json');
-            this.jsonString = JSON.stringify(this.transformers, null, 2);
+            this.jsonString = JSON.stringify(this.getMappingElementsJson(), null, 2);
             this.jsonDialog = true; // 다이얼로그 열기
         },
         menuItemSelected(item) {
@@ -309,18 +334,6 @@ export default {
 </script>
 
 <style>
-#app {
-    box-sizing: border-box;
-    width: 100%;
-    height: 100vh;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background: white;
-    border-bottom-left-radius: 12px;
-    border-bottom-right-radius: 12px;
-    user-select: none;
-}
 .v-toolbar {
     border-top-left-radius: 12px;
     border-top-right-radius: 12px;
@@ -332,7 +345,7 @@ export default {
 }
 #formArea {
     width: 100%;
-    height: 100vh;
+    height: 80vh;
     background: #eee;
 }
 .block > rect {
@@ -433,13 +446,13 @@ export default {
     width: 12px;
     height: 12px;
 }
-.left-treeview button{
+.left-treeview button {
     margin-left: auto;
 }
-.right-treeview button{
+.right-treeview button {
     margin-left: auto;
 }
-.tree-level  {
+.tree-level {
     padding-left: 0 !important;
 }
 </style>
