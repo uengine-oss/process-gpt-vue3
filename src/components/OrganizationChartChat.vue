@@ -43,6 +43,8 @@ import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import Chat from "@/components/ui/Chat.vue";
 import OrganizationChart from "@/components/ui/OrganizationChart.vue";
 
+const storageKey = 'configuration'
+
 export default {
     mixins: [ChatModule],
     components: {
@@ -51,7 +53,6 @@ export default {
         OrganizationChart,
     },
     data: () => ({
-        path: "organization",
         organizationChart: [],
         userList: [],
         chatInfo: {
@@ -70,17 +71,17 @@ export default {
     },
     methods: {
         async loadData(path) {
-            let value = await this.getData(`${path}/1`, {key: 'id'});
+            const data = await this.getData(`${storageKey}/organization`, {key: 'key'});
 
-            if (value) {
-                this.checkDisableChat(value);
+            if (data && data.value) {
+                this.checkDisableChat(data.value);
 
-                if (value.messages) {
+                if (data.value.messages) {
                     this.messages = value.messages;
                 }
 
-                if (value.organization_chart && value.organization_chart.length > 0) {
-                    let orgChart = JSON.parse(value.organization_chart);
+                if (data.value.chart && data.value.chart.length > 0) {
+                    let orgChart = JSON.parse(data.value.chart);
                     if (orgChart && orgChart.length > 0) {
                         this.organizationChart = orgChart;
                     }
@@ -105,7 +106,7 @@ export default {
                 try {
                     unknown = partialParse(messageWriting.jsonContent);
                 } catch(e) {
-                    console.log(er)
+                    console.log(e)
                     unknown = JSON.parse(messageWriting.jsonContent)
                 }
 
@@ -147,26 +148,29 @@ export default {
             }
 
             let chartText = "";
-            let putObj =  {
-                id: 1,
-                messages: this.messages,
-                organization_chart: "",
+            const putObj =  {
+                key: 'organization',
+                value: {
+                    messages: this.messages,
+                    chart: "",
+                }
             };
             if (this.organizationChart) {
                 chartText = JSON.stringify(this.organizationChart);
-                putObj.organization_chart = chartText;
-
+                putObj.value.chart = chartText;
                 this.drawChart(this.organizationChart);
+                this.putObject(storageKey, putObj);
             }
-            this.putObject(this.path, putObj);
         },
 
         afterModelStopped(response) {
-            let putObj =  {
-                id: 1,
-                messages: this.messages,
+            const putObj =  {
+                key: 'organization',
+                value: {
+                    messages: this.messages,
+                }
             };
-            this.putObject(this.path, putObj);
+            this.putObject(storageKey, putObj);
         },
     }
 }

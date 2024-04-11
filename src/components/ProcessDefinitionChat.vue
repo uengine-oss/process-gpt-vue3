@@ -56,6 +56,9 @@ import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/ProcessDefinitionGenerator';
 import Chat from './ui/Chat.vue';
 
+import BackendFactory from "@/components/api/BackendFactory";
+const backend = BackendFactory.createBackend();
+
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
 var jsondiffpatch = jsondiff.create({
     objectHash: function (obj, index) {
@@ -105,6 +108,7 @@ export default {
             isStream: true,
             preferredLanguage: 'Korean'
         });
+        console.log(this.generator)
     },
     mounted() {
         if (this.$route.query && this.$route.query.id) {
@@ -184,9 +188,18 @@ export default {
                     const store = useBpmnStore();
                     const modeler = store.getModeler;
                     const xml = await modeler.saveXML({ format: true, preamble: true });
-                    await me.saveModel(info, xml.xml); 
-
-                    await me.storage.delete(`lock/${info.proc_def_id}`, {key: 'id'});
+                    
+                    if (me.processDefinition) {
+                        info.definition = me.processDefinition;
+                    } else if (!me.processDefinition && xml && xml.xml) {
+                        me.processDefinition = me.convertXMLToJSON(xml.xml);
+                        info.definition = me.processDefinition;
+                    }
+                    
+                    info.snapshot = xml.xml;
+                    await backend.putRawDefinition(xml.xml, info.proc_def_id, info);
+                    // await me.saveModel(info, xml.xml); 
+                    // await me.storage.delete(`lock/${info.proc_def_id}`, {key: 'id'});
                     me.disableChat = true;
                     me.isViewMode = true;
                     me.lock = true // 잠금처리 ( 수정 불가 )
@@ -271,10 +284,9 @@ export default {
                     this.disableChat = true;
                     this.isViewMode = true;
                 }
-            }
-            const value = await this.getData(path, { key: "id" });
-            if (value) {
-                if (this.$route.params && this.$route.params.id) {
+
+                const value = await this.getData(path, { key: "id" });
+                if (value) {
                     this.messages = value.messages
                     this.processDefinition = value.definition;
                     if (!this.processDefinition) {

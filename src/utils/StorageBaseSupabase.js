@@ -128,7 +128,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 }
             }
         } catch(error) {
-            if (error.code === 'PGRST116') {
+            if (error.code === 'PGRST116' || error.code === '42703') {
                 console.log(error.message);
                 return "";
             }
@@ -176,7 +176,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
                 }
             }
         } catch(error) {
-            if (error.code === 'PGRST116') {
+            if (error.code === 'PGRST116' || error.code === '42703') {
                 console.log(error.message);
                 return {};
             } else {
