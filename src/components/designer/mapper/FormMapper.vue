@@ -102,16 +102,16 @@ import ContextMenu from './ContextMenu.vue';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 
 export default {
-    name: "form-mapper",
+    name: 'form-mapper',
     mixins: [FormMapper],
     props: {
         definition: {
             type: Object,
-            required: true,
+            required: true
         },
         name: {
             type: String,
-            required: true,
+            required: true
         }
     },
     components: {
@@ -120,7 +120,7 @@ export default {
         ConnectorComponent,
         AttributeComponent,
         ContextMenu,
-        VTreeview,
+        VTreeview
     },
     data() {
         return {
@@ -155,11 +155,11 @@ export default {
             config: {
                 roots: ['id1', 'id2']
             },
-            processVariableDescriptors: [],
+            processVariableDescriptors: []
         };
     },
     async created() {
-        let me = this
+        let me = this;
 
         me.storage = StorageBaseFactory.getStorage('supabase');
 
@@ -171,19 +171,19 @@ export default {
         };
 
         definition.processVariables.forEach(async (variable) => {
-            if (!me.config.roots.includes("Variables")) {
-                me.config.roots.push("Variables");
+            if (!me.config.roots.includes('Variables')) {
+                me.config.roots.push('Variables');
             }
 
-            if (!me.nodes["Variables"]) {
-                me.nodes["Variables"] = {
-                    text: "Variables",
+            if (!me.nodes['Variables']) {
+                me.nodes['Variables'] = {
+                    text: 'Variables',
                     children: []
                 };
             }
 
-            if(me.nodes["Variables"]){
-                me.nodes["Variables"].children.push(variable.name);
+            if (me.nodes['Variables']) {
+                me.nodes['Variables'].children.push(variable.name);
                 me.nodes[variable.name] = {
                     text: variable.name,
                     children: []
@@ -194,10 +194,10 @@ export default {
             // let [formName, formAlias] = variable.defaultValue.split('_');
             let name = variable.defaultValue.name;
             let alias = variable.defaultValue.alias;
-            let matchingForm = formDefs.find(form => form.name === name && form.alias === alias)
+            let matchingForm = formDefs.find((form) => form.name === name && form.alias === alias);
 
             if (matchingForm) {
-                matchingForm.fields.forEach(field => {
+                matchingForm.fields.forEach((field) => {
                     if (!me.nodes[variable.name]) {
                         me.nodes[variable.name] = {
                             text: variable.name,
@@ -246,6 +246,8 @@ export default {
                 }
             });
         }
+
+        this.renderFormMapperFromMappingElementJson("");
     },
     methods: {
         addTreeViewPort() {
@@ -327,7 +329,38 @@ export default {
         },
 
         transformers() {
-            return {"mappingElements":[{"_type":"org.uengine.kernel.MappingElement","argument":{},"transformerMapping":{"transformer":{"_type":"org.uengine.processdesigner.mapper.transformers.ConcatTransformer","name":"Concat","location":{"x":365.78125,"y":146.5},"argumentSourceMap":{"str1":"trouble_class"}},"linkedArgumentName":"out"},"isKey":false},{"_type":"org.uengine.kernel.MappingElement","argument":{},"transformerMapping":{"transformer":{"_type":"org.uengine.processdesigner.mapper.transformers.ConcatTransformer","name":"Concat","location":{"x":360.78125,"y":432.5},"argumentSourceMap":{"str1":"trouble_class"}},"linkedArgumentName":"out"},"isKey":false}]};
+            return {
+                mappingElements: [
+                    {
+                        _type: 'org.uengine.kernel.MappingElement',
+                        argument: {},
+                        transformerMapping: {
+                            transformer: {
+                                _type: 'org.uengine.processdesigner.mapper.transformers.ConcatTransformer',
+                                name: 'Concat',
+                                location: { x: 365.78125, y: 146.5 },
+                                argumentSourceMap: { str1: 'trouble_class' }
+                            },
+                            linkedArgumentName: 'out'
+                        },
+                        isKey: false
+                    },
+                    {
+                        _type: 'org.uengine.kernel.MappingElement',
+                        argument: {},
+                        transformerMapping: {
+                            transformer: {
+                                _type: 'org.uengine.processdesigner.mapper.transformers.ConcatTransformer',
+                                name: 'Concat',
+                                location: { x: 360.78125, y: 432.5 },
+                                argumentSourceMap: { str1: 'trouble_class' }
+                            },
+                            linkedArgumentName: 'out'
+                        },
+                        isKey: false
+                    }
+                ]
+            };
         }
     }
 };
