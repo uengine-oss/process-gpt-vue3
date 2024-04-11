@@ -187,19 +187,21 @@ export default {
 
                     const store = useBpmnStore();
                     const modeler = store.getModeler;
-                    const xml = await modeler.saveXML({ format: true, preamble: true });
+                    const xmlObj = await modeler.saveXML({ format: true, preamble: true });
                     
                     if (me.processDefinition) {
                         info.definition = me.processDefinition;
-                    } else if (!me.processDefinition && xml && xml.xml) {
-                        me.processDefinition = me.convertXMLToJSON(xml.xml);
+                    } else if (!me.processDefinition && xmlObj && xmlObj.xml) {
+                        me.processDefinition = me.convertXMLToJSON(xmlObj.xml);
                         info.definition = me.processDefinition;
                     }
                     
                     // info.snapshot = xml.xml;
                     // await backend.putRawDefinition(xml.xml, info.proc_def_id, info);
-                    await me.saveModel(info, xml.xml); 
+                    await me.saveModel(info, xmlObj.xml); 
                     await me.storage.delete(`lock/${info.proc_def_id}`, {key: 'id'});
+                    me.bpmn = xmlObj.xml;
+
                     me.disableChat = true;
                     me.isViewMode = true;
                     me.lock = true // 잠금처리 ( 수정 불가 )
@@ -564,12 +566,6 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    // alert(model);
-                    // console.log(this.changedXML);
-                    // const store = useBpmnStore();
-                    // let modeler = store.getModeler;
-                    // let xml = await modeler.saveXML({ format: true, preamble: true });
-
                     if (!me.processDefinition && xml) {
                         me.processDefinition = me.convertXMLToJSON(xml);
                     }
@@ -609,7 +605,6 @@ export default {
                         diff: diffs,
                         timeStamp: new Date()
                     });
-
 
                     // if (window.$mode == "uEngine") {
                     //     // :9093/definition/raw/sales/testProcess.bpmn < definition-samples/testProcess.bpmn
