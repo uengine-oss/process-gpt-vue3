@@ -1,7 +1,7 @@
 <template>
     <div>
         <v-toolbar>
-            <v-toolbar-title>Form Mapper</v-toolbar-title>
+            <v-toolbar-title>Form Mapper - {{ name }}</v-toolbar-title>
 
             <v-btn icon @click="openJsonDialog()">
                 <v-icon style="color: #eee">mdi-content-save-outline</v-icon>
@@ -107,6 +107,10 @@ export default {
             type: Object,
             required: true,
         },
+        name: {
+            type: String,
+            required: true,
+        }
     },
     components: {
         BlockComponent,
@@ -164,46 +168,7 @@ export default {
             roots: []
         };
 
-        var test = [
-                {'name': "장애신고",
-                'type': "Form",
-                'defaultValue': "form11_장애신고",
-                'description': "",
-                'datasource': {
-                    'type': "",
-                    'sql': ""
-                },
-                'table': ""},
-                {'name': "장애처리",
-                'type': "Form",
-                'defaultValue': "form22_장애처리",
-                'description': "",
-                'datasource': {
-                    'type': "",
-                    'sql': ""
-                },
-                'table': ""},
-                {'name': "처리알림",
-                'type': "Form",
-                'defaultValue': "form33_처리알림",
-                'description': "",
-                'datasource': {
-                    'type': "",
-                    'sql': ""
-                },
-                'table': ""},
-                {'name': "비고",
-                'type': "Text",
-                'defaultValue': "",
-                'description': "",
-                'datasource': {
-                    'type': "",
-                    'sql': ""
-                },
-                'table': ""}
-        ]
-
-        test.forEach(async (variable) => {
+        definition.processVariables.forEach(async (variable) => {
             if (!me.config.roots.includes("Variables")) {
                 me.config.roots.push("Variables");
             }
@@ -224,8 +189,10 @@ export default {
             }
 
             let formDefs = await me.storage.list('form_def');
-            let [formName, formAlias] = variable.defaultValue.split('_');
-            let matchingForm = formDefs.find(form => form.name === formName && form.alias === formAlias)
+            // let [formName, formAlias] = variable.defaultValue.split('_');
+            let name = variable.defaultValue.name;
+            let alias = variable.defaultValue.alias;
+            let matchingForm = formDefs.find(form => form.name === name && form.alias === alias)
 
             if (matchingForm) {
                 matchingForm.fields.forEach(field => {
@@ -332,6 +299,10 @@ export default {
                 top: `${this.menu_y}px`,
                 transform: 'translate(0, -50%)'
             };
+        },
+
+        transformers() {
+            return {"mappingElements":[{"_type":"org.uengine.kernel.MappingElement","argument":{},"transformerMapping":{"transformer":{"_type":"org.uengine.processdesigner.mapper.transformers.ConcatTransformer","name":"Concat","location":{"x":365.78125,"y":146.5},"argumentSourceMap":{"str1":"trouble_class"}},"linkedArgumentName":"out"},"isKey":false},{"_type":"org.uengine.kernel.MappingElement","argument":{},"transformerMapping":{"transformer":{"_type":"org.uengine.processdesigner.mapper.transformers.ConcatTransformer","name":"Concat","location":{"x":360.78125,"y":432.5},"argumentSourceMap":{"str1":"trouble_class"}},"linkedArgumentName":"out"},"isKey":false}]};
         }
     }
 };
