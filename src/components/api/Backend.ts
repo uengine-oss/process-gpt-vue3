@@ -1,5 +1,5 @@
 interface Backend {
-    listDefinition(basePath): Promise<any>;
+    listDefinition(basePath: string): Promise<any>;
     listVersionDefinitions(version: string, basePath: string): Promise<any>;
     listVersions(): Promise<any>;
     versionUp(version: string, major: boolean, makeProduction: boolean): Promise<any>;
@@ -32,4 +32,4 @@ interface Backend {
     getWorkList(): Promise<any>;
 }
 
-export { Backend };
+export type { Backend };
