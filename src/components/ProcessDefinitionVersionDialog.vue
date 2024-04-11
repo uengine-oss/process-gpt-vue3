@@ -100,6 +100,8 @@ export default {
                         })
                         if (result.length > 0) {
                             me.information = result[0]
+                        } else {
+                            me.isNew = true
                         }
                     } else {
                         me.isNew = true
