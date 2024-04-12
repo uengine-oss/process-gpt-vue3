@@ -541,7 +541,7 @@ export default {
       var block = this.blocks[conn.from[0]];
       var blockData = this.blockTemplates[block.type];
       var transformerMapping = {
-        "_type": "org.uengine.kernel.TransformerMapping",
+        "_type": "java.lang.Object",
         "transformer": {
           "_type": blockData.class,
           "name": block.type,
@@ -561,7 +561,9 @@ export default {
     createMappingElement(blockName, block, blockData, argument) {
       return {
         "_type": "org.uengine.kernel.MappingElement",
-        "argument": argument,
+        "argument": {
+          "text": argument
+        },
         "transformerMapping": {
           "transformer": {
             "_type": blockData.class,
@@ -569,7 +571,7 @@ export default {
             "location": block.pos,
             "argumentSourceMap": {}
           },
-          "linkedArgumentName": "out"
+          "linkedArgumentName": argument
         },
         "isKey": false
       };
@@ -591,10 +593,12 @@ export default {
 
 
         const mappingContent = {
-          mappingElements: [
+          "mappingElements": [
             {
               "_type": "org.uengine.kernel.MappingElement",
-              "argument": "Variables",
+              "argument": {
+                "text": "Variables"
+              },
               "transformerMapping": {
                 "transformer": {
                   "_type": "org.uengine.processdesigner.mapper.transformers.MinTransformer",
@@ -605,7 +609,7 @@ export default {
                   },
                   "argumentSourceMap": {
                     "value1": {
-                      "_type": "org.uengine.kernel.TransformerMapping",
+                      "_type": "java.lang.Object",
                       "transformer": {
                         "_type": "org.uengine.processdesigner.mapper.transformers.MaxTransformer",
                         "name": "Max",
@@ -621,7 +625,7 @@ export default {
                       "linkedArgumentName": "out"
                     },
                     "value2": {
-                      "_type": "org.uengine.kernel.TransformerMapping",
+                      "_type": "java.lang.Object",
                       "transformer": {
                         "_type": "org.uengine.processdesigner.mapper.transformers.MinTransformer",
                         "name": "Min",
@@ -638,13 +642,15 @@ export default {
                     }
                   }
                 },
-                "linkedArgumentName": "out"
+                "linkedArgumentName": "Variables"
               },
               "isKey": false
             },
             {
               "_type": "org.uengine.kernel.MappingElement",
-              "argument": "test1",
+              "argument": {
+                "text": "test3"
+              },
               "transformerMapping": {
                 "transformer": {
                   "_type": "org.uengine.processdesigner.mapper.transformers.MinTransformer",
@@ -655,7 +661,7 @@ export default {
                   },
                   "argumentSourceMap": {
                     "value1": {
-                      "_type": "org.uengine.kernel.TransformerMapping",
+                      "_type": "java.lang.Object",
                       "transformer": {
                         "_type": "org.uengine.processdesigner.mapper.transformers.MaxTransformer",
                         "name": "Max",
@@ -671,7 +677,7 @@ export default {
                       "linkedArgumentName": "out"
                     },
                     "value2": {
-                      "_type": "org.uengine.kernel.TransformerMapping",
+                      "_type": "java.lang.Object",
                       "transformer": {
                         "_type": "org.uengine.processdesigner.mapper.transformers.MinTransformer",
                         "name": "Min",
@@ -688,7 +694,7 @@ export default {
                     }
                   }
                 },
-                "linkedArgumentName": "out"
+                "linkedArgumentName": "test3"
               },
               "isKey": false
             }
@@ -698,6 +704,8 @@ export default {
         mappingContent.mappingElements.forEach(element => {
           this.createMappingElementFromJson(element);
         });
+
+        this.connections = this.tempConnections;
       } catch (error) {
         console.error("JSON 파싱 중 오류가 발생했습니다:", error);
       }
@@ -707,38 +715,71 @@ export default {
 
       var transformerMapping = element.transformerMapping;
 
-      this.addBlockFromJson(transformerMapping);
-      // this.connections = this.tempConnections;
+      this.addBlockFromJson(transformerMapping, element.argument.text);
     },
-    addBlockFromJson(transformerMapping) {
+    addBlockFromJson(transformerMapping, targetArgument = null) {
       var blockName = transformerMapping.transformer.name;
       var transformerType = transformerMapping.transformer._type;
       var filteredEntries = Object.entries(this.blockTemplates).filter(([key, block]) => block.class === transformerType);
       var keyOfMatchingBlock = filteredEntries.length > 0 ? filteredEntries[0][0] : undefined;
-       
+
       var newBlock = {
         type: keyOfMatchingBlock,
         pos: transformerMapping.transformer.location,
         attributes: {},
       };
- 
+
       Object.keys(transformerMapping.transformer.argumentSourceMap).forEach(key => {
         var argumentSourceMap = transformerMapping.transformer.argumentSourceMap[key];
-        var  connection = {};
         if (argumentSourceMap != null && typeof argumentSourceMap === 'object') {
           this.addBlockFromJson(argumentSourceMap);
-          connection = {
-            from: [blockName, "in value1"],
-            to: [blockName, "out"],
-          }
         } else {
         }
-        this.tempConnections.push(connection);
       });
 
 
+      if (transformerMapping.transformer.argumentSourceMap) {
+        this.addConnectionJson(blockName, "Target", transformerMapping.transformer.argumentSourceMap, targetArgument);
+      }
+
       this.blocks[blockName] = newBlock;
-    }
+    },
+    addConnectionJson(fromBlockName, toBlockName, argumentSourceMap, targetArgument = null) {
+      Object.entries(argumentSourceMap).forEach(([argument, source]) => {
+        let connection;
+        if (typeof source === 'object' && source.transformer) {
+          const sourceBlockName = source.transformer.name;
+          this.addConnectionJson(sourceBlockName, fromBlockName, source.transformer.argumentSourceMap);
+          connection = {
+            from: [sourceBlockName, "out"],
+            to: [fromBlockName, "in " + argument], 
+          };
+        } else {
+          connection = {
+            from: ["Source", source],
+            to: [fromBlockName, "in " + argument],
+          };
+        }
+        if (!this.isConnectionDuplicate(connection)) {
+          this.tempConnections.push(connection);
+        }
+      });
+
+      if (toBlockName === "Target" && targetArgument) {
+        const connection = {
+          from: [fromBlockName, "out"],
+          to: ["Target", targetArgument], 
+        };
+        if (!this.isConnectionDuplicate(connection)) {
+          this.tempConnections.push(connection);
+        }
+      }
+    },
+    isConnectionDuplicate(connection) {
+      return this.tempConnections.some(conn =>
+        conn.from[0] === connection.from[0] && conn.from[1] === connection.from[1] &&
+        conn.to[0] === connection.to[0] && conn.to[1] === connection.to[1]);
+    },
   },
   computed: {
     offset() {
