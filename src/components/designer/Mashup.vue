@@ -189,8 +189,21 @@ export default {
 
       return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
     },
+
+    /**
+     * KEditor를 완전하게 제거시키기 위해서
+     */
+    completeClearKEditor() {
+      document.body.classList.remove('initialized-click-event-handlers')
+      document.body.classList.remove('initialized-snippets-list')
+      $('.keditor-content-area').remove()
+      $(".keditor-ui").remove()
+      $('#kEditor1').data('keditor', null)
+    }
   },
   mounted() {
+    this.completeClearKEditor()
+
     let me = this;
     if (this.$route.path.includes('ui-definitions/')) {
       this.loadStylesForKEditor();
