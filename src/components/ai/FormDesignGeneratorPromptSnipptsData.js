@@ -42,13 +42,13 @@ const formDesignGeneratorPromptSnipptsData = {
         },
 
         {
-            tag: `<file-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' accept='<video/*|audio/*|image/*'></file-field>`,
+            tag: `<file-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>'></file-field>`,
             purpose: `파일을 입력받기 위해서`,
             limit: ""
         },
 
         {
-            tag: `<label-field>Label</label-field>`,
+            tag: `<label-field label='<입력시킬 라벨 값>'></label-field>`,
             purpose: `특정 컴포넌트를 설명하기 위해서`,
             limit: "name, alias가 있는 경우에는 이미 내부적으로 label이 설정되기 때문에 쓸 필요가 없음"
         },
@@ -74,7 +74,6 @@ const formDesignGeneratorPromptSnipptsData = {
             책 장르인 경우에는 간단하게 '소설', '시', '에세이' 정도로 한다면 items에 들어갈 내용은 '[{"소설": "novel"}, {"시": "poem"}, {"에세이": "essay"}]'로 하면 되겠네.
 
             책 표지 이미지는 파일을 입력받아야 하니까 file-field를 사용하면 되겠네.
-            이미지를 입력 받으니까 accept에서 유효한 문자열을 선택하면 'image/*'를 넣어주면 되겠네.
 
             제출 버튼은 하나만 추가하라는 제약사항이 있으니까 하나만 마지막에 추가하면 되겠네.
             마지막으로 '\`\`\`'로 감싸진 코드에 JSON 형식으로 "htmlOutput" 속성에 추가만 해주면 되겠네.`,
@@ -87,7 +86,7 @@ const formDesignGeneratorPromptSnipptsData = {
                         <text-field name='book_title' alias='책 제목'></text-field>
                         <text-field name='book_author' alias='저자'></text-field>
                         <select-field name='book_genre' alias='책 장르' items='[{"소설": "novel"}, {"시": "poem"}, {"에세이": "essay"}]'></select-field>
-                        <file-field name='book_cover' alias='책 표지 이미지' accept='image/*'></file-field>
+                        <file-field name='book_cover' alias='책 표지 이미지'></file-field>
                         <submit-field></submit-field>
                     </div>
                 </div>"

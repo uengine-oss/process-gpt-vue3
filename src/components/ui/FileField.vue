@@ -2,7 +2,6 @@
     <div>
         <v-file-input
             :label="label"
-            :accept="accept"
         ></v-file-input>
     </div>
 </template>
@@ -17,18 +16,20 @@ export default {
         
     ],
     props: {
+        vueRenderUUID: String,
+        tagName: String,
         name: String,
-        alias: String,
-        accept: String
+        alias: String
     },
     computed: {
         label() {
-            return this.alias || this.name;
+            return this.localAlias || this.localName;
         }
     },
     data() {
         return {
-         
+            localName: this.name,
+            localAlias: this.alias,
         };
     },
     created() {

@@ -19,17 +19,17 @@ export default {
         name: String,
         alias: String
     },
+    computed: {
+        label() {
+            return this.localAlias || this.localName;
+        }
+    },
     data() {
         return {
             localName: this.name,
             localAlias: this.alias,
             inputedValue: ""
         };
-    },
-    computed: {
-        label() {
-            return this.localAlias || this.localName;
-        }
     },
     created() {
     },
