@@ -48,8 +48,8 @@ const formDesignGeneratorPromptSnipptsData = {
         },
 
         {
-            tag: `<label-field for_id='<설명할 대상이 되는 컴포넌트의 ID>'>Label</label-field>`,
-            purpose: `ID로 지정된 특정 컴포넌트를 설명하기 위해서`,
+            tag: `<label-field>Label</label-field>`,
+            purpose: `특정 컴포넌트를 설명하기 위해서`,
             limit: "name, alias가 있는 경우에는 이미 내부적으로 label이 설정되기 때문에 쓸 필요가 없음"
         },
 

@@ -96,6 +96,8 @@ export default {
       return this.createComponentWithRef(TextField, {vueRenderUUID:this.vueRenderUUID, tagName: "text-field", ...this.parseContentToProps(this.content)});
     else if(this.content.includes("select-field"))
       return this.createComponentWithRef(SelectField, {vueRenderUUID:this.vueRenderUUID, tagName: "select-field", ...this.parseContentToProps(this.content)});
+    else if(this.content.includes("submit-field"))
+      return this.createComponentWithRef(SubmitField, {vueRenderUUID:this.vueRenderUUID, tagName: "submit-field", ...this.parseContentToProps(this.content)});
     else
       return ""
   },

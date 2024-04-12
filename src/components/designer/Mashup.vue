@@ -124,6 +124,7 @@ export default {
       }
 
       await me.putObject("form_def", putObj);
+      alert("저장 완료!")
     },
 
     /**
@@ -142,8 +143,8 @@ export default {
         const componentRef = window.componentRefs[vueRenderUUID]
 
         const newElement = document.createElement(componentRef.tagName)
-        newElement.setAttribute('name', componentRef.localName)
-        newElement.setAttribute('alias', componentRef.localAlias)
+        if(componentRef.localName) newElement.setAttribute('name', componentRef.localName)
+        if(componentRef.localAlias) newElement.setAttribute('alias', componentRef.localAlias)
         if(componentRef.localItems) newElement.setAttribute('items', JSON.stringify(componentRef.localItems))
 
         vueRenderElement.innerHTML = newElement.outerHTML
@@ -293,12 +294,19 @@ export default {
           const vueRenderElement = doc.querySelectorAll("div[id^='vuemount_']")
           if(vueRenderElement.length == 0)
           {
-            alert("선택된 컴포넌트가 없습니다.")
+            alert("선택된 입력 요소가 없습니다.")
             return
           }
 
           const vueRenderUUID = vueRenderElement[0].id
           const componentRef = window.componentRefs[vueRenderUUID]
+
+
+          if(!componentRef.localName && !componentRef.localAlias && !componentRef.localItems)
+          {
+            alert("해당 입력 요소에 대해서 추가적으로 세팅할 수 있는 항목이 없습니다.")
+            return
+          }
 
 
           const formValue = {
