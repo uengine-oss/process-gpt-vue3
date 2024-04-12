@@ -18,7 +18,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
             password: userInfo.password
         });
         if (!result.error) {
-            await this.writeUserData(result.data);
+            // await this.writeUserData(result.data);
             return result.data;
         } else {
             const users = await this.list('users');
@@ -44,9 +44,10 @@ export default class StorageBaseSupabase {//extends StorageBase{
         });
 
         if (!result.error) {
-            await this.writeUserData(result.data);
+            // await this.writeUserData(result.data);
             return result.data;
         } else {
+            result.errorMsg = result.error.message;
             return result;
         }
     }
@@ -64,27 +65,29 @@ export default class StorageBaseSupabase {//extends StorageBase{
     }
 
     async getUserInfo() {
-        const result = await window.$supabase.auth.getUser();
-        
-        if (result && result.data && result.data.user) {
-            const { data } = await window.$supabase
+        var { data, error } = await window.$supabase.auth.getUser();
+        const user = data.user;
+
+        if (!error && user) {
+            var { data } = await window.$supabase
                 .from('users')
-                .select('*')
-                .eq('id', result.data.user.id)
+                .select('profile')
+                .eq('id', data.user.id)
                 .maybeSingle()
 
             const userInfo = {
-                email: result.data.user.email,
-                name: result.data.user.user_metadata.name,
+                email: user.email,
+                name: user.user_metadata.name,
                 profile: data.profile,
-                uid: result.data.user.id,
-                role: result.data.user.role,
-                last_sign_in_at: result.data.user.last_sign_in_at,
+                uid: user.id,
+                role: user.role,
+                last_sign_in_at: user.last_sign_in_at,
             }
 
             return userInfo;
+
         } else {
-            return null;
+            return error;
         }
     }
 
@@ -336,7 +339,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
         try {
             let obj = this.formatDataPath(path, options);
             if (options && options.match) {
-                const { data, error } = await window.$supabase
+                const { error } = await window.$supabase
                     .from(obj.table)
                     .delete()
                     .match(options.match);
@@ -378,27 +381,6 @@ export default class StorageBaseSupabase {//extends StorageBase{
     
         } catch(error) {
             throw new StorageBaseError('error in watch', error, arguments);
-        }
-    }
-
-    async unwatch(path) {
-        try {
-            let obj = this.formatDataPath(path);
-            const subscription = await window.$supabase
-                .channel('room1')
-                .on('postgres_changes', {
-                    event: '*', 
-                    schema: 'public', 
-                    table: obj.table
-                }, payload => {
-                    console.log('Change received!', payload);
-                })
-                .subscribe();
-    
-            await window.$supabase.removeSubscription(subscription);
-    
-        } catch(error) {
-            throw new StorageBaseError('error in unwatch', error, arguments);
         }
     }
 
@@ -537,7 +519,7 @@ export default class StorageBaseSupabase {//extends StorageBase{
             window.localStorage.setItem("execution", "true");
         })
         .catch(error => {
-            console.log(error);
+            // console.log(error);
         });
     }
 
