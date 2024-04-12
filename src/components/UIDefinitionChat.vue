@@ -55,7 +55,7 @@ export default {
         uiCode: null,
         changedXML: "",
         projectName: '',
-        path: 'ui',
+        path: 'form_def',
         chatInfo: {
             title: 'uiDefinition.cardTitle',
             text: "uiDefinition.uiDefinitionExplanation"
@@ -77,17 +77,8 @@ export default {
     beforeDestroy() {
         this.src = null;
     },
-    mounted() {
-//         this.applyNewSrcToMashup(
-//             this.loadHTMLToKEditorContent(`<section>
-//    <div class="row">
-//       <div class="col-sm-12">
-//          <text-field name="nameUp1" alias="aliasUp1"></text-field>
-//          <select-field name="nameUp2" alias="aliasUp2" items="[{'key1':'value1'},{'key2':'value2'}]"></select-field>
-//       </div>
-//    </div>
-// </section>`)
-//         )
+    async mounted() {
+
 
         // if (this.$route.query && this.$route.query.id) {
         //     this.processDefinition = {
@@ -126,7 +117,14 @@ export default {
          * @param {*} path 
          */
         async loadData(path) {
+            if (this.$route.params.id && this.$route.params.id != 'chat') {
+                path = `${this.path}/${this.$route.params.id}`
+                const formDefData = await this.getData(path, { key: "id" })
 
+                this.applyNewSrcToMashup(
+                    this.loadHTMLToKEditorContent(formDefData.html)
+                )
+            }
         },
 
 
