@@ -114,7 +114,7 @@ export default {
 
 
         /**
-         * AI 관련 데이터 초기화하기 위해서 사용
+         * Supabase에서 Form 관련 데이터를 가져와서 KEditor에 반영하기 위해서 사용
          * @param {*} path 
          */
         async loadData(path) {
