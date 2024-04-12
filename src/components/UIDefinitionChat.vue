@@ -64,8 +64,9 @@ export default {
         modeler: null,
         src:``,
 
+        mashupKey: 0, // src가 변경되었을 경우, Mashup 컴포넌트를 다시 렌더링하기 위해서
         prevFormOutput: "", // 폼 디자이너에게 이미 이전에 생성된 HTML 결과물을 전달하기 위해서
-        mashupKey: 0 // src가 변경되었을 경우, Mashup 컴포넌트를 다시 렌더링하기 위해서
+        prevMessageFormat: "" // 사용자가 KEditor를 변경할때마다 해당 포맷을 기반으로 System 메세지를 재구축해서 보내기 위해서
     }),
     async created() {
         await this.init();
@@ -78,17 +79,6 @@ export default {
         this.src = null;
     },
     async mounted() {
-
-
-        // if (this.$route.query && this.$route.query.id) {
-        //     this.processDefinition = {
-        //         processDefinitionId: this.$route.query.id
-        //     }
-        //     if (this.$route.query.name) {
-        //         this.projectName = this.$route.query.name;
-        //         this.processDefinition.processDefinitionName = this.projectName;
-        //     }
-        // }
     },
     watch: {
         $route: {
@@ -107,9 +97,11 @@ export default {
         
     },
     methods: {
+        /**
+         * KEditor의 내용이 변경될때마다 AI에게 변경된 내용을 전달하기 위해서
+         */
         checkHTML({kEditorContent, html}) {
-            console.log(html)
-            localStorage["keditor.editing.content"] = kEditorContent;
+            this.prevFormOutput = html
         },
 
 
@@ -134,7 +126,7 @@ export default {
          * @param {*} newMessage 
          */
         beforeSendMessage(newMessage) {
-            this.sendMessage(newMessage);
+            this.generator.sendMessageWithPrevFormOutput(newMessage)
         },
 
 
