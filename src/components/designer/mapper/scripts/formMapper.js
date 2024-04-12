@@ -541,7 +541,7 @@ export default {
       var block = this.blocks[conn.from[0]];
       var blockData = this.blockTemplates[block.type];
       var transformerMapping = {
-        "_type": "org.uengine.kernel.TransformerMapping",
+        "_type": "java.lang.Object",
         "transformer": {
           "_type": blockData.class,
           "name": block.type,
@@ -561,7 +561,9 @@ export default {
     createMappingElement(blockName, block, blockData, argument) {
       return {
         "_type": "org.uengine.kernel.MappingElement",
-        "argument": argument,
+        "argument": { 
+          "text": argument 
+        },
         "transformerMapping": {
           "transformer": {
             "_type": blockData.class,
@@ -569,7 +571,7 @@ export default {
             "location": block.pos,
             "argumentSourceMap": {}
           },
-          "linkedArgumentName": "out"
+          "linkedArgumentName": argument
         },
         "isKey": false
       };
@@ -715,16 +717,16 @@ export default {
       var transformerType = transformerMapping.transformer._type;
       var filteredEntries = Object.entries(this.blockTemplates).filter(([key, block]) => block.class === transformerType);
       var keyOfMatchingBlock = filteredEntries.length > 0 ? filteredEntries[0][0] : undefined;
-       
+
       var newBlock = {
         type: keyOfMatchingBlock,
         pos: transformerMapping.transformer.location,
         attributes: {},
       };
- 
+
       Object.keys(transformerMapping.transformer.argumentSourceMap).forEach(key => {
         var argumentSourceMap = transformerMapping.transformer.argumentSourceMap[key];
-        var  connection = {};
+        var connection = {};
         if (argumentSourceMap != null && typeof argumentSourceMap === 'object') {
           this.addBlockFromJson(argumentSourceMap);
           connection = {
