@@ -89,24 +89,20 @@ export default {
         document.head.removeChild(link);
       });
     },
+
     onchangeKEditor(evt, fnNm) {
       let me = this;
-      // alert(fnNm);
-      let newValue = me.kEditor[0].children[0].innerHTML;
 
-      let parser = new DOMParser();
-      let doc = parser.parseFromString(newValue, 'text/html');
+      const kEditorContent = me.kEditor[0].children[0].innerHTML
+      this.content = (new DOMParser()).parseFromString(kEditorContent, 'text/html').body.innerHTML
 
-      // doc.querySelectorAll('[placeholder]').forEach(el => el.remove());
-
-      this.content = doc.body.innerHTML;
-
-      // this.content = newValue;
-      // me.value = newValue
-      console.log("save중  ->", fnNm);
-      this.$emit('value', newValue);
-      this.$emit('change', newValue);
+      console.log("save중  ->", fnNm)
+      this.$emit('change', {
+        kEditorContent: kEditorContent, 
+        html: this.kEditorContentToHtml(me.kEditor[0].children[0].innerHTML, false)
+      })
     },
+
     resetStat() {
       let me = this;
       me.kEditor[0].children[0].innerHTML="";

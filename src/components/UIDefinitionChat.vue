@@ -107,9 +107,9 @@ export default {
         
     },
     methods: {
-        checkHTML(html) {
+        checkHTML({kEditorContent, html}) {
             console.log(html)
-            localStorage["keditor.editing.content"] = html;
+            localStorage["keditor.editing.content"] = kEditorContent;
         },
 
 
