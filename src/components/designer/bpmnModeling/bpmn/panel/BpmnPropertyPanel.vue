@@ -22,11 +22,8 @@
                 :uengine-properties="uengineProperties" 
                 :name="name"
                 :role="role"
-                :variableForHtmlFormContext="element.variableForHtmlFormContext"
                 ref="panelComponent"
                 @update:name="val => name = val"
-                @setVariableForHtmlFormContext="val => element.variableForHtmlFormContext = val"
-                @setMappingContext="val => element.mappingContext = val"
                 :definition="definition"
             ></component>
         </v-card-text>
@@ -170,7 +167,6 @@ export default {
             modeling.updateProperties(task, this.elementCopy);
             this.$emit('close');
         },
-
     }
 };
 </script>

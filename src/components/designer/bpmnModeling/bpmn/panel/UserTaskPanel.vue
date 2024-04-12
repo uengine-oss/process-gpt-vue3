@@ -37,7 +37,7 @@
                 <div>Parameter Context</div>
                 <v-spacer></v-spacer>
                 <bpmn-parameter-contexts
-                    :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
+                :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
             </v-row>
         </div>
         <v-spacer></v-spacer>
@@ -216,10 +216,18 @@ export default {
         if (!this.copyUengineProperties.parameters)
             this.copyUengineProperties.parameters = []
 
-        if(this.variableForHtmlFormContext){
+        if(this.copyUengineProperties.variableForHtmlFormContext){
             this.isFormActivity = true
-            this.selectedForm = `${this.variableForHtmlFormContext.name}_${this.variableForHtmlFormContext.alias}`
+            this.selectedForm = `${this.copyUengineProperties.variableForHtmlFormContext.name}_${this.copyUengineProperties.variableForHtmlFormContext.alias}`
         }
+
+        let mapperData = 
+        {}
+
+        this.copyUengineProperties.mappingContext = mapperData
+        this.$emit('update:uEngineProperties', this.copyUengineProperties)
+
+
     },
     computed: {
         inputData() {
@@ -248,7 +256,14 @@ export default {
             if(newVal){
                 const [formName, formAlias] = newVal.split('_');
                 const formItem = this.definition.processVariables.find(item => item.type === 'Form' && item.defaultValue.name === formName && item.defaultValue.alias === formAlias);
-                this.$emit('setVariableForHtmlFormContext', formItem.defaultValue)
+
+                this.copyUengineProperties.variableForHtmlFormContext = formItem.defaultValue
+                this.$emit('update:uEngineProperties', this.copyUengineProperties)
+            }
+        },
+        isFormActivity(newVal){
+            if(newVal){
+                this.copyUengineProperties._type = "org.uengine.kernel.FormActivity"
             }
         }
     },
