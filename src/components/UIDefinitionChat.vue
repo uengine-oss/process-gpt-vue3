@@ -108,6 +108,7 @@ export default {
     },
     methods: {
         checkHTML(html) {
+            console.log(html)
             localStorage["keditor.editing.content"] = html;
         },
 

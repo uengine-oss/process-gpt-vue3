@@ -114,14 +114,30 @@ export default {
       this.$emit('change', "");
     },
 
+    /**
+     * 'Save' 버튼을 누를 경우, 최종 결과를 Supabase에 저장하기 위해서
+     */
     async saveFormDefinition(){
       let me = this;
 
+      var putObj = {
+        id: me.uuid(),
+        name: "test1",
+        alias: "alias1",
+        html: me.kEditorContentToHtml(me.kEditor[0].children[0].innerHTML)
+      }
 
-      let formContent = me.kEditor[0].children[0].innerHTML;
+      await me.putObject("form_def", putObj);
+    },
 
+    /**
+     * KEditor의 Content를 HTML로 변환하기 위해서
+     * @param {*} kEditorContent KEditor 내부의 innerHTML
+     * @param {*} isWithSection <section> 태그로 결과를 감싸는지 여부
+     */
+    kEditorContentToHtml(kEditorContent, isWithSection = true) {
       let parser = new DOMParser();
-      let doc = parser.parseFromString(formContent, 'text/html');
+      let doc = parser.parseFromString(kEditorContent, 'text/html');
 
 
       // 렌더링된 Vue 컴포넌트를 찾아서 다시 vue 태그로 되돌리기 위해서
@@ -149,17 +165,9 @@ export default {
 
       // Row들을 찾아서 조합시키고 section으로 감싸서 최종적인 저장 형태를 생성하기 위해서
       const formContentHTML = Array.from(doc.querySelectorAll('.row')).map(row => row.outerHTML).join('').replace(/&quot;/g, `'`);
-      const sectionHTML = `<section>${formContentHTML}</section>`
-
-
-      var putObj = {
-        id: me.uuid(),
-        name: "test1",
-        alias: "alias1",
-        html: sectionHTML
-      }
-      await me.putObject("form_def", putObj);
+      return (isWithSection) ? `<section>${formContentHTML}</section>` : formContentHTML
     },
+
     editFormDefinition(newValue) {
       const componentRef = window.componentRefs[newValue.id]
       componentRef.localName = newValue.name
