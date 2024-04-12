@@ -2,7 +2,7 @@
 import { getCurrentInstance, h } from 'vue';
 import TextField from '../ui/TextField.vue';
 import SelectField from '../ui/SelectField.vue';
-import CheckboxField from '../ui/CheckBoxField.vue';
+import CheckboxField from '../ui/CheckboxField.vue';
 import RadioField from '../ui/RadioField.vue';
 import FileField from '../ui/FileField.vue';
 import LabelField from '../ui/LabelField.vue';
