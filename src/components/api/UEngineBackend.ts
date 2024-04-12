@@ -258,6 +258,26 @@ class UEngineBackend implements Backend {
             alert(e);
         }
     }
+
+    async getDefinition(defPath: string) {
+        try {
+
+        } catch (e) {
+            
+        }
+        const response = await axiosInstance.get(`/definition/${defPath}`);
+        return response.data;
+    }
+    
+    async createFolder(newResource: any, requestPath: string) {
+        try {
+
+        } catch (e) {
+            
+        }
+        const response = await axiosInstance.post(`/definition/requestPath`, newResource);
+        return response.data;
+    }
 }
 
 export default UEngineBackend;
