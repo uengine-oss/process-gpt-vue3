@@ -3,6 +3,7 @@
         <v-select
             :label="label"
             :items="localKeys"
+            v-model="inputedValue"
         ></v-select>
     </div>
 </template>
@@ -35,12 +36,17 @@ export default {
             if(this.localItems === undefined || this.localItems === null || this.localItems.length === 0) return []
             return this.localItems.map((item) => Object.keys(item)[0])
         },
+        inputedItem() {
+            if(this.localItems === undefined || this.localItems === null || this.localItems.length === 0) return ""
+            return this.localItems.find((item) => Object.keys(item)[0] === this.inputedValue)
+        }
     },
     data() {
         return {
             localName: this.name,
             localAlias: this.alias,
-            localItems: []
+            localItems: [],
+            inputedValue: ""
         };
     },
     created() {

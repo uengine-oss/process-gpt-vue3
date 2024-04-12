@@ -55,7 +55,7 @@ export default {
         uiCode: null,
         changedXML: "",
         projectName: '',
-        path: 'ui',
+        path: 'form_def',
         chatInfo: {
             title: 'uiDefinition.cardTitle',
             text: "uiDefinition.uiDefinitionExplanation"
@@ -64,8 +64,9 @@ export default {
         modeler: null,
         src:``,
 
+        mashupKey: 0, // src가 변경되었을 경우, Mashup 컴포넌트를 다시 렌더링하기 위해서
         prevFormOutput: "", // 폼 디자이너에게 이미 이전에 생성된 HTML 결과물을 전달하기 위해서
-        mashupKey: 0 // src가 변경되었을 경우, Mashup 컴포넌트를 다시 렌더링하기 위해서
+        prevMessageFormat: "" // 사용자가 KEditor를 변경할때마다 해당 포맷을 기반으로 System 메세지를 재구축해서 보내기 위해서
     }),
     async created() {
         await this.init();
@@ -77,16 +78,7 @@ export default {
     beforeDestroy() {
         this.src = null;
     },
-    mounted() {
-        // if (this.$route.query && this.$route.query.id) {
-        //     this.processDefinition = {
-        //         processDefinitionId: this.$route.query.id
-        //     }
-        //     if (this.$route.query.name) {
-        //         this.projectName = this.$route.query.name;
-        //         this.processDefinition.processDefinitionName = this.projectName;
-        //     }
-        // }
+    async mounted() {
     },
     watch: {
         $route: {
@@ -105,17 +97,27 @@ export default {
         
     },
     methods: {
-        checkHTML(html) {
-            localStorage["keditor.editing.content"] = html;
+        /**
+         * KEditor의 내용이 변경될때마다 AI에게 변경된 내용을 전달하기 위해서
+         */
+        checkHTML({kEditorContent, html}) {
+            this.prevFormOutput = html
         },
 
 
         /**
-         * AI 관련 데이터 초기화하기 위해서 사용
+         * Supabase에서 Form 관련 데이터를 가져와서 KEditor에 반영하기 위해서 사용
          * @param {*} path 
          */
         async loadData(path) {
+            if (this.$route.params.id && this.$route.params.id != 'chat') {
+                path = `${this.path}/${this.$route.params.id}`
+                const formDefData = await this.getData(path, { key: "id" })
 
+                this.applyNewSrcToMashup(
+                    this.loadHTMLToKEditorContent(formDefData.html)
+                )
+            }
         },
 
 
@@ -124,7 +126,7 @@ export default {
          * @param {*} newMessage 
          */
         beforeSendMessage(newMessage) {
-            this.sendMessage(newMessage);
+            this.generator.sendMessageWithPrevFormOutput(newMessage)
         },
 
 
@@ -159,7 +161,7 @@ export default {
                 // 생성된 HTML을 보여주기 위해서
                 if(messageWriting.jsonContent) {
                     this.applyNewSrcToMashup(
-                        this.aiResultToKEditorContent(messageWriting.jsonContent.htmlOutput)
+                        this.loadHTMLToKEditorContent(messageWriting.jsonContent.htmlOutput)
                     )
                 }
 
@@ -180,8 +182,9 @@ export default {
 
                 try {
 
-                    const processedFragment = textFragment.match(/\{[\s\S]*\}/)[0].replaceAll("\n", "").replaceAll("`", `"`)
-                    return JSON.parse(processedFragment)
+                    let processedFragment = textFragment.match(/\{[\s\S]*\}/)[0].replaceAll("\n", "").replaceAll("`", `"`)
+                    const matchedHtmlOutput = processedFragment.match(/"htmlOutput"\s*:\s*"(.*)".*}/)[1]
+                    return JSON.parse(processedFragment.replace(matchedHtmlOutput, matchedHtmlOutput.replaceAll(`"`, `\\"`)))
 
                 } catch (error) {
                     console.log("유효 문자열 JSON 파싱 과정에서 오류 발생!")
@@ -197,7 +200,7 @@ export default {
          * AI가 생성한 결과물을 KEditor에 적합한 Html 형식으로 변환하기 위해서
          * @param {*} aiResult AI가 생성한 결과물
          */
-        aiResultToKEditorContent(aiResult) {
+        loadHTMLToKEditorContent(aiResult) {
             const dom = new DOMParser().parseFromString(aiResult, 'text/html')
 
 
@@ -207,30 +210,38 @@ export default {
                 node.setAttribute('data-type', 'container-content')
             })
 
-            // 컴포넌트인 경우, formDesigner 태그로 감싸서 KEditor가 속성을 편집할 수 있도록 만들기
+            // 컴포넌트인 경우, `vuemount_${crypto.randomUUID()}`를 id를 가지는 div로 감싸도록 만들기
+            // 해당 div마다 추후에 createApp으로 렌더링의 대상이되고, ref를 통해서 접근할 수 있도록 함
             const components = Array.from(dom.querySelectorAll('*')).filter(el => el.tagName.toLowerCase().endsWith('-field'));
             components.forEach(component => {
                 const parent = document.createElement('div')
-                parent.setAttribute('name', 'formDesigner')
+                parent.setAttribute('id', `vuemount_${crypto.randomUUID()}`)
 
                 component.parentNode.insertBefore(parent, component)
                 parent.appendChild(component)
             })
 
-            // 기본 HTML 구조를 KEditor 컨테이너 section으로 감싸서 KEditor가 인식할 수 있도록 만들기
-            const section = document.createElement('section')
-            section.setAttribute('class', 'keditor-ui keditor-container-inner')
-            section.innerHTML = dom.body.innerHTML
+            // Section이 없는 경우, Section으로 감싸서 새로 생성하고, 있는 경우 그대로 사용함
+            let targetSection = null
+            if(dom.body.children.length === 1 && dom.body.children[0].tagName.toLowerCase() !== 'section') {
+                const section = document.createElement('section')
+                section.innerHTML = dom.body.innerHTML
+                targetSection = section
+            }
+            else 
+                targetSection = dom.body.children[0]
+
+            // KEdtior에서 인식할 수 있도록 클래스 추가하기
+            targetSection.setAttribute('class', 'keditor-ui keditor-container-inner')
 
 
-            // 최종적으로 변환된 HTML 코드를 반환하면서 인코딩된 문자를 적합한 문자로 변환시키기
-            return section.outerHTML.replace(/&quot;/g, `'`)
+            return targetSection.outerHTML.replace(/&quot;/g, `'`)
         },
 
         /**
          * mashup에 새로운 src를 제공해서 재랜더링하기 위해서
          */
-        applyNewSrcToMashup(src) {
+         applyNewSrcToMashup(src) {
             this.src = src
             this.mashupKey += 1
         }
