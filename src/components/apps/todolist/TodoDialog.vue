@@ -23,7 +23,7 @@
         <v-card v-else-if="type == 'edit'">
             <v-card-title class="d-flex align-center justify-space-between pt-3 pl-5">
                 <h4 class="text-h4">할 일 수정</h4>
-                <v-btn class="edit-button" @click="type = 'view'">
+                <v-btn class="edit-button" variant="flat" @click="type = 'view'">
                     <v-icon>mdi-arrow-left</v-icon>
                 </v-btn>
             </v-card-title>
@@ -46,7 +46,7 @@
         <v-card v-else-if="type == 'view'">
             <v-card-title class="d-flex align-center justify-space-between pt-3 pl-5">
                 <h4 class="text-h4">할 일</h4>
-                <v-btn class="edit-button" @click="type = 'edit'">
+                <v-btn class="edit-button" variant="flat" @click="type = 'edit'">
                     <v-icon>mdi-pencil</v-icon>
                 </v-btn>
             </v-card-title>
