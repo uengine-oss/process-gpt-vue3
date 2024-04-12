@@ -146,6 +146,7 @@ export default {
         if(componentRef.localName) newElement.setAttribute('name', componentRef.localName)
         if(componentRef.localAlias) newElement.setAttribute('alias', componentRef.localAlias)
         if(componentRef.localItems) newElement.setAttribute('items', JSON.stringify(componentRef.localItems))
+        if(componentRef.localLabel) newElement.setAttribute('label', componentRef.localLabel)
 
         vueRenderElement.innerHTML = newElement.outerHTML
       })
@@ -165,11 +166,16 @@ export default {
       return (isWithSection) ? `<section>${formContentHTML}</section>` : formContentHTML
     },
 
+    /**
+     * 유저가 설정창을 통해서 변경한 값을 컴포넌트에 반영시키기 위해서
+     * @param {*} newValue 유저가 새롭게 설정한 값
+     */
     editFormDefinition(newValue) {
       const componentRef = window.componentRefs[newValue.id]
-      componentRef.localName = newValue.name
-      componentRef.localAlias = newValue.alias
-      componentRef.localItems = newValue.items
+      if(newValue.name) componentRef.localName = newValue.name
+      if(newValue.alias) componentRef.localAlias = newValue.alias
+      if(newValue.items) componentRef.localItems = newValue.items
+      if(newValue.label) componentRef.localLabel = newValue.label
 
       this.formValue = { ...newValue }
       this.openPanel = false
@@ -302,7 +308,7 @@ export default {
           const componentRef = window.componentRefs[vueRenderUUID]
 
 
-          if(!componentRef.localName && !componentRef.localAlias && !componentRef.localItems)
+          if(!componentRef.localName && !componentRef.localAlias && !componentRef.localItems && !componentRef.localLabel)
           {
             alert("해당 입력 요소에 대해서 추가적으로 세팅할 수 있는 항목이 없습니다.")
             return
@@ -314,7 +320,8 @@ export default {
             type: componentRef.tagName,
             name: componentRef.localName,
             alias: componentRef.localAlias,
-            items: componentRef.localItems
+            items: componentRef.localItems,
+            label: componentRef.localLabel
           }
 
           window.mashup.formValue = { ...formValue }
