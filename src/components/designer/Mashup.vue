@@ -117,7 +117,7 @@ export default {
       let me = this;
 
       var putObj = {
-        id: me.uuid(),
+        id: "test1",
         name: "test1",
         alias: "alias1",
         html: me.kEditorContentToHtml(me.kEditor[0].children[0].innerHTML)
