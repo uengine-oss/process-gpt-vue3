@@ -182,8 +182,9 @@ export default {
 
                 try {
 
-                    const processedFragment = textFragment.match(/\{[\s\S]*\}/)[0].replaceAll("\n", "").replaceAll("`", `"`)
-                    return JSON.parse(processedFragment)
+                    let processedFragment = textFragment.match(/\{[\s\S]*\}/)[0].replaceAll("\n", "").replaceAll("`", `"`)
+                    const matchedHtmlOutput = processedFragment.match(/"htmlOutput"\s*:\s*"(.*)".*}/)[1]
+                    return JSON.parse(processedFragment.replace(matchedHtmlOutput, matchedHtmlOutput.replaceAll(`"`, `\\"`)))
 
                 } catch (error) {
                     console.log("유효 문자열 JSON 파싱 과정에서 오류 발생!")

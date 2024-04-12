@@ -20,7 +20,7 @@ const formDesignGeneratorPromptSnipptsData = {
         {
             tag: `<text-field name='<이 입력창의 고유한 이름>' alias='<이 입력창의 별명>'></text-field>`,
             purpose: "텍스트를 입력받기 위해서",
-            limit: ""
+            limit: "년도와 같이 선택해야 할 항목이 너무 많은 경우에는 text-field를 사용할 것"
         },
 
         {
