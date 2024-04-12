@@ -14,13 +14,49 @@
         </v-card-item>
 
         <v-card-text>
-            <v-text-field label="Name" v-model="value.name"></v-text-field>
-            <v-text-field label="Alias" v-model="value.alias"></v-text-field>
+            <v-text-field v-if="value.name !== undefined" label="Name" v-model="value.name"></v-text-field>
+            <v-text-field v-if="value.alias !== undefined" label="Alias" v-model="value.alias"></v-text-field>
+            <v-text-field v-if="value.label !== undefined" label="Label" v-model="value.label"></v-text-field>
         </v-card-text>
 
-        <div v-if="value.type === 'checkbox' || value.type === 'radio'">
-          <v-list :items="items"></v-list>
-          <v-text-field v-model="addValue"></v-text-field>
+        <div v-if="value.items">
+          <v-container>
+            <v-row>
+              <v-col cols="6" class="d-flex align-center justify-center">
+                KEY
+              </v-col>
+              <v-col cols="6" class="d-flex align-center justify-center">
+                VALUE
+              </v-col>
+            </v-row>
+            <v-divider class="my-4"></v-divider>
+
+            <v-row v-for="(item, index) in value.items" :key="index">
+              <template v-for="(val, key) in item" :key="key">
+                <v-col cols="6" class="d-flex align-center justify-center">
+                  {{ key }}
+                </v-col>
+                <v-col cols="6" class="d-flex align-center justify-center">
+                  {{ val }}
+                </v-col>
+              </template>
+            </v-row>
+
+            <v-row>
+              <v-col cols="6" class="d-flex align-center justify-center">
+                <v-text-field v-model="addKey"></v-text-field>
+              </v-col>
+              <v-col cols="6" class="d-flex align-center justify-center">
+                <v-text-field v-model="addValue"></v-text-field>
+              </v-col>
+            </v-row>
+
+            <v-row>
+              <v-btn @click="addItem">
+                add
+              </v-btn>
+            </v-row>
+          </v-container>
         </div>
 
         <v-btn @click="save">
@@ -40,18 +76,25 @@
         type: String,
         name: String,
         alias: String,
-        html: String
+        items: Array,
+        label: String
       }
     },
     data: () => ({
-      items: ["value1", "value2"],
-      addValue: ""
+      addKey: "",
+      addValue: "",
     }),
     components: {
     },
     methods: {
       save() {
         this.$emit('save', JSON.parse(JSON.stringify(this.value)))
+      },
+
+      addItem() {
+        this.value.items.push({ [this.addKey]: this.addValue })
+        this.addKey = ""
+        this.addValue = ""     
       }
     },
     mounted() {}

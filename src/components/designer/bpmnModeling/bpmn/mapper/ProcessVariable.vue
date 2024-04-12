@@ -24,7 +24,11 @@
                     <v-label class=" font-weight-medium" >{{ $t('ProcessVariable.defaultValue') }}</v-label>
                 </v-col>
                 <v-col cols="12" sm="9">
-                    <v-autocomplete v-model="processVariable.defaultValue" :items="forms.map(item => item.name+'_'+item.alias)" color="primary" variant="outlined"
+                    <v-autocomplete v-model="processVariable.defaultValue" 
+                        :items="forms" 
+                        :item-text="item => `${item.name}_${item.alias}`" 
+                        :item-value="item => item"
+                        color="primary" variant="outlined"
                         hide-details></v-autocomplete>
                 </v-col>
             </v-row>

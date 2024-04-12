@@ -80,7 +80,7 @@
                                 <td>
                                     {{ item.type }}
                                 </td>
-                                <td class="text-subtitle-1">{{ item.defaultValue }}</td>
+                                <td v-if="item.defaultValue" class="text-subtitle-1">{{ item.defaultValue.name+"_"+item.defaultValue.alias }}</td><td v-else class="text-subtitle-1"></td>
                                 <td class="text-subtitle-1">{{ item.description }}</td>
                                 <td class="text-subtitle-1">{{
                         item.datasource ? item.datasource.type : 'None' }}</td>

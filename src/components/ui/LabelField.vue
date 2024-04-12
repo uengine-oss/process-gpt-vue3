@@ -1,6 +1,6 @@
 <template>
     <div>
-        <label :for="for_id"><slot></slot></label>
+        <label>{{localLabel}}</label>
     </div>
 </template>
 
@@ -14,11 +14,15 @@ export default {
         
     ],
     props: {
-        for_id: String
+        vueRenderUUID: String,
+        tagName: String,
+        label: String
+    },
+    computed: {
     },
     data() {
         return {
-         
+            localLabel: this.label
         };
     },
     created() {

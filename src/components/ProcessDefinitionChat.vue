@@ -56,6 +56,9 @@ import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/ProcessDefinitionGenerator';
 import Chat from './ui/Chat.vue';
 
+// import BackendFactory from "@/components/api/BackendFactory";
+// const backend = BackendFactory.createBackend();
+
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
 var jsondiffpatch = jsondiff.create({
     objectHash: function (obj, index) {
@@ -105,6 +108,7 @@ export default {
             isStream: true,
             preferredLanguage: 'Korean'
         });
+        console.log(this.generator)
     },
     mounted() {
         if (this.$route.query && this.$route.query.id) {
@@ -183,17 +187,31 @@ export default {
 
                     const store = useBpmnStore();
                     const modeler = store.getModeler;
-                    const xml = await modeler.saveXML({ format: true, preamble: true });
-                    await me.saveModel(info, xml.xml); 
-
+                    const xmlObj = await modeler.saveXML({ format: true, preamble: true });
+                    
+                    if (me.processDefinition) {
+                        info.definition = me.processDefinition;
+                    } else if (!me.processDefinition && xmlObj && xmlObj.xml) {
+                        me.processDefinition = me.convertXMLToJSON(xmlObj.xml);
+                        info.definition = me.processDefinition;
+                    }
+                    
+                    // info.snapshot = xml.xml;
+                    // await backend.putRawDefinition(xml.xml, info.proc_def_id, info);
+                    await me.saveModel(info, xmlObj.xml); 
                     await me.storage.delete(`lock/${info.proc_def_id}`, {key: 'id'});
+                    me.bpmn = xmlObj.xml;
+
                     me.disableChat = true;
                     me.isViewMode = true;
                     me.lock = true // 잠금처리 ( 수정 불가 )
+                    me.definitionChangeCount++
 
+                    // 신규 프로세스 이동.
+                    if(!me.$route.params.id) me.$router.push(`/definitions/${info.proc_def_id}`);
+                    
                     me.loading = false
                     me.toggleVersionDialog(false)
-                    me.definitionChangeCount++
                 }
             })
         
@@ -271,10 +289,9 @@ export default {
                     this.disableChat = true;
                     this.isViewMode = true;
                 }
-            }
-            const value = await this.getData(path, { key: "id" });
-            if (value) {
-                if (this.$route.params && this.$route.params.id) {
+
+                const value = await this.getData(path, { key: "id" });
+                if (value) {
                     this.messages = value.messages
                     this.processDefinition = value.definition;
                     if (!this.processDefinition) {
@@ -532,10 +549,10 @@ export default {
                     let diffs = null
     
     
-                    me.storage.putObject('proc_def_arcv', {
+                    await me.storage.putObject('proc_def_arcv', {
                         arcv_id: info.arcv_id,
                         version: info.version,
-                        name: info.name,
+                        // name: info.name,
                         proc_def_id: info.proc_def_id,
                         snapshot: currentXML,
                         diff: diffs,
@@ -549,20 +566,14 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    // alert(model);
-                    // console.log(this.changedXML);
-                    // const store = useBpmnStore();
-                    // let modeler = store.getModeler;
-                    // let xml = await modeler.saveXML({ format: true, preamble: true });
-
                     if (!me.processDefinition && xml) {
                         me.processDefinition = me.convertXMLToJSON(xml);
                     }
-                    
-                    me.processDefinition.processDefinitionName = info.name ? info.name : prompt("please give a name for the process definition");
+
                     me.processDefinition.processDefinitionId = info.proc_def_id ?  info.proc_def_id : prompt("please give a ID for the process definition");
-                    
-                    
+                    // Version 저장시 제외.
+                    if(!me.$route.params.id) me.processDefinition.processDefinitionName = info.name ? info.name : prompt("please give a name for the process definition");
+                        
                     me.projectName = me.processDefinition.processDefinitionName;
                     if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
                         throw new Error("processDefinitionId or processDefinitionName is missing");
@@ -576,7 +587,25 @@ export default {
                         bpmn: xml   //TODO: model --> definition과 구분이 안됨.  bpmn 혹은 xmlDefinition 혹은 xmlModel 등으로 프로퍼티명 변경할것!
                     });
 
-                    await me.saveVersion(info, xml)
+                    // await me.saveVersion(info, xml)
+
+                    // =========== Save Version Logic ===============
+                    const prevSnapshot = info.prevSnapshot
+                    const prevDiff = info.prevDiff
+
+                    // diff Logic
+                    let diffs = null
+
+                    // save table
+                    await me.storage.putObject('proc_def_arcv', {
+                        arcv_id: info.arcv_id,
+                        version: info.version,
+                        proc_def_id: info.proc_def_id,
+                        snapshot: xml,
+                        diff: diffs,
+                        timeStamp: new Date()
+                    });
+
                     // if (window.$mode == "uEngine") {
                     //     // :9093/definition/raw/sales/testProcess.bpmn < definition-samples/testProcess.bpmn
                     //     await axios.put(`/definition/raw/sales/${this.processDefinition.processDefinitionId}.bpmn`, xml.xml, {

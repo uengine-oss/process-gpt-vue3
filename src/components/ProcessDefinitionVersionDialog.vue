@@ -13,12 +13,12 @@
                             color="primary" :disabled="isNew" hide-details></v-switch>
                         <v-text-field v-if="isNew" v-model="information.proc_def_id" label="ID"
                             :rules="[v => !!v || 'ID is required']" required></v-text-field>
-                        <v-text-field v-model="information.name" label="Name" :rules="[v => !!v || 'Name is required']"
+                        <v-text-field v-if="isNew" v-model="information.name" label="Name" :rules="[v => !!v || 'Name is required']"
                             required></v-text-field>
                     </v-col>
 
                 </v-card-text>
-                <v-card-actions style="text-align: right;">
+                <v-card-actions style="justify-content: right;">
                     <v-btn v-if="!loading" @click="save()"> SAVE </v-btn>
                     <v-progress-circular v-if="loading" color="primary" :size="25" indeterminate
                         style="margin: 5px;"></v-progress-circular>
@@ -100,6 +100,8 @@ export default {
                         })
                         if (result.length > 0) {
                             me.information = result[0]
+                        } else {
+                            me.isNew = true
                         }
                     } else {
                         me.isNew = true
@@ -113,7 +115,9 @@ export default {
             this.$try({
                 context: me,
                 action: async () => {
-                    if (!(me.information.proc_def_id && me.information.name)) return;
+                    if (!me.information.proc_def_id) return; // 항상 ID는 필수.
+                    if (me.isNew && !me.information.name) return; // 초기 저장시에는 이름 필수.
+
                     me.$emit('save', {
                         arcv_id: me.process ? `${me.process.processDefinitionId}_${me.newVersion}` : `${me.information.proc_def_id}_${me.newVersion}`,
                         version: Number(me.newVersion),
