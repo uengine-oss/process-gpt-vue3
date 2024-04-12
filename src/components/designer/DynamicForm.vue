@@ -96,6 +96,14 @@ export default {
       return this.createComponentWithRef(TextField, {vueRenderUUID:this.vueRenderUUID, tagName: "text-field", ...this.parseContentToProps(this.content)});
     else if(this.content.includes("select-field"))
       return this.createComponentWithRef(SelectField, {vueRenderUUID:this.vueRenderUUID, tagName: "select-field", ...this.parseContentToProps(this.content)});
+    else if(this.content.includes("checkbox-field"))
+      return this.createComponentWithRef(CheckboxField, {vueRenderUUID:this.vueRenderUUID, tagName: "checkbox-field", ...this.parseContentToProps(this.content)});
+    else if(this.content.includes("radio-field"))
+      return this.createComponentWithRef(RadioField, {vueRenderUUID:this.vueRenderUUID, tagName: "radio-field", ...this.parseContentToProps(this.content)});
+    else if(this.content.includes("file-field"))
+      return this.createComponentWithRef(FileField, {vueRenderUUID:this.vueRenderUUID, tagName: "file-field", ...this.parseContentToProps(this.content)});
+    else if(this.content.includes("label-field"))
+      return this.createComponentWithRef(LabelField, {vueRenderUUID:this.vueRenderUUID, tagName: "label-field", ...this.parseContentToProps(this.content)});
     else if(this.content.includes("submit-field"))
       return this.createComponentWithRef(SubmitField, {vueRenderUUID:this.vueRenderUUID, tagName: "submit-field", ...this.parseContentToProps(this.content)});
     else
