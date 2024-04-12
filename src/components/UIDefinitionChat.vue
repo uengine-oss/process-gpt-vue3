@@ -184,9 +184,26 @@ export default {
                 try {
 
                     const processedFragment = textFragment.match(/\{[\s\S]*\}/)[0].replaceAll("\n", "").replaceAll("`", `"`) // JSON에서 유효하지 않은 '\n', '`' 문자 제거
-                    const matchedHtmlOutput = processedFragment.match(/"htmlOutput"\s*:\s*"(.*)".*}/)[1] // AI 응답이 `"` 문자열을 '\'로 파싱하지 않은 경우, 수동으로 파싱하기 위해서
-                    fragmentToParse = processedFragment.replace(matchedHtmlOutput, matchedHtmlOutput.replaceAll(`"`, `\\"`))
-    
+                    
+                    
+                    // AI가 잘못된 응답을 냈을 경우, 이를 대응하기 위한 수단들
+
+                    // AI 응답이 `"` 문자열을 '\'로 파싱하지 않은 경우, 수동으로 파싱하기 위해서
+                    const matchedHtmlOutput = processedFragment.match(/"htmlOutput"\s*:\s*"(.*)".*}/)[1]                  
+                    if(matchedHtmlOutput.includes(`\\"`)) fragmentToParse = processedFragment
+                    else fragmentToParse = processedFragment.replace(matchedHtmlOutput, matchedHtmlOutput.replaceAll(`"`, `\\"`))
+                    
+                    // AI 응답이 items에서 items='[{'남자':'male'},{'여자':'female'}' 와 같이 '안에서 "로 감싸지 않은 경우, 이를 대응하기 위해서
+                    const matchedItems = [...fragmentToParse.matchAll(/items='(.*?)'>/g)].map((g) => g[1])
+                    if(matchedItems) {
+                        for (let j=0; j<matchedItems.length; j++) {
+                            const matchedItem = matchedItems[j]
+                            if(matchedItem.includes(`'`)) {
+                                fragmentToParse = fragmentToParse.replace(matchedItem, matchedItem.replaceAll(`'`, `"`))
+                            }
+                        }
+                    }
+
                 } catch (error) {
                     console.log("### 유효 문자열을 JSON에 적합한 문자열로 변환시키는 과정에서 오류 발생! ###")
                     console.log(error)
@@ -201,6 +218,7 @@ export default {
                 } catch (error) {
                     console.log("### JSON 문자열을 최종 파싱하는 과정에서 오류 발생! ###")
                     console.log(error)
+                    console.log(textFragment)
                     console.log(fragmentToParse)
                     return null
                 }
