@@ -4,8 +4,8 @@ create table configuration (
   key text primary key,
   value jsonb
 );
-insert into configuration (key, value) values ('proc_map', {});
-insert into configuration (key, value) values ('organization', {});
+insert into configuration (key, value) values ('proc_map', '{}');
+insert into configuration (key, value) values ('organization', '{}');
 
 -- table todolist
 drop table todolist;
@@ -31,7 +31,7 @@ create table public.users (
     is_admin boolean not null default false,
     notifications jsonb null
 );
--- inserts a row into public.users
+-- trigger the function every time a auts.users is created
 create or replace function public.handle_new_user() 
 returns trigger as $$
 begin
@@ -41,10 +41,23 @@ begin
 end;
 $$ language plpgsql security definer;
 
--- trigger the function every time a user is created
 create trigger on_auth_user_created
     after insert on auth.users
     for each row execute procedure public.handle_new_user();
+
+-- trigger the function every time a public.users is deleted
+create or replace function public.handle_delete_user() 
+returns trigger as $$
+begin
+    delete from auth.users where id = old.id;
+    return old;
+end;
+$$ language plpgsql security definer;
+
+create trigger on_public_user_deleted
+    after delete on public.users
+    for each row execute procedure public.handle_delete_user();
+
 
 -- table proc_def
 drop table proc_def;
