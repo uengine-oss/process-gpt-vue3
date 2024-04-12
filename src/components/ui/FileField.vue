@@ -2,6 +2,8 @@
     <div>
         <v-file-input
             :label="label"
+            v-model="selectedFiles"
+            @change="convertToBase64"
         ></v-file-input>
     </div>
 </template>
@@ -30,12 +32,22 @@ export default {
         return {
             localName: this.name,
             localAlias: this.alias,
+            selectedFiles: null,
+            inputedValue: ""
         };
     },
     created() {
     },
     methods: {
- 
+        convertToBase64() {
+            if (!this.selectedFiles && this.selectedFiles.length <= 0) return
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.inputedValue = e.target.result
+            }
+            reader.readAsDataURL(this.selectedFiles[0])
+        }
     }
 };
 </script>
