@@ -180,16 +180,29 @@ export default {
                 const textFragment = textFragments[i]
                 if((!textFragment.includes("{")) || (!textFragment.includes("}")) || (!textFragment.includes("htmlOutput"))) continue
 
+                let fragmentToParse = ""
                 try {
 
-                    let processedFragment = textFragment.match(/\{[\s\S]*\}/)[0].replaceAll("\n", "").replaceAll("`", `"`)
-                    const matchedHtmlOutput = processedFragment.match(/"htmlOutput"\s*:\s*"(.*)".*}/)[1]
-                    return JSON.parse(processedFragment.replace(matchedHtmlOutput, matchedHtmlOutput.replaceAll(`"`, `\\"`)))
-
+                    const processedFragment = textFragment.match(/\{[\s\S]*\}/)[0].replaceAll("\n", "").replaceAll("`", `"`) // JSON에서 유효하지 않은 '\n', '`' 문자 제거
+                    const matchedHtmlOutput = processedFragment.match(/"htmlOutput"\s*:\s*"(.*)".*}/)[1] // AI 응답이 `"` 문자열을 '\'로 파싱하지 않은 경우, 수동으로 파싱하기 위해서
+                    fragmentToParse = processedFragment.replace(matchedHtmlOutput, matchedHtmlOutput.replaceAll(`"`, `\\"`))
+    
                 } catch (error) {
-                    console.log("유효 문자열 JSON 파싱 과정에서 오류 발생!")
+                    console.log("### 유효 문자열을 JSON에 적합한 문자열로 변환시키는 과정에서 오류 발생! ###")
                     console.log(error)
                     console.log(textFragment)
+                    return null
+                }
+
+                try {
+
+                    return JSON.parse(fragmentToParse)
+
+                } catch (error) {
+                    console.log("### JSON 문자열을 최종 파싱하는 과정에서 오류 발생! ###")
+                    console.log(error)
+                    console.log(fragmentToParse)
+                    return null
                 }
             }
 

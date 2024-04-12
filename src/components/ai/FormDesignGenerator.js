@@ -89,6 +89,9 @@ export default class FormDesignGenerator extends AIGenerator{
           copiedPrevMessageFormat.content = copiedPrevMessageFormat.content.replace("{{prevMessageFormat}}", prevFormOutput)
           this.previousMessages = [copiedPrevMessageFormat];
           
+          
+          console.log("### 전달되는 시스템상 AI 메시지 ###")
+          console.log(this.previousMessages)
           this.client.sendMessage(newMessage);
     }
 
