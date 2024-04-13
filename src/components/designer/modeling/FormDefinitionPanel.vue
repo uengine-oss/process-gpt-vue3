@@ -14,8 +14,9 @@
         </v-card-item>
 
         <v-card-text>
-            <v-text-field label="Name" v-model="value.name"></v-text-field>
-            <v-text-field label="Alias" v-model="value.alias"></v-text-field>
+            <v-text-field v-if="value.name !== undefined" label="Name" v-model="value.name"></v-text-field>
+            <v-text-field v-if="value.alias !== undefined" label="Alias" v-model="value.alias"></v-text-field>
+            <v-text-field v-if="value.label !== undefined" label="Label" v-model="value.label"></v-text-field>
         </v-card-text>
 
         <div v-if="value.items">
@@ -75,7 +76,8 @@
         type: String,
         name: String,
         alias: String,
-        items: Array
+        items: Array,
+        label: String
       }
     },
     data: () => ({

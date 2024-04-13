@@ -64,19 +64,6 @@ export default {
         count: 0,
     }),
     watch: {
-        "column.tasks": {
-            deep: true,
-            async handler(val) {
-                if (val && val.length > 0) {
-                    val.forEach(async (item, index) => {
-                        if (item.status != this.column.id) {
-                            item.status = this.column.id;
-                            await this.storage.putObject('todolist', item);
-                        }
-                    })
-                }
-            }
-        }
     },
     methods: {
         /**

@@ -54,48 +54,20 @@ export default {
   },
 
   render() {
-
-    // 각각의 컴포넌트에 대해서 참조 가능한 ref와 그 값과 매칭되는 ref_id를 생성하기 위해서
-    // const dom = new DOMParser().parseFromString(this.content, 'text/html')    
-
-    // const components = Array.from(dom.querySelectorAll('*')).filter(el => el.tagName.toLowerCase().endsWith('-field'));
-    // components.forEach(component => {
-
-    //   const field = crypto.randomUUID().replaceAll("-", "_")
-
-
-    //   const parent = document.createElement('div')
-    //   parent.setAttribute('name', 'fieldView')
-    //   parent.setAttribute('id', refId)
-
-    //   component.parentNode.insertBefore(parent, component)
-    //   component.setAttribute('fieldViewId', refId)
-    //   parent.appendChild(component)
-
-    // })
-
-    // const modifiedContent = dom.body.innerHTML.replace(/&quot;/g, `'`)
-
-
-    // const r = {
-    //   components: {
-    //     TextField,
-    //     SelectField,
-    //     CheckboxField,
-    //     RadioField,
-    //     FileField,
-    //     LabelField,
-    //     SubmitField
-    //   },
-    //   template: `<div class="content">${modifiedContent || ''}</div>`,
-    //   methods: {},
-    // };
-    // return h(r);
-
     if(this.content.includes("text-field"))
       return this.createComponentWithRef(TextField, {vueRenderUUID:this.vueRenderUUID, tagName: "text-field", ...this.parseContentToProps(this.content)});
     else if(this.content.includes("select-field"))
       return this.createComponentWithRef(SelectField, {vueRenderUUID:this.vueRenderUUID, tagName: "select-field", ...this.parseContentToProps(this.content)});
+    else if(this.content.includes("checkbox-field"))
+      return this.createComponentWithRef(CheckboxField, {vueRenderUUID:this.vueRenderUUID, tagName: "checkbox-field", ...this.parseContentToProps(this.content)});
+    else if(this.content.includes("radio-field"))
+      return this.createComponentWithRef(RadioField, {vueRenderUUID:this.vueRenderUUID, tagName: "radio-field", ...this.parseContentToProps(this.content)});
+    else if(this.content.includes("file-field"))
+      return this.createComponentWithRef(FileField, {vueRenderUUID:this.vueRenderUUID, tagName: "file-field", ...this.parseContentToProps(this.content)});
+    else if(this.content.includes("label-field"))
+      return this.createComponentWithRef(LabelField, {vueRenderUUID:this.vueRenderUUID, tagName: "label-field", ...this.parseContentToProps(this.content)});
+    else if(this.content.includes("submit-field"))
+      return this.createComponentWithRef(SubmitField, {vueRenderUUID:this.vueRenderUUID, tagName: "submit-field", ...this.parseContentToProps(this.content)});
     else
       return ""
   },
