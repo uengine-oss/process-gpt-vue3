@@ -9,7 +9,8 @@
                 </div>
             </template>
             <template v-slot:rightpart>
-                <mashup v-model="kEditorInput" @onChangeKEditorContent="updatePrevFormOutput" :key="mashupKey"/>
+                <mashup v-model="kEditorInput" @onChangeKEditorContent="updatePrevFormOutput"
+                        :key="mashupKey" @onSaveFormDefinition="saveFormDefinition"/>
             </template>
 
             <template v-slot:mobileLeftContent>
@@ -91,6 +92,18 @@ export default {
          */
         updatePrevFormOutput({html}) {
             this.prevFormOutput = html
+        },
+
+        /**
+         * 'Save' 버튼을 누를 경우, 최종 결과를 Supabase에 저장하기 위해서
+         */
+        async saveFormDefinition({id, name, html}){
+            await this.putObject("form_def", {
+                id, name, html,
+                messages: []
+            });
+            
+            alert("저장 완료!")
         },
 
 

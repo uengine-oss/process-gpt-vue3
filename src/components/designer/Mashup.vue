@@ -34,7 +34,8 @@ export default {
     modelValue: String
   },
   emits: [
-    "onChangeKEditorContent"
+    "onChangeKEditorContent",
+    "onSaveFormDefinition"
   ],
 
   data: () => ({
@@ -116,16 +117,12 @@ export default {
     /**
      * 'Save' 버튼을 누를 경우, 최종 결과를 Supabase에 저장하기 위해서
      */
-    async saveFormDefinition(){
-      var putObj = {
+    saveFormDefinition(){
+      window.mashup.$emit('onSaveFormDefinition', {
         id: "test1",
         name: "test1",
-        alias: "alias1",
         html: window.mashup.kEditorContentToHtml(window.mashup.kEditor[0].children[0].innerHTML)
-      }
-
-      await window.mashup.putObject("form_def", putObj);
-      alert("저장 완료!")
+      })
     },
 
     /**
