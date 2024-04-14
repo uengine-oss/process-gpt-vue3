@@ -4,31 +4,28 @@
       save
     </v-btn>
 
+
     <div id="kEditor1">
     </div>
     
-    <v-dialog v-model="openPanel">
+    
+    <v-dialog v-model="isOpenSettingDialog">
         <form-definition-panel
-          :value="formValue"
+          :value="componentSettingValue"
           @save="editFormDefinition"
         >
-
         </form-definition-panel>
     </v-dialog>
   </div>
 </template>
 
 <script>
-// import Snippets from '@/components/Snippets';
-// import Containers from './Containers';
+import { createApp } from 'vue';
+import axios from 'axios';
+import vuetify from "@/plugins/vuetify";
 import ChatModule from "@/components/ChatModule.vue";
 import FormDefinitionPanel from '@/components/designer/modeling/FormDefinitionPanel.vue';
-import axios from 'axios';
-import TextField from '../ui/TextField.vue';
 import DynamicForm from './DynamicForm.vue';
-
-import vuetify from "@/plugins/vuetify";
-import { createApp } from 'vue';
 
 export default {
   name: 'mash-up',
@@ -36,39 +33,50 @@ export default {
   props: {
     modelValue: String
   },
+
   data: () => ({
     kEditor: null,
-    inputName: '',
-    inputValue: '',
-    content: `<div id="kEditor1"></div>`,
+    kEditorContent: `<div id="kEditor1"></div>`,
     editing: `<text-field></text-field>`,
-    formValue: {
-      id: '',
-      type: '',
-      name: '',
-      alias: '',
-      html: ''
+
+    componentSettingValue: {
+      id: "",
+      type: "",
+      name: "",
+      alias: "",
+      items: "",
+      label: ""
     },
-    openPanel: false
+    isOpenSettingDialog: false
   }),
+
   components: {
     DynamicForm,
-    FormDefinitionPanel,
-    TextField
-    // "snippets":Snippets,
-    // Containers
+    FormDefinitionPanel
   },
+
   watch: {
-    // $route 객체를 감시
     '$route'(to, from) {
-      this.removeStylesForKEditor();
+      window.mashup.removeStylesForKEditor();
       // 경로가 'ui-definitions/'를 포함하는지 확인 후 다시 로드
       if (to.path.includes('ui-definitions/')) {
-        this.loadStylesForKEditor();
+        window.mashup.loadStylesForKEditor();
       }
     }
   },
   methods: {
+    onchangeKEditor(evt, fnNm) {
+      const kEditorContent = window.mashup.kEditor[0].children[0].innerHTML
+      window.mashup.kEditorContent = (new DOMParser()).parseFromString(kEditorContent, 'text/html').body.innerHTML
+
+      console.log("[*] onchangeKEditor 이벤트 => ", fnNm)
+      window.mashup.$emit('change', {
+        kEditorContent: kEditorContent, 
+        html: window.mashup.kEditorContentToHtml(window.mashup.kEditor[0].children[0].innerHTML, false)
+      })
+    },
+
+
     loadStylesForKEditor() {
       const cssFiles = [
         '/css/keditor.css',
@@ -90,40 +98,26 @@ export default {
       });
     },
 
-    onchangeKEditor(evt, fnNm) {
-      let me = this;
 
-      const kEditorContent = me.kEditor[0].children[0].innerHTML
-      this.content = (new DOMParser()).parseFromString(kEditorContent, 'text/html').body.innerHTML
-
-      console.log("save중  ->", fnNm)
-      this.$emit('change', {
-        kEditorContent: kEditorContent, 
-        html: this.kEditorContentToHtml(me.kEditor[0].children[0].innerHTML, false)
-      })
-    },
 
     resetStat() {
-      let me = this;
-      me.kEditor[0].children[0].innerHTML="";
-      this.$emit('value', "");
-      this.$emit('change', "");
+      window.mashup.kEditor[0].children[0].innerHTML="";
+      window.mashup.$emit('value', "");
+      window.mashup.$emit('change', "");
     },
 
     /**
      * 'Save' 버튼을 누를 경우, 최종 결과를 Supabase에 저장하기 위해서
      */
     async saveFormDefinition(){
-      let me = this;
-
       var putObj = {
         id: "test1",
         name: "test1",
         alias: "alias1",
-        html: me.kEditorContentToHtml(me.kEditor[0].children[0].innerHTML)
+        html: window.mashup.kEditorContentToHtml(window.mashup.kEditor[0].children[0].innerHTML)
       }
 
-      await me.putObject("form_def", putObj);
+      await window.mashup.putObject("form_def", putObj);
       alert("저장 완료!")
     },
 
@@ -140,7 +134,7 @@ export default {
       // 렌더링된 Vue 컴포넌트를 찾아서 다시 vue 태그로 되돌리기 위해서
       doc.querySelectorAll("div[id^='vuemount_']").forEach(vueRenderElement => {
         const vueRenderUUID = vueRenderElement.id
-        const componentRef = this.componentRefs[vueRenderUUID]
+        const componentRef = window.mashup.componentRefs[vueRenderUUID]
 
         const newElement = document.createElement(componentRef.tagName)
         if(componentRef.localName) newElement.setAttribute('name', componentRef.localName)
@@ -171,23 +165,13 @@ export default {
      * @param {*} newValue 유저가 새롭게 설정한 값
      */
     editFormDefinition(newValue) {
-      const componentRef = this.componentRefs[newValue.id]
+      const componentRef = window.mashup.componentRefs[newValue.id]
       if(newValue.name) componentRef.localName = newValue.name
       if(newValue.alias) componentRef.localAlias = newValue.alias
       if(newValue.items) componentRef.localItems = newValue.items
       if(newValue.label) componentRef.localLabel = newValue.label
 
-      this.formValue = { ...newValue }
-      this.openPanel = false
-    },
-    uuid() {
-      function s4() {
-          return Math.floor((1 + Math.random()) * 0x10000)
-              .toString(16)
-              .substring(1);
-      }
-
-      return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+      window.mashup.isOpenSettingDialog = false
     },
 
     /**
@@ -202,30 +186,20 @@ export default {
     }
   },
   mounted() {
-    this.completeClearKEditor()
-
-    let me = this;
-    if (this.$route.path.includes('ui-definitions/')) {
-      this.loadStylesForKEditor();
-    }
-    // let content = localStorage["keditor.editing.content"];
-    // console.log("document   ::   ",document.getElementById("keditor-snippets-list"));
-    // if (this.value) $('#kEditor1').innerHTML = this.value;
-    // if(content) $('#kEditor1').innerHTML(content);
-    me.kEditor = $('#kEditor1');
     window.mashup = this
-    // if (this.value){
-    //   let tempDivElement = document.createElement("div");
-    //   tempDivElement.innerHTML = this.value;
-    //   me.kEditor.keditor(tempDivElement);
-    // } else {
-    if (this.modelValue) {
-      $(me.kEditor)[0].innerHTML = this.modelValue;
+    window.mashup.completeClearKEditor()
+
+    if (window.mashup.$route.path.includes('ui-definitions/')) {
+      window.mashup.loadStylesForKEditor();
     }
 
-    me.kEditor.keditor({
-      // iframeMode: true,
-      // snippetsUrl:'./Snippets',
+    window.mashup.kEditor = $('#kEditor1');
+
+    if (window.mashup.modelValue) {
+      $(window.mashup.kEditor)[0].innerHTML = window.mashup.modelValue;
+    }
+
+    window.mashup.kEditor.keditor({
       tabContainersText: '<i class="fa fa-th-list"></i>',
       tabComponentsText: '<i class="fa fa-file"></i>',
       extraTabs: {
@@ -268,17 +242,13 @@ export default {
           if (self.options.snippetsTooltipEnabled || self.options.tabTooltipEnabled) {
             self.body.find('#' + self.options.snippetsListId).find('[data-toggle="tooltip"]').tooltip();
           }
-
-          // if (typeof self.options.onReady === 'function') {
-          //   self.options.onReady.call(self);
-          // }
         })
       },
       onReady: function () {
       },
       containerSettingInitFunction: function (form, keditor) {
         $("#resetBtn").on("click", function (e) {
-          me.resetStat();
+          window.mashup.resetStat();
         })
         console.log("containerSettingInitFunction  : ", form, keditor);
         form.append(
@@ -288,7 +258,7 @@ export default {
         );
       },
       onInitComponent: function (comp) {
-        me.onchangeKEditor(comp, 'onInitComponent');
+        window.mashup.onchangeKEditor(comp, 'onInitComponent');
       },
       containerSettingShowFunction: function (form, container, keditor) {
         console.log("containerSettingShowFunction : ", form, container, keditor);
@@ -318,7 +288,7 @@ export default {
           }
 
           const vueRenderUUID = vueRenderElement[0].id
-          const componentRef = me.componentRefs[vueRenderUUID]
+          const componentRef = window.mashup.componentRefs[vueRenderUUID]
 
 
           if(!componentRef.localName && !componentRef.localAlias && !componentRef.localItems && !componentRef.localLabel)
@@ -328,7 +298,7 @@ export default {
           }
 
 
-          const formValue = {
+          const componentSettingValue = {
             id: componentRef.vueRenderUUID, // 추후에 고유값을 통해서 값을 찾기 위해서
             type: componentRef.tagName,
             name: componentRef.localName,
@@ -337,8 +307,8 @@ export default {
             label: componentRef.localLabel
           }
 
-          window.mashup.formValue = { ...formValue }
-          window.mashup.openPanel = true
+          window.mashup.componentSettingValue = { ...componentSettingValue }
+          window.mashup.isOpenSettingDialog = true
 
         }
         catch(e)
@@ -354,34 +324,35 @@ export default {
         if(vueRenderUUID && vueRenderUUID.includes("vuemount_"))
         {
           const app = createApp(DynamicForm, {content:snippetContent, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
-           me.componentRefs[vueRenderUUID] = app.componentRef;
+          window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
         }
           
-        me.onchangeKEditor(event, 'onContentChanged');
+        window.mashup.onchangeKEditor(event, 'onContentChanged');
       },
       onComponentChanged: function (event) {
-        me.onchangeKEditor(event, 'onComponentChanged');
+        window.mashup.onchangeKEditor(event, 'onComponentChanged');
       },
       initContentAreas: function (self, contentAreas) {
         console.log('initContentAreas', self, contentAreas)
       }
     });
 
-    me.componentRefs = {}
-    if (me.modelValue) {
+    window.mashup.componentRefs = {}
+    if (window.mashup.modelValue) {
       const parser = new DOMParser();
-      const doc = parser.parseFromString(me.modelValue, 'text/html');
+      const doc = parser.parseFromString(window.mashup.modelValue, 'text/html');
 
       doc.querySelectorAll("div[id^='vuemount_']").forEach(vueRenderElement => {
         const vueRenderUUID = vueRenderElement.id
         const app = createApp(DynamicForm, {content:vueRenderElement.innerHTML, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
-        me.componentRefs[vueRenderUUID] = app.componentRef;
+        window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
       })
     }
   },
+
   beforeUnmount() {
     // 컴포넌트가 파괴되기 전에 CSS 제거
-    this.removeStylesForKEditor();
+    window.mashup.removeStylesForKEditor();
   }
 }
 </script>
