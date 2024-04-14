@@ -140,7 +140,7 @@ export default {
       // 렌더링된 Vue 컴포넌트를 찾아서 다시 vue 태그로 되돌리기 위해서
       doc.querySelectorAll("div[id^='vuemount_']").forEach(vueRenderElement => {
         const vueRenderUUID = vueRenderElement.id
-        const componentRef = window.componentRefs[vueRenderUUID]
+        const componentRef = this.componentRefs[vueRenderUUID]
 
         const newElement = document.createElement(componentRef.tagName)
         if(componentRef.localName) newElement.setAttribute('name', componentRef.localName)
@@ -171,7 +171,7 @@ export default {
      * @param {*} newValue 유저가 새롭게 설정한 값
      */
     editFormDefinition(newValue) {
-      const componentRef = window.componentRefs[newValue.id]
+      const componentRef = this.componentRefs[newValue.id]
       if(newValue.name) componentRef.localName = newValue.name
       if(newValue.alias) componentRef.localAlias = newValue.alias
       if(newValue.items) componentRef.localItems = newValue.items
@@ -318,7 +318,7 @@ export default {
           }
 
           const vueRenderUUID = vueRenderElement[0].id
-          const componentRef = window.componentRefs[vueRenderUUID]
+          const componentRef = me.componentRefs[vueRenderUUID]
 
 
           if(!componentRef.localName && !componentRef.localAlias && !componentRef.localItems && !componentRef.localLabel)
@@ -354,7 +354,7 @@ export default {
         if(vueRenderUUID && vueRenderUUID.includes("vuemount_"))
         {
           const app = createApp(DynamicForm, {content:snippetContent, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
-          window.componentRefs[vueRenderUUID] = app.componentRef;
+           me.componentRefs[vueRenderUUID] = app.componentRef;
         }
           
         me.onchangeKEditor(event, 'onContentChanged');
@@ -367,15 +367,15 @@ export default {
       }
     });
 
-    window.componentRefs = {}
-    if (this.modelValue) {
+    me.componentRefs = {}
+    if (me.modelValue) {
       const parser = new DOMParser();
-      const doc = parser.parseFromString(this.modelValue, 'text/html');
+      const doc = parser.parseFromString(me.modelValue, 'text/html');
 
       doc.querySelectorAll("div[id^='vuemount_']").forEach(vueRenderElement => {
         const vueRenderUUID = vueRenderElement.id
         const app = createApp(DynamicForm, {content:vueRenderElement.innerHTML, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
-        window.componentRefs[vueRenderUUID] = app.componentRef;
+        me.componentRefs[vueRenderUUID] = app.componentRef;
       })
     }
   },
