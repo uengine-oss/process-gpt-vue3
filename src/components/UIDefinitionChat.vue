@@ -9,7 +9,7 @@
                 </div>
             </template>
             <template v-slot:rightpart>
-                <mashup v-model="src" @change="checkHTML" :key="mashupKey"/>
+                <mashup v-model="kEditorInput" @change="checkHTML" :key="mashupKey"/>
             </template>
 
             <template v-slot:mobileLeftContent>
@@ -22,22 +22,22 @@
 </template>
 
 <script>
-
+import * as jsondiff from 'jsondiffpatch';
 import ChatDetail from '@/components/apps/chats/ChatDetail.vue';
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import Mashup from '@/components/designer/Mashup.vue';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
-import * as jsondiff from 'jsondiffpatch';
 import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/FormDesignGenerator';
 import Chat from './ui/Chat.vue';
-// import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
+
 var jsondiffpatch = jsondiff.create({
     objectHash: function (obj, index) {
         return '$$index:' + index;
     },
 });
+
 export default {
     mixins: [ChatModule],
     name: 'ProcessDefinitionChat',
@@ -48,23 +48,18 @@ export default {
         ChatDetail,
         ChatProfile,
         Mashup,
-        // BpmnModelingCanvas,
         ChatGenerator
     },
     data: () => ({
-        uiCode: null,
-        changedXML: "",
-        projectName: '',
         path: 'form_def',
         chatInfo: {
             title: 'uiDefinition.cardTitle',
             text: "uiDefinition.uiDefinitionExplanation"
         },
-        processDefinitionMap: null,
-        modeler: null,
-        src:``,
 
-        mashupKey: 0, // src가 변경되었을 경우, Mashup 컴포넌트를 다시 렌더링하기 위해서
+        kEditorInput:``, // Mashup 컴포넌트의 KEditor을 업데이트하기 위해서 전달되는 값
+        mashupKey: 0, // kEditorInput가 변경되었을 경우, Mashup 컴포넌트를 다시 렌더링하기 위해서
+
         prevFormOutput: "", // 폼 디자이너에게 이미 이전에 생성된 HTML 결과물을 전달하기 위해서
         prevMessageFormat: "" // 사용자가 KEditor를 변경할때마다 해당 포맷을 기반으로 System 메세지를 재구축해서 보내기 위해서
     }),
@@ -75,12 +70,10 @@ export default {
             preferredLanguage: 'Korean'
         });
     },
-    beforeDestroy() {
-        this.src = null;
-    },
-    async mounted() {
-    },
     watch: {
+        /**
+         * URL에서 폼을 가리키는 ID가 변경되었을 경우, 재업데이트를 위해서
+         */
         $route: {
             deep: true,
             handler(newVal, oldVal) {
@@ -90,11 +83,7 @@ export default {
                     }
                 }
             }
-        },
-       
-    },
-    computed: {
-        
+        }, 
     },
     methods: {
         /**
@@ -272,11 +261,15 @@ export default {
         /**
          * mashup에 새로운 src를 제공해서 재랜더링하기 위해서
          */
-         applyNewSrcToMashup(src) {
-            this.src = src
+        applyNewSrcToMashup(kEditorInput) {
+            this.kEditorInput = kEditorInput
             this.mashupKey += 1
         }
-    }
+    },
+    
+    beforeDestroy() {
+        this.kEditorInput = null;
+    },
 };
 </script>
 
