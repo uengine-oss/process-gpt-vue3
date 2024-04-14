@@ -9,7 +9,7 @@
                 </div>
             </template>
             <template v-slot:rightpart>
-                <mashup v-model="kEditorInput" @change="checkHTML" :key="mashupKey"/>
+                <mashup v-model="kEditorInput" @onChangeKEditorContent="updatePrevFormOutput" :key="mashupKey"/>
             </template>
 
             <template v-slot:mobileLeftContent>
@@ -89,7 +89,7 @@ export default {
         /**
          * KEditor의 내용이 변경될때마다 AI에게 변경된 내용을 전달하기 위해서
          */
-        checkHTML({kEditorContent, html}) {
+        updatePrevFormOutput({html}) {
             this.prevFormOutput = html
         },
 
@@ -266,7 +266,7 @@ export default {
             this.mashupKey += 1
         }
     },
-    
+
     beforeDestroy() {
         this.kEditorInput = null;
     },

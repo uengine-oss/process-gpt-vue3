@@ -33,11 +33,13 @@ export default {
   props: {
     modelValue: String
   },
+  emits: [
+    "onChangeKEditorContent"
+  ],
 
   data: () => ({
     kEditor: null,
     kEditorContent: `<div id="kEditor1"></div>`,
-    editing: `<text-field></text-field>`,
 
     componentSettingValue: {
       id: "",
@@ -55,28 +57,23 @@ export default {
     FormDefinitionPanel
   },
 
-  watch: {
-    '$route'(to, from) {
-      window.mashup.removeStylesForKEditor();
-      // 경로가 'ui-definitions/'를 포함하는지 확인 후 다시 로드
-      if (to.path.includes('ui-definitions/')) {
-        window.mashup.loadStylesForKEditor();
-      }
-    }
-  },
   methods: {
+    /**
+     * KEditor에 어떠한 변화가 있을 경우, 이를 부모 컴포넌트에 전달하기 위해서
+     */
     onchangeKEditor(evt, fnNm) {
-      const kEditorContent = window.mashup.kEditor[0].children[0].innerHTML
-      window.mashup.kEditorContent = (new DOMParser()).parseFromString(kEditorContent, 'text/html').body.innerHTML
+      window.mashup.kEditorContent  = window.mashup.kEditor[0].children[0].innerHTML
 
       console.log("[*] onchangeKEditor 이벤트 => ", fnNm)
-      window.mashup.$emit('change', {
-        kEditorContent: kEditorContent, 
+      window.mashup.$emit('onChangeKEditorContent', {
+        kEditorContent: window.mashup.kEditorContent, 
         html: window.mashup.kEditorContentToHtml(window.mashup.kEditor[0].children[0].innerHTML, false)
       })
     },
 
-
+    /**
+     * KEditor와 관련된 스타일 파일들을 동적으로 추가시키기 위해서
+     */
     loadStylesForKEditor() {
       const cssFiles = [
         '/css/keditor.css',
@@ -91,20 +88,30 @@ export default {
         document.head.appendChild(styleLink);
       });
     },
+
+    /**
+     * KEditor와 관련된 스타일 파일들을 동적으로 삭제시키기 위해서
+     */
     removeStylesForKEditor() {
-      // 'keditor-style' 클래스를 가진 모든 <link> 태그를 찾아 제거
       document.querySelectorAll('.keditor-stylesheet').forEach(link => {
         document.head.removeChild(link);
       });
     },
 
 
-
+    /**
+     * KEditor를 조작한 모든 내용을 초기화시키기 위해서
+     */
     resetStat() {
-      window.mashup.kEditor[0].children[0].innerHTML="";
-      window.mashup.$emit('value', "");
-      window.mashup.$emit('change', "");
+      window.mashup.kEditor[0].children[0].innerHTML = ""
+      window.mashup.kEditorContent = ""
+      
+      window.mashup.$emit('onChangeKEditorContent', {
+        kEditorContent: "", 
+        html: ""
+      })
     },
+
 
     /**
      * 'Save' 버튼을 누를 경우, 최종 결과를 Supabase에 저장하기 위해서
@@ -194,10 +201,9 @@ export default {
     }
 
     window.mashup.kEditor = $('#kEditor1');
-
-    if (window.mashup.modelValue) {
+    if (window.mashup.modelValue) 
       $(window.mashup.kEditor)[0].innerHTML = window.mashup.modelValue;
-    }
+
 
     window.mashup.kEditor.keditor({
       tabContainersText: '<i class="fa fa-th-list"></i>',
@@ -244,8 +250,7 @@ export default {
           }
         })
       },
-      onReady: function () {
-      },
+
       containerSettingInitFunction: function (form, keditor) {
         $("#resetBtn").on("click", function (e) {
           window.mashup.resetStat();
@@ -257,14 +262,19 @@ export default {
             '</div>'
         );
       },
-      onInitComponent: function (comp) {
-        window.mashup.onchangeKEditor(comp, 'onInitComponent');
-      },
-      containerSettingShowFunction: function (form, container, keditor) {
-        console.log("containerSettingShowFunction : ", form, container, keditor);
-      },
-      containerSettingHideFunction: function (form, keditor) {
-        console.log("containerSettingHideFunction : ", form, keditor);
+
+
+      /**
+       * 새롭게 컴포넌트를 드래그해서 추가시에 Vue 컴포넌트인 경우, 렌더링을 시키기 위해서
+       */
+      onContentChanged: function (event, snippetContent, vueRenderUUID) {  
+        if(vueRenderUUID && vueRenderUUID.includes("vuemount_"))
+        {
+          const app = createApp(DynamicForm, {content:snippetContent, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
+          window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
+        }
+          
+        window.mashup.onchangeKEditor(event, 'onContentChanged');
       },
 
       /**
@@ -317,26 +327,32 @@ export default {
         }
       },
 
-      componentSettingHideFunction: function (form, keditor) {
-        console.log("containerSettingHideFunction : ", form, keditor);
-      },
-      onContentChanged: function (event, snippetContent, vueRenderUUID) {  
-        if(vueRenderUUID && vueRenderUUID.includes("vuemount_"))
-        {
-          const app = createApp(DynamicForm, {content:snippetContent, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
-          window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
-        }
-          
-        window.mashup.onchangeKEditor(event, 'onContentChanged');
+
+      onInitComponent: function (comp) {
+        window.mashup.onchangeKEditor(comp, 'onInitComponent');
       },
       onComponentChanged: function (event) {
         window.mashup.onchangeKEditor(event, 'onComponentChanged');
       },
+
       initContentAreas: function (self, contentAreas) {
         console.log('initContentAreas', self, contentAreas)
-      }
+      },
+      componentSettingHideFunction: function (form, keditor) {
+        console.log("componentSettingHideFunction : ", form, keditor);
+      },
+      containerSettingShowFunction: function (form, container, keditor) {
+        console.log("containerSettingShowFunction : ", form, container, keditor);
+      },
+      containerSettingHideFunction: function (form, keditor) {
+        console.log("containerSettingHideFunction : ", form, keditor);
+      },
+
+      onReady: function () {
+      },
     });
 
+    // 처음 로드시에 Vue 컴포넌트들을 각각 별도의 createApp으로 렌더링시키고, 참조자 딕셔너리를 구성하기 위해서
     window.mashup.componentRefs = {}
     if (window.mashup.modelValue) {
       const parser = new DOMParser();
@@ -351,7 +367,6 @@ export default {
   },
 
   beforeUnmount() {
-    // 컴포넌트가 파괴되기 전에 CSS 제거
     window.mashup.removeStylesForKEditor();
   }
 }
