@@ -40,10 +40,12 @@
               <template v-for="(val, key) in item" :key="key">
                 <template v-if="index === itemIndexToEdit">
                   <v-col cols="5" class="d-flex align-center justify-center">
-                    <v-text-field v-model="keyToEdit"></v-text-field>
+                    <v-text-field class="centered-input" label="Key" v-model="keyToEdit"
+                                  :rules="[v => !!v || 'Key is required']" required></v-text-field>
                   </v-col>
                   <v-col cols="5" class="d-flex align-center justify-center">
-                    <v-text-field v-model="valueToEdit"></v-text-field>
+                    <v-text-field class="centered-input" label="Value" v-model="valueToEdit"
+                                  :rules="[v => !!v || 'Value is required']" required></v-text-field>
                   </v-col>
                   <v-col cols="2" class="d-flex align-center justify-center">
                     <v-sheet class="pb-5">
@@ -101,10 +103,10 @@
 
             <v-row>
               <v-col cols="5" class="d-flex align-center justify-center">
-                <v-text-field v-model="keyToAdd"></v-text-field>
+                <v-text-field class="centered-input" label="Key" v-model="keyToAdd"></v-text-field>
               </v-col>
               <v-col cols="5" class="d-flex align-center justify-center">
-                <v-text-field v-model="valueToAdd"></v-text-field>
+                <v-text-field class="centered-input" label="Value" v-model="valueToAdd"></v-text-field>
               </v-col>
               <v-col cols="2" class="d-flex align-center justify-center pb-9">
                 <v-sheet>
@@ -183,5 +185,7 @@
 </script>
   
 <style scoped>
-  
+.centered-input:deep(input) {
+  text-align: center
+}
 </style>
