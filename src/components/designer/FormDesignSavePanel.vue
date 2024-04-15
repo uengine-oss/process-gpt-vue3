@@ -13,13 +13,12 @@
             <v-col>
                 <v-text-field v-model="infoToSave.id" label="ID"
                     :rules="[v => !!v || 'ID is required']" required></v-text-field>
-                <v-text-field v-model="infoToSave.name" label="Name" 
-                    :rules="[v => !!v || 'Name is required']" required></v-text-field>
+                <v-text-field v-model="infoToSave.name" label="Name"></v-text-field>
             </v-col>
         </v-card-text>
 
         <v-card-actions style="justify-content: right;">
-            <v-btn @click="$emit('onSave', infoToSave)"> SAVE </v-btn>
+            <v-btn @click="save"> SAVE </v-btn>
         </v-card-actions>
     </v-card>
 </template>
@@ -37,5 +36,22 @@ export default {
             name: ""
         }
     }),
+    methods: {
+        save() {
+            //#region 유효성 검사
+            if(!(this.infoToSave.id) || this.infoToSave.id.length <= 0) {
+                alert("ID is required")
+                return
+            }
+            //#endregion
+            //#region 입력값 처리
+            if(!(this.infoToSave.name) || this.infoToSave.name.length <= 0) {
+                this.infoToSave.name = this.infoToSave.id
+            }
+            //#endregion
+
+            this.$emit('onSave', this.infoToSave)
+        }
+    }
 };
 </script>
