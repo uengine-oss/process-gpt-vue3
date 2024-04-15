@@ -313,8 +313,20 @@ export default {
                 const parent = document.createElement('div')
                 parent.setAttribute('id', `vuemount_${crypto.randomUUID()}`)
 
-                component.parentNode.insertBefore(parent, component)
-                parent.appendChild(component)
+                // AI 예외 처리
+                // component의 태그명이 'date-field'인 경우, 'text-field'태그로 name, alias 속성을 가지도록 추가
+                if(component.tagName.toLowerCase() === 'date-field') {
+                    const textField = document.createElement('text-field')
+                    textField.setAttribute("name", component.getAttribute("name") ?? "name")
+                    textField.setAttribute("alias", component.getAttribute("alias") ?? "alias")
+                
+                    component.parentNode.insertBefore(parent, textField)
+                    parent.appendChild(textField)      
+                }
+                else {
+                    component.parentNode.insertBefore(parent, component)
+                    parent.appendChild(component)
+                }
             })
 
             // Section이 없는 경우, Section으로 감싸서 새로 생성하고, 있는 경우 그대로 사용함
