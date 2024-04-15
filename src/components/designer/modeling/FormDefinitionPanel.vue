@@ -19,8 +19,7 @@
         <v-card-text>
             <v-text-field v-if="value.name !== undefined" label="Name" v-model="value.name"
                           :rules="[v => !!v || 'Name is required']" required></v-text-field>
-            <v-text-field v-if="value.alias !== undefined" label="Alias" v-model="value.alias"
-                          :rules="[v => !!v || 'Alias is required']" required></v-text-field>
+            <v-text-field v-if="value.alias !== undefined" label="Alias" v-model="value.alias"></v-text-field>
             <v-text-field v-if="value.label !== undefined" label="Label" v-model="value.label"
                           :rules="[v => !!v || 'Label is required']" required></v-text-field>
         </v-card-text>
@@ -47,8 +46,7 @@
                                   :rules="[v => !!v || 'Key is required']" required></v-text-field>
                   </v-col>
                   <v-col cols="5" class="d-flex align-center justify-center">
-                    <v-text-field class="centered-input" label="Value" v-model="valueToEdit"
-                                  :rules="[v => !!v || 'Value is required']" required></v-text-field>
+                    <v-text-field class="centered-input" label="Value" v-model="valueToEdit"></v-text-field>
                   </v-col>
                   <v-col cols="2" class="d-flex align-center justify-center">
                     <v-sheet class="pb-5">
@@ -171,10 +169,10 @@
           alert("Name is required")
           return
         }
-
+        //#endregion
+        //#region 입력값 처리
         if(!(this.value.alias) || this.value.alias.length <= 0) {
-          alert("Alias is required")
-          return
+            this.value.alias = this.value.name
         }
         //#endregion
 
@@ -188,14 +186,14 @@
           return
         }
 
-        if(!(this.valueToAdd) || this.valueToAdd.length <= 0) {
-          alert("Value is required")
-          return
-        }
-
         if(this.value.items.some(item => item.hasOwnProperty(this.keyToAdd))) {
           alert("Key already exists")
           return
+        }
+        //#endregion
+        //#region 입력값 처리
+        if(!(this.valueToAdd) || this.valueToAdd.length <= 0) {
+            this.valueToAdd = this.keyToAdd
         }
         //#endregion
 
@@ -211,17 +209,17 @@
           return
         }
 
-        if(!(this.valueToEdit) || this.valueToEdit.length <= 0) {
-          alert("Value is required")
-          return
-        }
-
         // 키가 기존의 값과 달라진 경우에만 중복 여부를 검사하기 위해서
         if(!(this.value.items[itemIndexToEdit].hasOwnProperty(this.keyToEdit))) {
           if(this.value.items.some(item => item.hasOwnProperty(this.keyToEdit))) {
             alert("Key already exists")
             return
           }
+        }
+        //#endregion
+        //#region 입력값 처리
+        if(!(this.valueToEdit) || this.valueToEdit.length <= 0) {
+            this.valueToEdit = this.keyToEdit
         }
         //#endregion
 
