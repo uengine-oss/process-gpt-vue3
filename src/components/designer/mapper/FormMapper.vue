@@ -13,11 +13,7 @@
                 </v-btn> -->
             </v-row>
             <div id="app" class="treeviews-container" @contextmenu.prevent="showContextMenu($event)">
-                <v-treeview :config="config" :nodes="nodes" class="left-treeview">
-                    <template #after-input="item">
-                        <v-btn class="after" small @click.stop="onButtonClickLeft(item, 'Source')"></v-btn>
-                    </template>
-                </v-treeview>
+                <v-treeview :config="config" :nodes="nodes" class="left-treeview"> </v-treeview>
 
                 <ContextMenu
                     ref="contextMenu"
@@ -65,6 +61,7 @@
                         :name="port.name"
                         :block-name="port.blockName"
                         :direction="port.direction"
+                        :parentNode="port.parentNode"
                         :onmousedown="newConnection(port.blockName, port.name, port.direction)"
                         :onmouseup="completeConnection(port.blockName, port.name, port.direction)"
                     ></port-component>
@@ -79,11 +76,7 @@
                     ></attribute-component>
                 </svg>
 
-                <v-treeview :config="config" :nodes="nodes" class="right-treeview" :key="renderKey">
-                    <template #after-input="item">
-                        <v-btn class="after" small @click.stop="onButtonClickRight(item, 'Target')"></v-btn>
-                    </template>
-                </v-treeview>
+                <v-treeview :config="config" :nodes="nodes" class="right-treeview" :key="renderKey"> </v-treeview>
             </div>
         </v-card>
     </div>
@@ -133,6 +126,7 @@ export default {
             menu_y: 0,
             component_x: 0,
             component_y: 0,
+            portIndex: 0,
             nodes: {
                 id1: {
                     text: 'text1',
@@ -159,81 +153,22 @@ export default {
         };
     },
     async created() {
-        let me = this;
-
-        me.storage = StorageBaseFactory.getStorage('supabase');
-
-        const definition = this.definition;
-
-        me.nodes = {};
-        me.config = {
-            roots: []
-        };
-
-        definition.processVariables.forEach(async (variable) => {
-            if (!me.config.roots.includes('Variables')) {
-                me.config.roots.push('Variables');
-            }
-
-            if (!me.nodes['Variables']) {
-                me.nodes['Variables'] = {
-                    text: 'Variables',
-                    children: []
-                };
-            }
-
-            if (me.nodes['Variables']) {
-                me.nodes['Variables'].children.push(variable.name);
-                me.nodes[variable.name] = {
-                    text: variable.name,
-                    children: []
-                };
-            }
-
-            let formDefs = await me.storage.list('form_def');
-            // let [formName, formAlias] = variable.defaultValue.split('_');
-            let name = variable.defaultValue.name;
-            let alias = variable.defaultValue.alias;
-            let matchingForm = formDefs.find((form) => form.name === name && form.alias === alias);
-
-            if (matchingForm) {
-                matchingForm.fields.forEach((field) => {
-                    if (!me.nodes[variable.name]) {
-                        me.nodes[variable.name] = {
-                            text: variable.name,
-                            children: []
-                        };
-                    }
-                    let fieldNameAlias = field.name + '_' + field.alias;
-                    me.nodes[variable.name].children.push(field.name);
-                    me.nodes[field.name] = {
-                        text: field.name,
-                        object: field
-                    };
-                });
-            }
-
-            // form.fields.forEach(async (field) => {
-            //     me.nodes[form.id].children.push(field.name + '_' + field.alias);
-            //     me.nodes[field.name + '_' + field.alias] = {
-            //         text: field.name + '_' + field.alias
-            //     };
-            // });
-        });
-
-        me.renderKey++;
+        await this.initializeStorage();
+        this.initializeNodesAndConfig();
+        await this.processVariables();
+        this.updateBlockTemplates();
+        this.renderKey++;
     },
     mounted() {
         let me = this;
 
-        Object.keys(me.nodes).forEach((key, index) => {
-            var node = me.nodes[key];
-            this.blockTemplates.Source.ports[node.text] = { x: 5, y: 36 * index, direction: 'out' };
-            this.blockTemplates.Target.ports[node.text] = { x: -5, y: 36 * index, direction: 'in' };
+        const formArea = document.getElementById('formArea');
+        const resizeObserver = new ResizeObserver((entries) => {
+            for (let entry of entries) {
+                this.addTreeViewPort();
+            }
         });
-        this.addTreeViewPort();
-
-        window.addEventListener('resize', this.addTreeViewPort);
+        resizeObserver.observe(formArea);
         // processVariables가 준비되었는지 확인
         if (this.processVariables && this.processVariables.length > 0) {
             // processVariables 사용
@@ -247,21 +182,144 @@ export default {
             });
         }
 
-        this.renderFormMapperFromMappingElementJson("");
+        this.renderFormMapperFromMappingElementJson('');
     },
     methods: {
+        async initializeStorage() {
+            this.storage = StorageBaseFactory.getStorage('supabase');
+        },
+
+        initializeNodesAndConfig() {
+            this.nodes = {};
+            this.config = {
+                roots: []
+            };
+        },
+        async fetchAndProcessFormDefinitions(variable) {
+            let formDefs = await this.storage.list('form_def');
+            let name = variable.defaultValue.name;
+            let alias = variable.defaultValue.alias;
+            let matchingForm = formDefs.find((form) => form.name === name && form.alias === alias);
+
+            if (matchingForm) {
+                matchingForm.fields.forEach((field) => {
+                    if (!this.nodes[variable.name]) {
+                        this.nodes[variable.name] = {
+                            text: variable.name,
+                            children: []
+                        };
+                    }
+                    let fieldNameAlias = field.name + '_' + field.alias;
+                    this.nodes[variable.name].children.push(field.name);
+                    this.nodes[field.name] = {
+                        text: field.name,
+                        object: field
+                    };
+                });
+            }
+        },
+        async processVariables() {
+            const definition = this.definition;
+
+            for (const variable of definition.processVariables) {
+                if (!this.config.roots.includes('Variables')) {
+                    this.config.roots.push('Variables');
+                }
+
+                if (!this.nodes['Variables']) {
+                    this.nodes['Variables'] = {
+                        text: 'Variables',
+                        children: []
+                    };
+                }
+
+                if (this.nodes['Variables']) {
+                    this.nodes['Variables'].children.push(variable.name);
+                    this.nodes[variable.name] = {
+                        text: variable.name,
+                        children: []
+                    };
+                }
+
+                await this.fetchAndProcessFormDefinitions(variable);
+            }
+        },
+        updateBlockTemplates() {
+            const treeStructure = this.buildTreeStructure(); // 트리 구조 생성
+
+            const updatePorts = (treeNode, path = '') => {
+                if (!treeNode) return;
+
+                const currentPath = path ? `${path}.${treeNode.text}` : treeNode.text;
+                this.addPortToBlockTemplates(currentPath);
+
+                if (treeNode.children && treeNode.children.length > 0) {
+                    treeNode.children.forEach((childNode) => {
+                        updatePorts(childNode, currentPath);
+                    });
+                }
+            };
+            treeStructure.forEach((rootNode) => updatePorts(rootNode));
+        },
+        addPortToBlockTemplates(nodePath, parentNode) {
+            this.blockTemplates.Source.ports[nodePath] = {
+                x: 5,
+                y: 0,
+                direction: 'out',
+                parentNode: { name: parentNode, offset: { x: 0, y: 24 * this.portIndex} }
+            };
+            this.blockTemplates.Target.ports[nodePath] = {
+                x: -5,
+                y: 0,
+                direction: 'in',
+                parentNode: { name: parentNode, offset: { x: 0, y: 24 * this.portIndex} }
+            };
+            this.portIndex++;
+        },
+
+        buildTreeStructure() {
+            const buildTree = (nodeKey) => {
+                const node = this.nodes[nodeKey];
+                if (!node) return null;
+
+                let treeNode = { text: node.text };
+                if (node.children && node.children.length > 0) {
+                    treeNode.children = node.children.map((childKey) => buildTree(childKey));
+                }
+                return treeNode;
+            };
+
+            let tree = [];
+            Object.keys(this.nodes).forEach((nodeKey) => {
+                // 최상위 노드만 탐색 시작점으로 삼습니다.
+                // 최상위 노드는 다른 어떤 노드의 자식도 아니어야 합니다.
+                const isRootNode = !Object.values(this.nodes).some((n) => n.children && n.children.includes(nodeKey));
+                if (isRootNode) {
+                    tree.push(buildTree(nodeKey));
+                }
+            });
+
+            return tree;
+        },
         addTreeViewPort() {
+            var me = this;
             const formAreaRect = document.getElementById('formArea').getBoundingClientRect();
 
-            this.blocks['Source'] = {
+            if (this.blocks['Source']) {
+                delete this.blocks['Source'];
+            }
+            if (this.blocks['Target']) {
+                delete this.blocks['Target'];
+            }
+            me.blocks['Source'] = {
                 type: 'Source',
-                pos: { x: 0, y: 20 },
+                pos: { x: 0, y: 12 },
                 attributes: {}
             };
 
-            this.blocks['Target'] = {
+            me.blocks['Target'] = {
                 type: 'Target',
-                pos: { x: formAreaRect.width, y: 20 },
+                pos: { x: formAreaRect.width, y: 12 },
                 attributes: {}
             };
         },
