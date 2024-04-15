@@ -1,6 +1,7 @@
 import axios from 'axios';
 const axiosInstance = axios.create();
 import * as Backend from './Backend';
+
 class UEngineBackend implements Backend {
     // constructor() {
     //     super();
@@ -33,7 +34,7 @@ class UEngineBackend implements Backend {
     }
     async versionUp(version: string, major: string, makeProduction: boolean) {
         try {
-            const response = await axiosInstance.post('/version', null, { params: { version, major, makeProduction } });
+            const response = await axiosInstance.post('/version', null);
             return response.data;
         } catch (e) {
             alert(e);
