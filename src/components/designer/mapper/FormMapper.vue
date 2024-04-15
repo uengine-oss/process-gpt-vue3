@@ -13,7 +13,15 @@
                 </v-btn> -->
             </v-row>
             <div id="app" class="treeviews-container" @contextmenu.prevent="showContextMenu($event)">
-                <v-treeview :config="config" :nodes="nodes" class="left-treeview"> </v-treeview>
+                <v-treeview
+                    :config="config"
+                    :nodes="nodes"
+                    class="left-treeview"
+                    :key="renderKey"
+                    @nodeOpened="handleNodeClick"
+                    @nodeClosed="handleNodeClick()"
+                >
+                </v-treeview>
 
                 <ContextMenu
                     ref="contextMenu"
@@ -62,6 +70,7 @@
                         :block-name="port.blockName"
                         :direction="port.direction"
                         :parentNode="port.parentNode"
+                        :tree-view="nodes"
                         :onmousedown="newConnection(port.blockName, port.name, port.direction)"
                         :onmouseup="completeConnection(port.blockName, port.name, port.direction)"
                     ></port-component>
@@ -76,7 +85,15 @@
                     ></attribute-component>
                 </svg>
 
-                <v-treeview :config="config" :nodes="nodes" class="right-treeview" :key="renderKey"> </v-treeview>
+                <v-treeview
+                    :config="config"
+                    :nodes="nodes"
+                    class="right-treeview"
+                    :key="renderKey"
+                    @nodeOpened="handleNodeClick"
+                    @nodeClosed="handleNodeClick()"
+                >
+                </v-treeview>
             </div>
         </v-card>
     </div>
@@ -168,7 +185,8 @@ export default {
                 this.addTreeViewPort();
             }
         });
-        this.$nextTick(() => {//다이얼로그가 생성될 시 이상한 위치로 되기에 일정 시간을 줌
+        this.$nextTick(() => {
+            //다이얼로그가 생성될 시 이상한 위치로 되기에 일정 시간을 줌
             setTimeout(() => {
                 this.addTreeViewPort();
             }, 300);
@@ -250,53 +268,76 @@ export default {
         },
         updateBlockTemplates() {
             const treeStructure = this.buildTreeStructure(); // 트리 구조 생성
+            const nodeHeight = 24; // 각 노드의 높이 설정
 
-            const updatePorts = (treeNode, path = '') => {
+            const updatePorts = (treeNode, path = '', yOffset = 0, isRootClosed = false) => {
                 if (!treeNode) return;
 
+                // 상위 노드가 닫혀 있으면 yOffset을 갱신하지 않음
+                const effectiveYOffset = isRootClosed ? yOffset : yOffset + nodeHeight;
                 const currentPath = path ? `${path}.${treeNode.text}` : treeNode.text;
-                this.addPortToBlockTemplates(currentPath);
+                if (!isRootClosed) {
+                    this.addPortToBlockTemplates(currentPath, effectiveYOffset - nodeHeight);
+                } else {
+                    this.addPortToBlockTemplates(currentPath, effectiveYOffset);
+                }
 
+                // 자식 노드가 있는 경우 처리
                 if (treeNode.children && treeNode.children.length > 0) {
-                    treeNode.children.forEach((childNode) => {
-                        updatePorts(childNode, currentPath);
+                    const nodeOpened = this.nodes[treeNode.text].state && this.nodes[treeNode.text].state.opened;
+                    let cumulativeOffset = effectiveYOffset;
+
+                    treeNode.children.forEach((childNode, index) => {
+                        const child = this.nodes[childNode];
+                        updatePorts(child, currentPath, cumulativeOffset, isRootClosed || !nodeOpened);
+                        if (nodeOpened && !isRootClosed) {
+                            cumulativeOffset += this.getNodeHeight(child);
+                        }
                     });
                 }
             };
-            treeStructure.forEach((rootNode) => updatePorts(rootNode));
+
+            this.getNodeHeight = function (node) {
+                let totalHeight = nodeHeight;
+                if (node.state && node.state.opened && node.children) {
+                    node.children.forEach((child) => {
+                        totalHeight += this.getNodeHeight(this.nodes[child]);
+                    });
+                }
+                return totalHeight;
+            };
+
+            treeStructure.forEach((rootNode, index) => {
+                const rootYOffset = index * nodeHeight; // 루트 노드의 yOffset 계산
+                const rootClosed = !(this.nodes[rootNode.text].state && this.nodes[rootNode.text].state.opened);
+                updatePorts(rootNode, '', rootYOffset, rootClosed);
+            });
         },
-        addPortToBlockTemplates(nodePath, parentNode) {
+        addPortToBlockTemplates(nodePath, yOffset) {
+            // 포트의 Y 위치를 yOffset을 사용하여 조정
             this.blockTemplates.Source.ports[nodePath] = {
                 x: 5,
-                y: 0,
-                direction: 'out',
-                parentNode: { name: parentNode, offset: { x: 0, y: 24 * this.portIndex } }
+                y: yOffset, // Y 위치 조정
+                direction: 'out'
             };
             this.blockTemplates.Target.ports[nodePath] = {
                 x: -5,
-                y: 0,
-                direction: 'in',
-                parentNode: { name: parentNode, offset: { x: 0, y: 24 * this.portIndex } }
+                y: yOffset, // Y 위치 조정
+                direction: 'in'
             };
-            this.portIndex++;
         },
-
         buildTreeStructure() {
             const buildTree = (nodeKey) => {
                 const node = this.nodes[nodeKey];
                 if (!node) return null;
 
-                let treeNode = { text: node.text };
-                if (node.children && node.children.length > 0) {
-                    treeNode.children = node.children.map((childKey) => buildTree(childKey));
-                }
+                let treeNode = { text: node.text, children: node.children || [] };
                 return treeNode;
             };
 
             let tree = [];
             Object.keys(this.nodes).forEach((nodeKey) => {
                 // 최상위 노드만 탐색 시작점으로 삼습니다.
-                // 최상위 노드는 다른 어떤 노드의 자식도 아니어야 합니다.
                 const isRootNode = !Object.values(this.nodes).some((n) => n.children && n.children.includes(nodeKey));
                 if (isRootNode) {
                     tree.push(buildTree(nodeKey));
@@ -327,8 +368,11 @@ export default {
                 attributes: {}
             };
         },
+        handleNodeClick() {
+            this.portIndex = 0;
+            this.updateBlockTemplates(); // 포트 위치 업데이트 메소드 호출
+        },
         openFunctionMenu(event) {
-            console.log('click menu');
             if (event) {
                 const svgElement = this.$refs.svgElement;
 

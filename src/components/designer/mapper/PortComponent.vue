@@ -1,6 +1,6 @@
 <template id="port-template">
     <g
-        :transform="'translate(' + getParentOffset().x + ',' + getParentOffset().y + ')'"
+        :transform="'translate(' + pos.x + ',' + pos.y + ')'"
         class="port"
         :data-port-name="name"
         :data-block-name="blockName"
@@ -33,22 +33,11 @@
 export default {
     props: {
         pos: Object,
-        parentNode: Object,
         name: String,
         blockName: String,
         direction: String,
         onmousedown: Function,
         onmouseup: Function
-    },
-    methods: {
-        getParentOffset() {
-            var position = { x: this.pos.x, y: this.pos.y };
-            if (this.parentNode) {
-                position.x += this.parentNode.offset.x;
-                position.y += this.parentNode.offset.y;
-            }
-            return position;
-        }
     }
 };
 </script>

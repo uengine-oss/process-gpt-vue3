@@ -321,7 +321,7 @@ export default {
   methods: {
     getBlock(name) {
       const block = this.blocks[name];
-      if(block) {
+      if (block) {
         return {
           ...this.blockTemplates[block.type],
           ...block,
@@ -335,12 +335,8 @@ export default {
         return spec;
       }
       const block = this.getBlock(spec[0]);
-      if(block != null) {
+      if (block != null) {
         var pos = add(block.pos, block.ports[spec[1]] || { x: 0, y: 0 });
-        if(block.ports[spec[1]].parentNode) {
-          var parentOffset = block.ports[spec[1]].parentNode.offset;
-          pos = add(pos, parentOffset);
-        }
         return pos;
       }
       return { x: 0, y: 0 };
