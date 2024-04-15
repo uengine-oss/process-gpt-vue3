@@ -107,6 +107,9 @@ export default {
             });
             
             alert("저장 완료!")
+            if(this.$route.params.id != id) {
+                this.$router.push(`/ui-definitions/${id}`)
+            }
         },
 
 
