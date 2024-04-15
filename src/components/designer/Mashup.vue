@@ -263,7 +263,7 @@ export default {
       niceScrollEnabled: false,
       tabTooltipEnabled: false,
       snippetsTooltipEnabled: false,
-      containerSettingEnabled: true,
+      containerSettingEnabled: false,
       onInitSidebar: function (self) {
         const headers = {
           'Content-type': 'html; charset=UTF-8',
