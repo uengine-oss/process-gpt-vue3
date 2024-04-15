@@ -134,6 +134,7 @@ export default {
                     alert(`'${this.$route.params.id}' ID 를 가지는 폼 디자인 정보가 없습니다! 새 폼 만들기 화면으로 이동됩니다.`)
                     this.$router.push(`/ui-definitions/chat`)
                     this.isShowMashup = true
+                    return
                 }
 
                 this.applyNewSrcToMashup(
