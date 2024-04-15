@@ -11,9 +11,9 @@
 
         <v-card-text>
             <v-col>
-                <v-text-field v-model.trim="infoToSave.id" label="ID"
-                    :rules="[v => !!v || 'ID is required']" required></v-text-field>
-                <v-text-field v-model.trim="infoToSave.name" label="Name"></v-text-field>
+                <v-text-field ref="inputId" v-model.trim="infoToSave.id" label="ID"
+                    :rules="[v => !!v || 'ID is required']" required @keyup.enter="save"></v-text-field>
+                <v-text-field v-model.trim="infoToSave.name" label="Name" @keyup.enter="save"></v-text-field>
             </v-col>
         </v-card-text>
 
@@ -65,6 +65,11 @@ export default {
 
             this.$emit('onSave', this.infoToSave)
         }
-    }
+    },
+    mounted() {
+        this.$nextTick(() => {
+            this.$refs.inputId.focus();
+        });
+    },
 };
 </script>
