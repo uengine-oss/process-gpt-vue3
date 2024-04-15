@@ -257,9 +257,7 @@ export default {
           'Accept': '*/*'
         }
 
-       
-        const baseUrl = "http://localhost:5173"
-        axios.get(`${baseUrl}/snippets/default/snippets.html`, {headers}).then(function (resp) {
+        axios.get(`${window.location.origin}/snippets/default/snippets.html`, {headers}).then(function (resp) {
           console.log("axios result", resp);
 
           self.renderSnippets(resp.data);
