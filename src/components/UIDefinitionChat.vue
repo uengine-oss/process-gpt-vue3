@@ -286,7 +286,8 @@ export default {
                 {
                     try {
 
-                        let items = JSON.parse(component.getAttribute("items").replace(/'/g, '"'))
+                        // AI가 메뉴얼을 따르지 않고, '[A, B, ..., C]'와 같이 나열 연산자를 사용할 경우, 제거시켜버름
+                        let items = JSON.parse(component.getAttribute("items").replace(/'/g, '"').replace(/[ ]*,[ ]*\.\.\.[ ]*,[ ]*/, ","))
                         let newItems = []
 
                         items.forEach(item => {
