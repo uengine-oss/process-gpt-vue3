@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-btn @click="isOpenSaveDialog = true">
+    <v-btn @click="onClickSave">
       save
     </v-btn>
 
@@ -46,7 +46,8 @@ export default {
     FormDesignSavePanel
   },
   props: {
-    modelValue: String
+    modelValue: String,
+    storedFormDefData: Object
   },
   emits: [
     "onChangeKEditorContent",
@@ -126,6 +127,16 @@ export default {
 
 
     /**
+     * Save 버튼을 누를 경우, 이미 Supabase에 관련데이터가 있으면 바로 저장하고, 없을 경우, ID, Name 입력 다이얼로그를 표시시키기 위해서
+     */
+    onClickSave() {
+      if(this.storedFormDefData)
+        this.saveFormDefinition(this.storedFormDefData)
+      else
+        this.isOpenSaveDialog = true
+    },
+
+    /**
      * 'Save' 버튼을 누를 경우, 최종 결과를 Supabase에 저장하기 위해서
      */
     saveFormDefinition({id, name}){
@@ -143,6 +154,7 @@ export default {
         window.mashup.isOpenSaveDialog = false
       }
     },
+
 
     /**
      * KEditor의 Content를 HTML로 변환하기 위해서

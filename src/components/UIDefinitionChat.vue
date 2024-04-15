@@ -10,13 +10,14 @@
             </template>
             <template v-slot:rightpart>
                 <mashup v-model="kEditorInput" @onChangeKEditorContent="updatePrevFormOutput"
-                        :key="mashupKey" @onSaveFormDefinition="saveFormDefinition"/>
+                        :key="mashupKey" @onSaveFormDefinition="saveFormDefinition"
+                        :storedFormDefData="storedFormDefData"/>
             </template>
 
             <template v-slot:mobileLeftContent>
                 <Chat :chatInfo="chatInfo" :messages="messages" :userInfo="userInfo"
                         @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage"
-                    ></Chat>
+                ></Chat>
             </template>
         </AppBaseCard>
     </v-card>
@@ -62,7 +63,9 @@ export default {
         mashupKey: 0, // kEditorInput가 변경되었을 경우, Mashup 컴포넌트를 다시 렌더링하기 위해서
 
         prevFormOutput: "", // 폼 디자이너에게 이미 이전에 생성된 HTML 결과물을 전달하기 위해서
-        prevMessageFormat: "" // 사용자가 KEditor를 변경할때마다 해당 포맷을 기반으로 System 메세지를 재구축해서 보내기 위해서
+        prevMessageFormat: "", // 사용자가 KEditor를 변경할때마다 해당 포맷을 기반으로 System 메세지를 재구축해서 보내기 위해서
+
+        storedFormDefData: null 
     }),
     async created() {
         await this.init();
@@ -114,10 +117,10 @@ export default {
         async loadData(path) {
             if (this.$route.params.id && this.$route.params.id != 'chat') {
                 path = `${this.path}/${this.$route.params.id}`
-                const formDefData = await this.getData(path, { key: "id" })
+                this.storedFormDefData = await this.getData(path, { key: "id" })
 
                 this.applyNewSrcToMashup(
-                    this.loadHTMLToKEditorContent(formDefData.html)
+                    this.loadHTMLToKEditorContent(this.storedFormDefData.html)
                 )
             }
         },
