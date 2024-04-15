@@ -34,7 +34,10 @@ export default {
         infoToSave: {
             id: "",
             name: ""
-        }
+        },
+
+        regexStr: /^[가-힣a-zA-Z0-9_\-.]+$/,
+        regexErrorMsg: "'{{propName}}'은 한글, 영문, 숫자, 밑줄(_), 대시(-), 점(.) 만 입력 가능합니다!"
     }),
     methods: {
         save() {
@@ -42,6 +45,16 @@ export default {
             if(!(this.infoToSave.id) || this.infoToSave.id.length <= 0) {
                 alert("ID is required")
                 return
+            }
+            if(!this.regexStr.test(this.infoToSave.id)) {
+                alert(this.regexErrorMsg.replace("{{propName}}", "ID"))
+                return
+            }
+            if(this.infoToSave.name && this.infoToSave.name.length > 0) {
+                if(!this.regexStr.test(this.infoToSave.name)) {
+                    alert(this.regexErrorMsg.replace("{{propName}}", "Name"))
+                    return
+                }
             }
             //#endregion
             //#region 입력값 처리

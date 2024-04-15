@@ -158,7 +158,10 @@
       keyToEdit: "",
       valueToEdit: "",
 
-      initialValue: {} // 초기에 해당 속성을 가지고 있는 경우에만 유효성을 검사시키기 위해서
+      initialValue: {}, // 초기에 해당 속성을 가지고 있는 경우에만 유효성을 검사시키기 위해서
+
+      regexStr: /^[가-힣a-zA-Z0-9_\-.]+$/,
+      regexErrorMsg: "'{{propName}}'은 한글, 영문, 숫자, 밑줄(_), 대시(-), 점(.) 만 입력 가능합니다!"
     }),
     components: {
     },
@@ -169,10 +172,21 @@
           alert("Name is required")
           return
         }
+        if(this.initialValue.name && !this.regexStr.test(this.value.name)) {
+          alert(this.regexErrorMsg.replace("{{propName}}", "Name"))
+          return
+        }
 
         if(this.initialValue.label && (!(this.value.label) || this.value.label.length <= 0)) {
           alert("Label is required")
           return
+        }
+
+        if(this.initialValue.alias && this.value.alias && this.value.alias.length > 0) {
+          if(!this.regexStr.test(this.value.alias)) {
+            alert(this.regexErrorMsg.replace("{{propName}}", "Alias"))
+            return
+          }
         }
         //#endregion
         //#region 입력값 처리
@@ -190,10 +204,20 @@
           alert("Key is required")
           return
         }
-
+        if(!this.regexStr.test(this.keyToAdd)) {
+            alert(this.regexErrorMsg.replace("{{propName}}", "Key"))
+            return
+        }
         if(this.value.items.some(item => item.hasOwnProperty(this.keyToAdd))) {
           alert("Key already exists")
           return
+        }
+
+        if(this.valueToAdd && this.valueToAdd.length > 0) {
+          if(!this.regexStr.test(this.valueToAdd)) {
+            alert(this.regexErrorMsg.replace("{{propName}}", "Value"))
+            return
+          }
         }
         //#endregion
         //#region 입력값 처리
@@ -213,11 +237,22 @@
           alert("Key is required")
           return
         }
+        if(!this.regexStr.test(this.keyToEdit)) {
+            alert(this.regexErrorMsg.replace("{{propName}}", "Key"))
+            return
+        }
 
         // 키가 기존의 값과 달라진 경우에만 중복 여부를 검사하기 위해서
         if(!(this.value.items[itemIndexToEdit].hasOwnProperty(this.keyToEdit))) {
           if(this.value.items.some(item => item.hasOwnProperty(this.keyToEdit))) {
             alert("Key already exists")
+            return
+          }
+        }
+
+        if(this.valueToEdit && this.valueToEdit.length > 0) {
+          if(!this.regexStr.test(this.valueToEdit)) {
+            alert(this.regexErrorMsg.replace("{{propName}}", "Value"))
             return
           }
         }
