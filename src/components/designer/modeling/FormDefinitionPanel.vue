@@ -2,7 +2,7 @@
     <v-card
     class="mx-auto my-8"
     elevation="16"
-    max-width="344"
+    max-width="400"
     >
         <v-card-item>
         <v-card-title>
@@ -43,12 +43,25 @@
                     <v-text-field v-model="valueToEdit"></v-text-field>
                   </v-col>
                   <v-col cols="2" class="d-flex align-center justify-center">
-                    <v-btn @click="itemIndexToEdit = -1">
-                      cancel
-                    </v-btn>
-                    <v-btn @click="editItem(index)">
-                      edit
-                    </v-btn>
+                    <v-sheet class="pb-5">
+                      <v-tooltip :text="$t('uiDefinition.cancel')">
+                        <template v-slot:activator="{ props }">
+                          <v-btn icon flat @click="itemIndexToEdit = -1" v-bind="props">
+                            <v-icon style="color: red;">mdi-close</v-icon>
+                          </v-btn>
+                        </template>
+                      </v-tooltip>
+                    </v-sheet>
+
+                    <v-sheet class="pb-5">
+                      <v-tooltip :text="$t('uiDefinition.edit')">
+                        <template v-slot:activator="{ props }">
+                          <v-btn icon flat @click="editItem(index)" v-bind="props">
+                            <PencilIcon stroke-width="1.5" size="20" class="text-primary" />
+                          </v-btn>
+                        </template>
+                      </v-tooltip>
+                    </v-sheet>
                   </v-col>
                 </template>
                 <template v-else>
@@ -59,12 +72,25 @@
                     {{ val }}
                   </v-col>
                   <v-col cols="2" class="d-flex align-center justify-center">
-                    <v-btn @click="itemIndexToEdit = index; keyToEdit = key; valueToEdit = val">
-                      edit
-                    </v-btn>
-                    <v-btn @click="deleteItem(index)">
-                      delete
-                    </v-btn>
+                    <v-sheet>
+                      <v-tooltip :text="$t('uiDefinition.edit')">
+                        <template v-slot:activator="{ props }">
+                          <v-btn icon flat @click="itemIndexToEdit = index; keyToEdit = key; valueToEdit = val" v-bind="props">
+                              <PencilIcon stroke-width="1.5" size="20" class="text-primary" />
+                          </v-btn>
+                        </template>
+                      </v-tooltip>
+                    </v-sheet>
+
+                    <v-sheet>
+                      <v-tooltip :text="$t('uiDefinition.delete')">
+                        <template v-slot:activator="{ props }">
+                          <v-btn icon flat @click="deleteItem(index)" v-bind="props">
+                              <TrashIcon stroke-width="1.5" size="20" class="text-error" />
+                          </v-btn>
+                        </template>
+                      </v-tooltip>
+                    </v-sheet>
                   </v-col>
                 </template>
               </template>
@@ -77,10 +103,16 @@
               <v-col cols="5" class="d-flex align-center justify-center">
                 <v-text-field v-model="valueToAdd"></v-text-field>
               </v-col>
-              <v-col cols="2" class="d-flex align-center justify-center">
-                <v-btn @click="addItem">
-                  add
-                </v-btn>
+              <v-col cols="2" class="d-flex align-center justify-center pb-9">
+                <v-sheet>
+                  <v-tooltip :text="$t('uiDefinition.add')">
+                    <template v-slot:activator="{ props }">
+                        <v-btn icon flat @click="addItem" v-bind="props">
+                          <v-icon style="color: green;" size="40">mdi-plus</v-icon>
+                        </v-btn>
+                    </template>
+                  </v-tooltip>
+                </v-sheet>
               </v-col>
             </v-row>
           </v-container>
