@@ -158,20 +158,25 @@
       keyToEdit: "",
       valueToEdit: "",
 
-      initialValue: {}
+      initialValue: {} // 초기에 해당 속성을 가지고 있는 경우에만 유효성을 검사시키기 위해서
     }),
     components: {
     },
     methods: {
       save() {
         //#region 유효성 검사
-        if(!(this.value.name) || this.value.name.length <= 0) {
+        if(this.initialValue.name && (!(this.value.name) || this.value.name.length <= 0)) {
           alert("Name is required")
+          return
+        }
+
+        if(this.initialValue.label && (!(this.value.label) || this.value.label.length <= 0)) {
+          alert("Label is required")
           return
         }
         //#endregion
         //#region 입력값 처리
-        if(!(this.value.alias) || this.value.alias.length <= 0) {
+        if(this.initialValue.alias && (!(this.value.alias) || this.value.alias.length <= 0)) {
             this.value.alias = this.value.name
         }
         //#endregion
