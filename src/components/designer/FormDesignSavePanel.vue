@@ -11,9 +11,9 @@
 
         <v-card-text>
             <v-col>
-                <v-text-field v-model="infoToSave.id" label="ID"
+                <v-text-field v-model.trim="infoToSave.id" label="ID"
                     :rules="[v => !!v || 'ID is required']" required></v-text-field>
-                <v-text-field v-model="infoToSave.name" label="Name"></v-text-field>
+                <v-text-field v-model.trim="infoToSave.name" label="Name"></v-text-field>
             </v-col>
         </v-card-text>
 

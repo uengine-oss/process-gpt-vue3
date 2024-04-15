@@ -17,10 +17,10 @@
         </v-card-item>
 
         <v-card-text>
-            <v-text-field v-if="value.name !== undefined" label="Name" v-model="value.name"
+            <v-text-field v-if="value.name !== undefined" label="Name" v-model.trim="value.name"
                           :rules="[v => !!v || 'Name is required']" required></v-text-field>
-            <v-text-field v-if="value.alias !== undefined" label="Alias" v-model="value.alias"></v-text-field>
-            <v-text-field v-if="value.label !== undefined" label="Label" v-model="value.label"
+            <v-text-field v-if="value.alias !== undefined" label="Alias" v-model.trim="value.alias"></v-text-field>
+            <v-text-field v-if="value.label !== undefined" label="Label" v-model.trim="value.label"
                           :rules="[v => !!v || 'Label is required']" required></v-text-field>
         </v-card-text>
 
@@ -42,11 +42,11 @@
               <template v-for="(val, key) in item" :key="key">
                 <template v-if="index === itemIndexToEdit">
                   <v-col cols="5" class="d-flex align-center justify-center">
-                    <v-text-field class="centered-input" label="Key" v-model="keyToEdit"
+                    <v-text-field class="centered-input" label="Key" v-model.trim="keyToEdit"
                                   :rules="[v => !!v || 'Key is required']" required></v-text-field>
                   </v-col>
                   <v-col cols="5" class="d-flex align-center justify-center">
-                    <v-text-field class="centered-input" label="Value" v-model="valueToEdit"></v-text-field>
+                    <v-text-field class="centered-input" label="Value" v-model.trim="valueToEdit"></v-text-field>
                   </v-col>
                   <v-col cols="2" class="d-flex align-center justify-center">
                     <v-sheet class="pb-5">
@@ -104,10 +104,10 @@
 
             <v-row>
               <v-col cols="5" class="d-flex align-center justify-center">
-                <v-text-field class="centered-input" label="Key" v-model="keyToAdd"></v-text-field>
+                <v-text-field class="centered-input" label="Key" v-model.trim="keyToAdd"></v-text-field>
               </v-col>
               <v-col cols="5" class="d-flex align-center justify-center">
-                <v-text-field class="centered-input" label="Value" v-model="valueToAdd"></v-text-field>
+                <v-text-field class="centered-input" label="Value" v-model.trim="valueToAdd"></v-text-field>
               </v-col>
               <v-col cols="2" class="d-flex align-center justify-center pb-9">
                 <v-sheet>
