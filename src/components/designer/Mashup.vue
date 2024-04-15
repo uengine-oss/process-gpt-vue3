@@ -340,7 +340,7 @@ export default {
             type: componentRef.tagName,
             name: componentRef.localName,
             alias: componentRef.localAlias,
-            items: JSON.parse(JSON.stringify(componentRef.localItems)),
+            items: ((componentRef.localItems) ? JSON.parse(JSON.stringify(componentRef.localItems)) : null),
             label: componentRef.localLabel
           }
 
