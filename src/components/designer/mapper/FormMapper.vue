@@ -168,7 +168,11 @@ export default {
                 this.addTreeViewPort();
             }
         });
-        resizeObserver.observe(formArea);
+        this.$nextTick(() => {//다이얼로그가 생성될 시 이상한 위치로 되기에 일정 시간을 줌
+            setTimeout(() => {
+                this.addTreeViewPort();
+            }, 300);
+        });
         // processVariables가 준비되었는지 확인
         if (this.processVariables && this.processVariables.length > 0) {
             // processVariables 사용
@@ -266,13 +270,13 @@ export default {
                 x: 5,
                 y: 0,
                 direction: 'out',
-                parentNode: { name: parentNode, offset: { x: 0, y: 24 * this.portIndex} }
+                parentNode: { name: parentNode, offset: { x: 0, y: 24 * this.portIndex } }
             };
             this.blockTemplates.Target.ports[nodePath] = {
                 x: -5,
                 y: 0,
                 direction: 'in',
-                parentNode: { name: parentNode, offset: { x: 0, y: 24 * this.portIndex} }
+                parentNode: { name: parentNode, offset: { x: 0, y: 24 * this.portIndex } }
             };
             this.portIndex++;
         },
@@ -545,5 +549,11 @@ export default {
 }
 .tree-level {
     padding-left: 0 !important;
+}
+.left-treeview {
+    width: 200px;
+}
+.right-treeview {
+    width: 200px;
 }
 </style>
