@@ -388,6 +388,7 @@ export default {
       },
 
       onReady: function () {
+        // 컴포넌트 설정 버튼 클릭시, 오른쪽 설정 패널이 뜨는 버그 수정
         $("#keditor-setting-panel").remove()
       },
     });
