@@ -313,19 +313,43 @@ export default {
                 const parent = document.createElement('div')
                 parent.setAttribute('id', `vuemount_${crypto.randomUUID()}`)
 
-                // AI 예외 처리
-                // component의 태그명이 'date-field'인 경우, 'text-field'태그로 name, alias 속성을 가지도록 추가
-                if(component.tagName.toLowerCase() === 'date-field') {
-                    const textField = document.createElement('text-field')
-                    textField.setAttribute("name", component.getAttribute("name") ?? "name")
-                    textField.setAttribute("alias", component.getAttribute("alias") ?? "alias")
-                
-                    component.parentNode.insertBefore(parent, textField)
-                    parent.appendChild(textField)      
-                }
-                else {
+
+                if(["text-field", "select-field", "checkbox-field", "radio-field", "file-field", "label-field", "submit-field"].includes(component.tagName.toLowerCase()))
+                {
                     component.parentNode.insertBefore(parent, component)
                     parent.appendChild(component)
+                }
+
+                // 메뉴얼에 없는 태그를 사용할 경우의 AI 예외 처리
+                // AI가 메뉴얼을 따르지 않고 다른 태그를 사용했을 경우, 적절한 태그로 생성시켜버리기
+                else 
+                {
+                    // items 속성을 가지고 있는 경우 select-field로 치환
+                    if(component.hasAttribute("items"))
+                    {
+                        const selectField = document.createElement('select-field')
+                        selectField.setAttribute("name", component.getAttribute("name") ?? "name")
+                        selectField.setAttribute("alias", component.getAttribute("alias") ?? "alias")
+                        selectField.setAttribute("items", component.getAttribute("items") ?? "[]")
+                        
+                        component.parentNode.insertBefore(parent, component)
+                        parent.appendChild(selectField)
+                        component.parentNode.removeChild(component)
+                    }
+                    // name이나 alias 속성을 가지고 있는 경우 text-field로 치환
+                    else if(component.hasAttribute("name") || component.hasAttribute("alias"))
+                    {
+                        const textField = document.createElement('text-field')
+                        textField.setAttribute("name", component.getAttribute("name") ?? "name")
+                        textField.setAttribute("alias", component.getAttribute("alias") ?? "alias")
+
+                        component.parentNode.insertBefore(parent, component)
+                        parent.appendChild(textField)  
+                        component.parentNode.removeChild(component)
+                    }
+                    // 처리 방법 없음. 무시
+                    else
+                        component.parentNode.removeChild(component)
                 }
             })
 
