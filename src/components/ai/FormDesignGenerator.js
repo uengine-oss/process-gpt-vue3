@@ -59,7 +59,7 @@ export default class FormDesignGenerator extends AIGenerator{
           사용해야 하는 컴포넌트는 다음과 같아.
           ${componentInfosPromptStr}
 
-          반환 형식은 다음과 같은 Json 형태를 따라주고, 채팅으로 응답할 때마다 맨 마지막에 결과를 적어주면 돼.
+          반환 형식은 다음과 같은 Json 형태를 따라주고, 채팅으로 응답할 때마다 맨 마지막에 반드시 결과를 적어주면 돼.
           마지막 결과는 markdown 으로, three backticks 로 감싸줘야 내가 이 결과를 사용해야 한다는 걸 알 수 있으니까 명심해.
           \`\`\`
           {
