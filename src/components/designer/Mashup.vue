@@ -388,6 +388,7 @@ export default {
       },
 
       onReady: function () {
+        $("#keditor-setting-panel").remove()
       },
     });
 
