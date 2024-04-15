@@ -2,7 +2,7 @@
     <v-card
     class="mx-auto my-8"
     elevation="16"
-    max-width="400"
+    max-width="600"
     >
         <v-card-item>
         <v-card-title>
