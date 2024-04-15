@@ -395,6 +395,7 @@ export default {
 
   beforeUnmount() {
     window.mashup.removeStylesForKEditor();
+    window.mashup.completeClearKEditor();
   }
 }
 </script>
