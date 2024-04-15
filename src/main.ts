@@ -104,14 +104,16 @@ let initOptions = {
     url: `http://localhost:9090/`,
     realm: `uengine6`,
     clientId: `uengine`,
-    onLoad: `login-required`
+    onLoad: 'login-required' as KeycloakOnLoad // Explicitly cast to KeycloakOnLoad
 };
 import Keycloak from 'keycloak-js';
-let keycloak = new Keycloak(initOptions);
-try {
-    const authenticated = await keycloak.init({
+import type { KeycloakOnLoad } from 'keycloak-js';
+(async () => {
+    let keycloak = new Keycloak(initOptions);
+    try {
+      const authenticated = await keycloak.init({
         onLoad: initOptions.onLoad
-    });
+      });
     console.log(`User is ${authenticated ? 'authenticated' : 'not authenticated'}`);
     if (authenticated) {
         localStorage.setItem('keycloak', `${keycloak.token}`);
@@ -136,3 +138,4 @@ try {
 } catch (error) {
     console.error('Failed to initialize adapter:', error);
 }
+})();

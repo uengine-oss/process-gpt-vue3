@@ -1,6 +1,6 @@
 import axios from 'axios';
 const axiosInstance = axios.create();
-import * as Backend from './Backend';
+import type { Backend } from './Backend';
 
 class UEngineBackend implements Backend {
     // constructor() {

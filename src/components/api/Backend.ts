@@ -1,4 +1,4 @@
-interface Backend {
+export interface Backend {
     listDefinition(basePath: string): Promise<any>;
     listVersionDefinitions(version: string, basePath: string): Promise<any>;
     listVersions(): Promise<any>;
@@ -30,4 +30,4 @@ interface Backend {
     getWorkList(): Promise<any>;
 }
 
-export type { Backend }
+// export type { Backend }
