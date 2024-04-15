@@ -26,19 +26,19 @@ const formDesignGeneratorPromptSnipptsData = {
         {
             tag: `<select-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' items='<선택 항목 리스트>'></select-field>`,
             purpose: "여러개의 옵션 중 하나를 선택하기 위해서",
-            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함. '...'으로 나열해야 할 정도로 항목이 많을 경우, text-field를 사용할 것.`
+            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함.`
         },
 
         {
             tag: `<checkbox-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' items='<선택 항목 리스트>'></checkbox-field>`,
             purpose: "여러개의 선택 사항들 중, 여러개를 선택하기 위해서",
-            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함. '...'으로 나열해야 할 정도로 항목이 많을 경우, text-field를 사용할 것.`
+            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함.`
         },
 
         {
             tag: `<radio-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' items='<선택 항목 리스트>'></radio-field>`,
             purpose: "나열된 여러개의 옵션 중 하나를 선택하기 위해서",
-            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함. '...'으로 나열해야 할 정도로 항목이 많을 경우, text-field를 사용할 것.`
+            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함.`
         },
 
         {
@@ -76,6 +76,7 @@ const formDesignGeneratorPromptSnipptsData = {
 
             책 장르는 여러 개의 옵션 중 하나를 선택해야 하니까 select-field를 사용하면 되겠네.
             책 장르인 경우에는 간단하게 '소설', '시', '에세이' 정도로 한다면 모든 요소를 각각 적어야 하니까 items에 들어갈 내용은 '[{"소설": "novel"}, {"시": "poem"}, {"에세이": "essay"}]'로 각각 적으면 되겠네.
+            items에 '...'과 같이 나열하는 문자열이 없고, 각각의 키가 고유하니까 만족되는 값이라고 볼 수 있겠네.
 
             책 표지 이미지는 파일을 입력받아야 하니까 file-field를 사용하면 되겠네.
 
