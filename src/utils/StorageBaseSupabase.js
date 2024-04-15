@@ -473,7 +473,7 @@ export default class StorageBaseSupabase {
             window.localStorage.setItem('email', value.user.email);
             window.localStorage.setItem('uid', value.user.id);
 
-            const { data, error } = await window.$supabase.from('users').select('*').eq('id', value.user.id).single();
+            // const { data, error } = await window.$supabase.from('users').select('*').eq('id', value.user.id).single();
 
             const { data, error } = await window.$supabase
                 .from('users')
