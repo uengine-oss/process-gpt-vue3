@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-text-field :label="label"></v-text-field>
+        <v-text-field :label="label" v-model="inputedValue"></v-text-field>
     </div>
 </template>
 
@@ -19,16 +19,17 @@ export default {
         name: String,
         alias: String
     },
-    data() {
-        return {
-            localName: this.name,
-            localAlias: this.alias
-        };
-    },
     computed: {
         label() {
             return this.localAlias || this.localName;
         }
+    },
+    data() {
+        return {
+            localName: this.name,
+            localAlias: this.alias,
+            inputedValue: ""
+        };
     },
     created() {
     },

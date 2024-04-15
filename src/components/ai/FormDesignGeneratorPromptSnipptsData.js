@@ -20,36 +20,36 @@ const formDesignGeneratorPromptSnipptsData = {
         {
             tag: `<text-field name='<이 입력창의 고유한 이름>' alias='<이 입력창의 별명>'></text-field>`,
             purpose: "텍스트를 입력받기 위해서",
-            limit: ""
+            limit: "년도와 같이 선택해야 할 항목이 너무 많은 경우에는 text-field를 사용할 것"
         },
 
         {
             tag: `<select-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' items='<선택 항목 리스트>'></select-field>`,
             purpose: "여러개의 옵션 중 하나를 선택하기 위해서",
-            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함`
+            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함. '...'으로 나열해야 할 정도로 항목이 많을 경우, text-field를 사용할 것.`
         },
 
         {
             tag: `<checkbox-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' items='<선택 항목 리스트>'></checkbox-field>`,
             purpose: "여러개의 선택 사항들 중, 여러개를 선택하기 위해서",
-            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함`
+            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함. '...'으로 나열해야 할 정도로 항목이 많을 경우, text-field를 사용할 것.`
         },
 
         {
             tag: `<radio-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' items='<선택 항목 리스트>'></radio-field>`,
             purpose: "나열된 여러개의 옵션 중 하나를 선택하기 위해서",
-            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함`
+            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함. '...'으로 나열해야 할 정도로 항목이 많을 경우, text-field를 사용할 것.`
         },
 
         {
-            tag: `<file-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' accept='<video/*|audio/*|image/*'></file-field>`,
+            tag: `<file-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>'></file-field>`,
             purpose: `파일을 입력받기 위해서`,
             limit: ""
         },
 
         {
-            tag: `<label-field for_id='<설명할 대상이 되는 컴포넌트의 ID>'>Label</label-field>`,
-            purpose: `ID로 지정된 특정 컴포넌트를 설명하기 위해서`,
+            tag: `<label-field label='<입력시킬 라벨 값>'></label-field>`,
+            purpose: `특정 컴포넌트를 설명하기 위해서`,
             limit: "name, alias가 있는 경우에는 이미 내부적으로 label이 설정되기 때문에 쓸 필요가 없음"
         },
 
@@ -71,10 +71,9 @@ const formDesignGeneratorPromptSnipptsData = {
             책 제목, 저자는 텍스트로 입력 받으면 되니까 text-field를 사용하면 되겠네.
 
             책 장르는 여러 개의 옵션 중 하나를 선택해야 하니까 select-field를 사용하면 되겠네.
-            책 장르인 경우에는 간단하게 '소설', '시', '에세이' 정도로 한다면 items에 들어갈 내용은 '[{"소설": "novel"}, {"시": "poem"}, {"에세이": "essay"}]'로 하면 되겠네.
+            책 장르인 경우에는 간단하게 '소설', '시', '에세이' 정도로 한다면 모든 요소를 각각 적어야 하니까 items에 들어갈 내용은 '[{"소설": "novel"}, {"시": "poem"}, {"에세이": "essay"}]'로 각각 적으면 되겠네.
 
             책 표지 이미지는 파일을 입력받아야 하니까 file-field를 사용하면 되겠네.
-            이미지를 입력 받으니까 accept에서 유효한 문자열을 선택하면 'image/*'를 넣어주면 되겠네.
 
             제출 버튼은 하나만 추가하라는 제약사항이 있으니까 하나만 마지막에 추가하면 되겠네.
             마지막으로 '\`\`\`'로 감싸진 코드에 JSON 형식으로 "htmlOutput" 속성에 추가만 해주면 되겠네.`,
@@ -87,7 +86,7 @@ const formDesignGeneratorPromptSnipptsData = {
                         <text-field name='book_title' alias='책 제목'></text-field>
                         <text-field name='book_author' alias='저자'></text-field>
                         <select-field name='book_genre' alias='책 장르' items='[{"소설": "novel"}, {"시": "poem"}, {"에세이": "essay"}]'></select-field>
-                        <file-field name='book_cover' alias='책 표지 이미지' accept='image/*'></file-field>
+                        <file-field name='book_cover' alias='책 표지 이미지'></file-field>
                         <submit-field></submit-field>
                     </div>
                 </div>"

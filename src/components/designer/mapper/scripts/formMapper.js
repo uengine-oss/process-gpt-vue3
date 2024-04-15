@@ -321,18 +321,29 @@ export default {
   methods: {
     getBlock(name) {
       const block = this.blocks[name];
-      return {
-        ...this.blockTemplates[block.type],
-        ...block,
-        name,
-      };
+      if(block) {
+        return {
+          ...this.blockTemplates[block.type],
+          ...block,
+          name,
+        };
+      }
+      return null;
     },
     resolvePos(spec) {
       if (_.isObject(spec) && spec.x !== undefined && spec.y !== undefined) {
         return spec;
       }
       const block = this.getBlock(spec[0]);
-      return add(block.pos, block.ports[spec[1]] || { x: 0, y: 0 });
+      if(block != null) {
+        var pos = add(block.pos, block.ports[spec[1]] || { x: 0, y: 0 });
+        if(block.ports[spec[1]].parentNode) {
+          var parentOffset = block.ports[spec[1]].parentNode.offset;
+          pos = add(pos, parentOffset);
+        }
+        return pos;
+      }
+      return { x: 0, y: 0 };
     },
     mousePos({ clientX, clientY }) {
       return sub({ x: clientX, y: clientY }, this.offset);
@@ -496,33 +507,14 @@ export default {
         if (!this.checkGlobalType(conn.to[0])) return;
         var block = this.blocks[conn.from[0]];
         var blockData = this.blockTemplates[block.type];
-        var mappingElement = this.createMappingElement(conn.from[0], block, blockData, conn.to[1]);
+        var mappingElement = this.createMappingElement(conn, block, blockData, conn.to[1]);
         var connections = this.connections.filter(childConn => childConn.to[0] === conn.from[0]);
         var argumentSourceMap = this.createArgumentSourceMap(connections);
-        mappingElement.transformerMapping.transformer.argumentSourceMap = argumentSourceMap;
+        if (mappingElement.transformerMapping) {
+          mappingElement.transformerMapping.transformer.argumentSourceMap = argumentSourceMap;
+        }
         computedTransformers.mappingElements.push(mappingElement);
       });
-      // Object.entries(this.blocks).forEach(([blockName, block]) => {
-      //   if (this.shouldSkipBlock(block)) return; 
-      //   const blockData = this.blockTemplates[block.type];
-      //   const mappingElement = this.createMappingElement(block, blockData, blockName); 
-      //   const connections = this.connections.filter(conn => conn.to[0] === blockName);
-      //   let shouldReturn = false;
-      //   const argumentSourceMap = connections.reduce((acc, conn) => {
-      //     const { shouldSkip, updatedAcc } = this.processConnection(conn, blockName); 
-      //     if (shouldSkip) {
-      //       shouldReturn = true;
-      //       return acc;
-      //     }
-      //     return updatedAcc;
-      //   }, {});
-      //   if (shouldReturn) return;
-
-      //   this.updateMappingElementForReplaceType(block, mappingElement); 
-
-      //   mappingElement.transformerMapping.transformer.argumentSourceMap = argumentSourceMap;
-      //   computedTransformers["mappingElements"].push(mappingElement);
-      // });
       return computedTransformers;
     },
     createArgumentSourceMap(connections) {
@@ -558,23 +550,42 @@ export default {
     checkGlobalType(type) {
       return type == "Source" || type == "Target" || type == "Direct";
     },
-    createMappingElement(blockName, block, blockData, argument) {
-      return {
-        "_type": "org.uengine.kernel.MappingElement",
-        "argument": {
-          "text": argument
-        },
-        "transformerMapping": {
-          "transformer": {
-            "_type": blockData.class,
-            "name": blockName,
-            "location": block.pos,
-            "argumentSourceMap": {}
+    createMappingElement(conn, block, blockData, argument) {
+      var mappingElement = {};
+      var blockName = conn.from[0];
+      if (blockName == "Source") {
+        mappingElement = {
+          "_type": "org.uengine.kernel.MappingElement",
+          "argument": {
+            "text": argument
           },
-          "linkedArgumentName": argument
-        },
-        "isKey": false
-      };
+          "variable": {
+            "name": conn.from[1],
+            "askWhenInit": false,
+            "isVolatile": false
+          },
+          "isKey": false
+        }
+      } else {
+        mappingElement = {
+          "_type": "org.uengine.kernel.MappingElement",
+          "argument": {
+            "text": argument
+          },
+          "transformerMapping": {
+            "transformer": {
+              "_type": blockData.class,
+              "name": blockName,
+              "location": block.pos,
+              "argumentSourceMap": {}
+            },
+            "linkedArgumentName": argument
+          },
+          "isKey": false
+        };
+
+      }
+      return mappingElement;
     },
     updateMappingElementForReplaceType(block, mappingElement) {
       if (block.type == "Replace") {
@@ -619,7 +630,7 @@ export default {
                         },
                         "argumentSourceMap": {
                           "value1": "Variables",
-                          "value2": "test1"
+                          "value2": "Variables.test1"
                         }
                       },
                       "linkedArgumentName": "out"
@@ -634,8 +645,8 @@ export default {
                           "y": 318.09375
                         },
                         "argumentSourceMap": {
-                          "value1": "test2",
-                          "value2": "test3"
+                          "value1": "Variables.test2",
+                          "value2": "Variables.test3"
                         }
                       },
                       "linkedArgumentName": "out"
@@ -649,7 +660,7 @@ export default {
             {
               "_type": "org.uengine.kernel.MappingElement",
               "argument": {
-                "text": "test3"
+                "text": "Variables.test3"
               },
               "transformerMapping": {
                 "transformer": {
@@ -671,7 +682,7 @@ export default {
                         },
                         "argumentSourceMap": {
                           "value1": "Variables",
-                          "value2": "test1"
+                          "value2": "Variables.test1"
                         }
                       },
                       "linkedArgumentName": "out"
@@ -686,20 +697,46 @@ export default {
                           "y": 318.09375
                         },
                         "argumentSourceMap": {
-                          "value1": "test2",
-                          "value2": "test3"
+                          "value1": "Variables.test2",
+                          "value2": "Variables.test3"
                         }
                       },
                       "linkedArgumentName": "out"
                     }
                   }
                 },
-                "linkedArgumentName": "test3"
+                "linkedArgumentName": "Variables.test3"
+              },
+              "isKey": false
+            },
+            {
+              "_type": "org.uengine.kernel.MappingElement",
+              "argument": {
+                "text": "Variables.test1"
+              },
+              "variable": {
+                "name": "Variables.test1",
+                "askWhenInit": false,
+                "isVolatile": false
+              },
+              "isKey": false
+            },
+            {
+              "_type": "org.uengine.kernel.MappingElement",
+              "argument": {
+                "text": "Variables.test2"
+              },
+              "variable": {
+                "name": "Variables.test3",
+                "askWhenInit": false,
+                "isVolatile": false
               },
               "isKey": false
             }
           ]
         };
+
+        // mappingContent = {};
 
         mappingContent.mappingElements.forEach(element => {
           this.createMappingElementFromJson(element);
@@ -711,11 +748,13 @@ export default {
       }
     },
     createMappingElementFromJson(element) {
-      console.log(element);
-
       var transformerMapping = element.transformerMapping;
 
-      this.addBlockFromJson(transformerMapping, element.argument.text);
+      if (transformerMapping) {
+        this.addBlockFromJson(transformerMapping, element.argument.text);
+      } else {
+        this.addConnectionDirect(element.variable.name, element.argument.text);
+      }
     },
     addBlockFromJson(transformerMapping, targetArgument = null) {
       var blockName = transformerMapping.transformer.name;
@@ -733,7 +772,6 @@ export default {
         var argumentSourceMap = transformerMapping.transformer.argumentSourceMap[key];
         if (argumentSourceMap != null && typeof argumentSourceMap === 'object') {
           this.addBlockFromJson(argumentSourceMap);
-        } else {
         }
       });
 
@@ -752,7 +790,7 @@ export default {
           this.addConnectionJson(sourceBlockName, fromBlockName, source.transformer.argumentSourceMap);
           connection = {
             from: [sourceBlockName, "out"],
-            to: [fromBlockName, "in " + argument], 
+            to: [fromBlockName, "in " + argument],
           };
         } else {
           connection = {
@@ -768,11 +806,20 @@ export default {
       if (toBlockName === "Target" && targetArgument) {
         const connection = {
           from: [fromBlockName, "out"],
-          to: ["Target", targetArgument], 
+          to: ["Target", targetArgument],
         };
         if (!this.isConnectionDuplicate(connection)) {
           this.tempConnections.push(connection);
         }
+      }
+    },
+    addConnectionDirect(variable, targetArgument) {
+      const connection = {
+        from: ["Source", variable],
+        to: ["Target", targetArgument],
+      };
+      if (!this.isConnectionDuplicate(connection)) {
+        this.tempConnections.push(connection);
       }
     },
     isConnectionDuplicate(connection) {
@@ -809,6 +856,7 @@ export default {
           ...port,
           direction: port.direction || "in",
           name,
+          parentNode: port.parentNode,
           blockName,
           pos: add(pos, port),
         }));

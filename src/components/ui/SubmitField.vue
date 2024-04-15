@@ -1,6 +1,6 @@
 <template>
     <div>
-        <input type="submit" value="Submit">
+        <input type="submit" value="Submit" @click="$emit('onClickSubmit')">
     </div>
 </template>
 
@@ -13,7 +13,12 @@ export default {
     mixins: [
         
     ],
+    emits: [
+        "onClickSubmit"
+    ],
     props: {
+        vueRenderUUID: String,
+        tagName: String
     },
     data() {
         return {

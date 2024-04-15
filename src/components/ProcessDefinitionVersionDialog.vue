@@ -102,9 +102,15 @@ export default {
                             me.information = result[0]
                         } else {
                             me.isNew = true
+                            me.information.proc_def_id = me.process.processDefinitionId;
+                            me.information.name = me.process.processDefinitionName;
                         }
                     } else {
                         me.isNew = true
+                        if (me.$route.query && me.$route.query.id && me.$route.query.name) {
+                            me.information.id = me.$route.query.id;
+                            me.information.name = me.$route.query.name;
+                        }
                     }
                     me.isOpen = true
                 }

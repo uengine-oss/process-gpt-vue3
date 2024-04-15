@@ -74,24 +74,22 @@ export default {
             const data = await this.getData(`${storageKey}/organization`, {key: 'key'});
 
             if (data && data.value) {
-                this.checkDisableChat(data.value);
-
-                if (data.value.messages) {
-                    this.messages = value.messages;
-                }
-
-                if (data.value.chart && data.value.chart.length > 0) {
-                    let orgChart = JSON.parse(data.value.chart);
-                    if (orgChart && orgChart.length > 0) {
-                        this.organizationChart = orgChart;
-                    }
+                if (data.value.chart) {
+                    this.organizationChart = data.value.chart;
                     if (!this.organizationChart) {
                         this.organizationChart = [];
                     }
                 }
             }
 
-            this.userList = await this.getData("users");
+            const message = await this.getData(`${storageKey}/organization_message`, {key: 'key'});
+            if (message && message.value) {
+                if (message.value.message) {
+                    this.messages = message.value.message
+                }
+            }
+
+            this.userList = await this.storage.list("users");
         },
 
         beforeSendMessage(newMessage) {
@@ -111,18 +109,20 @@ export default {
                 }
 
                 if (unknown && !unknown.modifications) {
-                    this.drawChart(unknown);
+                    if (unknown.organizationChart) {
+                        this.drawChart(unknown);
+                    }
                 }
             }
         },
 
         drawChart(obj) {
-            if(obj && obj.organizationChart) {
+            if (obj && obj.organizationChart) {
                 this.organizationChart = obj.organizationChart;
             }
         },
 
-        afterGenerationFinished(response) {
+        async afterGenerationFinished(response) {
             let messageWriting = this.messages[this.messages.length - 1];
 
             if (messageWriting.jsonContent) {
@@ -145,33 +145,79 @@ export default {
                         }
                     });
                 }
+
+                if (unknown && unknown.newUsers) {
+                    this.createNewUser(unknown.newUsers);
+                }
+                if (unknown && unknown.deleteUsers) {
+                    this.deleteUser(unknown.deleteUsers);
+                }
             }
 
-            let chartText = "";
             const putObj =  {
                 key: 'organization',
                 value: {
-                    messages: this.messages,
-                    chart: "",
+                    chart: this.organizationChart,
                 }
             };
-            if (this.organizationChart) {
-                chartText = JSON.stringify(this.organizationChart);
-                putObj.value.chart = chartText;
-                this.drawChart(this.organizationChart);
-                this.putObject(storageKey, putObj);
-            }
+            this.drawChart(this.organizationChart);
+            this.putObject(storageKey, putObj);
+
+            const msgObj =  {
+                key: 'organization_message',
+                value: {
+                    message: this.messages,
+                }
+            };
+            this.putObject(storageKey, msgObj);
         },
 
         afterModelStopped(response) {
             const putObj =  {
-                key: 'organization',
+                key: 'organization_message',
                 value: {
-                    messages: this.messages,
+                    message: this.messages,
                 }
             };
             this.putObject(storageKey, putObj);
         },
+
+        async createNewUser(users) {
+            if (users && users.length > 0) {
+                users.forEach(async user => {
+                    let userInfo = {
+                        username: user.name,
+                        email: user.email,
+                        password: '000000',
+                    }
+                    const result = await this.storage.signUp(userInfo);
+                    if (result.user) {
+                        userInfo = {
+                            id: result.user.id,
+                            username: user.name,
+                            email: user.email,
+                        }
+                        await this.putObject('users', userInfo);
+                    }
+                });
+                this.userList = await this.storage.list("users");
+            }
+        },
+
+        async deleteUser(users) {
+            if (users && users.length > 0) {
+                users.forEach(async user => {
+                    const options = {
+                        match: {
+                            email: user.email,
+                            username: user.name,
+                        }
+                    }
+                    await this.storage.delete('users', options);
+                });
+                this.userList = await this.storage.list("users");
+            }
+        }
     }
 }
 </script>
