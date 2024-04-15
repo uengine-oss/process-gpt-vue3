@@ -9,9 +9,8 @@
                 </div>
             </template>
             <template v-slot:rightpart>
-                <mashup v-if="isShowMashup" v-model="kEditorInput" @onChangeKEditorContent="updatePrevFormOutput"
-                        :key="mashupKey" @onSaveFormDefinition="saveFormDefinition"
-                        :storedFormDefData="storedFormDefData"/>
+                <mashup v-if="isShowMashup" ref="mashup" v-model="kEditorInput" :key="mashupKey" 
+                        @onSaveFormDefinition="saveFormDefinition" :storedFormDefData="storedFormDefData"/>
                 <card v-else class="d-flex align-center justify-center fill-height">
                     <v-progress-circular color="primary" indeterminate></v-progress-circular>
                 </card>
@@ -97,13 +96,6 @@ export default {
     },
     methods: {
         /**
-         * KEditor의 내용이 변경될때마다 AI에게 변경된 내용을 전달하기 위해서
-         */
-        updatePrevFormOutput({html}) {
-            this.prevFormOutput = html
-        },
-
-        /**
          * 'Save' 버튼을 누를 경우, 최종 결과를 Supabase에 저장하기 위해서
          */
         async saveFormDefinition({id, name, html}){
@@ -159,6 +151,7 @@ export default {
          * @param {*} newMessage 
          */
         beforeSendMessage(newMessage) {
+            this.prevFormOutput = this.$refs.mashup.getKEditorContentHtml()
             this.generator.sendMessageWithPrevFormOutput(newMessage)
         },
 
