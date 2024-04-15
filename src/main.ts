@@ -44,8 +44,8 @@ import VueScrollTo from 'vue-scrollto';
 const i18n = createI18n({
     locale: 'ko',
     fallbackLocale: 'en',
-    messages,
-  });
+    messages
+});
 // EventBus
 import mitt from 'mitt';
 const emitter = mitt();
@@ -58,20 +58,18 @@ app.config.globalProperties.EventBus = emitter;
 app.config.globalProperties.OGBus = OpenGraphEmitter;
 app.config.globalProperties.ModelingBus = ModelingEmitter;
 
-
-
 // 전역 상태 관리자를 전역 속성으로 추가
 app.config.globalProperties.$globalState = globalState;
 
 import ModelerImageGenerator from '@/components/designer/ModelerImageGenerator.vue';
-app.component('modeler-image-generator', ModelerImageGenerator)
+app.component('modeler-image-generator', ModelerImageGenerator);
 // modeler-image-generator
 // Use plugins
 import loadbpmnComponents from './components/designer/bpmnModeling/bpmn';
 import loadOpengraphComponents from './opengraph';
 
-loadOpengraphComponents(app)
-loadbpmnComponents(app)
+loadOpengraphComponents(app);
+loadbpmnComponents(app);
 
 fakeBackend();
 app.use(router);
@@ -80,7 +78,7 @@ app.use(PerfectScrollbar);
 app.use(createPinia());
 app.use(VCalendar, {});
 app.use(VueTablerIcons);
-app.component('Icon', Icon)
+app.component('Icon', Icon);
 // app.use(print);
 app.use(VueRecaptcha, {
     siteKey: '6LdzqbcaAAAAALrGEZWQHIHUhzJZc8O-KSTdTTh_',
@@ -95,9 +93,45 @@ app.use(setLocale);
 // app.use(VueScrollTo);
 app.use(VueScrollTo, {
     duration: 1000,
-    easing: "ease",
-    offset:-50,
-})
-app.use(VueDiff, {
-    componentName: 'vuediff',
+    easing: 'ease',
+    offset: -50
 });
+app.use(VueDiff, {
+    componentName: 'vuediff'
+});
+let initOptions = {
+    url: `http://localhost:9090/`,
+    realm: `uengine6`,
+    clientId: `uengine`,
+    onLoad: `login-required`
+};
+import Keycloak from 'keycloak-js';
+let keycloak = new Keycloak(initOptions);
+try {
+    const authenticated = await keycloak.init({
+        onLoad: initOptions.onLoad
+    });
+    console.log(`User is ${authenticated ? 'authenticated' : 'not authenticated'}`);
+    if (authenticated) {
+        localStorage.setItem('keycloak', `${keycloak.token}`);
+        console.log(keycloak.tokenParsed);
+        if (keycloak.token && keycloak.tokenParsed) {
+            localStorage.setItem('accessToken', `${keycloak.token}`);
+            localStorage.setItem('author', `${keycloak.tokenParsed.email}`);
+            localStorage.setItem('userName', `${keycloak.tokenParsed.preferred_username}`);
+            localStorage.setItem('email', `${keycloak.tokenParsed.email}`);
+            localStorage.setItem('uid', `${keycloak.tokenParsed.sub}`);
+            localStorage.setItem('isAdmin', 'true');
+            localStorage.setItem('picture', '');
+        }
+    }
+    // const response = await fetch('http://localhost:9090/api/users', {
+    //     headers: {
+    //         accept: 'application/json',
+    //         authorization: `Bearer ${keycloak.token}`
+    //     }
+    // });
+    // console.log(response.json());
+} catch (error) {
+    console.error('Failed to initialize adapter:', error);
+}
