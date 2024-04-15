@@ -12,7 +12,8 @@
     <v-dialog v-model="isOpenSettingDialog">
         <form-definition-panel
           :value="componentSettingValue"
-          @save="editFormDefinition"
+          @onSave="editFormDefinition"
+          @onClose="isOpenSettingDialog = false"
         >
         </form-definition-panel>
     </v-dialog>
@@ -339,7 +340,7 @@ export default {
             type: componentRef.tagName,
             name: componentRef.localName,
             alias: componentRef.localAlias,
-            items: componentRef.localItems,
+            items: JSON.parse(JSON.stringify(componentRef.localItems)),
             label: componentRef.localLabel
           }
 

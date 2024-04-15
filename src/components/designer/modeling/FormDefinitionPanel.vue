@@ -11,6 +11,9 @@
         <v-card-subtitle>
             type: {{ value.type }}
         </v-card-subtitle>
+        <v-btn icon style="position:absolute; right:5px; top:5px;" @click="$emit('onClose')">
+            <v-icon>mdi-close</v-icon>
+        </v-btn>
         </v-card-item>
 
         <v-card-text>
@@ -128,6 +131,10 @@
   export default {
     name: 'form-definition-panel',
     mixins: [],
+    emits: [
+      "onClose",
+      "onSave"
+    ],
     props: {
       value: {
         id: String,
@@ -150,7 +157,7 @@
     },
     methods: {
       save() {
-        this.$emit('save', JSON.parse(JSON.stringify(this.value)))
+        this.$emit('onSave', JSON.parse(JSON.stringify(this.value)))
       },
 
       addItem() {
