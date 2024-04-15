@@ -17,9 +17,12 @@
         </v-card-item>
 
         <v-card-text>
-            <v-text-field v-if="value.name !== undefined" label="Name" v-model="value.name"></v-text-field>
-            <v-text-field v-if="value.alias !== undefined" label="Alias" v-model="value.alias"></v-text-field>
-            <v-text-field v-if="value.label !== undefined" label="Label" v-model="value.label"></v-text-field>
+            <v-text-field v-if="value.name !== undefined" label="Name" v-model="value.name"
+                          :rules="[v => !!v || 'Name is required']" required></v-text-field>
+            <v-text-field v-if="value.alias !== undefined" label="Alias" v-model="value.alias"
+                          :rules="[v => !!v || 'Alias is required']" required></v-text-field>
+            <v-text-field v-if="value.label !== undefined" label="Label" v-model="value.label"
+                          :rules="[v => !!v || 'Label is required']" required></v-text-field>
         </v-card-text>
 
         <div v-if="value.items">
@@ -138,7 +141,7 @@
       "onSave"
     ],
     props: {
-      value: {
+      /** {
         id: String,
         type: String,
         name: String,
@@ -146,6 +149,8 @@
         items: Array,
         label: String
       }
+      */
+      value: Object 
     },
     data: () => ({
       keyToAdd: "",
@@ -153,22 +158,73 @@
 
       itemIndexToEdit: -1,
       keyToEdit: "",
-      valueToEdit: ""
+      valueToEdit: "",
+
+      initialValue: {}
     }),
     components: {
     },
     methods: {
       save() {
+        //#region 유효성 검사
+        if(!(this.value.name) || this.value.name.length <= 0) {
+          alert("Name is required")
+          return
+        }
+
+        if(!(this.value.alias) || this.value.alias.length <= 0) {
+          alert("Alias is required")
+          return
+        }
+        //#endregion
+
         this.$emit('onSave', JSON.parse(JSON.stringify(this.value)))
       },
 
       addItem() {
+        //#region 유효성 검사
+        if(!(this.keyToAdd) || this.keyToAdd.length <= 0) {
+          alert("Key is required")
+          return
+        }
+
+        if(!(this.valueToAdd) || this.valueToAdd.length <= 0) {
+          alert("Value is required")
+          return
+        }
+
+        if(this.value.items.some(item => item.hasOwnProperty(this.keyToAdd))) {
+          alert("Key already exists")
+          return
+        }
+        //#endregion
+
         this.value.items.push({ [this.keyToAdd]: this.valueToAdd })
         this.keyToAdd = ""
         this.valueToAdd = ""     
       },
 
       editItem(itemIndexToEdit) {
+        //#region 유효성 검사
+        if(!(this.keyToEdit) || this.keyToEdit.length <= 0) {
+          alert("Key is required")
+          return
+        }
+
+        if(!(this.valueToEdit) || this.valueToEdit.length <= 0) {
+          alert("Value is required")
+          return
+        }
+
+        // 키가 기존의 값과 달라진 경우에만 중복 여부를 검사하기 위해서
+        if(!(this.value.items[itemIndexToEdit].hasOwnProperty(this.keyToEdit))) {
+          if(this.value.items.some(item => item.hasOwnProperty(this.keyToEdit))) {
+            alert("Key already exists")
+            return
+          }
+        }
+        //#endregion
+
         this.value.items.splice(itemIndexToEdit, 1, { [this.keyToEdit]: this.valueToEdit })
 
         this.itemIndexToEdit = -1
@@ -180,7 +236,9 @@
         this.value.items.splice(itemIndexToDelete, 1)
       }
     },
-    mounted() {}
+    created() {
+      this.initialValue = JSON.parse(JSON.stringify(this.value))
+    }
   }
 </script>
   
