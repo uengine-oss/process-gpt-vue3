@@ -17,11 +17,11 @@
         </v-card-item>
 
         <v-card-text>
-            <v-text-field v-if="value.name !== undefined" label="Name" v-model="value.name"
-                          :rules="[v => !!v || 'Name is required']" required></v-text-field>
-            <v-text-field v-if="value.alias !== undefined" label="Alias" v-model="value.alias"></v-text-field>
-            <v-text-field v-if="value.label !== undefined" label="Label" v-model="value.label"
-                          :rules="[v => !!v || 'Label is required']" required></v-text-field>
+            <v-text-field v-if="value.name !== undefined" ref="inputName" label="Name" v-model.trim="value.name"
+                          :rules="[v => !!v || 'Name is required']" required @keyup.enter="save"></v-text-field>
+            <v-text-field v-if="value.alias !== undefined" label="Alias" v-model.trim="value.alias" @keyup.enter="save"></v-text-field>
+            <v-text-field v-if="value.label !== undefined" label="Label" v-model.trim="value.label"
+                          :rules="[v => !!v || 'Label is required']" required @keyup.enter="save"></v-text-field>
         </v-card-text>
 
         <div v-if="value.items">
@@ -42,11 +42,11 @@
               <template v-for="(val, key) in item" :key="key">
                 <template v-if="index === itemIndexToEdit">
                   <v-col cols="5" class="d-flex align-center justify-center">
-                    <v-text-field class="centered-input" label="Key" v-model="keyToEdit"
-                                  :rules="[v => !!v || 'Key is required']" required></v-text-field>
+                    <v-text-field class="centered-input" label="Key" v-model.trim="keyToEdit"
+                                  :rules="[v => !!v || 'Key is required']" required @keyup.enter="editItem(index)"></v-text-field>
                   </v-col>
                   <v-col cols="5" class="d-flex align-center justify-center">
-                    <v-text-field class="centered-input" label="Value" v-model="valueToEdit"></v-text-field>
+                    <v-text-field class="centered-input" label="Value" v-model.trim="valueToEdit" @keyup.enter="editItem(index)"></v-text-field>
                   </v-col>
                   <v-col cols="2" class="d-flex align-center justify-center">
                     <v-sheet class="pb-5">
@@ -104,10 +104,10 @@
 
             <v-row>
               <v-col cols="5" class="d-flex align-center justify-center">
-                <v-text-field class="centered-input" label="Key" v-model="keyToAdd"></v-text-field>
+                <v-text-field ref="inputKeyToAddItem" class="centered-input" label="Key" v-model.trim="keyToAdd" @keyup.enter="addItem"></v-text-field>
               </v-col>
               <v-col cols="5" class="d-flex align-center justify-center">
-                <v-text-field class="centered-input" label="Value" v-model="valueToAdd"></v-text-field>
+                <v-text-field class="centered-input" label="Value" v-model.trim="valueToAdd" @keyup.enter="addItem"></v-text-field>
               </v-col>
               <v-col cols="2" class="d-flex align-center justify-center pb-9">
                 <v-sheet>
@@ -158,7 +158,10 @@
       keyToEdit: "",
       valueToEdit: "",
 
-      initialValue: {} // 초기에 해당 속성을 가지고 있는 경우에만 유효성을 검사시키기 위해서
+      initialValue: {}, // 초기에 해당 속성을 가지고 있는 경우에만 유효성을 검사시키기 위해서
+
+      regexStr: /^[가-힣a-zA-Z0-9_\-.]+$/,
+      regexErrorMsg: "'{{propName}}'은 한글, 영문, 숫자, 밑줄(_), 대시(-), 점(.) 만 입력 가능합니다!"
     }),
     components: {
     },
@@ -169,10 +172,21 @@
           alert("Name is required")
           return
         }
+        if(this.initialValue.name && !this.regexStr.test(this.value.name)) {
+          alert(this.regexErrorMsg.replace("{{propName}}", "Name"))
+          return
+        }
 
         if(this.initialValue.label && (!(this.value.label) || this.value.label.length <= 0)) {
           alert("Label is required")
           return
+        }
+
+        if(this.initialValue.alias && this.value.alias && this.value.alias.length > 0) {
+          if(!this.regexStr.test(this.value.alias)) {
+            alert(this.regexErrorMsg.replace("{{propName}}", "Alias"))
+            return
+          }
         }
         //#endregion
         //#region 입력값 처리
@@ -190,10 +204,20 @@
           alert("Key is required")
           return
         }
-
+        if(!this.regexStr.test(this.keyToAdd)) {
+            alert(this.regexErrorMsg.replace("{{propName}}", "Key"))
+            return
+        }
         if(this.value.items.some(item => item.hasOwnProperty(this.keyToAdd))) {
           alert("Key already exists")
           return
+        }
+
+        if(this.valueToAdd && this.valueToAdd.length > 0) {
+          if(!this.regexStr.test(this.valueToAdd)) {
+            alert(this.regexErrorMsg.replace("{{propName}}", "Value"))
+            return
+          }
         }
         //#endregion
         //#region 입력값 처리
@@ -204,7 +228,11 @@
 
         this.value.items.push({ [this.keyToAdd]: this.valueToAdd })
         this.keyToAdd = ""
-        this.valueToAdd = ""     
+        this.valueToAdd = ""   
+        
+        this.$nextTick(() => {
+            this.$refs.inputKeyToAddItem.focus();
+        });
       },
 
       editItem(itemIndexToEdit) {
@@ -213,11 +241,22 @@
           alert("Key is required")
           return
         }
+        if(!this.regexStr.test(this.keyToEdit)) {
+            alert(this.regexErrorMsg.replace("{{propName}}", "Key"))
+            return
+        }
 
         // 키가 기존의 값과 달라진 경우에만 중복 여부를 검사하기 위해서
         if(!(this.value.items[itemIndexToEdit].hasOwnProperty(this.keyToEdit))) {
           if(this.value.items.some(item => item.hasOwnProperty(this.keyToEdit))) {
             alert("Key already exists")
+            return
+          }
+        }
+
+        if(this.valueToEdit && this.valueToEdit.length > 0) {
+          if(!this.regexStr.test(this.valueToEdit)) {
+            alert(this.regexErrorMsg.replace("{{propName}}", "Value"))
             return
           }
         }
@@ -241,7 +280,12 @@
     },
     created() {
       this.initialValue = JSON.parse(JSON.stringify(this.value))
-    }
+    },
+    mounted() {
+        this.$nextTick(() => {
+            this.$refs.inputName.focus();
+        });
+    },
   }
 </script>
   

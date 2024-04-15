@@ -9,9 +9,12 @@
                 </div>
             </template>
             <template v-slot:rightpart>
-                <mashup v-model="kEditorInput" @onChangeKEditorContent="updatePrevFormOutput"
+                <mashup v-if="isShowMashup" v-model="kEditorInput" @onChangeKEditorContent="updatePrevFormOutput"
                         :key="mashupKey" @onSaveFormDefinition="saveFormDefinition"
                         :storedFormDefData="storedFormDefData"/>
+                <card v-else class="d-flex align-center justify-center fill-height">
+                    <v-progress-circular color="primary" indeterminate></v-progress-circular>
+                </card>
             </template>
 
             <template v-slot:mobileLeftContent>
@@ -65,7 +68,8 @@ export default {
         prevFormOutput: "", // 폼 디자이너에게 이미 이전에 생성된 HTML 결과물을 전달하기 위해서
         prevMessageFormat: "", // 사용자가 KEditor를 변경할때마다 해당 포맷을 기반으로 System 메세지를 재구축해서 보내기 위해서
 
-        storedFormDefData: null 
+        storedFormDefData: null ,
+        isShowMashup: false
     }),
     async created() {
         await this.init();
@@ -82,10 +86,12 @@ export default {
             deep: true,
             handler(newVal, oldVal) {
                 if (newVal.path !== oldVal.path) {
-                    if (newVal.params.id && newVal.params.id != 'chat') {
+                    if (newVal.params.id && newVal.params.id != 'chat')
                         this.loadData();
-                    }
-                }
+                    else
+                        this.isShowMashup = true
+                } else
+                    this.isShowMashup = true
             }
         }, 
     },
@@ -101,13 +107,24 @@ export default {
          * 'Save' 버튼을 누를 경우, 최종 결과를 Supabase에 저장하기 위해서
          */
         async saveFormDefinition({id, name, html}){
+            const isNewSave = (this.$route.params.id !== id)
+            if(isNewSave) {
+                const isFormAlreadyExist = (await this.getData(`form_def/${id}`, { key: "id" }) !== null)
+                if(isFormAlreadyExist) {
+                    if(!confirm(`'${id}'는 이미 존재하는 폼 디자인 ID 입니다! 그래도 저장하시겠습니까?`))
+                        return
+                }
+            }
+
+
             await this.putObject("form_def", {
                 id, name, html,
                 messages: []
             });
             
+            
             alert("저장 완료!")
-            if(this.$route.params.id != id) {
+            if(isNewSave) {
                 this.$router.push(`/ui-definitions/${id}`)
             }
         },
@@ -121,11 +138,19 @@ export default {
             if (this.$route.params.id && this.$route.params.id != 'chat') {
                 path = `${this.path}/${this.$route.params.id}`
                 this.storedFormDefData = await this.getData(path, { key: "id" })
+                if(!this.storedFormDefData) {
+                    alert(`'${this.$route.params.id}' ID 를 가지는 폼 디자인 정보가 없습니다! 새 폼 만들기 화면으로 이동됩니다.`)
+                    this.$router.push(`/ui-definitions/chat`)
+                    this.isShowMashup = true
+                }
 
                 this.applyNewSrcToMashup(
                     this.loadHTMLToKEditorContent(this.storedFormDefData.html)
                 )
+                this.isShowMashup = true
             }
+            else
+                this.isShowMashup = true
         },
 
 
