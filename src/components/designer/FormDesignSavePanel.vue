@@ -36,8 +36,8 @@ export default {
             name: ""
         },
 
-        regexStr: /^[가-힣a-zA-Z0-9_\-.]+$/,
-        regexErrorMsg: "'{{propName}}'은 한글, 영문, 숫자, 밑줄(_), 대시(-), 점(.) 만 입력 가능합니다!"
+        regexStr: /^[가-힣a-zA-Z0-9_\-. ]+$/,
+        regexErrorMsg: "'{{propName}}'은 한글, 영문, 숫자, 공백, 밑줄(_), 대시(-), 점(.) 만 입력 가능합니다!"
     }),
     methods: {
         save() {

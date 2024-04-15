@@ -271,6 +271,44 @@ export default {
             // 해당 div마다 추후에 createApp으로 렌더링의 대상이되고, ref를 통해서 접근할 수 있도록 함
             const components = Array.from(dom.querySelectorAll('*')).filter(el => el.tagName.toLowerCase().endsWith('-field'));
             components.forEach(component => {
+                // 속성중에서 name, alias인 경우, [가-힣a-zA-Z0-9_\-. ]에 해당하는 문자가 아닌 경우, 전부 제거함
+                ['name', 'alias'].forEach(attr => {
+                    if(component.hasAttribute(attr)) {
+                        const validChars = component.getAttribute(attr).match(/[가-힣a-zA-Z0-9_\-. ]/g);
+                        const cleanedAttr = validChars ? validChars.join('') : attr;
+                        component.setAttribute(attr, cleanedAttr);
+                    }
+                });
+
+                // 속성중에서 items인 경우, 키와 값 각각이 [가-힣a-zA-Z0-9_\-. ]에 해당하는 문자가 아닌 경우, 전부 제거함
+                if(component.hasAttribute("items"))
+                {
+                    try {
+
+                        let items = JSON.parse(component.getAttribute("items").replace(/'/g, '"'))
+                        let newItems = []
+
+                        items.forEach(item => {
+                            Object.keys(item).forEach(key => {
+                                const value = item[key];
+                                const validKeyChars = key.match(/[가-힣a-zA-Z0-9_\-. ]/g);
+                                const validValueChars = value.match(/[가-힣a-zA-Z0-9_\-. ]/g);
+
+                                const cleanedKey = validKeyChars ? validKeyChars.join('') : '';
+                                const cleanedValue = validValueChars ? validValueChars.join('') : '';
+                                newItems.push({[cleanedKey]: cleanedValue })
+                            });
+                        });
+
+                        component.setAttribute("items", JSON.stringify(newItems));
+
+                    } catch(error) {
+                        console.log(error)
+                        component.setAttribute("items", "[]")
+                    }
+    
+                }
+
                 const parent = document.createElement('div')
                 parent.setAttribute('id', `vuemount_${crypto.randomUUID()}`)
 
@@ -292,7 +330,10 @@ export default {
             targetSection.setAttribute('class', 'keditor-ui keditor-container-inner')
 
 
-            return targetSection.outerHTML.replace(/&quot;/g, `'`)
+            const loadedValidHTML = targetSection.outerHTML.replace(/&quot;/g, `'`)
+            console.log("### 로드된 유효 HTML 텍스트 ###")
+            console.log(loadedValidHTML)
+            return loadedValidHTML
         },
 
         /**
