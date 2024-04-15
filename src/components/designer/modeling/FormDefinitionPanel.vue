@@ -22,39 +22,66 @@
         <div v-if="value.items">
           <v-container>
             <v-row>
-              <v-col cols="6" class="d-flex align-center justify-center">
+              <v-col cols="5" class="d-flex align-center justify-center">
                 KEY
               </v-col>
-              <v-col cols="6" class="d-flex align-center justify-center">
+              <v-col cols="5" class="d-flex align-center justify-center">
                 VALUE
+              </v-col>
+              <v-col cols="2" class="d-flex align-center justify-center">
               </v-col>
             </v-row>
             <v-divider class="my-4"></v-divider>
 
             <v-row v-for="(item, index) in value.items" :key="index">
               <template v-for="(val, key) in item" :key="key">
-                <v-col cols="6" class="d-flex align-center justify-center">
-                  {{ key }}
-                </v-col>
-                <v-col cols="6" class="d-flex align-center justify-center">
-                  {{ val }}
-                </v-col>
+                <template v-if="index === itemIndexToEdit">
+                  <v-col cols="5" class="d-flex align-center justify-center">
+                    <v-text-field v-model="keyToEdit"></v-text-field>
+                  </v-col>
+                  <v-col cols="5" class="d-flex align-center justify-center">
+                    <v-text-field v-model="valueToEdit"></v-text-field>
+                  </v-col>
+                  <v-col cols="2" class="d-flex align-center justify-center">
+                    <v-btn @click="itemIndexToEdit = -1">
+                      cancel
+                    </v-btn>
+                    <v-btn @click="editItem(index)">
+                      edit
+                    </v-btn>
+                  </v-col>
+                </template>
+                <template v-else>
+                  <v-col cols="5" class="d-flex align-center justify-center">
+                    {{ key }}
+                  </v-col>
+                  <v-col cols="5" class="d-flex align-center justify-center">
+                    {{ val }}
+                  </v-col>
+                  <v-col cols="2" class="d-flex align-center justify-center">
+                    <v-btn @click="itemIndexToEdit = index; keyToEdit = key; valueToEdit = val">
+                      edit
+                    </v-btn>
+                    <v-btn @click="deleteItem(index)">
+                      delete
+                    </v-btn>
+                  </v-col>
+                </template>
               </template>
             </v-row>
 
             <v-row>
-              <v-col cols="6" class="d-flex align-center justify-center">
-                <v-text-field v-model="addKey"></v-text-field>
+              <v-col cols="5" class="d-flex align-center justify-center">
+                <v-text-field v-model="keyToAdd"></v-text-field>
               </v-col>
-              <v-col cols="6" class="d-flex align-center justify-center">
-                <v-text-field v-model="addValue"></v-text-field>
+              <v-col cols="5" class="d-flex align-center justify-center">
+                <v-text-field v-model="valueToAdd"></v-text-field>
               </v-col>
-            </v-row>
-
-            <v-row>
-              <v-btn @click="addItem">
-                add
-              </v-btn>
+              <v-col cols="2" class="d-flex align-center justify-center">
+                <v-btn @click="addItem">
+                  add
+                </v-btn>
+              </v-col>
             </v-row>
           </v-container>
         </div>
@@ -66,7 +93,6 @@
 </template>
   
 <script>
-  import { createApp } from 'vue';
   export default {
     name: 'form-definition-panel',
     mixins: [],
@@ -81,8 +107,12 @@
       }
     },
     data: () => ({
-      addKey: "",
-      addValue: "",
+      keyToAdd: "",
+      valueToAdd: "",
+
+      itemIndexToEdit: -1,
+      keyToEdit: "",
+      valueToEdit: ""
     }),
     components: {
     },
@@ -92,9 +122,21 @@
       },
 
       addItem() {
-        this.value.items.push({ [this.addKey]: this.addValue })
-        this.addKey = ""
-        this.addValue = ""     
+        this.value.items.push({ [this.keyToAdd]: this.valueToAdd })
+        this.keyToAdd = ""
+        this.valueToAdd = ""     
+      },
+
+      editItem(itemIndexToEdit) {
+        this.value.items.splice(itemIndexToEdit, 1, { [this.keyToEdit]: this.valueToEdit })
+
+        this.itemIndexToEdit = -1
+        this.keyToEdit = ""
+        this.valueToEdit = ""
+      },
+
+      deleteItem(itemIndexToDelete) {
+        this.value.items.splice(itemIndexToDelete, 1)
       }
     },
     mounted() {}
