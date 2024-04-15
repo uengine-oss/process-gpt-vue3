@@ -54,6 +54,9 @@ export default {
     "onChangeKEditorContent",
     "onSaveFormDefinition"
   ],
+  expose: [
+    "getKEditorContentHtml"
+  ],
 
   data: () => ({
     kEditor: null,
@@ -74,6 +77,8 @@ export default {
   methods: {
     /**
      * KEditor에 어떠한 변화가 있을 경우, 이를 부모 컴포넌트에 전달하기 위해서
+     * [!] 적제된 컴포넌트를 화살표 버튼으로 위치를 이동시켰을 경우, 발생하는 이벤트는 KEditor에 존재하지 않음에 유의
+     *  이경우, 노출된 getKEditorContentHtml 함수를 통해서 직접 최신 HTML을 얻을 것
      */
     onchangeKEditor(evt, fnNm) {
       window.mashup.kEditorContent  = window.mashup.kEditor[0].children[0].innerHTML
@@ -146,7 +151,7 @@ export default {
         window.mashup.$emit('onSaveFormDefinition', {
           id: id,
           name: name,
-          html: window.mashup.kEditorContentToHtml(window.mashup.kEditor[0].children[0].innerHTML)
+          html: window.mashup.getKEditorContentHtml()
         })
 
       } catch(e) {
@@ -156,6 +161,12 @@ export default {
       }
     },
 
+    /**
+     * KEditor의 content에 대해서 저장되는 HTML 내용을 얻기 위해서
+     */
+    getKEditorContentHtml() {
+      return window.mashup.kEditorContentToHtml(window.mashup.kEditor[0].children[0].innerHTML)
+    },
 
     /**
      * KEditor의 Content를 HTML로 변환하기 위해서
@@ -195,6 +206,7 @@ export default {
       const formContentHTML = Array.from(doc.querySelectorAll('.row')).map(row => row.outerHTML).join('').replace(/&quot;/g, `'`);
       return (isWithSection) ? `<section>${formContentHTML}</section>` : formContentHTML
     },
+
 
     /**
      * 유저가 설정창을 통해서 변경한 값을 컴포넌트에 반영시키기 위해서
@@ -395,6 +407,7 @@ export default {
 
   beforeUnmount() {
     window.mashup.removeStylesForKEditor();
+    window.mashup.completeClearKEditor();
   }
 }
 </script>
