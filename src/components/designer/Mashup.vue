@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-btn @click="saveFormDefinition">
+    <v-btn @click="isOpenSaveDialog = true">
       save
     </v-btn>
 
@@ -16,6 +16,14 @@
         >
         </form-definition-panel>
     </v-dialog>
+
+    <v-dialog v-model="isOpenSaveDialog">
+        <form-design-save-panel
+          @onClose="isOpenSaveDialog = false"
+          @onSave="saveFormDefinition"
+        >
+        </form-design-save-panel>
+    </v-dialog>
   </div>
 </template>
 
@@ -25,11 +33,18 @@ import axios from 'axios';
 import vuetify from "@/plugins/vuetify";
 import ChatModule from "@/components/ChatModule.vue";
 import FormDefinitionPanel from '@/components/designer/modeling/FormDefinitionPanel.vue';
+import FormDesignSavePanel from '@/components/designer/FormDesignSavePanel.vue';
 import DynamicForm from './DynamicForm.vue';
 
 export default {
   name: 'mash-up',
+
   mixins: [ChatModule],
+  components: {
+    DynamicForm,
+    FormDefinitionPanel,
+    FormDesignSavePanel
+  },
   props: {
     modelValue: String
   },
@@ -50,13 +65,9 @@ export default {
       items: "",
       label: ""
     },
-    isOpenSettingDialog: false
+    isOpenSettingDialog: false,
+    isOpenSaveDialog: false
   }),
-
-  components: {
-    DynamicForm,
-    FormDefinitionPanel
-  },
 
   methods: {
     /**
@@ -117,12 +128,20 @@ export default {
     /**
      * 'Save' 버튼을 누를 경우, 최종 결과를 Supabase에 저장하기 위해서
      */
-    saveFormDefinition(){
-      window.mashup.$emit('onSaveFormDefinition', {
-        id: "test1",
-        name: "test1",
-        html: window.mashup.kEditorContentToHtml(window.mashup.kEditor[0].children[0].innerHTML)
-      })
+    saveFormDefinition({id, name}){
+      try {
+
+        window.mashup.$emit('onSaveFormDefinition', {
+          id: id,
+          name: name,
+          html: window.mashup.kEditorContentToHtml(window.mashup.kEditor[0].children[0].innerHTML)
+        })
+
+      } catch(e) {
+        console.error(e)
+      } finally {
+        window.mashup.isOpenSaveDialog = false
+      }
     },
 
     /**
