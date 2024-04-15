@@ -1,89 +1,84 @@
 <template>
     <div>
-        <v-toolbar>
-            <v-toolbar-title>Form Mapper</v-toolbar-title>
+        <v-card>
+            <v-row class="ma-0 pa-0">
+                <!-- {{$t('processDefinition.editProcessData') }} -->
+                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important"> Form Mapper </v-card-title>
+                <v-spacer></v-spacer>
+                <v-btn icon @click="openJsonDialog()">
+                    <v-icon>mdi-content-save-outline</v-icon>
+                </v-btn>
+                <!-- <v-btn icon @click="openFunctionMenu()">
+                    <v-icon>mdi-function</v-icon>
+                </v-btn> -->
+            </v-row>
+            <div id="app" class="treeviews-container" @contextmenu.prevent="showContextMenu($event)">
+                <v-treeview :config="config" :nodes="nodes" class="left-treeview"> </v-treeview>
 
-            <v-btn icon @click="openJsonDialog()">
-                <v-icon style="color: #eee">mdi-content-save-outline</v-icon>
-            </v-btn>
-            <!-- <v-btn icon @click="openFunctionMenu()">
-                <v-icon>mdi-function</v-icon>
-            </v-btn> -->
-        </v-toolbar>
-    </div>
-    <div id="app" class="treeviews-container" @contextmenu.prevent="showContextMenu($event)">
-        <v-treeview :config="config" :nodes="nodes" class="left-treeview elevation-1">
-            <template #after-input="item">
-                <v-btn class="after" small @click.stop="onButtonClickLeft(item, 'Source')">▶</v-btn>
-            </template>
-        </v-treeview>
+                <ContextMenu
+                    ref="contextMenu"
+                    :menu-items="filterTransformItems(blockTemplates)"
+                    :style="menuPositionStyle"
+                    :position-x="x"
+                    :position-y="y"
+                    @menu_item_selected="menuItemSelected"
+                />
 
-        <ContextMenu
-            ref="contextMenu"
-            :menu-items="filterTransformItems(blockTemplates)"
-            :style="menuPositionStyle"
-            :position-x="x"
-            :position-y="y"
-            @menu_item_selected="menuItemSelected"
-        />
-        
-        <v-dialog v-model="jsonDialog" max-width="600px">
-            <v-card>
-                <v-card-title>
-                    Transformers JSON
-                    <v-spacer></v-spacer>
-                </v-card-title>
-                <v-card-text style="max-height: 600px; overflow-y: auto">
-                    <pre style="user-select: text">{{ jsonString }}</pre>
-                </v-card-text>
-            </v-card>
-        </v-dialog>
+                <v-dialog v-model="jsonDialog" max-width="600px">
+                    <v-card>
+                        <v-card-title>
+                            Transformers JSON
+                            <v-spacer></v-spacer>
+                        </v-card-title>
+                        <v-card-text style="max-height: 600px; overflow-y: auto">
+                            <pre style="user-select: text">{{ jsonString }}</pre>
+                        </v-card-text>
+                    </v-card>
+                </v-dialog>
 
-        <svg id="formArea" ref="svgElement" @mousemove="updateMousePos" @mouseup="onMouseUp">
-            <block-component
-                v-for="(block, name) in blocks_"
-                :key="name"
-                :pos="block.pos"
-                :size="block.size"
-                :name="block.name"
-                :start-block-drag="startBlockDrag"
-                :delete-block="deleteBlock"
-            ></block-component>
-            <connector-component
-                v-for="(conn, index) in connectors"
-                :key="index"
-                :start-pos="conn.startPos"
-                :end-pos="conn.endPos"
-                :is-new="conn.isNew"
-                :onclick="() => removeConnection(index)"
-            ></connector-component>
+                <svg id="formArea" ref="svgElement" @mousemove="updateMousePos" @mouseup="onMouseUp">
+                    <block-component
+                        v-for="(block, name) in blocks_"
+                        :key="name"
+                        :pos="block.pos"
+                        :size="block.size"
+                        :name="block.name"
+                        :start-block-drag="startBlockDrag"
+                        :delete-block="deleteBlock"
+                    ></block-component>
+                    <connector-component
+                        v-for="(conn, index) in connectors"
+                        :key="index"
+                        :start-pos="conn.startPos"
+                        :end-pos="conn.endPos"
+                        :is-new="conn.isNew"
+                        :onclick="() => removeConnection(index)"
+                    ></connector-component>
+                    <port-component
+                        v-for="port in ports"
+                        :key="port.blockName + ',' + port.name"
+                        :pos="port.pos"
+                        :name="port.name"
+                        :block-name="port.blockName"
+                        :direction="port.direction"
+                        :parentNode="port.parentNode"
+                        :onmousedown="newConnection(port.blockName, port.name, port.direction)"
+                        :onmouseup="completeConnection(port.blockName, port.name, port.direction)"
+                    ></port-component>
+                    <attribute-component
+                        v-for="attribute in attributes_"
+                        :key="attribute.blockName + ',' + attribute.name"
+                        :pos="attribute.pos"
+                        :name="attribute.name"
+                        :block-name="attribute.blockName"
+                        :func="attribute.func"
+                        @onChangeAttribute="onChangeAttribute"
+                    ></attribute-component>
+                </svg>
 
-            <port-component
-                v-for="port in ports"
-                :key="port.blockName + ',' + port.name"
-                :pos="port.pos"
-                :name="port.name"
-                :block-name="port.blockName"
-                :direction="port.direction"
-                :onmousedown="newConnection(port.blockName, port.name, port.direction)"
-                :onmouseup="completeConnection(port.blockName, port.name, port.direction)"
-            ></port-component>
-            <attribute-component
-                v-for="attribute in attributes_"
-                :key="attribute.blockName + ',' + attribute.name"
-                :pos="attribute.pos"
-                :name="attribute.name"
-                :block-name="attribute.blockName"
-                :func="attribute.func"
-                @onChangeAttribute="onChangeAttribute"
-            ></attribute-component>
-        </svg>
-
-        <v-treeview :config="config" :nodes="nodes" class="right-treeview elevation-1" :key="renderKey">
-            <template #after-input="item">
-                <v-btn class="after" small @click.stop="onButtonClickRight(item, 'Target')">▶</v-btn>
-            </template>
-        </v-treeview>
+                <v-treeview :config="config" :nodes="nodes" class="right-treeview" :key="renderKey"> </v-treeview>
+            </div>
+        </v-card>
     </div>
 </template>
 
@@ -100,13 +95,17 @@ import ContextMenu from './ContextMenu.vue';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 
 export default {
-    name: "form-mapper",
+    name: 'form-mapper',
     mixins: [FormMapper],
     props: {
         definition: {
             type: Object,
-            required: true,
+            required: true
         },
+        name: {
+            type: String,
+            required: true
+        }
     },
     components: {
         BlockComponent,
@@ -114,7 +113,7 @@ export default {
         ConnectorComponent,
         AttributeComponent,
         ContextMenu,
-        VTreeview,
+        VTreeview
     },
     data() {
         return {
@@ -127,6 +126,7 @@ export default {
             menu_y: 0,
             component_x: 0,
             component_y: 0,
+            portIndex: 0,
             nodes: {
                 id1: {
                     text: 'text1',
@@ -149,114 +149,30 @@ export default {
             config: {
                 roots: ['id1', 'id2']
             },
-            processVariableDescriptors: [],
+            processVariableDescriptors: []
         };
     },
     async created() {
-        let me = this
-
-        me.storage = StorageBaseFactory.getStorage('supabase');
-
-        const definition = this.definition;
-
-        me.nodes = {};
-        me.config = {
-            roots: []
-        };
-
-        var test = [
-                {'name': "장애신고",
-                'type': "Form",
-                'defaultValue': "form11_장애신고",
-                'description': "",
-                'datasource': {
-                    'type': "",
-                    'sql': ""
-                },
-                'table': ""},
-                {'name': "장애처리",
-                'type': "Form",
-                'defaultValue': "form22_장애처리",
-                'description': "",
-                'datasource': {
-                    'type': "",
-                    'sql': ""
-                },
-                'table': ""},
-                {'name': "처리알림",
-                'type': "Form",
-                'defaultValue': "form33_처리알림",
-                'description': "",
-                'datasource': {
-                    'type': "",
-                    'sql': ""
-                },
-                'table': ""},
-                {'name': "비고",
-                'type': "Text",
-                'defaultValue': "",
-                'description': "",
-                'datasource': {
-                    'type': "",
-                    'sql': ""
-                },
-                'table': ""}
-        ]
-
-        test.forEach(async (variable) => {
-            if (!me.config.roots.includes("Variables")) {
-                me.config.roots.push("Variables");
-            }
-
-            if (!me.nodes["Variables"]) {
-                me.nodes["Variables"] = {
-                    text: "Variables",
-                    children: []
-                };
-            }
-
-            if(me.nodes["Variables"]){
-                me.nodes["Variables"].children.push(variable.name);
-                me.nodes[variable.name] = {
-                    text: variable.name,
-                    children: []
-                };
-            }
-
-            let formDefs = await me.storage.list('form_def');
-            let [formName, formAlias] = variable.defaultValue.split('_');
-            let matchingForm = formDefs.find(form => form.name === formName && form.alias === formAlias)
-
-            if (matchingForm) {
-                matchingForm.fields.forEach(field => {
-                    if (!me.nodes[variable.name]) {
-                        me.nodes[variable.name] = {
-                            text: variable.name,
-                            children: []
-                        };
-                    }
-                    let fieldNameAlias = field.name + '_' + field.alias;
-                    me.nodes[variable.name].children.push(field.name);
-                    me.nodes[field.name] = {
-                        text: field.name,
-                        object: field
-                    };
-                });
-            }
-
-            // form.fields.forEach(async (field) => {
-            //     me.nodes[form.id].children.push(field.name + '_' + field.alias);
-            //     me.nodes[field.name + '_' + field.alias] = {
-            //         text: field.name + '_' + field.alias
-            //     };
-            // });
-        });
-
-        me.renderKey++;
+        await this.initializeStorage();
+        this.initializeNodesAndConfig();
+        await this.processVariables();
+        this.updateBlockTemplates();
+        this.renderKey++;
     },
     mounted() {
         let me = this;
 
+        const formArea = document.getElementById('formArea');
+        const resizeObserver = new ResizeObserver((entries) => {
+            for (let entry of entries) {
+                this.addTreeViewPort();
+            }
+        });
+        this.$nextTick(() => {//다이얼로그가 생성될 시 이상한 위치로 되기에 일정 시간을 줌
+            setTimeout(() => {
+                this.addTreeViewPort();
+            }, 300);
+        });
         // processVariables가 준비되었는지 확인
         if (this.processVariables && this.processVariables.length > 0) {
             // processVariables 사용
@@ -269,8 +185,148 @@ export default {
                 }
             });
         }
+
+        this.renderFormMapperFromMappingElementJson('');
     },
     methods: {
+        async initializeStorage() {
+            this.storage = StorageBaseFactory.getStorage('supabase');
+        },
+
+        initializeNodesAndConfig() {
+            this.nodes = {};
+            this.config = {
+                roots: []
+            };
+        },
+        async fetchAndProcessFormDefinitions(variable) {
+            let formDefs = await this.storage.list('form_def');
+            let name = variable.defaultValue.name;
+            let alias = variable.defaultValue.alias;
+            let matchingForm = formDefs.find((form) => form.name === name && form.alias === alias);
+
+            if (matchingForm) {
+                matchingForm.fields.forEach((field) => {
+                    if (!this.nodes[variable.name]) {
+                        this.nodes[variable.name] = {
+                            text: variable.name,
+                            children: []
+                        };
+                    }
+                    let fieldNameAlias = field.name + '_' + field.alias;
+                    this.nodes[variable.name].children.push(field.name);
+                    this.nodes[field.name] = {
+                        text: field.name,
+                        object: field
+                    };
+                });
+            }
+        },
+        async processVariables() {
+            const definition = this.definition;
+
+            for (const variable of definition.processVariables) {
+                if (!this.config.roots.includes('Variables')) {
+                    this.config.roots.push('Variables');
+                }
+
+                if (!this.nodes['Variables']) {
+                    this.nodes['Variables'] = {
+                        text: 'Variables',
+                        children: []
+                    };
+                }
+
+                if (this.nodes['Variables']) {
+                    this.nodes['Variables'].children.push(variable.name);
+                    this.nodes[variable.name] = {
+                        text: variable.name,
+                        children: []
+                    };
+                }
+
+                await this.fetchAndProcessFormDefinitions(variable);
+            }
+        },
+        updateBlockTemplates() {
+            const treeStructure = this.buildTreeStructure(); // 트리 구조 생성
+
+            const updatePorts = (treeNode, path = '') => {
+                if (!treeNode) return;
+
+                const currentPath = path ? `${path}.${treeNode.text}` : treeNode.text;
+                this.addPortToBlockTemplates(currentPath);
+
+                if (treeNode.children && treeNode.children.length > 0) {
+                    treeNode.children.forEach((childNode) => {
+                        updatePorts(childNode, currentPath);
+                    });
+                }
+            };
+            treeStructure.forEach((rootNode) => updatePorts(rootNode));
+        },
+        addPortToBlockTemplates(nodePath, parentNode) {
+            this.blockTemplates.Source.ports[nodePath] = {
+                x: 5,
+                y: 0,
+                direction: 'out',
+                parentNode: { name: parentNode, offset: { x: 0, y: 24 * this.portIndex } }
+            };
+            this.blockTemplates.Target.ports[nodePath] = {
+                x: -5,
+                y: 0,
+                direction: 'in',
+                parentNode: { name: parentNode, offset: { x: 0, y: 24 * this.portIndex } }
+            };
+            this.portIndex++;
+        },
+
+        buildTreeStructure() {
+            const buildTree = (nodeKey) => {
+                const node = this.nodes[nodeKey];
+                if (!node) return null;
+
+                let treeNode = { text: node.text };
+                if (node.children && node.children.length > 0) {
+                    treeNode.children = node.children.map((childKey) => buildTree(childKey));
+                }
+                return treeNode;
+            };
+
+            let tree = [];
+            Object.keys(this.nodes).forEach((nodeKey) => {
+                // 최상위 노드만 탐색 시작점으로 삼습니다.
+                // 최상위 노드는 다른 어떤 노드의 자식도 아니어야 합니다.
+                const isRootNode = !Object.values(this.nodes).some((n) => n.children && n.children.includes(nodeKey));
+                if (isRootNode) {
+                    tree.push(buildTree(nodeKey));
+                }
+            });
+
+            return tree;
+        },
+        addTreeViewPort() {
+            var me = this;
+            const formAreaRect = document.getElementById('formArea').getBoundingClientRect();
+
+            if (this.blocks['Source']) {
+                delete this.blocks['Source'];
+            }
+            if (this.blocks['Target']) {
+                delete this.blocks['Target'];
+            }
+            me.blocks['Source'] = {
+                type: 'Source',
+                pos: { x: 0, y: 12 },
+                attributes: {}
+            };
+
+            me.blocks['Target'] = {
+                type: 'Target',
+                pos: { x: formAreaRect.width, y: 12 },
+                attributes: {}
+            };
+        },
         openFunctionMenu(event) {
             console.log('click menu');
             if (event) {
@@ -290,7 +346,7 @@ export default {
         },
         openJsonDialog() {
             console.log('open json');
-            this.jsonString = JSON.stringify(this.transformers, null, 2);
+            this.jsonString = JSON.stringify(this.getMappingElementsJson(), null, 2);
             this.jsonDialog = true; // 다이얼로그 열기
         },
         menuItemSelected(item) {
@@ -332,24 +388,47 @@ export default {
                 top: `${this.menu_y}px`,
                 transform: 'translate(0, -50%)'
             };
+        },
+
+        transformers() {
+            return {
+                mappingElements: [
+                    {
+                        _type: 'org.uengine.kernel.MappingElement',
+                        argument: {},
+                        transformerMapping: {
+                            transformer: {
+                                _type: 'org.uengine.processdesigner.mapper.transformers.ConcatTransformer',
+                                name: 'Concat',
+                                location: { x: 365.78125, y: 146.5 },
+                                argumentSourceMap: { str1: 'trouble_class' }
+                            },
+                            linkedArgumentName: 'out'
+                        },
+                        isKey: false
+                    },
+                    {
+                        _type: 'org.uengine.kernel.MappingElement',
+                        argument: {},
+                        transformerMapping: {
+                            transformer: {
+                                _type: 'org.uengine.processdesigner.mapper.transformers.ConcatTransformer',
+                                name: 'Concat',
+                                location: { x: 360.78125, y: 432.5 },
+                                argumentSourceMap: { str1: 'trouble_class' }
+                            },
+                            linkedArgumentName: 'out'
+                        },
+                        isKey: false
+                    }
+                ]
+            };
         }
     }
 };
 </script>
 
 <style>
-#app {
-    box-sizing: border-box;
-    width: 100%;
-    height: 100vh;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background: white;
-    border-bottom-left-radius: 12px;
-    border-bottom-right-radius: 12px;
-    user-select: none;
-}
 .v-toolbar {
     border-top-left-radius: 12px;
     border-top-right-radius: 12px;
@@ -361,7 +440,7 @@ export default {
 }
 #formArea {
     width: 100%;
-    height: 100vh;
+    height: 80vh;
     background: #eee;
 }
 .block > rect {
@@ -462,13 +541,19 @@ export default {
     width: 12px;
     height: 12px;
 }
-.left-treeview button{
+.left-treeview button {
     margin-left: auto;
 }
-.right-treeview button{
+.right-treeview button {
     margin-left: auto;
 }
-.tree-level  {
+.tree-level {
     padding-left: 0 !important;
+}
+.left-treeview {
+    width: 200px;
+}
+.right-treeview {
+    width: 200px;
 }
 </style>

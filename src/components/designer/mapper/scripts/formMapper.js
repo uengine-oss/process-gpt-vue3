@@ -25,7 +25,6 @@ export function d({ x, y }) {
 export default {
   data() {
     return {
-      offset: { x: 30, y: 30 },
       blockTemplates: {
         Abs: {
           size: { width: 150, height: 50 },
@@ -288,16 +287,18 @@ export default {
           isTransform: true,
         },
         Source: {//소스
-          size: { width: 150, height: 50 },
+          size: { width: 0, height: 0 },
           ports: {
-            out: { x: 75, y: 0, direction: "out" },
+            // out: { x: 5, y: 0, direction: "out" },
+            // out1: { x: 5, y: 25, direction: "out" },
           },
           isTransform: false,
         },
         Target: {//타겟
-          size: { width: 150, height: 50 },
+          size: { width: 0, height: 0 },
           ports: {
-            in: { x: -75, y: 0, direction: "in" },
+            // in: { x: -5, y: 0, direction: "in" },
+            // in1: { x: -5, y: 25, direction: "in" },
           },
           isTransform: false,
         },
@@ -305,6 +306,8 @@ export default {
       blocks: {
       },
       connections: [
+      ],
+      tempConnections: [
       ],
       attributes: {
 
@@ -318,18 +321,29 @@ export default {
   methods: {
     getBlock(name) {
       const block = this.blocks[name];
-      return {
-        ...this.blockTemplates[block.type],
-        ...block,
-        name,
-      };
+      if(block) {
+        return {
+          ...this.blockTemplates[block.type],
+          ...block,
+          name,
+        };
+      }
+      return null;
     },
     resolvePos(spec) {
       if (_.isObject(spec) && spec.x !== undefined && spec.y !== undefined) {
         return spec;
       }
       const block = this.getBlock(spec[0]);
-      return add(block.pos, block.ports[spec[1]] || { x: 0, y: 0 });
+      if(block != null) {
+        var pos = add(block.pos, block.ports[spec[1]] || { x: 0, y: 0 });
+        if(block.ports[spec[1]].parentNode) {
+          var parentOffset = block.ports[spec[1]].parentNode.offset;
+          pos = add(pos, parentOffset);
+        }
+        return pos;
+      }
+      return { x: 0, y: 0 };
     },
     mousePos({ clientX, clientY }) {
       return sub({ x: clientX, y: clientY }, this.offset);
@@ -474,7 +488,7 @@ export default {
                 active: false,
                 submenu: []
               };
-              items.push(parentItem); 
+              items.push(parentItem);
             }
             parentItem.submenu.push(item);
           } else {
@@ -483,9 +497,341 @@ export default {
         }
       });
       return items;
-    }
+    },
+    getMappingElementsJson() {
+      var computedTransformers = {
+        "mappingElements": []
+      };
+
+      this.connections.forEach(conn => {
+        if (!this.checkGlobalType(conn.to[0])) return;
+        var block = this.blocks[conn.from[0]];
+        var blockData = this.blockTemplates[block.type];
+        var mappingElement = this.createMappingElement(conn, block, blockData, conn.to[1]);
+        var connections = this.connections.filter(childConn => childConn.to[0] === conn.from[0]);
+        var argumentSourceMap = this.createArgumentSourceMap(connections);
+        if (mappingElement.transformerMapping) {
+          mappingElement.transformerMapping.transformer.argumentSourceMap = argumentSourceMap;
+        }
+        computedTransformers.mappingElements.push(mappingElement);
+      });
+      return computedTransformers;
+    },
+    createArgumentSourceMap(connections) {
+      var argumentSourceMap = {};
+      connections.forEach(conn => {
+        var argument = conn.to[1].replace("in ", "");
+        if (this.checkGlobalType(conn.from[0])) {
+          argumentSourceMap[argument] = "" + conn.from[1];
+        } else {
+          argumentSourceMap[argument] = this.createFormMappingData(conn);
+        }
+      });
+      return argumentSourceMap;
+    },
+    createFormMappingData(conn) {
+      var block = this.blocks[conn.from[0]];
+      var blockData = this.blockTemplates[block.type];
+      var transformerMapping = {
+        "_type": "java.lang.Object",
+        "transformer": {
+          "_type": blockData.class,
+          "name": block.type,
+          "location": block.pos,
+          "argumentSourceMap": {}
+        },
+        "linkedArgumentName": "out"
+      }
+      var connections = this.connections.filter(childConn => childConn.to[0] === conn.from[0]);
+      var argumentSourceMap = this.createArgumentSourceMap(connections);
+      transformerMapping.transformer.argumentSourceMap = argumentSourceMap;
+      return transformerMapping;
+    },
+    checkGlobalType(type) {
+      return type == "Source" || type == "Target" || type == "Direct";
+    },
+    createMappingElement(conn, block, blockData, argument) {
+      var mappingElement = {};
+      var blockName = conn.from[0];
+      if (blockName == "Source") {
+        mappingElement = {
+          "_type": "org.uengine.kernel.MappingElement",
+          "argument": {
+            "text": argument
+          },
+          "variable": {
+            "name": conn.from[1],
+            "askWhenInit": false,
+            "isVolatile": false
+          },
+          "isKey": false
+        }
+      } else {
+        mappingElement = {
+          "_type": "org.uengine.kernel.MappingElement",
+          "argument": {
+            "text": argument
+          },
+          "transformerMapping": {
+            "transformer": {
+              "_type": blockData.class,
+              "name": blockName,
+              "location": block.pos,
+              "argumentSourceMap": {}
+            },
+            "linkedArgumentName": argument
+          },
+          "isKey": false
+        };
+
+      }
+      return mappingElement;
+    },
+    updateMappingElementForReplaceType(block, mappingElement) {
+      if (block.type == "Replace") {
+        mappingElement.transformerMapping.transformer["oldString"] = block.attributes["from"];
+        mappingElement.transformerMapping.transformer["newString"] = block.attributes["to"];
+        mappingElement.transformerMapping.transformer["isRegularExp"] = false;
+      }
+    },
+    renderFormMapperFromMappingElementJson(json) {
+      // if (!json) {
+      //   console.error("JSON 데이터가 제공되지 않았습니다.");
+      //   return;
+      // }
+      try {
+        // const mappingContent = JSON.parse(json);
+
+
+        const mappingContent = {
+          "mappingElements": [
+            {
+              "_type": "org.uengine.kernel.MappingElement",
+              "argument": {
+                "text": "Variables"
+              },
+              "transformerMapping": {
+                "transformer": {
+                  "_type": "org.uengine.processdesigner.mapper.transformers.MinTransformer",
+                  "name": "Min 2",
+                  "location": {
+                    "x": 803.5,
+                    "y": 276.09375
+                  },
+                  "argumentSourceMap": {
+                    "value1": {
+                      "_type": "java.lang.Object",
+                      "transformer": {
+                        "_type": "org.uengine.processdesigner.mapper.transformers.MaxTransformer",
+                        "name": "Max",
+                        "location": {
+                          "x": 400.5,
+                          "y": 189.09375
+                        },
+                        "argumentSourceMap": {
+                          "value1": "Variables",
+                          "value2": "Variables.test1"
+                        }
+                      },
+                      "linkedArgumentName": "out"
+                    },
+                    "value2": {
+                      "_type": "java.lang.Object",
+                      "transformer": {
+                        "_type": "org.uengine.processdesigner.mapper.transformers.MinTransformer",
+                        "name": "Min",
+                        "location": {
+                          "x": 395.5,
+                          "y": 318.09375
+                        },
+                        "argumentSourceMap": {
+                          "value1": "Variables.test2",
+                          "value2": "Variables.test3"
+                        }
+                      },
+                      "linkedArgumentName": "out"
+                    }
+                  }
+                },
+                "linkedArgumentName": "Variables"
+              },
+              "isKey": false
+            },
+            {
+              "_type": "org.uengine.kernel.MappingElement",
+              "argument": {
+                "text": "Variables.test3"
+              },
+              "transformerMapping": {
+                "transformer": {
+                  "_type": "org.uengine.processdesigner.mapper.transformers.MinTransformer",
+                  "name": "Min 2",
+                  "location": {
+                    "x": 803.5,
+                    "y": 276.09375
+                  },
+                  "argumentSourceMap": {
+                    "value1": {
+                      "_type": "java.lang.Object",
+                      "transformer": {
+                        "_type": "org.uengine.processdesigner.mapper.transformers.MaxTransformer",
+                        "name": "Max",
+                        "location": {
+                          "x": 400.5,
+                          "y": 189.09375
+                        },
+                        "argumentSourceMap": {
+                          "value1": "Variables",
+                          "value2": "Variables.test1"
+                        }
+                      },
+                      "linkedArgumentName": "out"
+                    },
+                    "value2": {
+                      "_type": "java.lang.Object",
+                      "transformer": {
+                        "_type": "org.uengine.processdesigner.mapper.transformers.MinTransformer",
+                        "name": "Min",
+                        "location": {
+                          "x": 395.5,
+                          "y": 318.09375
+                        },
+                        "argumentSourceMap": {
+                          "value1": "Variables.test2",
+                          "value2": "Variables.test3"
+                        }
+                      },
+                      "linkedArgumentName": "out"
+                    }
+                  }
+                },
+                "linkedArgumentName": "Variables.test3"
+              },
+              "isKey": false
+            },
+            {
+              "_type": "org.uengine.kernel.MappingElement",
+              "argument": {
+                "text": "Variables.test1"
+              },
+              "variable": {
+                "name": "Variables.test1",
+                "askWhenInit": false,
+                "isVolatile": false
+              },
+              "isKey": false
+            },
+            {
+              "_type": "org.uengine.kernel.MappingElement",
+              "argument": {
+                "text": "Variables.test2"
+              },
+              "variable": {
+                "name": "Variables.test3",
+                "askWhenInit": false,
+                "isVolatile": false
+              },
+              "isKey": false
+            }
+          ]
+        };
+
+        // mappingContent = {};
+
+        mappingContent.mappingElements.forEach(element => {
+          this.createMappingElementFromJson(element);
+        });
+
+        this.connections = this.tempConnections;
+      } catch (error) {
+        console.error("JSON 파싱 중 오류가 발생했습니다:", error);
+      }
+    },
+    createMappingElementFromJson(element) {
+      var transformerMapping = element.transformerMapping;
+
+      if (transformerMapping) {
+        this.addBlockFromJson(transformerMapping, element.argument.text);
+      } else {
+        this.addConnectionDirect(element.variable.name, element.argument.text);
+      }
+    },
+    addBlockFromJson(transformerMapping, targetArgument = null) {
+      var blockName = transformerMapping.transformer.name;
+      var transformerType = transformerMapping.transformer._type;
+      var filteredEntries = Object.entries(this.blockTemplates).filter(([key, block]) => block.class === transformerType);
+      var keyOfMatchingBlock = filteredEntries.length > 0 ? filteredEntries[0][0] : undefined;
+
+      var newBlock = {
+        type: keyOfMatchingBlock,
+        pos: transformerMapping.transformer.location,
+        attributes: {},
+      };
+
+      Object.keys(transformerMapping.transformer.argumentSourceMap).forEach(key => {
+        var argumentSourceMap = transformerMapping.transformer.argumentSourceMap[key];
+        if (argumentSourceMap != null && typeof argumentSourceMap === 'object') {
+          this.addBlockFromJson(argumentSourceMap);
+        }
+      });
+
+
+      if (transformerMapping.transformer.argumentSourceMap) {
+        this.addConnectionJson(blockName, "Target", transformerMapping.transformer.argumentSourceMap, targetArgument);
+      }
+
+      this.blocks[blockName] = newBlock;
+    },
+    addConnectionJson(fromBlockName, toBlockName, argumentSourceMap, targetArgument = null) {
+      Object.entries(argumentSourceMap).forEach(([argument, source]) => {
+        let connection;
+        if (typeof source === 'object' && source.transformer) {
+          const sourceBlockName = source.transformer.name;
+          this.addConnectionJson(sourceBlockName, fromBlockName, source.transformer.argumentSourceMap);
+          connection = {
+            from: [sourceBlockName, "out"],
+            to: [fromBlockName, "in " + argument],
+          };
+        } else {
+          connection = {
+            from: ["Source", source],
+            to: [fromBlockName, "in " + argument],
+          };
+        }
+        if (!this.isConnectionDuplicate(connection)) {
+          this.tempConnections.push(connection);
+        }
+      });
+
+      if (toBlockName === "Target" && targetArgument) {
+        const connection = {
+          from: [fromBlockName, "out"],
+          to: ["Target", targetArgument],
+        };
+        if (!this.isConnectionDuplicate(connection)) {
+          this.tempConnections.push(connection);
+        }
+      }
+    },
+    addConnectionDirect(variable, targetArgument) {
+      const connection = {
+        from: ["Source", variable],
+        to: ["Target", targetArgument],
+      };
+      if (!this.isConnectionDuplicate(connection)) {
+        this.tempConnections.push(connection);
+      }
+    },
+    isConnectionDuplicate(connection) {
+      return this.tempConnections.some(conn =>
+        conn.from[0] === connection.from[0] && conn.from[1] === connection.from[1] &&
+        conn.to[0] === connection.to[0] && conn.to[1] === connection.to[1]);
+    },
   },
   computed: {
+    offset() {
+      return { x: $("#formArea")[0].getBoundingClientRect().x, y: $("#formArea")[0].getBoundingClientRect().y };
+    },
     transform() {
       return `translate(${d(this.offset)})`;
     },
@@ -506,13 +852,15 @@ export default {
     ports() {
       return _.flatMap(this.blocks, ({ type, pos }, blockName) => {
         const template = this.blockTemplates[type];
-        return _.map(template.ports, (port, name) => ({
+        var portsTemp = _.map(template.ports, (port, name) => ({
           ...port,
           direction: port.direction || "in",
           name,
+          parentNode: port.parentNode,
           blockName,
           pos: add(pos, port),
         }));
+        return portsTemp;
       });
     },
     attributes_() {
@@ -528,52 +876,5 @@ export default {
         }));
       });
     },
-    transformers() {
-      var computedTransformers = {
-        "mappingElements": []
-      };
-      Object.values(this.blocks).forEach(block => {
-        if (block.type == "Source") return;
-        if (block.type == "Target") return;
-        if (block.type.indexOf("Direct") != -1) return;
-        const blockData = this.blockTemplates[block.type];
-        const mappingElement = {
-          "_type": "org.uengine.kernel.MappingElement",
-          "argument": {},
-          "transformerMapping": {
-            "transformer": {
-              "_type": blockData.class,
-              "name": block.type,
-              "location": block.pos,
-              "argumentSourceMap": {}
-            },
-            "linkedArgumentName": "out"
-          },
-          "isKey": false
-        };
-        const connections = this.connections.filter(conn => conn.to[0] === block.type);
-        const argumentSourceMap = {};
-        connections.forEach(conn => {
-          var argument = conn.to[1].replace("in ", "");
-          // argumentSourceMap[argument] = "[instance]." + conn.from[0];
-          argumentSourceMap[argument] = "" + conn.from[0];
-        });
-
-        if (block.type == "Replace") {
-          mappingElement.transformerMapping.transformer["oldString"] = block.attributes["from"];
-          mappingElement.transformerMapping.transformer["newString"] = block.attributes["to"];
-          mappingElement.transformerMapping.transformer["isRegularExp"] = false;
-        }
-
-        mappingElement.transformerMapping.transformer.argumentSourceMap = argumentSourceMap;
-
-        computedTransformers["mappingElements"].push(mappingElement);
-      });
-
-
-
-
-      return computedTransformers;
-    }
   },
 };

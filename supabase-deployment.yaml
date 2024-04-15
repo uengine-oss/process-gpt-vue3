@@ -59,7 +59,7 @@ spec:
         - containerPort: 9999
         env:
         - name: API_EXTERNAL_URL
-          value: "https://test.msaschool.io/auth"
+          value: "https://process-gpt.io/auth"
         - name: GOTRUE_API_HOST
           value: "0.0.0.0"
         - name: GOTRUE_API_PORT

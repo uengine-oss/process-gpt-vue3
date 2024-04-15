@@ -32,7 +32,7 @@ class UEngineBackend implements Backend {
             alert(e);
         }
     }
-    async versionUp(version: string, major: string, makeProduction: boolean) {
+    async versionUp(version: string, major: boolean, makeProduction: boolean) {
         try {
             const response = await axiosInstance.post('/version', null);
             return response.data;
@@ -72,7 +72,7 @@ class UEngineBackend implements Backend {
             alert(e);
         }
     }
-    async deleteDefinition(requestPath) {
+    async deleteDefinition(requestPath: string) {
         try {
             const response = await axiosInstance.delete('/definition/' + requestPath);
             return response.data;
@@ -80,7 +80,7 @@ class UEngineBackend implements Backend {
             alert(e);
         }
     }
-    async putRawDefinition(definition, requestPath) {
+    async putRawDefinition(definition: any, requestPath: string) {
         try {
             let req = {
                 definition: definition
@@ -89,7 +89,7 @@ class UEngineBackend implements Backend {
                 headers: {
                     'Content-Type': 'text/plain'
                 },
-                responseType: 'text'
+                responseType: 'text' as const
             };
             const response = await axiosInstance.put('/definition/raw/' + requestPath + '.xml', definition, config);
             return response.data;
@@ -97,7 +97,7 @@ class UEngineBackend implements Backend {
             alert(e);
         }
     }
-    async getRawDefinition(defPath) {
+    async getRawDefinition(defPath: string) {
         try {
             const response = await axiosInstance.get(`/definition/raw/${defPath}`);
             return response.data;
@@ -116,7 +116,7 @@ class UEngineBackend implements Backend {
         }
     }
 
-    async stop(instanceId) {
+    async stop(instanceId: string) {
         try {
             const response = await axiosInstance.post(`/instance/${instanceId}/stop`);
             return response.data;
@@ -125,7 +125,7 @@ class UEngineBackend implements Backend {
         }
     }
 
-    async suspend(instanceId) {
+    async suspend(instanceId: string) {
         try {
             const response = await axiosInstance.post(`/instance/${instanceId}/suspend`);
             return response.data;
@@ -134,7 +134,7 @@ class UEngineBackend implements Backend {
         }
     }
 
-    async resume(instanceId) {
+    async resume(instanceId: string) {
         try {
             const response = await axiosInstance.post(`/instance/${instanceId}/resume`);
             return response.data;
@@ -143,7 +143,7 @@ class UEngineBackend implements Backend {
         }
     }
 
-    async getInstance(instanceId) {
+    async getInstance(instanceId: string) {
         try {
             const response = await axiosInstance.get(`/instance/${instanceId}`);
             return response.data;
@@ -152,7 +152,7 @@ class UEngineBackend implements Backend {
         }
     }
 
-    async backToHere(instanceId, tracingTag) {
+    async backToHere(instanceId: string, tracingTag: string) {
         try {
             const response = await axiosInstance.post(`/instance/${instanceId}/activity/${tracingTag}/backToHere`);
             return response.data;
@@ -161,7 +161,7 @@ class UEngineBackend implements Backend {
         }
     }
 
-    async getProcessVariables(instanceId) {
+    async getProcessVariables(instanceId: string) {
         try {
             const response = await axiosInstance.get(`/instance/${instanceId}/variables`);
             return response.data;
@@ -170,7 +170,7 @@ class UEngineBackend implements Backend {
         }
     }
 
-    async getVariable(instId, varName) {
+    async getVariable(instId: string, varName: string) {
         try {
             const response = await axiosInstance.get(`/instance/${instId}/variable/${varName}`);
             return response.data;
@@ -179,7 +179,7 @@ class UEngineBackend implements Backend {
         }
     }
 
-    async setVariable(instanceId, varName, varValue) {
+    async setVariable(instanceId: string, varName: string, varValue: any) {
         try {
             const response = await axiosInstance.post(`/instance/${instanceId}/variable/${varName}`, null, { params: { varValue } });
             return response.data;
@@ -188,7 +188,7 @@ class UEngineBackend implements Backend {
         }
     }
 
-    async getRoleMapping(instId, roleName) {
+    async getRoleMapping(instId: string, roleName: string) {
         try {
             const response = await axiosInstance.get(`/instance/${instId}/role-mapping/${roleName}`);
             return response.data;
@@ -197,7 +197,7 @@ class UEngineBackend implements Backend {
         }
     }
 
-    async setRoleMapping(instanceId, roleName, roleMapping) {
+    async setRoleMapping(instanceId: string, roleName: string, roleMapping: any) {
         try {
             const response = await axiosInstance.post(`/instance/${instanceId}/role-mapping/${roleName}`, roleMapping);
             return response.data;
@@ -206,7 +206,7 @@ class UEngineBackend implements Backend {
         }
     }
 
-    async signal(instanceId, signal) {
+    async signal(instanceId: string, signal: string) {
         try {
             const response = await axiosInstance.post(`/instance/${instanceId}/signal/${signal}`);
             return response.data;
@@ -215,7 +215,7 @@ class UEngineBackend implements Backend {
         }
     }
 
-    async serviceMessage(requestPath) {
+    async serviceMessage(requestPath: string) {
         try {
             const response = await axiosInstance.post(requestPath);
             return response.data;
@@ -224,7 +224,7 @@ class UEngineBackend implements Backend {
         }
     }
 
-    async getWorkItem(taskId) {
+    async getWorkItem(taskId: string) {
         try {
             const response = await axiosInstance.get(`/work-item/${taskId}`);
             return response.data;
@@ -233,7 +233,7 @@ class UEngineBackend implements Backend {
         }
     }
 
-    async putWorkItem(taskId, workItem) {
+    async putWorkItem(taskId: string, workItem: any) {
         try {
             const response = await axiosInstance.post(`/work-item/${taskId}`, workItem);
             return response.data;
@@ -242,7 +242,7 @@ class UEngineBackend implements Backend {
         }
     }
 
-    async postMessage(instanceId, message) {
+    async postMessage(instanceId: string, message: any) {
         try {
             const response = await axiosInstance.post(`/instance/${instanceId}/message`, message);
             return response.data;
@@ -258,6 +258,26 @@ class UEngineBackend implements Backend {
         } catch (e) {
             alert(e);
         }
+    }
+
+    async getDefinition(defPath: string) {
+        try {
+
+        } catch (e) {
+            
+        }
+        const response = await axiosInstance.get(`/definition/${defPath}`);
+        return response.data;
+    }
+    
+    async createFolder(newResource: any, requestPath: string) {
+        try {
+
+        } catch (e) {
+            
+        }
+        const response = await axiosInstance.post(`/definition/requestPath`, newResource);
+        return response.data;
     }
 }
 

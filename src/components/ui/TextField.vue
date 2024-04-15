@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-text-field :label="label"></v-text-field>
+        <v-text-field :label="label" v-model="inputedValue"></v-text-field>
     </div>
 </template>
 
@@ -14,22 +14,27 @@ export default {
         
     ],
     props: {
+        vueRenderUUID: String,
+        tagName: String,
         name: String,
         alias: String
     },
     computed: {
         label() {
-            return this.alias || this.name;
+            return this.localAlias || this.localName;
         }
     },
     data() {
         return {
+            localName: this.name,
+            localAlias: this.alias,
+            inputedValue: ""
         };
     },
     created() {
     },
     methods: {
- 
+        
     }
 };
 </script>

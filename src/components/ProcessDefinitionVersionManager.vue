@@ -144,7 +144,7 @@ export default {
             //     action: async () => {
             me.loading = true
             let result = await me.storage.list(`${me.basePath}`, {
-                key: 'version, name',
+                key: 'version',
                 sort: 'asc',
                 orderBy: 'timeStamp',
                 match: { 'proc_def_id': me.process.processDefinitionId }

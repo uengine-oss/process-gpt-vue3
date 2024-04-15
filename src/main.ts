@@ -53,6 +53,7 @@ const OpenGraphEmitter = mitt();
 const ModelingEmitter = mitt();
 
 const app = createApp(App);
+// @ts-ignore
 app.config.globalProperties.$try = app._component.methods.try;
 app.config.globalProperties.EventBus = emitter;
 app.config.globalProperties.OGBus = OpenGraphEmitter;

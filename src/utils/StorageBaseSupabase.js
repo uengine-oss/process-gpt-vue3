@@ -18,7 +18,7 @@ export default class StorageBaseSupabase {
             password: userInfo.password
         });
         if (!result.error) {
-            await this.writeUserData(result.data);
+            // await this.writeUserData(result.data);
             return result.data;
         } else {
             const users = await this.list('users');
@@ -51,9 +51,10 @@ export default class StorageBaseSupabase {
         });
 
         if (!result.error) {
-            await this.writeUserData(result.data);
+            // await this.writeUserData(result.data);
             return result.data;
         } else {
+            result.errorMsg = result.error.message;
             return result;
         }
     }
@@ -71,23 +72,29 @@ export default class StorageBaseSupabase {
     }
 
     async getUserInfo() {
-        const result = await window.$supabase.auth.getUser();
+        var { data, error } = await window.$supabase.auth.getUser();
+        const user = data.user;
 
-        if (result && result.data && result.data.user) {
-            const { data } = await window.$supabase.from('users').select('*').eq('id', result.data.user.id).single();
+        if (!error && user) {
+            var { data } = await window.$supabase
+                .from('users')
+                .select('profile')
+                .eq('id', data.user.id)
+                .maybeSingle()
 
             const userInfo = {
-                email: result.data.user.email,
-                name: result.data.user.user_metadata.name,
+                email: user.email,
+                name: user.user_metadata.name,
                 profile: data.profile,
-                uid: result.data.user.id,
-                role: result.data.user.role,
-                last_sign_in_at: result.data.user.last_sign_in_at
-            };
+                uid: user.id,
+                role: user.role,
+                last_sign_in_at: user.last_sign_in_at,
+            }
 
             return userInfo;
+
         } else {
-            return null;
+            return error;
         }
     }
 
@@ -95,32 +102,47 @@ export default class StorageBaseSupabase {
         try {
             let obj = this.formatDataPath(path, options);
             if (options && options.match) {
-                const { data, error } = await window.$supabase.from(obj.table).select().match(options.match).single();
+                const { data, error } = await window.$supabase
+                    .from(obj.table)
+                    .select()
+                    .match(options.match)
+                    .maybeSingle()
 
                 if (error) {
-                    throw new StorageBaseError('error in getString', error, arguments);
+                    throw error;
                 } else {
                     return data;
                 }
             } else if (obj.searchVal) {
-                const { data, error } = await window.$supabase.from(obj.table).select().eq(obj.searchKey, obj.searchVal).single();
+                const { data, error } = await window.$supabase
+                    .from(obj.table)
+                    .select()
+                    .eq(obj.searchKey, obj.searchVal)
+                    .maybeSingle()
 
                 if (error) {
-                    throw new StorageBaseError('error in getString', error, arguments);
+                    throw error;
                 } else {
                     return data;
                 }
             } else {
-                const { data, error } = await window.$supabase.from(obj.table).select().single();
+                const { data, error } = await window.$supabase
+                    .from(obj.table)
+                    .select()
+                    .maybeSingle()
 
                 if (error) {
-                    throw new StorageBaseError('error in getString', error, arguments);
+                    throw error;
                 } else {
                     return data;
                 }
             }
-        } catch (error) {
-            throw new StorageBaseError('error in getString', error, arguments);
+        } catch(error) {
+            if (error.code === 'PGRST116' || error.code === '42703') {
+                console.log(error.message);
+                return "";
+            }
+            throw new StorageBaseError('error in getString', error, arguments)
         }
     }
 
@@ -128,32 +150,48 @@ export default class StorageBaseSupabase {
         try {
             let obj = this.formatDataPath(path, options);
             if (options && options.match) {
-                const { data, error } = await window.$supabase.from(obj.table).select().match(options.match).single();
+                const { data, error } = await window.$supabase
+                    .from(obj.table)
+                    .select()
+                    .match(options.match)
+                    .maybeSingle()
 
                 if (error) {
-                    throw new StorageBaseError('error in getObject', error, arguments);
+                    throw error;
                 } else {
                     return data;
                 }
             } else if (obj.searchVal) {
-                const { data, error } = await window.$supabase.from(obj.table).select().eq(obj.searchKey, obj.searchVal).single();
+                const { data, error } = await window.$supabase
+                    .from(obj.table)
+                    .select()
+                    .eq(obj.searchKey, obj.searchVal)
+                    .maybeSingle()
 
                 if (error) {
-                    throw new StorageBaseError('error in getObject', error, arguments);
+                    throw error;
                 } else {
                     return data;
                 }
             } else {
-                const { data, error } = await window.$supabase.from(obj.table).select().single();
-
+                const { data, error } = await window.$supabase
+                    .from(obj.table)
+                    .select()
+                    .maybeSingle()
+                
                 if (error) {
-                    throw new StorageBaseError('error in getObject', error, arguments);
+                    throw error;
                 } else {
                     return data;
                 }
             }
-        } catch (error) {
-            throw new StorageBaseError('error in getObject', error, arguments);
+        } catch(error) {
+            if (error.code === 'PGRST116' || error.code === '42703') {
+                console.log(error.message);
+                return {};
+            } else {
+                throw new StorageBaseError('error in getObject', error.message)
+            }
         }
     }
 
@@ -180,8 +218,8 @@ export default class StorageBaseSupabase {
                     throw new StorageBaseError('error in putString', error, arguments);
                 }
             }
-        } catch (error) {
-            throw new StorageBaseError('error in putString', error, arguments);
+        } catch(error) {
+            throw new StorageBaseError('error in putString', error.message, arguments)
         }
     }
 
@@ -210,8 +248,8 @@ export default class StorageBaseSupabase {
                     throw new StorageBaseError('error in putObject', error, arguments);
                 }
             }
-        } catch (error) {
-            throw new StorageBaseError('error in putObject', error, arguments);
+        } catch(error) {
+            throw new StorageBaseError('error in putObject', error.message, arguments);
         }
     }
 
@@ -275,7 +313,10 @@ export default class StorageBaseSupabase {
         try {
             let obj = this.formatDataPath(path, options);
             if (options && options.match) {
-                const { data, error } = await window.$supabase.from(obj.table).delete().match(options.match);
+                const { error } = await window.$supabase
+                    .from(obj.table)
+                    .delete()
+                    .match(options.match);
 
                 if (error) {
                     throw new StorageBaseError('error in delete', error, arguments);
@@ -312,7 +353,8 @@ export default class StorageBaseSupabase {
                     }
                 )
                 .subscribe();
-        } catch (error) {
+    
+        } catch(error) {
             throw new StorageBaseError('error in watch', error, arguments);
         }
     }
@@ -433,6 +475,12 @@ export default class StorageBaseSupabase {
 
             const { data, error } = await window.$supabase.from('users').select('*').eq('id', value.user.id).single();
 
+            const { data, error } = await window.$supabase
+                .from('users')
+                .select('*')
+                .eq('id', value.user.id)
+                .maybeSingle()
+            
             if (error) {
                 throw new StorageBaseError('error in writeUserData', error, arguments);
             }
@@ -445,15 +493,13 @@ export default class StorageBaseSupabase {
             headers: {
                 Authorization: 'bearer ' + localStorage.getItem('accessToken')
             }
-        };
-        await axios
-            .get('/test/execution', options)
-            .then((res) => {
-                window.localStorage.setItem('execution', 'true');
-            })
-            .catch((error) => {
-                console.log(error);
-            });
+        }
+        await axios.get('/test/execution', options).then(res => {
+            window.localStorage.setItem("execution", "true");
+        })
+        .catch(error => {
+            // console.log(error);
+        });
     }
 
     formatDataPath(path, options) {
