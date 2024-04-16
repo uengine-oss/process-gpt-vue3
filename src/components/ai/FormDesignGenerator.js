@@ -80,6 +80,7 @@ export default class FormDesignGenerator extends AIGenerator{
 
           변경에 대한 지시사항은 action, targetCSSSelector 속성을 반드시 사용해야 하고 추가 및 변경시에는 tagValue라는 속성을 반드시 사용해야 해.
           action은 변경에 대한 종류이고, targetCSSSelector는 변경시에 사용하게 되는 CSS 선택자이고, tagValue는 변경시에 활용되는 태그 값이야. 삭제시에는 사용하지 않아도 돼.
+          targetValue에서 하나의 태그 값만 넣을 수 있어. 여러개의 태그를 활용하고 싶을 경우에는 지시사항을 여러개를 만들어주면 돼.
 
           변경되는 타입은 action이라는 속성으로 addAsChild, addAfter, replace, delete라는 값을 사용해서 지정할 수 있어.
           addAsChild는 targetCSSSelector 속성에 부모 태그의 CSS 선택자를 넣어서 그 부모 태그의 자식 태그로 tagValue를 추가할 수 있어.
@@ -95,7 +96,7 @@ export default class FormDesignGenerator extends AIGenerator{
               {
                 "action": "addAsChild" | "addAfter" | "replace" | "delete",
                 "targetCSSSelector": "CSS 선택자",
-                "tagValue": "HTML 태그 값"
+                "tagValue": "하나의 단일 HTML 태그 값"
               }
             ]
           }
