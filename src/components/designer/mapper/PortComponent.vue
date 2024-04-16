@@ -1,6 +1,6 @@
 <template id="port-template">
     <g
-        :transform="'translate(' + pos.x + ',' + pos.y + ')'"
+        :transform="'translate(' + getPosition().x + ',' + getPosition().y + ')'"
         class="port"
         :data-port-name="name"
         :data-block-name="blockName"
@@ -37,7 +37,23 @@ export default {
         blockName: String,
         direction: String,
         onmousedown: Function,
-        onmouseup: Function
+        onmouseup: Function,
+        appendComponent: Boolean
+    },
+    methods: {
+        getPosition() {
+            var position = {
+                x: this.pos.x,
+                y: this.pos.y
+            };
+            if (this.appendComponent[this.blockName] == true) {
+                if (this.pos.appendX && this.pos.appendY) {
+                    position.x = this.pos.appendX;
+                    position.y = this.pos.appendY;
+                }
+            }
+            return position;
+        }
     }
 };
 </script>
