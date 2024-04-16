@@ -11,9 +11,10 @@
 
         <v-card-text>
             <v-col>
-                <v-text-field ref="inputId" v-model.trim="infoToSave.id" label="ID"
-                    :rules="[v => !!v || 'ID is required']" required @keyup.enter="save"></v-text-field>
-                <v-text-field v-model.trim="infoToSave.name" label="Name" @keyup.enter="save"></v-text-field>
+                <v-text-field ref="inputId" v-model.trim="infoToSave.id" label="ID" @keyup.enter="save" 
+                              :placeholder="placeholder.id" persistent-placeholder @input="onInputId"></v-text-field>
+                <v-text-field ref="inputName" v-model.trim="infoToSave.name" label="Name" @keyup.enter="save"
+                              :placeholder="placeholder.name" persistent-placeholder></v-text-field>
             </v-col>
         </v-card-text>
 
@@ -33,7 +34,16 @@ export default {
     data: () => ({
         infoToSave: {
             id: "",
+            name: "",
+        },
+
+        placeholder: {
+            id: "",
             name: ""
+        },
+
+        default: {
+            id: `untitled-${Date.now()}`
         },
 
         regexStr: /^[가-힣a-zA-Z0-9_\-. ]+$/,
@@ -41,30 +51,41 @@ export default {
     }),
     methods: {
         save() {
-            //#region 유효성 검사
-            if(!(this.infoToSave.id) || this.infoToSave.id.length <= 0) {
-                alert("ID is required")
-                return
-            }
-            if(!this.regexStr.test(this.infoToSave.id)) {
-                alert(this.regexErrorMsg.replace("{{propName}}", "ID"))
-                return
-            }
-            if(this.infoToSave.name && this.infoToSave.name.length > 0) {
-                if(!this.regexStr.test(this.infoToSave.name)) {
-                    alert(this.regexErrorMsg.replace("{{propName}}", "Name"))
-                    return
-                }
-            }
-            //#endregion
             //#region 입력값 처리
+            if(!(this.infoToSave.id) || this.infoToSave.id.length <= 0) {
+                this.infoToSave.id = this.default.id
+            }
             if(!(this.infoToSave.name) || this.infoToSave.name.length <= 0) {
                 this.infoToSave.name = this.infoToSave.id
             }
             //#endregion
+            //#region 유효성 검사
+            if(!this.regexStr.test(this.infoToSave.id)) {
+                alert(this.regexErrorMsg.replace("{{propName}}", "ID"))
+                this.$refs.inputId.focus();
+                return
+            }
+            if(!this.regexStr.test(this.infoToSave.name)) {
+                alert(this.regexErrorMsg.replace("{{propName}}", "Name"))
+                this.$refs.inputName.focus();
+                return
+            }
+            //#endregion
 
             this.$emit('onSave', this.infoToSave)
+        },
+
+        onInputId() {
+            if(this.infoToSave.id.length > 0)
+                this.placeholder.name = this.infoToSave.id
+            else
+                this.placeholder.name = this.default.id
         }
+    },
+    
+    created() {
+        this.placeholder.id = this.default.id
+        this.placeholder.name = this.default.id
     },
     mounted() {
         this.$nextTick(() => {
