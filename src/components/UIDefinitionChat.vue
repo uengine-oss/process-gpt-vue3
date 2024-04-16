@@ -187,9 +187,16 @@ export default {
 
                 // 생성된 HTML을 보여주기 위해서
                 if(messageWriting.jsonContent) {
-                    this.applyNewSrcToMashup(
-                        this.loadHTMLToKEditorContent(messageWriting.jsonContent.htmlOutput)
-                    )
+                    if(messageWriting.jsonContent.htmlOutput)
+                    {
+                        this.applyNewSrcToMashup(
+                            this.loadHTMLToKEditorContent(messageWriting.jsonContent.htmlOutput)
+                        )
+                    }
+                    else if(messageWriting.jsonContent.modifications)
+                    {
+                        console.log(messageWriting.jsonContent.modifications)
+                    }
                 }
 
             } catch (error) {
@@ -205,7 +212,9 @@ export default {
             const textFragments = inputString.split("```")
             for (let i=textFragments.length - 1; i>=0; i--) {
                 const textFragment = textFragments[i]
-                if((!textFragment.includes("{")) || (!textFragment.includes("}")) || (!textFragment.includes("htmlOutput"))) continue
+                if((!textFragment.includes("{")) || (!textFragment.includes("}"))) continue
+                if((!textFragment.includes("htmlOutput")) && (!textFragment.includes("modifications"))) continue
+                const isFirstCreated = textFragment.includes("htmlOutput")
 
                 let fragmentToParse = ""
                 try {
@@ -216,7 +225,7 @@ export default {
                     // AI가 잘못된 응답을 냈을 경우, 이를 대응하기 위한 수단들
 
                     // AI 응답이 `"` 문자열을 '\'로 파싱하지 않은 경우, 수동으로 파싱하기 위해서
-                    const matchedHtmlOutput = processedFragment.match(/"htmlOutput"\s*:\s*"(.*)".*}/)[1]                  
+                    const matchedHtmlOutput = (isFirstCreated) ? processedFragment.match(/"htmlOutput"\s*:\s*"(.*)".*}/)[1] : processedFragment.match(/"tagValue"\s*:\s*"(.*)".*}/)[1]         
                     if(matchedHtmlOutput.includes(`\\"`)) fragmentToParse = processedFragment
                     else fragmentToParse = processedFragment.replace(matchedHtmlOutput, matchedHtmlOutput.replaceAll(`"`, `\\"`))
                     
