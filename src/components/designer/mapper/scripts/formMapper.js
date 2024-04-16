@@ -1,10 +1,15 @@
 
 
 export function add(a, b) {
-  return {
+  var result = {
     x: a.x + b.x,
     y: a.y + b.y,
   };
+  if (b.appendX != undefined && b.appendY != undefined) {
+    result["appendX"] = a.x + b.appendX;
+    result["appendY"] = a.y + b.appendY;
+  }
+  return result;
 }
 
 export function sub(a, b) {
@@ -27,101 +32,109 @@ export default {
     return {
       blockTemplates: {
         Abs: {
-          size: { width: 150, height: 50 },
+          size: { width: 100, height: 50 },
           ports: {
-            "in input": { x: -75, y: 0 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in input": { x: -50, y: 10 },
+            out: { x: 50, y: 10, direction: "out" },
           },
           parent: "Math",
           class: "org.uengine.processdesigner.mapper.transformers.AbsTransformer",
           isTransform: true,
+          appendable: false,
         },
         Ceil: {
-          size: { width: 150, height: 50 },
+          size: { width: 100, height: 50 },
           ports: {
-            "in input": { x: -75, y: 0 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in input": { x: -50, y: 10 },
+            out: { x: 50, y: 10, direction: "out" },
           },
           parent: "Math",
           class: "org.uengine.processdesigner.mapper.transformers.CeilTransformer",
           isTransform: true,
+          appendable: false,
         },
         Concat: {
-          size: { width: 150, height: 250 },
+          size: { width: 120, height: 150 },
           ports: {
-            "in str1": { x: -75, y: -100 },
-            "in str2": { x: -75, y: -50 },
-            "in str3": { x: -75, y: 0 },
-            "in str4": { x: -75, y: 50 },
-            "in str5": { x: -75, y: 100 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in str1": { x: -60, y: -60 },
+            "in str2": { x: -60, y: -30 },
+            "in str3": { x: -60, y: 0 },
+            "in str4": { x: -60, y: 30 },
+            "in str5": { x: -60, y: 60 },
+            out: { x: 60, y: 0, direction: "out" },
           },
           parent: "String",
           class: "org.uengine.processdesigner.mapper.transformers.ConcatTransformer",
           isTransform: true,
+          appendable: false,
         },
         Floor: {
-          size: { width: 150, height: 50 },
+          size: { width: 100, height: 50 },
           ports: {
-            "in input": { x: -75, y: 0 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in input": { x: -50, y: 10 },
+            out: { x: 50, y: 10, direction: "out" },
           },
           parent: "Math",
           class: "org.uengine.processdesigner.mapper.transformers.FloorTransformer",
           isTransform: true,
+          appendable: false,
         },
         Max: {
-          size: { width: 150, height: 100 },
+          size: { width: 100, height: 60 },
           ports: {
-            "in value1": { x: -75, y: -25 },
-            "in value2": { x: -75, y: 25 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in value1": { x: -50, y: 0 },
+            "in value2": { x: -50, y: 20 },
+            out: { x: 50, y: 10, direction: "out" },
           },
           parent: "Math",
           class: "org.uengine.processdesigner.mapper.transformers.MaxTransformer",
           isTransform: true,
+          appendable: false,
         },
         Min: {
-          size: { width: 150, height: 100 },
+          size: { width: 100, height: 60 },
           ports: {
-            "in value1": { x: -75, y: -25 },
-            "in value2": { x: -75, y: 25 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in value1": { x: -50, y: 0 },
+            "in value2": { x: -50, y: 20 },
+            out: { x: 50, y: 0, direction: "out" },
           },
           parent: "Math",
           class: "org.uengine.processdesigner.mapper.transformers.MinTransformer",
           isTransform: true,
+          appendable: false,
         },
         NumberFormat: {
-          size: { width: 150, height: 100 },
+          size: { width: 150, height: 60, appendWidth: 150, appendHeight: 130 },
           ports: {
-            "in input": { x: -75, y: -25 },
-            "in locale": { x: -75, y: 25 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in input": { x: -75, y: -15, appendX: -75, appendY: -50 },
+            "in locale": { x: -75, y: 15, appendX: -75, appendY: 50 },
+            out: { x: 75, y: 0, direction: "out", appendX: 75, appendY: 0 },
           },
           attributes: {
-            "inputType": { x: -55, y: -30, func: "NumberFormatInput", value: "" },
-            "toType": { x: -55, y: 25, func: "NumberFormatTo", value: "" },
+            "inputType": { x: -55, y: -30, width: 100, height: 50, func: "NumberFormatInput", value: "" },
+            "toType": { x: -55, y: 25, width: 100, height: 50, func: "NumberFormatTo", value: "" },
           },
           parent: "String",
           class: "org.uengine.processdesigner.mapper.transformers.NumberFormatTransformer",
           isTransform: true,
+          appendable: true,
         },
         Round: {
-          size: { width: 150, height: 50 },
+          size: { width: 100, height: 50 },
           ports: {
-            "in input": { x: -75, y: 0 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in input": { x: -50, y: 10 },
+            out: { x: 50, y: 10, direction: "out" },
           },
           parent: "Math",
           class: "org.uengine.processdesigner.mapper.transformers.RoundTransformer",
           isTransform: true,
+          appendable: false,
         },
-        Replace: {//직접 값을 입력하는듯 함
-          size: { width: 150, height: 120 },
+        Replace: {
+          size: { width: 120, height: 50, appendWidth: 150, appendHeight: 120 },
           ports: {
-            "in input": { x: -75, y: 0 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in input": { x: -60, y: 0, appendX: -75, appendY: 0 },
+            out: { x: 60, y: 0, direction: "out", appendX: 75, appendY: 0 },
           },
           attributes: {
             "from": { x: -55, y: -30, func: "input", value: "" },
@@ -130,142 +143,150 @@ export default {
           parent: "String",
           class: "org.uengine.processdesigner.mapper.transformers.ReplaceTransformer",
           isTransform: true,
+          appendable: true,
         },
         Sum: {
-          size: { width: 150, height: 250 },
+          size: { width: 100, height: 120 },
           ports: {
-            "in val1": { x: -75, y: -100 },
-            "in val2": { x: -75, y: -50 },
-            "in val3": { x: -75, y: 0 },
-            "in val4": { x: -75, y: 50 },
-            "in val5": { x: -75, y: 100 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in val1": { x: -50, y: -30 },
+            "in val2": { x: -50, y: -10 },
+            "in val3": { x: -50, y: 10 },
+            "in val4": { x: -50, y: 30 },
+            "in val5": { x: -50, y: 50 },
+            out: { x: 50, y: 10, direction: "out" },
           },
           parent: "Math",
           class: "org.uengine.processdesigner.mapper.transformers.SumTransformer",
           isTransform: true,
-        },
-        MergerValidator: {
-          size: { width: 150, height: 500 },
-          ports: {
-            "in in1": { x: -75, y: -225 },
-            "in in2": { x: -75, y: -175 },
-            "in in3": { x: -75, y: -125 },
-            "in in4": { x: -75, y: -75 },
-            "in in5": { x: -75, y: -25 },
-            "in in6": { x: -75, y: 25 },
-            "in in7": { x: -75, y: 75 },
-            "in in8": { x: -75, y: 125 },
-            "in in9": { x: -75, y: 175 },
-            "in in10": { x: -75, y: 225 },
-            out: { x: 75, y: 0, direction: "out" },
-          },
-          parent: "Validator",
-          class: "org.uengine.processdesigner.mapper.transformers.MergerValidator",
-          isTransform: true,
+          appendable: false,
         },
         NotNullValidator: {
-          size: { width: 150, height: 500 },
+          size: { width: 140, height: 220, appendWidth: 160, appendHeight: 270 },
           ports: {
-            "in in1": { x: -75, y: -225 },
-            "in in2": { x: -75, y: -175 },
-            "in in3": { x: -75, y: -125 },
-            "in in4": { x: -75, y: -75 },
-            "in in5": { x: -75, y: -25 },
-            "in in6": { x: -75, y: 25 },
-            "in in7": { x: -75, y: 75 },
-            "in in8": { x: -75, y: 125 },
-            "in in9": { x: -75, y: 175 },
-            "in in10": { x: -75, y: 225 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in in1": { x: -70, y: -80, appendX: -70, appendY: -60 },
+            "in in2": { x: -70, y: -60, appendX: -70, appendY: -40 },
+            "in in3": { x: -70, y: -40, appendX: -70, appendY: -20 },
+            "in in4": { x: -70, y: -20, appendX: -70, appendY: 0 },
+            "in in5": { x: -70, y: 0, appendX: -70, appendY: 20 },
+            "in in6": { x: -70, y: 20, appendX: -70, appendY: 40 },
+            "in in7": { x: -70, y: 40, appendX: -70, appendY: 60 },
+            "in in8": { x: -70, y: 60, appendX: -70, appendY: 80 },
+            "in in9": { x: -70, y: 80, appendX: -70, appendY: 100 },
+            "in in10": { x: -70, y: 100, appendX: -70, appendY: 120 },
+            out: { x: 70, y: 10, direction: "out" },
+          },
+          attributes: {
+            "validationMessage": { x: -55, y: -90, func: "input", value: "" },
           },
           parent: "Validator",
           class: "org.uengine.processdesigner.mapper.transformers.NotNullValidator",
           isTransform: true,
+          appendable: true,
         },
         RegularExpValidator: {
-          size: { width: 150, height: 500 },
+          size: { width: 160, height: 220, appendWidth: 160, appendHeight: 290 },
           ports: {
-            "in in1": { x: -75, y: -225 },
-            "in in2": { x: -75, y: -175 },
-            "in in3": { x: -75, y: -125 },
-            "in in4": { x: -75, y: -75 },
-            "in in5": { x: -75, y: -25 },
-            "in in6": { x: -75, y: 25 },
-            "in in7": { x: -75, y: 75 },
-            "in in8": { x: -75, y: 125 },
-            "in in9": { x: -75, y: 175 },
-            "in in10": { x: -75, y: 225 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in in1": { x: -80, y: -80, appendX: -80, appendY: -50 },
+            "in in2": { x: -80, y: -60, appendX: -80, appendY: -30 },
+            "in in3": { x: -80, y: -40, appendX: -80, appendY: -10 },
+            "in in4": { x: -80, y: -20, appendX: -80, appendY: 10 },
+            "in in5": { x: -80, y: 0, appendX: -80, appendY: 30 },
+            "in in6": { x: -80, y: 20, appendX: -80, appendY: 50 },
+            "in in7": { x: -80, y: 40, appendX: -80, appendY: 70 },
+            "in in8": { x: -80, y: 60, appendX: -80, appendY: 90 },
+            "in in9": { x: -80, y: 80, appendX: -80, appendY: 110 },
+            "in in10": { x: -80, y: 100, appendX: -80, appendY: 130 },
+            out: { x: 80, y: 10, direction: "out" },
+          },
+          attributes: {
+            "validationMessage": { x: -55, y: -110, func: "input", value: "" },
+            "regularExpression": { x: -55, y: -80, func: "input", value: "" },
           },
           parent: "Validator",
           class: "org.uengine.processdesigner.mapper.transformers.RegularExpValidator",
           isTransform: true,
+          appendable: true,
         },
         SizeValidator: {
-          size: { width: 150, height: 500 },
+          size: { width: 120, height: 220, appendWidth: 150, appendHeight: 290 },
           ports: {
-            "in in1": { x: -75, y: -225 },
-            "in in2": { x: -75, y: -175 },
-            "in in3": { x: -75, y: -125 },
-            "in in4": { x: -75, y: -75 },
-            "in in5": { x: -75, y: -25 },
-            "in in6": { x: -75, y: 25 },
-            "in in7": { x: -75, y: 75 },
-            "in in8": { x: -75, y: 125 },
-            "in in9": { x: -75, y: 175 },
-            "in in10": { x: -75, y: 225 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in in1": { x: -60, y: -80, appendX: -75, appendY: -50 },
+            "in in2": { x: -60, y: -60, appendX: -75, appendY: -30 },
+            "in in3": { x: -60, y: -40, appendX: -75, appendY: -10 },
+            "in in4": { x: -60, y: -20, appendX: -75, appendY: 10 },
+            "in in5": { x: -60, y: 0, appendX: -75, appendY: 30 },
+            "in in6": { x: -60, y: 20, appendX: -75, appendY: 50 },
+            "in in7": { x: -60, y: 40, appendX: -75, appendY: 70 },
+            "in in8": { x: -60, y: 60, appendX: -75, appendY: 90 },
+            "in in9": { x: -60, y: 80, appendX: -75, appendY: 110 },
+            "in in10": { x: -60, y: 100, appendX: -75, appendY: 130 },
+            out: { x: 60, y: 10, direction: "out" },
+          },
+          attributes: {
+            "validationMessage": { x: -55, y: -110, func: "input", value: "" },
+            "size": { x: -55, y: -80, func: "input", value: "" },
           },
           parent: "Validator",
           class: "org.uengine.processdesigner.mapper.transformers.SizeValidator",
           isTransform: true,
+          appendable: true,
         },
-        DirectSql: {//직접 값을 입력하는듯 함
-          size: { width: 150, height: 100 },
+        BeanValue: {
+          size: { width: 120, height: 50, appendWidth: 150, appendHeight: 80 },
+          ports: {
+            "in in": { x: -60, y: 10, appendX: -75, appendY: -10 },
+            out: { x: 60, y: 10, direction: "out", appendX: 75, appendY: -10  },
+          },
+          attributes: {
+            "className": { x: -55, y: 15, func: "input", value: "" },
+          },
+          parent: "Resolver",
+          class: "org.uengine.processdesigner.mapper.transformers.BeanValueTransformer",
+          isTransform: true,
+          appendable: true,
+        },
+        DirectSql: {
+          size: { width: 150, height: 80 },
           ports: {
             out: { x: 75, y: 0, direction: "out" },
           },
           attributes: {
-            "input": { x: -55, y: 25, func: "input", value: "" },
+            "input": { x: -55, y: 15, func: "input", value: "" },
           },
           parent: "ETC",
           class: "org.uengine.processdesigner.mapper.transformers.DirectSqlTransformer",
           isTransform: true,
+          appendable: false,
         },
-        BeanValue: {
-          size: { width: 150, height: 50 },
+        DirectValue: {
+          size: { width: 120, height: 50, appendWidth: 150, appendHeight: 80 },
           ports: {
-            "in in": { x: -75, y: 0 },
-            out: { x: 75, y: 0, direction: "out" },
-          },
-          parent: "ETC",
-          class: "org.uengine.processdesigner.mapper.transformers.BeanValueTransformer",
-          isTransform: true,
-        },
-        DirectValue: {//직접 값을 입력하는듯 함
-          size: { width: 150, height: 100 },
-          ports: {
-            out: { x: 75, y: 0, direction: "out" },
+            "in input": { x: -60, y: 10, appendX: -75, appendY: -10 },
+            out: { x: 60, y: 10, direction: "out", appendX: 75, appendY: -10 },
           },
           attributes: {
-            "input": { x: -55, y: 25, func: "input", value: "" },
+            "Value": { x: -55, y: 15, func: "input", value: "" },
           },
           parent: "ETC",
           class: "org.uengine.processdesigner.mapper.transformers.DirectValueTransformer",
           isTransform: true,
+          appendable: true,
         },
-        Number: {
-          size: { width: 150, height: 50 },
+        ToNumber: {
+          size: { width: 120, height: 50, appendWidth: 150, appendHeight: 80 },
           ports: {
-            "in input": { x: -75, y: 0 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in input": { x: -60, y: 10, appendX: -75, appendY: -10 },
+            out: { x: 60, y: 10, direction: "out", appendX: 75, appendY: -10 },
           },
-          parent: "ETC",
+          attributes: {
+            "input": { x: -55, y: 15, func: "NumberFormatInput", value: "" },
+          },
+          parent: "Math",
           class: "org.uengine.processdesigner.mapper.transformers.NumberTransformer",
           isTransform: true,
+          appendable: true,
         },
-        SequenceGenerator: {//직접 값을 입력하는듯 함
+        SequenceGenerator: {
           size: { width: 150, height: 50 },
           ports: {
             out: { x: 75, y: 0, direction: "out" },
@@ -273,6 +294,7 @@ export default {
           parent: "ETC",
           class: "org.uengine.processdesigner.mapper.transformers.SequenceGeneratorTransformer",
           isTransform: true,
+          appendable: false,
         },
         XMLParsing: {//직접 값을 입력하는듯 함
           size: { width: 150, height: 100 },
@@ -285,6 +307,7 @@ export default {
           parent: "ETC",
           class: "org.uengine.processdesigner.mapper.transformers.XMLParsingTransformer",
           isTransform: true,
+          appendable: false,
         },
         Source: {//소스
           size: { width: 0, height: 0 },
@@ -310,7 +333,6 @@ export default {
       tempConnections: [
       ],
       attributes: {
-
       },
       pendingConnection: null,
       pendingConnectionEnd: null,
@@ -400,8 +422,6 @@ export default {
         }
       }
       this.blocks[nextBlockName] = newBlock;
-      console.log(this.blocks);
-      console.log(this.attributes);
     },
     deleteBlock(name) {
       if (this.blocks[name]) {
