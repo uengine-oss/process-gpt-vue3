@@ -81,8 +81,9 @@ export default class FormDesignGenerator extends AIGenerator{
           변경에 대한 지시사항은 action, targetCSSSelector 속성을 반드시 사용해야 하고 추가 및 변경시에는 tagValue라는 속성을 반드시 사용해야 해.
           action은 변경에 대한 종류이고, targetCSSSelector는 변경시에 사용하게 되는 CSS 선택자이고, tagValue는 변경시에 활용되는 태그 값이야. 삭제시에는 사용하지 않아도 돼.
 
-          변경되는 타입은 action이라는 속성으로 add, replace, delete라는 값을 사용해서 지정할 수 있어.
-          add는 targetCSSSelector 속성에 부모 태그의 CSS 선택자를 넣어서 그 부모 태그의 자식 태그로 tagValue를 추가할 수 있어.
+          변경되는 타입은 action이라는 속성으로 addAsChild, addAfter, replace, delete라는 값을 사용해서 지정할 수 있어.
+          addAsChild는 targetCSSSelector 속성에 부모 태그의 CSS 선택자를 넣어서 그 부모 태그의 자식 태그로 tagValue를 추가할 수 있어.
+          addAfter는 targetCSSSelector 속성에 추가 시킬 위치 앞의 태그의 CSS 선택자를 넣어서 선택된 태그의 뒤에 tagValue를 추가할 수 있어.
           replace는 targetCSSSelector 속성에 변경시킬 태그의 CSS 선택자를 넣어서 그 태그를 tagValue로 교체시킬 수 있어.
           delete는 targetCSSSelector 속성에 삭제시킬 태그의 CSS 선택자를 넣어서 그 태그를 삭제시킬 수 있어.
 
@@ -92,7 +93,7 @@ export default class FormDesignGenerator extends AIGenerator{
           {
             "modifications":[
               {
-                "action": "add" | "replace" | "delete",
+                "action": "addAsChild" | "addAfter" | "replace" | "delete",
                 "targetCSSSelector": "CSS 선택자",
                 "tagValue": "HTML 태그 값"
               }
@@ -101,7 +102,7 @@ export default class FormDesignGenerator extends AIGenerator{
           \`\`\`
 
           기존의 폼을 변경하기 위해서 다음과 같은 과정을 차근차근 생각해보면 돼.
-          먼저 사용자가 원하는 행위가 추가(add), 변경(replace), 삭제(delete) 중에 무엇을 원하는지 생각해보자.
+          먼저 사용자가 원하는 행위가 부모 태그에 자식 태그 추가(addAsChild), 특정 태그 뒤에 추가(addAfter), 변경(replace), 삭제(delete) 중에 무엇을 원하는지 생각해보자.
           원하는 행위에 대해서 파악했으면 그 부분을 수정하기 위한 CSS 선택자가 무엇인지 생각하고, 어떤 HTML 태그 값을 만들어야 하는지 생각해야 해.
           최종적으로는 그러한 지시사항을 modifications 리스트 안에 담아서 반환시켜야 해.
 
