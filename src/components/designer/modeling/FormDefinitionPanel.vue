@@ -105,10 +105,12 @@
 
             <v-row>
               <v-col cols="5" class="d-flex align-center justify-center">
-                <v-text-field ref="inputKeyToAddItem" class="centered-input" label="Key" v-model.trim="keyToAdd" @keyup.enter="addItem"></v-text-field>
+                <v-text-field ref="inputKeyToAddItem" class="centered-input" label="Key" v-model.trim="keyToAdd" @keyup.enter="addItem"
+                              @input="onInputKeyToAdd" persistent-placeholder></v-text-field>
               </v-col>
               <v-col cols="5" class="d-flex align-center justify-center">
-                <v-text-field class="centered-input" label="Value" v-model.trim="valueToAdd" @keyup.enter="addItem"></v-text-field>
+                <v-text-field class="centered-input" label="Value" v-model.trim="valueToAdd" @keyup.enter="addItem"
+                              :placeholder="placeholder.valueToAdd" persistent-placeholder></v-text-field>
               </v-col>
               <v-col cols="2" class="d-flex align-center justify-center pb-9">
                 <v-sheet>
@@ -165,7 +167,8 @@
       regexErrorMsg: "'{{propName}}'은 한글, 영문, 숫자, 공백, 밑줄(_), 대시(-), 점(.) 만 입력 가능합니다!",
 
       placeholder: {
-        alias: ""
+        alias: "",
+        valueToAdd: ""
       }
     }),
     components: {
@@ -239,6 +242,7 @@
         this.value.items.push({ [this.keyToAdd]: this.valueToAdd })
         this.keyToAdd = ""
         this.valueToAdd = ""   
+        this.placeholder.valueToAdd = ""
         
         this.$nextTick(() => {
             this.$refs.inputKeyToAddItem.focus();
@@ -288,11 +292,16 @@
         this.value.items.splice(itemIndexToDelete, 1)
       },
 
+
       onInputName() {
         if(this.value.name.length > 0)
             this.placeholder.alias = this.value.name
         else
             this.placeholder.alias = this.initialValue.name
+      },
+
+      onInputKeyToAdd() {
+        this.placeholder.valueToAdd = this.keyToAdd
       }
     },
     created() {
