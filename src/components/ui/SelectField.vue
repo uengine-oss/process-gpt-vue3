@@ -1,10 +1,15 @@
 <template>
     <div>
         <v-select
-            :label="label"
             :items="localKeys"
             v-model="inputedValue"
-        ></v-select>
+        >
+        <template v-slot:label>
+            <span style="color:black;">
+                {{label}}
+            </span>
+        </template>
+        </v-select>
     </div>
 </template>
 

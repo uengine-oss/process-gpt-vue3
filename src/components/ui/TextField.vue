@@ -1,6 +1,12 @@
 <template>
     <div>
-        <v-text-field :label="label" v-model="inputedValue"></v-text-field>
+        <v-text-field v-model="inputedValue">
+            <template v-slot:label>
+                <span style="color:black;">
+                    {{label}}
+                </span>
+            </template>
+        </v-text-field>
     </div>
 </template>
 
