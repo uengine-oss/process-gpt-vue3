@@ -13,10 +13,14 @@
                 </v-btn> -->
             </v-row>
             <div id="app" class="treeviews-container" @contextmenu.prevent="showContextMenu($event)">
-                <v-treeview :config="config" :nodes="nodes" class="left-treeview">
-                    <template #after-input="item">
-                        <v-btn class="after" small @click.stop="onButtonClickLeft(item, 'Source')"></v-btn>
-                    </template>
+                <v-treeview
+                    :config="config"
+                    :nodes="nodes"
+                    class="left-treeview"
+                    :key="renderKey"
+                    @nodeOpened="handleNodeClick"
+                    @nodeClosed="handleNodeClick()"
+                >
                 </v-treeview>
 
                 <ContextMenu
@@ -65,6 +69,8 @@
                         :name="port.name"
                         :block-name="port.blockName"
                         :direction="port.direction"
+                        :parentNode="port.parentNode"
+                        :tree-view="nodes"
                         :onmousedown="newConnection(port.blockName, port.name, port.direction)"
                         :onmouseup="completeConnection(port.blockName, port.name, port.direction)"
                     ></port-component>
@@ -79,10 +85,14 @@
                     ></attribute-component>
                 </svg>
 
-                <v-treeview :config="config" :nodes="nodes" class="right-treeview" :key="renderKey">
-                    <template #after-input="item">
-                        <v-btn class="after" small @click.stop="onButtonClickRight(item, 'Target')"></v-btn>
-                    </template>
+                <v-treeview
+                    :config="config"
+                    :nodes="nodes"
+                    class="right-treeview"
+                    :key="renderKey"
+                    @nodeOpened="handleNodeClick"
+                    @nodeClosed="handleNodeClick()"
+                >
                 </v-treeview>
             </div>
         </v-card>
@@ -133,6 +143,7 @@ export default {
             menu_y: 0,
             component_x: 0,
             component_y: 0,
+            portIndex: 0,
             nodes: {
                 id1: {
                     text: 'text1',
@@ -159,81 +170,27 @@ export default {
         };
     },
     async created() {
-        let me = this;
-
-        me.storage = StorageBaseFactory.getStorage('supabase');
-
-        const definition = this.definition;
-
-        me.nodes = {};
-        me.config = {
-            roots: []
-        };
-
-        definition.processVariables.forEach(async (variable) => {
-            if (!me.config.roots.includes('Variables')) {
-                me.config.roots.push('Variables');
-            }
-
-            if (!me.nodes['Variables']) {
-                me.nodes['Variables'] = {
-                    text: 'Variables',
-                    children: []
-                };
-            }
-
-            if (me.nodes['Variables']) {
-                me.nodes['Variables'].children.push(variable.name);
-                me.nodes[variable.name] = {
-                    text: variable.name,
-                    children: []
-                };
-            }
-
-            let formDefs = await me.storage.list('form_def');
-            // let [formName, formAlias] = variable.defaultValue.split('_');
-            let name = variable.defaultValue.name;
-            let alias = variable.defaultValue.alias;
-            let matchingForm = formDefs.find((form) => form.name === name && form.alias === alias);
-
-            if (matchingForm) {
-                matchingForm.fields.forEach((field) => {
-                    if (!me.nodes[variable.name]) {
-                        me.nodes[variable.name] = {
-                            text: variable.name,
-                            children: []
-                        };
-                    }
-                    let fieldNameAlias = field.name + '_' + field.alias;
-                    me.nodes[variable.name].children.push(field.name);
-                    me.nodes[field.name] = {
-                        text: field.name,
-                        object: field
-                    };
-                });
-            }
-
-            // form.fields.forEach(async (field) => {
-            //     me.nodes[form.id].children.push(field.name + '_' + field.alias);
-            //     me.nodes[field.name + '_' + field.alias] = {
-            //         text: field.name + '_' + field.alias
-            //     };
-            // });
-        });
-
-        me.renderKey++;
+        await this.initializeStorage();
+        this.initializeNodesAndConfig();
+        await this.processVariables();
+        this.updateBlockTemplates();
+        this.renderKey++;
     },
     mounted() {
         let me = this;
 
-        Object.keys(me.nodes).forEach((key, index) => {
-            var node = me.nodes[key];
-            this.blockTemplates.Source.ports[node.text] = { x: 5, y: 36 * index, direction: 'out' };
-            this.blockTemplates.Target.ports[node.text] = { x: -5, y: 36 * index, direction: 'in' };
+        const formArea = document.getElementById('formArea');
+        const resizeObserver = new ResizeObserver((entries) => {
+            for (let entry of entries) {
+                this.addTreeViewPort();
+            }
         });
-        this.addTreeViewPort();
-
-        window.addEventListener('resize', this.addTreeViewPort);
+        this.$nextTick(() => {
+            //다이얼로그가 생성될 시 이상한 위치로 되기에 일정 시간을 줌
+            setTimeout(() => {
+                this.addTreeViewPort();
+            }, 300);
+        });
         // processVariables가 준비되었는지 확인
         if (this.processVariables && this.processVariables.length > 0) {
             // processVariables 사용
@@ -247,26 +204,175 @@ export default {
             });
         }
 
-        this.renderFormMapperFromMappingElementJson("");
+        this.renderFormMapperFromMappingElementJson('');
     },
     methods: {
+        async initializeStorage() {
+            this.storage = StorageBaseFactory.getStorage('supabase');
+        },
+
+        initializeNodesAndConfig() {
+            this.nodes = {};
+            this.config = {
+                roots: []
+            };
+        },
+        async fetchAndProcessFormDefinitions(variable) {
+            let formDefs = await this.storage.list('form_def');
+            let name = variable.defaultValue.name;
+            let alias = variable.defaultValue.alias;
+            let matchingForm = formDefs.find((form) => form.name === name && form.alias === alias);
+
+            if (matchingForm) {
+                matchingForm.fields.forEach((field) => {
+                    if (!this.nodes[variable.name]) {
+                        this.nodes[variable.name] = {
+                            text: variable.name,
+                            children: []
+                        };
+                    }
+                    let fieldNameAlias = field.name + '_' + field.alias;
+                    this.nodes[variable.name].children.push(field.name);
+                    this.nodes[field.name] = {
+                        text: field.name,
+                        object: field
+                    };
+                });
+            }
+        },
+        async processVariables() {
+            const definition = this.definition;
+
+            for (const variable of definition.processVariables) {
+                if (!this.config.roots.includes('Variables')) {
+                    this.config.roots.push('Variables');
+                }
+
+                if (!this.nodes['Variables']) {
+                    this.nodes['Variables'] = {
+                        text: 'Variables',
+                        children: []
+                    };
+                }
+
+                if (this.nodes['Variables']) {
+                    this.nodes['Variables'].children.push(variable.name);
+                    this.nodes[variable.name] = {
+                        text: variable.name,
+                        children: []
+                    };
+                }
+
+                await this.fetchAndProcessFormDefinitions(variable);
+            }
+        },
+        updateBlockTemplates() {
+            const treeStructure = this.buildTreeStructure(); // 트리 구조 생성
+            const nodeHeight = 24; // 각 노드의 높이 설정
+
+            const updatePorts = (treeNode, path = '', yOffset = 0, isRootClosed = false) => {
+                if (!treeNode) return;
+
+                // 상위 노드가 닫혀 있으면 yOffset을 갱신하지 않음
+                const effectiveYOffset = isRootClosed ? yOffset : yOffset + nodeHeight;
+                const currentPath = path ? `${path}.${treeNode.text}` : treeNode.text;
+                if (!isRootClosed) {
+                    this.addPortToBlockTemplates(currentPath, effectiveYOffset - nodeHeight);
+                } else {
+                    this.addPortToBlockTemplates(currentPath, effectiveYOffset);
+                }
+
+                // 자식 노드가 있는 경우 처리
+                if (treeNode.children && treeNode.children.length > 0) {
+                    const nodeOpened = this.nodes[treeNode.text].state && this.nodes[treeNode.text].state.opened;
+                    let cumulativeOffset = effectiveYOffset;
+
+                    treeNode.children.forEach((childNode, index) => {
+                        const child = this.nodes[childNode];
+                        updatePorts(child, currentPath, cumulativeOffset, isRootClosed || !nodeOpened);
+                        if (nodeOpened && !isRootClosed) {
+                            cumulativeOffset += this.getNodeHeight(child);
+                        }
+                    });
+                }
+            };
+
+            this.getNodeHeight = function (node) {
+                let totalHeight = nodeHeight;
+                if (node.state && node.state.opened && node.children) {
+                    node.children.forEach((child) => {
+                        totalHeight += this.getNodeHeight(this.nodes[child]);
+                    });
+                }
+                return totalHeight;
+            };
+
+            treeStructure.forEach((rootNode, index) => {
+                const rootYOffset = index * nodeHeight; // 루트 노드의 yOffset 계산
+                const rootClosed = !(this.nodes[rootNode.text].state && this.nodes[rootNode.text].state.opened);
+                updatePorts(rootNode, '', rootYOffset, rootClosed);
+            });
+        },
+        addPortToBlockTemplates(nodePath, yOffset) {
+            // 포트의 Y 위치를 yOffset을 사용하여 조정
+            this.blockTemplates.Source.ports[nodePath] = {
+                x: 5,
+                y: yOffset, // Y 위치 조정
+                direction: 'out'
+            };
+            this.blockTemplates.Target.ports[nodePath] = {
+                x: -5,
+                y: yOffset, // Y 위치 조정
+                direction: 'in'
+            };
+        },
+        buildTreeStructure() {
+            const buildTree = (nodeKey) => {
+                const node = this.nodes[nodeKey];
+                if (!node) return null;
+
+                let treeNode = { text: node.text, children: node.children || [] };
+                return treeNode;
+            };
+
+            let tree = [];
+            Object.keys(this.nodes).forEach((nodeKey) => {
+                // 최상위 노드만 탐색 시작점으로 삼습니다.
+                const isRootNode = !Object.values(this.nodes).some((n) => n.children && n.children.includes(nodeKey));
+                if (isRootNode) {
+                    tree.push(buildTree(nodeKey));
+                }
+            });
+
+            return tree;
+        },
         addTreeViewPort() {
+            var me = this;
             const formAreaRect = document.getElementById('formArea').getBoundingClientRect();
 
-            this.blocks['Source'] = {
+            if (this.blocks['Source']) {
+                delete this.blocks['Source'];
+            }
+            if (this.blocks['Target']) {
+                delete this.blocks['Target'];
+            }
+            me.blocks['Source'] = {
                 type: 'Source',
-                pos: { x: 0, y: 20 },
+                pos: { x: 0, y: 12 },
                 attributes: {}
             };
 
-            this.blocks['Target'] = {
+            me.blocks['Target'] = {
                 type: 'Target',
-                pos: { x: formAreaRect.width, y: 20 },
+                pos: { x: formAreaRect.width, y: 12 },
                 attributes: {}
             };
         },
+        handleNodeClick() {
+            this.portIndex = 0;
+            this.updateBlockTemplates(); // 포트 위치 업데이트 메소드 호출
+        },
         openFunctionMenu(event) {
-            console.log('click menu');
             if (event) {
                 const svgElement = this.$refs.svgElement;
 
@@ -487,5 +593,11 @@ export default {
 }
 .tree-level {
     padding-left: 0 !important;
+}
+.left-treeview {
+    width: 200px;
+}
+.right-treeview {
+    width: 200px;
 }
 </style>

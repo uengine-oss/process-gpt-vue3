@@ -6,8 +6,8 @@ server:
 
 
 keycloak-client:
-  server-url: http://localhost:9000
-  realm: supabase
+  server-url: http://localhost:9090
+  realm: uengine6
 
 spring:
   config:
@@ -21,7 +21,15 @@ spring:
         - id: execution
           uri: http://localhost:8000
           predicates:
-            - Path=/complete/**, /vision-complete/**,  
+            - Path=/complete/**, /vision-complete/**, 
+        - id: definition-servicce
+          uri: http://localhost:9093
+          predicates:
+            - Path=/definition/**, /version/**
+        - id: instance-servicce
+          uri: http://localhost:9094
+          predicates:
+            - Path=/worklist/**, /instance/**, /work-item/** 
         - id: frontend
           uri: http://localhost:5173
           predicates:
@@ -45,11 +53,11 @@ spring:
             user-name-attribute: preferred_username
         registration:
           keycloak:
-            client-id: supabase
-            client-secret: UghyBT78UkmIbD4rIyH6nbgJtD6n8cyj
-            redirect-uri: http://127.0.0.1:8088/login/oauth2/code/supabase
+            client-id: uengine
+            client-secret: 5APcQbTwlv9REwKeREWqP9Q8s4gILOHH
+            redirect-uri: http://localhost:8088/login/oauth2/code/uengine
             authorization-grant-type: authorization_code
-            scope: openid, execution
+            scope: openid
       resourceserver:
         jwt:
           jwk-set-uri: ${keycloak-client.server-url}/realms/${keycloak-client.realm}/protocol/openid-connect/certs
@@ -87,7 +95,7 @@ spring:
         registration:
           keycloak:
             client-id: supabase
-            client-secret: UghyBT78UkmIbD4rIyH6nbgJtD6n8cyj
+            client-secret: oZ2Hj8a48f2jsfgMibXqg17YwqYGHPEc
             redirect-uri: http://127.0.0.1:8088/login/oauth2/code/supabase
             authorization-grant-type: authorization_code
             scope: openid, execution

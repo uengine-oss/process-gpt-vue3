@@ -321,18 +321,25 @@ export default {
   methods: {
     getBlock(name) {
       const block = this.blocks[name];
-      return {
-        ...this.blockTemplates[block.type],
-        ...block,
-        name,
-      };
+      if (block) {
+        return {
+          ...this.blockTemplates[block.type],
+          ...block,
+          name,
+        };
+      }
+      return null;
     },
     resolvePos(spec) {
       if (_.isObject(spec) && spec.x !== undefined && spec.y !== undefined) {
         return spec;
       }
       const block = this.getBlock(spec[0]);
-      return add(block.pos, block.ports[spec[1]] || { x: 0, y: 0 });
+      if (block != null) {
+        var pos = add(block.pos, block.ports[spec[1]] || { x: 0, y: 0 });
+        return pos;
+      }
+      return { x: 0, y: 0 };
     },
     mousePos({ clientX, clientY }) {
       return sub({ x: clientX, y: clientY }, this.offset);
@@ -619,7 +626,7 @@ export default {
                         },
                         "argumentSourceMap": {
                           "value1": "Variables",
-                          "value2": "test1"
+                          "value2": "Variables.test1"
                         }
                       },
                       "linkedArgumentName": "out"
@@ -634,8 +641,8 @@ export default {
                           "y": 318.09375
                         },
                         "argumentSourceMap": {
-                          "value1": "test2",
-                          "value2": "test3"
+                          "value1": "Variables.test2",
+                          "value2": "Variables.test3"
                         }
                       },
                       "linkedArgumentName": "out"
@@ -649,7 +656,7 @@ export default {
             {
               "_type": "org.uengine.kernel.MappingElement",
               "argument": {
-                "text": "test3"
+                "text": "Variables.test3"
               },
               "transformerMapping": {
                 "transformer": {
@@ -671,7 +678,7 @@ export default {
                         },
                         "argumentSourceMap": {
                           "value1": "Variables",
-                          "value2": "test1"
+                          "value2": "Variables.test1"
                         }
                       },
                       "linkedArgumentName": "out"
@@ -686,29 +693,25 @@ export default {
                           "y": 318.09375
                         },
                         "argumentSourceMap": {
-                          "value1": "test2",
-                          "value2": "test3"
+                          "value1": "Variables.test2",
+                          "value2": "Variables.test3"
                         }
                       },
                       "linkedArgumentName": "out"
                     }
                   }
                 },
-                "linkedArgumentName": "test3"
+                "linkedArgumentName": "Variables.test3"
               },
               "isKey": false
             },
             {
               "_type": "org.uengine.kernel.MappingElement",
               "argument": {
-                "text": "test1"
+                "text": "Variables.test1"
               },
               "variable": {
-                "name": {
-                  "name": "Variables",
-                  "askWhenInit": false,
-                  "isVolatile": false
-                },
+                "name": "Variables.test1",
                 "askWhenInit": false,
                 "isVolatile": false
               },
@@ -717,10 +720,10 @@ export default {
             {
               "_type": "org.uengine.kernel.MappingElement",
               "argument": {
-                "text": "test3"
+                "text": "Variables.test2"
               },
               "variable": {
-                "name": "test1",
+                "name": "Variables.test3",
                 "askWhenInit": false,
                 "isVolatile": false
               },
@@ -728,6 +731,8 @@ export default {
             }
           ]
         };
+
+        // mappingContent = {};
 
         mappingContent.mappingElements.forEach(element => {
           this.createMappingElementFromJson(element);
@@ -739,8 +744,6 @@ export default {
       }
     },
     createMappingElementFromJson(element) {
-      console.log(element);
-
       var transformerMapping = element.transformerMapping;
 
       if (transformerMapping) {
@@ -849,6 +852,7 @@ export default {
           ...port,
           direction: port.direction || "in",
           name,
+          parentNode: port.parentNode,
           blockName,
           pos: add(pos, port),
         }));
