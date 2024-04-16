@@ -402,39 +402,25 @@ export default {
         getModifiedPrevFormOutput(modifications) {
             const dom = new DOMParser().parseFromString(this.prevFormOutput, 'text/html')
 
-            // modifications의 수정 지시 사항마다 다음의 과정을 수행함
             modifications.forEach(modification => {
-                // - action의 값이 "addAsChild"인 경우,
-                // targetCSSSelector로 부모 태그를 얻어서, 그 아래에 tagValue에 적힌 태그를 생성시키고, 적힌 속성들을 추가시켜서 부모 태그에 추가시켜 주면 됨
-                // tagValue는 '<text-field name='age' alias='나이'></text-field>'와 같은 값을 가질 수 있음
                 if(modification.action === "addAsChild")
                 {
                     const parent = dom.querySelector(modification.targetCSSSelector)
                     const domToInsert = new DOMParser().parseFromString(modification.tagValue, 'text/html')
                     parent.appendChild(domToInsert.body.firstChild)
                 }
-
-                // - action의 값이 "addAfter"인 경우
-                // targetCSSSelector로 태그를 얻고, 그 태그의 뒤 위치에 tagValue에 적힌 태그와 속성을 추가시키면 됨
-                // tagValue는 '<text-field name='age' alias='나이'></text-field>'와 같은 값을 가질 수 있음
                 else if(modification.action === "addAfter")
                 {
                     const target = dom.querySelector(modification.targetCSSSelector)
                     const domToInsert = new DOMParser().parseFromString(modification.tagValue, 'text/html')
                     target.parentNode.insertBefore(domToInsert.body.firstChild, target.nextSibling)
                 }
-
-                // - action의 값이 "replace"인 경우
-                // targetCSSSelector로 변경시킬 태그를 얻고, 그 태그를 지운뒤에 그 위치에 tagValue에 적힌 태그와 속성을 추가시키면 됨
                 else if(modification.action == "replace")
                 {
                     const target = dom.querySelector(modification.targetCSSSelector)
                     const domToReplace = new DOMParser().parseFromString(modification.tagValue, 'text/html')
                     target.parentNode.replaceChild(domToReplace.body.firstChild, target)
                 }
-
-                // - action이 값이 "delete"인 경우
-                // targetCSSSelector로 삭제시킬 태그를 얻고, 그 태그를 지워주면 됨
                 else if(modification.action === "delete")
                 {
                     const target = dom.querySelector(modification.targetCSSSelector)
