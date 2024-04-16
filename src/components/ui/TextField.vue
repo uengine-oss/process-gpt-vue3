@@ -27,7 +27,10 @@ export default {
     },
     computed: {
         label() {
-            return this.localAlias || this.localName;
+            if(this.localAlias && this.localName) return `${this.localAlias}(${this.localName})`
+            else if (this.localAlias) return this.localAlias
+            else if (this.localName) return this.localName
+            else return ""
         }
     },
     data() {
