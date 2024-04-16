@@ -67,7 +67,7 @@ export default {
         prevFormOutput: "", // 폼 디자이너에게 이미 이전에 생성된 HTML 결과물을 전달하기 위해서
         prevMessageFormat: "", // 사용자가 KEditor를 변경할때마다 해당 포맷을 기반으로 System 메세지를 재구축해서 보내기 위해서
 
-        storedFormDefData: null ,
+        storedFormDefData: {},
         isShowMashup: false
     }),
     async created() {
@@ -114,7 +114,6 @@ export default {
             });
             
             
-            alert("저장 완료!")
             if(isNewSave) {
                 this.$router.push(`/ui-definitions/${id}`)
             }

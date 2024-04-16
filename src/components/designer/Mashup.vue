@@ -22,6 +22,8 @@
         <form-design-save-panel
           @onClose="isOpenSaveDialog = false"
           @onSave="saveFormDefinition"
+          :savedId="storedFormDefData.id"
+          :savedName="storedFormDefData.name"
         >
         </form-design-save-panel>
     </v-dialog>
@@ -132,14 +134,8 @@ export default {
     },
 
 
-    /**
-     * Save 버튼을 누를 경우, 이미 Supabase에 관련데이터가 있으면 바로 저장하고, 없을 경우, ID, Name 입력 다이얼로그를 표시시키기 위해서
-     */
     onClickSave() {
-      if(this.storedFormDefData)
-        this.saveFormDefinition(this.storedFormDefData)
-      else
-        this.isOpenSaveDialog = true
+      this.isOpenSaveDialog = true
     },
 
     /**

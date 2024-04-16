@@ -4,7 +4,7 @@
     elevation="16"
     max-width="400"
     >
-        <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{ "NewForm" }}</v-card-title>
+        <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{ ((savedId) ? "UpdateForm" : "NewForm") }}</v-card-title>
         <v-btn icon style="position:absolute; right:5px; top:5px;" @click="$emit('onClose')">
             <v-icon>mdi-close</v-icon>
         </v-btn>
@@ -12,7 +12,7 @@
         <v-card-text>
             <v-col>
                 <v-text-field ref="inputId" v-model.trim="infoToSave.id" label="ID" @keyup.enter="save" 
-                              :placeholder="placeholder.id" persistent-placeholder @input="onInputId"></v-text-field>
+                              :placeholder="placeholder.id" persistent-placeholder @input="onInputId" :disabled="!!savedId"></v-text-field>
                 <v-text-field ref="inputName" v-model.trim="infoToSave.name" label="Name" @keyup.enter="save"
                               :placeholder="placeholder.name" persistent-placeholder></v-text-field>
             </v-col>
@@ -31,10 +31,14 @@ export default {
         "onClose",
         "onSave"
     ],
+    props: {
+        savedId: String,
+        savedName: String
+    },
     data: () => ({
         infoToSave: {
             id: "",
-            name: "",
+            name: ""
         },
 
         placeholder: {
@@ -86,6 +90,13 @@ export default {
     created() {
         this.placeholder.id = this.default.id
         this.placeholder.name = this.default.id
+
+        if(this.savedId) {
+            this.infoToSave.id = this.savedId
+            this.placeholder.name = this.savedId
+        }
+        if(this.savedName)
+            this.infoToSave.name = this.savedName
     },
     mounted() {
         this.$nextTick(() => {
