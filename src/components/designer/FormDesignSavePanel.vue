@@ -99,9 +99,15 @@ export default {
             this.infoToSave.name = this.savedName
     },
     mounted() {
-        this.$nextTick(() => {
-            this.$refs.inputId.focus();
-        });
+        if(this.savedId) {
+            this.$nextTick(() => {
+                this.$refs.inputName.focus();
+            });
+        } else {
+            this.$nextTick(() => {
+                this.$refs.inputId.focus();
+            });
+        }
     },
 };
 </script>
