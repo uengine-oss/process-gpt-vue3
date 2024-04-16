@@ -1,4 +1,4 @@
-interface Backend {
+export interface Backend {
     listDefinition(basePath: string): Promise<any>;
     listVersionDefinitions(version: string, basePath: string): Promise<any>;
     listVersions(): Promise<any>;
@@ -32,4 +32,4 @@ interface Backend {
     putProcessDefinitionMap(definitionMap: any): Promise<any>;
 }
 
-export type { Backend }
+// export type { Backend }

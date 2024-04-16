@@ -71,8 +71,29 @@ export default class StorageBaseSupabase {
         return await window.$supabase.auth.signOut();
     }
 
+    async createUser(userInfo) {
+        const result = await window.$supabase.auth.admin.createUser({
+            email: userInfo.email, 
+            password: userInfo.password,
+            options: {
+                data: {
+                    name: userInfo.username,
+                }
+            }
+        });
+
+        if (!result.error) {
+            return result.data;
+        } else {
+            result.errorMsg = result.error.message;
+            return result;
+        }
+    }
+
     async getUserInfo() {
-        var { data, error } = await window.$supabase.auth.getUser();
+        // var { data, error } = await window.$supabase.auth.getUser();
+        const uid = window.localStorage.getItem("uid");
+        var { data, error } = await window.$supabase.auth.admin.getUserById(uid);
         const user = data.user;
 
         if (!error && user) {

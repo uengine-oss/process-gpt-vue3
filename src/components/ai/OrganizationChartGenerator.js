@@ -59,22 +59,34 @@ export default class OrganizationChartGenerator extends AIGenerator{
 
 \`\`\`
 {
-    "organizationChart": [
-        {
-            "team": true,
-            "id": "String-based unique id of the team", 
-            "name": "team name", 
-            "description": "team description"
+    "organizationChart": {
+        "id": "root",
+        "data": {
+            "img": "/src/assets/images/chat/chat-icon.png",
+            "name": "Process-GPT"
         },
-        {
-            "id": "String-based unique id of the activity user",
-            "name": "user name",
-            "email": "user email",
-            "img": "user profile image",
-            "pid": "team id",
-            "role": "user role"
-        }
-    ]
+        "children": [
+            {
+                "id": "String-based unique id of the team",
+                "data": {
+                    "img": "team profile image",
+                    "name": "team name"
+                },
+                "children": [
+                    {
+                        "id": "String-based unique id of the activity user",
+                        "data": {
+                            "name": "user name",
+                            "email": "user email",
+                            "img": "user profile image",
+                            "pid": "team id",
+                            "role": "user role"
+                        }
+                    }
+                ]
+            }
+        ]
+    }
 }
 \`\`\`
 
@@ -89,7 +101,7 @@ export default class OrganizationChartGenerator extends AIGenerator{
     modifications: [
       {
         action: "replace" | "add" | "delete",
-        targetJsonPath: "$.organizationChart[?(@.email=='email')]",
+        targetJsonPath: "$.organizationChart.children[?(@.id=='String-based unique id of the activity user')]",
         value: {...} //delete 인 경우는 불필요
       }
     ]

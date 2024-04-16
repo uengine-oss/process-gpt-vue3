@@ -12,7 +12,8 @@
     <v-dialog v-model="isOpenSettingDialog">
         <form-definition-panel
           :value="componentSettingValue"
-          @save="editFormDefinition"
+          @onSave="editFormDefinition"
+          @onClose="isOpenSettingDialog = false"
         >
         </form-definition-panel>
     </v-dialog>
@@ -21,6 +22,8 @@
         <form-design-save-panel
           @onClose="isOpenSaveDialog = false"
           @onSave="saveFormDefinition"
+          :savedId="storedFormDefData.id"
+          :savedName="storedFormDefData.name"
         >
         </form-design-save-panel>
     </v-dialog>
@@ -53,6 +56,9 @@ export default {
     "onChangeKEditorContent",
     "onSaveFormDefinition"
   ],
+  expose: [
+    "getKEditorContentHtml"
+  ],
 
   data: () => ({
     kEditor: null,
@@ -73,6 +79,8 @@ export default {
   methods: {
     /**
      * KEditor에 어떠한 변화가 있을 경우, 이를 부모 컴포넌트에 전달하기 위해서
+     * [!] 적제된 컴포넌트를 화살표 버튼으로 위치를 이동시켰을 경우, 발생하는 이벤트는 KEditor에 존재하지 않음에 유의
+     *  이경우, 노출된 getKEditorContentHtml 함수를 통해서 직접 최신 HTML을 얻을 것
      */
     onchangeKEditor(evt, fnNm) {
       window.mashup.kEditorContent  = window.mashup.kEditor[0].children[0].innerHTML
@@ -126,14 +134,8 @@ export default {
     },
 
 
-    /**
-     * Save 버튼을 누를 경우, 이미 Supabase에 관련데이터가 있으면 바로 저장하고, 없을 경우, ID, Name 입력 다이얼로그를 표시시키기 위해서
-     */
     onClickSave() {
-      if(this.storedFormDefData)
-        this.saveFormDefinition(this.storedFormDefData)
-      else
-        this.isOpenSaveDialog = true
+      this.isOpenSaveDialog = true
     },
 
     /**
@@ -145,7 +147,7 @@ export default {
         window.mashup.$emit('onSaveFormDefinition', {
           id: id,
           name: name,
-          html: window.mashup.kEditorContentToHtml(window.mashup.kEditor[0].children[0].innerHTML)
+          html: window.mashup.getKEditorContentHtml()
         })
 
       } catch(e) {
@@ -155,6 +157,12 @@ export default {
       }
     },
 
+    /**
+     * KEditor의 content에 대해서 저장되는 HTML 내용을 얻기 위해서
+     */
+    getKEditorContentHtml() {
+      return window.mashup.kEditorContentToHtml(window.mashup.kEditor[0].children[0].innerHTML)
+    },
 
     /**
      * KEditor의 Content를 HTML로 변환하기 위해서
@@ -194,6 +202,7 @@ export default {
       const formContentHTML = Array.from(doc.querySelectorAll('.row')).map(row => row.outerHTML).join('').replace(/&quot;/g, `'`);
       return (isWithSection) ? `<section>${formContentHTML}</section>` : formContentHTML
     },
+
 
     /**
      * 유저가 설정창을 통해서 변경한 값을 컴포넌트에 반영시키기 위해서
@@ -250,7 +259,7 @@ export default {
       niceScrollEnabled: false,
       tabTooltipEnabled: false,
       snippetsTooltipEnabled: false,
-      containerSettingEnabled: true,
+      containerSettingEnabled: false,
       onInitSidebar: function (self) {
         const headers = {
           'Content-type': 'html; charset=UTF-8',
@@ -339,7 +348,7 @@ export default {
             type: componentRef.tagName,
             name: componentRef.localName,
             alias: componentRef.localAlias,
-            items: componentRef.localItems,
+            items: ((componentRef.localItems) ? JSON.parse(JSON.stringify(componentRef.localItems)) : null),
             label: componentRef.localLabel
           }
 
@@ -375,6 +384,8 @@ export default {
       },
 
       onReady: function () {
+        // 컴포넌트 설정 버튼 클릭시, 오른쪽 설정 패널이 뜨는 버그 수정
+        $("#keditor-setting-panel").remove()
       },
     });
 
@@ -394,6 +405,7 @@ export default {
 
   beforeUnmount() {
     window.mashup.removeStylesForKEditor();
+    window.mashup.completeClearKEditor();
   }
 }
 </script>

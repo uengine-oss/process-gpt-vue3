@@ -172,6 +172,86 @@ class ProcessGPTBackend implements Backend {
         await storage.putObject('configuration', putObj);
     }
 
+    // Add stub implementations for the missing methods and properties
+    async versionUp() {
+        throw new Error("Method not implemented.");
+    }
+
+    async makeProduction() {
+        throw new Error("Method not implemented.");
+    }
+
+    async getProduction() {
+        throw new Error("Method not implemented.");
+    }
+
+    async getVersion() {
+        throw new Error("Method not implemented.");
+    }
+
+    async getDefinition() {
+        throw new Error("Method not implemented.");
+    }
+
+    async renameOrMove() {
+        throw new Error("Method not implemented.");
+    }
+
+    async createFolder() {
+        throw new Error("Method not implemented.");
+    }
+
+    async stop() {
+        throw new Error("Method not implemented.");
+    }
+    
+    async suspend(instanceId: string): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async resume(instanceId: string): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async backToHere(instanceId: string, tracingTag: string): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async getProcessVariables(instanceId: string): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async getVariable(instId: string, varName: string): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async setVariable(instanceId: string, varName: string, varValue: any): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async getRoleMapping(instId: string, roleName: string): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async setRoleMapping(instanceId: string, roleName: string, roleMapping: any): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async signal(instanceId: string, signal: string): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async serviceMessage(requestPath: string): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async putWorkItem(taskId: string, workItem: any): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async postMessage(instanceId: string, message: any): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
 }
 
 export default ProcessGPTBackend;

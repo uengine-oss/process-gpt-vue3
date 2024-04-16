@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
       - name: my-app
-        image: gcr.io/process-gpt-419207/process-gpt:v1.0.7
+        image: gcr.io/process-gpt-419207/process-gpt:v1.0.8
         ports:
         - containerPort: 8080

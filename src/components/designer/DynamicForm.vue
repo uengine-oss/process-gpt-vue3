@@ -68,8 +68,10 @@ export default {
       return this.createComponentWithRef(LabelField, {vueRenderUUID:this.vueRenderUUID, tagName: "label-field", ...this.parseContentToProps(this.content)});
     else if(this.content.includes("submit-field"))
       return this.createComponentWithRef(SubmitField, {vueRenderUUID:this.vueRenderUUID, tagName: "submit-field", ...this.parseContentToProps(this.content)});
-    else
-      return ""
+    else {
+      console.error("유효하지 않은 렌더링 content:", this.content)
+      return "" 
+    }
   },
 };
 </script>
