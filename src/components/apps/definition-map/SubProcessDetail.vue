@@ -13,10 +13,8 @@
                     <v-icon class="cursor-pointer">mdi-chevron-right</v-icon>
                     <v-menu activator="parent">
                         <v-list v-if="selectedProc.major.sub_proc_list" density="compact" class="cursor-pointer">
-                            <v-list-item v-for="sub in selectedProc.major.sub_proc_list"
-                                :key="sub.id"
-                                @click="goProcess(sub)"
-                            >
+                            <v-list-item v-for="sub in selectedProc.major.sub_proc_list" :key="sub.id"
+                                @click="goProcess(sub)">
                                 <v-list-item-title>
                                     {{ sub.label }}
                                 </v-list-item-title>
@@ -41,6 +39,9 @@
             </div>
 
             <div class="ml-auto d-flex">
+                <v-btn icon variant="text" class="ml-3" :size="24" @click="executeProcess">
+                    <Icon icon="carbon:play-outline" width="24" height="24" />
+                </v-btn>
                 <v-btn icon variant="text" class="ml-3" :size="24" @click="capture">
                     <Icon icon="mage:image-download" width="24" height="24" />
                 </v-btn>
@@ -48,13 +49,9 @@
         </div>
 
         <v-card-text style="width:100%; height:95%; padding:10px;">
-            <ProcessDefinition v-if="bpmn" 
-                style="width: 100%; height: 100%;" 
-                :bpmn="bpmn" :key="defCnt"
-                :processDefinition="processDefinition.definition"
-                :isViewMode="isViewMode"
-                v-on:openSubProcess="ele => openSubProcess(ele)"
-            ></ProcessDefinition>
+            <ProcessDefinition v-if="bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
+                :processDefinition="processDefinition.definition" :isViewMode="isViewMode"
+                v-on:openSubProcess="ele => openSubProcess(ele)"></ProcessDefinition>
             <div v-else-if="!bpmn" style="height: 90%; text-align: center">
                 <h6 class="text-h6">정의된 프로세스 모델이 없습니다.</h6>
                 <v-btn color="primary" variant="flat" class="mt-4" @click="editProcessModel">
@@ -62,15 +59,20 @@
                 </v-btn>
             </div>
         </v-card-text>
+        <v-dialog v-model="executeDialog">
+            <ProcessExecuteDialog :definitionId="processDefinition.id" @close="executeDialog = false"></ProcessExecuteDialog>
+        </v-dialog>
     </v-card>
 </template>
 
 <script>
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
+import ProcessExecuteDialog from '@/components/apps/definition-map/ProcessExecuteDialog.vue';
 
 export default {
     components: {
-        ProcessDefinition
+        ProcessDefinition,
+        ProcessExecuteDialog
     },
     props: {
         value: Object,
@@ -88,6 +90,7 @@ export default {
         subProcessBreadCrumb: [],
         defCnt: 0,
         isViewMode: true,
+        executeDialog: false
     }),
     created() {
         let me = this;
@@ -158,6 +161,9 @@ export default {
         capture() {
             this.$emit('capture')
         },
+        executeProcess() {
+            this.executeDialog = true
+        }
     },
 }
 </script>

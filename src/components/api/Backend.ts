@@ -28,6 +28,8 @@ interface Backend {
     putWorkItem(taskId: string, workItem: any): Promise<any>;
     postMessage(instanceId: string, message: any): Promise<any>;
     getWorkList(): Promise<any>;
+    getProcessDefinitionMap(): Promise<any>;
+    putProcessDefinitionMap(definitionMap: any): Promise<any>;
 }
 
 export type { Backend }

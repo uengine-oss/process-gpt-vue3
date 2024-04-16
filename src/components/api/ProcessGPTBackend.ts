@@ -157,6 +157,20 @@ class ProcessGPTBackend implements Backend {
             throw new Error('error in getWorkList');
         }
     }
+    async getProcessDefinitionMap() {
+        const procMap = await storage.getObject('configuration/proc_map', { key: 'key' });
+        if (procMap && procMap.value) {
+            return procMap.value;
+        }
+        // return await storage.getObject('proc_map', { key: 'key' });
+    }
+    async putProcessDefinitionMap(definitionMap: any) {
+        const putObj = {
+                key: 'proc_map',
+                value: definitionMap
+        }
+        await storage.putObject('configuration', putObj);
+    }
 
 }
 
