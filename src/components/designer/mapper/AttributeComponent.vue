@@ -12,22 +12,26 @@
                 />
             </body>
         </foreignObject>
-        <template v-if="appendComponent[blockName] == true && func == 'NumberFormatInput'">
-            <text x="-15" y="10" style="fill: #fff; font-size: 11px; user-select: none; text-anchor: start">{{ name.replace('in ', '') }}</text>
+        <g v-show="appendComponent[blockName] == true && func == 'NumberFormatInput'">
+            <text x="-15" y="10" style="fill: #fff; font-size: 11px; user-select: none; text-anchor: start">{{
+                name.replace('in ', '')
+            }}</text>
             <foreignObject x="50" y="-10" width="70" height="25">
                 <body xmlns="http://www.w3.org/1999/xhtml">
-                    <select id="numberFormatSelect" class="attribute">
+                    <select id="numberFormatInput" class="attribute" @change="handleInput($event.target.value)">
                         <option value="L">Long</option>
                         <option value="D">Double</option>
                     </select>
                 </body>
             </foreignObject>
-        </template>
-        <template v-if="appendComponent[blockName] == true && func == 'NumberFormatTo'">
-            <text x="-15" y="10" style="fill: #fff; font-size: 11px; user-select: none; text-anchor: start">{{ name.replace('in ', '') }}</text>
+        </g>
+        <g v-show="appendComponent[blockName] == true && func == 'NumberFormatTo'">
+            <text x="-15" y="10" style="fill: #fff; font-size: 11px; user-select: none; text-anchor: start">{{
+                name.replace('in ', '')
+            }}</text>
             <foreignObject x="40" y="-10" width="80" height="25">
                 <body xmlns="http://www.w3.org/1999/xhtml">
-                    <select id="numberFormatSelect" class="attribute">
+                    <select id="numberFormatTo" class="attribute" @change="handleInput($event.target.value)">
                         <option value="I">Integer</option>
                         <option value="N">Number</option>
                         <option value="C">Currency</option>
@@ -35,7 +39,7 @@
                     </select>
                 </body>
             </foreignObject>
-        </template>
+        </g>
     </g>
 </template>
 
@@ -49,12 +53,25 @@ export default {
         func: String,
         appendComponent: Boolean
     },
+    mounted() {
+        var selectElement = null;
+        if (this.func === 'NumberFormatInput') {
+            selectElement = this.$el.querySelector('#numberFormatInput');
+            if (selectElement && selectElement.options.length > 0) {
+                const firstOptionValue = selectElement.options[0].value;
+                this.$emit('onChangeAttribute', firstOptionValue, this.blockName, this.name);
+            }
+        } else {
+            selectElement = this.$el.querySelector('#numberFormatTo');
+            if (selectElement && selectElement.options.length > 0) {
+                const firstOptionValue = selectElement.options[0].value;
+                this.$emit('onChangeAttribute', firstOptionValue, this.blockName, this.name);
+            }
+        }
+    },
     methods: {
         handleInput(value) {
             this.$emit('onChangeAttribute', value, this.blockName, this.name);
-        },
-        handleFormatChange(value) {
-            this.$emit('formatChangeAttribute', value, this.blockName, this.name);
         }
     }
 };

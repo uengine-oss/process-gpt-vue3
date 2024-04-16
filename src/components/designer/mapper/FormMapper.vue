@@ -29,6 +29,7 @@
                     :style="menuPositionStyle"
                     :position-x="x"
                     :position-y="y"
+                    :max-height="300"
                     @menu_item_selected="menuItemSelected"
                 />
 

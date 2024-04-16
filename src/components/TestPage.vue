@@ -7,6 +7,8 @@
                 <v-btn @click="putRawDefinition">putRawDefinition</v-btn>
                 <v-btn @click="getRawDefinition">getRawDefinition</v-btn>
                 <v-btn @click="deleteDefinition">deleteDefinition</v-btn>
+                <v-btn @click="getDefinitionMap">getDefinitionMap</v-btn>
+                <v-btn @click="putDefinitionMap">putDefinitionMap</v-btn>
                 <process-execute-dialog></process-execute-dialog>
 
             </template>
@@ -74,11 +76,21 @@ export default {
             this.result = result
         },
         async getRawDefinition() {
-            let result = await this.uengine.getRawDefinition('sales/testprocess.xml');
+            let result = await this.uengine.getRawDefinition('sale/savetest.xml');
             this.result = result
         },
         async deleteDefinition() {
             let result = await this.uengine.deleteDefinition('sale/savetest.xml');
+            this.result = result
+        },
+        async getDefinitionMap() {
+            let result = await this.uengine.getProcessDefinitionMap();
+            this.result = result
+        },
+        async putDefinitionMap() {
+            let str = { "mega_proc_list": [{ "id": "megaprocess", "label": "test", "major_proc_list": [{ "id": "test_major", "label": "test_major", "sub_proc_list": [{ "id": "Recruitment_Management_Process", "label": "입사관리 프로세스" }, { "id": "aaa" }, { "id": "Resume_Submission_Process" }, { "id": "save" }, { "id": "testDefinition", "label": "testDefinition" }, { "id": "testDefinition2", "label": "testDefinition2" }] }] }, { "id": "asdf", "label": "asdf", "major_proc_list": [] }, { "id": "asdfaa", "label": "asas", "major_proc_list": [] }, { "id": "adfbadfb", "label": "adfb", "major_proc_list": [] }, { "id": "wqefqwefqw", "label": "qwef", "major_proc_list": [] }, { "id": "asdvasdvas", "label": "dvsdv", "major_proc_list": [] }, { "id": "qwevqwev", "label": "qwevqwev", "major_proc_list": [] }, { "id": "aaaaaaaaaaa", "label": "aasd", "major_proc_list": [] }, { "id": "asbasdb", "label": "asdfasd", "major_proc_list": [] }, { "id": "sdfasdfasdf", "label": "asdfasd", "major_proc_list": [] }, { "id": "sdfasd", "label": "asdfqwef", "major_proc_list": [] }, { "id": "sdfgt", "label": "tgtg", "major_proc_list": [] }, { "id": "stgsdtg", "label": "sdtgst", "major_proc_list": [] }, { "id": "sdfgsffgy", "label": "aer", "major_proc_list": [{ "id": "asdfasdfqwef", "label": "qewef", "sub_proc_list": [{ "id": "휴가신청" }] }] }] }
+
+            let result = await this.uengine.putProcessDefinitionMap(JSON.stringify(str));
             this.result = result
         }
     }
