@@ -110,8 +110,7 @@ export default {
 
 
             await this.putObject("form_def", {
-                id, name, html,
-                messages: []
+                id, name, html, messages: this.messages
             });
             
             
@@ -137,6 +136,7 @@ export default {
                     return
                 }
 
+                this.messages = this.storedFormDefData.messages
                 this.applyNewSrcToMashup(
                     this.loadHTMLToKEditorContent(this.storedFormDefData.html)
                 )
