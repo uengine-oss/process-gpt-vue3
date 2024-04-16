@@ -1,4 +1,13 @@
 <template>
+    <v-snackbar v-model="snackbar" :timeout="timeout">
+        {{ text }}
+        <template v-slot:actions>
+            <v-btn color="red" variant="text" @click="snackbar = false">
+                Close
+            </v-btn>
+        </template>
+    </v-snackbar>
+
     <RouterView></RouterView>
 </template>
 
@@ -11,6 +20,9 @@ export default {
         RouterView
     },
     data: () => ({
+        snackbar: false,
+        text: '',
+        timeout: 3000
     }),
     async created() {
         // window.$supabase = createClient(window._env_.DB_URL, window._env_.DB_PW);
@@ -36,7 +48,8 @@ export default {
                 await options.action(options.parameters)
 
                 if (options.successMsg) {
-                    // console.log(options.successMsg)
+                    this.text = options.successMsg
+                    this.snackbar = true
                 }
                 console.log('successfully done');
 

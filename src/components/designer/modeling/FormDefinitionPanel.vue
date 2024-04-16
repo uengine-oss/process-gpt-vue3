@@ -43,12 +43,12 @@
               <template v-for="(val, key) in item" :key="key">
                 <template v-if="index === itemIndexToEdit">
                   <v-col cols="5" class="d-flex align-center justify-center">
-                    <v-text-field class="centered-input" label="Key" v-model.trim="keyToEdit"
+                    <v-text-field ref="inputKeyToEditItem" class="centered-input" label="Key" v-model.trim="keyToEdit"
                                   :rules="[v => !!v || 'Key is required']" required @keyup.enter="editItem(index)"
                                   @input="onInputKeyToEdit" persistent-placeholder></v-text-field>
                   </v-col>
                   <v-col cols="5" class="d-flex align-center justify-center">
-                    <v-text-field class="centered-input" label="Value" v-model.trim="valueToEdit" @keyup.enter="editItem(index)"
+                    <v-text-field ref="inputValueToEditItem" class="centered-input" label="Value" v-model.trim="valueToEdit" @keyup.enter="editItem(index)"
                                   :placeholder="placeholder.valueToEdit" persistent-placeholder></v-text-field>
                   </v-col>
                   <v-col cols="2" class="d-flex align-center justify-center">
@@ -111,7 +111,7 @@
                               @input="onInputKeyToAdd" persistent-placeholder></v-text-field>
               </v-col>
               <v-col cols="5" class="d-flex align-center justify-center">
-                <v-text-field class="centered-input" label="Value" v-model.trim="valueToAdd" @keyup.enter="addItem"
+                <v-text-field ref="inputValueToAddItem" class="centered-input" label="Value" v-model.trim="valueToAdd" @keyup.enter="addItem"
                               :placeholder="placeholder.valueToAdd" persistent-placeholder></v-text-field>
               </v-col>
               <v-col cols="2" class="d-flex align-center justify-center pb-9">
@@ -218,20 +218,24 @@
         //#region 유효성 검사
         if(!(this.keyToAdd) || this.keyToAdd.length <= 0) {
           alert("Key is required")
+          this.$refs.inputKeyToAddItem.focus();
           return
         }
         if(!this.regexStr.test(this.keyToAdd)) {
             alert(this.regexErrorMsg.replace("{{propName}}", "Key"))
+            this.$refs.inputKeyToAddItem.focus();
             return
         }
         if(this.value.items.some(item => item.hasOwnProperty(this.keyToAdd))) {
           alert("Key already exists")
+          this.$refs.inputKeyToAddItem.focus();
           return
         }
 
         if(this.valueToAdd && this.valueToAdd.length > 0) {
           if(!this.regexStr.test(this.valueToAdd)) {
             alert(this.regexErrorMsg.replace("{{propName}}", "Value"))
+            this.$refs.inputValueToAddItem.focus();
             return
           }
         }
@@ -256,10 +260,12 @@
         //#region 유효성 검사
         if(!(this.keyToEdit) || this.keyToEdit.length <= 0) {
           alert("Key is required")
+          this.$refs.inputKeyToEditItem.focus();
           return
         }
         if(!this.regexStr.test(this.keyToEdit)) {
             alert(this.regexErrorMsg.replace("{{propName}}", "Key"))
+            this.$refs.inputKeyToEditItem.focus();
             return
         }
 
@@ -267,6 +273,7 @@
         if(!(this.value.items[itemIndexToEdit].hasOwnProperty(this.keyToEdit))) {
           if(this.value.items.some(item => item.hasOwnProperty(this.keyToEdit))) {
             alert("Key already exists")
+            this.$refs.inputKeyToEditItem.focus();
             return
           }
         }
@@ -274,6 +281,7 @@
         if(this.valueToEdit && this.valueToEdit.length > 0) {
           if(!this.regexStr.test(this.valueToEdit)) {
             alert(this.regexErrorMsg.replace("{{propName}}", "Value"))
+            this.$refs.inputValueToEditItem.focus();
             return
           }
         }

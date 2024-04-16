@@ -29,6 +29,7 @@
                     :style="menuPositionStyle"
                     :position-x="x"
                     :position-y="y"
+                    :max-height="300"
                     @menu_item_selected="menuItemSelected"
                 />
 
@@ -44,15 +45,18 @@
                     </v-card>
                 </v-dialog>
 
-                <svg id="formArea" ref="svgElement" @mousemove="updateMousePos" @mouseup="onMouseUp">
+                <svg class="test1" id="formArea" ref="svgElement" @mousemove="updateMousePos" @mouseup="onMouseUp">
                     <block-component
                         v-for="(block, name) in blocks_"
                         :key="name"
                         :pos="block.pos"
                         :size="block.size"
                         :name="block.name"
+                        :appendable="block.appendable"
+                        :appendComponent="appendComponent"
                         :start-block-drag="startBlockDrag"
                         :delete-block="deleteBlock"
+                        @toggle-append="toggleAppend"
                     ></block-component>
                     <connector-component
                         v-for="(conn, index) in connectors"
@@ -71,6 +75,7 @@
                         :direction="port.direction"
                         :parentNode="port.parentNode"
                         :tree-view="nodes"
+                        :appendComponent="appendComponent"
                         :onmousedown="newConnection(port.blockName, port.name, port.direction)"
                         :onmouseup="completeConnection(port.blockName, port.name, port.direction)"
                     ></port-component>
@@ -81,6 +86,7 @@
                         :name="attribute.name"
                         :block-name="attribute.blockName"
                         :func="attribute.func"
+                        :appendComponent="appendComponent"
                         @onChangeAttribute="onChangeAttribute"
                     ></attribute-component>
                 </svg>
@@ -138,6 +144,7 @@ export default {
             renderKey: 0,
             jsonDialog: false,
             jsonString: '',
+            appendComponent: {},
             menu: false,
             menu_x: 0,
             menu_y: 0,
@@ -267,13 +274,12 @@ export default {
             }
         },
         updateBlockTemplates() {
-            const treeStructure = this.buildTreeStructure(); // 트리 구조 생성
-            const nodeHeight = 24; // 각 노드의 높이 설정
+            const treeStructure = this.buildTreeStructure();
+            const nodeHeight = 24;
 
             const updatePorts = (treeNode, path = '', yOffset = 0, isRootClosed = false) => {
                 if (!treeNode) return;
 
-                // 상위 노드가 닫혀 있으면 yOffset을 갱신하지 않음
                 const effectiveYOffset = isRootClosed ? yOffset : yOffset + nodeHeight;
                 const currentPath = path ? `${path}.${treeNode.text}` : treeNode.text;
                 if (!isRootClosed) {
@@ -282,7 +288,6 @@ export default {
                     this.addPortToBlockTemplates(currentPath, effectiveYOffset);
                 }
 
-                // 자식 노드가 있는 경우 처리
                 if (treeNode.children && treeNode.children.length > 0) {
                     const nodeOpened = this.nodes[treeNode.text].state && this.nodes[treeNode.text].state.opened;
                     let cumulativeOffset = effectiveYOffset;
@@ -308,21 +313,20 @@ export default {
             };
 
             treeStructure.forEach((rootNode, index) => {
-                const rootYOffset = index * nodeHeight; // 루트 노드의 yOffset 계산
+                const rootYOffset = index * nodeHeight;
                 const rootClosed = !(this.nodes[rootNode.text].state && this.nodes[rootNode.text].state.opened);
                 updatePorts(rootNode, '', rootYOffset, rootClosed);
             });
         },
         addPortToBlockTemplates(nodePath, yOffset) {
-            // 포트의 Y 위치를 yOffset을 사용하여 조정
             this.blockTemplates.Source.ports[nodePath] = {
                 x: 5,
-                y: yOffset, // Y 위치 조정
+                y: yOffset,
                 direction: 'out'
             };
             this.blockTemplates.Target.ports[nodePath] = {
                 x: -5,
-                y: yOffset, // Y 위치 조정
+                y: yOffset,
                 direction: 'in'
             };
         },
@@ -337,7 +341,6 @@ export default {
 
             let tree = [];
             Object.keys(this.nodes).forEach((nodeKey) => {
-                // 최상위 노드만 탐색 시작점으로 삼습니다.
                 const isRootNode = !Object.values(this.nodes).some((n) => n.children && n.children.includes(nodeKey));
                 if (isRootNode) {
                     tree.push(buildTree(nodeKey));
@@ -389,24 +392,19 @@ export default {
             this.menu = true;
         },
         openJsonDialog() {
-            console.log('open json');
             this.jsonString = JSON.stringify(this.getMappingElementsJson(), null, 2);
-            this.jsonDialog = true; // 다이얼로그 열기
+            this.jsonDialog = true;
         },
         menuItemSelected(item) {
-            console.log('Selected:', item);
             this.newBlock(item.title, { x: this.component_x, y: this.component_y });
         },
         onButtonClickLeft(item, type) {
-            console.log('Button clicked:', item.node.text, type);
             this.newBlock(type, { x: 450, y: 300 }, item.node.text);
         },
         onButtonClickRight(item, type) {
-            console.log('Button clicked:', item.node.text, type);
             this.newBlock(type, { x: 1450, y: 300 }, item.node.text);
         },
         onChangeAttribute(value, blockName, name) {
-            console.log('onChangeAttribute', value, blockName, name);
             this.blocks[blockName].attributes[name] = value;
         },
         showContextMenu(event) {
@@ -422,6 +420,13 @@ export default {
             this.component_x = this.menu_x;
             this.component_y = this.menu_y;
             this.$refs.contextMenu.showContextMenu(this.x, this.y);
+        },
+        toggleAppend(blockName) {
+            if (this.appendComponent[blockName] != undefined) {
+                this.appendComponent[blockName] = !this.appendComponent[blockName];
+            } else {
+                this.appendComponent[blockName] = true;
+            }
         }
     },
     computed: {
@@ -497,7 +502,7 @@ export default {
 .block > text {
     font-size: 11px;
     fill: #fff;
-    text-anchor: middle;
+    text-anchor: start;
     alignment-baseline: middle;
     pointer-events: none;
 }

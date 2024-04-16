@@ -1,10 +1,15 @@
 <template>
     <div>
         <v-select
-            :label="label"
-            :items="localKeys"
+            :items="localKeyValueStrs"
             v-model="inputedValue"
-        ></v-select>
+        >
+        <template v-slot:label>
+            <span style="color:black;">
+                {{label}}
+            </span>
+        </template>
+        </v-select>
     </div>
 </template>
 
@@ -26,7 +31,10 @@ export default {
     },
     computed: {
         label() {
-            return this.localAlias || this.localName;
+            if(this.localAlias && this.localName) return `${this.localAlias}(${this.localName})`
+            else if (this.localAlias) return this.localAlias
+            else if (this.localName) return this.localName
+            else return ""
         },
         localValues() {
             if(this.localItems === undefined || this.localItems === null || this.localItems.length === 0) return []
@@ -36,9 +44,13 @@ export default {
             if(this.localItems === undefined || this.localItems === null || this.localItems.length === 0) return []
             return this.localItems.map((item) => Object.keys(item)[0])
         },
+        localKeyValueStrs() {
+            if(this.localItems === undefined || this.localItems === null || this.localItems.length === 0) return []
+            return this.localItems.map((item) => `${Object.keys(item)[0]}(${Object.values(item)[0]})`)
+        },
         inputedItem() {
             if(this.localItems === undefined || this.localItems === null || this.localItems.length === 0) return ""
-            return this.localItems.find((item) => Object.keys(item)[0] === this.inputedValue)
+            return this.localItems.find((item) => Object.keys(item)[0] === this.inputedValue.split("(")[0])
         }
     },
     data() {
