@@ -44,10 +44,12 @@
                 <template v-if="index === itemIndexToEdit">
                   <v-col cols="5" class="d-flex align-center justify-center">
                     <v-text-field class="centered-input" label="Key" v-model.trim="keyToEdit"
-                                  :rules="[v => !!v || 'Key is required']" required @keyup.enter="editItem(index)"></v-text-field>
+                                  :rules="[v => !!v || 'Key is required']" required @keyup.enter="editItem(index)"
+                                  @input="onInputKeyToEdit" persistent-placeholder></v-text-field>
                   </v-col>
                   <v-col cols="5" class="d-flex align-center justify-center">
-                    <v-text-field class="centered-input" label="Value" v-model.trim="valueToEdit" @keyup.enter="editItem(index)"></v-text-field>
+                    <v-text-field class="centered-input" label="Value" v-model.trim="valueToEdit" @keyup.enter="editItem(index)"
+                                  :placeholder="placeholder.valueToEdit" persistent-placeholder></v-text-field>
                   </v-col>
                   <v-col cols="2" class="d-flex align-center justify-center">
                     <v-sheet class="pb-5">
@@ -82,7 +84,7 @@
                     <v-sheet>
                       <v-tooltip :text="$t('uiDefinition.edit')">
                         <template v-slot:activator="{ props }">
-                          <v-btn icon flat @click="itemIndexToEdit = index; keyToEdit = key; valueToEdit = val" v-bind="props">
+                          <v-btn icon flat @click="itemIndexToEdit = index; keyToEdit = key; valueToEdit = val; placeholder.valueToEdit = key" v-bind="props">
                               <PencilIcon stroke-width="1.5" size="20" class="text-primary" />
                           </v-btn>
                         </template>
@@ -168,7 +170,8 @@
 
       placeholder: {
         alias: "",
-        valueToAdd: ""
+        valueToAdd: "",
+        valueToEdit: ""
       }
     }),
     components: {
@@ -286,6 +289,7 @@
         this.itemIndexToEdit = -1
         this.keyToEdit = ""
         this.valueToEdit = ""
+        this.placeholder.valueToEdit = ""
       },
 
       deleteItem(itemIndexToDelete) {
@@ -302,6 +306,10 @@
 
       onInputKeyToAdd() {
         this.placeholder.valueToAdd = this.keyToAdd
+      },
+
+      onInputKeyToEdit() {
+        this.placeholder.valueToEdit = this.keyToEdit
       }
     },
     created() {
