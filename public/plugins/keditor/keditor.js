@@ -910,7 +910,7 @@
             }
 
             self.toggleSidebar(true);
-            body.addClass('opened-keditor-setting');
+            // body.addClass('opened-keditor-setting');
         },
         
         hideSettingPanel: function () {
