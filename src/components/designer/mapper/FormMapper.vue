@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="form-mapper">
         <v-card>
             <v-row class="ma-0 pa-0">
                 <!-- {{$t('processDefinition.editProcessData') }} -->
@@ -448,35 +448,35 @@ export default {
 </script>
 
 <style>
-.v-toolbar {
+.form-mapper .v-toolbar {
     border-top-left-radius: 12px;
     border-top-right-radius: 12px;
 }
-.v-toolbar-title {
+.form-mapper .v-toolbar-title {
     font-size: 16px;
     font-weight: bold;
     color: #eee;
 }
-#formArea {
+.form-mapper #formArea {
     width: 100%;
     height: 80vh;
     background: #eee;
 }
-.block > rect {
+.form-mapper .block > rect {
     fill: rgba(127, 127, 127, 1);
     stroke: #888;
     stroke-width: 2;
     rx: 4;
     ry: 4;
 }
-.block > text {
+.form-mapper .block > text {
     font-size: 11px;
     fill: #fff;
     text-anchor: start;
     alignment-baseline: middle;
     pointer-events: none;
 }
-.block > .delete-button {
+.form-mapper .block > .delete-button {
     background: none;
     border: none;
     cursor: pointer;
@@ -488,91 +488,91 @@ export default {
     justify-content: center;
 }
 
-.port > text {
+.form-mapper .port > text {
     font-size: 11px;
     fill: rgb(255, 255, 255);
     alignment-baseline: middle;
 }
-.port > rect {
+.form-mapper .port > rect {
     fill: rgb(59, 0, 66);
 }
-.port > rect.background {
+.form-mapper .port > rect.background {
     fill: rgba(63, 63, 63, 0);
     width: 50px;
     height: 20px;
 }
-.port:hover > text {
+.form-mapper .port:hover > text {
     fill: rgb(115, 0, 128);
 }
-.port:hover > rect {
+.form-mapper .port:hover > rect {
     fill: rgb(115, 0, 128);
     stroke-width: 3px;
     stroke: rgb(115, 0, 128);
 }
-.port:hover > rect.background {
+.form-mapper .port:hover > rect.background {
     fill: rgba(63, 63, 63, 0.5);
     stroke-width: 0;
 }
 
-.connector {
+.form-mapper .connector {
     stroke: #888;
     stroke-width: 3;
     fill: none;
 }
-.connector:hover {
+.form-mapper .connector:hover {
     stroke: #f88;
     stroke-width: 4;
 }
-.connector.isNew,
-.connector.isNew:hover {
+.form-mapper .connector.isNew,
+.form-mapper .connector.isNew:hover {
     stroke: rgb(115, 0, 128);
     stroke-width: 3;
 }
 
-.treeviews-container {
+.form-mapper .treeviews-container {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
 }
 
-.right-treeview .node-wrapper {
+.form-mapper .right-treeview .node-wrapper {
     transform: scaleX(-1);
 }
 
-.right-treeview .input-wrapper {
+.form-mapper .right-treeview .input-wrapper {
     transform: scaleX(-1);
 }
 
-.form-menu {
+.form-mapper .form-menu {
     max-height: 300px;
     overflow-y: auto;
 }
-.tree-node .input-wrapper {
+.form-mapper .tree-node .input-wrapper {
     align-self: center;
 }
-.tree-node .icon-wrapper {
+.form-mapper .tree-node .icon-wrapper {
     align-self: center;
     width: 24px;
     height: 24px;
     margin-left: 12px;
 }
-.tree-node .icon-wrapper svg {
+.form-mapper .tree-node .icon-wrapper svg {
     width: 12px;
     height: 12px;
 }
-.left-treeview button {
+.form-mapper .left-treeview button {
     margin-left: auto;
 }
-.right-treeview button {
+.form-mapper .right-treeview button {
     margin-left: auto;
 }
-.tree-level {
+.form-mapper .tree-level {
     padding-left: 0 !important;
 }
-.left-treeview {
+.form-mapper .left-treeview {
     width: 200px;
 }
-.right-treeview {
+.form-mapper .right-treeview {
     width: 200px;
 }
 </style>
