@@ -51,13 +51,10 @@ const customizer = useCustomizerStore();
 </template>
 
 <script>
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import BackendFactory from '@/components/api/BackendFactory';
-const storageKey = 'proc_def'
 
 export default {
     data: () => ({
-        storage: null,
         sidebarItem: [
             {
                 title: "dashboard.title",
@@ -127,8 +124,6 @@ export default {
         definitionList: null,
     }),
     async created() {
-        this.storage = await StorageBaseFactory.getStorage();
-        this.uengine = BackendFactory.createBackend();
         const isAdmin = localStorage.getItem("isAdmin");
         if (isAdmin == 'true') {
             this.definition = {
@@ -151,10 +146,9 @@ export default {
     },
     methods: {
         async getDefinitionList() {
-            // let def = await this.storage.list(storageKey);
-            let def = await this.uengine.listDefinition();
-            console.log(def)
-            if (def) {
+            const backend = BackendFactory.createBackend();
+            const list = await backend.listDefinition();
+            if (list && list.length > 0) {
                 var menu = {
                     title: 'processList.title',
                     icon: 'solar:list-bold',
@@ -162,18 +156,15 @@ export default {
                     to: `/`,
                     children: []
                 };
-                var list = Object.values(def);
-                if (list.length > 0) {
-                    list.forEach(item => {
-                        if (item && item.definition) {
-                            var obj = {
-                                title: item.definition.processDefinitionName,
-                                to: `/definitions/${item.definition.processDefinitionId}`
-                            }
-                            menu.children.push(obj);
+                list.forEach(item => {
+                    if (item && item.definition) {
+                        var obj = {
+                            title: item.definition.processDefinitionName,
+                            to: `/definitions/${item.definition.processDefinitionId}`
                         }
-                    });
-                }
+                        menu.children.push(obj);
+                    }
+                });
                 this.definitionList = menu;
             }
         }
