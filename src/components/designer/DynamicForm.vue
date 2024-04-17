@@ -18,6 +18,10 @@ export default {
     }
   },
 
+  emits: [
+    "onClickSubmit"
+  ],
+
   expose: [
     "getUserInputedDatas",
     "setUserInputedDatas"
@@ -63,6 +67,12 @@ export default {
           const vueRenderUUID = vueRenderElement.id
           const app = createApp(DynamicComponent, {content:vueRenderElement.innerHTML, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
           this.componentRefs[vueRenderUUID] = app.componentRef;
+
+          if(app.componentRef.onClickSubmit) {
+            app.componentRef.onClickSubmit = () => {
+              this.$emit('onClickSubmit', this.getUserInputedDatas());
+            }
+          }
         })
       });
     },
