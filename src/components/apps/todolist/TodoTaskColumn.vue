@@ -12,7 +12,7 @@
                 :animation="200" 
                 ghost-class="ghost-card"
                 group="tasks"
-                @end="updateTask"
+                @add="updateTask"
             >
                 <transition-group>
                     <div v-for="task in column.tasks"
@@ -21,6 +21,7 @@
                     >
                         <TodoTaskItemCard 
                             :task="task" 
+                            @deleteTask="deleteTask"
                             @executeTask="executeTask"
                         />
                     </div>
@@ -33,6 +34,7 @@
                 >
                     <TodoTaskItemCard 
                         :task="task" 
+                        @deleteTask="deleteTask"
                         @executeTask="executeTask"
                     />
                 </div>
@@ -45,6 +47,7 @@
 import TodoTaskItemCard from './TodoTaskItemCard.vue';
 
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import BackendFactory from "@/components/api/BackendFactory";
 
 export default {
     components: {
@@ -56,17 +59,21 @@ export default {
     data: () => ({
     }),
     methods: {
-        updateTask(event) {
-            console.log(event)
+        async updateTask(event) {
+            const movedTask = this.column.tasks.find(task => task.id === event.item.dataset.id);
+            movedTask.status = this.column.id;
+            const back = BackendFactory.createBackend();
+            await back.putWorkItem(movedTask.taskId, movedTask);
         },
         /**
-         * 할 일 목록 카드의 메뉴에서 제거 버튼을 눌렀을 경우, 매칭되는 할 일을 삭제시키기 위해서
+         * 할 일 목록 카드의 메뉴에서 삭제 버튼을 눌렀을 경우, 매칭되는 할 일을 삭제시키기 위해서
          * @param {*} task 삭제하려는 task 정보
+         * TODO:: UEngineBackend.ts 에서 삭제 기능 사용시 Backend.ts 로 삭제 함수 공통화
          */
-        deleteTask(task) {
+        async deleteTask(task) {
             const storage = StorageBaseFactory.getStorage();
-            this.column.tasks = this.column.tasks.filter((item) => item.id !== task.id);
-            storage.delete(`todolist/${task.id}`, {key: 'id'});
+            this.column.tasks = this.column.tasks.filter((item) => item.taskId !== task.taskId);
+            await storage.delete(`todolist/${task.id}`, { key: 'id' });
         },
         executeTask(task){
             this.$emit('executeTask', task)
