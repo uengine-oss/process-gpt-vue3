@@ -7,13 +7,11 @@
                     <div v-for="item in inputItems" class="input-group">
                         <v-row>
                             <v-col cols="4">
-                                <v-list-subheader>{{item.name}}</v-list-subheader>
+                                <v-list-subheader>{{ item.name }}</v-list-subheader>
                             </v-col>
 
                             <v-col cols="8">
-                                <v-text-field
-                                    v-model="item.value"
-                                ></v-text-field>
+                                <v-text-field v-model="item.value"></v-text-field>
                             </v-col>
                         </v-row>
                     </div>
@@ -23,11 +21,12 @@
                 </div>
             </v-col>
             <v-col cols="12" md="6">
-                <process-definition class="process-definition-resize" :bpmn="xml" :key="updatedKey" :isViewMode="true"></process-definition>
+                <process-definition class="process-definition-resize" :bpmn="xml" :key="updatedKey"
+                    :isViewMode="true"></process-definition>
             </v-col>
         </v-row>
 
-       
+
     </v-card>
 </template>
 
@@ -41,7 +40,7 @@ export default {
         inputItems: [],
         xml: null,
         updatedKey: 0,
-      
+
     }),
     components: {
         ProcessDefinition
@@ -50,27 +49,27 @@ export default {
         this.init();
     },
     methods: {
-       async init(){
+        async init() {
             var me = this
             const backend = BackendFactory.createBackend()
 
             me.workItem = await backend.getWorkItem(me.$route.params.taskId);
-            if(!me.workItem) return;
+            if (!me.workItem) return;
             me.inputItems = me.workItem.activity.parameters
-            .filter(item => item.direction === "OUT")
-            .map(item => ({ name: item.variable.name, value: null }));
+                .filter(item => item.direction === "OUT")
+                .map(item => ({ name: item.variable.name, value: null }));
 
             // xml
             me.xml = await backend.getRawDefinition(me.workItem.worklist.defId);
-            me.updatedKey ++
+            me.updatedKey++
         },
-    
-        async nextTask(){
+
+        async nextTask() {
             var me = this
             const backend = BackendFactory.createBackend()
 
-            let parameterValues = this.inputItems.reduce((acc, item) => ({...acc, [item.name]: item.value}), {});
-            let result = await backend.putWorkItem(me.$route.params.taskId, {"parameterValues": parameterValues})
+            let parameterValues = this.inputItems.reduce((acc, item) => ({ ...acc, [item.name]: item.value }), {});
+            let result = await backend.putWorkItem(me.$route.params.taskId, { "parameterValues": parameterValues })
             console.log(result)
         },
     },
