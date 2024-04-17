@@ -288,7 +288,7 @@ class UEngineBackend implements Backend {
 
     async putProcessDefinitionMap(definitionMap: any) {
         try {
-            definitionMap = JSON.stringify(definitionMap)
+            definitionMap = JSON.stringify(definitionMap);
             const response = await axiosInstance.put(`/definition/map`, definitionMap, { headers: { 'Content-Type': 'text/plain' } });
             return response.data;
         } catch (e) {

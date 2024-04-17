@@ -7,14 +7,16 @@
             <h5 class="text-subtitle-2 font-weight-semibold pr-4">
                 {{ task.title }}(TaskId: {{ task.taskId }}/InstId: {{task.instId}})
             </h5>
-            <RouterLink to="" class="px-0 ">
+            
+            <!-- ProcessGPTBackend -->
+            <RouterLink to="" class="px-0">
                 <DotsVerticalIcon size="15" />
                 <v-menu activator="parent">
                     <v-list density="compact">
-                        <v-list-item @click="deleteTask()">
+                        <v-list-item @click="deleteTask">
                             <v-list-item-title>삭제</v-list-item-title>
                         </v-list-item>
-                        <v-list-item @click="openDetail()">
+                        <v-list-item @click="openDetail">
                             <v-list-item-title>상세보기</v-list-item-title>
                         </v-list-item>
                     </v-list>
@@ -42,7 +44,6 @@
             <TodoDialog 
                 :type="dialogType"
                 :task="task"
-                @edit="editTask"
                 @close="closeDialog"
             />
         </v-dialog>
@@ -72,14 +73,9 @@ export default {
         TodoDialog,
     },
     props: {
-        path: String,
-        userInfo: Object,
         task: Object,
-        storage: Object,
     },
-    emits: ['onDeleteTask'],
     data: () => ({
-        instance: null,
         dialog: false,
         dialogType: '',
     }),
@@ -97,52 +93,24 @@ export default {
         }
     },
     created() {
-        this.init();
     },
     methods: {
-        async init() {
-            if (this.task.proc_def_id) {
-                this.instance = await this.storage.getObject(`${this.task.proc_def_id}/${this.task.proc_inst_id}`, 
-                    {key: 'proc_inst_id'}
-                );
-            
-                if (this.instance) {
-                    var isUpdated = false
-                    if (!this.task.activity_id) {
-                        isUpdated = true
-                        this.task.activity_id = this.instance.current_activity_ids[0];
-                    }
-                    if (this.task.status == "IN_PROGRESS" && !this.task.start_date) {
-                        isUpdated = true
-                        this.task.start_date = this.task.end_date;
-                    }
-
-                    if (isUpdated) {
-                        await this.storage.putObject('todolist', this.task);
-                    }
-                }
-            }
-        },
         executeTask(){
             this.$emit('executeTask', this.task)
         },
         openDetail() {
-            if (this.task.proc_inst_id) {
-                this.$router.push(`/instances/chat?id=${this.task.proc_inst_id}`);
+            if (this.task.instId) {
+                this.$router.push(`/instances/chat?id=${this.task.instId}`);
             } else {
                 this.dialogType = 'view';
                 this.dialog = true;
             }
         },
-        deleteTask() {
-            this.$emit('onDeleteTask', this.task);
-        },
-        async editTask() {
-            await this.storage.putObject('todolist', this.task);
-            this.closeDialog();
-        },
         closeDialog() {
             this.dialog = false;
+        },
+        deleteTask() {
+            this.$emit('deleteTask', this.task);
         }
     },
 }

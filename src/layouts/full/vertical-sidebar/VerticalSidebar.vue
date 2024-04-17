@@ -12,8 +12,8 @@ const customizer = useCustomizerStore();
 
 <template>
     <v-navigation-drawer left v-model="customizer.Sidebar_drawer" rail-width="70" :mobile-breakpoint="960" app
-        class="leftSidebar ml-sm-5 mt-sm-5 bg-containerBg" elevation="10" :rail="customizer.mini_sidebar" expand-on-hover
-        width="270">
+        class="leftSidebar ml-sm-5 mt-sm-5 bg-containerBg" elevation="10" :rail="customizer.mini_sidebar"
+        expand-on-hover width="270">
         <div class="pa-5 pl-4 ">
             <Logo />
         </div>
@@ -52,7 +52,7 @@ const customizer = useCustomizerStore();
 
 <script>
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
-
+import BackendFactory from '@/components/api/BackendFactory';
 const storageKey = 'proc_def'
 
 export default {
@@ -128,7 +128,7 @@ export default {
     }),
     async created() {
         this.storage = await StorageBaseFactory.getStorage();
-
+        this.uengine = BackendFactory.createBackend();
         const isAdmin = localStorage.getItem("isAdmin");
         if (isAdmin == 'true') {
             this.definition = {
@@ -151,7 +151,9 @@ export default {
     },
     methods: {
         async getDefinitionList() {
-            let def = await this.storage.list(storageKey);
+            // let def = await this.storage.list(storageKey);
+            let def = await this.uengine.listDefinition();
+            console.log(def)
             if (def) {
                 var menu = {
                     title: 'processList.title',
