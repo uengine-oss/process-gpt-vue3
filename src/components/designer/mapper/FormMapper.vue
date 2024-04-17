@@ -5,7 +5,7 @@
                 <!-- {{$t('processDefinition.editProcessData') }} -->
                 <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important"> Form Mapper </v-card-title>
                 <v-spacer></v-spacer>
-                <v-btn icon @click="openJsonDialog()">
+                <v-btn icon @click="saveFormMapperJson()">
                     <v-icon>mdi-content-save-outline</v-icon>
                 </v-btn>
                 <!-- <v-btn icon @click="openFunctionMenu()">
@@ -29,6 +29,7 @@
                     :style="menuPositionStyle"
                     :position-x="x"
                     :position-y="y"
+                    :max-height="300"
                     @menu_item_selected="menuItemSelected"
                 />
 
@@ -127,6 +128,10 @@ export default {
         name: {
             type: String,
             required: true
+        },
+        formMapperJson: {
+            type: String,
+            required: true
         }
     },
     components: {
@@ -142,8 +147,6 @@ export default {
             storage: null,
             renderKey: 0,
             jsonDialog: false,
-            jsonString: '',
-            appendComponent: {},
             menu: false,
             menu_x: 0,
             menu_y: 0,
@@ -151,23 +154,23 @@ export default {
             component_y: 0,
             portIndex: 0,
             nodes: {
-                id1: {
-                    text: 'text1',
-                    children: ['id11', 'id12']
-                },
-                id11: {
-                    text: 'text11'
-                },
-                id12: {
-                    text: 'text12',
-                    children: ['id123']
-                },
-                id2: {
-                    text: 'text2'
-                },
-                id123: {
-                    text: 'text123'
-                }
+                // id1: {
+                //     text: 'text1',
+                //     children: ['id11', 'id12']
+                // },
+                // id11: {
+                //     text: 'text11'
+                // },
+                // id12: {
+                //     text: 'text12',
+                //     children: ['id123']
+                // },
+                // id2: {
+                //     text: 'text2'
+                // },
+                // id123: {
+                //     text: 'text123'
+                // }
             },
             config: {
                 roots: ['id1', 'id2']
@@ -210,7 +213,7 @@ export default {
             });
         }
 
-        this.renderFormMapperFromMappingElementJson('');
+        this.renderFormMapperFromMappingElementJson(this.formMapperJson);
     },
     methods: {
         async initializeStorage() {
@@ -390,9 +393,9 @@ export default {
             }
             this.menu = true;
         },
-        openJsonDialog() {
-            this.jsonString = JSON.stringify(this.getMappingElementsJson(), null, 2);
-            this.jsonDialog = true;
+        saveFormMapperJson() {
+            var jsonString = JSON.stringify(this.getMappingElementsJson(), null, 2);
+            this.$emit('saveFormMapperJson', jsonString);
         },
         menuItemSelected(item) {
             this.newBlock(item.title, { x: this.component_x, y: this.component_y });
@@ -436,42 +439,10 @@ export default {
                 top: `${this.menu_y}px`,
                 transform: 'translate(0, -50%)'
             };
-        },
-
-        transformers() {
-            return {
-                mappingElements: [
-                    {
-                        _type: 'org.uengine.kernel.MappingElement',
-                        argument: {},
-                        transformerMapping: {
-                            transformer: {
-                                _type: 'org.uengine.processdesigner.mapper.transformers.ConcatTransformer',
-                                name: 'Concat',
-                                location: { x: 365.78125, y: 146.5 },
-                                argumentSourceMap: { str1: 'trouble_class' }
-                            },
-                            linkedArgumentName: 'out'
-                        },
-                        isKey: false
-                    },
-                    {
-                        _type: 'org.uengine.kernel.MappingElement',
-                        argument: {},
-                        transformerMapping: {
-                            transformer: {
-                                _type: 'org.uengine.processdesigner.mapper.transformers.ConcatTransformer',
-                                name: 'Concat',
-                                location: { x: 360.78125, y: 432.5 },
-                                argumentSourceMap: { str1: 'trouble_class' }
-                            },
-                            linkedArgumentName: 'out'
-                        },
-                        isKey: false
-                    }
-                ]
-            };
         }
+    },
+    beforeDestroy() {
+        this.saveFormMapperJson();
     }
 };
 </script>

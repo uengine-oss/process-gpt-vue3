@@ -104,15 +104,15 @@ export default {
           appendable: false,
         },
         NumberFormat: {
-          size: { width: 150, height: 60, appendWidth: 150, appendHeight: 130 },
+          size: { width: 150, height: 60, appendWidth: 150, appendHeight: 150 },
           ports: {
-            "in input": { x: -75, y: -15, appendX: -75, appendY: -50 },
-            "in locale": { x: -75, y: 15, appendX: -75, appendY: 50 },
-            out: { x: 75, y: 0, direction: "out", appendX: 75, appendY: 0 },
+            "in input": { x: -75, y: 0, appendX: -75, appendY: -40 },
+            "in locale": { x: -75, y: 20, appendX: -75, appendY: 60 },
+            out: { x: 75, y: 10, direction: "out", appendX: 75, appendY: 10 },
           },
           attributes: {
-            "inputType": { x: -55, y: -30, width: 100, height: 50, func: "NumberFormatInput", value: "" },
-            "toType": { x: -55, y: 25, width: 100, height: 50, func: "NumberFormatTo", value: "" },
+            "inputType": { x: -55, y: -20, width: 100, height: 50, func: "NumberFormatInput", value: "" },
+            "toType": { x: -55, y: 30, width: 100, height: 50, func: "NumberFormatTo", value: "" },
           },
           parent: "String",
           class: "org.uengine.processdesigner.mapper.transformers.NumberFormatTransformer",
@@ -131,14 +131,14 @@ export default {
           appendable: false,
         },
         Replace: {
-          size: { width: 120, height: 50, appendWidth: 150, appendHeight: 120 },
+          size: { width: 120, height: 50, appendWidth: 150, appendHeight: 100 },
           ports: {
-            "in input": { x: -60, y: 0, appendX: -75, appendY: 0 },
-            out: { x: 60, y: 0, direction: "out", appendX: 75, appendY: 0 },
+            "in input": { x: -60, y: 10, appendX: -75, appendY: 10 },
+            out: { x: 60, y: 10, direction: "out", appendX: 75, appendY: 10 },
           },
           attributes: {
-            "from": { x: -55, y: -30, func: "input", value: "" },
-            "to": { x: -55, y: 25, func: "input", value: "" },
+            "oldString": { x: -55, y: -15, func: "input", value: "" },
+            "newString": { x: -55, y: 30, func: "input", value: "" },
           },
           parent: "String",
           class: "org.uengine.processdesigner.mapper.transformers.ReplaceTransformer",
@@ -161,7 +161,7 @@ export default {
           appendable: false,
         },
         NotNullValidator: {
-          size: { width: 140, height: 220, appendWidth: 160, appendHeight: 270 },
+          size: { width: 140, height: 220, appendWidth: 140, appendHeight: 270 },
           ports: {
             "in in1": { x: -70, y: -80, appendX: -70, appendY: -60 },
             "in in2": { x: -70, y: -60, appendX: -70, appendY: -40 },
@@ -235,7 +235,7 @@ export default {
           size: { width: 120, height: 50, appendWidth: 150, appendHeight: 80 },
           ports: {
             "in in": { x: -60, y: 10, appendX: -75, appendY: -10 },
-            out: { x: 60, y: 10, direction: "out", appendX: 75, appendY: -10  },
+            out: { x: 60, y: 10, direction: "out", appendX: 75, appendY: -10 },
           },
           attributes: {
             "className": { x: -55, y: 15, func: "input", value: "" },
@@ -261,7 +261,6 @@ export default {
         DirectValue: {
           size: { width: 120, height: 50, appendWidth: 150, appendHeight: 80 },
           ports: {
-            "in input": { x: -60, y: 10, appendX: -75, appendY: -10 },
             out: { x: 60, y: 10, direction: "out", appendX: 75, appendY: -10 },
           },
           attributes: {
@@ -279,7 +278,7 @@ export default {
             out: { x: 60, y: 10, direction: "out", appendX: 75, appendY: -10 },
           },
           attributes: {
-            "input": { x: -55, y: 15, func: "NumberFormatInput", value: "" },
+            "toType": { x: -55, y: 15, func: "NumberFormatInput", value: "" },
           },
           parent: "Math",
           class: "org.uengine.processdesigner.mapper.transformers.NumberTransformer",
@@ -334,6 +333,7 @@ export default {
       ],
       attributes: {
       },
+      appendComponent: {},
       pendingConnection: null,
       pendingConnectionEnd: null,
       draggedBlockPos: null,
@@ -358,7 +358,13 @@ export default {
       }
       const block = this.getBlock(spec[0]);
       if (block != null) {
-        var pos = add(block.pos, block.ports[spec[1]] || { x: 0, y: 0 });
+        var connector = { x: block.ports[spec[1]].x, y: block.ports[spec[1]].y };
+        if (block.appendable == true) {
+          if (this.appendComponent != undefined && this.appendComponent[spec[0]] == true) {
+            connector = { x: block.ports[spec[1]].appendX, y: block.ports[spec[1]].appendY };
+          }
+        }
+        var pos = add(block.pos, connector || { x: 0, y: 0 });
         return pos;
       }
       return { x: 0, y: 0 };
@@ -528,6 +534,7 @@ export default {
         var argumentSourceMap = this.createArgumentSourceMap(connections);
         if (mappingElement.transformerMapping) {
           mappingElement.transformerMapping.transformer.argumentSourceMap = argumentSourceMap;
+          this.updateMappingElementVariables(block, mappingElement.transformerMapping);
         }
         computedTransformers.mappingElements.push(mappingElement);
       });
@@ -561,6 +568,7 @@ export default {
       var connections = this.connections.filter(childConn => childConn.to[0] === conn.from[0]);
       var argumentSourceMap = this.createArgumentSourceMap(connections);
       transformerMapping.transformer.argumentSourceMap = argumentSourceMap;
+      this.updateMappingElementVariables(block, transformerMapping);
       return transformerMapping;
     },
     checkGlobalType(type) {
@@ -603,156 +611,18 @@ export default {
       }
       return mappingElement;
     },
-    updateMappingElementForReplaceType(block, mappingElement) {
-      if (block.type == "Replace") {
-        mappingElement.transformerMapping.transformer["oldString"] = block.attributes["from"];
-        mappingElement.transformerMapping.transformer["newString"] = block.attributes["to"];
-        mappingElement.transformerMapping.transformer["isRegularExp"] = false;
-      }
+    updateMappingElementVariables(block, transformerMapping) {
+      Object.keys(block.attributes).forEach(key => {
+        transformerMapping.transformer[key] = block.attributes[key];
+      });
     },
     renderFormMapperFromMappingElementJson(json) {
-      // if (!json) {
-      //   console.error("JSON 데이터가 제공되지 않았습니다.");
-      //   return;
-      // }
+      if (!json) {
+        console.error("JSON 데이터가 제공되지 않았습니다.");
+        return;
+      }
       try {
-        // const mappingContent = JSON.parse(json);
-
-
-        const mappingContent = {
-          "mappingElements": [
-            {
-              "_type": "org.uengine.kernel.MappingElement",
-              "argument": {
-                "text": "Variables"
-              },
-              "transformerMapping": {
-                "transformer": {
-                  "_type": "org.uengine.processdesigner.mapper.transformers.MinTransformer",
-                  "name": "Min 2",
-                  "location": {
-                    "x": 803.5,
-                    "y": 276.09375
-                  },
-                  "argumentSourceMap": {
-                    "value1": {
-                      "_type": "java.lang.Object",
-                      "transformer": {
-                        "_type": "org.uengine.processdesigner.mapper.transformers.MaxTransformer",
-                        "name": "Max",
-                        "location": {
-                          "x": 400.5,
-                          "y": 189.09375
-                        },
-                        "argumentSourceMap": {
-                          "value1": "Variables",
-                          "value2": "Variables.test1"
-                        }
-                      },
-                      "linkedArgumentName": "out"
-                    },
-                    "value2": {
-                      "_type": "java.lang.Object",
-                      "transformer": {
-                        "_type": "org.uengine.processdesigner.mapper.transformers.MinTransformer",
-                        "name": "Min",
-                        "location": {
-                          "x": 395.5,
-                          "y": 318.09375
-                        },
-                        "argumentSourceMap": {
-                          "value1": "Variables.test2",
-                          "value2": "Variables.test3"
-                        }
-                      },
-                      "linkedArgumentName": "out"
-                    }
-                  }
-                },
-                "linkedArgumentName": "Variables"
-              },
-              "isKey": false
-            },
-            {
-              "_type": "org.uengine.kernel.MappingElement",
-              "argument": {
-                "text": "Variables.test3"
-              },
-              "transformerMapping": {
-                "transformer": {
-                  "_type": "org.uengine.processdesigner.mapper.transformers.MinTransformer",
-                  "name": "Min 2",
-                  "location": {
-                    "x": 803.5,
-                    "y": 276.09375
-                  },
-                  "argumentSourceMap": {
-                    "value1": {
-                      "_type": "java.lang.Object",
-                      "transformer": {
-                        "_type": "org.uengine.processdesigner.mapper.transformers.MaxTransformer",
-                        "name": "Max",
-                        "location": {
-                          "x": 400.5,
-                          "y": 189.09375
-                        },
-                        "argumentSourceMap": {
-                          "value1": "Variables",
-                          "value2": "Variables.test1"
-                        }
-                      },
-                      "linkedArgumentName": "out"
-                    },
-                    "value2": {
-                      "_type": "java.lang.Object",
-                      "transformer": {
-                        "_type": "org.uengine.processdesigner.mapper.transformers.MinTransformer",
-                        "name": "Min",
-                        "location": {
-                          "x": 395.5,
-                          "y": 318.09375
-                        },
-                        "argumentSourceMap": {
-                          "value1": "Variables.test2",
-                          "value2": "Variables.test3"
-                        }
-                      },
-                      "linkedArgumentName": "out"
-                    }
-                  }
-                },
-                "linkedArgumentName": "Variables.test3"
-              },
-              "isKey": false
-            },
-            {
-              "_type": "org.uengine.kernel.MappingElement",
-              "argument": {
-                "text": "Variables.test1"
-              },
-              "variable": {
-                "name": "Variables.test1",
-                "askWhenInit": false,
-                "isVolatile": false
-              },
-              "isKey": false
-            },
-            {
-              "_type": "org.uengine.kernel.MappingElement",
-              "argument": {
-                "text": "Variables.test2"
-              },
-              "variable": {
-                "name": "Variables.test3",
-                "askWhenInit": false,
-                "isVolatile": false
-              },
-              "isKey": false
-            }
-          ]
-        };
-
-        // mappingContent = {};
+        const mappingContent = JSON.parse(json);
 
         mappingContent.mappingElements.forEach(element => {
           this.createMappingElementFromJson(element);
