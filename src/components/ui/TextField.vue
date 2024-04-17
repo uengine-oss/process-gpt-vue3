@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-text-field v-model="inputedValue" @change="onChange">
+        <v-text-field v-model="inputedValue">
             <template v-slot:label>
                 <span style="color:black;">
                     {{label}}
@@ -43,6 +43,10 @@ export default {
     watch: {
         initialValue() {
             this.inputedValue = this.initialValue
+        },
+
+        inputedValue() {
+            this.onChange(this.inputedValue)
         }
     }
 };
