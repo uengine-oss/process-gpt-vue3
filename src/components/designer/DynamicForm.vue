@@ -1,77 +1,70 @@
+<template>
+  <div v-html="renderedContent">
+
+  </div>
+</template>
+
 <script>
-import { h, ref } from 'vue';
-import TextField from '../ui/TextField.vue';
-import SelectField from '../ui/SelectField.vue';
-import CheckboxField from '../ui/CheckboxField.vue';
-import RadioField from '../ui/RadioField.vue';
-import FileField from '../ui/FileField.vue';
-import LabelField from '../ui/LabelField.vue';
-import SubmitField from '../ui/SubmitField.vue';
+import { createApp } from 'vue';
+import vuetify from "@/plugins/vuetify";
+import DynamicComponent from './DynamicComponent.vue';
 
 export default {
   props: {
-    content: {
+    formHTML: {
       type: String,
       default: '',
-    },
-    vueRenderUUID: {
-      type: String,
-      default: ''
     }
   },
 
-  setup() {
-    const componentRef = ref(null);
+  watch: {
+    formHTML() {
+      this.renderVueComponents()
+    }
+  },
 
-    const createComponentWithRef = (component, props) => {
-      return h(component, {
-        ...props,
-        ref: (instance) => {
-          if (instance) {
-            componentRef.value = instance;
-          }
-        },
-      });
-    };
-
-    const parseContentToProps = (content) => {
-      const dom = new DOMParser().parseFromString(content, 'text/html');
-      const element = dom.body.firstChild;
-      const props = {};
-      if (element) {
-        Array.from(element.attributes).forEach(attr => {
-          props[attr.name] = attr.value;
-        });
-      }
-      return props;
-    };
-
+  data() {
     return {
-      componentRef,
-      createComponentWithRef,
-      parseContentToProps
-    };
-  },
-
-  render() {
-    if(this.content.includes("text-field"))
-      return this.createComponentWithRef(TextField, {vueRenderUUID:this.vueRenderUUID, tagName: "text-field", ...this.parseContentToProps(this.content)});
-    else if(this.content.includes("select-field"))
-      return this.createComponentWithRef(SelectField, {vueRenderUUID:this.vueRenderUUID, tagName: "select-field", ...this.parseContentToProps(this.content)});
-    else if(this.content.includes("checkbox-field"))
-      return this.createComponentWithRef(CheckboxField, {vueRenderUUID:this.vueRenderUUID, tagName: "checkbox-field", ...this.parseContentToProps(this.content)});
-    else if(this.content.includes("radio-field"))
-      return this.createComponentWithRef(RadioField, {vueRenderUUID:this.vueRenderUUID, tagName: "radio-field", ...this.parseContentToProps(this.content)});
-    else if(this.content.includes("file-field"))
-      return this.createComponentWithRef(FileField, {vueRenderUUID:this.vueRenderUUID, tagName: "file-field", ...this.parseContentToProps(this.content)});
-    else if(this.content.includes("label-field"))
-      return this.createComponentWithRef(LabelField, {vueRenderUUID:this.vueRenderUUID, tagName: "label-field", ...this.parseContentToProps(this.content)});
-    else if(this.content.includes("submit-field"))
-      return this.createComponentWithRef(SubmitField, {vueRenderUUID:this.vueRenderUUID, tagName: "submit-field", ...this.parseContentToProps(this.content)});
-    else {
-      console.error("유효하지 않은 렌더링 content:", this.content)
-      return "" 
+      renderedContent: "",
+      componentRefs: {}
     }
   },
+
+  methods: {
+    /**
+     * 전달된 formHTML의 Vue 컴포넌트 요소들을 렌더링시키기 위해서
+     */
+    renderVueComponents() {
+      if(!this.formHTML) return
+
+      // "-field"가 포함된 컴포넌트들을 렌더링을 위해서 vuemount div로 감싸고, renderedContent에 저장시켜서 렌더링 준비하기
+      const formHTMLDom = new DOMParser().parseFromString(this.formHTML, 'text/html')
+      const components = Array.from(formHTMLDom.querySelectorAll('*')).filter(el => el.tagName.toLowerCase().endsWith('-field'));
+      components.forEach(component => {
+        const parent = document.createElement('div')
+        parent.setAttribute('id', `vuemount_${crypto.randomUUID()}`)
+        component.parentNode.insertBefore(parent, component)
+        parent.appendChild(component)
+      })
+      this.renderedContent = formHTMLDom.body.innerHTML
+
+      this.$nextTick(() => {
+        // renderedContent에서 "-field"가 있는 태그들을 Vue 컴포넌트로 렌더링시켜서 참조 가능하도록 넣어두기
+        const parser = new DOMParser();
+        const renderedDom = parser.parseFromString(this.renderedContent, 'text/html');
+
+        renderedDom.querySelectorAll("div[id^='vuemount_']").forEach(vueRenderElement => {
+          const vueRenderUUID = vueRenderElement.id
+          const app = createApp(DynamicComponent, {content:vueRenderElement.innerHTML, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
+          this.componentRefs[vueRenderUUID] = app.componentRef;
+        })
+      });
+    }
+  },
+
+  created() {
+    this.renderVueComponents()
+  }
 };
 </script>
+
