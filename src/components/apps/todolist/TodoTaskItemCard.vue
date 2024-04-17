@@ -2,10 +2,10 @@
     <!-- ---------------------------------------------------- -->
     <!-- Table Basic -->
     <!-- ---------------------------------------------------- -->
-    <v-card elevation="10" class="mb-5 cursor-pointer" @click="openDetail">
+    <v-card elevation="10" class="mb-5 cursor-pointer" @click="executeTask()">
         <div class="d-flex align-center justify-space-between px-4 py-2 pr-3">
             <h5 class="text-subtitle-2 font-weight-semibold pr-4">
-                {{ task.title }}
+                {{ task.title }}(TaskId: {{ task.taskId }}/InstId: {{task.instId}})
             </h5>
             
             <!-- ProcessGPTBackend -->
@@ -14,9 +14,10 @@
                 <v-menu activator="parent">
                     <v-list density="compact">
                         <v-list-item @click="deleteTask">
-                            <v-list-item-title >
-                                삭제
-                            </v-list-item-title>
+                            <v-list-item-title>삭제</v-list-item-title>
+                        </v-list-item>
+                        <v-list-item @click="openDetail">
+                            <v-list-item-title>상세보기</v-list-item-title>
                         </v-list-item>
                     </v-list>
                 </v-menu>
@@ -51,9 +52,22 @@
 
 <script>
 import { format } from 'date-fns';
-
 import TodoDialog from './TodoDialog.vue'
-
+/*
+task: {
+    "defId": "sales/testProcess.xml",
+    "endpoint": "manager",      
+    "instId": 9,                
+    "rootInstId": 9,     
+    "taskId": 10,     
+    "startDate": "2024-04-12",  
+    "dueDate": "2024-04-17", 
+    "status": "NEW",            
+    "title": "Task_b",
+    "description": "",  
+    "tool": "defaultHandler","formHandler:definitionId"  
+}
+*/
 export default {
     components: {
         TodoDialog,
@@ -81,6 +95,9 @@ export default {
     created() {
     },
     methods: {
+        executeTask(){
+            this.$emit('executeTask', this.task)
+        },
         openDetail() {
             if (this.task.instId) {
                 this.$router.push(`/instances/chat?id=${this.task.instId}`);

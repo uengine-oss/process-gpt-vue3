@@ -4,7 +4,6 @@
             <div class="d-flex align-center justify-space-between mb-7">
                 <h5 class="text-h5 font-weight-semibold">{{ ($t('todoList.title')) }}</h5>
                 
-                <!-- ProcessGPTBackend -->
                 <v-avatar 
                     size="24" 
                     elevation="10" 
@@ -24,7 +23,7 @@
                     sm="6" 
                     class="d-flex" 
                 >
-                    <TodoTaskColumn :column="column" />
+                    <TodoTaskColumn :column="column" @executeTask="executeTask" />
                 </v-col>
             </v-row>
         </div>
@@ -40,7 +39,6 @@ import TodoDialog from './TodoDialog.vue';
 import TodoTaskColumn from './TodoTaskColumn.vue';
 
 import BackendFactory from "@/components/api/BackendFactory";
-const backend = BackendFactory.createBackend();
 
 export default {
     components: {
@@ -76,15 +74,44 @@ export default {
         ],
         dialog: false,
     }),
-    mounted() {
-        var me = this;
-        me.$try({
-            action: async () => {
-                me.todolist = await backend.getWorkList();
-            },
-        })
+    created() {
+        this.loadToDo();
     },
     methods:{
+        executeTask(item){
+            var me = this
+            me.$router.push(`/todolist/${item.taskId}`)
+        },
+        loadToDo(){
+            var me = this
+            me.$try({
+                context: me,
+                action: async () => {
+                    let back = BackendFactory.createBackend();
+                    let result = await back.getWorkList()
+
+                    let mappedResult = result._embedded.worklist.map(task => ({
+                        defId: task.defId,
+                        endpoint: task.endpoint,
+                        instId: task.instId,
+                        rootInstId: task.rootInstId,
+                        taskId: parseInt(task._links.self.href.split('/').pop()),
+                        startDate: task.startDate,
+                        dueDate: task.dueDate,
+                        status: task.status,
+                        title: task.title,
+                        tool: task.tool,
+                        description: task.description || "" // description이 null일 경우 빈 문자열로 처리
+                    }));
+                    me.todolist.find(x => x.id == 'TODO').tasks.push(...mappedResult);
+                }
+            })
+        },
+        loadWorkItemByInstId(instId){
+            const todoTasks = this.todolist.find(item => item.id === 'TODO').tasks;
+            const instanceIds = todoTasks.map(task => task.instId);
+            if(instanceIds.length == 0 ) return;
+        },
         openDialog() {
             this.dialog = true;
         },

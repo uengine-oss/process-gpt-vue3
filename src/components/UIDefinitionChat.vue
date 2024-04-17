@@ -67,7 +67,7 @@ export default {
         prevFormOutput: "", // 폼 디자이너에게 이미 이전에 생성된 HTML 결과물을 전달하기 위해서
         prevMessageFormat: "", // 사용자가 KEditor를 변경할때마다 해당 포맷을 기반으로 System 메세지를 재구축해서 보내기 위해서
 
-        storedFormDefData: null ,
+        storedFormDefData: {},
         isShowMashup: false
     }),
     async created() {
@@ -114,7 +114,6 @@ export default {
             });
             
             
-            alert("저장 완료!")
             if(isNewSave) {
                 this.$router.push(`/ui-definitions/${id}`)
             }
@@ -230,9 +229,25 @@ export default {
                     // AI가 잘못된 응답을 냈을 경우, 이를 대응하기 위한 수단들
 
                     // AI 응답이 `"` 문자열을 '\'로 파싱하지 않은 경우, 수동으로 파싱하기 위해서
-                    const matchedHtmlOutput = (isFirstCreated) ? processedFragment.match(/"htmlOutput"\s*:\s*"(.*)".*}/)[1] : processedFragment.match(/"tagValue"\s*:\s*"(.*)".*}/)[1]         
-                    if(matchedHtmlOutput.includes(`\\"`)) fragmentToParse = processedFragment
-                    else fragmentToParse = processedFragment.replace(matchedHtmlOutput, matchedHtmlOutput.replaceAll(`"`, `\\"`))
+                    if(isFirstCreated)
+                    {
+                        const matchedHtmlOutput = processedFragment.match(/"htmlOutput"\s*:\s*"(.*)".*}/)[1]
+                        if(matchedHtmlOutput.includes(`\\"`)) fragmentToParse = processedFragment
+                        else fragmentToParse = processedFragment.replace(matchedHtmlOutput, matchedHtmlOutput.replaceAll(`"`, `\\"`))
+                    }
+                    else
+                    {
+                        const matchedItems = [...processedFragment.matchAll(/items='(.*?)'>/g)].map((g) => g[1])
+                        
+                        fragmentToParse = processedFragment
+                        if(matchedItems) {
+                            for(let j=0; j<matchedItems.length; j++) {
+                                const matchedItem = matchedItems[j]
+                                if(!(matchedItem.includes(`\\"`)))
+                                    fragmentToParse = fragmentToParse.replace(matchedItem, matchedItem.replaceAll(`"`, `\\"`))
+                            }
+                        }
+                    }
                     
                     // AI 응답이 items에서 items='[{'남자':'male'},{'여자':'female'}' 와 같이 '안에서 "로 감싸지 않은 경우, 이를 대응하기 위해서
                     const matchedItems = [...fragmentToParse.matchAll(/items='(.*?)'>/g)].map((g) => g[1])
@@ -240,7 +255,7 @@ export default {
                         for (let j=0; j<matchedItems.length; j++) {
                             const matchedItem = matchedItems[j]
                             if(matchedItem.includes(`'`)) {
-                                fragmentToParse = fragmentToParse.replace(matchedItem, matchedItem.replaceAll(`'`, `"`))
+                                fragmentToParse = fragmentToParse.replace(matchedItem, matchedItem.replaceAll(`'`, `\\"`))
                             }
                         }
                     }
