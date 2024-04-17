@@ -144,7 +144,6 @@ export default {
             renderKey: 0,
             jsonDialog: false,
             jsonString: '',
-            appendComponent: {},
             menu: false,
             menu_x: 0,
             menu_y: 0,

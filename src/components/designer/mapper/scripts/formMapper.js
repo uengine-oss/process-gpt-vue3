@@ -278,7 +278,7 @@ export default {
             out: { x: 60, y: 10, direction: "out", appendX: 75, appendY: -10 },
           },
           attributes: {
-            "input": { x: -55, y: 15, func: "NumberFormatInput", value: "" },
+            "toType": { x: -55, y: 15, func: "NumberFormatInput", value: "" },
           },
           parent: "Math",
           class: "org.uengine.processdesigner.mapper.transformers.NumberTransformer",
@@ -333,6 +333,7 @@ export default {
       ],
       attributes: {
       },
+      appendComponent: {},
       pendingConnection: null,
       pendingConnectionEnd: null,
       draggedBlockPos: null,
@@ -357,7 +358,13 @@ export default {
       }
       const block = this.getBlock(spec[0]);
       if (block != null) {
-        var pos = add(block.pos, block.ports[spec[1]] || { x: 0, y: 0 });
+        var connector = { x: block.ports[spec[1]].x, y: block.ports[spec[1]].y };
+        if (block.appendable == true) {
+          if (this.appendComponent != undefined && this.appendComponent[spec[0]] == true) {
+            connector = { x: block.ports[spec[1]].appendX, y: block.ports[spec[1]].appendY };
+          }
+        }
+        var pos = add(block.pos, connector || { x: 0, y: 0 });
         return pos;
       }
       return { x: 0, y: 0 };
