@@ -3,26 +3,16 @@
         <div class="pa-5">
             <div class="d-flex align-center justify-space-between mb-7">
                 <h5 class="text-h5 font-weight-semibold">{{ ($t('todoList.title')) }}</h5>
-                
-                <v-avatar 
-                    size="24" 
-                    elevation="10" 
-                    class="bg-surface d-flex align-center cursor-pointer"
-                    @click="openDialog" 
-                >
+
+                <v-avatar size="24" elevation="10" class="bg-surface d-flex align-center cursor-pointer"
+                    @click="openDialog">
                     <v-tooltip activator="parent" location="left">할 일 등록</v-tooltip>
                     <PlusIcon size="24" stroke-width="2" />
                 </v-avatar>
             </div>
 
             <v-row>
-                <v-col v-for="column in todolist" 
-                    :key="column.id"
-                    cols="12" 
-                    md="3" 
-                    sm="6" 
-                    class="d-flex" 
-                >
+                <v-col v-for="column in todolist" :key="column.id" cols="12" md="3" sm="6" class="d-flex">
                     <TodoTaskColumn :column="column" @executeTask="executeTask" />
                 </v-col>
             </v-row>
@@ -77,20 +67,20 @@ export default {
     created() {
         this.loadToDo();
     },
-    methods:{
-        executeTask(item){
+    methods: {
+        executeTask(item) {
             var me = this
             me.$router.push(`/todolist/${item.taskId}`)
         },
-        loadToDo(){
+        loadToDo() {
             var me = this
             me.$try({
                 context: me,
                 action: async () => {
                     let back = BackendFactory.createBackend();
-                    let result = await back.getWorkList()
+                    let worklist = await back.getWorkList()
 
-                    let mappedResult = result._embedded.worklist.map(task => ({
+                    let mappedResult = worklist.map(task => ({
                         defId: task.defId,
                         endpoint: task.endpoint,
                         instId: task.instId,
@@ -107,10 +97,10 @@ export default {
                 }
             })
         },
-        loadWorkItemByInstId(instId){
+        loadWorkItemByInstId(instId) {
             const todoTasks = this.todolist.find(item => item.id === 'TODO').tasks;
             const instanceIds = todoTasks.map(task => task.instId);
-            if(instanceIds.length == 0 ) return;
+            if (instanceIds.length == 0) return;
         },
         openDialog() {
             this.dialog = true;
