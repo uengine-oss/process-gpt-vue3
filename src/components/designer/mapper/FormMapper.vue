@@ -441,7 +441,7 @@ export default {
             };
         }
     },
-    beforeDestroy() {
+    onBeforeUnmount() {
         this.saveFormMapperJson();
     }
 };
