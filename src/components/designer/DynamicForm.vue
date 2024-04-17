@@ -27,8 +27,7 @@ export default {
     modelValue: {
       handler() {
         this.setUserInputedDatas(this.modelValue)
-      },
-      immediate: true
+      }
     }
   },
 
@@ -74,6 +73,7 @@ export default {
           }
         })
 
+        this.setUserInputedDatas(this.modelValue)
         this.$emit('update:modelValue', this.getUserInputedDatas())
       });
     },
