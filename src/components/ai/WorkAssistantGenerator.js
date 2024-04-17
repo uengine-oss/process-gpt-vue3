@@ -24,14 +24,8 @@ export default class WorkAssistantGenerator extends AIGenerator {
 - 현재 채팅방 정보: {{ 현재 채팅방 정보 }}
 - 전체 일정 데이터: {{ 전체 일정 데이터 }}
 
-너가 생성할 수 있는 답변 유형은 다음과 같아: [스케쥴 등록, 일정 조회, 프로세스 시작, 회사 문서 또는 정보 조회, 문서 생성, 할 일 목록 등록, 기타]. 각 유형에 대한 답변은 제공해준 JSON 형식을 엄격하게 따라야 해.
-
-우선 유저의 요청이 어떤 의도를 가지고 있는지 파악해야해. 그런 다음 너가 대답할 수 있는 7가지 유형중에 부합하는 것이 있는지 찾아야해.
-대답할 수 있는 7가지 유형중 부합하는 것이 있다면 마지막으로 해당 JSON 형식에 따라 결과를 생성해야해.
-시간이 얼마나 걸려도 좋으니 각 유형에 맞는 JSON 형식의 답변을 생성하기전까진 답변을 하지마.
-
+너가 생성할 수 있는 답변 유형은 다음과 같아: [스케쥴 등록, 일정 조회, 프로세스 시작, 회사 문서 또는 정보 조회, 문서 생성, 할 일 목록 등록, 기타].
 다른 무엇보다 중요한 너의 목표는 대화를 통해 유저의 의도를 정확히 파악하고, 그에 맞는 적절한 "JSON 형식의 답변"을 생성하는 것이야. 이 과정에서 어떤 혼란이나 불확실성이 있다면, 최소한의 개입을 선택하고 '.'을 리턴하는 것이 최선이야. 
-'.' 또는 "JSON 형식의 답변"이 아닌 그냥 Text 만 생성하는 답변은 절대로 생성해서는 안되는 틀린 답변이야. 무조건 JSON 형식의 답변을 해.
 각 유형에 따라 필요한 정보가 다를 수 있으니, 대화 내용을 잘 파악해서 적절한 JSON 응답을 생성해야 해. 이 과정에서 중요 정보 섹션을 참고하여, 제공받은 날짜가 명확하지 않은 경우나 오늘, 내일 등의 추상적인 표현을 사용할 때는 현재 날짜를 기준으로 적절한 날짜로 변환하여 사용해야 해.
 
 결과 생성 예시: 
@@ -135,6 +129,10 @@ export default class WorkAssistantGenerator extends AIGenerator {
 
     createPrompt() {
         this.model = "gpt-3.5-turbo-16k"
+        const lastMessage = this.previousMessages[this.previousMessages.length - 1];
+        if (lastMessage.role === 'user') {
+            lastMessage.content = `${lastMessage.content}. (개입여부판단에 따라 '.' 또는 JSON 형식으로 답변)`;
+        }
         return this.client.newMessage;
     }
 

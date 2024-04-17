@@ -138,6 +138,17 @@ redirect_uri = ""
 # or any other third-party OIDC providers.
 url = ""
 
+[auth.external.keycloak]
+enabled = true
+client_id = "supabase"
+# DO NOT commit your OAuth provider secret to git. Use environment variable substitution instead:
+secret = "iNiv41zttfK1rQMmXxqr3MJq31MqXww2"
+# Overrides the default auth redirectUrl.
+redirect_uri = ""
+# Overrides the default auth provider URL. Used to support self-hosted gitlab, single-tenant Azure,
+# or any other third-party OIDC providers.
+url = ""
+
 [analytics]
 enabled = false
 port = 54327

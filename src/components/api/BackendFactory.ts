@@ -5,7 +5,7 @@ class BackendFactory extends Window {
     static createBackend() {
         console.log((window as any).$mode);
         switch ((window as any).$mode) {
-            case 'uengine':
+            case 'uEngine':
                 return new UEngineBackend();
             case 'ProcessGPT':
                 return new ProcessGPTBackend();

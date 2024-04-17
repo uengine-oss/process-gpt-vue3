@@ -72,6 +72,8 @@
                 <form-mapper 
                     :definition="definition" 
                     :name="name"    
+                    :formMapperJson="formMapperJson"
+                    @saveFormMapperJson="saveFormMapperJson"
                 />
             </v-dialog>
         </div>
@@ -202,7 +204,8 @@ export default {
             paramValue: "",
             oepnFieldMapper: false,
             isFormActivity: false,
-            selectedForm: ""
+            selectedForm: "",
+            formMapperJson: ""
         };
     },
     async mounted() {
@@ -324,7 +327,11 @@ export default {
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint })
             this.$emit('update:uEngineProperties', this.copyUengineProperties)
-        },
+        },  
+        saveFormMapperJson(jsonString) {
+            this.formMapperJson = jsonString;
+            this.oepnFieldMapper = false;
+        }
     }
 };
 </script>

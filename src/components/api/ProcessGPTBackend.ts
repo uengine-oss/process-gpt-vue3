@@ -17,11 +17,11 @@ class ProcessGPTBackend implements Backend {
     }
 
     async listVersionDefinitions(version: string, basePath: string) {
-        //
+        throw new Error("Method not implemented.");
     }
 
     async listVersions() {
-        //
+        throw new Error("Method not implemented.");
     }
 
     async deleteDefinition(defId: string) {
@@ -144,20 +144,154 @@ class ProcessGPTBackend implements Backend {
 
     async getWorkList() {
         try {
+            const todolist: any[] = [
+                { id: 'TODO', title: 'Todo', cardbg: 'background', tasks: [] },
+                { id: 'IN_PROGRESS', title: 'In Progress', cardbg: 'lightsecondary', tasks: [] },
+                { id: 'PENDING', title: 'Pending', cardbg: 'lightinfo', tasks: [] },
+                { id: 'DONE', title: 'Done', cardbg: 'lightsuccess', tasks: [] }
+            ];
+    
             const email = localStorage.getItem("email");
-            const options = {
-                match: {
-                    user_id: email
+            const options = { match: { user_id: email } };
+    
+            const updateTodoList = async (list: any[]) => {
+                for (const item of list) {
+                    if (item.user_id === email) {
+                        const workItem: any = {
+                            defId: item.proc_def_id,
+                            endpoint: item.user_id,
+                            instId: item.proc_inst_id,
+                            rootInstId: null,
+                            taskId: item.id,
+                            startDate: item.start_date,
+                            dueDate: item.end_date,
+                            status: item.status,
+                            title: item.activity_id,
+                            description: "",
+                            tool: ""
+                        };
+                        if (item.proc_inst_id) {
+                            const data = await storage.getString(item.proc_def_id, { 
+                                match: { proc_inst_id: item.proc_inst_id },
+                                column: "proc_inst_name"
+                            });
+                            if (data && data.proc_inst_name) {
+                                workItem.description = data.proc_inst_name;
+                            }
+                        }
+                        const statusIndex = todolist.findIndex(t => t.id === item.status);
+                        if (statusIndex !== -1) {
+                            todolist[statusIndex].tasks.push(workItem);
+                        }
+                    }
                 }
             };
-            const data = await storage.list('todolist', options);
-            return data;
-
+    
+            const list = await storage.list('todolist', options);
+            if (list && list.length > 0) {
+                await updateTodoList(list);
+            }
+    
+            return todolist;
         } catch (error) {
             throw new Error('error in getWorkList');
         }
     }
+    async getProcessDefinitionMap() {
+        const procMap = await storage.getObject('configuration/proc_map', { key: 'key' });
+        if (procMap && procMap.value) {
+            return procMap.value;
+        }
+        // return await storage.getObject('proc_map', { key: 'key' });
+    }
+    async putProcessDefinitionMap(definitionMap: any) {
+        const putObj = {
+                key: 'proc_map',
+                value: definitionMap
+        }
+        await storage.putObject('configuration', putObj);
+    }
 
+    // Add stub implementations for the missing methods and properties
+    async versionUp() {
+        throw new Error("Method not implemented.");
+    }
+
+    async makeProduction() {
+        throw new Error("Method not implemented.");
+    }
+
+    async getProduction() {
+        throw new Error("Method not implemented.");
+    }
+
+    async getVersion() {
+        throw new Error("Method not implemented.");
+    }
+
+    async getDefinition() {
+        throw new Error("Method not implemented.");
+    }
+
+    async renameOrMove() {
+        throw new Error("Method not implemented.");
+    }
+
+    async createFolder() {
+        throw new Error("Method not implemented.");
+    }
+
+    async stop() {
+        throw new Error("Method not implemented.");
+    }
+    
+    async suspend(instanceId: string): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async resume(instanceId: string): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async backToHere(instanceId: string, tracingTag: string): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async getProcessVariables(instanceId: string): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async getVariable(instId: string, varName: string): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async setVariable(instanceId: string, varName: string, varValue: any): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async getRoleMapping(instId: string, roleName: string): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async setRoleMapping(instanceId: string, roleName: string, roleMapping: any): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async signal(instanceId: string, signal: string): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async serviceMessage(requestPath: string): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async putWorkItem(taskId: string, workItem: any): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+
+    async postMessage(instanceId: string, message: any): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
 }
 
 export default ProcessGPTBackend;

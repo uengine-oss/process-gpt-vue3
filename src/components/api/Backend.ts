@@ -1,4 +1,4 @@
-interface Backend {
+export interface Backend {
     listDefinition(basePath: string): Promise<any>;
     listVersionDefinitions(version: string, basePath: string): Promise<any>;
     listVersions(): Promise<any>;
@@ -28,6 +28,8 @@ interface Backend {
     putWorkItem(taskId: string, workItem: any): Promise<any>;
     postMessage(instanceId: string, message: any): Promise<any>;
     getWorkList(): Promise<any>;
+    getProcessDefinitionMap(): Promise<any>;
+    putProcessDefinitionMap(definitionMap: any): Promise<any>;
 }
 
-export type { Backend }
+// export type { Backend }

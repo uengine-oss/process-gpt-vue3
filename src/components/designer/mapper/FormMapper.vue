@@ -1,11 +1,11 @@
 <template>
-    <div>
+    <div class="form-mapper">
         <v-card>
             <v-row class="ma-0 pa-0">
                 <!-- {{$t('processDefinition.editProcessData') }} -->
                 <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important"> Form Mapper - {{ name }} </v-card-title>
                 <v-spacer></v-spacer>
-                <v-btn icon @click="openJsonDialog()">
+                <v-btn icon @click="saveFormMapperJson()">
                     <v-icon>mdi-content-save-outline</v-icon>
                 </v-btn>
                 <!-- <v-btn icon @click="openFunctionMenu()">
@@ -13,7 +13,15 @@
                 </v-btn> -->
             </v-row>
             <div id="app" class="treeviews-container" @contextmenu.prevent="showContextMenu($event)">
-                <v-treeview :config="config" :nodes="nodes" class="left-treeview"> </v-treeview>
+                <v-treeview
+                    :config="config"
+                    :nodes="nodes"
+                    class="left-treeview"
+                    :key="renderKey"
+                    @nodeOpened="handleNodeClick"
+                    @nodeClosed="handleNodeClick()"
+                >
+                </v-treeview>
 
                 <ContextMenu
                     ref="contextMenu"
@@ -21,6 +29,7 @@
                     :style="menuPositionStyle"
                     :position-x="x"
                     :position-y="y"
+                    :max-height="300"
                     @menu_item_selected="menuItemSelected"
                 />
 
@@ -36,15 +45,18 @@
                     </v-card>
                 </v-dialog>
 
-                <svg id="formArea" ref="svgElement" @mousemove="updateMousePos" @mouseup="onMouseUp">
+                <svg class="test1" id="formArea" ref="svgElement" @mousemove="updateMousePos" @mouseup="onMouseUp">
                     <block-component
                         v-for="(block, name) in blocks_"
                         :key="name"
                         :pos="block.pos"
                         :size="block.size"
                         :name="block.name"
+                        :appendable="block.appendable"
+                        :appendComponent="appendComponent"
                         :start-block-drag="startBlockDrag"
                         :delete-block="deleteBlock"
+                        @toggle-append="toggleAppend"
                     ></block-component>
                     <connector-component
                         v-for="(conn, index) in connectors"
@@ -62,6 +74,8 @@
                         :block-name="port.blockName"
                         :direction="port.direction"
                         :parentNode="port.parentNode"
+                        :tree-view="nodes"
+                        :appendComponent="appendComponent"
                         :onmousedown="newConnection(port.blockName, port.name, port.direction)"
                         :onmouseup="completeConnection(port.blockName, port.name, port.direction)"
                     ></port-component>
@@ -72,11 +86,20 @@
                         :name="attribute.name"
                         :block-name="attribute.blockName"
                         :func="attribute.func"
+                        :appendComponent="appendComponent"
                         @onChangeAttribute="onChangeAttribute"
                     ></attribute-component>
                 </svg>
 
-                <v-treeview :config="config" :nodes="nodes" class="right-treeview" :key="renderKey"> </v-treeview>
+                <v-treeview
+                    :config="config"
+                    :nodes="nodes"
+                    class="right-treeview"
+                    :key="renderKey"
+                    @nodeOpened="handleNodeClick"
+                    @nodeClosed="handleNodeClick()"
+                >
+                </v-treeview>
             </div>
         </v-card>
     </div>
@@ -105,6 +128,10 @@ export default {
         name: {
             type: String,
             required: true
+        },
+        formMapperJson: {
+            type: String,
+            required: true
         }
     },
     components: {
@@ -120,7 +147,6 @@ export default {
             storage: null,
             renderKey: 0,
             jsonDialog: false,
-            jsonString: '',
             menu: false,
             menu_x: 0,
             menu_y: 0,
@@ -128,23 +154,23 @@ export default {
             component_y: 0,
             portIndex: 0,
             nodes: {
-                id1: {
-                    text: 'text1',
-                    children: ['id11', 'id12']
-                },
-                id11: {
-                    text: 'text11'
-                },
-                id12: {
-                    text: 'text12',
-                    children: ['id123']
-                },
-                id2: {
-                    text: 'text2'
-                },
-                id123: {
-                    text: 'text123'
-                }
+                // id1: {
+                //     text: 'text1',
+                //     children: ['id11', 'id12']
+                // },
+                // id11: {
+                //     text: 'text11'
+                // },
+                // id12: {
+                //     text: 'text12',
+                //     children: ['id123']
+                // },
+                // id2: {
+                //     text: 'text2'
+                // },
+                // id123: {
+                //     text: 'text123'
+                // }
             },
             config: {
                 roots: ['id1', 'id2']
@@ -168,7 +194,8 @@ export default {
                 this.addTreeViewPort();
             }
         });
-        this.$nextTick(() => {//다이얼로그가 생성될 시 이상한 위치로 되기에 일정 시간을 줌
+        this.$nextTick(() => {
+            //다이얼로그가 생성될 시 이상한 위치로 되기에 일정 시간을 줌
             setTimeout(() => {
                 this.addTreeViewPort();
             }, 300);
@@ -186,7 +213,7 @@ export default {
             });
         }
 
-        this.renderFormMapperFromMappingElementJson('');
+        this.renderFormMapperFromMappingElementJson(this.formMapperJson);
     },
     methods: {
         async initializeStorage() {
@@ -249,54 +276,73 @@ export default {
             }
         },
         updateBlockTemplates() {
-            const treeStructure = this.buildTreeStructure(); // 트리 구조 생성
+            const treeStructure = this.buildTreeStructure();
+            const nodeHeight = 24;
 
-            const updatePorts = (treeNode, path = '') => {
+            const updatePorts = (treeNode, path = '', yOffset = 0, isRootClosed = false) => {
                 if (!treeNode) return;
 
+                const effectiveYOffset = isRootClosed ? yOffset : yOffset + nodeHeight;
                 const currentPath = path ? `${path}.${treeNode.text}` : treeNode.text;
-                this.addPortToBlockTemplates(currentPath);
+                if (!isRootClosed) {
+                    this.addPortToBlockTemplates(currentPath, effectiveYOffset - nodeHeight);
+                } else {
+                    this.addPortToBlockTemplates(currentPath, effectiveYOffset);
+                }
 
                 if (treeNode.children && treeNode.children.length > 0) {
-                    treeNode.children.forEach((childNode) => {
-                        updatePorts(childNode, currentPath);
+                    const nodeOpened = this.nodes[treeNode.text].state && this.nodes[treeNode.text].state.opened;
+                    let cumulativeOffset = effectiveYOffset;
+
+                    treeNode.children.forEach((childNode, index) => {
+                        const child = this.nodes[childNode];
+                        updatePorts(child, currentPath, cumulativeOffset, isRootClosed || !nodeOpened);
+                        if (nodeOpened && !isRootClosed) {
+                            cumulativeOffset += this.getNodeHeight(child);
+                        }
                     });
                 }
             };
-            treeStructure.forEach((rootNode) => updatePorts(rootNode));
+
+            this.getNodeHeight = function (node) {
+                let totalHeight = nodeHeight;
+                if (node.state && node.state.opened && node.children) {
+                    node.children.forEach((child) => {
+                        totalHeight += this.getNodeHeight(this.nodes[child]);
+                    });
+                }
+                return totalHeight;
+            };
+
+            treeStructure.forEach((rootNode, index) => {
+                const rootYOffset = index * nodeHeight;
+                const rootClosed = !(this.nodes[rootNode.text].state && this.nodes[rootNode.text].state.opened);
+                updatePorts(rootNode, '', rootYOffset, rootClosed);
+            });
         },
-        addPortToBlockTemplates(nodePath, parentNode) {
+        addPortToBlockTemplates(nodePath, yOffset) {
             this.blockTemplates.Source.ports[nodePath] = {
                 x: 5,
-                y: 0,
-                direction: 'out',
-                parentNode: { name: parentNode, offset: { x: 0, y: 24 * this.portIndex } }
+                y: yOffset,
+                direction: 'out'
             };
             this.blockTemplates.Target.ports[nodePath] = {
                 x: -5,
-                y: 0,
-                direction: 'in',
-                parentNode: { name: parentNode, offset: { x: 0, y: 24 * this.portIndex } }
+                y: yOffset,
+                direction: 'in'
             };
-            this.portIndex++;
         },
-
         buildTreeStructure() {
             const buildTree = (nodeKey) => {
                 const node = this.nodes[nodeKey];
                 if (!node) return null;
 
-                let treeNode = { text: node.text };
-                if (node.children && node.children.length > 0) {
-                    treeNode.children = node.children.map((childKey) => buildTree(childKey));
-                }
+                let treeNode = { text: node.text, children: node.children || [] };
                 return treeNode;
             };
 
             let tree = [];
             Object.keys(this.nodes).forEach((nodeKey) => {
-                // 최상위 노드만 탐색 시작점으로 삼습니다.
-                // 최상위 노드는 다른 어떤 노드의 자식도 아니어야 합니다.
                 const isRootNode = !Object.values(this.nodes).some((n) => n.children && n.children.includes(nodeKey));
                 if (isRootNode) {
                     tree.push(buildTree(nodeKey));
@@ -327,8 +373,11 @@ export default {
                 attributes: {}
             };
         },
+        handleNodeClick() {
+            this.portIndex = 0;
+            this.updateBlockTemplates(); // 포트 위치 업데이트 메소드 호출
+        },
         openFunctionMenu(event) {
-            console.log('click menu');
             if (event) {
                 const svgElement = this.$refs.svgElement;
 
@@ -344,25 +393,20 @@ export default {
             }
             this.menu = true;
         },
-        openJsonDialog() {
-            console.log('open json');
-            this.jsonString = JSON.stringify(this.getMappingElementsJson(), null, 2);
-            this.jsonDialog = true; // 다이얼로그 열기
+        saveFormMapperJson() {
+            var jsonString = JSON.stringify(this.getMappingElementsJson(), null, 2);
+            this.$emit('saveFormMapperJson', jsonString);
         },
         menuItemSelected(item) {
-            console.log('Selected:', item);
             this.newBlock(item.title, { x: this.component_x, y: this.component_y });
         },
         onButtonClickLeft(item, type) {
-            console.log('Button clicked:', item.node.text, type);
             this.newBlock(type, { x: 450, y: 300 }, item.node.text);
         },
         onButtonClickRight(item, type) {
-            console.log('Button clicked:', item.node.text, type);
             this.newBlock(type, { x: 1450, y: 300 }, item.node.text);
         },
         onChangeAttribute(value, blockName, name) {
-            console.log('onChangeAttribute', value, blockName, name);
             this.blocks[blockName].attributes[name] = value;
         },
         showContextMenu(event) {
@@ -378,6 +422,13 @@ export default {
             this.component_x = this.menu_x;
             this.component_y = this.menu_y;
             this.$refs.contextMenu.showContextMenu(this.x, this.y);
+        },
+        toggleAppend(blockName) {
+            if (this.appendComponent[blockName] != undefined) {
+                this.appendComponent[blockName] = !this.appendComponent[blockName];
+            } else {
+                this.appendComponent[blockName] = true;
+            }
         }
     },
     computed: {
@@ -388,76 +439,44 @@ export default {
                 top: `${this.menu_y}px`,
                 transform: 'translate(0, -50%)'
             };
-        },
-
-        transformers() {
-            return {
-                mappingElements: [
-                    {
-                        _type: 'org.uengine.kernel.MappingElement',
-                        argument: {},
-                        transformerMapping: {
-                            transformer: {
-                                _type: 'org.uengine.processdesigner.mapper.transformers.ConcatTransformer',
-                                name: 'Concat',
-                                location: { x: 365.78125, y: 146.5 },
-                                argumentSourceMap: { str1: 'trouble_class' }
-                            },
-                            linkedArgumentName: 'out'
-                        },
-                        isKey: false
-                    },
-                    {
-                        _type: 'org.uengine.kernel.MappingElement',
-                        argument: {},
-                        transformerMapping: {
-                            transformer: {
-                                _type: 'org.uengine.processdesigner.mapper.transformers.ConcatTransformer',
-                                name: 'Concat',
-                                location: { x: 360.78125, y: 432.5 },
-                                argumentSourceMap: { str1: 'trouble_class' }
-                            },
-                            linkedArgumentName: 'out'
-                        },
-                        isKey: false
-                    }
-                ]
-            };
         }
+    },
+    beforeDestroy() {
+        this.saveFormMapperJson();
     }
 };
 </script>
 
 <style>
-.v-toolbar {
+.form-mapper .v-toolbar {
     border-top-left-radius: 12px;
     border-top-right-radius: 12px;
 }
-.v-toolbar-title {
+.form-mapper .v-toolbar-title {
     font-size: 16px;
     font-weight: bold;
     color: #eee;
 }
-#formArea {
+.form-mapper #formArea {
     width: 100%;
     height: 80vh;
     background: #eee;
 }
-.block > rect {
+.form-mapper .block > rect {
     fill: rgba(127, 127, 127, 1);
     stroke: #888;
     stroke-width: 2;
     rx: 4;
     ry: 4;
 }
-.block > text {
+.form-mapper .block > text {
     font-size: 11px;
     fill: #fff;
-    text-anchor: middle;
+    text-anchor: start;
     alignment-baseline: middle;
     pointer-events: none;
 }
-.block > .delete-button {
+.form-mapper .block > .delete-button {
     background: none;
     border: none;
     cursor: pointer;
@@ -469,91 +488,91 @@ export default {
     justify-content: center;
 }
 
-.port > text {
+.form-mapper .port > text {
     font-size: 11px;
     fill: rgb(255, 255, 255);
     alignment-baseline: middle;
 }
-.port > rect {
+.form-mapper .port > rect {
     fill: rgb(59, 0, 66);
 }
-.port > rect.background {
+.form-mapper .port > rect.background {
     fill: rgba(63, 63, 63, 0);
     width: 50px;
     height: 20px;
 }
-.port:hover > text {
+.form-mapper .port:hover > text {
     fill: rgb(115, 0, 128);
 }
-.port:hover > rect {
+.form-mapper .port:hover > rect {
     fill: rgb(115, 0, 128);
     stroke-width: 3px;
     stroke: rgb(115, 0, 128);
 }
-.port:hover > rect.background {
+.form-mapper .port:hover > rect.background {
     fill: rgba(63, 63, 63, 0.5);
     stroke-width: 0;
 }
 
-.connector {
+.form-mapper .connector {
     stroke: #888;
     stroke-width: 3;
     fill: none;
 }
-.connector:hover {
+.form-mapper .connector:hover {
     stroke: #f88;
     stroke-width: 4;
 }
-.connector.isNew,
-.connector.isNew:hover {
+.form-mapper .connector.isNew,
+.form-mapper .connector.isNew:hover {
     stroke: rgb(115, 0, 128);
     stroke-width: 3;
 }
 
-.treeviews-container {
+.form-mapper .treeviews-container {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
 }
 
-.right-treeview .node-wrapper {
+.form-mapper .right-treeview .node-wrapper {
     transform: scaleX(-1);
 }
 
-.right-treeview .input-wrapper {
+.form-mapper .right-treeview .input-wrapper {
     transform: scaleX(-1);
 }
 
-.form-menu {
+.form-mapper .form-menu {
     max-height: 300px;
     overflow-y: auto;
 }
-.tree-node .input-wrapper {
+.form-mapper .tree-node .input-wrapper {
     align-self: center;
 }
-.tree-node .icon-wrapper {
+.form-mapper .tree-node .icon-wrapper {
     align-self: center;
     width: 24px;
     height: 24px;
     margin-left: 12px;
 }
-.tree-node .icon-wrapper svg {
+.form-mapper .tree-node .icon-wrapper svg {
     width: 12px;
     height: 12px;
 }
-.left-treeview button {
+.form-mapper .left-treeview button {
     margin-left: auto;
 }
-.right-treeview button {
+.form-mapper .right-treeview button {
     margin-left: auto;
 }
-.tree-level {
+.form-mapper .tree-level {
     padding-left: 0 !important;
 }
-.left-treeview {
+.form-mapper .left-treeview {
     width: 200px;
 }
-.right-treeview {
+.form-mapper .right-treeview {
     width: 200px;
 }
 </style>

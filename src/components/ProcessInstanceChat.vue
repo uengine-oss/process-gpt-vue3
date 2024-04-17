@@ -72,6 +72,8 @@ import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 import { VDataTable } from 'vuetify/labs/VDataTable';
 import GeneratorAgent from './GeneratorAgent.vue';
 
+import BackendFactory from "@/components/api/BackendFactory";
+const backend = BackendFactory.createBackend();
 
 export default {
     mixins: [ChatModule, GeneratorAgent],
@@ -198,17 +200,19 @@ export default {
 
                 } else if (this.$route.query.id) {
                     id = this.$route.query.id;
-                    def_id = id.split('.')[0];
-                    const proc_inst = await this.getData(`${def_id}/${id}`, { key: "proc_inst_id" });
+                    // def_id = id.split('.')[0];
+                    // const proc_inst = await this.getData(`${def_id}/${id}`, { key: "proc_inst_id" });
+                    const proc_inst = await backend.getInstance(id);
                     if (proc_inst) {
                         this.currentActivities = proc_inst.current_activity_ids;
                     }
                 }
 
-                var defInfo = await this.getData(`proc_def/${def_id}`, { key: "id" });
-                if (defInfo) {
-                    let definition = defInfo.definition;
-                    this.bpmn = this.createBpmnXml(definition);
+                // var defInfo = await this.getData(`proc_def/${def_id}`, { key: "id" });
+                var defInfo = await backend.getRawDefinition(def_id);
+                if (defInfo && defInfo.bpmn) {
+                    // let definition = defInfo.definition;
+                    this.bpmn = defInfo.bpmn;
                     this.onLoad = true;
                 }
             } else {
@@ -224,21 +228,12 @@ export default {
                 const id = this.$route.query.id;
                 this.loadMessages(`${this.path}/${id}`, { key: "id" });
 
-                const def_id = id.split('.')[0];
-                value = await this.getData(`${def_id}/${id}`, { key: "proc_inst_id" });
+                // const def_id = id.split('.')[0];
+                // value = await this.getData(`${def_id}/${id}`, { key: "proc_inst_id" });
+                value = await backend.getInstance(id);
                 if (value) {
                     this.processInstance = value;
                     this.checkDisableChat();
-                }
-            }
-
-            value = await this.getData("organization");
-
-            if (value && value.organizationChart) {
-                this.organizationChart = JSON.parse(value.organizationChart);
-
-                if (!this.organizationChart) {
-                    this.organizationChart = [];
                 }
             }
         },
@@ -456,6 +451,7 @@ export default {
         },
 
         async queryFromVectorDB(messsage) {
+            await this.saveDefinitionToVectorDB();
             // const apiToken = this.generator.getToken();
             const vectorStore = new VectorStorage({ openAIApiKey: this.openaiToken });
 
@@ -467,7 +463,6 @@ export default {
                 const res = results.similarItems.map(item => item.text);
                 return res
             } else {
-                await this.saveDefinitionToVectorDB();
                 return this.queryFromVectorDB(messsage);
             }
         },

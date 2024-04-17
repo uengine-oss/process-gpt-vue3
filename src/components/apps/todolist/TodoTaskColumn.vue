@@ -12,6 +12,7 @@
                 :animation="200" 
                 ghost-class="ghost-card"
                 group="tasks"
+                @end="updateTask"
             >
                 <transition-group>
                     <div v-for="task in column.tasks"
@@ -20,11 +21,7 @@
                     >
                         <TodoTaskItemCard 
                             :task="task" 
-                            :path="path" 
-                            :userInfo="userInfo" 
-                            :storage="storage"
-                            @onDeleteTask="deleteTask" 
-                            ref="taskCard" 
+                            @executeTask="executeTask"
                         />
                     </div>
                 </transition-group>
@@ -36,10 +33,7 @@
                 >
                     <TodoTaskItemCard 
                         :task="task" 
-                        :path="path" 
-                        :userInfo="userInfo" 
-                        :storage="storage" 
-                        @onDeleteTask="deleteTask" 
+                        @executeTask="executeTask"
                     />
                 </div>
             </div>
@@ -50,29 +44,32 @@
 <script>
 import TodoTaskItemCard from './TodoTaskItemCard.vue';
 
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
+
 export default {
     components: {
         TodoTaskItemCard
     },
     props: {
-        path: String,
-        userInfo: Object,
         column: Object,
-        storage: Object
     },
     data: () => ({
-        count: 0,
     }),
-    watch: {
-    },
     methods: {
+        updateTask(event) {
+            console.log(event)
+        },
         /**
          * 할 일 목록 카드의 메뉴에서 제거 버튼을 눌렀을 경우, 매칭되는 할 일을 삭제시키기 위해서
          * @param {*} task 삭제하려는 task 정보
          */
         deleteTask(task) {
+            const storage = StorageBaseFactory.getStorage();
             this.column.tasks = this.column.tasks.filter((item) => item.id !== task.id);
-            this.storage.delete(`todolist/${task.id}`, {key: 'id'});
+            storage.delete(`todolist/${task.id}`, {key: 'id'});
+        },
+        executeTask(task){
+            this.$emit('executeTask', task)
         }
     }
 }

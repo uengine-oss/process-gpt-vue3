@@ -5,7 +5,7 @@
             <div v-for="(value, key) in item" :key="key">
                 <v-checkbox
                     v-model="inputedValue"
-                    :label="key"
+                    :label="`${key}(${value})`"
                     :value="value"
                 ></v-checkbox>
             </div>
@@ -31,7 +31,10 @@ export default {
     },
     computed: {
         label() {
-            return this.localAlias || this.localName;
+            if(this.localAlias && this.localName) return `${this.localAlias}(${this.localName})`
+            else if (this.localAlias) return this.localAlias
+            else if (this.localName) return this.localName
+            else return ""
         }
     },
     data() {
