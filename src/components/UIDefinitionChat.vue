@@ -344,7 +344,8 @@ export default {
                 const parent = document.createElement('div')
                 parent.setAttribute('id', `vuemount_${crypto.randomUUID()}`)
 
-                if(["text-field", "select-field", "checkbox-field", "radio-field", "file-field", "label-field", "submit-field"].includes(component.tagName.toLowerCase()))
+                
+                if(this.generator.avaliableComponentTagNames.includes(component.tagName.toLowerCase()))
                 {
                     component.parentNode.insertBefore(parent, component)
                     parent.appendChild(component)
