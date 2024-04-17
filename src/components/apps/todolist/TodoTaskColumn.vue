@@ -10,7 +10,8 @@
                 :component-data="getComponentData()">
                 <transition-group>
                     <div v-for="task in column.tasks" :key="task.id" class="mt-6 cursor-move">
-                        <TodoTaskItemCard :task="task" @deleteTask="deleteTask" @executeTask="executeTask" @add="addTask" />
+                        <TodoTaskItemCard :task="task" @deleteTask="deleteTask" @executeTask="executeTask"
+                            @add="addTask" />
                     </div>
                 </transition-group>
             </draggable>
@@ -45,14 +46,15 @@ export default {
         async updateTask(event) {
             const movedTask = this.column.tasks.find(task => task.id === event.item.dataset.id);
             movedTask.status = this.column.id;
+            console.log(movedTask)
             const back = BackendFactory.createBackend();
-            await back.putWorkItem(movedTask.taskId, movedTask);
+            await back.putWorklist(movedTask.taskId, movedTask);
         },
         /*
          * 할 일 목록 카드의 메뉴에서 삭제 버튼을 눌렀을 경우, 매칭되는 할 일을 삭제시키기 위해서
          * @param {*} task 삭제하려는 task 정보
          * TODO:: UEngineBackend.ts 에서 workitem 삭제 사용시 Backend.ts 로 삭제 함수 공통화
-         */ 
+         */
         async deleteTask(task) {
             const storage = StorageBaseFactory.getStorage();
             this.column.tasks = this.column.tasks.filter((item) => item.taskId !== task.taskId);
