@@ -78,10 +78,10 @@ export default {
                 context: me,
                 action: async () => {
                     let back = BackendFactory.createBackend();
-                    let result = await back.getWorkList()
+                    let worklist = await back.getWorkList()
 
 
-                    me.todolist.find(x => x.id == 'TODO').tasks.push(...result);
+                    me.todolist.find(x => x.id == 'TODO').tasks.push(...worklist);
                 }
             })
         },

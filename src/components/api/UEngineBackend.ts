@@ -254,6 +254,9 @@ class UEngineBackend implements Backend {
     async getWorkList() {
         try {
             const response = await axiosInstance.get(`/worklist/search/findToDo`);
+
+            if(!response.data) return null;
+            if(!response.data._embedded) return null;
             let mappedResult = response.data._embedded.worklist.map((task: any) => ({
                 defId: task.defId,
                 endpoint: task.endpoint,
@@ -269,6 +272,7 @@ class UEngineBackend implements Backend {
             }));
 
             return mappedResult;
+            
         } catch (e) {
             alert(e);
         }

@@ -12,15 +12,33 @@
                 <v-col class="cursor-pointer"
                     cols="12" md="2" sm="3"
                 >
-                    <v-card @click="addMegaProcess('add')"
-                        class="add-process-card-hover cp-add-mega"
-                        elevation="9" variant="outlined"
-                        style="padding: 10px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;"
-                    >
-                        <div style="display: flex; justify-content: center; align-items: center;">
-                            <Icon icon="streamline:add-1-solid" width="24" height="24" style="color: #5EB2E8" />
-                        </div>
-                    </v-card>
+                    <v-tooltip v-if="!processDialogStatus" text="Mega 프로세스 추가">
+                        <template v-slot:activator="{ props }">
+                            <v-card @click="openProcessDialog('add')"
+                                class="add-process-card-hover bg-lightwarning cp-add-mega"
+                                elevation="9" variant="outlined"
+                                v-bind="props"
+                                style="padding: 10px;
+                                    display: flex;
+                                    justify-content: center;
+                                    align-items: center;
+                                    border-radius: 10px !important;"
+                            >
+                                <div style="display: flex; justify-content: center; align-items: center;">
+                                    <Icon icon="streamline:add-1-solid" width="24" height="24" style="color: #5EB2E8" />
+                                </div>
+                            </v-card>
+                        </template>
+                    </v-tooltip>
+                    <ProcessDialog v-if="processDialogStatus"
+                        :enableEdit="enableEdit"
+                        :process="value"
+                        :definitions="definitions"
+                        :processType="processType"
+                        :type="'map'"
+                        @add="addProcess"
+                        @closeProcessDialog="closeProcessDialog"
+                    />
                 </v-col>
             </transition-group>
         </draggable>
@@ -31,15 +49,13 @@
                     @click="viewProcessDetail(item)" />
             </v-col>
         </v-row>
-        <ProcessDialog :enableEdit="enableEdit" :process="value" :processDialogStatus="processDialogStatus"
-            :definitions="definitions" :processType="processType" :type="'map'" @add="addProcess"
-            @closeProcessDialog="closeProcessDialog" />
     </div>
 </template>
 
 <script>
 import MegaProcess from './MegaProcess.vue';
 import ProcessDialog from './ProcessDialog.vue';
+import BaseProcess from './BaseProcess.vue'
 
 
 export default {
@@ -47,6 +63,7 @@ export default {
         MegaProcess,
         ProcessDialog
     },
+    mixins:[BaseProcess],
     props: {
         value: Object,
         storage: Object,
@@ -56,31 +73,27 @@ export default {
     },
     data: () => ({
         processType: '',
-        processDialogStatus: false,
+        processRenderer: 0
     }),
     methods: {
         viewProcess(process) {
             this.$router.push(`/definition-map/sub/${process.id}`)
         },
         viewProcessDetail(process) {
-            this.$router.push(`/definition-map/mega/${process.id}`)
-        },
-        addMegaProcess(processType) {
-            this.processType = processType;
-            this.processDialogStatus = true;
+            this.$router.push(`/definition-map/mega/${process.label}`)
         },
         addProcess(newProcess) {
+            let id = 0;
+            if(this.value.mega_proc_list.length != 0) {
+                id = this.value.mega_proc_list[this.value.mega_proc_list.length - 1].id +1
+            }
             var newMegaProc = {
-                id: newProcess.id,
+                id: id,
                 label: newProcess.label,
                 major_proc_list: [],
             };
             this.value.mega_proc_list.push(newMegaProc);
-            this.processDialogStatus = false;
-        },
-        closeProcessDialog() {
-            this.processDialogStatus = false;
-        },
+        }
     },
 }
 </script>

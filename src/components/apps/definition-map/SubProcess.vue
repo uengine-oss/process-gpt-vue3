@@ -1,38 +1,56 @@
 <template>
-    <div class="d-flex align-center px-3 cursor-pointer sub-process-hover sub-process-style"
-        @click="viewProcess"
+    <div class="align-center pa-2 cursor-pointer sub-process-hover sub-process-style"
     >
-        <h6 class="text-subtitle-2 font-weight-semibold">
-            {{ value.label }}
+        <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-2 font-weight-semibold">
+            <v-row class="ma-0 pa-0">
+                <v-col cols="6" class="ma-0 pa-0 text-left">
+                    <div>{{ value.label }}</div>
+                </v-col>
+                <v-col cols="6" class="ma-0 pa-0">
+                <div class="ml-auto add-sub-process">
+                    <ProcessMenu
+                        :size="16"
+                        :type="type"
+                        :process="value"
+                        :storage="storage"
+                        :enableEdit="enableEdit"
+                        @delete="deleteProcess"
+                        @editProcessdialog="editProcessdialog"
+                        @modeling="editProcessModel"
+                    />
+                </div>
+                </v-col>
+            </v-row>
         </h6>
-        <div class="ml-auto">
-            <ProcessMenu
-                :size="12"
-                :type="type"
-                :process="value"
-                :storage="storage"
-                :enableEdit="enableEdit"
-                :enableExecution="enableExecution"
-                @edit="editProcess"
-                @delete="deleteProcess"
-                @modeling="editProcessModel"
-            />
-        </div>
+        <ProcessDialog v-else-if="processDialogStatus && enableEdit && processType === 'update'"
+            :enableEdit="enableEdit"
+            :process="value"
+            :processDialogStatus="processDialogStatus"
+            :processType="processType"
+            :storage="storage"
+            :type="type"
+            @edit="editProcess"
+            @closeProcessDialog="closeProcessDialog"
+        />
     </div>
 </template>
 
 <script>
 import ProcessMenu from './ProcessMenu.vue';
+import ProcessDialog from './ProcessDialog.vue'
+import BaseProcess from './BaseProcess.vue';
+
 
 export default {
     components: {
         ProcessMenu,
+        ProcessDialog
     },
+    mixins: [BaseProcess],
     props: {
         value: Object,
         parent: Object,
         storage: Object,
-        userInfo: Object,
         enableEdit: Boolean,
         enableExecution: Boolean
     },
@@ -44,19 +62,15 @@ export default {
         this.definition = await this.storage.getObject(`proc_def/${this.value.id}`, {key: 'id'})
     },
     methods: {
-        editProcess(process) {
-            this.value.id = process.id;
-            this.value.label = process.label;
-        },
         deleteProcess() {
             this.parent.sub_proc_list = this.parent.sub_proc_list.filter(item => item.id != this.value.id);
         },
         editProcessModel() {
+            let url;
             if (this.definition && this.definition.id) {
-                this.$router.push(`/definitions/${this.value.id}`);
-            } else {
-                this.$router.push(`/definitions/chat?id=${this.value.id}&name=${this.value.label}`);
+                url = `/definitions/${this.value.id}`;
             }
+            window.open(url, '_blank'); // '_blank'는 새 탭에서 열기
         },
         viewProcess() {
             this.$emit('view', this.value);
