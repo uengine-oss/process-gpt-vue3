@@ -11,11 +11,16 @@ import DynamicComponent from './DynamicComponent.vue';
 
 export default {
   props: {
+    // 폼 HTML 데이터를 전달시켜서 렌더링시키기 위해서
     formHTML: {
       type: String,
       default: '',
     }
   },
+
+  expose: [
+    "getUserInputedDatas"
+  ],
 
   watch: {
     formHTML() {
@@ -59,6 +64,23 @@ export default {
           this.componentRefs[vueRenderUUID] = app.componentRef;
         })
       });
+    },
+
+    /**
+     * 입력 요소에 대해서 유저가 입력한 데이터를 반환시키기 위해서
+     * {name1:value1, name2:value2}와 같이 반환됨(name1은 입력 태그의 name 속성이며, 고유한 속성임)
+     */
+    getUserInputedDatas() {
+      let userInputedDatas = {}
+
+      Object.keys(this.componentRefs).forEach(refKey => {
+        const component = this.componentRefs[refKey];
+        if (component.name && component.inputedValue !== undefined) {
+          userInputedDatas[component.name] = component.inputedValue;
+        }
+      });
+
+      return userInputedDatas
     }
   },
 
