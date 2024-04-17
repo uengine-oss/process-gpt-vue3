@@ -103,9 +103,9 @@ export default {
                 context: me,
                 action: async () => {
                     let back = BackendFactory.createBackend();
-                    let result = await back.getWorkList()
+                    let worklist = await back.getWorkList()
 
-                    let mappedResult = result._embedded.worklist.map(task => ({
+                    let mappedResult = worklist.map(task => ({
                         defId: task.defId,
                         endpoint: task.endpoint,
                         instId: task.instId,

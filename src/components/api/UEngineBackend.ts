@@ -254,7 +254,10 @@ class UEngineBackend implements Backend {
     async getWorkList() {
         try {
             const response = await axiosInstance.get(`/worklist/search/findToDo`);
-            return response.data;
+
+            if(!response.data) return null;
+            if(!response.data._embedded) return null;
+            return response.data._embedded.worklist;
         } catch (e) {
             alert(e);
         }
