@@ -4,9 +4,9 @@
         <div v-for="(item, index) in localItems" :key="index">
             <div v-for="(value, key) in item" :key="key">
                 <v-checkbox
-                    v-model="inputedValue"
+                    v-model="selectedKeys"
                     :label="`${key}(${value})`"
-                    :value="value"
+                    :value="key"
                 ></v-checkbox>
             </div>
         </div>
@@ -16,12 +16,6 @@
 <script>
 
 export default {
-    components: {
-       
-    },
-    mixins: [
-        
-    ],
     props: {
         vueRenderUUID: String,
         tagName: String,
@@ -29,6 +23,7 @@ export default {
         alias: String,
         items: String
     },
+
     computed: {
         label() {
             if(this.localAlias && this.localName) return `${this.localAlias}(${this.localName})`
@@ -37,14 +32,20 @@ export default {
             else return ""
         }
     },
+
     data() {
         return {
             localName: this.name,
             localAlias: this.alias,
             localItems: [],
-            inputedValue: []
+            
+            selectedKeys: [],
+            inputedValue: [],
+            initialValue: [],
+            onChange: () => {}
         };
     },
+
     created() {
         try {
             // 문자열로 형태로 items의 값이 전달되었을 경우, 리스트 형태로 변환해서 반영시키기 위해서
@@ -58,8 +59,16 @@ export default {
             console.error(e);
         }
     },
-    methods: {
- 
+
+    watch: {
+        initialValue() {
+            this.selectedKeys = this.initialValue.map(item => Object.keys(item)[0])
+        },
+
+        selectedKeys() {
+            this.inputedValue = this.selectedKeys.map(key => ({ [key]: this.localItems.find(item => Object.keys(item)[0] === key)[key] }))
+            this.onChange(this.inputedValue)
+        }
     }
 };
 </script>
