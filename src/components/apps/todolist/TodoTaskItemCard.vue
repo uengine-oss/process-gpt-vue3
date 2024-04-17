@@ -2,16 +2,18 @@
     <!-- ---------------------------------------------------- -->
     <!-- Table Basic -->
     <!-- ---------------------------------------------------- -->
-    <v-card elevation="10" class="mb-5 cursor-pointer" @dblclick="openDetail">
+    <v-card elevation="10" class="mb-5 cursor-pointer" @click="openDetail">
         <div class="d-flex align-center justify-space-between px-4 py-2 pr-3">
             <h5 class="text-subtitle-2 font-weight-semibold pr-4">
-                {{ task.activity_id }}
+                {{ task.title }}
             </h5>
-            <RouterLink to="" class="px-0 ">
+            
+            <!-- ProcessGPTBackend -->
+            <RouterLink to="" class="px-0">
                 <DotsVerticalIcon size="15" />
                 <v-menu activator="parent">
                     <v-list density="compact">
-                        <v-list-item @click="deleteTask(task)">
+                        <v-list-item @click="deleteTask">
                             <v-list-item-title >
                                 삭제
                             </v-list-item-title>
@@ -22,7 +24,7 @@
         </div>
 
         <p class="text-subtitle-2 px-4">
-            {{ instance ? instance.proc_inst_name : task.description }}
+            {{ task.description }}
         </p>
         
         <div class="d-flex align-center justify-space-between px-4 py-3">
@@ -41,7 +43,6 @@
             <TodoDialog 
                 :type="dialogType"
                 :task="task"
-                @edit="editTask"
                 @close="closeDialog"
             />
         </v-dialog>
@@ -58,74 +59,41 @@ export default {
         TodoDialog,
     },
     props: {
-        path: String,
-        userInfo: Object,
         task: Object,
-        storage: Object,
     },
-    emits: ['onDeleteTask'],
     data: () => ({
-        instance: null,
         dialog: false,
         dialogType: '',
     }),
     computed: {
         formattedDate() {
             var dateString = "";
-            if (this.task.start_date) {
-                dateString += format(new Date(this.task.start_date), "yyyy.MM.dd HH:mm") + " ~";
+            if (this.task.startDate) {
+                dateString += format(new Date(this.task.startDate), "yyyy.MM.dd HH:mm") + " ~";
             } 
-            if (this.task.end_date) {
+            if (this.task.dueDate) {
                 if (!dateString.includes("~")) dateString += "~ "
-                dateString += format(new Date(this.task.end_date), "yyyy.MM.dd HH:mm");
+                dateString += format(new Date(this.task.dueDate), "yyyy.MM.dd HH:mm");
             }
             return dateString;
         }
     },
     created() {
-        this.init();
     },
     methods: {
-        async init() {
-            if (this.task.proc_def_id) {
-                this.instance = await this.storage.getObject(`${this.task.proc_def_id}/${this.task.proc_inst_id}`, 
-                    {key: 'proc_inst_id'}
-                );
-            
-                if (this.instance) {
-                    var isUpdated = false
-                    if (!this.task.activity_id) {
-                        isUpdated = true
-                        this.task.activity_id = this.instance.current_activity_ids[0];
-                    }
-                    if (this.task.status == "IN_PROGRESS" && !this.task.start_date) {
-                        isUpdated = true
-                        this.task.start_date = this.task.end_date;
-                    }
-
-                    if (isUpdated) {
-                        await this.storage.putObject('todolist', this.task);
-                    }
-                }
-            }
-        },
         openDetail() {
-            if (this.task.proc_inst_id) {
-                this.$router.push(`/instances/chat?id=${this.task.proc_inst_id}`);
+            if (this.task.instId) {
+                this.$router.push(`/instances/chat?id=${this.task.instId}`);
             } else {
                 this.dialogType = 'view';
                 this.dialog = true;
             }
         },
-        deleteTask(task) {
-            this.$emit('onDeleteTask', task);
-        },
-        async editTask() {
-            await this.storage.putObject('todolist', this.task);
-            this.closeDialog();
-        },
         closeDialog() {
             this.dialog = false;
+        },
+        deleteTask() {
+            this.$emit('deleteTask', this.task);
         }
     },
 }
