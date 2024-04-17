@@ -11,18 +11,13 @@
 <script>
 
 export default {
-    components: {
-       
-    },
-    mixins: [
-        
-    ],
     props: {
         vueRenderUUID: String,
         tagName: String,
         name: String,
         alias: String
     },
+
     computed: {
         label() {
             if(this.localAlias && this.localName) return `${this.localAlias}(${this.localName})`
@@ -31,16 +26,18 @@ export default {
             else return ""
         }
     },
+
     data() {
         return {
             localName: this.name,
             localAlias: this.alias,
             selectedFiles: null,
-            inputedValue: ""
+            
+            inputedValue: "",
+            onChange: () => {}
         };
     },
-    created() {
-    },
+
     methods: {
         convertToBase64() {
             if (!this.selectedFiles && this.selectedFiles.length <= 0) return
@@ -48,6 +45,7 @@ export default {
             const reader = new FileReader();
             reader.onload = (e) => {
                 this.inputedValue = e.target.result
+                this.onChange(this.inputedValue)
             }
             reader.readAsDataURL(this.selectedFiles[0])
         }
