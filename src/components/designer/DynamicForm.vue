@@ -5,6 +5,17 @@
 </template>
 
 <script>
+/**
+ * formHTML: HTML 폼 데이터를 전달해서 렌더링하기 위해서
+ * v-model: 이 값을 세팅해서 입력 요소에 값을 세팅하거나 받을 수 있음
+ *    {"name1":"value1", "name2":{'key1':'value1'}} 과 같이 전달되며, "name1"은 해당 태그의 name 속성 값임(name은 고유하다고 가정)
+ *    text-field: Read("value1" 과 같이 문자열 값) / Write("value1"과 같은 문자열 값) 
+ *    select-field: Read({'key1':'value1'} 과 같은 선택된 객체의 값) / Write({'key1':'value1'}과 같은 선택 목록 객체 값)
+ *    checkbox-field: Read([{'key1':'value1'}, {'key2':'value2'}] 와 같이 체크된 항목의 객체 값들을 담은 리스트) / Write(Read와 동일)
+ *    radio-field: Read({'key1':'value1'} 과 같은 선택된 객체의 값) / Write(Read와 동일)
+ *    file-field: Read(선택된 파일의 Base64 URL 주소) / Write(지원하지 않음)
+ *    label-field: Read(지원하지 않음) / Write(지원하지 않음)
+ */
 import { createApp } from 'vue';
 import vuetify from "@/plugins/vuetify";
 import DynamicComponent from './DynamicComponent.vue';
