@@ -144,17 +144,11 @@ class ProcessGPTBackend implements Backend {
 
     async getWorkList() {
         try {
-            const todolist: any[] = [
-                { id: 'TODO', title: 'Todo', cardbg: 'background', tasks: [] },
-                { id: 'IN_PROGRESS', title: 'In Progress', cardbg: 'lightsecondary', tasks: [] },
-                { id: 'PENDING', title: 'Pending', cardbg: 'lightinfo', tasks: [] },
-                { id: 'DONE', title: 'Done', cardbg: 'lightsuccess', tasks: [] }
-            ];
-    
+            const worklist: any[] = [];
             const email = localStorage.getItem("email");
             const options = { match: { user_id: email } };
     
-            const updateTodoList = async (list: any[]) => {
+            const formattedWorklist = async (list: any[]) => {
                 for (const item of list) {
                     if (item.user_id === email) {
                         const workItem: any = {
@@ -179,35 +173,47 @@ class ProcessGPTBackend implements Backend {
                                 workItem.description = data.proc_inst_name;
                             }
                         }
-                        const statusIndex = todolist.findIndex(t => t.id === item.status);
-                        if (statusIndex !== -1) {
-                            todolist[statusIndex].tasks.push(workItem);
-                        }
+                        worklist.push(workItem);
                     }
                 }
             };
     
             const list = await storage.list('todolist', options);
             if (list && list.length > 0) {
-                await updateTodoList(list);
+                await formattedWorklist(list);
             }
     
-            return todolist;
+            return worklist;
         } catch (error) {
             throw new Error('error in getWorkList');
         }
     }
+    
+    async putWorkItem(taskId: string, workItem: any) {
+        const putObj = {
+            id: taskId,
+            proc_def_id: workItem.defId,
+            user_id: workItem.endpoint,
+            proc_inst_id: workItem.instId,
+            start_date: workItem.startDate,
+            end_date: workItem.dueDate,
+            status: workItem.status,
+            activity_id: workItem.title,
+        }
+        await storage.putObject('todolist', putObj);
+    }
+
     async getProcessDefinitionMap() {
         const procMap = await storage.getObject('configuration/proc_map', { key: 'key' });
         if (procMap && procMap.value) {
             return procMap.value;
         }
-        // return await storage.getObject('proc_map', { key: 'key' });
     }
+
     async putProcessDefinitionMap(definitionMap: any) {
         const putObj = {
-                key: 'proc_map',
-                value: definitionMap
+            key: 'proc_map',
+            value: definitionMap
         }
         await storage.putObject('configuration', putObj);
     }
@@ -282,10 +288,6 @@ class ProcessGPTBackend implements Backend {
     }
 
     async serviceMessage(requestPath: string): Promise<any> {
-        throw new Error("Method not implemented.");
-    }
-
-    async putWorkItem(taskId: string, workItem: any): Promise<any> {
         throw new Error("Method not implemented.");
     }
 

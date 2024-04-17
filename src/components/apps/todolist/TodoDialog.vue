@@ -69,8 +69,7 @@
 import { format } from 'date-fns';
 
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
-const storage = StorageBaseFactory.getStorage();
-const storageKey = 'todolist'
+import BackendFactory from "@/components/api/BackendFactory";
 
 export default {
     props: {
@@ -79,9 +78,9 @@ export default {
         todolist: Array,
     },
     data: () => ({
-        userInfo: {},
         newTask: {
             taskId: '',
+            endpoint: '',
             title: '',
             description: '',
             status: 'TODO',
@@ -95,6 +94,7 @@ export default {
         } else {
             this.newTask = {
                 taskId: '',
+                endpoint: '',
                 title: '',
                 description: '',
                 status: 'TODO',
@@ -102,15 +102,20 @@ export default {
                 dueDate: null,
             };
         }
-        this.userInfo = await storage.getUserInfo();
     },
     methods: {
         close() {
             this.$emit('close')
         },
         async save() {
+            const backend = BackendFactory.createBackend();
+
             if (!this.newTask.taskId) {
                 this.newTask.taskId = this.uuid();
+            }
+            if (!this.newTask.endpoint) {
+                const email = localStorage.getItem('email');
+                this.newTask.endpoint = email;
             }
             if (this.todolist && this.todolist.length > 0) {
                 const statusIndex = this.todolist.findIndex(t => t.id === this.newTask.status);
@@ -118,16 +123,7 @@ export default {
                     this.todolist[statusIndex].tasks.push(this.newTask);
                 }
             }
-            const putObj = {
-                id: this.newTask.taskId,
-                user_id: this.userInfo.email,
-                activity_id: this.newTask.title,
-                description: this.newTask.description,
-                status: this.newTask.status,
-                start_date: this.newTask.startDate,
-                end_date: this.newTask.dueDate,
-            }
-            await storage.putObject(storageKey, putObj);
+            await backend.putWorklist(this.newTask.taskId, this.newTask);
             this.close();
         },
         uuid() {
@@ -141,6 +137,8 @@ export default {
         },
         
         async addNewSchedule(task) {
+            const storage = StorageBaseFactory.getStorage();
+
             const uid = localStorage.getItem('uid');
             const year_month = format(new Date(task.start_date), "yyyy_MM");
             const schedule = await storage.getObject(`calendar/${uid}`, {key: 'uid'});
@@ -179,10 +177,13 @@ export default {
             this.sendNotification(task);
         },
         async sendNotification(data) {
+            const storage = StorageBaseFactory.getStorage();
+            const userInfo = await storage.getUserInfo();
+
             const options = {
                 match: {
-                    id: this.userInfo.uid,
-                    email: this.userInfo.email,
+                    id: userInfo.uid,
+                    email: userInfo.email,
                 }
             };
             const result = await storage.getObject('users', options);
@@ -198,7 +199,7 @@ export default {
             notifications.push(noti);
 
             const obj = {
-                id: this.userInfo.uid,
+                id: userInfo.uid,
                 notifications: notifications,
             };
             storage.putObject('users', obj);
