@@ -2,19 +2,20 @@
     <!-- ---------------------------------------------------- -->
     <!-- Table Basic -->
     <!-- ---------------------------------------------------- -->
-    <v-card elevation="10" class="mb-5 cursor-pointer" @dblclick="openDetail">
+    <v-card elevation="10" class="mb-5 cursor-pointer" @click="executeTask()">
         <div class="d-flex align-center justify-space-between px-4 py-2 pr-3">
             <h5 class="text-subtitle-2 font-weight-semibold pr-4">
-                {{ task.activity_id }}
+                {{ task.title }}(TaskId: {{ task.taskId }}/InstId: {{task.instId}})
             </h5>
             <RouterLink to="" class="px-0 ">
                 <DotsVerticalIcon size="15" />
                 <v-menu activator="parent">
                     <v-list density="compact">
-                        <v-list-item @click="deleteTask(task)">
-                            <v-list-item-title >
-                                삭제
-                            </v-list-item-title>
+                        <v-list-item @click="deleteTask()">
+                            <v-list-item-title>삭제</v-list-item-title>
+                        </v-list-item>
+                        <v-list-item @click="openDetail()">
+                            <v-list-item-title>상세보기</v-list-item-title>
                         </v-list-item>
                     </v-list>
                 </v-menu>
@@ -22,7 +23,7 @@
         </div>
 
         <p class="text-subtitle-2 px-4">
-            {{ instance ? instance.proc_inst_name : task.description }}
+            {{ task.description }}
         </p>
         
         <div class="d-flex align-center justify-space-between px-4 py-3">
@@ -50,9 +51,22 @@
 
 <script>
 import { format } from 'date-fns';
-
 import TodoDialog from './TodoDialog.vue'
-
+/*
+task: {
+    "defId": "sales/testProcess.xml",
+    "endpoint": "manager",      
+    "instId": 9,                
+    "rootInstId": 9,     
+    "taskId": 10,     
+    "startDate": "2024-04-12",  
+    "dueDate": "2024-04-17", 
+    "status": "NEW",            
+    "title": "Task_b",
+    "description": "",  
+    "tool": "defaultHandler","formHandler:definitionId"  
+}
+*/
 export default {
     components: {
         TodoDialog,
@@ -72,12 +86,12 @@ export default {
     computed: {
         formattedDate() {
             var dateString = "";
-            if (this.task.start_date) {
-                dateString += format(new Date(this.task.start_date), "yyyy.MM.dd HH:mm") + " ~";
+            if (this.task.startDate) {
+                dateString += format(new Date(this.task.startDate), "yyyy.MM.dd HH:mm") + " ~";
             } 
-            if (this.task.end_date) {
+            if (this.task.dueDate) {
                 if (!dateString.includes("~")) dateString += "~ "
-                dateString += format(new Date(this.task.end_date), "yyyy.MM.dd HH:mm");
+                dateString += format(new Date(this.task.dueDate), "yyyy.MM.dd HH:mm");
             }
             return dateString;
         }
@@ -109,6 +123,9 @@ export default {
                 }
             }
         },
+        executeTask(){
+            this.$emit('executeTask', this.task)
+        },
         openDetail() {
             if (this.task.proc_inst_id) {
                 this.$router.push(`/instances/chat?id=${this.task.proc_inst_id}`);
@@ -117,8 +134,8 @@ export default {
                 this.dialog = true;
             }
         },
-        deleteTask(task) {
-            this.$emit('onDeleteTask', task);
+        deleteTask() {
+            this.$emit('onDeleteTask', this.task);
         },
         async editTask() {
             await this.storage.putObject('todolist', this.task);

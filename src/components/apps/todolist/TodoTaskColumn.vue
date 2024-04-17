@@ -24,6 +24,7 @@
                             :userInfo="userInfo" 
                             :storage="storage"
                             @onDeleteTask="deleteTask" 
+                            @executeTask="executeTask"
                             ref="taskCard" 
                         />
                     </div>
@@ -40,6 +41,7 @@
                         :userInfo="userInfo" 
                         :storage="storage" 
                         @onDeleteTask="deleteTask" 
+                        @executeTask="executeTask"
                     />
                 </div>
             </div>
@@ -73,6 +75,9 @@ export default {
         deleteTask(task) {
             this.column.tasks = this.column.tasks.filter((item) => item.id !== task.id);
             this.storage.delete(`todolist/${task.id}`, {key: 'id'});
+        },
+        executeTask(task){
+            this.$emit('executeTask', task)
         }
     }
 }

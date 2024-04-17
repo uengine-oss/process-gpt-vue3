@@ -21,7 +21,7 @@
                     sm="6" 
                     class="d-flex" 
                 >
-                    <TodoTaskColumn :column="column" :path="path" :userInfo="userInfo" :storage="storage" />
+                    <TodoTaskColumn :column="column" :path="path" :userInfo="userInfo" :storage="storage" @executeTask="executeTask" />
                 </v-col>
             </v-row>
         </div>
@@ -42,6 +42,7 @@ import { format } from 'date-fns';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import TodoDialog from './TodoDialog.vue';
 import TodoTaskColumn from './TodoTaskColumn.vue';
+import BackendFactory from '@/components/api/BackendFactory';
 
 export default {
     components: {
@@ -83,14 +84,53 @@ export default {
     async created() {
         this.storage = StorageBaseFactory.getStorage();
         this.userInfo = await this.storage.getUserInfo();
-        
-        this.getTodolist();
+
+        // this.getTodolist();
+        this.loadToDo();
     },
     async mounted() {
         var me = this;
         await this.storage.watch(me.path, me.getTodolist);
     },
     methods:{
+        executeTask(item){
+            var me = this
+            me.$router.push(`/todolist/${item.taskId}`)
+        },
+        loadToDo(){
+            var me = this
+            me.$try({
+                context: me,
+                action: async () => {
+                    let back = BackendFactory.createBackend();
+                    let result = await back.getWorkList()
+
+                    let mappedResult = result._embedded.worklist.map(task => ({
+                        defId: task.defId,
+                        endpoint: task.endpoint,
+                        instId: task.instId,
+                        rootInstId: task.rootInstId,
+                        taskId: parseInt(task._links.self.href.split('/').pop()),
+                        startDate: task.startDate,
+                        dueDate: task.dueDate,
+                        status: task.status,
+                        title: task.title,
+                        tool: task.tool,
+                        description: task.description || "" // description이 null일 경우 빈 문자열로 처리
+                    }));
+                    me.todolist.find(x => x.id == 'TODO').tasks.push(...mappedResult);
+                }
+            })
+        },
+        loadWorkItemByInstId(instId){
+            const todoTasks = this.todolist.find(item => item.id === 'TODO').tasks;
+            const instanceIds = todoTasks.map(task => task.instId);
+            if(instanceIds.length == 0 ) return;
+            
+            
+            
+       
+        },
         async getTodolist() {
             if (this.userInfo && this.userInfo.email) {
                 const list = await this.storage.list(this.path);
