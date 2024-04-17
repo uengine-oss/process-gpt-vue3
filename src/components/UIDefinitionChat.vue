@@ -71,11 +71,11 @@ export default {
         isShowMashup: false
     }),
     async created() {
-        await this.init();
         this.generator = new ChatGenerator(this, {
             isStream: true,
             preferredLanguage: 'Korean'
         });
+        await this.init();
     },
     watch: {
         /**

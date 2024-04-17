@@ -37,14 +37,14 @@ import vuetify from "@/plugins/vuetify";
 import ChatModule from "@/components/ChatModule.vue";
 import FormDefinitionPanel from '@/components/designer/modeling/FormDefinitionPanel.vue';
 import FormDesignSavePanel from '@/components/designer/FormDesignSavePanel.vue';
-import DynamicForm from './DynamicForm.vue';
+import DynamicComponent from './DynamicComponent.vue';
 
 export default {
   name: 'mash-up',
 
   mixins: [ChatModule],
   components: {
-    DynamicForm,
+    DynamicComponent,
     FormDefinitionPanel,
     FormDesignSavePanel
   },
@@ -305,7 +305,7 @@ export default {
       onContentChanged: function (event, snippetContent, vueRenderUUID) {  
         if(vueRenderUUID && vueRenderUUID.includes("vuemount_"))
         {
-          const app = createApp(DynamicForm, {content:snippetContent, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
+          const app = createApp(DynamicComponent, {content:snippetContent, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
           window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
         }
           
@@ -397,7 +397,7 @@ export default {
 
       doc.querySelectorAll("div[id^='vuemount_']").forEach(vueRenderElement => {
         const vueRenderUUID = vueRenderElement.id
-        const app = createApp(DynamicForm, {content:vueRenderElement.innerHTML, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
+        const app = createApp(DynamicComponent, {content:vueRenderElement.innerHTML, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
         window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
       })
     }
