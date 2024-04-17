@@ -13,18 +13,13 @@
 <script>
 
 export default {
-    components: {
-       
-    },
-    mixins: [
-        
-    ],
     props: {
         vueRenderUUID: String,
         tagName: String,
         name: String,
         alias: String
     },
+
     computed: {
         label() {
             if(this.localAlias && this.localName) return `${this.localAlias}(${this.localName})`
@@ -33,17 +28,20 @@ export default {
             else return ""
         }
     },
+    
     data() {
         return {
             localName: this.name,
             localAlias: this.alias,
-            inputedValue: ""
+            inputedValue: "",
+            initialValue: ""
         };
     },
-    created() {
-    },
-    methods: {
-        
+
+    watch: {
+        initialValue() {
+            this.inputedValue = this.initialValue
+        }
     }
 };
 </script>

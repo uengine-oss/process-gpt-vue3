@@ -19,7 +19,8 @@ export default {
   },
 
   expose: [
-    "getUserInputedDatas"
+    "getUserInputedDatas",
+    "setUserInputedDatas"
   ],
 
   watch: {
@@ -81,6 +82,24 @@ export default {
       });
 
       return userInputedDatas
+    },
+
+    /**
+     * 입력 요소에 자동으로 값을 입력시키기 위해서
+     * {name1:value1, name2:value2}와 같이 전달할 것(name1은 입력 태그의 name 속성이며, 고유한 속성임)
+     * [!] 만약, 해당 키를 이름으로 가진 속성이 없을 경우, 그 키는 무시됨
+     */
+    setUserInputedDatas(userInputedDatas) {
+      Object.keys(userInputedDatas).forEach(key => {
+        // this.componentRefs를 순환하면서 name 속성이 key와 동일한 componentRef를 찾는다.
+        // 찾았을 경우, 그 Ref의 initialValue의 값을 userInputedDatas[key]의 값으로 세팅한다.
+        Object.keys(this.componentRefs).forEach(refKey => {
+          const component = this.componentRefs[refKey];
+          if (component.name === key) {
+            component.initialValue = userInputedDatas[key];
+          }
+        });
+      });
     }
   },
 
