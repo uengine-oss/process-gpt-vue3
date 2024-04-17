@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-text-field v-model="inputedValue">
+        <v-text-field v-model="inputedValue" @change="onChange">
             <template v-slot:label>
                 <span style="color:black;">
                     {{label}}
@@ -33,8 +33,10 @@ export default {
         return {
             localName: this.name,
             localAlias: this.alias,
+
             inputedValue: "",
-            initialValue: ""
+            initialValue: "",
+            onChange: () => {}
         };
     },
 

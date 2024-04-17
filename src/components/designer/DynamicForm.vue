@@ -15,21 +15,20 @@ export default {
     formHTML: {
       type: String,
       default: '',
-    }
+    },
+    modelValue: Object
   },
-
-  emits: [
-    "onClickSubmit"
-  ],
-
-  expose: [
-    "getUserInputedDatas",
-    "setUserInputedDatas"
-  ],
 
   watch: {
     formHTML() {
       this.renderVueComponents()
+    },
+
+    modelValue: {
+      handler() {
+        this.setUserInputedDatas(this.modelValue)
+      },
+      immediate: true
     }
   },
 
@@ -68,14 +67,15 @@ export default {
           const app = createApp(DynamicComponent, {content:vueRenderElement.innerHTML, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
           this.componentRefs[vueRenderUUID] = app.componentRef;
 
-          if(app.componentRef.onClickSubmit) {
-            app.componentRef.onClickSubmit = () => {
-              this.$emit('onClickSubmit', this.getUserInputedDatas());
+          if(app.componentRef.onChange) {
+            app.componentRef.onChange = () => {
+              this.$emit('update:modelValue', this.getUserInputedDatas())
             }
           }
         })
       });
     },
+
 
     /**
      * 입력 요소에 대해서 유저가 입력한 데이터를 반환시키기 위해서
@@ -101,8 +101,6 @@ export default {
      */
     setUserInputedDatas(userInputedDatas) {
       Object.keys(userInputedDatas).forEach(key => {
-        // this.componentRefs를 순환하면서 name 속성이 key와 동일한 componentRef를 찾는다.
-        // 찾았을 경우, 그 Ref의 initialValue의 값을 userInputedDatas[key]의 값으로 세팅한다.
         Object.keys(this.componentRefs).forEach(refKey => {
           const component = this.componentRefs[refKey];
           if (component.name === key) {
