@@ -80,20 +80,8 @@ export default {
                     let back = BackendFactory.createBackend();
                     let result = await back.getWorkList()
 
-                    let mappedResult = result.map(task => ({
-                        defId: task.defId,
-                        endpoint: task.endpoint,
-                        instId: task.instId,
-                        rootInstId: task.rootInstId,
-                        taskId: parseInt(task._links.self.href.split('/').pop()),
-                        startDate: task.startDate,
-                        dueDate: task.dueDate,
-                        status: task.status,
-                        title: task.title,
-                        tool: task.tool,
-                        description: task.description || "" // description이 null일 경우 빈 문자열로 처리
-                    }));
-                    me.todolist.find(x => x.id == 'TODO').tasks.push(...mappedResult);
+
+                    me.todolist.find(x => x.id == 'TODO').tasks.push(...result);
                 }
             })
         },
