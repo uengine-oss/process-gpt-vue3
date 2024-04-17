@@ -152,7 +152,7 @@ export default {
 
         this.processPath = this.$route.params.id;
         if (this.parent && this.parent.mega_proc_list && this.parent.mega_proc_list.length > 0) {
-            this.filteredProcess = this.parent.mega_proc_list.find(process => process.id === this.processPath);
+            this.filteredProcess = this.parent.mega_proc_list.find(process => process.label === this.processPath);
         }
     },
     computed: {
@@ -186,7 +186,7 @@ export default {
         },
         parent(newVal) {
             if (newVal && newVal.mega_proc_list && newVal.mega_proc_list.length > 0) {
-                this.filteredProcess = newVal.mega_proc_list.find(process => process.id === this.processPath);
+                this.filteredProcess = newVal.mega_proc_list.find(process => process.label === this.processPath);
             }
         },
     },
@@ -205,7 +205,7 @@ export default {
             } else if (type === 'major') {
                 // 'major' 프로세스에 'sub' 프로세스 추가
                 // selectedProcessId를 사용하여 현재 선택된 'major' 프로세스를 찾습니다.
-                const majorProc = this.filteredProcess.major_proc_list.find(major => major.id === selectedProcessId);
+                const majorProc = this.filteredProcess.major_proc_list.find(major => major.label === selectedProcessId);
                 if (majorProc) {
                     if (!majorProc.sub_proc_list) {
                         majorProc.sub_proc_list = [];

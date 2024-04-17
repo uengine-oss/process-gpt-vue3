@@ -6,10 +6,21 @@ hr {
     opacity: 1 !important;
 }
 
+.proc-menu-btn-box button {
+    margin-right:3px;
+    cursor: pointer;
+    background: none;
+    width:20px !important;
+    height:20px !important;
+}
 
 .vue-bpmn-diagram-container {
     height: 100%;
     width: 100%;
+}
+
+.edit-process-text-field .v-input__details{
+    display: none;
 }
 
 .highlight:not(.djs-connection) .djs-visual> :nth-child(1) {

@@ -1,63 +1,50 @@
 <template>
     <div>
-        <div class="d-flex">
-            <v-btn v-if="enableEdit" icon variant="text" :width="size" :height="size">
-                <!-- <PlusIcon v-if="type == 'map'" :size="size" /> -->
-                <DotsVerticalIcon v-if="type != 'map'" :size="size" />
-                <v-menu activator="parent">
-                    <v-list density="compact" class="cursor-pointer">
-                        <v-list-item @click="editProcess">
-                            <v-list-item-title>
-                                프로세스 실행
-                            </v-list-item-title>
-                        </v-list-item>
-                        <v-list-item v-if="type != 'sub'" @click="openDialog('add')">
-                            <v-list-item-title class="cp-process">
-                                <span v-if="addType != 'sub'">{{ addType.toUpperCase() }}</span> 프로세스 추가
-                            </v-list-item-title>
-                        </v-list-item>
-                        <v-list-item v-else @click="editProcess">
-                            <v-list-item-title>
-                                프로세스 편집
-                            </v-list-item-title>
-                        </v-list-item>
-                        <v-list-item v-if="type != 'map'" @click="openDialog('update')">
-                            <v-list-item-title>
-                                수정
-                            </v-list-item-title>
-                        </v-list-item>
-                        <v-list-item v-if="type != 'map'" @click="deleteProcess">
-                            <v-list-item-title>
-                                삭제
-                            </v-list-item-title>
-                        </v-list-item>
-                        <v-list-item class="cp-mega-datail" v-if="type == 'mega'"
-                            @click="openViewProcessDetails(process)">
-                            <v-list-item-title>
-                                상세보기
-                            </v-list-item-title>
-                        </v-list-item>
-                    </v-list>
-                </v-menu>
-            </v-btn>
-            <v-btn v-else-if="enableExecution" icon variant="text" :width="size" :height="size">
-                <!-- <PlusIcon v-if="type == 'map'" :size="size" /> -->
-                <DotsVerticalIcon v-if="type != 'map'" :size="size" />
-                <v-menu activator="parent">
-                    <v-list density="compact" class="cursor-pointer">
-                        <v-list-item @click="executeProcessDialog">
-                            <v-list-item-title>
-                                프로세스 실행
-                            </v-list-item-title>
-                        </v-list-item>
-                    </v-list>
-                </v-menu>
-            </v-btn>
-        </div>
-
-        <ProcessDialog :enableEdit="enableEdit" :process="process" :processDialogStatus="processDialogStatus"
-            :definitions="definitions" :processType="processType" :type="type" @add="addProcess" @edit="updateProcess"
-            @closeProcessDialog="closeProcessDialog" />
+        <v-row class="ma-0 pa-0">
+            <v-spacer></v-spacer>
+            <div v-if="enableEdit" class="proc-menu-btn-box">
+                <v-tooltip v-if="type == 'sub'" text="프로세스 편집">
+                    <template v-slot:activator="{ props }">
+                        <v-btn @click="editProcess"
+                            icon v-bind="props"
+                            density="compact"
+                            size="small"
+                        >
+                            <Icon icon="tabler:pencil-cog" width="16" height="16" />
+                        </v-btn>
+                    </template>
+                </v-tooltip>
+                <v-tooltip v-if="type != 'map'" text="수정">
+                    <template v-slot:activator="{ props }">
+                        <v-btn @click="openEditDialog('update')"
+                            icon v-bind="props"
+                            density="compact"
+                            size="small"
+                        >
+                            <Icon icon="oi:pencil" />
+                        </v-btn>
+                    </template>
+                </v-tooltip>
+                <v-tooltip v-if="type != 'map'" text="삭제">
+                    <template v-slot:activator="{ props }">
+                        <v-btn @click="deleteProcess"
+                            icon v-bind="props"
+                            density="compact"
+                            size="small"
+                        >
+                            <Icon icon="el:trash" />
+                        </v-btn>
+                    </template>
+                </v-tooltip>
+            </div>
+            <!-- <div v-else-if="enableExecution" icon variant="text" :width="size" :height="size">
+                <v-list density="compact" class="cursor-pointer">
+                    <v-btn @click="executeProcessDialog">
+                            프로세스 실행
+                    </v-btn>
+                </v-list>
+            </div> -->
+        </v-row>
     </div>
 </template>
 
@@ -75,7 +62,7 @@ export default {
         size: Number,
         type: String,
         process: Object,
-        storage: Object,
+        // storage: Object,
         enableEdit: Boolean,
         enableExecution: Boolean,
     },
@@ -85,10 +72,9 @@ export default {
             id: "",
             label: ""
         },
-        definitions: null,
         processDialogStatus: false,
         processType: "",
-        executeProcessDialog: false
+        // executeProcessDialog: false
     }),
     computed: {
         addType() {
@@ -104,45 +90,22 @@ export default {
     watch: {
     },
     created() {
-        this.init();
     },
     methods: {
-        async init() {
-            if (this.addType == 'sub') {
-                const list = await this.storage.list(`proc_def`);
-                if (list && list.length > 0) {
-                    this.definitions = list;
-                } else {
-                    this.definitions = null;
-                }
-            }
-        },
-        executeProcessDialog() {
-            this.executeProcessDialog = true;
-        },
+        // executeProcessDialog() {
+        //     this.executeProcessDialog = true;
+        // },
         openViewProcessDetails(process) {
             this.$router.push(`/definition-map/mega/${process.id}`);
         },
-        openDialog(processType) {
-            this.processType = processType;
-            this.processDialogStatus = true;
+        openEditDialog(processType) {
+            this.$emit('editProcessdialog', processType);
         },
         deleteProcess() {
             this.$emit("delete");
         },
         editProcess() {
             this.$emit("modeling");
-        },
-        addProcess(newProcess) {
-            this.$emit("add", newProcess);
-            this.processDialogStatus = false;
-        },
-        updateProcess(newProcess) {
-            this.$emit("edit", newProcess);
-            this.processDialogStatus = false;
-        },
-        closeProcessDialog() {
-            this.processDialogStatus = false;
         },
     },
 }
