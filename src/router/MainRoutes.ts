@@ -12,6 +12,11 @@ const MainRoutes = {
             component: () => import('@/components/apps/todolist/TodolistCard.vue'),
         },
         {
+            name: 'WorkItem',
+            path: '/todolist/:taskId',
+            component: () => import('@/components/apps/todolist/WorkItem.vue'),
+        },
+        {
             name: 'Chats',
             path: '/chats',
             component: () => import('@/views/apps/chat/Chats.vue')
@@ -50,6 +55,11 @@ const MainRoutes = {
         {
             name: 'ui-definitions',
             path: '/ui-definitions/chat',
+            component: () => import('@/components/UIDefinitionChat.vue'),
+        },
+        {
+            name: 'ui-definitions',
+            path: '/ui-definitions/:id',
             component: () => import('@/components/UIDefinitionChat.vue'),
         },
         {

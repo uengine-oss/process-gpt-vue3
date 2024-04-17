@@ -1,4 +1,4 @@
-interface Backend {
+export interface Backend {
     listDefinition(basePath: string): Promise<any>;
     listVersionDefinitions(version: string, basePath: string): Promise<any>;
     listVersions(): Promise<any>;
@@ -10,7 +10,7 @@ interface Backend {
     renameOrMove(definition: any, requestPath: string): Promise<any>;
     createFolder(newResource: any, requestPath: string): Promise<any>;
     deleteDefinition(requestPath: string): Promise<any>;
-    putRawDefinition(definition: any, requestPath: string): Promise<any>;
+    putRawDefinition(definition: any, requestPath: string, options: any): Promise<any>;
     start(command: any): Promise<any>;
     stop(instanceId: string): Promise<any>;
     suspend(instanceId: string): Promise<any>;
@@ -28,6 +28,8 @@ interface Backend {
     putWorkItem(taskId: string, workItem: any): Promise<any>;
     postMessage(instanceId: string, message: any): Promise<any>;
     getWorkList(): Promise<any>;
+    getProcessDefinitionMap(): Promise<any>;
+    putProcessDefinitionMap(definitionMap: any): Promise<any>;
 }
 
-export type { Backend }
+// export type { Backend }

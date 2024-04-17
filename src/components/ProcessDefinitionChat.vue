@@ -2,37 +2,30 @@
     <v-card elevation="10" style="background-color: rgba(255, 255, 255, 0)">
         <AppBaseCard>
             <template v-slot:leftpart>
-                <process-definition class="process-definition-resize"
-                    :bpmn="bpmn" :processDefinition="processDefinition" :key="definitionChangeCount"
-                    :isViewMode="isViewMode"
-                    :definitionChat="this"
-                    @update="updateDefinition"
-                ></process-definition>
-                <process-definition-version-dialog :process="processDefinition" :loading="loading" :open="versionDialog" @close="toggleVersionDialog" @save="saveDefinition"></process-definition-version-dialog>
-                <ProcessDefinitionVersionManager   :process="processDefinition" :open="verMangerDialog"  @close="toggleVerMangerDialog" @changeXML="changeXML"></ProcessDefinitionVersionManager>
+                <process-definition class="process-definition-resize" :bpmn="bpmn"
+                    :processDefinition="processDefinition" :key="definitionChangeCount" :isViewMode="isViewMode"
+                    :definitionChat="this" @update="updateDefinition"></process-definition>
+                <process-definition-version-dialog :process="processDefinition" :loading="loading" :open="versionDialog"
+                    @close="toggleVersionDialog" @save="saveDefinition"></process-definition-version-dialog>
+                <ProcessDefinitionVersionManager :process="processDefinition" :open="verMangerDialog"
+                    @close="toggleVerMangerDialog" @changeXML="changeXML"></ProcessDefinitionVersionManager>
             </template>
             <template v-slot:rightpart>
                 <div class="no-scrollbar">
                     <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :isChanged="true"
                         :userInfo="userInfo" :type="'definitions'" :lock="lock" :disableChat="disableChat"
-                        @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" 
-                        @stopMessage="stopMessage" @getMoreChat="getMoreChat"
-                        @loadBPMN="bpmn => loadBPMN(bpmn)"
-                        @openVerMangerDialog="toggleVerMangerDialog"
-                        @toggleLock="toggleLock"
-                    ></Chat>
+                        @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage"
+                        @stopMessage="stopMessage" @getMoreChat="getMoreChat" @loadBPMN="bpmn => loadBPMN(bpmn)"
+                        @openVerMangerDialog="toggleVerMangerDialog" @toggleLock="toggleLock"></Chat>
                 </div>
             </template>
 
             <template v-slot:mobileLeftContent>
                 <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :isChanged="isChanged"
                     :userInfo="userInfo" :type="'definitions'" :lock="lock" :disableChat="disableChat"
-                    @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage"
-                    @stopMessage="stopMessage" @getMoreChat="getMoreChat"
-                    @loadBPMN="bpmn => loadBPMN(bpmn)"
-                    @openVerMangerDialog="toggleVerMangerDialog"
-                    @toggleLock="toggleLock"
-                ></Chat>
+                    @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage"
+                    @getMoreChat="getMoreChat" @loadBPMN="bpmn => loadBPMN(bpmn)"
+                    @openVerMangerDialog="toggleVerMangerDialog" @toggleLock="toggleLock"></Chat>
             </template>
         </AppBaseCard>
     </v-card>
@@ -55,6 +48,9 @@ import * as jsondiff from 'jsondiffpatch';
 import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/ProcessDefinitionGenerator';
 import Chat from './ui/Chat.vue';
+
+import BackendFactory from "@/components/api/BackendFactory";
+const backend = BackendFactory.createBackend();
 
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
 var jsondiffpatch = jsondiff.create({
@@ -105,6 +101,7 @@ export default {
             isStream: true,
             preferredLanguage: 'Korean'
         });
+        console.log(this.generator)
     },
     mounted() {
         if (this.$route.query && this.$route.query.id) {
@@ -144,14 +141,14 @@ export default {
         // }
     },
     methods: {
-        toggleLock(){
+        toggleLock() {
             var me = this
             me.$try({
                 context: me,
                 action: async () => {
-                    if(me.lock){
+                    if (me.lock) {
                         // 잠금 > 수정가능 하도록
-                        if(me.processDefinition) await me.storage.putObject('lock', {
+                        if (me.processDefinition) await me.storage.putObject('lock', {
                             id: me.processDefinition.processDefinitionId,
                             user_id: me.userInfo.email
                         });
@@ -166,15 +163,15 @@ export default {
                 }
             })
         },
-        toggleVerMangerDialog(open){
+        toggleVerMangerDialog(open) {
             // Version Manager Dialog
             this.verMangerDialog = open
         },
-        toggleVersionDialog(open){
+        toggleVersionDialog(open) {
             // Version Dialog
             this.versionDialog = open
         },
-        saveDefinition(info){
+        saveDefinition(info) {
             var me = this
             me.$try({
                 context: me,
@@ -183,28 +180,42 @@ export default {
 
                     const store = useBpmnStore();
                     const modeler = store.getModeler;
-                    const xml = await modeler.saveXML({ format: true, preamble: true });
-                    await me.saveModel(info, xml.xml); 
+                    const xmlObj = await modeler.saveXML({ format: true, preamble: true });
 
-                    await me.storage.delete(`lock/${info.proc_def_id}`, {key: 'id'});
+                    if (me.processDefinition) {
+                        info.definition = me.processDefinition;
+                    } else if (!me.processDefinition && xmlObj && xmlObj.xml) {
+                        me.processDefinition = me.convertXMLToJSON(xmlObj.xml);
+                        info.definition = me.processDefinition;
+                    }
+
+                    // info.snapshot = xml.xml;
+                    // await backend.putRawDefinition(xml.xml, info.proc_def_id, info);
+                    await me.saveModel(info, xmlObj.xml);
+                    await me.storage.delete(`lock/${info.proc_def_id}`, { key: 'id' });
+                    me.bpmn = xmlObj.xml;
+
                     me.disableChat = true;
                     me.isViewMode = true;
                     me.lock = true // 잠금처리 ( 수정 불가 )
+                    me.definitionChangeCount++
+
+                    // 신규 프로세스 이동.
+                    if (!me.$route.params.id) me.$router.push(`/definitions/${info.proc_def_id}`);
 
                     me.loading = false
                     me.toggleVersionDialog(false)
-                    me.definitionChangeCount++
                 }
             })
-        
+
         },
-        changeXML(info){
+        changeXML(info) {
             var me = this
             me.$try({
                 context: me,
                 action: async () => {
-                    if(!info) return;
-                    if(!info.id) return;
+                    if (!info) return;
+                    if (!info.id) return;
 
                     await me.storage.putObject(`${me.path}`, {
                         id: info.id,
@@ -263,18 +274,17 @@ export default {
                 // lock
                 const lockObj = await this.getData(`lock/${this.$route.params.id}`, { key: 'id' });
                 if (lockObj && lockObj.id && lockObj.user_id && lockObj.user_id == this.userInfo.email) {
-                    this.lock = false; 
+                    this.lock = false;
                     this.disableChat = false;
                     this.isViewMode = false;
                 } else {
-                    this.lock = true; 
+                    this.lock = true;
                     this.disableChat = true;
                     this.isViewMode = true;
                 }
-            }
-            const value = await this.getData(path, { key: "id" });
-            if (value) {
-                if (this.$route.params && this.$route.params.id) {
+
+                const value = await this.getData(path, { key: "id" });
+                if (value) {
                     this.messages = value.messages
                     this.processDefinition = value.definition;
                     if (!this.processDefinition) {
@@ -297,7 +307,7 @@ export default {
         extractPropertyNameAndIndex(jsonPath) {
             let match
             match = jsonPath.match(/^\$\.(\w+)\[(\d+)\]$/);
-            if(!match){
+            if (!match) {
                 match = jsonPath.match(/^\$\.(\w+)\[\?(.*)\]$/)
                 return match ? { propertyName: match[1], index: match.index } : null;
             } else {
@@ -306,9 +316,9 @@ export default {
         },
         modificationAdd(modification) {
             let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath)
-            if(obj){
+            if (obj) {
                 this.processDefinition[obj.propertyName].splice(obj.index, 0, modification.value)
-            } else if(this.processDefinition[modification.targetJsonPath.replace('$.', '')]){
+            } else if (this.processDefinition[modification.targetJsonPath.replace('$.', '')]) {
                 this.processDefinition[modification.targetJsonPath.replace('$.', '')].push(modification.value)
             }
         },
@@ -520,7 +530,7 @@ export default {
 
         //     return processDefinition;
         // },
-        saveVersion(info, currentXML){
+        saveVersion(info, currentXML) {
             var me = this
             me.$try({
                 context: me,
@@ -530,12 +540,12 @@ export default {
 
                     // diff Logic
                     let diffs = null
-    
-    
-                    me.storage.putObject('proc_def_arcv', {
+
+
+                    await me.storage.putObject('proc_def_arcv', {
                         arcv_id: info.arcv_id,
                         version: info.version,
-                        name: info.name,
+                        // name: info.name,
                         proc_def_id: info.proc_def_id,
                         snapshot: currentXML,
                         diff: diffs,
@@ -549,34 +559,46 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    // alert(model);
-                    // console.log(this.changedXML);
-                    // const store = useBpmnStore();
-                    // let modeler = store.getModeler;
-                    // let xml = await modeler.saveXML({ format: true, preamble: true });
-
                     if (!me.processDefinition && xml) {
                         me.processDefinition = me.convertXMLToJSON(xml);
                     }
-                    
-                    me.processDefinition.processDefinitionName = info.name ? info.name : prompt("please give a name for the process definition");
-                    me.processDefinition.processDefinitionId = info.proc_def_id ?  info.proc_def_id : prompt("please give a ID for the process definition");
-                    
-                    
+
+                    me.processDefinition.processDefinitionId = info.proc_def_id ? info.proc_def_id : prompt("please give a ID for the process definition");
+                    // Version 저장시 제외.
+                    if (!me.$route.params.id) me.processDefinition.processDefinitionName = info.name ? info.name : prompt("please give a name for the process definition");
+
                     me.projectName = me.processDefinition.processDefinitionName;
                     if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
                         throw new Error("processDefinitionId or processDefinitionName is missing");
                     }
+                    await backend.putRawDefinition(xml, info.proc_def_id, info);
+                    // await me.putObject(`${me.path}/${me.processDefinition.processDefinitionId}`, {
+                    //     id: me.processDefinition.processDefinitionId,
+                    //     name: me.processDefinition.processDefinitionName,
+                    //     definition: me.processDefinition,
+                    //     // messages: this.messages,
+                    //     bpmn: xml   //TODO: model --> definition과 구분이 안됨.  bpmn 혹은 xmlDefinition 혹은 xmlModel 등으로 프로퍼티명 변경할것!
+                    // });
 
-                    await me.putObject(`${me.path}/${me.processDefinition.processDefinitionId}`, {
-                        id: me.processDefinition.processDefinitionId,
-                        name: me.processDefinition.processDefinitionName,
-                        definition: me.processDefinition,
-                        // messages: this.messages,
-                        bpmn: xml   //TODO: model --> definition과 구분이 안됨.  bpmn 혹은 xmlDefinition 혹은 xmlModel 등으로 프로퍼티명 변경할것!
+                    // await me.saveVersion(info, xml)
+
+                    // =========== Save Version Logic ===============
+                    const prevSnapshot = info.prevSnapshot
+                    const prevDiff = info.prevDiff
+
+                    // diff Logic
+                    let diffs = null
+
+                    // save table
+                    await me.storage.putObject('proc_def_arcv', {
+                        arcv_id: info.arcv_id,
+                        version: info.version,
+                        proc_def_id: info.proc_def_id,
+                        snapshot: xml,
+                        diff: diffs,
+                        timeStamp: new Date()
                     });
 
-                    await me.saveVersion(info, xml)
                     // if (window.$mode == "uEngine") {
                     //     // :9093/definition/raw/sales/testProcess.bpmn < definition-samples/testProcess.bpmn
                     //     await axios.put(`/definition/raw/sales/${this.processDefinition.processDefinitionId}.bpmn`, xml.xml, {
@@ -589,7 +611,7 @@ export default {
                     // } else {
 
 
-                        
+
                     // }
 
 
@@ -608,15 +630,15 @@ export default {
 
                     // const table = await this.getObject(this.processDefinition.processDefinitionId)
                     // if (!table) {
-                        await axios.post('http://localhost:8001/process-db-schema/invoke', {
-                            "input": {
-                                "process_definition_id": me.processDefinition.processDefinitionId
-                            }
-                        }).then(async res => {
-                            console.log(res);
-                        }).catch(error => {
-                            console.log(error);
-                        });
+                    await axios.post('http://localhost:8001/process-db-schema/invoke', {
+                        "input": {
+                            "process_definition_id": me.processDefinition.processDefinitionId
+                        }
+                    }).then(async res => {
+                        console.log(res);
+                    }).catch(error => {
+                        console.log(error);
+                    });
                     // }
                 }
             })
@@ -1391,7 +1413,7 @@ export default {
 }
 
 :deep(.left-part) {
-    width: 80%; /* Apply specific width */
+    width: 80%;
+    /* Apply specific width */
 }
-
 </style>

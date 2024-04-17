@@ -1,29 +1,59 @@
-<template id = "port-template">
-    <g :transform="'translate(' + pos.x + ',' + pos.y + ')'" class="port"
-       :data-port-name="name"
-       :data-block-name="blockName"
-       @mousedown="onmousedown"
-       @mouseup="onmouseup">
-      <rect v-if="direction == 'in'" x="-10" y="-10" class="background"></rect>
-      <rect v-if="direction == 'out'" x="-40" y="-10" class="background"></rect>
-  
-      <text v-if="direction == 'in'" x="8" y="0" style="text-anchor: start">{{ name.replace("in ", "") }}</text>
-      <text v-if="direction == 'out'" x="-8" y="0" style="text-anchor: end">{{ name }}</text>
-  
-      <rect x="-5" y="-5" width="10" height="10"></rect>
+<template id="port-template">
+    <g
+        :transform="'translate(' + getPosition().x + ',' + getPosition().y + ')'"
+        class="port"
+        :data-port-name="name"
+        :data-block-name="blockName"
+        @mousedown="onmousedown"
+        @mouseup="onmouseup"
+    >
+        <rect v-if="direction == 'in'" x="-10" y="-10" class="background"></rect>
+        <rect v-if="direction == 'out'" x="-40" y="-10" class="background"></rect>
+
+        <text
+            v-if="direction == 'in' && blockName != 'Source' && blockName != 'Target'"
+            x="8"
+            y="0"
+            style="user-select: none; text-anchor: start"
+            >{{ name.replace('in ', '') }}</text
+        >
+        <text
+            v-if="direction == 'out' && blockName != 'Source' && blockName != 'Target'"
+            x="-8"
+            y="0"
+            style="user-select: none; text-anchor: end"
+            >{{ name }}</text
+        >
+
+        <rect x="-5" y="-5" width="10" height="10"></rect>
     </g>
-  </template>
-  
-  <script>
-  export default {
+</template>
+
+<script>
+export default {
     props: {
-      pos: Object,
-      name: String,
-      blockName: String,
-      direction: String,
-      onmousedown: Function,
-      onmouseup: Function,
+        pos: Object,
+        name: String,
+        blockName: String,
+        direction: String,
+        onmousedown: Function,
+        onmouseup: Function,
+        appendComponent: Boolean
     },
-  };
-  </script>
-  
+    methods: {
+        getPosition() {
+            var position = {
+                x: this.pos.x,
+                y: this.pos.y
+            };
+            if (this.appendComponent[this.blockName] == true) {
+                if (this.pos.appendX && this.pos.appendY) {
+                    position.x = this.pos.appendX;
+                    position.y = this.pos.appendY;
+                }
+            }
+            return position;
+        }
+    }
+};
+</script>

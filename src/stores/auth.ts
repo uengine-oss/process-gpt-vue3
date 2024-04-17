@@ -10,11 +10,25 @@ export const useAuthStore = defineStore({
         async logout() {
             try {
                 await storage?.signOut();
-                if (router.currentRoute.value.path === "/") {
+                if (router.currentRoute.value.path === '/') {
                     window.location.reload();
                 } else {
-                    router.push("/");
+                    router.push('/');
                 }
+            } catch (e) {
+                console.log(e);
+            }
+        },
+        async signInWithKeycloak() {
+            try {
+                
+                    var result: any = await storage?.signInWithKeycloak();
+
+                    if (!result.error) {
+                        router.push('/dashboard2');
+                    } else {
+                        alert(result.errorMsg);
+                    }
             } catch (e) {
                 console.log(e);
             }
@@ -28,10 +42,11 @@ export const useAuthStore = defineStore({
                     };
                     var result: any = await storage?.signIn(userInfo);
                     
-                    if (!result.error) {
-                        router.push('/dashboard2');
-                    } else {
+                    if (result.error) {
                         alert(result.errorMsg);
+                    } else {
+                        router.push('/dashboard2');
+                        await storage?.writeUserData(result);
                     }
                 }
             } catch (e) {
@@ -44,17 +59,20 @@ export const useAuthStore = defineStore({
                     const userInfo: any = {
                         username: username,
                         email: email,
-                        password: password,
-                    }
+                        password: password
+                    };
                     var result: any = await storage?.signUp(userInfo);
 
-                    if (!result.error) {
+                    if (result.error) {
+                        alert(result.errorMsg);
+                    } else {
                         router.push('/auth/login');
+                        await storage?.writeUserData(result);
                     }
                 }
             } catch (e) {
                 console.log(e);
             }
-        },
+        }
     }
 });

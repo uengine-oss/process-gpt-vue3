@@ -129,12 +129,20 @@
                         class="cp-check-in" 
                         variant="flat" 
                         @click="checkOut"
-                    >확인</v-btn>
+                    >체크인</v-btn>
                    
-                    <v-btn color="error" 
+                    <v-btn 
+                    v-if="userInfo.email && userInfo.email == editUser"
+                    color="error" 
                     variant="flat" 
                     @click="alertDialog=false"
                     >닫기</v-btn>
+
+                    <v-btn v-else 
+                    color="error" 
+                    variant="flat" 
+                    @click="alertDialog=false"
+                    >취소</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -149,7 +157,8 @@ import ProcessMenu from './ProcessMenu.vue';
 import SubProcessDetail from './SubProcessDetail.vue';
 import ViewProcessDetails from './ViewProcessDetails.vue';
 const storageKey = 'configuration'
-
+import BackendFactory from '@/components/api/BackendFactory';
+const uengine = BackendFactory.createBackend();
 export default {
     components: {
         ProcessMenu,
@@ -234,10 +243,9 @@ export default {
             this.$router.push(`/definition-map`);
         },
         async getProcessMap() {
-            const procMap = await this.storage.getObject(storageKey + '/proc_map', { key: 'key' });
-            if (procMap && procMap.value) {
-                this.value = procMap.value;
-            }
+            let map = await uengine.getProcessDefinitionMap();
+            this.value = map
+            
         },
         addProcess(newProcess) {
             var newMegaProc = {
@@ -248,11 +256,9 @@ export default {
             this.value.mega_proc_list.push(newMegaProc);
         },
         async saveProcess() {
-            const putObj = {
-                key: 'proc_map',
-                value: this.value
-            }
-            await this.storage.putObject(storageKey, putObj);
+            
+            await uengine.putProcessDefinitionMap(this.value);
+            
             this.closeAlertDialog();
         },
         async checkIn() {

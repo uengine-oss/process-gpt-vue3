@@ -2,7 +2,8 @@
     <div>
         <v-file-input
             :label="label"
-            :accept="accept"
+            v-model="selectedFiles"
+            @change="convertToBase64"
         ></v-file-input>
     </div>
 </template>
@@ -17,24 +18,39 @@ export default {
         
     ],
     props: {
+        vueRenderUUID: String,
+        tagName: String,
         name: String,
-        alias: String,
-        accept: String
+        alias: String
     },
     computed: {
         label() {
-            return this.alias || this.name;
+            if(this.localAlias && this.localName) return `${this.localAlias}(${this.localName})`
+            else if (this.localAlias) return this.localAlias
+            else if (this.localName) return this.localName
+            else return ""
         }
     },
     data() {
         return {
-         
+            localName: this.name,
+            localAlias: this.alias,
+            selectedFiles: null,
+            inputedValue: ""
         };
     },
     created() {
     },
     methods: {
- 
+        convertToBase64() {
+            if (!this.selectedFiles && this.selectedFiles.length <= 0) return
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.inputedValue = e.target.result
+            }
+            reader.readAsDataURL(this.selectedFiles[0])
+        }
     }
 };
 </script>

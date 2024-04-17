@@ -1,6 +1,7 @@
 import axios from 'axios';
 const axiosInstance = axios.create();
 import type { Backend } from './Backend';
+
 class UEngineBackend implements Backend {
     // constructor() {
     //     super();
@@ -33,7 +34,7 @@ class UEngineBackend implements Backend {
     }
     async versionUp(version: string, major: boolean, makeProduction: boolean) {
         try {
-            const response = await axiosInstance.post('/version', null, { params: { version, major, makeProduction } });
+            const response = await axiosInstance.post('/version', null);
             return response.data;
         } catch (e) {
             alert(e);
@@ -252,7 +253,43 @@ class UEngineBackend implements Backend {
     // WorkListRepository API
     async getWorkList() {
         try {
-            const response = await axiosInstance.get(`/worklist/search/findTodo`);
+            const response = await axiosInstance.get(`/worklist/search/findToDo`);
+
+            if(!response.data) return null;
+            if(!response.data._embedded) return null;
+            return response.data._embedded.worklist;
+        } catch (e) {
+            alert(e);
+        }
+    }
+
+    async getDefinition(defPath: string) {
+        try {
+        } catch (e) {}
+        const response = await axiosInstance.get(`/definition/${defPath}`);
+        return response.data;
+    }
+
+    async createFolder(newResource: any, requestPath: string) {
+        try {
+        } catch (e) {}
+        const response = await axiosInstance.post(`/definition/${requestPath}`, newResource);
+        return response.data;
+    }
+
+    async getProcessDefinitionMap() {
+        try {
+            const response = await axiosInstance.get(`/definition/map`);
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
+    }
+
+    async putProcessDefinitionMap(definitionMap: any) {
+        try {
+            definitionMap = JSON.stringify(definitionMap);
+            const response = await axiosInstance.put(`/definition/map`, definitionMap, { headers: { 'Content-Type': 'text/plain' } });
             return response.data;
         } catch (e) {
             alert(e);

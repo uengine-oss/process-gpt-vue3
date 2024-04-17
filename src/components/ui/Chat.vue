@@ -380,6 +380,7 @@ export default {
             newMessage: '',
             hoverIndex: -1,
             editIndex: -1,
+            editText: null,
             replyIndex: -1,
             replyUser: null,
             isViewJSON: [],
@@ -631,6 +632,7 @@ export default {
             }, 100);
         },
         cancel() {
+            this.messages[this.editIndex].content = this.editText
             this.editIndex = -1;
         },
         editMessage(index) {
@@ -640,6 +642,7 @@ export default {
                 this.editIndex = -1;
             }
             this.editIndex = index;
+            this.editText = this.messages[this.editIndex].content
         },
         viewJSON(index) {
             if (!this.isViewJSON.includes(index)) {

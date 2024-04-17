@@ -69,7 +69,12 @@
                 </v-row>
             </div>
             <v-dialog v-model="oepnFieldMapper"  max-width="80%" max-height="80%">
-                <form-mapper :definition="definition" />
+                <form-mapper 
+                    :definition="definition" 
+                    :name="name"    
+                    :formMapperJson="formMapperJson"
+                    @saveFormMapperJson="saveFormMapperJson"
+                />
             </v-dialog>
         </div>
         <!-- <div>
@@ -166,7 +171,8 @@ export default {
         isViewMode: Boolean,
         role: String,
         variableForHtmlFormContext: Object,
-        definition: Object
+        definition: Object,
+        name: String
     },
     created() {
         
@@ -182,7 +188,6 @@ export default {
                 "parameters": [],
             },
             copyUengineProperties: this.uengineProperties,
-            name: "",
             checkpoints: [],
             editCheckpoint: false,
             checkpointMessage: {
@@ -199,7 +204,8 @@ export default {
             paramValue: "",
             oepnFieldMapper: false,
             isFormActivity: false,
-            selectedForm: ""
+            selectedForm: "",
+            formMapperJson: ""
         };
     },
     async mounted() {
@@ -213,9 +219,10 @@ export default {
         if (!this.copyUengineProperties.parameters)
             this.copyUengineProperties.parameters = []
 
-        if(this.variableForHtmlFormContext)
+        if(this.variableForHtmlFormContext){
             this.isFormActivity = true
             this.selectedForm = `${this.variableForHtmlFormContext.name}_${this.variableForHtmlFormContext.alias}`
+        }
     },
     computed: {
         inputData() {
@@ -241,9 +248,11 @@ export default {
     },
     watch: {
         selectedForm(newVal){
-            const [formName, formAlias] = newVal.split('_');
-            const formItem = this.definition.processVariables.find(item => item.type === 'Form' && item.defaultValue.name === formName && item.defaultValue.alias === formAlias);
-            this.$emit('setVariableForHtmlFormContext', formItem.defaultValue)
+            if(newVal){
+                const [formName, formAlias] = newVal.split('_');
+                const formItem = this.definition.processVariables.find(item => item.type === 'Form' && item.defaultValue.name === formName && item.defaultValue.alias === formAlias);
+                this.$emit('setVariableForHtmlFormContext', formItem.defaultValue)
+            }
         }
     },
     methods: {
@@ -303,7 +312,11 @@ export default {
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint })
             this.$emit('update:uEngineProperties', this.copyUengineProperties)
-        },
+        },  
+        saveFormMapperJson(jsonString) {
+            this.formMapperJson = jsonString;
+            this.oepnFieldMapper = false;
+        }
     }
 };
 </script>

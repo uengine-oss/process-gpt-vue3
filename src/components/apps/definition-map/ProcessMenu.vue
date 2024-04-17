@@ -50,13 +50,11 @@
 
 <script>
 import ProcessDialog from './ProcessDialog.vue'
-import FormMapper from '@/components/designer/mapper/FormMapper.vue';
 
 
 export default {
     components: {
         ProcessDialog,
-        FormMapper,
     },
     props: {
         size: Number,
@@ -67,7 +65,6 @@ export default {
         enableExecution: Boolean,
     },
     data: () => ({
-        formMapperDialog: false,
         newProcess: {
             id: "",
             label: ""

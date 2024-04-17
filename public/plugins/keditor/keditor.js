@@ -466,7 +466,7 @@
             var filterHtml = '';
             filterHtml += '<div id="keditor-' + lowerCaseType + '-snippets-filter-wrapper" class="keditor-ui keditor-snippets-filter-wrapper">';
             filterHtml += '     <input type="text" id="keditor-' + lowerCaseType + '-snippets-search" class="keditor-ui keditor-snippets-search" value="" placeholder="Type to search..." />';
-            filterHtml += '     <select id="keditor-' + lowerCaseType + '-snippets-filter" class="keditor-ui keditor-snippets-filter">';
+            filterHtml += '     <select id="keditor-' + lowerCaseType + '-snippets-filter" class="keditor-ui keditor-snippets-filter" style="font-size: small; height: 40px;">';
             filterHtml += '         <option value="" selected="selected">All</option>';
             
             for (var i = 0; i < categories.length; i++) {
@@ -910,7 +910,7 @@
             }
 
             self.toggleSidebar(true);
-            body.addClass('opened-keditor-setting');
+            // body.addClass('opened-keditor-setting');
         },
         
         hideSettingPanel: function () {
