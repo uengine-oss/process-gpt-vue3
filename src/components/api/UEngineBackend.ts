@@ -10,7 +10,10 @@ class UEngineBackend implements Backend {
     // Process Definition Service Impl API
     async listDefinition(basePath: string) {
         try {
-            const response = await axiosInstance.get(`/definition?basePath=${basePath}`);
+            let url = '/definition';
+            if (basePath) url += `?basePath=${basePath}`;
+
+            const response = await axiosInstance.get(url);
             return response.data;
         } catch (e) {
             alert(e);
@@ -233,10 +236,76 @@ class UEngineBackend implements Backend {
         }
     }
 
-    async putWorkItem(taskId: string, workItem: any) {
+    async putWorklist(taskId: string, workItem: any) {
         try {
-            const response = await axiosInstance.post(`/work-item/${taskId}`, workItem);
-            return response.data;
+            let url = `/worklist`;
+            if (typeof taskId === 'number') url += `/${taskId}`;
+            console.log(workItem);
+            let task;
+            if (workItem.task) {
+                task = workItem.task;
+                if (workItem.status) task.status = workItem.status;
+                const response = await axiosInstance.put(url, task);
+                return response.data;
+            } else {
+                task = {
+                    endpoint: workItem.endpoint,
+                    title: workItem.title,
+                    description: workItem.description,
+                    status: workItem.status,
+                    startDate: workItem.startDate,
+                    dueDate: workItem.dueDate
+                };
+                const response = await axiosInstance.post(url, task);
+                return response.data;
+            }
+            // let test = {
+            //     instId: 1,
+            //     title: 'Task_b',
+            //     description: null,
+            //     endpoint: 'manager',
+            //     roleName: 'initiator',
+            //     refRoleName: 'null',
+            //     resName: 'Initiator',
+            //     defId: 'sales/testLaneProcess.xml',
+            //     defName: 'Noname',
+            //     trcTag: 'Task_b',
+            //     tool: 'defaultHandler',
+            //     parameter: null,
+            //     priority: 1,
+            //     startDate: '2024-04-17',
+            //     endDate: null,
+            //     saveDate: null,
+            //     dueDate: '2024-04-22',
+            //     status: 'NEW',
+            //     dispatchOption: 0,
+            //     dispatchParam1: null,
+            //     prevUserName: null,
+            //     rootInstId: 1,
+            //     readDate: null,
+            //     actType: null,
+            //     absTrcTag: null,
+            //     delegated: null,
+            //     urget: null,
+            //     execScope: null,
+            //     ext1: null,
+            //     ext2: null,
+            //     ext3: null,
+            //     ext4: null,
+            //     ext5: null,
+            //     _links: {
+            //         self: {
+            //             href: 'http://localhost:9094/worklist/2'
+            //         },
+            //         worklistEntity: {
+            //             href: 'http://localhost:9094/worklist/2'
+            //         },
+            //         processInstance: {
+            //             href: 'http://localhost:9094/worklist/2/processInstance'
+            //         }
+            //     }
+            // };
+            // workItem.task.status = workItem.status;
         } catch (e) {
             alert(e);
         }
@@ -254,12 +323,82 @@ class UEngineBackend implements Backend {
     async getWorkList() {
         try {
             const response = await axiosInstance.get(`/worklist/search/findToDo`);
-            return response.data;
+
+            if (!response.data) return null;
+            if (!response.data._embedded) return null;
+            let mappedResult = response.data._embedded.worklist.map((task: any) => ({
+                defId: task.defId,
+                endpoint: task.endpoint,
+                instId: task.instId,
+                rootInstId: task.rootInstId,
+                taskId: parseInt(task._links.self.href.split('/').pop()),
+                startDate: task.startDate,
+                dueDate: task.dueDate,
+                status: task.status,
+                title: task.title,
+                tool: task.tool,
+                description: task.description || '', // description이 null일 경우 빈 문자열로 처리
+                task: task
+            }));
+
+            return mappedResult;
         } catch (e) {
             alert(e);
         }
     }
 
+    async getPendingList() {
+        try {
+            const response = await axiosInstance.get(`/worklist/search/findPending`);
+
+            if (!response.data) return null;
+            if (!response.data._embedded) return null;
+            let mappedResult = response.data._embedded.worklist.map((task: any) => ({
+                defId: task.defId,
+                endpoint: task.endpoint,
+                instId: task.instId,
+                rootInstId: task.rootInstId,
+                taskId: parseInt(task._links.self.href.split('/').pop()),
+                startDate: task.startDate,
+                dueDate: task.dueDate,
+                status: task.status,
+                title: task.title,
+                tool: task.tool,
+                description: task.description || '', // description이 null일 경우 빈 문자열로 처리
+                task: task
+            }));
+
+            return mappedResult;
+        } catch (e) {
+            alert(e);
+        }
+    }
+    async getInProgressList() {
+        try {
+            const response = await axiosInstance.get(`/worklist/search/findInProgress`);
+
+            if (!response.data) return null;
+            if (!response.data._embedded) return null;
+            let mappedResult = response.data._embedded.worklist.map((task: any) => ({
+                defId: task.defId,
+                endpoint: task.endpoint,
+                instId: task.instId,
+                rootInstId: task.rootInstId,
+                taskId: parseInt(task._links.self.href.split('/').pop()),
+                startDate: task.startDate,
+                dueDate: task.dueDate,
+                status: task.status,
+                title: task.title,
+                tool: task.tool,
+                description: task.description || '', // description이 null일 경우 빈 문자열로 처리
+                task: task
+            }));
+
+            return mappedResult;
+        } catch (e) {
+            alert(e);
+        }
+    }
     async getDefinition(defPath: string) {
         try {
         } catch (e) {}
@@ -285,7 +424,7 @@ class UEngineBackend implements Backend {
 
     async putProcessDefinitionMap(definitionMap: any) {
         try {
-            definitionMap = JSON.stringify(definitionMap)
+            definitionMap = JSON.stringify(definitionMap);
             const response = await axiosInstance.put(`/definition/map`, definitionMap, { headers: { 'Content-Type': 'text/plain' } });
             return response.data;
         } catch (e) {

@@ -255,7 +255,7 @@ export default {
                         for (let j=0; j<matchedItems.length; j++) {
                             const matchedItem = matchedItems[j]
                             if(matchedItem.includes(`'`)) {
-                                fragmentToParse = fragmentToParse.replace(matchedItem, matchedItem.replaceAll(`'`, `"`))
+                                fragmentToParse = fragmentToParse.replace(matchedItem, matchedItem.replaceAll(`'`, `\\"`))
                             }
                         }
                     }
