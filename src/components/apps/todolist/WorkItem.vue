@@ -93,7 +93,7 @@ export default {
         }
     },
     methods: {
-       async init(){
+        async init() {
             var me = this
             const backend = BackendFactory.createBackend()
             me.loading = true;

@@ -123,7 +123,7 @@ export default {
                     this.todolist[statusIndex].tasks.push(this.newTask);
                 }
             }
-            await backend.putWorkItem(this.newTask.taskId, this.newTask);
+            await backend.putWorklist(this.newTask.taskId, this.newTask);
             this.close();
         },
         uuid() {

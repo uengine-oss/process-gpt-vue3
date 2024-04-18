@@ -54,14 +54,14 @@ export default {
           appendable: false,
         },
         Concat: {
-          size: { width: 120, height: 150 },
+          size: { width: 120, height: 120 },
           ports: {
-            "in str1": { x: -60, y: -60 },
-            "in str2": { x: -60, y: -30 },
-            "in str3": { x: -60, y: 0 },
+            "in str1": { x: -60, y: -30 },
+            "in str2": { x: -60, y: -10 },
+            "in str3": { x: -60, y: 10 },
             "in str4": { x: -60, y: 30 },
-            "in str5": { x: -60, y: 60 },
-            out: { x: 60, y: 0, direction: "out" },
+            "in str5": { x: -60, y: 50 },
+            out: { x: 60, y: 10, direction: "out" },
           },
           parent: "String",
           class: "org.uengine.processdesigner.mapper.transformers.ConcatTransformer",
@@ -358,13 +358,13 @@ export default {
       }
       const block = this.getBlock(spec[0]);
       if (block != null) {
-        var connector = { x: block.ports[spec[1]].x, y: block.ports[spec[1]].y };
+        var ports = block.ports[spec[1]];
         if (block.appendable == true) {
           if (this.appendComponent != undefined && this.appendComponent[spec[0]] == true) {
-            connector = { x: block.ports[spec[1]].appendX, y: block.ports[spec[1]].appendY };
+            ports = { x: block.ports[spec[1]].appendX, y: block.ports[spec[1]].appendY };
           }
         }
-        var pos = add(block.pos, connector || { x: 0, y: 0 });
+        var pos = add(block.pos, ports || { x: 0, y: 0 });
         return pos;
       }
       return { x: 0, y: 0 };
@@ -579,7 +579,6 @@ export default {
       var blockName = conn.from[0];
       if (blockName == "Source") {
         mappingElement = {
-          "_type": "org.uengine.kernel.MappingElement",
           "argument": {
             "text": argument
           },
@@ -592,7 +591,6 @@ export default {
         }
       } else {
         mappingElement = {
-          "_type": "org.uengine.kernel.MappingElement",
           "argument": {
             "text": argument
           },
