@@ -112,7 +112,7 @@ class ProcessGPTBackend implements Backend {
             throw new Error('error in start');
         }
     }
-    
+
     async getInstance(instanceId: string) {
         try {
             const definitionId = instanceId.split('.')[0];
@@ -130,11 +130,7 @@ class ProcessGPTBackend implements Backend {
 
     async getWorkItem(taskId: string) {
         try {
-            const options = {
-                match: {
-                    id: taskId
-                }
-            };
+            const options = { match: { id: taskId } };
             const data = await storage.getObject('todolist', options);
             return data;
         } catch (error) {
@@ -144,45 +140,41 @@ class ProcessGPTBackend implements Backend {
 
     async getWorkList() {
         try {
-            return this.getWorkListByStatus('TODO');
-        } catch (error) {
-            throw new Error(`error in getWorkListByStatus with status: ${status}`);
-        }
-    }
-
-    async getWorkListByStatus(status: string) {
-        const email = localStorage.getItem("email");
-        const options = { match: { user_id: email, status: status } };
-        const list = await storage.list('todolist', options);
-        const worklist: any[] = [];
-        if (list && list.length > 0) {
-            for (const item of list) {
-                const workItem: any = {
-                    defId: item.proc_def_id,
-                    endpoint: item.user_id,
-                    instId: item.proc_inst_id,
-                    rootInstId: null,
-                    taskId: item.id,
-                    startDate: item.start_date,
-                    dueDate: item.end_date,
-                    status: item.status,
-                    title: item.activity_id,
-                    description: item.description || "",
-                    tool: ""
-                };
-                if (item.proc_inst_id) {
-                    const data = await storage.getString(item.proc_def_id, { 
-                        match: { proc_inst_id: item.proc_inst_id },
-                        column: "proc_inst_name"
-                    });
-                    if (data && data.proc_inst_name) {
-                        workItem.description = data.proc_inst_name;
+            const email = localStorage.getItem("email");
+            const options = { match: { user_id: email } };
+            const list = await storage.list('todolist', options);
+            const worklist: any[] = [];
+            if (list && list.length > 0) {
+                for (const item of list) {
+                    const workItem: any = {
+                        defId: item.proc_def_id,
+                        endpoint: item.user_id,
+                        instId: item.proc_inst_id,
+                        rootInstId: null,
+                        taskId: item.id,
+                        startDate: item.start_date,
+                        dueDate: item.end_date,
+                        status: item.status,
+                        title: item.activity_id,
+                        description: item.description || "",
+                        tool: ""
+                    };
+                    if (item.proc_inst_id) {
+                        const data = await storage.getString(item.proc_def_id, { 
+                            match: { proc_inst_id: item.proc_inst_id },
+                            column: "proc_inst_name"
+                        });
+                        if (data && data.proc_inst_name) {
+                            workItem.description = data.proc_inst_name;
+                        }
                     }
+                    worklist.push(workItem);
                 }
-                worklist.push(workItem);
             }
+            return worklist;
+        } catch (error) {
+            throw new Error(`error in getWorkList`);
         }
-        return worklist;
     }
 
     async putWorkItem(taskId: string, workItem: any) {
@@ -300,11 +292,11 @@ class ProcessGPTBackend implements Backend {
     }
 
     async getInProgressList() {
-        return this.getWorkListByStatus('IN_PROGRESS');
+        throw new Error("Method not implemented.");
     }
 
     async getPendingList() {
-        return this.getWorkListByStatus('PENDING');
+        throw new Error("Method not implemented.");
     }
 }
 
