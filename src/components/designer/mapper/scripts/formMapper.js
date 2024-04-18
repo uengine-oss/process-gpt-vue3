@@ -579,7 +579,6 @@ export default {
       var blockName = conn.from[0];
       if (blockName == "Source") {
         mappingElement = {
-          "_type": "org.uengine.kernel.MappingElement",
           "argument": {
             "text": argument
           },
@@ -592,7 +591,6 @@ export default {
         }
       } else {
         mappingElement = {
-          "_type": "org.uengine.kernel.MappingElement",
           "argument": {
             "text": argument
           },
