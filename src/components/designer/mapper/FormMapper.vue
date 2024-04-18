@@ -84,6 +84,7 @@
                         :key="attribute.blockName + ',' + attribute.name"
                         :pos="attribute.pos"
                         :name="attribute.name"
+                        :value="attribute.value"
                         :block-name="attribute.blockName"
                         :func="attribute.func"
                         :appendComponent="appendComponent"
