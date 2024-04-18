@@ -7,28 +7,16 @@
 <script>
 
 export default {
-    components: {
-       
-    },
-    mixins: [
-        
-    ],
     props: {
         vueRenderUUID: String,
         tagName: String,
         label: String
     },
-    computed: {
-    },
+
     data() {
         return {
             localLabel: this.label
         };
-    },
-    created() {
-    },
-    methods: {
- 
     }
 };
 </script>

@@ -556,7 +556,7 @@ export default {
       var block = this.blocks[conn.from[0]];
       var blockData = this.blockTemplates[block.type];
       var transformerMapping = {
-        "_type": "java.lang.Object",
+        "_type": "org.uengine.processdesigner.mapper.TransformerMapping",
         "transformer": {
           "_type": blockData.class,
           "name": block.type,
@@ -579,7 +579,6 @@ export default {
       var blockName = conn.from[0];
       if (blockName == "Source") {
         mappingElement = {
-          "_type": "org.uengine.kernel.MappingElement",
           "argument": {
             "text": argument
           },
@@ -592,7 +591,6 @@ export default {
         }
       } else {
         mappingElement = {
-          "_type": "org.uengine.kernel.MappingElement",
           "argument": {
             "text": argument
           },

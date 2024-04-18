@@ -58,7 +58,10 @@
     "processDefinitionMap" : {
         "title" : "Process Definition Map",
         "lock": "Please press the lock to lock it in order to check in (save).",
-        "unlock": "Please press the lock to unlock it in order to check out (edit)."
+        "unlock": "Please press the lock to unlock it in order to check out (edit).",
+        "addMega": "Add Mega Process",
+        "addMajor": "Add Major Process",
+        "addSub": "Add Sub Process"
     },
     "processDefinition" : {
         "title" : "Process Definition",

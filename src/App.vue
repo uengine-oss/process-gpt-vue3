@@ -39,6 +39,7 @@ export default {
             }
         });
         window.$mode = 'uEngine'
+        // window.$mode = 'ProcessGPT'
         window.$app_ = this
     },
     methods: {
