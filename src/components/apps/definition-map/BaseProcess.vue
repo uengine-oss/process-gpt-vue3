@@ -16,14 +16,6 @@ export default {
         async editProcess(process) {
             this.value.id = process.id;
             this.value.label = process.label
-            if (this.type === 'sub') {
-                const updateValue = {
-                    id: process.id,
-                    name: process.label
-                };
-
-                await this.storage.putObject(`proc_def/${process.id}`, updateValue);
-            }
         },
         editProcessdialog(processType) {
             this.processType = processType;
