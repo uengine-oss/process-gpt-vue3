@@ -53,7 +53,7 @@ export default {
         },
         async completeTask(){
             var me = this
-            let result = await backend.putWorkItem(me.$route.params.taskId, {"parameterValues": {}})
+            let result = await backend.putWorkItemComplate(me.$route.params.taskId, {"parameterValues": {}})
             alert('completeTask')
         },
     },

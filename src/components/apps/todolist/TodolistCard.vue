@@ -66,8 +66,8 @@ export default {
     }),
     created() {
         this.loadToDo();
-        this.loadInProgress();
-        this.loadPending();
+        // this.loadInProgress();
+        // this.loadPending();
     },
     methods: {
         executeTask(item) {
@@ -81,32 +81,44 @@ export default {
                 action: async () => {
                     let back = BackendFactory.createBackend();
                     let worklist = await back.getWorkList()
-                    me.todolist.find(x => x.id == 'TODO').tasks.push(...worklist);
+                    console.log(worklist)
+                    worklist.forEach(function(item) {
+                        if (item.status == 'TODO' || item.status == 'NEW' || item.status == 'DRAFT') {
+                            me.todolist.find(x => x.id == 'TODO').tasks.push(item);
+                        } else if (item.status == 'IN_PROGRESS') {
+                            me.todolist.find(x => x.id == 'IN_PROGRESS').tasks.push(item);
+                        } else if (item.status == 'PENDING') {
+                            me.todolist.find(x => x.id == 'PENDING').tasks.push(item);
+                        }
+                    })
+                    // me.todolist.find(x => x.id == 'TODO').tasks.push(...worklist);
+                    // me.todolist.find(x => x.id == 'IN_PROGRESS').tasks.push(...worklist);
+                    // me.todolist.find(x => x.id == 'PENDING').tasks.push(...worklist);
                 }
             })
         },
-        loadInProgress() {
-            var me = this
-            me.$try({
-                context: me,
-                action: async () => {
-                    let back = BackendFactory.createBackend();
-                    let worklist = await back.getInProgressList()
-                    me.todolist.find(x => x.id == 'IN_PROGRESS').tasks.push(...worklist);
-                }
-            })
-        },
-        loadPending() {
-            var me = this
-            me.$try({
-                context: me,
-                action: async () => {
-                    let back = BackendFactory.createBackend();
-                    let worklist = await back.getPendingList()
-                    me.todolist.find(x => x.id == 'PENDING').tasks.push(...worklist);
-                }
-            })
-        },
+        // loadInProgress() {
+        //     var me = this
+        //     me.$try({
+        //         context: me,
+        //         action: async () => {
+        //             let back = BackendFactory.createBackend();
+        //             let worklist = await back.getInProgressList()
+        //             
+        //         }
+        //     })
+        // },
+        // loadPending() {
+        //     var me = this
+        //     me.$try({
+        //         context: me,
+        //         action: async () => {
+        //             let back = BackendFactory.createBackend();
+        //             let worklist = await back.getPendingList()
+        //             
+        //         }
+        //     })
+        // },
         loadWorkItemByInstId(instId) {
             const todoTasks = this.todolist.find(item => item.id === 'TODO').tasks;
             const instanceIds = todoTasks.map(task => task.instId);
