@@ -12,6 +12,7 @@
 
 export default {
     props: {
+        modelValue: String,
         vueRenderUUID: String,
         tagName: String,
         name: String,
@@ -31,10 +32,7 @@ export default {
         return {
             localName: this.name,
             localAlias: this.alias,
-            selectedFiles: null,
-            
-            inputedValue: "",
-            onChange: () => {}
+            selectedFiles: null
         };
     },
 
@@ -44,11 +42,14 @@ export default {
 
             const reader = new FileReader();
             reader.onload = (e) => {
-                this.inputedValue = e.target.result
-                this.onChange(this.inputedValue)
+                this.$emit('update:modelValue', e.target.result)
             }
             reader.readAsDataURL(this.selectedFiles[0])
         }
+    },
+
+    created() {
+        this.$emit('update:modelValue', "")
     }
 };
 </script>

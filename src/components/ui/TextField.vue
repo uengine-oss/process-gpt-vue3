@@ -11,9 +11,9 @@
 </template>
 
 <script>
-
 export default {
     props: {
+        modelValue: String,
         vueRenderUUID: String,
         tagName: String,
         name: String,
@@ -33,23 +33,31 @@ export default {
         return {
             localName: this.name,
             localAlias: this.alias,
-
-            inputedValue: "",
-            initialValue: "",
-            onChange: () => {}
+            inputedValue: ""
         };
     },
 
     watch: {
-        initialValue() {
-            this.inputedValue = this.initialValue
+        modelValue: {
+            handler() {
+                if(this.modelValue && this.modelValue.length > 0)
+                    this.inputedValue = this.modelValue
+                else
+                    this.inputedValue = ""
+            },
+            deep: true,
+            immediate: true
         },
 
-        inputedValue() {
-            this.onChange(this.inputedValue)
+        inputedValue: {
+            handler() {
+                this.$emit('update:modelValue', this.inputedValue)
+            },
+            deep: true,
+            immediate: true
         }
-    }
-};
+    },
+}
 </script>
 
 <style lang="scss">

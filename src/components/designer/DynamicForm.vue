@@ -1,24 +1,23 @@
-<template>
-  <div v-html="renderedContent">
-
-  </div>
-</template>
-
 <script>
 /**
  * formHTML: HTML 폼 데이터를 전달해서 렌더링하기 위해서
  * v-model: 이 값을 세팅해서 입력 요소에 값을 세팅하거나 받을 수 있음
- *    {"name1":"value1", "name2":{'key1':'value1'}} 과 같이 전달되며, "name1"은 해당 태그의 name 속성 값임(name은 고유하다고 가정)
- *    text-field: Read("value1" 과 같이 문자열 값) / Write("value1"과 같은 문자열 값) 
- *    select-field: Read({'key1':'value1'} 과 같은 선택된 객체의 값) / Write({'key1':'value1'}과 같은 선택 목록 객체 값)
- *    checkbox-field: Read([{'key1':'value1'}, {'key2':'value2'}] 와 같이 체크된 항목의 객체 값들을 담은 리스트) / Write(Read와 동일)
- *    radio-field: Read({'key1':'value1'} 과 같은 선택된 객체의 값) / Write(Read와 동일)
+ *    {"name1":"value1", "name2":"key1"} 과 같이 전달되며, "name1"은 해당 태그의 name 속성 값임(name은 고유하다고 가정)
+ *    text-field: Read("value1"과 같은 문자열 값) / Write("value1"과 같은 문자열 값) 
+ *    select-field: Read("key1"과 같은 유저가 선택한 키 값) / Write("key1"과 같은 선택시킬 값)
+ *    checkbox-field: Read(["key1", "key2"]) 와 같이 체크된 항목의 객체 값들을 담은 리스트) / Write(Read와 동일)
+ *    radio-field: Read("key1"과 같은 키 값과 같은 선택된 객체의 값) / Write(Read와 동일)
  *    file-field: Read(선택된 파일의 Base64 URL 주소) / Write(지원하지 않음)
+ * 
  *    label-field: Read(지원하지 않음) / Write(지원하지 않음)
  */
-import { createApp } from 'vue';
-import vuetify from "@/plugins/vuetify";
-import DynamicComponent from './DynamicComponent.vue';
+import { h } from 'vue';
+import TextField from '@/components/ui/TextField.vue';
+import SelectField from '@/components/ui/SelectField.vue';
+import CheckboxField from '@/components/ui/CheckboxField.vue';
+import RadioField from '@/components/ui/RadioField.vue';
+import FileField from '@/components/ui/FileField.vue';
+import LabelField from '@/components/ui/LabelField.vue';
 
 export default {
   props: {
@@ -31,102 +30,58 @@ export default {
   },
 
   watch: {
-    formHTML() {
-      this.renderVueComponents()
-    },
-
     modelValue: {
       handler() {
-        this.setUserInputedDatas(this.modelValue)
-      }
+        if(JSON.stringify(this.formValues) === JSON.stringify(this.modelValue)) return
+
+        this.formValues = this.modelValue
+      },
+      deep: true,
+      immediate: true
+    },
+
+    formValues: {
+      handler() {
+        if(JSON.stringify(this.formValues) === JSON.stringify(this.modelValue)) return
+
+        this.$emit('update:modelValue', this.formValues)
+      },
+      deep: true,
+      immediate: true
     }
   },
 
   data() {
     return {
       renderedContent: "",
-      componentRefs: {}
+      formValues: {}
     }
   },
 
-  methods: {
-    /**
-     * 전달된 formHTML의 Vue 컴포넌트 요소들을 렌더링시키기 위해서
-     */
-    renderVueComponents() {
-      if(!this.formHTML) return
-
-      // "-field"가 포함된 컴포넌트들을 렌더링을 위해서 vuemount div로 감싸고, renderedContent에 저장시켜서 렌더링 준비하기
-      const formHTMLDom = new DOMParser().parseFromString(this.formHTML, 'text/html')
-      const components = Array.from(formHTMLDom.querySelectorAll('*')).filter(el => el.tagName.toLowerCase().endsWith('-field'));
-      components.forEach(component => {
-        const parent = document.createElement('div')
-        parent.setAttribute('id', `vuemount_${crypto.randomUUID()}`)
-        component.parentNode.insertBefore(parent, component)
-        parent.appendChild(component)
-      })
-      this.renderedContent = formHTMLDom.body.innerHTML
-
-      this.$nextTick(() => {
-        // renderedContent에서 "-field"가 있는 태그들을 Vue 컴포넌트로 렌더링시켜서 참조 가능하도록 넣어두기
-        const parser = new DOMParser();
-        const renderedDom = parser.parseFromString(this.renderedContent, 'text/html');
-
-        renderedDom.querySelectorAll("div[id^='vuemount_']").forEach(vueRenderElement => {
-          const vueRenderUUID = vueRenderElement.id
-          const app = createApp(DynamicComponent, {content:vueRenderElement.innerHTML, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
-          this.componentRefs[vueRenderUUID] = app.componentRef;
-
-          if(app.componentRef.onChange) {
-            app.componentRef.onChange = () => {
-              this.$emit('update:modelValue', this.getUserInputedDatas())
-            }
-          }
-        })
-
-        this.setUserInputedDatas(this.modelValue)
-        this.$emit('update:modelValue', this.getUserInputedDatas())
-      });
-    },
-
-
-    /**
-     * 입력 요소에 대해서 유저가 입력한 데이터를 반환시키기 위해서
-     * {name1:value1, name2:value2}와 같이 반환됨(name1은 입력 태그의 name 속성이며, 고유한 속성임)
-     */
-    getUserInputedDatas() {
-      let userInputedDatas = {}
-
-      Object.keys(this.componentRefs).forEach(refKey => {
-        const component = this.componentRefs[refKey];
-        if (component.name && component.inputedValue !== undefined) {
-          userInputedDatas[component.name] = component.inputedValue;
+  /**
+   * 'console.log(JSON.stringify(this.formValues))'과 같이 this.formValues의 값을 접근해서 로깅하지 말 것
+   * Vue의 render 추적 대상에 읽기 동작만으로 포함되기 때문에 예상치 못한 동작이 일어남
+   * 로깅을 하고 싶을 경우, updated와 같은 다른 함수에서 할 것
+   */
+  render() {
+    const me = this
+    const r = {
+      components: {
+        TextField,
+        SelectField,
+        CheckboxField,
+        RadioField,
+        FileField,
+        LabelField
+      },
+      data() {
+        return {
+          formValues: me.formValues
         }
-      });
-
-      return userInputedDatas
-    },
-
-    /**
-     * 입력 요소에 자동으로 값을 입력시키기 위해서
-     * {name1:value1, name2:value2}와 같이 전달할 것(name1은 입력 태그의 name 속성이며, 고유한 속성임)
-     * [!] 만약, 해당 키를 이름으로 가진 속성이 없을 경우, 그 키는 무시됨
-     */
-    setUserInputedDatas(userInputedDatas) {
-      Object.keys(userInputedDatas).forEach(key => {
-        Object.keys(this.componentRefs).forEach(refKey => {
-          const component = this.componentRefs[refKey];
-          if (component.name === key) {
-            component.initialValue = userInputedDatas[key];
-          }
-        });
-      });
+      },
+      template: me.formHTML
     }
+    return h(r);
   },
-
-  created() {
-    this.renderVueComponents()
-  }
 };
 </script>
-
