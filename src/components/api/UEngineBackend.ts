@@ -14,7 +14,7 @@ class UEngineBackend implements Backend {
             if (basePath) url += `?basePath=${basePath}`;
 
             const response = await axiosInstance.get(url);
-            return response.data;
+            return response.data._embedded.definitions;
         } catch (e) {
             alert(e);
         }
@@ -235,7 +235,14 @@ class UEngineBackend implements Backend {
             alert(e);
         }
     }
-
+    async putWorkItem(taskId: string, workItem: any) {
+        try {
+            const response = await axiosInstance.post(`/work-item/${taskId}`, workItem);
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
+    }
     async putWorklist(taskId: string, workItem: any) {
         try {
             let url = `/worklist`;
