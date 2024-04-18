@@ -556,7 +556,7 @@ export default {
       var block = this.blocks[conn.from[0]];
       var blockData = this.blockTemplates[block.type];
       var transformerMapping = {
-        "_type": "java.lang.Object",
+        "_type": "org.uengine.processdesigner.mapper.TransformerMapping",
         "transformer": {
           "_type": blockData.class,
           "name": block.type,
