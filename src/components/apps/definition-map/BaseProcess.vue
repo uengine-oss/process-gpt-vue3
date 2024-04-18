@@ -11,6 +11,7 @@ export default {
     },
     data: () => ({
         processDialogStatus: false,
+        hover: false,
     }),
     methods: {
         async editProcess(process) {
