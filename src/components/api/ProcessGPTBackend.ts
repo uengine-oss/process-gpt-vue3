@@ -144,13 +144,12 @@ class ProcessGPTBackend implements Backend {
 
     async getWorkList() {
         try {
-            const worklist: any[] = [];
             const email = localStorage.getItem("email");
             const options = { match: { user_id: email } };
-    
             const formattedWorklist = async (list: any[]) => {
-                for (const item of list) {
-                    if (item.user_id === email) {
+                const worklist: any[] = [];
+                if (list && list.length > 0) {
+                    for (const item of list) {
                         const workItem: any = {
                             defId: item.proc_def_id,
                             endpoint: item.user_id,
@@ -161,7 +160,7 @@ class ProcessGPTBackend implements Backend {
                             dueDate: item.end_date,
                             status: item.status,
                             title: item.activity_id,
-                            description: "",
+                            description: item.description || "",
                             tool: ""
                         };
                         if (item.proc_inst_id) {
@@ -176,20 +175,23 @@ class ProcessGPTBackend implements Backend {
                         worklist.push(workItem);
                     }
                 }
-            };
-    
-            const list = await storage.list('todolist', options);
-            if (list && list.length > 0) {
-                await formattedWorklist(list);
+                return worklist;
             }
-    
+            let worklist = await storage.list('todolist', options);
+            if (worklist && worklist.length > 0) {
+                worklist = await formattedWorklist(worklist);
+            }
             return worklist;
         } catch (error) {
-            throw new Error('error in getWorkList');
+            throw new Error(`error in getWorkListByStatus with status: ${status}`);
         }
     }
-    
+
     async putWorkItem(taskId: string, workItem: any) {
+        throw new Error("Method not implemented.");
+    }
+    
+    async putWorklist(taskId: string, workItem: any) {
         const putObj = {
             id: taskId,
             proc_def_id: workItem.defId,
@@ -201,6 +203,10 @@ class ProcessGPTBackend implements Backend {
             activity_id: workItem.title,
         }
         await storage.putObject('todolist', putObj);
+    }
+
+    async deleteWorkItem(taskId: string) {
+        await storage.delete(`todolist/${taskId}`, { key: 'id' });
     }
 
     async getProcessDefinitionMap() {
@@ -251,47 +257,55 @@ class ProcessGPTBackend implements Backend {
         throw new Error("Method not implemented.");
     }
     
-    async suspend(instanceId: string): Promise<any> {
+    async suspend(instanceId: string) {
         throw new Error("Method not implemented.");
     }
 
-    async resume(instanceId: string): Promise<any> {
+    async resume(instanceId: string) {
         throw new Error("Method not implemented.");
     }
 
-    async backToHere(instanceId: string, tracingTag: string): Promise<any> {
+    async backToHere(instanceId: string, tracingTag: string) {
         throw new Error("Method not implemented.");
     }
 
-    async getProcessVariables(instanceId: string): Promise<any> {
+    async getProcessVariables(instanceId: string) {
         throw new Error("Method not implemented.");
     }
 
-    async getVariable(instId: string, varName: string): Promise<any> {
+    async getVariable(instId: string, varName: string) {
         throw new Error("Method not implemented.");
     }
 
-    async setVariable(instanceId: string, varName: string, varValue: any): Promise<any> {
+    async setVariable(instanceId: string, varName: string, varValue: any) {
         throw new Error("Method not implemented.");
     }
 
-    async getRoleMapping(instId: string, roleName: string): Promise<any> {
+    async getRoleMapping(instId: string, roleName: string) {
         throw new Error("Method not implemented.");
     }
 
-    async setRoleMapping(instanceId: string, roleName: string, roleMapping: any): Promise<any> {
+    async setRoleMapping(instanceId: string, roleName: string, roleMapping: any) {
         throw new Error("Method not implemented.");
     }
 
-    async signal(instanceId: string, signal: string): Promise<any> {
+    async signal(instanceId: string, signal: string) {
         throw new Error("Method not implemented.");
     }
 
-    async serviceMessage(requestPath: string): Promise<any> {
+    async serviceMessage(requestPath: string) {
         throw new Error("Method not implemented.");
     }
 
-    async postMessage(instanceId: string, message: any): Promise<any> {
+    async postMessage(instanceId: string, message: any) {
+        throw new Error("Method not implemented.");
+    }
+
+    async getInProgressList() {
+        throw new Error("Method not implemented.");
+    }
+
+    async getPendingList() {
         throw new Error("Method not implemented.");
     }
 }
