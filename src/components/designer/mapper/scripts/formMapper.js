@@ -264,7 +264,7 @@ export default {
             out: { x: 60, y: 10, direction: "out", appendX: 75, appendY: -10 },
           },
           attributes: {
-            "Value": { x: -55, y: 15, func: "input", value: "" },
+            "value": { x: -55, y: 15, func: "input", value: "" },
           },
           parent: "ETC",
           class: "org.uengine.processdesigner.mapper.transformers.DirectValueTransformer",
@@ -616,7 +616,6 @@ export default {
     },
     renderFormMapperFromMappingElementJson(json) {
       if (!json) {
-        console.error("JSON 데이터가 제공되지 않았습니다.");
         return;
       }
       try {
@@ -659,12 +658,22 @@ export default {
         }
       });
 
+      this.addAttributeFromJson(newBlock, transformerMapping);
+
 
       if (transformerMapping.transformer.argumentSourceMap) {
         this.addConnectionJson(blockName, "Target", transformerMapping.transformer.argumentSourceMap, targetArgument);
       }
 
       this.blocks[blockName] = newBlock;
+    },
+    addAttributeFromJson(block, transformerMapping) {
+      var attributeTemplate = this.blockTemplates[block.type].attributes;
+      if(attributeTemplate != undefined) {
+        Object.keys(attributeTemplate).forEach(key => {
+          block.attributes[key] = transformerMapping.transformer[key];
+        });
+      }
     },
     addConnectionJson(fromBlockName, toBlockName, argumentSourceMap, targetArgument = null) {
       Object.entries(argumentSourceMap).forEach(([argument, source]) => {
@@ -750,7 +759,7 @@ export default {
     attributes_() {
       return _.flatMap(this.blocks, ({ type, pos }, blockName) => {
         const template = this.blockTemplates[type];
-        return _.map(template.attributes, (attribute, name) => ({
+        var result = _.map(template.attributes, (attribute, name) => ({
           ...attribute,
           func: attribute.func,
           name,
@@ -758,6 +767,12 @@ export default {
           blockName,
           pos: add(pos, attribute),
         }));
+        if(result.length > 0 && this.blocks) {
+          if(this.blocks[blockName].attributes) {
+            result[0].value = this.blocks[blockName].attributes[result[0].name];
+          }
+        }
+        return result;
       });
     },
   },
