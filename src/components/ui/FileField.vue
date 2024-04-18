@@ -3,7 +3,6 @@
         <v-file-input
             :label="label"
             v-model="selectedFiles"
-            @change="convertToBase64"
         ></v-file-input>
     </div>
 </template>
@@ -11,18 +10,14 @@
 <script>
 
 export default {
-    components: {
-       
-    },
-    mixins: [
-        
-    ],
     props: {
+        modelValue: String,
         vueRenderUUID: String,
         tagName: String,
         name: String,
         alias: String
     },
+
     computed: {
         label() {
             if(this.localAlias && this.localName) return `${this.localAlias}(${this.localName})`
@@ -31,26 +26,32 @@ export default {
             else return ""
         }
     },
+
     data() {
         return {
             localName: this.name,
             localAlias: this.alias,
-            selectedFiles: null,
-            inputedValue: ""
+            selectedFiles: null
         };
     },
-    created() {
-    },
-    methods: {
-        convertToBase64() {
-            if (!this.selectedFiles && this.selectedFiles.length <= 0) return
+
+    watch: {
+        selectedFiles() {
+            if (!this.selectedFiles || this.selectedFiles.length <= 0) {
+                this.$emit('update:modelValue', "")
+                return
+            }
 
             const reader = new FileReader();
             reader.onload = (e) => {
-                this.inputedValue = e.target.result
+                this.$emit('update:modelValue', e.target.result)
             }
             reader.readAsDataURL(this.selectedFiles[0])
         }
+    },
+
+    created() {
+        this.$emit('update:modelValue', "")
     }
 };
 </script>

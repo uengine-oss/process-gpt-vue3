@@ -36,6 +36,7 @@ import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/FormDesignGenerator';
 import Chat from './ui/Chat.vue';
 
+
 var jsondiffpatch = jsondiff.create({
     objectHash: function (obj, index) {
         return '$$index:' + index;
@@ -71,11 +72,11 @@ export default {
         isShowMashup: false
     }),
     async created() {
-        await this.init();
         this.generator = new ChatGenerator(this, {
             isStream: true,
             preferredLanguage: 'Korean'
         });
+        await this.init();
     },
     watch: {
         /**
@@ -99,24 +100,8 @@ export default {
          * 'Save' 버튼을 누를 경우, 최종 결과를 Supabase에 저장하기 위해서
          */
         async saveFormDefinition({id, name, html}){
-            const isNewSave = (this.$route.params.id !== id)
-            if(isNewSave) {
-                const isFormAlreadyExist = (await this.getData(`form_def/${id}`, { key: "id" }) !== null)
-                if(isFormAlreadyExist) {
-                    if(!confirm(`'${id}'는 이미 존재하는 폼 디자인 ID 입니다! 그래도 저장하시겠습니까?`))
-                        return
-                }
-            }
-
-
-            await this.putObject("form_def", {
-                id, name, html, messages: this.messages
-            });
             
-            
-            if(isNewSave) {
-                this.$router.push(`/ui-definitions/${id}`)
-            }
+            this.backend.putRawDefinition(html, id, {'type': 'form'});
         },
 
 
@@ -344,7 +329,8 @@ export default {
                 const parent = document.createElement('div')
                 parent.setAttribute('id', `vuemount_${crypto.randomUUID()}`)
 
-                if(["text-field", "select-field", "checkbox-field", "radio-field", "file-field", "label-field", "submit-field"].includes(component.tagName.toLowerCase()))
+                
+                if(this.generator.avaliableComponentTagNames.includes(component.tagName.toLowerCase()))
                 {
                     component.parentNode.insertBefore(parent, component)
                     parent.appendChild(component)

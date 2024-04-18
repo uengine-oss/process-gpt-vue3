@@ -26,6 +26,7 @@ export interface Backend {
     serviceMessage(requestPath: string): Promise<any>;
     getWorkItem(taskId: string): Promise<any>;
     putWorkItem(taskId: string, workItem: any): Promise<any>;
+    putWorkItemComplate(taskId: string, workItem: any): Promise<any>;
     postMessage(instanceId: string, message: any): Promise<any>;
     getWorkList(): Promise<any>;
     getProcessDefinitionMap(): Promise<any>;

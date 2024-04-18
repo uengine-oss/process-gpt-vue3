@@ -3,7 +3,7 @@
         <v-card>
             <v-row class="ma-0 pa-0">
                 <!-- {{$t('processDefinition.editProcessData') }} -->
-                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important"> Form Mapper </v-card-title>
+                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important"> Form Mapper - {{ name }} </v-card-title>
                 <v-spacer></v-spacer>
                 <v-btn icon @click="saveFormMapperJson()">
                     <v-icon>mdi-content-save-outline</v-icon>
@@ -84,6 +84,7 @@
                         :key="attribute.blockName + ',' + attribute.name"
                         :pos="attribute.pos"
                         :name="attribute.name"
+                        :value="attribute.value"
                         :block-name="attribute.blockName"
                         :func="attribute.func"
                         :appendComponent="appendComponent"

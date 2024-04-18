@@ -14,7 +14,7 @@ class UEngineBackend implements Backend {
             if (basePath) url += `?basePath=${basePath}`;
 
             const response = await axiosInstance.get(url);
-            return response.data;
+            return response.data._embedded.definitions;
         } catch (e) {
             alert(e);
         }
@@ -83,7 +83,7 @@ class UEngineBackend implements Backend {
             alert(e);
         }
     }
-    async putRawDefinition(definition: any, requestPath: string) {
+    async putRawDefinition(definition: any, requestPath: string, options) {
         try {
             let req = {
                 definition: definition
@@ -94,15 +94,15 @@ class UEngineBackend implements Backend {
                 },
                 responseType: 'text' as const
             };
-            const response = await axiosInstance.put('/definition/raw/' + requestPath + '.xml', definition, config);
+            const response = await axiosInstance.put('/definition/raw/' + requestPath + '.' + options.type, definition, config);
             return response.data;
         } catch (e) {
             alert(e);
         }
     }
-    async getRawDefinition(defPath: string) {
+    async getRawDefinition(defPath: string, options) {
         try {
-            const response = await axiosInstance.get(`/definition/raw/${defPath}`);
+            const response = await axiosInstance.get(`/definition/raw/${defPath}.${options.type}`);
             return response.data;
         } catch (e) {
             alert(e);
@@ -184,7 +184,14 @@ class UEngineBackend implements Backend {
 
     async setVariable(instanceId: string, varName: string, varValue: any) {
         try {
-            const response = await axiosInstance.post(`/instance/${instanceId}/variable/${varName}`, null, { params: { varValue } });
+            var config = {
+                headers: {
+                    'Content-Type': 'text/plain'
+                },
+                responseType: 'text' as const
+            };
+            
+            const response = await axiosInstance.post(`/instance/${instanceId}/variable/${varName}`, JSON.stringify(varValue), config);
             return response.data;
         } catch (e) {
             alert(e);
@@ -235,7 +242,24 @@ class UEngineBackend implements Backend {
             alert(e);
         }
     }
-
+    async putWorkItem(taskId: string, workItem: any) {
+        try {
+            const response = await axiosInstance.post(`/work-item/${taskId}`, workItem);
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
+    }
+    
+    async putWorkItemComplate(taskId: string, workItem: any) {
+        try {
+            const response = await axiosInstance.post(`/work-item/${taskId}/complate`, workItem);
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
+    }
+    
     async putWorklist(taskId: string, workItem: any) {
         try {
             let url = `/worklist`;
