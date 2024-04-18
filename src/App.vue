@@ -1,28 +1,34 @@
 <template>
-    <v-snackbar v-model="snackbar" :timeout="timeout">
-        {{ text }}
-        <template v-slot:actions>
-            <v-btn color="red" variant="text" @click="snackbar = false">
-                Close
-            </v-btn>
-        </template>
-    </v-snackbar>
-
-    <RouterView></RouterView>
+    <div>
+        <v-progress-linear v-if="loading"
+            style="position: absolute; z-index:999;"
+            indeterminate
+            class="my-progress-linear"
+        ></v-progress-linear>
+        <v-snackbar class="custom-snackbar"
+            v-model="snackbar"
+            :timeout="2000"
+            :color="snackbarColor"
+            elevation="24"
+        >
+            {{ snackbarMessage }}
+        </v-snackbar>
+        <RouterView></RouterView>
+    </div>
 </template>
 
 <script>
 import { createClient } from '@supabase/supabase-js';
 import { RouterView } from "vue-router";
-
 export default {
     components: {
         RouterView
     },
     data: () => ({
+        loading: false,
+        snackbarMessage : String,
         snackbar: false,
-        text: '',
-        timeout: 3000
+        snackbarColor : null,
     }),
     async created() {
         // window.$supabase = createClient(window._env_.DB_URL, window._env_.DB_PW);
@@ -32,32 +38,32 @@ export default {
                 persistSession: false
             }
         });
-        window.$mode = 'uEngine'
-        // window.$mode = 'ProcessGPT'
+        // window.$mode = 'uEngine'
+        window.$mode = 'ProcessGPT'
+        window.$app_ = this
     },
     methods: {
-        async try(options, parameters) {
+        async try(options, parameters, options_) {
             if (options && !options.action) {
                 options = {
                     parameters: parameters,
                     action: options
                 }
+                Object.assign(options, options_);
             }
-
             try {
+                window.$app_.loading = true
                 await options.action(options.parameters)
-
                 if (options.successMsg) {
-                    this.text = options.successMsg
-                    this.snackbar = true
+                    // console.log(options.successMsg)
+                    window.$app_.snackbarMessage = options.successMsg
+                    window.$app_.snackbarColor = 'success'
+                    window.$app_.snackbar = true;
                 }
-                console.log('successfully done');
-
             } catch (e) {
                 if (options.onFail) {
                     options.onFail(e);
                 }
-
                 let errorMessage = e.message;
                 let currentException = e;
                 while (currentException.cause) {
@@ -66,10 +72,32 @@ export default {
                 }
                 if (errorMessage) {
                     // alert(errorMessage)
+                    window.$app_.snackbarMessage = errorMessage
+                    window.$app_.snackbarColor = 'error'
+                    window.$app_.snackbar = true;
                 }
                 console.log(e);
+            }
+            finally {
+                window.$app_.loading = false
             }
         },
     }
 }
 </script>
+
+<style>
+.custom-snackbar {
+    position: fixed !important;
+    bottom: auto !important;
+    top: 50px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 1010 !important;
+}
+.custom-snackbar .v-snackbar__content {
+    text-align: center;
+    font-size:16px !important;
+    font-weight: 500 !important;
+}
+</style>

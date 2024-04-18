@@ -122,10 +122,11 @@ export default class StorageBaseSupabase {
     async getString(path, options) {
         try {
             let obj = this.formatDataPath(path, options);
+            const column = options.column ? options.column : "*";
             if (options && options.match) {
                 const { data, error } = await window.$supabase
                     .from(obj.table)
-                    .select()
+                    .select(column)
                     .match(options.match)
                     .maybeSingle()
 
@@ -137,7 +138,7 @@ export default class StorageBaseSupabase {
             } else if (obj.searchVal) {
                 const { data, error } = await window.$supabase
                     .from(obj.table)
-                    .select()
+                    .select(column)
                     .eq(obj.searchKey, obj.searchVal)
                     .maybeSingle()
 
@@ -149,7 +150,7 @@ export default class StorageBaseSupabase {
             } else {
                 const { data, error } = await window.$supabase
                     .from(obj.table)
-                    .select()
+                    .select(column)
                     .maybeSingle()
 
                 if (error) {

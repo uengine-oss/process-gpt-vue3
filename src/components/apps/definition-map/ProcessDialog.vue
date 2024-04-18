@@ -1,6 +1,6 @@
 <template>
     <div v-if="enableEdit">
-        <v-dialog v-model="addDialog" max-width="500">
+        <v-dialog v-model="subProcessDialogStauts" max-width="500">
             <v-card>
                 <v-card-title>
                     {{ addType.toUpperCase() }} 프로세스 추가
@@ -24,14 +24,6 @@
                         color="primary"
                         density="compact"
                     ></v-checkbox>
-
-                    <v-text-field
-                        v-if="addType != 'sub' || isNewDef"
-                        class="cp-process-id"
-                        v-model="newProcess.id"
-                        label="프로세스 ID"
-                        autofocus
-                    ></v-text-field>
                     
                     <v-text-field
                         v-if="addType != 'sub' || isNewDef"
@@ -50,39 +42,78 @@
                     >저장</v-btn>
                     <v-btn color="error" 
                         variant="flat" 
-                        @click="closeDialog('add')"
+                        @click="closeDialog()"
                     >닫기</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
-        <v-dialog v-model="updateDialog" max-width="500">
-            <v-card>
-                <v-card-title>
-                    {{ type.toUpperCase() }} 프로세스 수정
-                </v-card-title>
-                
-                <v-card-text>
+        <div v-if="processType === 'add' && !subProcessDialogStauts">
+            <v-row class="ma-0 pa-0" align="center">
+                <v-col class="ma-0 pa-0" cols="12">
+                    <v-row v-if="addType == 'sub' && !isNewDef" justify="end" class="ma-0 pa-0">
+                        <v-tooltip text="닫기">
+                            <template v-slot:activator="{ props }">
+                                <v-btn @click="closeDialog()"
+                                    icon v-bind="props"
+                                    density="compact"
+                                    size="small"
+                                >
+                                <Icon icon="material-symbols:close" />
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
+                    </v-row>
+                </v-col>
+            </v-row>
+            <v-row v-if="isNewDef || addType === 'mega' || addType === 'major'" justify="end" class="ma-0 pa-0" style="margin-top: -22px !important;">
+                <v-spacer></v-spacer>
+                <v-tooltip text="닫기">
+                    <template v-slot:activator="{ props }">
+                        <v-btn @click="closeDialog()"
+                            icon v-bind="props"
+                            density="compact"
+                            size="small"
+                        >
+                        <Icon icon="material-symbols:close" />
+                        </v-btn>
+                    </template>
+                </v-tooltip>
+                <v-col cols="12" class="ma-0 pa-0">
                     <v-text-field
-                        v-model="newProcess.id"
-                        label="프로세스 ID"
-                        autofocus
-                    ></v-text-field>
-                    <v-text-field
+                        class="cp-process-id"
                         v-model="newProcess.label"
-                        label="프로세스명"
+                        :label="`${addType.toUpperCase()} 프로세스 추가`"
+                        autofocus
+                        @keyup.enter="addProcess"
                     ></v-text-field>
-                </v-card-text>
-                
-                <v-card-actions class="justify-center">
-                    <v-btn color="primary" 
-                        variant="flat"
-                        :disabled="newProcess.id == '' && newProcess.label == ''"
-                        @click="updateProcess"
-                    >저장</v-btn>
-                    <v-btn color="error" variant="flat" @click="closeDialog('update')">닫기</v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
+                </v-col>
+            </v-row>
+        </div>
+        <v-row v-if="processType === 'update'" justify="end" class="ma-0 pa-0">
+            <v-spacer></v-spacer>
+            <v-tooltip text="닫기">
+                <template v-slot:activator="{ props }">
+                    <v-btn @click="closeDialog()"
+                        icon v-bind="props"
+                        density="compact"
+                        size="small"
+                    >
+                    <Icon icon="material-symbols:close" />
+                    </v-btn>
+                </template>
+            </v-tooltip>
+            <v-col cols="12"  class="ma-0 pa-0">
+                <div max-width="500">
+                    <v-text-field
+                        class="edit-process-text-field"
+                        v-model="newProcess.label"
+                        autofocus
+                        label="프로세스 수정"
+                        @keyup.enter="updateProcess"
+                    ></v-text-field>
+                </div>
+            </v-col>
+        </v-row>
     </div>
 </template>
 
@@ -91,10 +122,11 @@ export default {
     props: {
         process: Object,
         enableEdit: Boolean,
-        definitions: Object,
         type: String,
         processDialogStatus: Boolean,
-        processType: String
+        processType: String,
+        storage: Object,
+        subProcessDialogStauts: Boolean
     },
     data: () => ({
         newProcess: {
@@ -102,9 +134,22 @@ export default {
             label: ""
         },
         isNewDef: false,
-        addDialog: false,
-        updateDialog: false,
+        definitions: null,
+        
     }),
+    mounted() {
+            if(!this.processDialogStatus) return;
+            if (this.processType == 'add') {
+                // this.newProcess = {
+                //     id: "",
+                //     label: "",
+                //     name: ""
+                // };
+            } else if(this.processType == 'update') {
+                this.newProcess.id = this.process.id;
+                this.newProcess.label = this.process.label;
+            }
+    },
     computed: {
         addType() {
             if (this.type == 'map') {
@@ -114,7 +159,7 @@ export default {
             } else if (this.type == 'major') {
                 return "sub";
             }
-        },
+        }
     },
     watch: {
         isNewDef(val) {
@@ -139,40 +184,47 @@ export default {
                 //     label: "",
                 //     name: ""
                 // };
-                this.addDialog = true
             } else if(this.processType == 'update') {
                 this.newProcess.id = this.process.id;
                 this.newProcess.label = this.process.label;
-                this.updateDialog = true
             }
         }
     },
     created() {
+        this.init();
+        
     },
     methods: {
-        closeDialog(type) {
+        async init() {
+            if (this.addType == 'sub') {
+                const list = await this.storage.list(`proc_def`);
+                if (list && list.length > 0) {
+                    this.definitions = list;
+                } else {
+                    this.definitions = null;
+                }
+            }
+        },
+        closeDialog() {
             // this.newProcess = {
             //     id: "",
             //     label: ""
             // };
             this.isNewDef = false;
-            if (type == 'add') {
-                this.addDialog = false;
-            } else if(type == 'update') {
-                this.updateDialog = false;
-            }
             this.$emit('closeProcessDialog');
         },
         addProcess() {
-            if (this.newProcess.id != '' && (this.newProcess.name != '' || this.newProcess.label != '')) {
+            if (this.newProcess.label != '') {
                 this.$emit("add", this.newProcess);
-                this.closeDialog('add');
+                if(this.addType === 'sub') {
+                    this.closeDialog();
+                }
             }
         },
         updateProcess() {
-            if (this.newProcess.id != '' && this.newProcess.label != '') {
+            if (this.newProcess.id != '') {       
                 this.$emit("edit", this.newProcess);
-                this.closeDialog('update');
+                this.closeDialog();
             }
         },
     },

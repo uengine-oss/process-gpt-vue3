@@ -63,15 +63,18 @@
             </div>
             <div>
                 <v-row  class="ma-0 pa-0">
-                    <v-btn text color="primary" class="my-3" @click="oepnFieldMapper = !oepnFieldMapper">
+                    <v-btn text color="primary" class="my-3" @click="openFieldMapper = !openFieldMapper">
                         Field Mapping
                     </v-btn>
                 </v-row>
             </div>
-            <v-dialog v-model="oepnFieldMapper"  max-width="80%" max-height="80%">
+            <v-dialog  v-model="openFieldMapper"  max-width="80%" max-height="80%" @afterLeave="$refs.formMapper && $refs.formMapper.saveFormMapperJson()">
                 <form-mapper 
+                    ref="formMapper"
                     :definition="definition" 
                     :name="name"    
+                    :formMapperJson="formMapperJson"
+                    @saveFormMapperJson="saveFormMapperJson"
                 />
             </v-dialog>
         </div>
@@ -200,9 +203,10 @@ export default {
             editParam: false,
             paramKey: "",
             paramValue: "",
-            oepnFieldMapper: false,
+            openFieldMapper: false,
             isFormActivity: false,
-            selectedForm: ""
+            selectedForm: "",
+            formMapperJson: ""
         };
     },
     async mounted() {
@@ -309,7 +313,11 @@ export default {
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint })
             this.$emit('update:uEngineProperties', this.copyUengineProperties)
-        },
+        },  
+        saveFormMapperJson(jsonString) {
+            this.formMapperJson = jsonString;
+            this.openFieldMapper = false;
+        }
     }
 };
 </script>

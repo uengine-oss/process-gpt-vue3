@@ -17,11 +17,11 @@ class ProcessGPTBackend implements Backend {
     }
 
     async listVersionDefinitions(version: string, basePath: string) {
-        //
+        throw new Error("Method not implemented.");
     }
 
     async listVersions() {
-        //
+        throw new Error("Method not implemented.");
     }
 
     async deleteDefinition(defId: string) {
@@ -144,30 +144,80 @@ class ProcessGPTBackend implements Backend {
 
     async getWorkList() {
         try {
-            const email = localStorage.getItem("email");
-            const options = {
-                match: {
-                    user_id: email
-                }
-            };
-            const data = await storage.list('todolist', options);
-            return data;
-
+            return this.getWorkListByStatus('TODO');
         } catch (error) {
-            throw new Error('error in getWorkList');
+            throw new Error(`error in getWorkListByStatus with status: ${status}`);
         }
     }
+
+    async getWorkListByStatus(status: string) {
+        const email = localStorage.getItem("email");
+        const options = { match: { user_id: email, status: status } };
+        const list = await storage.list('todolist', options);
+        const worklist: any[] = [];
+        if (list && list.length > 0) {
+            for (const item of list) {
+                const workItem: any = {
+                    defId: item.proc_def_id,
+                    endpoint: item.user_id,
+                    instId: item.proc_inst_id,
+                    rootInstId: null,
+                    taskId: item.id,
+                    startDate: item.start_date,
+                    dueDate: item.end_date,
+                    status: item.status,
+                    title: item.activity_id,
+                    description: item.description || "",
+                    tool: ""
+                };
+                if (item.proc_inst_id) {
+                    const data = await storage.getString(item.proc_def_id, { 
+                        match: { proc_inst_id: item.proc_inst_id },
+                        column: "proc_inst_name"
+                    });
+                    if (data && data.proc_inst_name) {
+                        workItem.description = data.proc_inst_name;
+                    }
+                }
+                worklist.push(workItem);
+            }
+        }
+        return worklist;
+    }
+
+    async putWorkItem(taskId: string, workItem: any) {
+        throw new Error("Method not implemented.");
+    }
+    
+    async putWorklist(taskId: string, workItem: any) {
+        const putObj = {
+            id: taskId,
+            proc_def_id: workItem.defId,
+            user_id: workItem.endpoint,
+            proc_inst_id: workItem.instId,
+            start_date: workItem.startDate,
+            end_date: workItem.dueDate,
+            status: workItem.status,
+            activity_id: workItem.title,
+        }
+        await storage.putObject('todolist', putObj);
+    }
+
+    async deleteWorkItem(taskId: string) {
+        await storage.delete(`todolist/${taskId}`, { key: 'id' });
+    }
+
     async getProcessDefinitionMap() {
         const procMap = await storage.getObject('configuration/proc_map', { key: 'key' });
         if (procMap && procMap.value) {
             return procMap.value;
         }
-        // return await storage.getObject('proc_map', { key: 'key' });
     }
+
     async putProcessDefinitionMap(definitionMap: any) {
         const putObj = {
-                key: 'proc_map',
-                value: definitionMap
+            key: 'proc_map',
+            value: definitionMap
         }
         await storage.putObject('configuration', putObj);
     }
@@ -205,52 +255,56 @@ class ProcessGPTBackend implements Backend {
         throw new Error("Method not implemented.");
     }
     
-    async suspend(instanceId: string): Promise<any> {
+    async suspend(instanceId: string) {
         throw new Error("Method not implemented.");
     }
 
-    async resume(instanceId: string): Promise<any> {
+    async resume(instanceId: string) {
         throw new Error("Method not implemented.");
     }
 
-    async backToHere(instanceId: string, tracingTag: string): Promise<any> {
+    async backToHere(instanceId: string, tracingTag: string) {
         throw new Error("Method not implemented.");
     }
 
-    async getProcessVariables(instanceId: string): Promise<any> {
+    async getProcessVariables(instanceId: string) {
         throw new Error("Method not implemented.");
     }
 
-    async getVariable(instId: string, varName: string): Promise<any> {
+    async getVariable(instId: string, varName: string) {
         throw new Error("Method not implemented.");
     }
 
-    async setVariable(instanceId: string, varName: string, varValue: any): Promise<any> {
+    async setVariable(instanceId: string, varName: string, varValue: any) {
         throw new Error("Method not implemented.");
     }
 
-    async getRoleMapping(instId: string, roleName: string): Promise<any> {
+    async getRoleMapping(instId: string, roleName: string) {
         throw new Error("Method not implemented.");
     }
 
-    async setRoleMapping(instanceId: string, roleName: string, roleMapping: any): Promise<any> {
+    async setRoleMapping(instanceId: string, roleName: string, roleMapping: any) {
         throw new Error("Method not implemented.");
     }
 
-    async signal(instanceId: string, signal: string): Promise<any> {
+    async signal(instanceId: string, signal: string) {
         throw new Error("Method not implemented.");
     }
 
-    async serviceMessage(requestPath: string): Promise<any> {
+    async serviceMessage(requestPath: string) {
         throw new Error("Method not implemented.");
     }
 
-    async putWorkItem(taskId: string, workItem: any): Promise<any> {
+    async postMessage(instanceId: string, message: any) {
         throw new Error("Method not implemented.");
     }
 
-    async postMessage(instanceId: string, message: any): Promise<any> {
-        throw new Error("Method not implemented.");
+    async getInProgressList() {
+        return this.getWorkListByStatus('IN_PROGRESS');
+    }
+
+    async getPendingList() {
+        return this.getWorkListByStatus('PENDING');
     }
 }
 
