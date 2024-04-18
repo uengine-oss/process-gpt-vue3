@@ -2,22 +2,18 @@
     <!-- ---------------------------------------------------- -->
     <!-- Table Basic -->
     <!-- ---------------------------------------------------- -->
-    <v-card elevation="10" class="mb-5 cursor-pointer" @click="executeTask()">
+    <v-card elevation="10" class="mb-5 cursor-pointer" @click="executeTask">
         <div class="d-flex align-center justify-space-between px-4 py-2 pr-3">
             <h5 class="text-subtitle-2 font-weight-semibold pr-4">
-                {{ task.title }}(TaskId: {{ task.taskId }}/InstId: {{task.instId}})
+                {{ formattedTitle }}
             </h5>
             
-            <!-- ProcessGPTBackend -->
-            <RouterLink to="" class="px-0">
+            <RouterLink v-if="managed" to="" class="px-0">
                 <DotsVerticalIcon size="15" />
                 <v-menu activator="parent">
                     <v-list density="compact">
                         <v-list-item @click="deleteTask">
                             <v-list-item-title>삭제</v-list-item-title>
-                        </v-list-item>
-                        <v-list-item @click="openDetail">
-                            <v-list-item-title>상세보기</v-list-item-title>
                         </v-list-item>
                     </v-list>
                 </v-menu>
@@ -35,9 +31,9 @@
                     {{ formattedDate }}
                 </div>
             </div>
-            <!-- <div :class="'rounded-sm body-text-1 px-1 py-0 bg-' + task?.categorybg" size="small">
-                {{ task?.category }}
-            </div> -->
+            <div v-if="category" :class="'rounded-sm body-text-1 px-1 py-0 bg-' + category.color" size="small">
+                {{ category.name }}
+            </div>
         </div>
 
         <v-dialog v-model="dialog" max-width="500">
@@ -76,6 +72,7 @@ export default {
         task: Object,
     },
     data: () => ({
+        managed: false,
         dialog: false,
         dialogType: '',
     }),
@@ -83,24 +80,40 @@ export default {
         formattedDate() {
             var dateString = "";
             if (this.task.startDate) {
-                dateString += format(new Date(this.task.startDate), "yyyy.MM.dd HH:mm") + " ~";
+                dateString += format(new Date(this.task.startDate), "yyyy.MM.dd") + " ~";
             } 
             if (this.task.dueDate) {
                 if (!dateString.includes("~")) dateString += "~ "
-                dateString += format(new Date(this.task.dueDate), "yyyy.MM.dd HH:mm");
+                dateString += format(new Date(this.task.dueDate), "yyyy.MM.dd");
             }
             return dateString;
+        },
+        formattedTitle() {
+            if (window.$mode == 'ProcessGPT') {
+                return this.task.title;
+            } else if (window.$mode == 'uEngine') {
+                return `${this.task.title}  (TaskId: ${this.task.taskId}/InstId: ${this.task.instId})`;
+            }
+        },
+        category() {
+            if (!this.task.instId) {
+                return null
+            } else {
+                return { name: 'BPM', color: 'primary' };
+            }
         }
     },
     created() {
+        if (!this.task.instId) {
+            this.managed = true;
+        } else {
+            this.managed = false;
+        }
     },
     methods: {
-        executeTask(){
-            this.$emit('executeTask', this.task)
-        },
-        openDetail() {
-            if (this.task.instId) {
-                this.$router.push(`/instances/chat?id=${this.task.instId}`);
+        executeTask() {
+            if (!this.managed) {
+                this.$emit('executeTask', this.task);
             } else {
                 this.dialogType = 'view';
                 this.dialog = true;

@@ -2,7 +2,7 @@
     <div>
         <v-dialog v-model="isOpen" max-width="400">
             <v-card>
-                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{ isNew ? 'NewDefinition' : 'Version Up'}}</v-card-title>
+                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{ isNew ? 'Save Definition' : 'Version Up'}}</v-card-title>
                 <v-btn icon style="position:absolute; right:5px; top:5px;" @click="close()">
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
