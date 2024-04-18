@@ -1,76 +1,107 @@
 <template>
-    <v-card elevation="10">
-        <v-row>
-            <v-col cols="12" md="6">
-                <!-- 좌측 컨텐츠 -->
-                <div class="pa-5">
-                    <div v-for="item in inputItems" class="input-group">
-                        <v-row>
-                            <v-col cols="4">
-                                <v-list-subheader>{{ item.name }}</v-list-subheader>
-                            </v-col>
-
-                            <v-col cols="8">
-                                <v-text-field v-model="item.value"></v-text-field>
-                            </v-col>
-                        </v-row>
+     <v-card elevation="10" v-if="workItem" style="height:calc(100vh - 155px)">
+        <v-card-title style="font-size: larger;"> {{workItem.activity.name}} </v-card-title>
+        <v-row class="ma-0 pa-0">
+            <v-col class="pa-0">
+                <div v-if="currentComponent">
+                    <component :is="currentComponent" :work-item="workItem"></component>
+                </div>
+                <div v-else>
+                    <div v-if="loading">Loading...</div>
+                    <div v-else>
+                        <div>No work item found</div>
                     </div>
                 </div>
-                <div style="float: right;">
-                    <v-btn @click="nextTask()">완료</v-btn>
+            </v-col>
+            <v-col class="pa-0">
+                <div style="height: 50%; margin-bottom: 15px;" >
+                    프로세스 진행상태
+                    <div>
+                        <div v-if="bpmn">
+                            <process-definition class="process-definition-resize" :bpmn="bpmn" :key="updatedKey" :isViewMode="true"></process-definition>
+                        </div>
+                        <dif v-else>
+                            No BPMN found
+                        </dif>
+                    </div>
+                </div>
+                <div style="height: 50%;">
+                    <v-row style="height: 100%; width: 100%; margin-left: 1px;">
+                        <div style="width: 50%; height: 100%;">
+                            CheckPoint ({{checkedCount}}/{{ checkPoints.length }})
+                            <div style="width: 99%; height:70%; max-height:70%; overflow-y: scroll;">
+                                <div v-if="checkPoints.length" v-for="(checkPoint, index) in checkPoints" :key="index">
+                                    <v-checkbox v-model="checkPoint.checked" :label="checkPoint.name" color="primary" hide-details></v-checkbox>
+                                </div>
+                                <div v-else>
+                                    <v-checkbox disabled value-model="true" label="Check Point Description" color="primary" hide-details></v-checkbox>
+                                </div>
+                            </div>
+                            <div style="width: 99%; height: 23%;margin-top: 4%;">
+                                <v-row style="width: 100%; height: 100%; margin-left: 0%;">
+                                    <div style="align-self: center; margin-left: 2%;">
+                                        <v-avatar color="brown" size="large">
+                                            <v-img src="https://avatars0.githubusercontent.com/u/9064066?v=4&s=460"></v-img>
+                                        </v-avatar>
+                                    </div>
+                                    <v-col style="align-self: center;">
+                                        <div> 다음 담당자 / 업무</div>
+                                        <div> Hongil Dong / 정보 수집 및 영상제작</div>
+                                    </v-col>
+                                </v-row>
+                            </div>
+                        </div>
+                        <div style="width: 50%; height: 100%;">
+                            <div style="width: 100%; height: 100%; margin-left: 0%; outline: solid;">
+                                업무 진행 상태
+                            </div>
+                        </div>
+                    </v-row>
                 </div>
             </v-col>
-            <v-col cols="12" md="6">
-                <process-definition class="process-definition-resize" :bpmn="xml" :key="updatedKey"
-                    :isViewMode="true"></process-definition>
-            </v-col>
         </v-row>
-
-
     </v-card>
 </template>
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
+import DefaultWorkItem from './DefaultWorkItem.vue'; // DefaultWorkItem 컴포넌트 임포트
+import FormWorkItem from './FormWorkItem.vue'; // FormWorkItem 컴포넌트 임포트
 
 export default {
     data: () => ({
         workItem: null,
-        inputItems: [],
-        xml: null,
+        bpmn: null,
+        currentComponent: null,
+        checkPoints: [],
+        loading: false,
         updatedKey: 0,
-
+        picture: null
     }),
     components: {
-        ProcessDefinition
+        ProcessDefinition,
+        DefaultWorkItem,
+        FormWorkItem
     },
     created() {
         this.init();
+    },
+    computed:{
+        checkedCount(){
+            return this.checkPoints.filter(checkPoint => checkPoint.checked).length;
+        }
     },
     methods: {
         async init() {
             var me = this
             const backend = BackendFactory.createBackend()
-
+            me.loading = true;
             me.workItem = await backend.getWorkItem(me.$route.params.taskId);
-            if (!me.workItem) return;
-            me.inputItems = me.workItem.activity.parameters
-                .filter(item => item.direction === "OUT")
-                .map(item => ({ name: item.variable.name, value: null }));
-
-            // xml
-            me.xml = await backend.getRawDefinition(me.workItem.worklist.defId);
-            me.updatedKey++
-        },
-
-        async nextTask() {
-            var me = this
-            const backend = BackendFactory.createBackend()
-
-            let parameterValues = this.inputItems.reduce((acc, item) => ({ ...acc, [item.name]: item.value }), {});
-            let result = await backend.putWorkItem(me.$route.params.taskId, { "parameterValues": parameterValues })
-            console.log(result)
+            me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId);
+            me.currentComponent = me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem';
+            me.updatedKey ++
+            me.loading = false
         },
     },
 }

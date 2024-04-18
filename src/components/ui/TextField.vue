@@ -11,20 +11,15 @@
 </template>
 
 <script>
-
 export default {
-    components: {
-       
-    },
-    mixins: [
-        
-    ],
     props: {
+        modelValue: String,
         vueRenderUUID: String,
         tagName: String,
         name: String,
         alias: String
     },
+
     computed: {
         label() {
             if(this.localAlias && this.localName) return `${this.localAlias}(${this.localName})`
@@ -33,6 +28,7 @@ export default {
             else return ""
         }
     },
+    
     data() {
         return {
             localName: this.name,
@@ -40,12 +36,28 @@ export default {
             inputedValue: ""
         };
     },
-    created() {
+
+    watch: {
+        modelValue: {
+            handler() {
+                if(this.modelValue && this.modelValue.length > 0)
+                    this.inputedValue = this.modelValue
+                else
+                    this.inputedValue = ""
+            },
+            deep: true,
+            immediate: true
+        },
+
+        inputedValue: {
+            handler() {
+                this.$emit('update:modelValue', this.inputedValue)
+            },
+            deep: true,
+            immediate: true
+        }
     },
-    methods: {
-        
-    }
-};
+}
 </script>
 
 <style lang="scss">

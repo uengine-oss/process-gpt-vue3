@@ -11,7 +11,6 @@
                 
                 <!-- buttons -->
                 <div class="ml-auto d-flex">
-                    
                     <v-tooltip location="bottom" v-if="!lock && isAdmin" >
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" icon variant="text" size="24" class="ml-3 cp-unlock"

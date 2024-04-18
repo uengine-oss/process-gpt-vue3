@@ -1,6 +1,7 @@
 <template>
-    <div class="w-100">
-        <v-card class="align-center pa-3 mb-3 bg-lightwarning"
+    <div class="w-100" @mouseover="hover = true" @mouseleave="hover = false">
+        <v-card
+            class="align-center pa-3 mb-3 bg-lightwarning"
             elevation="10"
             style="border-radius: 10px !important;"
         >
@@ -74,25 +75,21 @@
                 />
             </div>
         </div>
-        <v-tooltip v-if="!processDialogStatus && enableEdit" text="Mejor 프로세스 추가">
-            <template v-slot:activator="{ props }">
-                <v-card @click="openProcessDialog('add')"
-                    class="add-process-card-hover bg-lightsecondary cp-add-mega pa-2"
-                    elevation="9" variant="outlined"
-                    v-bind="props"
-                    style="display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        border-radius: 10px !important;
-                        margin-bottom:10px;
-                        height:34px;"
-                >
-                    <div style="display: flex; justify-content: center; align-items: center;">
-                        <Icon icon="streamline:add-1-solid" width="24" height="24" style="color: #5EB2E8" />
-                    </div>
-                </v-card>
-            </template>
-        </v-tooltip>
+        <v-card v-if="!processDialogStatus && enableEdit && hover" 
+            @click="openProcessDialog('add')"
+            class="add-process-card-hover bg-lightsecondary cp-add-mega pa-2"
+            elevation="9" variant="outlined"
+            style="display: flex;
+                justify-content: center;
+                align-items: center;
+                border-radius: 10px !important;
+                margin-bottom:10px;
+                height:34px;"
+        >
+            <div class="definitionMap-add-card">
+                {{ $t('processDefinitionMap.addMajor') }}
+            </div>
+        </v-card>
         <ProcessDialog v-else-if="processDialogStatus && enableEdit && processType === 'add'"
             :enableEdit="enableEdit"
             :process="value"
@@ -130,6 +127,7 @@ export default {
     },
     data: () => ({
         type: 'mega',
+        hover: false,
     }),
     created() {
     },

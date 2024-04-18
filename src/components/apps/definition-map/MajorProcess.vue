@@ -1,5 +1,5 @@
 <template>
-    <div class="mb-3">
+    <div class="mb-3" @mouseover="hover = true" @mouseleave="hover = false">
         <v-card class="align-center bg-lightsecondary pa-2"
             elevation="10"
             style="border-radius: 10px !important; margin-bottom:5px;"
@@ -75,25 +75,21 @@
                 />
             </div>
         </div>
-        <v-tooltip v-if="!processDialogStatus && enableEdit" text="sub 프로세스 추가">
-            <template v-slot:activator="{ props }">
-                <v-card @click="openSubProcessDialog('add')"
-                    class="add-process-card-hover cp-add-mega pa-2"
-                    elevation="9" variant="outlined"
-                    v-bind="props"
-                    style="display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        border-radius: 10px !important;
-                        margin-bottom:10px;
-                        height:26px;"
-                >
-                    <div style="display: flex; justify-content: center; align-items: center;">
-                        <Icon icon="streamline:add-1-solid" width="16" height="16" style="color: #5EB2E8" />
-                    </div>
-                </v-card>
-            </template>
-        </v-tooltip>
+        <v-card v-if="!processDialogStatus && enableEdit && hover" @click="openSubProcessDialog('add')"
+            class="add-process-card-hover cp-add-mega pa-2"
+            elevation="9" variant="outlined"
+            v-bind="props"
+            style="display: flex;
+                justify-content: center;
+                align-items: center;
+                border-radius: 10px !important;
+                margin-bottom:10px;
+                height:26px;"
+        >
+            <div class="definitionMap-add-card">
+                {{ $t('processDefinitionMap.addSub') }}
+            </div>
+        </v-card>
         <ProcessDialog v-else-if="processDialogStatus && enableEdit && processType === 'add'"
             :enableEdit="enableEdit"
             :process="value"
