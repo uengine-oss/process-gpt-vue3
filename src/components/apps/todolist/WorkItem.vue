@@ -40,6 +40,7 @@ export default {
         workItem: null,
         inputItems: [],
         xml: null,
+        html: null,
         updatedKey: 0,
       
     }),
@@ -59,6 +60,9 @@ export default {
             me.inputItems = me.workItem.activity.parameters
             .filter(item => item.direction === "OUT")
             .map(item => ({ name: item.variable.name, value: null }));
+
+            let formName = me.workItem.worklist.tool.split(':')[1];
+            me.html = await backend.getRawDefinition(formName, {'type': 'form'});
 
             // xml
             me.xml = await backend.getRawDefinition(me.workItem.worklist.defId);

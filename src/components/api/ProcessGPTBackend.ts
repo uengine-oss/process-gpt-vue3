@@ -210,6 +210,14 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getFormDefinition(formName: string) {
+        const form = await storage.getString(`form_def/${formName}`, { key: 'key' });
+        if (form && form.html) {
+            return form.html;
+        }
+        return null;
+    }
+
     async putProcessDefinitionMap(definitionMap: any) {
         const putObj = {
             key: 'proc_map',

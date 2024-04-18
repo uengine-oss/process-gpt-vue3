@@ -80,7 +80,7 @@ class UEngineBackend implements Backend {
             alert(e);
         }
     }
-    async putRawDefinition(definition: any, requestPath: string) {
+    async putRawDefinition(definition: any, requestPath: string, options) {
         try {
             let req = {
                 definition: definition
@@ -91,15 +91,15 @@ class UEngineBackend implements Backend {
                 },
                 responseType: 'text' as const
             };
-            const response = await axiosInstance.put('/definition/raw/' + requestPath + '.xml', definition, config);
+            const response = await axiosInstance.put('/definition/raw/' + requestPath + '.' + options.type, definition, config);
             return response.data;
         } catch (e) {
             alert(e);
         }
     }
-    async getRawDefinition(defPath: string) {
+    async getRawDefinition(defPath: string, options) {
         try {
-            const response = await axiosInstance.get(`/definition/raw/${defPath}`);
+            const response = await axiosInstance.get(`/definition/raw/${defPath}.${options.type}`);
             return response.data;
         } catch (e) {
             alert(e);
