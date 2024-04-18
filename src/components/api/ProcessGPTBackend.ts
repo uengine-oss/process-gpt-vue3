@@ -144,47 +144,45 @@ class ProcessGPTBackend implements Backend {
 
     async getWorkList() {
         try {
-            const email = localStorage.getItem("email");
-            const options = { match: { user_id: email } };
-            const formattedWorklist = async (list: any[]) => {
-                const worklist: any[] = [];
-                if (list && list.length > 0) {
-                    for (const item of list) {
-                        const workItem: any = {
-                            defId: item.proc_def_id,
-                            endpoint: item.user_id,
-                            instId: item.proc_inst_id,
-                            rootInstId: null,
-                            taskId: item.id,
-                            startDate: item.start_date,
-                            dueDate: item.end_date,
-                            status: item.status,
-                            title: item.activity_id,
-                            description: item.description || "",
-                            tool: ""
-                        };
-                        if (item.proc_inst_id) {
-                            const data = await storage.getString(item.proc_def_id, { 
-                                match: { proc_inst_id: item.proc_inst_id },
-                                column: "proc_inst_name"
-                            });
-                            if (data && data.proc_inst_name) {
-                                workItem.description = data.proc_inst_name;
-                            }
-                        }
-                        worklist.push(workItem);
-                    }
-                }
-                return worklist;
-            }
-            let worklist = await storage.list('todolist', options);
-            if (worklist && worklist.length > 0) {
-                worklist = await formattedWorklist(worklist);
-            }
-            return worklist;
+            return this.getWorkListByStatus('TODO');
         } catch (error) {
             throw new Error(`error in getWorkListByStatus with status: ${status}`);
         }
+    }
+
+    async getWorkListByStatus(status: string) {
+        const email = localStorage.getItem("email");
+        const options = { match: { user_id: email, status: status } };
+        const list = await storage.list('todolist', options);
+        const worklist: any[] = [];
+        if (list && list.length > 0) {
+            for (const item of list) {
+                const workItem: any = {
+                    defId: item.proc_def_id,
+                    endpoint: item.user_id,
+                    instId: item.proc_inst_id,
+                    rootInstId: null,
+                    taskId: item.id,
+                    startDate: item.start_date,
+                    dueDate: item.end_date,
+                    status: item.status,
+                    title: item.activity_id,
+                    description: item.description || "",
+                    tool: ""
+                };
+                if (item.proc_inst_id) {
+                    const data = await storage.getString(item.proc_def_id, { 
+                        match: { proc_inst_id: item.proc_inst_id },
+                        column: "proc_inst_name"
+                    });
+                    if (data && data.proc_inst_name) {
+                        workItem.description = data.proc_inst_name;
+                    }
+                }
+                worklist.push(workItem);
+            }
+        }
+        return worklist;
     }
 
     async putWorkItem(taskId: string, workItem: any) {
@@ -302,11 +300,11 @@ class ProcessGPTBackend implements Backend {
     }
 
     async getInProgressList() {
-        throw new Error("Method not implemented.");
+        return this.getWorkListByStatus('IN_PROGRESS');
     }
 
     async getPendingList() {
-        throw new Error("Method not implemented.");
+        return this.getWorkListByStatus('PENDING');
     }
 }
 
