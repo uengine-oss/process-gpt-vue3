@@ -38,7 +38,7 @@ export default {
     methods: {
        async init(){
             var me = this
-            const backend = BackendFactory.createBackend()
+            // const backend = BackendFactory.createBackend()
 
         },
         saveTask(){
@@ -47,7 +47,7 @@ export default {
         async completeTask(){
             var me = this
             const backend = BackendFactory.createBackend()
-            let result = await backend.putWorkItem(me.$route.params.taskId, {"parameterValues": {}})
+            let result = await backend.putWorkItemComplate(me.$route.params.taskId, {"parameterValues": {}})
             alert('completeTask')
         },
     },

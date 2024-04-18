@@ -243,6 +243,16 @@ class UEngineBackend implements Backend {
             alert(e);
         }
     }
+    
+    async putWorkItemComplate(taskId: string, workItem: any) {
+        try {
+            const response = await axiosInstance.post(`/work-item/${taskId}/complate`, workItem);
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
+    }
+    
     async putWorklist(taskId: string, workItem: any) {
         try {
             let url = `/worklist`;
