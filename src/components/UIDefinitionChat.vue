@@ -100,7 +100,20 @@ export default {
          * 'Save' 버튼을 누를 경우, 최종 결과를 Supabase에 저장하기 위해서
          */
         async saveFormDefinition({id, html}){
-            this.backend.putRawDefinition(html, id, {'type': 'form'});
+            const isNewSave = (this.$route.params.id !== id)
+            if(isNewSave) {
+                const isFormAlreadyExist = await this.backend.getRawDefinition(id, { type: "form" })
+                if(isFormAlreadyExist) {
+                    if(!confirm(`'${id}'는 이미 존재하는 폼 디자인 ID 입니다! 그래도 저장하시겠습니까?`))
+                        return
+                }
+            }
+            
+            await this.backend.putRawDefinition(html, id, {'type': 'form'});
+
+            if(isNewSave) {
+                this.$router.push(`/ui-definitions/${id}`)
+            }
         },
 
 
