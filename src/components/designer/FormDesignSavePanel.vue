@@ -77,7 +77,7 @@ export default {
     mounted() {
         if(this.savedId) {
             this.$nextTick(() => {
-                this.$refs.saveButton.focus();
+                this.$refs.saveButton.$el.focus();
             });
         } else {
             this.$nextTick(() => {
