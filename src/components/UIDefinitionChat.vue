@@ -99,8 +99,7 @@ export default {
         /**
          * 'Save' 버튼을 누를 경우, 최종 결과를 Supabase에 저장하기 위해서
          */
-        async saveFormDefinition({id, name, html}){
-            
+        async saveFormDefinition({id, html}){
             this.backend.putRawDefinition(html, id, {'type': 'form'});
         },
 

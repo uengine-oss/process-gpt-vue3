@@ -34,6 +34,16 @@ class ProcessGPTBackend implements Backend {
 
     async putRawDefinition(xml: any, defId: string, options: any) {
         try {
+            // 폼 정보를 저장하기 위해서
+            if(options.type === "form") {
+                await storage.putObject('form_def', {
+                    id: defId,
+                    html: xml
+                });
+                
+                return
+            }
+            
             const procDef: any = {
                 id: defId,
                 name: options.name,
