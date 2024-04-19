@@ -300,7 +300,7 @@ export default {
                 if (treeNode[Object.keys(treeNode)[0]].length > 0) {
                     const nodeOpened = this.nodes[treeNodeText].state && this.nodes[treeNodeText].state.opened;
                     let cumulativeOffset = effectiveYOffset;
-                    if(!nodeOpened) {
+                    if(!nodeOpened && !isRootClosed) {
                         cumulativeOffset -= nodeHeight;
                     }
 
