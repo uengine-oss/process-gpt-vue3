@@ -157,6 +157,15 @@ export default {
                     children: []
                 };
                 list.forEach(item => {
+                    console.log(item)
+                    if (item.directory) {
+                        var obj = {
+                            title: item.name,
+                            // to: `/definitions/${item.definition.processDefinitionId}`,
+                            directory: true
+                        }
+                        menu.children.push(obj);
+                    }
                     if (item && item.definition) {
                         var obj = {
                             title: item.definition.processDefinitionName,

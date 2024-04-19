@@ -1,16 +1,8 @@
 <template>
     <div>
-        <v-progress-linear v-if="loading"
-            style="position: absolute; z-index:999;"
-            indeterminate
-            class="my-progress-linear"
-        ></v-progress-linear>
-        <v-snackbar class="custom-snackbar"
-            v-model="snackbar"
-            :timeout="2000"
-            :color="snackbarColor"
-            elevation="24"
-        >
+        <v-progress-linear v-if="loading" style="position: absolute; z-index:999;" indeterminate
+            class="my-progress-linear"></v-progress-linear>
+        <v-snackbar class="custom-snackbar" v-model="snackbar" :timeout="2000" :color="snackbarColor" elevation="24">
             {{ snackbarMessage }}
         </v-snackbar>
         <RouterView></RouterView>
@@ -26,9 +18,9 @@ export default {
     },
     data: () => ({
         loading: false,
-        snackbarMessage : String,
+        snackbarMessage: String,
         snackbar: false,
-        snackbarColor : null,
+        snackbarColor: null,
     }),
     async created() {
         // window.$supabase = createClient(window._env_.DB_URL, window._env_.DB_PW);
@@ -38,8 +30,8 @@ export default {
                 persistSession: false
             }
         });
-        // window.$mode = 'uEngine'
-        window.$mode = 'ProcessGPT'
+        
+        // window.$mode = 'ProcessGPT'
         window.$app_ = this
     },
     methods: {
@@ -95,9 +87,10 @@ export default {
     transform: translateX(-50%) !important;
     z-index: 1010 !important;
 }
+
 .custom-snackbar .v-snackbar__content {
     text-align: center;
-    font-size:16px !important;
+    font-size: 16px !important;
     font-weight: 500 !important;
 }
 </style>
