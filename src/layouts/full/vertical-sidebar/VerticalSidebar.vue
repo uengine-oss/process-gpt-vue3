@@ -39,7 +39,8 @@ const customizer = useCustomizerStore();
                 </template>
                 <!-- Process Definition List -->
                 <template v-if="definitionList">
-                    <NavCollapse class="leftPadding" :item="definitionList" :level="0" />
+                    
+                    <NavCollapse class="leftPadding" :item="definitionList"  @update:item="def => definitionList = def" :level="0" />
                 </template>
                 <!-- <Moreoption/> -->
             </v-list>
