@@ -1,6 +1,6 @@
 <template>
-    <div style="margin-top: 10px; overflow: auto;">
-        <v-row class="pa-0 ma-0 mr-7">
+    <div style="overflow: auto;">
+        <v-row class="pa-0 ma-0">
             <v-spacer></v-spacer>
             <v-btn @click="save">
                 <Icon icon="mdi:close" width="24" height="24" class="cursor-pointer" />
@@ -22,10 +22,8 @@
                 :uengine-properties="uengineProperties" 
                 :name="name"
                 :role="role"
-                :variableForHtmlFormContext="element.variableForHtmlFormContext"
                 ref="panelComponent"
                 @update:name="val => name = val"
-                @setVariableForHtmlFormContext="val => element.variableForHtmlFormContext = val"
                 :definition="definition"
             ></component>
         </v-card-text>
@@ -169,7 +167,6 @@ export default {
             modeling.updateProperties(task, this.elementCopy);
             this.$emit('close');
         },
-
     }
 };
 </script>

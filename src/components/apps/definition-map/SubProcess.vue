@@ -1,9 +1,9 @@
 <template>
-    <div class="align-center pa-2 cursor-pointer sub-process-hover sub-process-style"
+    <div class="align-center pa-2 cursor-pointer sub-process-hover sub-process-style pr-3 pl-3"
     >
         <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-2 font-weight-semibold">
             <v-row class="ma-0 pa-0">
-                <v-col cols="6" class="ma-0 pa-0 text-left">
+                <v-col cols="6" class="ma-0 pa-0 text-left align-center">
                     <div>{{ value.label }}</div>
                 </v-col>
                 <v-col cols="6" class="ma-0 pa-0">

@@ -1,150 +1,150 @@
 {
     "message": "en",
     "mainPage": {
-        "login" : "login",
+        "login": "login",
         "logout": "logout",
-        "demo" : "demos",
-        "pricing" : "pricing",
-        "documentation" : "documentation",
-        "support" : "Support",
-        "start" : "Start",
-        "title" : "Easily initiate from AI-based process management to execution.",
-        "subTitle" : "Process definition, organizational chart management, To-Do management, process execution, process monitoring, process analysis."
+        "demo": "demos",
+        "pricing": "pricing",
+        "documentation": "documentation",
+        "support": "Support",
+        "start": "Start",
+        "title": "Easily initiate from AI-based process management to execution.",
+        "subTitle": "Process definition, organizational chart management, To-Do management, process execution, process monitoring, process analysis."
     },
-    "DashboardUpcomingScheduls" : {
-        "title" : "Upcoming Schedules",
-        "schedule" : "Schedule",
-        "dateAndTime" : "Date and Time",
-        "category" : "Category"
+    "DashboardUpcomingScheduls": {
+        "title": "Upcoming Schedules",
+        "schedule": "Schedule",
+        "dateAndTime": "Date and Time",
+        "category": "Category"
     },
-    "DashboardTodoList" : {
-        "todo" : "Todo",
-        "inProgress" : "In Progess",
-        "done" : "Done"
+    "DashboardTodoList": {
+        "todo": "Todo",
+        "inProgress": "In Progess",
+        "done": "Done"
     },
-    "dashboard" : {
-        "title" : "Dashboard"
+    "dashboard": {
+        "title": "Dashboard"
     },
-    "todoList" : {
-        "title" : "ToDoList"
+    "todoList": {
+        "title": "ToDoList"
     },
-    "calendar" : {
-        "title" : "Calendar"
+    "calendar": {
+        "title": "Calendar"
     },
-    "chats" : {
-        "title" : "Chats"
+    "chats": {
+        "title": "Chats"
     },
-    "instance" : {
-        "title" : "Instance"
+    "instance": {
+        "title": "Instance"
     },
-    "processExecution" : {
-        "title" : "Process Execution",
-        "cardTitle" : "Process Execution",
-        "processDefinitionExplanation" : "Execute the process interactively. For example, you can issue commands like: \n'I'd like to apply for a vacation:\n 1. Reason: Personal matter\n 2. Start date of leave: Today\n 3. Return date from leave: Friday'",
-        "search" : "Search",
-        "newChat" : "New Chat",
-        "recentChats" : "Recent Chats",
-        "sortByTime" : "Sort by Time",
-        "sortByCompleted" : "Sort by Completed"
+    "processExecution": {
+        "title": "Process Execution",
+        "cardTitle": "Process Execution",
+        "processDefinitionExplanation": "Execute the process interactively. For example, you can issue commands like: \n'I'd like to apply for a vacation:\n 1. Reason: Personal matter\n 2. Start date of leave: Today\n 3. Return date from leave: Friday'",
+        "search": "Search",
+        "newChat": "New Chat",
+        "recentChats": "Recent Chats",
+        "sortByTime": "Sort by Time",
+        "sortByCompleted": "Sort by Completed"
     },
-    "definitionManagement" : {
-        "title" : "Definition Management"
+    "definitionManagement": {
+        "title": "Definition Management"
     },
-    "organizationChartDefinition" : {
-        "title" : "Org Chart Setup",
-        "cardTitle" : "Org Chart Management",
+    "organizationChartDefinition": {
+        "title": "Org Chart Setup",
+        "cardTitle": "Org Chart Management",
         "organizationChartExplanation": "Manage the organization chart interactively.\nYou can register, modify, and delete teams (departments), roles, and employees.\nFor example, you can issue commands like: 'Register the development and management teams, and add Mr. Hong Gil-dong as a new employee to the management team. His role is a developer. The team leader of the management team is Team Leader Amuge.'"
     },
-    "processDefinitionMap" : {
-        "title" : "Process Definition Map",
+    "processDefinitionMap": {
+        "title": "Process Definition Map",
         "lock": "Please press the lock to lock it in order to check in (save).",
         "unlock": "Please press the lock to unlock it in order to check out (edit).",
-        "addMega": "Add Mega Process",
-        "addMajor": "Add Major Process",
-        "addSub": "Add Sub Process"
+        "addMega": "Mega Process",
+        "addMajor": "Major Process",
+        "addSub": "Sub Process"
     },
-    "processDefinition" : {
-        "title" : "Process Definition",
-        "cardTitle" : "Process Definition Management",
-        "processDefinitionExplanation" : "Manage the process interactively. For example, you can issue commands like: \n'Register the sales management process as follows:\n1. Register sales opportunities including customer name, estimated business size, key person, requirements\n2. Proposal preparation: proposal contents, pricing\n3. Winning or losing an order\n4. If the order is won, proceed with contract execution'",
-        "name" : "Name",
-        "type" : "Type",
-        "description" : "Description",
-        "dataSource" : "DataSource",
-        "query" : "Query",
-        "actions" : "Actions",
-        "itemsPerPage" : "Items per page",
-        "processVariables" : "Process Variables",
-        "editProcessData" : "Edit Process Data",
-        "edit" : "Edit",
-        "delete" : "Delete",
-        "zoom" : "Canvas Zoom in/Zoom out"
+    "processDefinition": {
+        "title": "Process Definition",
+        "cardTitle": "Process Definition Management",
+        "processDefinitionExplanation": "Manage the process interactively. For example, you can issue commands like: \n'Register the sales management process as follows:\n1. Register sales opportunities including customer name, estimated business size, key person, requirements\n2. Proposal preparation: proposal contents, pricing\n3. Winning or losing an order\n4. If the order is won, proceed with contract execution'",
+        "name": "Name",
+        "type": "Type",
+        "description": "Description",
+        "dataSource": "DataSource",
+        "query": "Query",
+        "actions": "Actions",
+        "itemsPerPage": "Items per page",
+        "processVariables": "Process Variables",
+        "editProcessData": "Edit Process Data",
+        "edit": "Edit",
+        "delete": "Delete",
+        "zoom": "Canvas Zoom in/Zoom out"
     },
-    "ProcessVariable" : {
-        "name" : "Name",
-        "type" : "Type",
-        "description" : "Description",
-        "dataSource" : "DataSource",
-        "add" : "Add",
-        "edit" : "Edit"
+    "ProcessVariable": {
+        "name": "Name",
+        "type": "Type",
+        "description": "Description",
+        "dataSource": "DataSource",
+        "add": "Add",
+        "edit": "Edit"
     },
-    "processList" : {
-        "title" : "Process List"
+    "processList": {
+        "title": "Process List"
     },
-    "chat" : {
+    "chat": {
         "inputMessage": "Type a Message",
         "lock": "Please press the lock to lock it in order to check in (save).",
         "unlock": "Please press the lock to unlock it in order to check out (edit).",
-        "history" : "history button",
+        "history": "history button",
         "import": "Import BPMN File"
     },
-    "accountTab" : {
-        "accountSetting" : "Account Settings",
-        "profileImageChange" : "Profile Image Change",
-        "imageSelect" : "Select Profile Image",
-        "selectImageExplanation" : "JPG, GIF, or PNG allowed. Max size 800K",
-        "changePassword" : "Change Password",
-        "changePasswordExplanation" : "To change your password, confirm here.",
-        "currentPassword" : "Current Password",
-        "newPassword" : "New Password",
-        "confirmPassword" : "Confirm Password",
-        "personalDetails" : "Personal Details",
-        "personalDetailsExplanation" : "To modify and save your personal details, edit here.",
-        "name" : "Name",
-        "email" : "Email",
-        "phone" : "Phone",
-        "address" : "Address",
-        "save" : "Save"
+    "accountTab": {
+        "accountSetting": "Account Settings",
+        "profileImageChange": "Profile Image Change",
+        "imageSelect": "Select Profile Image",
+        "selectImageExplanation": "JPG, GIF, or PNG allowed. Max size 800K",
+        "changePassword": "Change Password",
+        "changePasswordExplanation": "To change your password, confirm here.",
+        "currentPassword": "Current Password",
+        "newPassword": "New Password",
+        "confirmPassword": "Confirm Password",
+        "personalDetails": "Personal Details",
+        "personalDetailsExplanation": "To modify and save your personal details, edit here.",
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "address": "Address",
+        "save": "Save"
     },
-    "loginPage" : {
-        "title" : "Welcome to Process-GPT",
-        "google" : "Sign in with Google",
-        "or" : "or sign in with",
-        "userName" : "Username",
-        "password" : "Password",
-        "remeber" : "Remeber this Device",
-        "login" : "Sign In",
-        "create" : "Create an account"
+    "loginPage": {
+        "title": "Welcome to Process-GPT",
+        "google": "Sign in with Google",
+        "or": "or sign in with",
+        "userName": "Username",
+        "password": "Password",
+        "remeber": "Remeber this Device",
+        "login": "Sign In",
+        "create": "Create an account"
     },
-    "createAccount" : {
-        "title" : "Welcome to Process-GPT",
-        "already" : "Already have an Account?",
-        "login" : "Sign In",
-        "userName" : "User Name",
-        "password" : "Password",
-        "email" : "Email",
-        "google" : "Sign in with Google",
-        "or" : "or sign in with"
+    "createAccount": {
+        "title": "Welcome to Process-GPT",
+        "already": "Already have an Account?",
+        "login": "Sign In",
+        "userName": "User Name",
+        "password": "Password",
+        "email": "Email",
+        "google": "Sign in with Google",
+        "or": "or sign in with"
     },
-    "ExtraBox" : {
-        "logOut" : "log out"
+    "ExtraBox": {
+        "logOut": "log out"
     },
-    "BpnmPropertyPanel" : {
-        "name" : "Name",
-        "description" : "Description",
-        "inputData" : "Input Data",
-        "outputData" : "Output Data",
-        "checkPoints" : "Checkpoints",
-        "add" : "Add"
+    "BpnmPropertyPanel": {
+        "name": "Name",
+        "description": "Description",
+        "inputData": "Input Data",
+        "outputData": "Output Data",
+        "checkPoints": "Checkpoints",
+        "add": "Add"
     }
 }

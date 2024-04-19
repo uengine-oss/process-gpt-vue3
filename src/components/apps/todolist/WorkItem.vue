@@ -72,12 +72,12 @@ import FormWorkItem from './FormWorkItem.vue'; // FormWorkItem 컴포넌트 임�
 export default {
     data: () => ({
         workItem: null,
+        inputItems: [],
         bpmn: null,
-        currentComponent: null,
-        checkPoints: [],
-        loading: false,
         updatedKey: 0,
-        picture: null
+        picture: null,
+        checkPoints: [],
+        loading: false
     }),
     components: {
         ProcessDefinition,
@@ -98,7 +98,7 @@ export default {
             const backend = BackendFactory.createBackend()
             me.loading = true;
             me.workItem = await backend.getWorkItem(me.$route.params.taskId);
-            me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId);
+            me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, {type: 'bpmn'});
             me.currentComponent = me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem';
             me.updatedKey ++
             me.loading = false

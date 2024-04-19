@@ -1,9 +1,29 @@
 <script setup lang="ts">
-import { ref, computed, getCurrentInstance } from 'vue';
+import { ref, computed, getCurrentInstance, watch, onMounted, onUnmounted } from 'vue';
 import { useDisplay } from 'vuetify';
+import { useRoute } from 'vue-router';
 
 const { lgAndUp } = useDisplay();
 const sDrawer = ref(false);
+const route = useRoute();
+
+// 화면 너비가 1279px 이하인지 여부를 추적하는 반응형 참조
+const isWidthUnder1279 = ref(window.innerWidth <= 1279);
+
+// 화면 크기 변경 이벤트 핸들러
+function handleResize() {
+  isWidthUnder1279.value = window.innerWidth <= 1279;
+}
+
+onMounted(() => {
+  window.addEventListener('resize', handleResize);
+});
+
+// 컴포넌트가 언마운트될 때 이벤트 리스너 제거
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+});
+
 
 // 현재 인스턴스를 가져옵니다.
 const instance = getCurrentInstance();
@@ -18,6 +38,15 @@ const chatReSizeDisplay = computed(() => {
 const canvasReSize = computed(() => {
     // globalState의 isZoomed 상태에 따라 width 스타일 속성을 반환합니다.
     return globalState?.state.isZoomed ? 'width: 100%;' : '';
+});
+// 조건에 따라 슬롯 이름을 결정하는 계산된 속성
+const slotName = computed(() => {
+    // 화면 너비 조건도 포함
+    if (route.path === '/definitions/chat' && isWidthUnder1279.value) {
+        return 'leftpart';
+    } else {
+        return 'rightpart';
+    }
 });
 </script>
 
@@ -38,7 +67,7 @@ const canvasReSize = computed(() => {
                 <Menu2Icon size="20" class="mr-2 cp-dialog-open" /> Menu
             </v-btn>
             <v-divider class="d-lg-none d-block" />
-            <slot name="rightpart"></slot>
+            <slot :name="slotName"></slot>
         </div>
 
         <!---right chat conversation -->

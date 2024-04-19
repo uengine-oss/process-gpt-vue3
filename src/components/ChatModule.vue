@@ -4,7 +4,7 @@ import jp from 'jsonpath';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { encodingForModel } from "js-tiktoken";
 import _ from 'lodash';
-
+import BackendFactory from '@/components/api/BackendFactory';
 export default {
     data: () => ({
         replyUser: null,
@@ -16,6 +16,7 @@ export default {
         disableChat: false,
         chatRoomList: [],
         openaiToken: null,
+        backend: null
     }),
     async created() {
         var me = this;
@@ -35,6 +36,7 @@ export default {
         async init() {
             this.disableChat = false;
             this.userInfo = await this.storage.getUserInfo();
+            this.backend = BackendFactory.createBackend();
 
             await this.loadData(this.getDataPath());
             // await this.loadMessages(this.getDataPath());
