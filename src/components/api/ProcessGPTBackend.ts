@@ -322,6 +322,10 @@ class ProcessGPTBackend implements Backend {
     async getPendingList() {
         throw new Error("Method not implemented.");
     }
+
+    async putWorkItemComplate() {
+        throw new Error("Method not implemented.");
+    }
 }
 
 export default ProcessGPTBackend;

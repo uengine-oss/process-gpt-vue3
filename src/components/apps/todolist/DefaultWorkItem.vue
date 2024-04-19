@@ -1,10 +1,10 @@
 <template>
-    <v-row class="ma-0 pa-0">
+    <v-row class="ma-0 pa-0 task-btn">
         <v-spacer></v-spacer>
-        <v-btn @click="nextTask()">완료</v-btn>
+        <v-btn @click="completeTask()" color="#0085DB" style="color: white;" rounded>완료</v-btn>
     </v-row>
     <div style="height:calc(100vh - 255px); padding: 20px;" >
-        <div v-for="item in inputItems" class="input-group">
+        <div v-if="inputItems" v-for="item in inputItems" class="input-group">
             <v-row>
                 <v-col cols="4">
                     <v-list-subheader>{{item.name}}</v-list-subheader>
@@ -33,7 +33,7 @@ export default {
         },
     },
     data: () => ({
-        inputItems: [],      
+        inputItems: null,      
     }),
     components: {
         
@@ -48,13 +48,12 @@ export default {
                     .filter(item => item.direction === "OUT")
                     .map(item => ({ name: item.variable.name, value: null }));
         },
-    
-        async nextTask(){
+        async completeTask(){
             var me = this
             const backend = BackendFactory.createBackend()
 
             let parameterValues = this.inputItems.reduce((acc, item) => ({...acc, [item.name]: item.value}), {});
-            let result = await backend.putWorkItem(me.$route.params.taskId, {"parameterValues": parameterValues})
+            let result = await backend.putWorkItemComplate(me.$route.params.taskId, {"parameterValues": parameterValues})
             console.log(result)
         },
     },

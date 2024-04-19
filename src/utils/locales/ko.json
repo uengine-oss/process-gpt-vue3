@@ -38,7 +38,7 @@
         "title": "제안서"
     },
     "instance": {
-        "title": "인스턴스"
+        "title": "프로세스 참여"
     },
     "processExecution": {
         "title": "프로세스 실행",
@@ -60,11 +60,11 @@
     },
     "processDefinitionMap": {
         "title": "프로세스 정의 체계도",
-        "lock" : "체크인(저장)하려면 자물쇠를 눌러 자물쇠를 닫으십시",
-        "unlock" : "체크아웃(편집)하려면 자물쇠를 눌러 자물쇠를 여십시오",
-        "addMega" : "Mega 프로세스 추가",
-        "addMajor" : "Major 프로세스 추가",
-        "addSub" : "Sub 프로세스 추가"
+        "lock": "체크인(저장)하려면 자물쇠를 눌러 자물쇠를 닫으십시",
+        "unlock": "체크아웃(편집)하려면 자물쇠를 눌러 자물쇠를 여십시오",
+        "addMega": "Mega 프로세스",
+        "addMajor": "Major 프로세스",
+        "addSub": "Sub 프로세스"
     },
     "uiDefinition": {
         "title": "화면 정의",
@@ -108,10 +108,10 @@
     },
     "chat": {
         "inputMessage": "메시지 입력",
-        "lock" : "체크인(저장)하려면 자물쇠를 눌러 자물쇠를 닫으십시",
-        "unlock" : "체크아웃(편집)하려면 자물쇠를 눌러 자물쇠를 여십시오",
-        "history" : "버전 히스토리",
-        "import" : "BPMN 파일 불러오기"
+        "lock": "체크인(저장)하려면 자물쇠를 눌러 자물쇠를 닫으십시",
+        "unlock": "체크아웃(편집)하려면 자물쇠를 눌러 자물쇠를 여십시오",
+        "history": "버전 히스토리",
+        "import": "BPMN 파일 불러오기"
     },
     "accountTab": {
         "accountSetting": "계정 설정",
