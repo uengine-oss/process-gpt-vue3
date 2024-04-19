@@ -111,7 +111,8 @@ export default {
         async loadData(path) {
             if (this.$route.params.id && this.$route.params.id != 'chat') {
                 path = `${this.path}/${this.$route.params.id}`
-                this.storedFormDefData = await this.getData(path, { key: "id" })
+
+                this.storedFormDefData = await this.backend.getRawDefinition(this.$route.params.id, { type: "form" })    
                 if(!this.storedFormDefData) {
                     alert(`'${this.$route.params.id}' ID 를 가지는 폼 디자인 정보가 없습니다! 새 폼 만들기 화면으로 이동됩니다.`)
                     this.$router.push(`/ui-definitions/chat`)
@@ -119,7 +120,6 @@ export default {
                     return
                 }
 
-                this.messages = this.storedFormDefData.messages
                 this.applyNewSrcToMashup(
                     this.loadHTMLToKEditorContent(this.storedFormDefData.html)
                 )

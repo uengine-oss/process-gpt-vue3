@@ -40,7 +40,7 @@ class ProcessGPTBackend implements Backend {
                     id: defId,
                     html: xml
                 });
-                
+
                 return
             }
             
@@ -79,9 +79,15 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getRawDefinition(defId: string) {
+    async getRawDefinition(defId: string, options: any) {
         try {
-            const options = {
+            // 폼 정보를 불러오기 위해서
+            if(options.type === "form") {
+                const data = await storage.getString(`form_def/${defId}`, { key: 'id' });
+                return data;
+            }
+
+            options = {
                 match: {
                     id: defId
                 }
