@@ -823,18 +823,19 @@ export default {
 
 
             // Data 매핑
-            if (jsonModel.data)
+            const extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
+            const root = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
+            if (jsonModel.data) {
                 jsonModel.data.forEach(data => {
-                    const extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
-                    const root = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
                     const variable = xmlDoc.createElementNS('http://uengine', 'uengine:variable');
                     variable.setAttribute('name', data.name);
                     variable.setAttribute('type', data.type);
                     root.appendChild(variable);
-                    extensionElements.appendChild(root);
-                    process.appendChild(extensionElements);
                 });
-
+            }
+                
+            extensionElements.appendChild(root);
+            process.appendChild(extensionElements);
             // Lane 및 Activity 매핑
             const laneActivityMapping = {};
             if (jsonModel.activities)
@@ -925,19 +926,20 @@ export default {
                         inputDataList.push({
                             "argument": {"text": data.name},
                             "variable": {"name": data.name},
-                            "direction": "IN"
+                            "direction": "OUT"
                         })
                     })
                     activity?.outputData?.forEach(data => {
                         outputDataList.push({
                             "argument": {"text": data.name},
                             "variable": {"name": data.name},
-                            "direction": "OUT"
+                            "direction": "IN"
                         })
                     })
+
                     let activityData = {
-                        "inputData": inputDataList,
-                        "outputData": outputDataList
+                        "role": {"name":activity.role},
+                        "parameters": [...inputDataList, ...outputDataList]
                     }
                     params.textContent = JSON.stringify(activityData)
                     root.appendChild(params)
@@ -1042,7 +1044,7 @@ export default {
                     process.appendChild(userTask);
                 });
 
-
+            // BPMN Diagram Draw
             const bpmnDiagram = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNDiagram');
             bpmnDiagram.setAttribute('id', 'BPMNDiagram_1');
             bpmnDefinitions.appendChild(bpmnDiagram);
