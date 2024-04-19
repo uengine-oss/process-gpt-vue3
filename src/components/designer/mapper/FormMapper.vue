@@ -300,7 +300,7 @@ export default {
                 if (treeNode[Object.keys(treeNode)[0]].length > 0) {
                     const nodeOpened = this.nodes[treeNodeText].state && this.nodes[treeNodeText].state.opened;
                     let cumulativeOffset = effectiveYOffset;
-                    if(!nodeOpened && !isRootClosed) {
+                    if (!nodeOpened && !isRootClosed) {
                         cumulativeOffset -= nodeHeight;
                     }
 
@@ -321,7 +321,7 @@ export default {
                 const nodeOpened = node.state && node.state.opened;
                 if (nodeOpened && node.children) {
                     node.children.forEach((childNode) => {
-                        const child = this.nodes[childNode]; 
+                        const child = this.nodes[childNode];
                         totalHeight += this.getNodeHeight(child);
                     });
                 }
@@ -424,22 +424,6 @@ export default {
             this.portIndex = 0;
             this.updateBlockTemplates(); // 포트 위치 업데이트 메소드 호출
         },
-        openFunctionMenu(event) {
-            if (event) {
-                const svgElement = this.$refs.svgElement;
-
-                const svgRect = svgElement.getBoundingClientRect();
-
-                const mouseX = event.clientX;
-                const mouseY = event.clientY;
-
-                this.menu_x = mouseX;
-                this.menu_y = mouseY;
-                this.component_x = this.menu_x;
-                this.component_y = this.menu_y;
-            }
-            this.menu = true;
-        },
         saveFormMapperJson() {
             var jsonString = JSON.stringify(this.getMappingElementsJson(), null, 2);
             this.$emit('saveFormMapperJson', jsonString);
@@ -464,10 +448,10 @@ export default {
             const mouseX = event.clientX;
             const mouseY = event.clientY;
 
-            this.menu_x = mouseX;
-            this.menu_y = mouseY;
-            this.component_x = this.menu_x;
-            this.component_y = this.menu_y;
+            this.menu_x = mouseX - 50;
+            this.menu_y = (mouseY / 2) + svgRect.y*2;
+            this.component_x = mouseX;
+            this.component_y = mouseY;
             this.$refs.contextMenu.showContextMenu(this.x, this.y);
         },
         toggleAppend(blockName) {
