@@ -46,8 +46,9 @@ export default {
         async saveTask(){
             var me = this
             let variable = await backend.getVariable(me.workItem.worklist.instId, '장애신고')
-
+            variable._type = "org.uengine.contexts.HtmlFormContext"
             variable.valueMap = this.formData
+            variable.valueMap._type = "java.util.HashMap"
             await backend.setVariable(me.workItem.worklist.instId, '장애신고', variable)
             alert('saveTask: '+JSON.stringify(this.formData))
         },

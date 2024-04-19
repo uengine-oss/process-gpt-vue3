@@ -22,9 +22,10 @@
                             align-items: center;
                             border-radius: 10px !important;"
                     >
-                        <div class="definitionMap-add-card">
-                            {{ $t('processDefinitionMap.addMega') }}
-                        </div>
+                        <v-row class="pa-0 ma-0 definitionMap-add-card">
+                            <PlusIcon size="20" stroke-width="2" />
+                            <div>&nbsp;{{ $t('processDefinitionMap.addMega') }}</div>
+                        </v-row>
                     </v-card>
                     <ProcessDialog v-if="processDialogStatus"
                         :enableEdit="enableEdit"

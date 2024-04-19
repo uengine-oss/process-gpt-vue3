@@ -99,9 +99,21 @@ export default {
         /**
          * 'Save' 버튼을 누를 경우, 최종 결과를 Supabase에 저장하기 위해서
          */
-        async saveFormDefinition({id, name, html}){
+        async saveFormDefinition({id, html}){
+            const isNewSave = (this.$route.params.id !== id)
+            if(isNewSave) {
+                const isFormAlreadyExist = await this.backend.getRawDefinition(id, { type: "form" })
+                if(isFormAlreadyExist) {
+                    if(!confirm(`'${id}'는 이미 존재하는 폼 디자인 ID 입니다! 그래도 저장하시겠습니까?`))
+                        return
+                }
+            }
             
-            this.backend.putRawDefinition(html, id, {'type': 'form'});
+            await this.backend.putRawDefinition(html, id, {'type': 'form'});
+
+            if(isNewSave) {
+                this.$router.push(`/ui-definitions/${id}`)
+            }
         },
 
 
@@ -112,7 +124,8 @@ export default {
         async loadData(path) {
             if (this.$route.params.id && this.$route.params.id != 'chat') {
                 path = `${this.path}/${this.$route.params.id}`
-                this.storedFormDefData = await this.getData(path, { key: "id" })
+
+                this.storedFormDefData = await this.backend.getRawDefinition(this.$route.params.id, { type: "form" })    
                 if(!this.storedFormDefData) {
                     alert(`'${this.$route.params.id}' ID 를 가지는 폼 디자인 정보가 없습니다! 새 폼 만들기 화면으로 이동됩니다.`)
                     this.$router.push(`/ui-definitions/chat`)
@@ -120,7 +133,6 @@ export default {
                     return
                 }
 
-                this.messages = this.storedFormDefData.messages
                 this.applyNewSrcToMashup(
                     this.loadHTMLToKEditorContent(this.storedFormDefData.html)
                 )

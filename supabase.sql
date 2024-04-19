@@ -134,7 +134,5 @@ create table
 drop table if exists form_def;
 create table form_def (
   id text primary key,
-  name text not null,
-  html text not null,
-  messages jsonb
+  html text not null
 ) tablespace pg_default;
