@@ -51,14 +51,14 @@ import mitt from 'mitt';
 const emitter = mitt();
 const OpenGraphEmitter = mitt();
 const ModelingEmitter = mitt();
-
+window.$mode = 'uEngine';
 const app = createApp(App);
+
 // @ts-ignore
 app.config.globalProperties.$try = app._component.methods.try;
 app.config.globalProperties.EventBus = emitter;
 app.config.globalProperties.OGBus = OpenGraphEmitter;
 app.config.globalProperties.ModelingBus = ModelingEmitter;
-
 // 전역 상태 관리자를 전역 속성으로 추가
 app.config.globalProperties.$globalState = globalState;
 
@@ -111,31 +111,31 @@ import type { KeycloakOnLoad } from 'keycloak-js';
 (async () => {
     let keycloak = new Keycloak(initOptions);
     try {
-      const authenticated = await keycloak.init({
-        onLoad: initOptions.onLoad
-      });
-    console.log(`User is ${authenticated ? 'authenticated' : 'not authenticated'}`);
-    if (authenticated) {
-        localStorage.setItem('keycloak', `${keycloak.token}`);
-        console.log(keycloak.tokenParsed);
-        if (keycloak.token && keycloak.tokenParsed) {
-            localStorage.setItem('accessToken', `${keycloak.token}`);
-            localStorage.setItem('author', `${keycloak.tokenParsed.email}`);
-            localStorage.setItem('userName', `${keycloak.tokenParsed.preferred_username}`);
-            localStorage.setItem('email', `${keycloak.tokenParsed.email}`);
-            localStorage.setItem('uid', `${keycloak.tokenParsed.sub}`);
-            localStorage.setItem('isAdmin', 'true');
-            localStorage.setItem('picture', '');
+        const authenticated = await keycloak.init({
+            onLoad: initOptions.onLoad
+        });
+        console.log(`User is ${authenticated ? 'authenticated' : 'not authenticated'}`);
+        if (authenticated) {
+            localStorage.setItem('keycloak', `${keycloak.token}`);
+            console.log(keycloak.tokenParsed);
+            if (keycloak.token && keycloak.tokenParsed) {
+                localStorage.setItem('accessToken', `${keycloak.token}`);
+                localStorage.setItem('author', `${keycloak.tokenParsed.email}`);
+                localStorage.setItem('userName', `${keycloak.tokenParsed.preferred_username}`);
+                localStorage.setItem('email', `${keycloak.tokenParsed.email}`);
+                localStorage.setItem('uid', `${keycloak.tokenParsed.sub}`);
+                localStorage.setItem('isAdmin', 'true');
+                localStorage.setItem('picture', '');
+            }
         }
+        // const response = await fetch('http://localhost:9090/api/users', {
+        //     headers: {
+        //         accept: 'application/json',
+        //         authorization: `Bearer ${keycloak.token}`
+        //     }
+        // });
+        // console.log(response.json());
+    } catch (error) {
+        console.error('Failed to initialize adapter:', error);
     }
-    // const response = await fetch('http://localhost:9090/api/users', {
-    //     headers: {
-    //         accept: 'application/json',
-    //         authorization: `Bearer ${keycloak.token}`
-    //     }
-    // });
-    // console.log(response.json());
-} catch (error) {
-    console.error('Failed to initialize adapter:', error);
-}
 })();
