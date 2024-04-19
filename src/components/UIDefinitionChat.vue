@@ -145,15 +145,24 @@ export default {
                 // 미리보기에 KEditor에서 편집한 HTML을 로드시키기 위해서
                 else {
                     $("div[id^='keditor-content-area-']").css("display", "none");
-                
-                    this.isShowPreview = false
+                    var me = this
 
-                    this.previewFormValues = {}
-                    this.previewHTML = this.keditorContentHTMLToDynamicFormHTML(
-                        this.$refs.mashup.getKEditorContentHtml()
-                    )
+                    me.isShowPreview = false
 
-                    this.isShowPreview = true
+                    me.$try({
+                        context: me,
+                        action: async () => {
+                            me.previewHTML = this.keditorContentHTMLToDynamicFormHTML(
+                                me.$refs.mashup.getKEditorContentHtml()
+                            )
+                        },
+                        onFail: () => {
+                            me.previewHTML = ""
+                        }
+                    })
+                    me.previewFormValues = {}
+
+                    me.isShowPreview = true
                 }
             }
         }
@@ -188,8 +197,17 @@ export default {
          */
         keditorContentHTMLToDynamicFormHTML(html) {
             const dom = new DOMParser().parseFromString(html, 'text/html')
-
             const formValues = dom.querySelectorAll('[name]')
+
+            const nameSet = new Set();
+            formValues.forEach(el => {
+                const name = el.getAttribute('name');
+                if (nameSet.has(name)) {
+                    throw new Error(`'${name}' 이름이 중복되어 있습니다.`);
+                }
+                nameSet.add(name);
+            });
+
             formValues.forEach(el => {
                 el.setAttribute('v-model', `formValues['${el.getAttribute('name')}']`)
             })
