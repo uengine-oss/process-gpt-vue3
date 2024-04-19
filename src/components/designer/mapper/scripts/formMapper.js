@@ -542,10 +542,11 @@ export default {
     },
     createArgumentSourceMap(connections) {
       var argumentSourceMap = {};
+      const rootNodeName = Object.keys(this.nodes)[0];
       connections.forEach(conn => {
         var argument = conn.to[1].replace("in ", "");
         if (this.checkGlobalType(conn.from[0])) {
-          argumentSourceMap[argument] = "" + conn.from[1];
+          argumentSourceMap[argument] = "" + conn.from[1].replace(rootNodeName + ".", "");
         } else {
           argumentSourceMap[argument] = this.createFormMappingData(conn);
         }
@@ -574,16 +575,18 @@ export default {
     checkGlobalType(type) {
       return type == "Source" || type == "Target" || type == "Direct";
     },
-    createMappingElement(conn, block, blockData, argument) {
+    createMappingElement(conn, block, blockData, arg) {
       var mappingElement = {};
-      var blockName = conn.from[0];
+      const blockName = conn.from[0];
+      const rootNodeName = Object.keys(this.nodes)[0];
+      var argument = arg.replace(rootNodeName + ".", "");
       if (blockName == "Source") {
         mappingElement = {
           "argument": {
             "text": argument
           },
           "variable": {
-            "name": conn.from[1],
+            "name": conn.from[1].replace(rootNodeName + ".", ""),
             "askWhenInit": false,
             "isVolatile": false
           },
@@ -676,6 +679,7 @@ export default {
       }
     },
     addConnectionJson(fromBlockName, toBlockName, argumentSourceMap, targetArgument = null) {
+      const rootNodeName = "Variables";
       Object.entries(argumentSourceMap).forEach(([argument, source]) => {
         let connection;
         if (typeof source === 'object' && source.transformer) {
@@ -687,7 +691,7 @@ export default {
           };
         } else {
           connection = {
-            from: ["Source", source],
+            from: ["Source", rootNodeName + "." + source],
             to: [fromBlockName, "in " + argument],
           };
         }
@@ -699,7 +703,7 @@ export default {
       if (toBlockName === "Target" && targetArgument) {
         const connection = {
           from: [fromBlockName, "out"],
-          to: ["Target", targetArgument],
+          to: ["Target", rootNodeName + "." + targetArgument],
         };
         if (!this.isConnectionDuplicate(connection)) {
           this.tempConnections.push(connection);
@@ -707,9 +711,10 @@ export default {
       }
     },
     addConnectionDirect(variable, targetArgument) {
+      const rootNodeName = "Variables";
       const connection = {
-        from: ["Source", variable],
-        to: ["Target", targetArgument],
+        from: ["Source", rootNodeName + "." + variable],
+        to: ["Target", rootNodeName + "." + targetArgument],
       };
       if (!this.isConnectionDuplicate(connection)) {
         this.tempConnections.push(connection);

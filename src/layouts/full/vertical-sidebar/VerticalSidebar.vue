@@ -39,7 +39,8 @@ const customizer = useCustomizerStore();
                 </template>
                 <!-- Process Definition List -->
                 <template v-if="definitionList">
-                    <NavCollapse class="leftPadding" :item="definitionList" :level="0" />
+                    
+                    <NavCollapse class="leftPadding" :item="definitionList"  @update:item="def => definitionList = def" :level="0" />
                 </template>
                 <!-- <Moreoption/> -->
             </v-list>
@@ -154,6 +155,15 @@ export default {
                     children: []
                 };
                 list.forEach(item => {
+                    console.log(item)
+                    if (item.directory) {
+                        var obj = {
+                            title: item.name,
+                            // to: `/definitions/${item.definition.processDefinitionId}`,
+                            directory: true
+                        }
+                        menu.children.push(obj);
+                    }
                     if (item && item.definition) {
                         var obj = {
                             title: item.definition.processDefinitionName,
