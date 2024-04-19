@@ -96,6 +96,13 @@ export default {
                 disable: true,
             },
             {
+                title: "processDefinitionMap.title",
+                icon: 'carbon:flow-connection',
+                BgColor: 'primary',
+                to: "/definition-map",
+                disable: false,
+            },
+            {
                 header: 'definitionManagement.title',
                 disable: false,
             },
@@ -105,13 +112,6 @@ export default {
                 BgColor: 'primary',
                 to: "/organization",
                 disable: true,
-            },
-            {
-                title: "processDefinitionMap.title",
-                icon: 'carbon:flow-connection',
-                BgColor: 'primary',
-                to: "/definition-map",
-                disable: false,
             },
             {
                 title: "uiDefinition.title",
