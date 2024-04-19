@@ -6,7 +6,7 @@
     >
         <v-card-item>
         <v-card-title>
-            Edit Form Definition
+            Edit Form Attribute
         </v-card-title>
         <v-card-subtitle>
             type: {{ value.type }}
@@ -19,7 +19,7 @@
         <v-card-text>
             <v-text-field v-if="value.name !== undefined" ref="inputName" label="Name" v-model.trim="value.name"
                           :rules="[v => !!v || 'Name is required']" required @keyup.enter="save" persistent-placeholder @input="onInputName"></v-text-field>
-            <v-text-field v-if="value.alias !== undefined" ref="inputAlias" label="Alias" v-model.trim="value.alias" @keyup.enter="save"
+            <v-text-field v-if="value.alias !== undefined" ref="inputAlias" label="Label" v-model.trim="value.alias" @keyup.enter="save"
                           :placeholder="placeholder.alias" persistent-placeholder></v-text-field>
             <v-text-field v-if="value.label !== undefined" ref="inputLabel" label="Label" v-model.trim="value.label"
                           :rules="[v => !!v || 'Label is required']" required @keyup.enter="save" persistent-placeholder></v-text-field>
@@ -130,7 +130,7 @@
         </div>
 
         <v-btn @click="save">
-          save
+          Apply
         </v-btn>
     </v-card>
 </template>

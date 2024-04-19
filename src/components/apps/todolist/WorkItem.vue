@@ -101,7 +101,7 @@ export default {
         checkPoints: null,
         workHistoryList: null,
         currentComponent: null,
-        
+        currentActivities: [],
         // status variables
         updatedKey: 0,
         loading: false,
@@ -123,8 +123,8 @@ export default {
             }))
         },
         id() {
-            if (this.$route.params.id) {
-                return this.$route.params.id
+            if (this.$route.params.taskId) {
+                return this.$route.params.taskId
             } else if (this.$route.query.id) {
                 return this.$route.query.id
             } else {
@@ -141,7 +141,7 @@ export default {
             me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, {type: 'bpmn'});
             me.workHistoryList = await backend.getWorkListByInstId(me.workItem.worklist.instId);
             me.currentComponent = me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem';
-            me.currentActivities = [me.workItem.activity.id];
+            me.currentActivities = [me.workItem.activity.id || me.workItem.activity.tracingTag ];
             me.updatedKey ++
             me.loading = false
         },

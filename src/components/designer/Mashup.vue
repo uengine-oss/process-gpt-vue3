@@ -1,10 +1,5 @@
 <template>
   <div>
-    <v-btn @click="onClickSave">
-      save
-    </v-btn>
-
-
     <div id="kEditor1">
     </div>
     
@@ -17,16 +12,6 @@
         >
         </form-definition-panel>
     </v-dialog>
-
-    <v-dialog v-model="isOpenSaveDialog">
-        <form-design-save-panel
-          @onClose="isOpenSaveDialog = false"
-          @onSave="saveFormDefinition"
-          :savedId="storedFormDefData.id"
-          :savedName="storedFormDefData.name"
-        >
-        </form-design-save-panel>
-    </v-dialog>
   </div>
 </template>
 
@@ -36,7 +21,6 @@ import axios from 'axios';
 import vuetify from "@/plugins/vuetify";
 import ChatModule from "@/components/ChatModule.vue";
 import FormDefinitionPanel from '@/components/designer/modeling/FormDefinitionPanel.vue';
-import FormDesignSavePanel from '@/components/designer/FormDesignSavePanel.vue';
 import DynamicComponent from './DynamicComponent.vue';
 
 export default {
@@ -45,8 +29,7 @@ export default {
   mixins: [ChatModule],
   components: {
     DynamicComponent,
-    FormDefinitionPanel,
-    FormDesignSavePanel
+    FormDefinitionPanel
   },
   props: {
     modelValue: String,
@@ -72,8 +55,7 @@ export default {
       items: "",
       label: ""
     },
-    isOpenSettingDialog: false,
-    isOpenSaveDialog: false
+    isOpenSettingDialog: false
   }),
 
   methods: {
@@ -133,29 +115,6 @@ export default {
       })
     },
 
-
-    onClickSave() {
-      this.isOpenSaveDialog = true
-    },
-
-    /**
-     * 'Save' 버튼을 누를 경우, 최종 결과를 Supabase에 저장하기 위해서
-     */
-    saveFormDefinition({id, name}){
-      try {
-
-        window.mashup.$emit('onSaveFormDefinition', {
-          id: id,
-          name: name,
-          html: window.mashup.getKEditorContentHtml()
-        })
-
-      } catch(e) {
-        console.error(e)
-      } finally {
-        window.mashup.isOpenSaveDialog = false
-      }
-    },
 
     /**
      * KEditor의 content에 대해서 저장되는 HTML 내용을 얻기 위해서
@@ -305,7 +264,13 @@ export default {
       onContentChanged: function (event, snippetContent, vueRenderUUID) {  
         if(vueRenderUUID && vueRenderUUID.includes("vuemount_"))
         {
-          const app = createApp(DynamicComponent, {content:snippetContent, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
+          const nameSeq = Object.values(window.mashup.componentRefs).filter(componentRef => componentRef.localName).length + 1
+          const snipptDom = new DOMParser().parseFromString(snippetContent, 'text/html')
+          snipptDom.body.querySelectorAll("[name]").forEach(
+            (el) => el.setAttribute("name", el.getAttribute("name") + `-${nameSeq}`)
+          )
+          
+          const app = createApp(DynamicComponent, {content:snipptDom.body.innerHTML, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
           window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
         }
           
