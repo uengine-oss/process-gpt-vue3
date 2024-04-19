@@ -3,7 +3,7 @@
         <AppBaseCard>
             <template v-slot:leftpart>
                 <div class="no-scrollbar">
-                    <Chat :chatInfo="chatInfo" :messages="messages" :userInfo="userInfo"
+                    <Chat :chatInfo="chatInfo" :messages="messages" :userInfo="userInfo" type="form" @onClickSaveFormButton="openSaveDialog"
                         @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage"
                     ></Chat>
                 </div>
@@ -17,12 +17,21 @@
             </template>
 
             <template v-slot:mobileLeftContent>
-                <Chat :chatInfo="chatInfo" :messages="messages" :userInfo="userInfo"
+                <Chat :chatInfo="chatInfo" :messages="messages" :userInfo="userInfo" type="form"  @onClickSaveFormButton="openSaveDialog"
                         @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage"
                 ></Chat>
             </template>
         </AppBaseCard>
     </v-card>
+
+    <v-dialog v-model="isOpenSaveDialog">
+        <form-design-save-panel
+          @onClose="isOpenSaveDialog = false"
+          @onSave="tryToSaveFormDefinition"
+          :savedId="storedFormDefData.id"
+        >
+        </form-design-save-panel>
+    </v-dialog>
 </template>
 
 <script>
@@ -32,6 +41,7 @@ import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import Mashup from '@/components/designer/Mashup.vue';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
+import FormDesignSavePanel from '@/components/designer/FormDesignSavePanel.vue';
 import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/FormDesignGenerator';
 import Chat from './ui/Chat.vue';
@@ -53,7 +63,8 @@ export default {
         ChatDetail,
         ChatProfile,
         Mashup,
-        ChatGenerator
+        ChatGenerator,
+        FormDesignSavePanel
     },
     data: () => ({
         path: 'form_def',
@@ -69,7 +80,8 @@ export default {
         prevMessageFormat: "", // 사용자가 KEditor를 변경할때마다 해당 포맷을 기반으로 System 메세지를 재구축해서 보내기 위해서
 
         storedFormDefData: {},
-        isShowMashup: false
+        isShowMashup: false,
+        isOpenSaveDialog: false
     }),
     async created() {
         this.generator = new ChatGenerator(this, {
@@ -96,6 +108,20 @@ export default {
         }, 
     },
     methods: {
+        openSaveDialog() {
+            this.isOpenSaveDialog = true
+        },
+
+        /**
+         * ID 정보를 제공하고, 'Save' 버튼을 누를 경우, 최종 결과를 DB에 저장시키기 위해서
+         */
+        async tryToSaveFormDefinition({id}){
+            await this.saveFormDefinition({
+                id: id,
+                html: this.$refs.mashup.getKEditorContentHtml()
+            })
+        },
+
         /**
          * 'Save' 버튼을 누를 경우, 최종 결과를 DB에 저장하기 위해서
          */
@@ -110,6 +136,8 @@ export default {
             }
             
             await this.backend.putRawDefinition(html, id, {'type': 'form'});
+            this.isOpenSaveDialog = false
+            
 
             if(isNewSave) {
                 this.$router.push(`/ui-definitions/${id}`)

@@ -73,7 +73,8 @@
         "add": "추가",
         "edit": "수정",
         "delete": "삭제",
-        "cancel": "취소"
+        "cancel": "취소",
+        "save": "화면 저장"
     },
     "processDefinition": {
         "title": "프로세스 정의",

@@ -17,6 +17,22 @@
                             <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
                         </div>
                     </div>
+                    <!-- 폼 저장을 위해서 -->
+                    <span v-if="type == 'form'" class="d-flex gap-2 flex-row-reverse" style="height: 0px">
+                        <v-tooltip>
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props"
+                                    icon variant="text"
+                                    class="text-medium-emphasis"
+                                    style="bottom: 35px; left: 15px;"
+                                    @click="$emit('onClickSaveFormButton')"
+                                >
+                                    <Icon icon="material-symbols:save" width="24" height="24" />
+                                </v-btn>
+                            </template>
+                            <span>{{ $t('uiDefinition.save') }}</span>
+                        </v-tooltip>
+                    </span>
 
                     <!-- 프로세스 정의 & 실행 -->
                     <div class="d-flex">
