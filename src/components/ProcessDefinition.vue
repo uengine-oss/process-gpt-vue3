@@ -199,7 +199,11 @@ export default {
     }),
     computed: {
         mode() {
-            return window.$mode
+            if (window.$mode == 'ProcessGPT') {
+                return 'LLM';
+            } else {
+                return window.$mode;
+            }
         },
         thisDefinition() {
             return {
