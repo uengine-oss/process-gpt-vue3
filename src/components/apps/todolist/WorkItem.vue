@@ -18,7 +18,9 @@
                     프로세스 진행상태
                     <div>
                         <div v-if="bpmn">
-                            <process-definition class="process-definition-resize" :bpmn="bpmn" :key="updatedKey" :isViewMode="true"></process-definition>
+                            <process-definition class="process-definition-resize" :bpmn="bpmn" 
+                                :currentActivities="currentActivities" :key="updatedKey" :isViewMode="true"
+                            ></process-definition>
                         </div>
                         <dif v-else>
                             No BPMN found
@@ -77,7 +79,8 @@ export default {
         updatedKey: 0,
         picture: null,
         checkPoints: [],
-        loading: false
+        loading: false,
+        currentActivities: [],
     }),
     components: {
         ProcessDefinition,
@@ -90,16 +93,26 @@ export default {
     computed:{
         checkedCount(){
             return this.checkPoints.filter(checkPoint => checkPoint.checked).length;
-        }
+        },
+        id() {
+            if (this.$route.params.id) {
+                return this.$route.params.id
+            } else if (this.$route.query.id) {
+                return this.$route.query.id
+            } else {
+                return null
+            }
+        },
     },
     methods: {
         async init() {
             var me = this
             const backend = BackendFactory.createBackend()
             me.loading = true;
-            me.workItem = await backend.getWorkItem(me.$route.params.taskId);
+            me.workItem = await backend.getWorkItem(this.id);
             me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, {type: 'bpmn'});
             me.currentComponent = me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem';
+            me.currentActivities = [me.workItem.activity.id];
             me.updatedKey ++
             me.loading = false
         },
