@@ -228,6 +228,8 @@ export default {
             };
         },
         async fetchAndProcessFormDefinitions(variable) {
+            if (!variable.defaultValue) return;
+
             let formDefs = await this.storage.list('form_def');
             let name = variable.defaultValue.name;
             let alias = variable.defaultValue.alias;
@@ -277,27 +279,35 @@ export default {
             }
         },
         updateBlockTemplates() {
-            const treeStructure = this.buildTreeStructure();
+            const treeStructure = this.transformData();
             const nodeHeight = 24;
 
             const updatePorts = (treeNode, path = '', yOffset = 0, isRootClosed = false) => {
                 if (!treeNode) return;
 
                 const effectiveYOffset = isRootClosed ? yOffset : yOffset + nodeHeight;
-                const currentPath = path ? `${path}.${treeNode.text}` : treeNode.text;
-                if (!isRootClosed) {
-                    this.addPortToBlockTemplates(currentPath, effectiveYOffset - nodeHeight);
-                } else {
-                    this.addPortToBlockTemplates(currentPath, effectiveYOffset);
+                const treeNodeText = Object.keys(treeNode)[0];
+                const currentPath = path ? `${path}.${treeNodeText}` : treeNodeText;
+                if (path != '') {
+                    // 최상위 노드가 아닐 때 포트를 표시합니다.
+                    if (!isRootClosed) {
+                        this.addPortToBlockTemplates(currentPath, effectiveYOffset - nodeHeight);
+                    } else {
+                        this.addPortToBlockTemplates(currentPath, effectiveYOffset);
+                    }
                 }
 
-                if (treeNode.children && treeNode.children.length > 0) {
-                    const nodeOpened = this.nodes[treeNode.text].state && this.nodes[treeNode.text].state.opened;
+                if (treeNode[Object.keys(treeNode)[0]].length > 0) {
+                    const nodeOpened = this.nodes[treeNodeText].state && this.nodes[treeNodeText].state.opened;
                     let cumulativeOffset = effectiveYOffset;
+                    if(!nodeOpened) {
+                        cumulativeOffset -= nodeHeight;
+                    }
 
-                    treeNode.children.forEach((childNode, index) => {
-                        const child = this.nodes[childNode];
-                        updatePorts(child, currentPath, cumulativeOffset, isRootClosed || !nodeOpened);
+                    treeNode[Object.keys(treeNode)[0]].forEach((childNode, index) => {
+                        const childNodeText = Object.keys(childNode)[0];
+                        const child = this.nodes[childNodeText]; // 수정: childNode가 객체이므로 text 속성 접근 필요
+                        updatePorts(childNode, currentPath, cumulativeOffset, isRootClosed || !nodeOpened);
                         if (nodeOpened && !isRootClosed) {
                             cumulativeOffset += this.getNodeHeight(child);
                         }
@@ -307,17 +317,22 @@ export default {
 
             this.getNodeHeight = function (node) {
                 let totalHeight = nodeHeight;
-                if (node.state && node.state.opened && node.children) {
-                    node.children.forEach((child) => {
-                        totalHeight += this.getNodeHeight(this.nodes[child]);
+
+                const nodeOpened = node.state && node.state.opened;
+                if (nodeOpened && node.children) {
+                    node.children.forEach((childNode) => {
+                        const child = this.nodes[childNode]; 
+                        totalHeight += this.getNodeHeight(child);
                     });
                 }
+
                 return totalHeight;
             };
 
             treeStructure.forEach((rootNode, index) => {
                 const rootYOffset = index * nodeHeight;
-                const rootClosed = !(this.nodes[rootNode.text].state && this.nodes[rootNode.text].state.opened);
+                const rootText = Object.keys(rootNode)[0];
+                const rootClosed = !(this.nodes[rootText].state && this.nodes[rootText].state.opened);
                 updatePorts(rootNode, '', rootYOffset, rootClosed);
             });
         },
@@ -332,6 +347,37 @@ export default {
                 y: yOffset,
                 direction: 'in'
             };
+        },
+        transformData() {
+            var data = this.nodes;
+            function processNode(nodeId) {
+                const node = data[nodeId];
+                if (!node) return null;
+
+                const obj = {};
+                if (node.children && node.children.length > 0) {
+                    const childrenArray = node.children.map((childId) => processNode(childId)).filter((n) => n !== null);
+                    obj[node.text] = childrenArray.length > 0 ? childrenArray : [];
+                } else {
+                    obj[node.text] = [];
+                }
+
+                return obj;
+            }
+
+            const result = [];
+            Object.keys(data).forEach((key) => {
+                const rootNode = data[key];
+                if (rootNode && rootNode.parent === null) {
+                    // Assuming the root nodes have 'parent' set to null
+                    const nodeData = processNode(key);
+                    if (nodeData) {
+                        result.push(nodeData);
+                    }
+                }
+            });
+
+            return result;
         },
         buildTreeStructure() {
             const buildTree = (nodeKey) => {
