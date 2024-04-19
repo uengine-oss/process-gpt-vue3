@@ -20,10 +20,6 @@
 
                     <!-- 프로세스 정의 & 실행 -->
                     <div class="d-flex">
-                        <v-btn v-if="type == 'instances'" icon variant="text" class="text-medium-emphasis"
-                            @click="viewProcess">
-                            <Icon icon="fluent:flowchart-16-regular" :style="{ fontSize: '28px' }" />
-                        </v-btn>
                         <v-tooltip v-if="type == 'definitions'"
                             :disabled="!isChanged"
                             location="bottom"
@@ -326,18 +322,6 @@
                 </div>
             </div>
         </form>
-
-        <v-dialog v-model="alertDialog" max-width="500" persistent>
-            <v-card>
-                <v-card-text class="mt-2">
-                    {{ alertMessage }}
-                </v-card-text>
-                <v-card-actions class="justify-center">
-                    <v-btn color="primary" variant="flat" @click="complete">확인</v-btn>
-                    <v-btn color="error" variant="flat" @click="alertDialog=false">닫기</v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
     </div>
 </template>
 
@@ -391,8 +375,6 @@ export default {
             showUserList: false,
             mentionStartIndex: null,
             mentionedUsers: [], // Mention된 유저들의 정보를 저장할 배열
-            alertDialog: false,
-            alertMessage: '',
         };
     },
     computed: {
@@ -672,17 +654,9 @@ export default {
         openAlertDialog() {
             if (this.type == 'definitions') {
                 this.$emit('toggleLock')
-                // if (this.lock) {
-                //     this.alertMessage = '저장 및 체크아웃 하시겠습니까?';
-                // } else {
-                //     this.alertMessage = '체크인 및 프로세스 편집을 시작하시겠습니까?';
-                // }
-                // this.alertDialog = true;
             }
         },
         complete() {
-            this.alertDialog = false;
-            this.alertMessage = '';
             this.$emit('complete');
         },
     }
