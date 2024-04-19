@@ -264,7 +264,13 @@ export default {
       onContentChanged: function (event, snippetContent, vueRenderUUID) {  
         if(vueRenderUUID && vueRenderUUID.includes("vuemount_"))
         {
-          const app = createApp(DynamicComponent, {content:snippetContent, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
+          const nameSeq = Object.values(window.mashup.componentRefs).filter(componentRef => componentRef.localName).length + 1
+          const snipptDom = new DOMParser().parseFromString(snippetContent, 'text/html')
+          snipptDom.body.querySelectorAll("[name]").forEach(
+            (el) => el.setAttribute("name", el.getAttribute("name") + `-${nameSeq}`)
+          )
+          
+          const app = createApp(DynamicComponent, {content:snipptDom.body.innerHTML, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
           window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
         }
           

@@ -27,7 +27,7 @@
                         </card>
                     </v-window-item>
 
-                    <v-window-item value="preview" class="fill-height mt-15" style="overflow-y: auto;">
+                    <v-window-item value="preview" class="fill-height mt-15 pa-5" style="overflow-y: auto;">
                         <template v-if="isShowPreview">
                             <DynamicForm  :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
                             <v-btn color="primary" class="full-width" @click="onClickPreviewSubmitButton">제출</v-btn>
@@ -141,13 +141,17 @@ export default {
             handler() {
                 if(this.currentTabName === "edit") 
                     $("div[id^='keditor-content-area-']").css("display", "block");
+
+                // 미리보기에 KEditor에서 편집한 HTML을 로드시키기 위해서
                 else {
                     $("div[id^='keditor-content-area-']").css("display", "none");
                 
                     this.isShowPreview = false
 
                     this.previewFormValues = {}
-                    this.previewHTML = this.$refs.mashup.getKEditorContentHtml()
+                    this.previewHTML = this.keditorContentHTMLToDynamicFormHTML(
+                        this.$refs.mashup.getKEditorContentHtml()
+                    )
 
                     this.isShowPreview = true
                 }
@@ -163,10 +167,48 @@ export default {
          * ID 정보를 제공하고, 'Save' 버튼을 누를 경우, 최종 결과를 DB에 저장시키기 위해서
          */
         async tryToSaveFormDefinition({id}){
-            await this.saveFormDefinition({
-                id: id,
-                html: this.$refs.mashup.getKEditorContentHtml()
+            var me = this
+            me.$try({
+                context: me,
+                action: async () => {
+                    const kEditorContentHTML = me.$refs.mashup.getKEditorContentHtml()
+                    const DynamicFormHTML = me.keditorContentHTMLToDynamicFormHTML(kEditorContentHTML)
+
+                    await me.saveFormDefinition({
+                        id: id,
+                        html: DynamicFormHTML
+                    })
+                },
+                successMsg: '저장되었습니다.'
             })
+        },
+
+        /**
+         * KEditor에서 추출한 내용을 실제로 DynamicForm 컴포넌트에 적용할 수 있는 형태로 변환시키기 위해서
+         */
+        keditorContentHTMLToDynamicFormHTML(html) {
+            const dom = new DOMParser().parseFromString(html, 'text/html')
+
+            const formValues = dom.querySelectorAll('[name]')
+            formValues.forEach(el => {
+                el.setAttribute('v-model', `formValues['${el.getAttribute('name')}']`)
+            })
+
+            return dom.body.innerHTML
+        },
+
+        /**
+         * DB에서 로드된 내용을 KEditor에 적용할 수 있는 형태로 바꾸기 위해서
+         */
+        dynamicFormHTMLToKeditorContentHTML(html) {
+            const dom = new DOMParser().parseFromString(html, 'text/html')
+
+            const formValues = dom.querySelectorAll('[v-model]')
+            formValues.forEach(el => {
+                el.removeAttribute('v-model')
+            })
+
+            return dom.body.innerHTML
         },
 
         /**
@@ -212,9 +254,10 @@ export default {
                     return
                 }
 
-                this.applyNewSrcToMashup(
-                    this.loadHTMLToKEditorContent(this.storedFormDefData.html)
-                )
+                const kEditorContentHTML = this.dynamicFormHTMLToKeditorContentHTML(this.storedFormDefData.html)
+                const kEditorContent = this.loadHTMLToKEditorContent(kEditorContentHTML)
+                this.applyNewSrcToMashup(kEditorContent)
+                
                 this.isShowMashup = true
             }
             else
