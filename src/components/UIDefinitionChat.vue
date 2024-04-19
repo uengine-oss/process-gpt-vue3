@@ -97,7 +97,7 @@ export default {
     },
     methods: {
         /**
-         * 'Save' 버튼을 누를 경우, 최종 결과를 Supabase에 저장하기 위해서
+         * 'Save' 버튼을 누를 경우, 최종 결과를 DB에 저장하기 위해서
          */
         async saveFormDefinition({id, html}){
             const isNewSave = (this.$route.params.id !== id)
@@ -118,15 +118,15 @@ export default {
 
 
         /**
-         * Supabase에서 Form 관련 데이터를 가져와서 KEditor에 반영하기 위해서 사용
+         * DB에서 Form 관련 데이터를 가져와서 KEditor에 반영하기 위해서 사용
          * @param {*} path 
          */
         async loadData(path) {
             if (this.$route.params.id && this.$route.params.id != 'chat') {
                 path = `${this.path}/${this.$route.params.id}`
 
-                this.storedFormDefData = await this.backend.getRawDefinition(this.$route.params.id, { type: "form" })    
-                if(!this.storedFormDefData) {
+                this.storedFormDefData = (await this.backend.getRawDefinition(this.$route.params.id, { type: "form" })) ?? {}   
+                if(!(this.storedFormDefData.id)) {
                     alert(`'${this.$route.params.id}' ID 를 가지는 폼 디자인 정보가 없습니다! 새 폼 만들기 화면으로 이동됩니다.`)
                     this.$router.push(`/ui-definitions/chat`)
                     this.isShowMashup = true

@@ -12,14 +12,12 @@
         <v-card-text>
             <v-col>
                 <v-text-field ref="inputId" v-model.trim="infoToSave.id" label="ID" @keyup.enter="save" 
-                              :placeholder="placeholder.id" persistent-placeholder @input="onInputId" :disabled="!!savedId"></v-text-field>
-                <v-text-field ref="inputName" v-model.trim="infoToSave.name" label="Name" @keyup.enter="save"
-                              :placeholder="placeholder.name" persistent-placeholder></v-text-field>
+                              :placeholder="placeholder.id" persistent-placeholder :disabled="!!savedId"></v-text-field>
             </v-col>
         </v-card-text>
 
         <v-card-actions style="justify-content: right;">
-            <v-btn @click="save"> SAVE </v-btn>
+            <v-btn ref="saveButton" @click="save" @keyup.enter="save" > SAVE </v-btn>
         </v-card-actions>
     </v-card>
 </template>
@@ -32,18 +30,15 @@ export default {
         "onSave"
     ],
     props: {
-        savedId: String,
-        savedName: String
+        savedId: String
     },
     data: () => ({
         infoToSave: {
-            id: "",
-            name: ""
+            id: ""
         },
 
         placeholder: {
-            id: "",
-            name: ""
+            id: ""
         },
 
         default: {
@@ -59,9 +54,6 @@ export default {
             if(!(this.infoToSave.id) || this.infoToSave.id.length <= 0) {
                 this.infoToSave.id = this.default.id
             }
-            if(!(this.infoToSave.name) || this.infoToSave.name.length <= 0) {
-                this.infoToSave.name = this.infoToSave.id
-            }
             //#endregion
             //#region 유효성 검사
             if(!this.regexStr.test(this.infoToSave.id)) {
@@ -69,39 +61,23 @@ export default {
                 this.$refs.inputId.focus();
                 return
             }
-            if(!this.regexStr.test(this.infoToSave.name)) {
-                alert(this.regexErrorMsg.replace("{{propName}}", "Name"))
-                this.$refs.inputName.focus();
-                return
-            }
             //#endregion
 
             this.$emit('onSave', this.infoToSave)
         },
-
-        onInputId() {
-            if(this.infoToSave.id.length > 0)
-                this.placeholder.name = this.infoToSave.id
-            else
-                this.placeholder.name = this.default.id
-        }
     },
     
     created() {
         this.placeholder.id = this.default.id
-        this.placeholder.name = this.default.id
 
         if(this.savedId) {
             this.infoToSave.id = this.savedId
-            this.placeholder.name = this.savedId
         }
-        if(this.savedName)
-            this.infoToSave.name = this.savedName
     },
     mounted() {
         if(this.savedId) {
             this.$nextTick(() => {
-                this.$refs.inputName.focus();
+                this.$refs.saveButton.focus();
             });
         } else {
             this.$nextTick(() => {

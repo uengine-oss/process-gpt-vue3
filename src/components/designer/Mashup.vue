@@ -23,7 +23,6 @@
           @onClose="isOpenSaveDialog = false"
           @onSave="saveFormDefinition"
           :savedId="storedFormDefData.id"
-          :savedName="storedFormDefData.name"
         >
         </form-design-save-panel>
     </v-dialog>
@@ -133,20 +132,18 @@ export default {
       })
     },
 
-
     onClickSave() {
-      this.isOpenSaveDialog = true
+      window.mashup.isOpenSaveDialog = true
     },
 
     /**
-     * 'Save' 버튼을 누를 경우, 최종 결과를 Supabase에 저장하기 위해서
+     * ID 정보를 제공하고, 'Save' 버튼을 누를 경우, 최종 결과를 DB에 저자시키기 위해서
      */
-    saveFormDefinition({id, name}){
+    saveFormDefinition({id}){
       try {
 
         window.mashup.$emit('onSaveFormDefinition', {
           id: id,
-          name: name,
           html: window.mashup.getKEditorContentHtml()
         })
 
