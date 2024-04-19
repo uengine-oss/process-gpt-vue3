@@ -9,11 +9,34 @@
                 </div>
             </template>
             <template v-slot:rightpart>
-                <mashup v-if="isShowMashup" ref="mashup" v-model="kEditorInput" :key="mashupKey" 
-                        @onSaveFormDefinition="saveFormDefinition" :storedFormDefData="storedFormDefData"/>
-                <card v-else class="d-flex align-center justify-center fill-height">
-                    <v-progress-circular color="primary" indeterminate></v-progress-circular>
-                </card>
+                <v-tabs
+                    v-model="currentTabName"
+                    style="position: fixed; z-index: 999;"
+                    class="text-black"
+                    fixed-tabs
+                >
+                    <v-tab value="edit">편집</v-tab>
+                    <v-tab value="preview">미리보기</v-tab>
+                </v-tabs>
+                <v-window v-model="currentTabName" class="fill-height">
+                    <v-window-item value="edit" class="fill-height" style="overflow-y: auto;">
+                        <mashup v-if="isShowMashup" ref="mashup" v-model="kEditorInput" :key="mashupKey" 
+                            @onSaveFormDefinition="saveFormDefinition" :storedFormDefData="storedFormDefData"/>
+                        <card v-else class="d-flex align-center justify-center fill-height">
+                            <v-progress-circular color="primary" indeterminate></v-progress-circular>
+                        </card>
+                    </v-window-item>
+
+                    <v-window-item value="preview" class="fill-height mt-15" style="overflow-y: auto;">
+                        <template v-if="isShowPreview">
+                            <DynamicForm  :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
+                            <v-btn color="primary" class="full-width" @click="onClickPreviewSubmitButton">제출</v-btn>
+                        </template>
+                        <card v-else class="d-flex align-center justify-center fill-height">
+                            <v-progress-circular color="primary" indeterminate></v-progress-circular>
+                        </card>
+                    </v-window-item>
+                </v-window>
             </template>
 
             <template v-slot:mobileLeftContent>
@@ -45,6 +68,7 @@ import FormDesignSavePanel from '@/components/designer/FormDesignSavePanel.vue';
 import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/FormDesignGenerator';
 import Chat from './ui/Chat.vue';
+import DynamicForm from '@/components/designer/DynamicForm.vue'
 
 
 var jsondiffpatch = jsondiff.create({
@@ -64,7 +88,8 @@ export default {
         ChatProfile,
         Mashup,
         ChatGenerator,
-        FormDesignSavePanel
+        FormDesignSavePanel,
+        DynamicForm
     },
     data: () => ({
         path: 'form_def',
@@ -80,8 +105,13 @@ export default {
         prevMessageFormat: "", // 사용자가 KEditor를 변경할때마다 해당 포맷을 기반으로 System 메세지를 재구축해서 보내기 위해서
 
         storedFormDefData: {},
+        isOpenSaveDialog: false,
+        currentTabName: "",
         isShowMashup: false,
-        isOpenSaveDialog: false
+
+        previewHTML: "",
+        previewFormValues: {},
+        isShowPreview: false
     }),
     async created() {
         this.generator = new ChatGenerator(this, {
@@ -105,7 +135,24 @@ export default {
                 } else
                     this.isShowMashup = true
             }
-        }, 
+        },
+        
+        currentTabName: {
+            handler() {
+                if(this.currentTabName === "edit") 
+                    $("div[id^='keditor-content-area-']").css("display", "block");
+                else {
+                    $("div[id^='keditor-content-area-']").css("display", "none");
+                
+                    this.isShowPreview = false
+
+                    this.previewFormValues = {}
+                    this.previewHTML = this.$refs.mashup.getKEditorContentHtml()
+
+                    this.isShowPreview = true
+                }
+            }
+        }
     },
     methods: {
         openSaveDialog() {
@@ -137,11 +184,15 @@ export default {
             
             await this.backend.putRawDefinition(html, id, {'type': 'form'});
             this.isOpenSaveDialog = false
-            
+
 
             if(isNewSave) {
                 this.$router.push(`/ui-definitions/${id}`)
             }
+        },
+
+        onClickPreviewSubmitButton() {
+            alert(JSON.stringify(this.previewFormValues))
         },
 
 
