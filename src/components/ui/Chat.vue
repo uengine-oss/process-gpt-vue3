@@ -275,14 +275,14 @@
             </div> -->
         </div>
         <v-divider />
-        <div v-if="showNewMessageNoti"
+        <!-- <div v-if="showNewMessageNoti"
             style="position: absolute; z-index: 9; max-width: 1000px; left: 50%; transform: translateX(-50%); bottom: 150px;">
             <v-chip color="primary" closable @click:close="showNewMessageNoti = false" style="cursor: pointer;">
                 <div @click="clickToScroll">
                     <span>{{ lastMessage.name }}: {{ lastMessage.content }}</span>
                 </div>
             </v-chip>
-        </div>
+        </div> -->
         <div class="text-body-1" v-if="isReply" style="margin-left: 10px">
             {{ replyUser.name }}님에게 답장
             <v-icon @click="cancelReply()">mdi-close</v-icon>
