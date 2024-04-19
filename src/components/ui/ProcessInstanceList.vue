@@ -1,170 +1,81 @@
 <template>
-    <v-sheet>
-        <div class="px-6 pt-3">
-            <v-text-field
-                variant="outlined"
-                v-model="searchValue"
-                append-inner-icon="mdi-magnify"
-                :placeholder="$t('processExecution.search')"
-                hide-details
-                density="compact"
-            ></v-text-field>
-
-            <div class="d-flex">
-                <v-menu>
-                    <template v-slot:activator="{ props }">
-                        <v-btn color="white" variant="flat" class="mt-4 text-medium-emphasis" v-bind="props">
-                            {{ $t('processExecution.recentChats') }}
-                            <ChevronDownIcon size="18" class="ml-2" />
-                        </v-btn>
-                    </template>
-                    <v-list class="elevation-10">
-                        <v-list-item v-for="(item, index) in menuItems" :key="index" :value="index">
-                            <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
-                        </v-list-item>
-                    </v-list>
-                </v-menu>
-
-                <v-btn color="primary" variant="flat" class="mt-4 ml-auto text-medium-emphasis" @click="newInstanceChat">
-                    {{ $t('processExecution.newChat') }}
-                </v-btn>
-            </div>
-        </div>
-    </v-sheet>
-
-    <perfect-scrollbar class="lgScroll h-100">
-        <v-list>
-            <!---Single Item-->
-            <v-list-item
-                v-for="item in instanceList"
-                :key="item.proc_inst_id"
-                :value="item.proc_inst_id"
-                color="secondary"
-                class="text-no-wrap chatItem"
-                lines="two"
-                :active="currentChatId === item.proc_inst_id"
-                @click="selectChat(item.proc_inst_id)"
-            >
-                <!---Name-->
-                <v-list-item-title class="text-subtitle-1 textPrimary w-100 font-weight-semibold">
-                    {{ item.proc_inst_name }}
-                </v-list-item-title>
-                <!---Subtitle-->
-                <div class="text-subtitle-2 textPrimary mt-1 text-truncate w-100">
-                    {{
-                        item.current_activity_ids.length > 0 ? 
-                            item.current_activity_ids : '다음 액티비티가 없습니다.'
-                    }}
-                </div>
-                <!---Last seen--->
-                <template v-slot:append>
-                    <div class="d-flex flex-column text-right w-25">
-                        <DotsVerticalIcon size="15" />
-                        <v-menu activator="parent">
-                            <v-list density="compact">
-                                <v-list-item @click="deleteInstance(item.proc_inst_id)">
-                                    <v-list-item-title>
-                                        Delete
-                                    </v-list-item-title>
-                                </v-list-item>
-                            </v-list>
-                        </v-menu>
-                    </div>
-                </template>
-            </v-list-item>
-        </v-list>
-    </perfect-scrollbar>
+    <v-list class="py-4 px-4 bg-containerBg">
+        <NavGroup :item="instMenu" :key="instMenu.header" />
+        <NavItem class="leftPadding" :item="instExecution" />
+        <NavCollapse v-if="runningInstances.children.length" class="leftPadding" :item="runningInstances" :level="0" />
+        <NavCollapse v-if="completeInstances.children.length" class="leftPadding" :item="completeInstances" :level="0" />
+    </v-list>
 </template>
 
 <script>
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import NavCollapse from '@/layouts/full/vertical-sidebar/NavCollapse/NavCollapse.vue';
+import NavGroup from '@/layouts/full/vertical-sidebar/NavGroup/index.vue';
+import NavItem from '@/layouts/full/vertical-sidebar/NavItem/index.vue';
+
+import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
 
 export default {
+    components: {
+        NavCollapse,
+        NavGroup,
+        NavItem,
+    },
     data: () => ({
-        path: "proc_inst",
-        instanceList: [],
-        searchValue: "",
-        currentChatId: "",
-        menuItems: [
-            { title: 'processExecution.sortByTime' },
-            { title: 'processExecution.sortByCompleted' }
-        ],
-        email: "",
-        storage: null,
-    }),
-    watch: {
-        "$route": {
-            deep: true,
-            async handler(newVal) {
-                if (!newVal.query.id) {
-                    this.currentChatId = "";
-                }
-            }
+        instMenu: {
+            header: 'instance.title',
+            disable: false,
         },
-    },
+        instExecution: {
+            title: "processExecution.title",
+            icon: 'solar:chat-dots-linear',
+            BgColor: 'primary',
+            to: '/instances/chat',
+            disable: false,
+        },
+        runningInstances: {
+            title: '실행 중 인스턴스',
+            // title: 'runningInstances.title',
+            icon: 'solar:list-bold',
+            BgColor: 'primary',
+            children: [],
+            disable: false,
+        },
+        completeInstances: {
+            title: '종료된 인스턴스',
+            // title: 'completeInstances.title',
+            icon: 'solar:list-bold',
+            BgColor: 'primary',
+            children: [],
+            disable: false,
+        },
+    }),
     async created() {
-        this.storage = StorageBaseFactory.getStorage();
-        this.email = localStorage.getItem("email");
-        await this.init();
-    },
-    async mounted() {
-        await this.storage.watch(`${this.path}`, this.init);
+        const execution = localStorage.getItem("execution");
+        if (execution == 'true') {
+            this.instMenu.disable = false;
+            await this.loadInstances();
+        }
     },
     methods: {
-        async init() {
-            if (this.$route.query && this.$route.query.id) {
-                const id = this.$route.query.id;
-                this.currentChatId = id;
-            }
-
-            var me = this;
-            var list = await this.storage.list(`${this.path}`);
-            if (list && list.length > 0) {
-                me.instanceList = [];
-                list.forEach(async item => {
-                    if (item.user_ids.includes(this.email)) {
-                        var def_id = item.id.split('.')[0];
-                        var inst = await this.storage.getObject(`${def_id}/${item.id}`, {key: 'proc_inst_id'});
-                        if (inst) {
-                            me.instanceList.push(inst);
-                        }
-                    }
-                })
-            }
+        async loadInstances() {
+            this.runningInstances.children = await backend.getInstanceList();
+            this.runningInstances.children = this.runningInstances.children.map((item) => {
+                item = {
+                    title: item.instName,
+                    to: `/todolist/${item.instId}`,
+                }
+                return item;
+            });
+            this.completeInstances.children = await backend.getCompleteInstanceList();
+            this.completeInstances.children = this.completeInstances.children.map((item) => {
+                item = {
+                    title: item.instName,
+                    to: `/todolist/${item.isntid}`,
+                }
+                return item;
+            });
         },
-        selectChat(id) {
-            this.currentChatId = id;
-            this.$router.push(`/instances/chat?id=${id}`);
-        },
-        newInstanceChat() {
-            this.currentChatId = "";
-            this.$router.push(`/instances/chat`);
-        },
-        async deleteInstance(id) {
-            // TODO delete 트리거 처리 
-            var def_id = id.split('.')[0];
-            await this.storage.delete(`${def_id}/${id}`, {key: 'proc_inst_id'});
-            await this.storage.delete(`${this.path}/${id}`, {key: "id"});
-
-            if (this.currentChatId == id) {
-                this.newInstanceChat();
-            }            
-        }
     }
-};
+}
 </script>
-
-<style>
-.chatItem {
-    padding: 16px 24px !important;
-    border-bottom: 1px solid rgb(var(--v-theme-inputBorder), 0.1);
-}
-.badg-dot {
-    left: -17px;
-    position: relative;
-    bottom: -10px;
-}
-.lgScroll {
-    height: 500px !important;
-}
-</style>

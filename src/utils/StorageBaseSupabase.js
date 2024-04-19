@@ -133,7 +133,11 @@ export default class StorageBaseSupabase {
                 if (error) {
                     throw error;
                 } else {
-                    return data;
+                    if (column != "*") {
+                        return data[column];
+                    } else {
+                        return data;
+                    }
                 }
             } else if (obj.searchVal) {
                 const { data, error } = await window.$supabase
@@ -145,7 +149,11 @@ export default class StorageBaseSupabase {
                 if (error) {
                     throw error;
                 } else {
-                    return data;
+                    if (column != "*") {
+                        return data[column];
+                    } else {
+                        return data;
+                    }
                 }
             } else {
                 const { data, error } = await window.$supabase
@@ -156,7 +164,11 @@ export default class StorageBaseSupabase {
                 if (error) {
                     throw error;
                 } else {
-                    return data;
+                    if (column != "*") {
+                        return data[column];
+                    } else {
+                        return data;
+                    }
                 }
             }
         } catch(error) {
@@ -476,7 +488,7 @@ export default class StorageBaseSupabase {
 
             const { data, error } = await query;
             if (error) {
-                throw error;
+                return error;
             } else {
                 return data;
             }
@@ -576,6 +588,22 @@ export default class StorageBaseSupabase {
             }
         } catch (error) {
             throw new StorageBaseError('error in getCount', error, arguments);
+        }
+    }
+
+    async callProcedure(procedure, params) {
+        try {
+            const { data, error } = await window.$supabase.rpc(procedure, params);
+    
+            if (error) {
+                console.error('Error calling function:', error);
+                return null;
+            }
+    
+            return data;
+        } catch (error) {
+            console.error('Error in callProcedure:', error);
+            throw error;
         }
     }
 }

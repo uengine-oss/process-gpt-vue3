@@ -85,6 +85,7 @@ USING (true);
 drop table proc_inst;
 create table proc_inst (
     id text primary key,
+    name text,
     user_ids text[],
     messages jsonb
 );

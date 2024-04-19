@@ -35,12 +35,11 @@ class ProcessGPTBackend implements Backend {
     async putRawDefinition(xml: any, defId: string, options: any) {
         try {
             // 폼 정보를 저장하기 위해서
-            if(options.type === "form") {
+            if(options && options.type === "form") {
                 await storage.putObject('form_def', {
                     id: defId,
                     html: xml
                 });
-
                 return
             }
             
@@ -81,19 +80,20 @@ class ProcessGPTBackend implements Backend {
 
     async getRawDefinition(defId: string, options: any) {
         try {
-            // 폼 정보를 불러오기 위해서
-            if(options.type === "form") {
-                const data = await storage.getString(`form_def/${defId}`, { key: 'id' });
+            if (options) {
+                // 폼 정보를 불러오기 위해서
+                if(options.type === "form") {
+                    const data = await storage.getString(`form_def/${defId}`, { key: 'id' });
+                    return data;
+                } else if(options.type === "bpmn") {
+                    const data = await storage.getString(`proc_def/${defId}`, { key: 'id', column: 'bpmn' });
+                    console.log(data)
+                    return data;
+                }
+            } else {
+                const data = await storage.getObject(`proc_def/${defId}`, { key: 'id' });
                 return data;
             }
-
-            options = {
-                match: {
-                    id: defId
-                }
-            };
-            const data = await storage.getObject('proc_def', options);
-            return data;
         } catch (error) {
             throw new Error('error in getRawDefinition');
         }
@@ -101,6 +101,21 @@ class ProcessGPTBackend implements Backend {
 
     async start(input: any) {
         try {
+            if (input.process_definition_id) {
+                const list = await storage.list(input.process_definition_id);
+                if (list.code == "42P01") {
+                    await axios.post('/process-db-schema/invoke', {
+                        "input": {
+                            "process_definition_id": input.process_definition_id
+                        }
+                    }).then(res => {
+                        return res
+                    }).catch(error => {
+                        return error
+                    });
+                }
+            }
+            
             var result: any = null;
             var url = '/complete/invoke';
             if (input.image != null) {
@@ -146,9 +161,26 @@ class ProcessGPTBackend implements Backend {
 
     async getWorkItem(taskId: string) {
         try {
-            const options = { match: { id: taskId } };
-            const data = await storage.getObject('todolist', options);
-            return data;
+            const data = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
+            const workItem = {
+                worklist: {
+                    defId: data.proc_def_id,
+                    endpoint: data.user_id,
+                    instId: data.proc_inst_id,
+                    rootInstId: null,
+                    taskId: data.id,
+                    startDate: data.start_date,
+                    dueDate: data.end_date,
+                    status: data.status,
+                    description: data.description || "",
+                    tool: ""
+                },
+                activity: {
+                    tracingTag: data.activity_id,
+                    parameters: []
+                }
+            }
+            return workItem;
         } catch (error) {
             throw new Error('error in getWorkItem');
         }
@@ -325,6 +357,64 @@ class ProcessGPTBackend implements Backend {
 
     async putWorkItemComplate() {
         throw new Error("Method not implemented.");
+    }
+
+    async getInstanceList() {
+        try {
+            const instList: any[] = [];
+            const data = await storage.list('proc_inst');
+            const email = localStorage.getItem("email");
+            let list = data.filter((item: any) => item.user_ids.includes(email));
+            
+            if (list && list.length > 0) {
+                for (const item of list) {
+                    const defId = item.id.split(".")[0];
+                    const instance = await storage.getObject(defId, { match: { proc_inst_id: item.id } });
+                    if (instance.current_activity_ids.length > 0) {
+                        const instItem = {
+                            instId: item.id,
+                            instName: item.name,
+                            status: "IN_PROGRESS",
+                            startedDate: instance.start_date,
+                            defId: defId
+                        };
+                        instList.push(instItem);
+                    }
+                }
+            }
+            return instList;
+        } catch (error) {
+            throw new Error('error in listInstance');
+        }
+    }
+
+    async getCompleteInstanceList() {
+        try {
+            const instList: any[] = [];
+            const data = await storage.list('proc_inst');
+            const email = localStorage.getItem("email");
+            let list = data.filter((item: any) => item.user_ids.includes(email));
+            
+            if (list && list.length > 0) {
+                for (const item of list) {
+                    const defId = item.id.split(".")[0];
+                    const instance = await storage.getObject(defId, { match: { proc_inst_id: item.id } });
+                    if (!instance.current_activity_ids.length) {
+                        const instItem = {
+                            instId: item.id,
+                            instName: item.name,
+                            status: "COMPLETE",
+                            startedDate: instance.start_date,
+                            defId: defId
+                        };
+                        instList.push(instItem);
+                    }
+                }
+            }
+            return instList;
+        } catch (error) {
+            throw new Error('error in listInstance');
+        }
     }
 }
 
