@@ -100,13 +100,13 @@ export default class StorageBaseSupabase {
             var { data } = await window.$supabase
                 .from('users')
                 .select('profile')
-                .eq('id', data.user.id)
+                .eq('id', user.id)
                 .maybeSingle()
 
             const userInfo = {
                 email: user.email,
                 name: user.user_metadata.name,
-                profile: data.profile,
+                profile: data ? data.profile:null,
                 uid: user.id,
                 role: user.role,
                 last_sign_in_at: user.last_sign_in_at,
