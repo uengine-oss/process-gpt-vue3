@@ -30,7 +30,6 @@
                 :processDialogStatus="processDialogStatus"
                 :processType="processType"
                 :type="type"
-                :storage="storage"
                 @edit="editProcess"
                 @closeProcessDialog="closeProcessDialog"
             />
@@ -51,7 +50,6 @@
                     <MajorProcess 
                         :value="item" 
                         :parent="value" 
-                        :storage="storage" 
                         :userInfo="userInfo"
                         :enableEdit="enableEdit"
                         :enableExecution="enableExecution"
@@ -67,7 +65,6 @@
                 <MajorProcess 
                     :value="item" 
                     :parent="value" 
-                    :storage="storage"
                     :userInfo="userInfo"
                     :enableEdit="enableEdit"
                     :enableExecution="enableExecution"
@@ -96,7 +93,6 @@
             :processDialogStatus="processDialogStatus"
             :processType="processType"
             :type="type"
-            :storage="storage" 
             @add="addProcess"
             @closeProcessDialog="closeProcessDialog"
             style="margin-top:20px !important;"
@@ -120,7 +116,6 @@ export default {
     props: {
         value: Object,
         parent: Object,
-        storage: Object,
         userInfo: Object,
         enableEdit: Boolean,
         enableExecution: Boolean,
@@ -143,7 +138,6 @@ export default {
                 sub_proc_list: [],
             };
             this.value.major_proc_list.push(newMajorProc);
-            // this.storage.putObject(`proc_map`, this.value);
         },
         deleteProcess() {
             this.parent.mega_proc_list = this.parent.mega_proc_list.filter(item => item.id != this.value.id);
