@@ -250,6 +250,9 @@ export default {
                 let chatObj = {
                     role: 'user'
                 };
+                if(this.generator){
+                    this.generator.model = "gpt-4";
+                }
                 if (message.image && message.image != '') {
                     chatObj.content = [
                         {
@@ -263,11 +266,11 @@ export default {
                             }
                         }
                     ];
+
                     this.generator.model = "gpt-4-vision-preview";
 
                 } else {
                     chatObj.content= message.text;
-                    this.generator.model = "gpt-4";
                 }
                 
                 chatMsgs.push(chatObj);
