@@ -50,6 +50,12 @@
         "sortByTime": "시간 순으로 정렬",
         "sortByCompleted": "완료 순으로 정렬"
     },
+    "runningInstance": {
+        "title": "실행 중인 인스턴스"
+    },
+    "completeInstance": {
+        "title": "종료된 인스턴스"
+    },
     "definitionManagement": {
         "title": "정의 관리"
     },

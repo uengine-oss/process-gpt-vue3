@@ -34,16 +34,14 @@ export default {
             disable: false,
         },
         runningInstances: {
-            title: '실행 중 인스턴스',
-            // title: 'runningInstances.title',
+            title: 'runningInstance.title',
             icon: 'solar:list-bold',
             BgColor: 'primary',
             children: [],
             disable: false,
         },
         completeInstances: {
-            title: '종료된 인스턴스',
-            // title: 'completeInstances.title',
+            title: 'completeInstance.title',
             icon: 'solar:list-bold',
             BgColor: 'primary',
             children: [],
