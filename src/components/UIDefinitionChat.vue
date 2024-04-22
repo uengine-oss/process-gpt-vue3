@@ -368,6 +368,13 @@ export default {
             }
         },
 
+        /**
+         * 모델 생성을 도중에 멈춰도 결과를 처리가 가능한 경우에는 최대한 처리시키기 위해서
+         */
+        afterModelStopped(response) {
+            this.processResponse(response)
+        },
+
 
         /**
          * 마지막 최종 결과 Html이 표시된 JSON을 추출하기 위해서
