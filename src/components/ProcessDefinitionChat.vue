@@ -271,14 +271,13 @@ export default {
             // this.definitionChangeCount++;
             // alert("loadData!")
             
-            console.log(this.$route.params.pathMatch)
             const fullPath = this.$route.params.pathMatch.join('/');
             if (fullPath.startsWith('/')) {
                 fullPath = fullPath.substring(1);
             }
             console.log(`Full path: /${fullPath}`);
-            
-            if (fullPath && !fullPath.includes('chat')) {
+            let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length-1]
+            if (fullPath && lastPath != "chat") {
                 let definition = await backend.getRawDefinition(fullPath, {type: "bpmn"})
                 if(definition) {
                     this.bpmn = definition
