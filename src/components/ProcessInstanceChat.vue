@@ -2,7 +2,7 @@
     <v-card elevation="10" style="background-color: rgba(255, 255, 255, 0)">
         <AppBaseCard>
             <template v-slot:leftpart>
-                <WorkItem v-if="!isNew"></WorkItem>
+                <WorkItem v-if="onLoad"></WorkItem>
                 
                 <v-dialog v-model="definitionDialog" max-width="800">
                     <v-card>
@@ -58,6 +58,7 @@ import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import Chat from "@/components/ui/Chat.vue";
 import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
+import { VDataTable } from 'vuetify/labs/VDataTable';
 import GeneratorAgent from './GeneratorAgent.vue';
 import WorkItem from './apps/todolist/WorkItem.vue';
 
@@ -65,7 +66,7 @@ import BackendFactory from "@/components/api/BackendFactory";
 const backend = BackendFactory.createBackend();
 
 export default {
-    mixins: [ChatModule, GeneratorAgent],
+    mixins: [ChatModule],
     components: {
         AppBaseCard,
         Chat,
@@ -95,14 +96,9 @@ export default {
         bpmn: null,
         processDefinition: null,
         currentActivities: null,
-
+        
         // temp
         isRunningId: null,
-        agentInfo: {
-            draftPrompt: '',
-            isRunning: false,
-            isConnection: false,
-        }
     }),
     computed: {
         chatName() {
@@ -111,12 +107,6 @@ export default {
             }
             return '';
         },
-        isNew() {
-            if (this.$route.query.id) {
-                return false;
-            }
-            return true;
-        }
     },
     async created() {
         await this.init();
@@ -131,41 +121,17 @@ export default {
         }
     },
     mounted() {
-        var me = this
-        me.connectAgent()
-        me.receiveAgent(function (callback) {
-            if (callback.connection) {
-                me.agentInfo.isConnection = true
-                if (callback.data) {
-                    let message = callback.data
-                    let duplication = me.messages.find(mes => mes.role == message.role && JSON.stringify(mes.content) === JSON.stringify(message.content))
-                    if (duplication) return;
-
-                    message['_template'] = 'agent'
-                    me.messages.push(message)
-                    me.saveMessages(me.messages)
-                }
-
-                if (callback.isFinished) {
-                    me.agentInfo.isRunning = false
-                } else {
-                    me.agentInfo.isRunning = true
-                }
-            } else {
-                me.agentInfo.isConnection = false
-                me.agentInfo.isRunning = false
-            }
-        })
+        // 
     },
     beforeUnmount() {
-        this.releaseAgent()
+
     },
     watch: {
         "$route": {
             deep: true,
             async handler(newVal, oldVal) {
-                if (newVal.query !== oldVal.query) {
-                    if (!newVal.query.id) {
+                if (newVal.params.taskId && newVal.params.taskId !== oldVal.params.taskId) {
+                    if (!newVal.params.taskId) {
                         this.messages = [];
                     }
                     await this.init();
@@ -174,6 +140,9 @@ export default {
         },
     },
     methods: {
+        async viewProcess() {
+            
+        },
         requestDraftAgent(newVal) {
             var me = this
             me.$try({
@@ -191,26 +160,24 @@ export default {
         },
         async loadProcess() {
             this.onLoad = false;
-            if (this.$route.query.id) {
-                const id = this.$route.query.id;
-                const defId = id.split('.')[0];
-
-                if (this.processInstance && this.processInstance.current_activity_ids) {
+            let id, defId;
+            if (this.processInstance && this.processInstance.current_activity_ids) {
+                this.currentActivities = this.processInstance.current_activity_ids;
+                id = this.processInstance.proc_inst_id;
+                defId = id.split('.')[0];
+            } else {
+                id = this.$route.params.taskId;
+                defId = id.split('.')[0];
+                this.processInstance = await backend.getInstance(id);
+                if (this.processInstance) {
                     this.currentActivities = this.processInstance.current_activity_ids;
-
-                } else {
-                    this.processInstance = await backend.getInstance(id);
-                    if (this.processInstance) {
-                        this.currentActivities = this.processInstance.current_activity_ids;
-                    }
                 }
-
-                var defInfo = await backend.getRawDefinition(defId);
-                if (defInfo && defInfo.bpmn) {
-                    this.bpmn = defInfo.bpmn;
-                    this.processDefinition = defInfo.definition;
-                    this.onLoad = true;
-                }
+            }
+            var defInfo = await backend.getRawDefinition(defId);
+            if (defInfo && defInfo.bpmn) {
+                this.bpmn = defInfo.bpmn;
+                this.processDefinition = defInfo.definition;
+                this.onLoad = true;
             }
         },
         async loadData(path) {
@@ -219,20 +186,23 @@ export default {
                 context: me,
                 action: async () => {
                     me.processInstance = null;
-                    if (me.$route.query.id) {
-                        const id = me.$route.query.id;
-                        const value = await backend.getInstance(id);
+                    me.bpmn = null;
+                    me.processDefinition = null;
+                    if (me.$route.params.taskId) {
+                        const id = me.$route.params.taskId;
+                        const workitem = await backend.getWorkItem(id);
+                        const value = await backend.getInstance(workitem.worklist.instId);
                         if (value) {
                             me.processInstance = value;
-                            me.checkDisableChat();
+                            me.checkDisableChat(workitem);
                         }
                         await me.loadProcess();
-                        await me.loadMessages(`proc_inst/${id}`, { key: 'id' });
+                        await me.loadMessages(`proc_inst/${value.proc_inst_id}`, { key: 'id' });
                     }
                 }
             })
         },
-        checkDisableChat() {
+        checkDisableChat(workitem) {
             if (this.processInstance) {
                 if (this.processInstance.current_user_ids &&
                     this.processInstance.current_user_ids.length > 0 &&
@@ -313,8 +283,8 @@ export default {
                 if (jsonData.description) {
                     messageWriting.content = jsonData.description;
                 }
-                if (!this.$route.query.id) {
-                    this.$router.replace(`chat?id=${jsonData.instanceId}`);
+                if (!this.$route.params.taskId) {
+                    this.$router.replace(`/todolist/${jsonData.instanceId}`);
                 }
 
                 this.saveInstance(jsonData);
@@ -324,19 +294,19 @@ export default {
             this.checkDisableChat();
         },
         afterModelStopped(response) {
-            let path = '';
+            let id;
 
-            if (this.$route.query.id) {
-                path = this.$route.query.id;
-            } else if (this.processInstance && this.processInstance.processInstanceId) {
-                path = this.processInstance.processInstanceId;
+            if (this.$route.params.taskId) {
+                id = this.$route.params.taskId;
+            } else if (this.processInstance && this.processInstance.proc_inst_id) {
+                id = this.processInstance.proc_inst_id;
             }
 
-            if (path != '') {
+            if (id != '') {
                 let putObj = {
                     messages: this.messages
                 };
-                this.putObject(`${this.path}/${path}`, putObj, { key: 'id' });
+                this.putObject(`proc_inst/${id}`, putObj, { key: 'id' });
             }
         },
         async saveInstance(data) {

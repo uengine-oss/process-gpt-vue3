@@ -4,7 +4,7 @@
         <div v-if="workItemStatus == 'COMPLETED'">
             <v-btn @click="undoTask()" color="#0085DB" style="color: white;" rounded >현 시점 되돌리기</v-btn>
         </div>
-        <div v-if="workItemStatus == 'NEW'">
+        <div v-if="workItemStatus == 'NEW' || workItemStatus == 'DRAFT'">
             <v-btn @click="saveTask()" color="#0085DB" style="color: white;" rounded >중간 저장</v-btn>
             <v-btn @click="completeTask()" variant="tex" rounded>제출 완료</v-btn>
         </div>
@@ -59,18 +59,31 @@ export default {
         },
         async saveTask(){
             var me = this
-            let variable = await backend.getVariable(me.workItem.worklist.instId, '장애신고')
-            variable._type = "org.uengine.contexts.HtmlFormContext"
-            variable.valueMap = this.formData
-            variable.valueMap._type = "java.util.HashMap"
-            await backend.setVariable(me.workItem.worklist.instId, '장애신고', variable)
-            await backend.putWorkItemComplate(me.$route.params.taskId, {"parameterValues": {}})
-            me.$router.push('/todolist')
+            me.$try({
+                context: me,
+                action: async () => {
+                    let varName = true ? '장애신고' : me.workItem.activity.name
+                    let variable = await backend.getVariable(me.workItem.worklist.instId, varName)
+                    variable._type = "org.uengine.contexts.HtmlFormContext"
+                    variable.valueMap = this.formData
+                    variable.valueMap._type = "java.util.HashMap"
+                    await backend.setVariable(me.workItem.worklist.instId, varName, variable)
+                    await backend.putWorkItem(me.$route.params.taskId, {"parameterValues": {}})
+                },
+                successMsg: '중간 저장 완료'
+            })
         },
         async completeTask(){
             var me = this
-            await backend.putWorkItemComplate(me.$route.params.taskId, {"parameterValues": {}})
-            me.$router.push('/todolist')
+            me.$try({
+                context: me,
+                action: async () => {
+                    await backend.putWorkItemComplate(me.$route.params.taskId, {"parameterValues": {}})
+                    me.$router.push('/todolist')
+                },
+                successMsg: '해당 업무 완료'
+            })
+           
         },
     },
 }

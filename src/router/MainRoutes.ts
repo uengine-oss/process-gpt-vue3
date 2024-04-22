@@ -14,7 +14,8 @@ const MainRoutes = {
         {
             name: 'WorkItem',
             path: '/todolist/:taskId',
-            component: () => import('@/components/apps/todolist/WorkItem.vue'),
+            component: () => import('@/components/ProcessInstance.vue')
+            // component: () => import('@/components/apps/todolist/WorkItem.vue'),
         },
         {
             name: 'Chats',
@@ -29,13 +30,13 @@ const MainRoutes = {
         {
             name: 'Instance Chat',
             path: '/instances/chat',
-            component: () => import('@/views/apps/instance-list/InstanceList.vue')
+            component: () => import('@/components/ProcessInstance.vue')
         },
-        {
-            name: 'instances',
-            path: '/instances/:id',
-            component: () => import('@/views/apps/instance-list/InstanceList.vue')
-        },
+        // {
+        //     name: 'instances',
+        //     path: '/instances/:id',
+        //     component: () => import('@/views/apps/instance-list/InstanceList.vue')
+        // },
         
         {
             name: 'organization',
@@ -49,7 +50,12 @@ const MainRoutes = {
         },
         {
             name: 'definitions',
-            path: '/definitions/:id',
+            path: '/definitions/:pathMatch(.*)*',
+            component: () => import('@/components/ProcessDefinitionChat.vue'),
+        },
+        {
+            name: 'forms',
+            path: '/forms/:pathMatch(.*)*',
             component: () => import('@/components/ProcessDefinitionChat.vue'),
         },
         {
@@ -59,7 +65,7 @@ const MainRoutes = {
         },
         {
             name: 'ui-definitions',
-            path: '/ui-definitions/:id',
+            path: '/ui-definitions/:pathMatch(.*)*',
             component: () => import('@/components/UIDefinitionChat.vue'),
         },
         {
