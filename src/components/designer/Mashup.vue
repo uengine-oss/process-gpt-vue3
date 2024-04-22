@@ -1,6 +1,12 @@
 <template>
   <div>
-    <div id="kEditor1" style="position: relative; top: -60px;">
+    <div id="initGuide">
+      <span style="font-size: 18px; font-weight: bold;">
+        여기에 레이아웃(Container)을 드래그해서 놓아서 폼 편집을 시작하십시오.
+      </span>
+    </div>
+
+    <div id="kEditor1" style="position: relative; top: -135px;">
     </div>
     
     
@@ -271,7 +277,9 @@ export default {
       /**
        * 새롭게 컴포넌트를 드래그해서 추가시에 Vue 컴포넌트인 경우, 렌더링을 시키기 위해서
        */
-      onContentChanged: function (event, snippetContent, vueRenderUUID) {  
+      onContentChanged: function (event, snippetContent, vueRenderUUID) {
+        $("#initGuide").css("opacity", "0")
+
         if(vueRenderUUID && vueRenderUUID.includes("vuemount_"))
         {
           const nameSeq = Object.values(window.mashup.componentRefs).filter(componentRef => componentRef.localName).length + 1
@@ -367,6 +375,7 @@ export default {
     // 처음 로드시에 Vue 컴포넌트들을 각각 별도의 createApp으로 렌더링시키고, 참조자 딕셔너리를 구성하기 위해서
     window.mashup.componentRefs = {}
     if (window.mashup.modelValue) {
+      $("#initGuide").css("opacity", "0")
       const parser = new DOMParser();
       const doc = parser.parseFromString(window.mashup.modelValue, 'text/html');
 
@@ -397,5 +406,16 @@ export default {
   box-sizing: border-box; /* 패딩을 포함한 너비 계산 */
   overflow-y: auto; /* 내용이 넘칠 경우 스크롤바 표시 */
   z-index: 999999;
+}
+
+#initGuide {
+  width:100%;
+  height: 70px;
+  width:100%;
+  background-color: whitesmoke;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
