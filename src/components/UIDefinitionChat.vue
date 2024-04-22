@@ -126,7 +126,8 @@ export default {
         dev: {
             isDevMode: window.localStorage.getItem('isDevMode') === 'true',
             previewFormValues: ''
-        }
+        },
+        loadFormId: ""
     }),
     async created() {
         this.generator = new ChatGenerator(this, {
@@ -143,7 +144,10 @@ export default {
             deep: true,
             handler(newVal, oldVal) {
                 if (newVal.path !== oldVal.path) {
-                    if (newVal.params.id && newVal.params.id != 'chat') this.loadData();
+                    const pathMatchParams = this.$route.params.pathMatch
+                    this.loadFormId = pathMatchParams[pathMatchParams.length - 1]
+
+                    if (this.loadFormId && this.loadFormId != 'chat') this.loadData();
                     else this.isShowMashup = true;
                 } else this.isShowMashup = true;
             }
@@ -244,7 +248,7 @@ export default {
          * 'Save' 버튼을 누를 경우, 최종 결과를 DB에 저장하기 위해서
          */
         async saveFormDefinition({ id, html }) {
-            const isNewSave = this.$route.params.id !== id;
+            const isNewSave = this.loadFormId !== id;
             if (isNewSave) {
                 const isFormAlreadyExist = await this.backend.getRawDefinition(id, { type: 'form' });
                 if (isFormAlreadyExist) {
@@ -256,7 +260,7 @@ export default {
             this.isOpenSaveDialog = false;
 
             if (isNewSave) {
-                this.$router.push(`/ui-definitions/${id}`);
+                this.$router.push(`/ui-definitions/form/${id}`);
             }
         },
 
@@ -274,17 +278,13 @@ export default {
          * @param {*} path
          */
         async loadData(path) {
-            const fullPath = this.$route.params.pathMatch.join('/');
-            if (fullPath.startsWith('/')) {
-                fullPath = fullPath.substring(1);
-            }
-            let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
-            if (fullPath && lastPath != 'chat') {
-                path = `${this.path}/${fullPath}`;
+            const pathMatchParams = this.$route.params.pathMatch
+            this.loadFormId = pathMatchParams[pathMatchParams.length - 1]
 
-                this.storedFormDefData = (await this.backend.getRawDefinition(fullPath, { type: 'form' })) ?? {};
+            if (this.loadFormId && this.loadFormId != 'chat') {
+                this.storedFormDefData = (await this.backend.getRawDefinition(this.loadFormId, { type: 'form' })) ?? {};
                 if (!this.storedFormDefData.id) {
-                    alert(`'${fullPath}' ID 를 가지는 폼 디자인 정보가 없습니다! 새 폼 만들기 화면으로 이동됩니다.`);
+                    alert(`'${this.loadFormId}' ID 를 가지는 폼 디자인 정보가 없습니다! 새 폼 만들기 화면으로 이동됩니다.`);
                     this.$router.push(`/ui-definitions/chat`);
                     this.isShowMashup = true;
                     return;
