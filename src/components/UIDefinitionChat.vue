@@ -21,15 +21,9 @@
                     <v-tab value="preview">미리보기</v-tab>
                 </v-tabs>
                 <v-window v-model="currentTabName" class="fill-height">
-                    <v-window-item value="edit" class="fill-height" style="overflow-y: auto">
-                        <mashup
-                            v-if="isShowMashup"
-                            ref="mashup"
-                            v-model="kEditorInput"
-                            :key="mashupKey"
-                            @onSaveFormDefinition="saveFormDefinition"
-                            :storedFormDefData="storedFormDefData"
-                        />
+                    <v-window-item value="edit" class="fill-height mt-15" style="overflow-y: auto;">
+                        <mashup v-if="isShowMashup" ref="mashup" v-model="kEditorInput" :key="mashupKey" 
+                            @onSaveFormDefinition="saveFormDefinition" :storedFormDefData="storedFormDefData"/>
                         <card v-else class="d-flex align-center justify-center fill-height">
                             <v-progress-circular color="primary" indeterminate></v-progress-circular>
                         </card>
@@ -352,6 +346,15 @@ export default {
                 console.log(error);
             }
         },
+
+        /**
+         * 모델 생성을 도중에 멈춰도 결과를 처리가 가능한 경우에는 최대한 처리시키기 위해서
+         */
+        afterModelStopped(response) {
+            // AI 생성을 멈춘 경우, 아무것도 반영시키기 않기 위해서
+            console.log(response)
+        },
+
 
         /**
          * 마지막 최종 결과 Html이 표시된 JSON을 추출하기 위해서
