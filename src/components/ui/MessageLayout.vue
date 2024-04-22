@@ -10,10 +10,13 @@
                 </slot>
                 <slot name="messageContent">
                     <v-sheet class="bg-lightsecondary rounded-md px-3 py-2">
-                        <div v-html="message.content"></div>
+                        <div v-html="message.content" @click="clickContent(message)"></div>
                         <v-btn v-if="message.description" class="mt-2" elevation="0" @click="openDescription(index)">View Detail</v-btn>
                         <pre v-if="message.open" class="text-body-1">{{ message.description }}</pre>
                     </v-sheet>
+                    <div v-if="message.timeStamp" style="font-size:12px; padding-top:20px;">
+                        {{ formatTime(message.timeStamp) }}
+                    </div>
                 </slot>
             </div>
         </slot>
@@ -48,6 +51,15 @@ export default {
         },
         openDescription(index){
             this.filterMessages[index].open = this.filterMessages[index].open ? false : true
+        },
+        formatTime(timeStamp) {
+            var date = new Date(timeStamp);
+            var dateString = date.toString();
+            var timeString = dateString.split(' ')[4].substring(0, 5);
+            return timeString;
+        },
+        clickContent(message){
+            this.$emit('clickMessage', message)
         }
     }
 };

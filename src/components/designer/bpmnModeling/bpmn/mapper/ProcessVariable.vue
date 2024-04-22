@@ -25,9 +25,7 @@
                 </v-col>
                 <v-col cols="12" sm="9">
                     <v-autocomplete v-model="processVariable.defaultValue" 
-                        :items="forms" 
-                        :item-text="item => `${item.name}_${item.alias}`" 
-                        :item-value="item => item"
+                        :items="forms"
                         color="primary" variant="outlined"
                         hide-details></v-autocomplete>
                 </v-col>
@@ -82,7 +80,7 @@
 </template>
 <script>
 import axios from 'axios';
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import BackendFactory from '@/components/api/BackendFactory';
 
 export default {
     name: 'ProcessVariable',
@@ -101,16 +99,16 @@ export default {
             processVariable: {
                 name: "",
                 type: "",
-                defaultValue: null,
+                defaultValue: "",
                 description: "",
                 datasource: {
                     type: "",
                     sql: ""
                 },
                 // table: '<table><tr><th>Name</th><th>Position</th></tr><tr><td>John Doe</td><td>Developer</td></tr><tr><td>Jane Doe</td><td>Designer</td></tr></table>'
-                table: ""
-            },
-            storage: null
+                table: "",
+                backend: null
+            }
         }
     },
     methods: {
@@ -166,14 +164,19 @@ export default {
             if (newVal == "Form") {
                 me.forms = []
 
-                let formDefs = await me.storage.list('form_def');
+                let formDefs = await me.backend.listDefinition();
                 formDefs.forEach(async (form) => {
-                    me.forms.push(form)
+                    if(form.name.includes(".form")){
+                        me.forms.push(form.name.replace(".form", ""))
+                    }
                 })
             }else {
                 me.forms = []
             }
         }
+    },
+    created(){
+        this.backend = BackendFactory.createBackend()
     },
     mounted() {
         if (this.variable) {
@@ -185,8 +188,6 @@ export default {
             }
             this.processVariable = Object.assign({}, this.variable)
         }
-
-        this.storage = StorageBaseFactory.getStorage('supabase');
     }
 }
 </script>

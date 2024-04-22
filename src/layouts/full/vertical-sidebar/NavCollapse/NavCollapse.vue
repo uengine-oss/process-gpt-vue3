@@ -1,5 +1,5 @@
 <script setup>
-import DropDown from "../DropDown/index.vue";
+import DropDown from '../DropDown/index.vue';
 // import Icon from '../Icon.vue';
 import { Icon } from '@iconify/vue';
 const props = defineProps({ item: Object, level: Number });
@@ -7,24 +7,29 @@ import BackendFactory from '@/components/api/BackendFactory';
 const emit = defineEmits(['update:item']);
 const backend = BackendFactory.createBackend();
 const getChild = async (subitem, i) => {
-    let res = await backend.listDefinition(subitem.title)
-    let menu = []
-    res.forEach(el => {
+    let res = await backend.listDefinition(subitem.title);
+    let menu = [];
+    res.forEach((el) => {
         var obj = {
-            title: el.name,
-        }
-        if(el.directory){
-            obj.directory = true
-            obj.children = []
+            title: el.name.split('.')[0]
+        };
+
+        if (el.directory) {
+            obj.directory = true;
+            obj.children = [];
         } else {
-            obj.to = `/definitions/${el.path}`
+            if (el.name.split('.')[1] == 'form') {
+                obj.to = `/ui-definitions/${el.path.split('.')[0]}`;
+            } else {
+                obj.to = `/definitions/${el.path.split('.')[0]}`;
+            }
         }
         menu.push(obj);
-    })
-    props.item.children[i]["children"] = menu
-    let copy = JSON.parse(JSON.stringify(props.item))
-    emit('update:item', copy)
-}
+    });
+    props.item.children[i]['children'] = menu;
+    let copy = JSON.parse(JSON.stringify(props.item));
+    emit('update:item', copy);
+};
 </script>
 
 <template>
@@ -37,8 +42,7 @@ const getChild = async (subitem, i) => {
             <!---Dropdown  -->
             <!-- ---------------------------------------------- -->
             <template v-slot:activator="{ props }">
-                <v-list-item v-bind="props" :value="item.title" :ripple="false" :class="' bg-hover-' + item.BgColor"
-                    :color="item.BgColor">
+                <v-list-item v-bind="props" :value="item.title" :ripple="false" :class="' bg-hover-' + item.BgColor" :color="item.BgColor">
                     <!---Icon  -->
                     <template v-slot:prepend>
                         <div :class="'navbox  bg-hover-' + item.BgColor" :color="item.BgColor">
@@ -46,14 +50,18 @@ const getChild = async (subitem, i) => {
                                 <div class="sublink-dot" width="30"></div>
                             </span>
                             <span class="icon-box" v-else>
-                                <Icon :icon="item.icon" height="24" width="24" :level="level"
-                                    :class="'position-relative z-index-2 texthover-' + item.BgColor" />
+                                <Icon
+                                    :icon="item.icon"
+                                    height="24"
+                                    width="24"
+                                    :level="level"
+                                    :class="'position-relative z-index-2 texthover-' + item.BgColor"
+                                />
                             </span>
                         </div>
                     </template>
                     <!---Title  -->
-                    <v-list-item-title class="text-subtitle-1  font-weight-medium">{{ $t(item.title)
-                        }}</v-list-item-title>
+                    <v-list-item-title class="text-subtitle-1 font-weight-medium">{{ $t(item.title) }}</v-list-item-title>
                     <!---If Caption-->
                     <v-list-item-subtitle v-if="item.subCaption" class="text-caption mt-n1 hide-menu">
                         {{ item.subCaption }}
@@ -65,8 +73,7 @@ const getChild = async (subitem, i) => {
             <!-- ---------------------------------------------- -->
             <div class="mb-4 sublinks">
                 <template v-for="(subitem, i) in item.children" :key="i" v-if="item.children">
-                    <NavCollapse :item="subitem" v-if="subitem.directory" :level="level + 1"
-                        @click="getChild(subitem, i)" />
+                    <NavCollapse :item="subitem" v-if="subitem.directory" :level="level + 1" @click="getChild(subitem, i)" />
                     <NavCollapse :item="subitem" v-else-if="subitem.children" :level="level + 1" />
                     <DropDown :item="subitem" :level="level + 1" v-else></DropDown>
                 </template>

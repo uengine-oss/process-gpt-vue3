@@ -49,11 +49,20 @@
                         <v-label class=" font-weight-medium" for="hcpm">{{ $t('ProcessVariable.defaultValue') }}</v-label>
                     </v-col> -->
                     <v-col cols="12" sm="9">
-                        <v-autocomplete 
+                        <!-- <v-autocomplete 
                             v-model="selectedForm"
                             :items="definition.processVariables
                                         .filter(item => item.type === 'Form' && item.defaultValue && item.defaultValue.name && item.defaultValue.alias)
                                         .map(item => item.defaultValue.name + '_' + item.defaultValue.alias)" 
+                            color="primary" 
+                            variant="outlined"
+                            hide-details>
+                        </v-autocomplete> -->
+                        <v-autocomplete 
+                            v-model="selectedForm"
+                            :items="definition.processVariables
+                                        .filter(item => item.type === 'Form')
+                                        .map(item => item.name)" 
                             color="primary" 
                             variant="outlined"
                             hide-details>
@@ -63,15 +72,15 @@
             </div>
             <div>
                 <v-row  class="ma-0 pa-0">
-                    <v-btn text color="primary" class="my-3" @click="openFieldMapper = !openFieldMapper">
+                    <v-btn text color="primary" class="my-3" @click="openFormMapper()">
                         Field Mapping
                     </v-btn>
                 </v-row>
             </div>
-            <v-dialog  v-model="openFieldMapper"  max-width="80%" max-height="80%" @afterLeave="$refs.formMapper && $refs.formMapper.saveFormMapperJson()">
+            <v-dialog  v-model="isOpenFieldMapper"  max-width="80%" max-height="80%" @afterLeave="$refs.formMapper && $refs.formMapper.saveFormMapperJson()">
                 <form-mapper 
                     ref="formMapper"
-                    :definition="definition" 
+                    :definition="copyDefinition" 
                     :name="name"    
                     :formMapperJson="formMapperJson"
                     @saveFormMapperJson="saveFormMapperJson"
@@ -158,8 +167,8 @@
 import BpmnParameterContexts from '@/components/designer/bpmnModeling/bpmn/variable/BpmnParameterContexts.vue';
 import FormMapper from '@/components/designer/mapper/FormMapper.vue';
 import { useBpmnStore } from '@/stores/bpmn';
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
-const storage = StorageBaseFactory.getStorage()
+import BackendFactory from '@/components/api/BackendFactory';
+
 export default {
     name: 'user-task-panel',
     components: {
@@ -203,11 +212,16 @@ export default {
             editParam: false,
             paramKey: "",
             paramValue: "",
-            openFieldMapper: false,
+            isOpenFieldMapper: false,
             isFormActivity: false,
             selectedForm: "",
-            formMapperJson: ""
+            formMapperJson: "",
+            backend: null,
+            copyDefinition: null
         };
+    },
+    created(){
+        this.backend = BackendFactory.createBackend()
     },
     async mounted() {
         let me = this
@@ -222,7 +236,7 @@ export default {
 
         if(this.copyUengineProperties.variableForHtmlFormContext){
             this.isFormActivity = true
-            this.selectedForm = `${this.copyUengineProperties.variableForHtmlFormContext.name}_${this.copyUengineProperties.variableForHtmlFormContext.alias}`
+            this.selectedForm = this.copyUengineProperties.variableForHtmlFormContext.name
         }
 
         let mapperData = 
@@ -230,6 +244,8 @@ export default {
 
         this.copyUengineProperties.mappingContext = mapperData
         this.$emit('update:uEngineProperties', this.copyUengineProperties)
+
+        this.copyDefinition = this.definition
 
 
     },
@@ -258,10 +274,16 @@ export default {
     watch: {
         selectedForm(newVal){
             if(newVal){
-                const [formName, formAlias] = newVal.split('_');
-                const formItem = this.definition.processVariables.find(item => item.type === 'Form' && item.defaultValue.name === formName && item.defaultValue.alias === formAlias);
+                // const [formName, formAlias] = newVal.split('_');
+                // const formItem = this.definition.processVariables.find(item => item.type === 'Form' && item.defaultValue.name === formName && item.defaultValue.alias === formAlias);
 
-                this.copyUengineProperties.variableForHtmlFormContext = formItem.defaultValue
+                let formItem = this.copyDefinition.processVariables.find(item => item.name === newVal);
+                let variableForHtmlFormContext = ""
+                if(formItem){
+                    variableForHtmlFormContext = {name: formItem.defaultValue.formDefId}
+                }
+
+                this.copyUengineProperties.variableForHtmlFormContext = variableForHtmlFormContext
                 this.$emit('update:uEngineProperties', this.copyUengineProperties)
             }
         },
@@ -331,8 +353,54 @@ export default {
         },  
         saveFormMapperJson(jsonString) {
             this.formMapperJson = jsonString;
-            this.openFieldMapper = false;
-        }
+
+            this.copyUengineProperties.mappingContext.mappingElement = JSON.parse(jsonString)
+            this.$emit('update:uEngineProperties', this.copyUengineProperties)
+
+            this.isOpenFieldMapper = false;
+        },
+        async openFormMapper(){
+            var me = this
+
+            if(this.selectedForm){
+                var forms = []
+
+                let formDefs = await me.backend.listDefinition();
+                formDefs.forEach(async (form) => {
+                    if(form.name.includes(".form")){
+                        forms.push(form.name.replace(".form", ""))
+                    }
+                })
+
+                me.copyDefinition.processVariables.forEach(async (variable) => {
+                    if(forms.find(item => item === variable.defaultValue.formDefId && variable.type === 'Form')){
+                        let formHtml = await me.backend.getRawDefinition(variable.defaultValue.formDefId, {'type': 'form'});
+                        let fields = me.parseFormHtmlField(formHtml)
+
+                        variable.fields = fields
+                    }
+                })
+
+                this.isOpenFieldMapper = true
+            }
+        },
+        parseFormHtmlField(formHtml) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(formHtml, 'text/html');
+            const fields = doc.querySelectorAll('text-field, select-field, checkbox-field, radio-field, file-field');
+            const result = Array.from(fields).map(field => {
+                const type = field.tagName.toLowerCase().replace('-field', '');
+                const name = field.getAttribute('name') || '';
+                const alias = field.getAttribute('alias') || '';
+                return {
+                    name: name,
+                    type: type,
+                    alias: alias
+                };
+            });
+            console.log(result);
+            return result;
+        },
     }
 };
 </script>

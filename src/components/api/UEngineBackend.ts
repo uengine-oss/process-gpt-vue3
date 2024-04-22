@@ -83,7 +83,7 @@ class UEngineBackend implements Backend {
             alert(e);
         }
     }
-    async putRawDefinition(definition: any, requestPath: string, options) {
+    async putRawDefinition(definition: any, requestPath: string, options: any) {
         try {
             let req = {
                 definition: definition
@@ -190,7 +190,7 @@ class UEngineBackend implements Backend {
                 },
                 responseType: 'text' as const
             };
-            
+
             const response = await axiosInstance.post(`/instance/${instanceId}/variable/${varName}`, JSON.stringify(varValue), config);
             return response.data;
         } catch (e) {
@@ -250,7 +250,7 @@ class UEngineBackend implements Backend {
             alert(e);
         }
     }
-    
+
     async putWorkItemComplate(taskId: string, workItem: any) {
         try {
             const response = await axiosInstance.post(`/work-item/${taskId}/complate`, workItem);
@@ -259,7 +259,7 @@ class UEngineBackend implements Backend {
             alert(e);
         }
     }
-    
+
     async putWorklist(taskId: string, workItem: any) {
         try {
             let url = `/worklist`;
@@ -370,7 +370,7 @@ class UEngineBackend implements Backend {
             alert(e);
         }
     }
-    
+
     async getWorkListByInstId(instId: number) {
         try {
             const response = await axiosInstance.get(`/worklist/search/findWorkListByInstId`, { params: { instId: instId } });
@@ -477,6 +477,28 @@ class UEngineBackend implements Backend {
         try {
             definitionMap = JSON.stringify(definitionMap);
             const response = await axiosInstance.put(`/definition/map`, definitionMap, { headers: { 'Content-Type': 'text/plain' } });
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
+    }
+
+    // Running Instance API
+    async getInstanceList() {
+        try {
+            return []
+            // const response = await axiosInstance.get(`/instances/search/findFilterICanSee`);
+            // return response.data;
+        } catch (e) {
+            alert(e);
+        }
+    }
+
+    // Complate Instance API
+    async getCompleteInstanceList() {
+        try {
+            return []
+            const response = await axiosInstance.get(`/instances/search/findFilterICanSee`);
             return response.data;
         } catch (e) {
             alert(e);

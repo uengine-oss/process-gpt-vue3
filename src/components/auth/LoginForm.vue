@@ -17,12 +17,12 @@ const passwordRules = ref([
 ]);
 const emailRules = ref([(v: string) => !!v || 'E-mail is required', (v: string) => /.+@.+\..+/.test(v) || 'E-mail must be valid']);
 
-// function validate(values: any, { setErrors }: any) {
-//     return authStore.signIn(username.value, password.value);
-// }
 function validate(values: any, { setErrors }: any) {
-    return authStore.signInWithKeycloak();
+    return authStore.signIn(username.value, password.value);
 }
+// function validate(values: any, { setErrors }: any) {
+//     return authStore.signInWithKeycloak();
+// }
 </script>
 
 <template>

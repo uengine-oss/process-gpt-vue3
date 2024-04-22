@@ -81,7 +81,7 @@ export default {
                 action: async () => {
                     let back = BackendFactory.createBackend();
                     let worklist = await back.getWorkList()
-                    console.log(worklist)
+                    if(!worklist) worklist = []
                     worklist.forEach(function(item) {
                         if (item.status == 'TODO' || item.status == 'NEW' || item.status == 'DRAFT') {
                             me.todolist.find(x => x.id == 'TODO').tasks.push(item);
@@ -89,6 +89,8 @@ export default {
                             me.todolist.find(x => x.id == 'IN_PROGRESS').tasks.push(item);
                         } else if (item.status == 'PENDING') {
                             me.todolist.find(x => x.id == 'PENDING').tasks.push(item);
+                        } else if (item.status == 'DONE') {
+                            me.todolist.find(x => x.id == 'DONE').tasks.push(item);
                         }
                     })
                     // me.todolist.find(x => x.id == 'TODO').tasks.push(...worklist);

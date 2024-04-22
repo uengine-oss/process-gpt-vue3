@@ -75,7 +75,6 @@ export default {
             if (data && data.value) {
                 if (data.value.chart) {
                     this.organizationChart = data.value.chart;
-                    console.log(data.value.chart)
                     if (!this.organizationChart) {
                         this.organizationChart = [];
                     }

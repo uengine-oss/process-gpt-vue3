@@ -104,9 +104,10 @@ export default {
         console.log(this.generator)
     },
     mounted() {
-        if (this.$route.query && this.$route.query.id) {
+        const id = this.$route.params.pathMatch[this.$route.params.pathMatch.length-1];
+        if (id) {
             this.processDefinition = {
-                processDefinitionId: this.$route.query.id
+                processDefinitionId: id
             }
             if (this.$route.query.name) {
                 this.projectName = this.$route.query.name;
@@ -119,7 +120,7 @@ export default {
             deep: true,
             handler(newVal, oldVal) {
                 if (newVal.path !== oldVal.path) {
-                    if (newVal.params.id && newVal.params.id != 'chat') {
+                    if (newVal.params.id != 'chat') {
                         this.loadData();
                     }
                 }
@@ -268,35 +269,48 @@ export default {
             // this.bpmn = `{"$type":"bpmn:Definitions","id":"sample-diagram","targetNamespace":"http://bpmn.io/schema/bpmn","rootElements":[{"$type":"bpmn:Collaboration","id":"Collaboration_1tj7ei2","participants":[{"$type":"bpmn:Participant","id":"Participant_1eqhejj","$parent":"Collaboration_1tj7ei2"}],"$parent":"sample-diagram"},{"$type":"bpmn:Process","id":"Process_1","isExecutable":false,"laneSets":[{"$type":"bpmn:LaneSet","id":"LaneSet_1g2nbpc","lanes":[{"$type":"bpmn:Lane","id":"Lane_0wneims","name":"Woker","$parent":"LaneSet_1g2nbpc"},{"$type":"bpmn:Lane","id":"Lane_1lf58ly","name":"HR","$parent":"LaneSet_1g2nbpc"}],"$parent":"Process_1"}],"flowElements":[{"$type":"bpmn:StartEvent","id":"StartEvent_1","name":"시작","eventDefinitions":[],"$parent":"Process_1"},{"$type":"bpmn:SequenceFlow","id":"Flow_0sp25wg","$parent":"Process_1","sourceRef":"StartEvent_1","targetRef":"Activity_1ta8n6y"},{"$type":"bpmn:SequenceFlow","id":"Flow_03dbjwz","$parent":"Process_1","sourceRef":"Activity_1ta8n6y","targetRef":"Activity_0ji9jev"},{"$type":"bpmn:EndEvent","id":"Event_0h4j724","name":"종료","eventDefinitions":[],"$parent":"Process_1"},{"$type":"bpmn:SequenceFlow","id":"Flow_182335x","$parent":"Process_1","sourceRef":"Activity_0ji9jev","targetRef":"Event_0h4j724"},{"$type":"bpmn:UserTask","id":"Activity_1ta8n6y","name":"휴가 신청","documentation":[{"$type":"bpmn:Documentation","text":"Vacation","$parent":"Activity_1ta8n6y"}],"uengine-params":{"script": "System.out.println('hello world')"},"$parent":"Process_1"},{"$type":"bpmn:UserTask","id":"Activity_0ji9jev","name":"승인","documentation":[{"$type":"bpmn:Documentation","text":"confirm","$parent":"Activity_0ji9jev"}],"$parent":"Process_1"}],"$parent":"sample-diagram"}],"diagrams":[{"$type":"bpmndi:BPMNDiagram","id":"BPMNDiagram_1","plane":{"$type":"bpmndi:BPMNPlane","id":"BPMNPlane_1","planeElement":[{"$type":"bpmndi:BPMNShape","id":"Lane_1lf58ly_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":300,"y":275,"width":570,"height":125,"$parent":"Lane_1lf58ly_di"},"label":{"$type":"bpmndi:BPMNLabel","$parent":"Lane_1lf58ly_di"},"bpmnElement":"Lane_1lf58ly","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Lane_0wneims_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":300,"y":150,"width":570,"height":125,"$parent":"Lane_0wneims_di"},"label":{"$type":"bpmndi:BPMNLabel","$parent":"Lane_0wneims_di"},"bpmnElement":"Lane_0wneims","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Participant_1eqhejj_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":270,"y":150,"width":600,"height":250,"$parent":"Participant_1eqhejj_di"},"bpmnElement":"Participant_1eqhejj","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"_BPMNShape_StartEvent_2","bounds":{"$type":"dc:Bounds","x":352,"y":192,"width":36,"height":36,"$parent":"_BPMNShape_StartEvent_2"},"label":{"$type":"bpmndi:BPMNLabel","bounds":{"$type":"dc:Bounds","x":361,"y":235,"width":20,"height":14},"$parent":"_BPMNShape_StartEvent_2"},"bpmnElement":"StartEvent_1","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Event_0h4j724_di","bounds":{"$type":"dc:Bounds","x":762,"y":322,"width":36,"height":36,"$parent":"Event_0h4j724_di"},"label":{"$type":"bpmndi:BPMNLabel","bounds":{"$type":"dc:Bounds","x":770,"y":365,"width":20,"height":14},"$parent":"Event_0h4j724_di"},"bpmnElement":"Event_0h4j724","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Activity_18762mc_di","bounds":{"$type":"dc:Bounds","x":440,"y":170,"width":100,"height":80,"$parent":"Activity_18762mc_di"},"bpmnElement":"Activity_1ta8n6y","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Activity_1omaje8_di","bounds":{"$type":"dc:Bounds","x":600,"y":300,"width":100,"height":80,"$parent":"Activity_1omaje8_di"},"bpmnElement":"Activity_0ji9jev","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_0sp25wg_di","waypoint":[{"$type":"dc:Point","x":388,"y":210,"$parent":"Flow_0sp25wg_di"},{"$type":"dc:Point","x":440,"y":210,"$parent":"Flow_0sp25wg_di"}],"bpmnElement":"Flow_0sp25wg","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_03dbjwz_di","waypoint":[{"$type":"dc:Point","x":540,"y":210,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":570,"y":210,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":570,"y":340,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":600,"y":340,"$parent":"Flow_03dbjwz_di"}],"bpmnElement":"Flow_03dbjwz","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_182335x_di","waypoint":[{"$type":"dc:Point","x":700,"y":340,"$parent":"Flow_182335x_di"},{"$type":"dc:Point","x":762,"y":340,"$parent":"Flow_182335x_di"}],"bpmnElement":"Flow_182335x","$parent":"BPMNPlane_1"}],"bpmnElement":"Collaboration_1tj7ei2","$parent":"BPMNDiagram_1"},"$parent":"sample-diagram"}]}`;
             // this.projectName = this.processDefinition.processDefinitionName;
             // this.definitionChangeCount++;
-            if (this.$route.params.id && this.$route.params.id != 'chat') {
-                path = `${this.path}/${this.$route.params.id}`;
-
-                // lock
-                const lockObj = await this.getData(`lock/${this.$route.params.id}`, { key: 'id' });
-                if (lockObj && lockObj.id && lockObj.user_id && lockObj.user_id == this.userInfo.email) {
-                    this.lock = false;
-                    this.disableChat = false;
-                    this.isViewMode = false;
-                } else {
-                    this.lock = true;
-                    this.disableChat = true;
-                    this.isViewMode = true;
+            // alert("loadData!")
+            
+            console.log(this.$route.params.pathMatch)
+            const fullPath = this.$route.params.pathMatch.join('/');
+            if (fullPath.startsWith('/')) {
+                fullPath = fullPath.substring(1);
+            }
+            console.log(`Full path: /${fullPath}`);
+            
+            if (fullPath && !fullPath.includes('chat')) {
+                let definition = await backend.getRawDefinition(fullPath, {type: "bpmn"})
+                if(definition) {
+                    this.bpmn = definition
+                    this.definitionChangeCount++;
                 }
+                // path = `${this.path}/${id}`;
+                // // lock
+                // const lockObj = await this.getData(`lock/${id}`, { key: 'id' });
+                // if (lockObj && lockObj.id && lockObj.user_id && lockObj.user_id == this.userInfo.email) {
+                //     this.lock = false;
+                //     this.disableChat = false;
+                //     this.isViewMode = false;
+                // } else {
+                //     this.lock = true;
+                //     this.disableChat = true;
+                //     this.isViewMode = true;
+                // }
 
-                const value = await this.getData(path, { key: "id" });
-                if (value) {
-                    this.messages = value.messages
-                    this.processDefinition = value.definition;
-                    if (!this.processDefinition) {
-                        this.processDefinition = [];
-                    } else {
-                        this.bpmn = value.bpmn;
-                        //this.bpmn = this.createBpmnXml(this.processDefinition);
-                        // this.bpmn = `{"$type":"bpmn:Definitions","id":"sample-diagram","targetNamespace":"http://bpmn.io/schema/bpmn","rootElements":[{"$type":"bpmn:Collaboration","id":"Collaboration_1tj7ei2","participants":[{"$type":"bpmn:Participant","id":"Participant_1eqhejj","$parent":"Collaboration_1tj7ei2"}],"$parent":"sample-diagram"},{"$type":"bpmn:Process","id":"Process_1","isExecutable":false,"laneSets":[{"$type":"bpmn:LaneSet","id":"LaneSet_1g2nbpc","lanes":[{"$type":"bpmn:Lane","id":"Lane_0wneims","name":"Woker","$parent":"LaneSet_1g2nbpc"},{"$type":"bpmn:Lane","id":"Lane_1lf58ly","name":"HR","$parent":"LaneSet_1g2nbpc"}],"$parent":"Process_1"}],"flowElements":[{"$type":"bpmn:StartEvent","id":"StartEvent_1","name":"시작","eventDefinitions":[],"$parent":"Process_1"},{"$type":"bpmn:SequenceFlow","id":"Flow_0sp25wg","$parent":"Process_1","sourceRef":"StartEvent_1","targetRef":"Activity_1ta8n6y"},{"$type":"bpmn:SequenceFlow","id":"Flow_03dbjwz","$parent":"Process_1","sourceRef":"Activity_1ta8n6y","targetRef":"Activity_0ji9jev"},{"$type":"bpmn:EndEvent","id":"Event_0h4j724","name":"종료","eventDefinitions":[],"$parent":"Process_1"},{"$type":"bpmn:SequenceFlow","id":"Flow_182335x","$parent":"Process_1","sourceRef":"Activity_0ji9jev","targetRef":"Event_0h4j724"},{"$type":"bpmn:UserTask","id":"Activity_1ta8n6y","name":"휴가 신청","documentation":[{"$type":"bpmn:Documentation","text":"Vacation","$parent":"Activity_1ta8n6y"}],"$parent":"Process_1"},{"$type":"bpmn:UserTask","id":"Activity_0ji9jev","name":"승인","documentation":[{"$type":"bpmn:Documentation","text":"confirm","$parent":"Activity_0ji9jev"}],"$parent":"Process_1"}],"$parent":"sample-diagram"}],"diagrams":[{"$type":"bpmndi:BPMNDiagram","id":"BPMNDiagram_1","plane":{"$type":"bpmndi:BPMNPlane","id":"BPMNPlane_1","planeElement":[{"$type":"bpmndi:BPMNShape","id":"Participant_1eqhejj_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":270,"y":150,"width":600,"height":250,"$parent":"Participant_1eqhejj_di"},"bpmnElement":"Participant_1eqhejj","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Lane_1lf58ly_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":300,"y":275,"width":570,"height":125,"$parent":"Lane_1lf58ly_di"},"label":{"$type":"bpmndi:BPMNLabel","$parent":"Lane_1lf58ly_di"},"bpmnElement":"Lane_1lf58ly","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Lane_0wneims_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":300,"y":150,"width":570,"height":125,"$parent":"Lane_0wneims_di"},"label":{"$type":"bpmndi:BPMNLabel","$parent":"Lane_0wneims_di"},"bpmnElement":"Lane_0wneims","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"_BPMNShape_StartEvent_2","bounds":{"$type":"dc:Bounds","x":352,"y":192,"width":36,"height":36,"$parent":"_BPMNShape_StartEvent_2"},"label":{"$type":"bpmndi:BPMNLabel","bounds":{"$type":"dc:Bounds","x":361,"y":235,"width":20,"height":14},"$parent":"_BPMNShape_StartEvent_2"},"bpmnElement":"StartEvent_1","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Event_0h4j724_di","bounds":{"$type":"dc:Bounds","x":762,"y":322,"width":36,"height":36,"$parent":"Event_0h4j724_di"},"label":{"$type":"bpmndi:BPMNLabel","bounds":{"$type":"dc:Bounds","x":770,"y":365,"width":20,"height":14},"$parent":"Event_0h4j724_di"},"bpmnElement":"Event_0h4j724","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Activity_18762mc_di","bounds":{"$type":"dc:Bounds","x":440,"y":170,"width":100,"height":80,"$parent":"Activity_18762mc_di"},"bpmnElement":"Activity_1ta8n6y","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Activity_1omaje8_di","bounds":{"$type":"dc:Bounds","x":600,"y":300,"width":100,"height":80,"$parent":"Activity_1omaje8_di"},"bpmnElement":"Activity_0ji9jev","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_0sp25wg_di","waypoint":[{"$type":"dc:Point","x":388,"y":210,"$parent":"Flow_0sp25wg_di"},{"$type":"dc:Point","x":440,"y":210,"$parent":"Flow_0sp25wg_di"}],"bpmnElement":"Flow_0sp25wg","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_03dbjwz_di","waypoint":[{"$type":"dc:Point","x":540,"y":210,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":570,"y":210,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":570,"y":340,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":600,"y":340,"$parent":"Flow_03dbjwz_di"}],"bpmnElement":"Flow_03dbjwz","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_182335x_di","waypoint":[{"$type":"dc:Point","x":700,"y":340,"$parent":"Flow_182335x_di"},{"$type":"dc:Point","x":762,"y":340,"$parent":"Flow_182335x_di"}],"bpmnElement":"Flow_182335x","$parent":"BPMNPlane_1"}],"bpmnElement":"Collaboration_1tj7ei2","$parent":"BPMNDiagram_1"},"$parent":"sample-diagram"}]}`;
-                        this.projectName = this.processDefinition.processDefinitionName;
-                        this.definitionChangeCount++;
-                    }
-                }
+                // const value = await this.getData(path, { key: "id" });
+                // if (value) {
+                //     this.messages = value.messages
+                //     this.processDefinition = value.definition;
+                //     if (!this.processDefinition) {
+                //         this.processDefinition = [];
+                //     } else {
+                //         this.bpmn = value.bpmn;
+                //         //this.bpmn = this.createBpmnXml(this.processDefinition);
+                //         // this.bpmn = `{"$type":"bpmn:Definitions","id":"sample-diagram","targetNamespace":"http://bpmn.io/schema/bpmn","rootElements":[{"$type":"bpmn:Collaboration","id":"Collaboration_1tj7ei2","participants":[{"$type":"bpmn:Participant","id":"Participant_1eqhejj","$parent":"Collaboration_1tj7ei2"}],"$parent":"sample-diagram"},{"$type":"bpmn:Process","id":"Process_1","isExecutable":false,"laneSets":[{"$type":"bpmn:LaneSet","id":"LaneSet_1g2nbpc","lanes":[{"$type":"bpmn:Lane","id":"Lane_0wneims","name":"Woker","$parent":"LaneSet_1g2nbpc"},{"$type":"bpmn:Lane","id":"Lane_1lf58ly","name":"HR","$parent":"LaneSet_1g2nbpc"}],"$parent":"Process_1"}],"flowElements":[{"$type":"bpmn:StartEvent","id":"StartEvent_1","name":"시작","eventDefinitions":[],"$parent":"Process_1"},{"$type":"bpmn:SequenceFlow","id":"Flow_0sp25wg","$parent":"Process_1","sourceRef":"StartEvent_1","targetRef":"Activity_1ta8n6y"},{"$type":"bpmn:SequenceFlow","id":"Flow_03dbjwz","$parent":"Process_1","sourceRef":"Activity_1ta8n6y","targetRef":"Activity_0ji9jev"},{"$type":"bpmn:EndEvent","id":"Event_0h4j724","name":"종료","eventDefinitions":[],"$parent":"Process_1"},{"$type":"bpmn:SequenceFlow","id":"Flow_182335x","$parent":"Process_1","sourceRef":"Activity_0ji9jev","targetRef":"Event_0h4j724"},{"$type":"bpmn:UserTask","id":"Activity_1ta8n6y","name":"휴가 신청","documentation":[{"$type":"bpmn:Documentation","text":"Vacation","$parent":"Activity_1ta8n6y"}],"$parent":"Process_1"},{"$type":"bpmn:UserTask","id":"Activity_0ji9jev","name":"승인","documentation":[{"$type":"bpmn:Documentation","text":"confirm","$parent":"Activity_0ji9jev"}],"$parent":"Process_1"}],"$parent":"sample-diagram"}],"diagrams":[{"$type":"bpmndi:BPMNDiagram","id":"BPMNDiagram_1","plane":{"$type":"bpmndi:BPMNPlane","id":"BPMNPlane_1","planeElement":[{"$type":"bpmndi:BPMNShape","id":"Participant_1eqhejj_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":270,"y":150,"width":600,"height":250,"$parent":"Participant_1eqhejj_di"},"bpmnElement":"Participant_1eqhejj","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Lane_1lf58ly_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":300,"y":275,"width":570,"height":125,"$parent":"Lane_1lf58ly_di"},"label":{"$type":"bpmndi:BPMNLabel","$parent":"Lane_1lf58ly_di"},"bpmnElement":"Lane_1lf58ly","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Lane_0wneims_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":300,"y":150,"width":570,"height":125,"$parent":"Lane_0wneims_di"},"label":{"$type":"bpmndi:BPMNLabel","$parent":"Lane_0wneims_di"},"bpmnElement":"Lane_0wneims","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"_BPMNShape_StartEvent_2","bounds":{"$type":"dc:Bounds","x":352,"y":192,"width":36,"height":36,"$parent":"_BPMNShape_StartEvent_2"},"label":{"$type":"bpmndi:BPMNLabel","bounds":{"$type":"dc:Bounds","x":361,"y":235,"width":20,"height":14},"$parent":"_BPMNShape_StartEvent_2"},"bpmnElement":"StartEvent_1","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Event_0h4j724_di","bounds":{"$type":"dc:Bounds","x":762,"y":322,"width":36,"height":36,"$parent":"Event_0h4j724_di"},"label":{"$type":"bpmndi:BPMNLabel","bounds":{"$type":"dc:Bounds","x":770,"y":365,"width":20,"height":14},"$parent":"Event_0h4j724_di"},"bpmnElement":"Event_0h4j724","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Activity_18762mc_di","bounds":{"$type":"dc:Bounds","x":440,"y":170,"width":100,"height":80,"$parent":"Activity_18762mc_di"},"bpmnElement":"Activity_1ta8n6y","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Activity_1omaje8_di","bounds":{"$type":"dc:Bounds","x":600,"y":300,"width":100,"height":80,"$parent":"Activity_1omaje8_di"},"bpmnElement":"Activity_0ji9jev","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_0sp25wg_di","waypoint":[{"$type":"dc:Point","x":388,"y":210,"$parent":"Flow_0sp25wg_di"},{"$type":"dc:Point","x":440,"y":210,"$parent":"Flow_0sp25wg_di"}],"bpmnElement":"Flow_0sp25wg","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_03dbjwz_di","waypoint":[{"$type":"dc:Point","x":540,"y":210,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":570,"y":210,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":570,"y":340,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":600,"y":340,"$parent":"Flow_03dbjwz_di"}],"bpmnElement":"Flow_03dbjwz","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_182335x_di","waypoint":[{"$type":"dc:Point","x":700,"y":340,"$parent":"Flow_182335x_di"},{"$type":"dc:Point","x":762,"y":340,"$parent":"Flow_182335x_di"}],"bpmnElement":"Flow_182335x","$parent":"BPMNPlane_1"}],"bpmnElement":"Collaboration_1tj7ei2","$parent":"BPMNDiagram_1"},"$parent":"sample-diagram"}]}`;
+                //         this.projectName = this.processDefinition.processDefinitionName;
+                //         this.definitionChangeCount++;
+                //     }
+                // }
             }
             this.processDefinitionMap = await this.getData('configuration/proc_map', { key: 'key' });
         },
@@ -571,7 +585,7 @@ export default {
                     if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
                         throw new Error("processDefinitionId or processDefinitionName is missing");
                     }
-                    await backend.putRawDefinition(xml, info.proc_def_id, info);
+                    await backend.putRawDefinition(xml, info.proc_def_id, info, {"type": "bpmn"});
                     // await me.putObject(`${me.path}/${me.processDefinition.processDefinitionId}`, {
                     //     id: me.processDefinition.processDefinitionId,
                     //     name: me.processDefinition.processDefinitionName,

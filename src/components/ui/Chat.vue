@@ -268,18 +268,27 @@
                     </v-tooltip>
                     <v-tooltip text="Draft Agent">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-if="type == 'instances' && !agentInfo.isRunning"
+                            <v-btn v-if="(type == 'instances' || type == 'chats') && !agentInfo.isRunning"
                                 :disabled="!(newMessage || agentInfo.draftPrompt)" icon variant="text"
                                 class="text-medium-emphasis" @click="requestDraftAgent" v-bind="props"
                                 style="width:30px; height:30px;">
                                 <Icon icon="fluent:document-one-page-sparkle-16-regular" width="20" height="20" />
                             </v-btn>
-                            <v-btn v-if="type == 'instances' && agentInfo.isRunning" icon variant="text"
+                            <v-btn v-if="(type == 'instances' || type == 'chats') && agentInfo.isRunning" icon variant="text"
                                 class="text-medium-emphasis" style="width:30px; height:30px;">
                                 <v-progress-circular :size="20" indeterminate color="primary"></v-progress-circular>
                             </v-btn>
                         </template>
                     </v-tooltip>
+                    <v-form ref="uploadForm" @submit.prevent="submitFile">
+                        <v-file-input
+                            v-model="file"
+                            label="Choose a file"
+                            prepend-icon="mdi-paperclip"
+                            outlined
+                        ></v-file-input>
+                        <v-btn type="submit" color="primary">Upload</v-btn>
+                    </v-form>
                 </v-row>
             </div>
             <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
@@ -348,6 +357,7 @@ import partialParse from "partial-json-parser";
 import ProgressAnimated from '@/components/ui/ProgressAnimated.vue';
 import ScrollBottomHandle from '@/components/ui/ScrollBottomHandle.vue';
 import AgentsChat from './AgentsChat.vue';
+import axios from 'axios';
 import { HistoryIcon } from 'vue-tabler-icons';
 
 export default {
@@ -391,6 +401,7 @@ export default {
             showUserList: false,
             mentionStartIndex: null,
             mentionedUsers: [], // Mention된 유저들의 정보를 저장할 배열
+            file: null,
         };
     },
     computed: {
@@ -457,6 +468,25 @@ export default {
         },
     },
     methods: {
+        async submitFile() {
+            if (!this.file) return; // 파일이 없으면 함수 종료
+
+            const formData = new FormData();
+            formData.append('file', this.file[0]); // 'file' 키에 파일 데이터 추가
+
+            try {
+                const response = await axios.post('http://localhost:8005/uploadfile/', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
+                console.log(response.data); // 응답 로그 출력
+                // 성공적으로 파일을 전송한 후의 로직을 여기에 작성하세요.
+            } catch (error) {
+                console.error(error); // 에러 로그 출력
+                // 파일 전송 실패 시의 로직을 여기에 작성하세요.
+            }
+        },
         openVerMangerDialog() {
             this.$emit('openVerMangerDialog', true)
         },
@@ -602,6 +632,7 @@ export default {
             if ($event.shiftKey) return;
             if (this.isLoading) {
                 this.isLoading = false;
+                this.$emit('stopMessage');
             }
             var copyMsg = this.newMessage.replace(/(?:\r\n|\r|\n)/g, '');
             if (copyMsg.length > 0)
