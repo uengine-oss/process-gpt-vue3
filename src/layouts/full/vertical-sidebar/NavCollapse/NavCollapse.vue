@@ -11,13 +11,13 @@ const getChild = async (subitem, i) => {
     let menu = []
     res.forEach(el => {
         var obj = {
-            title: el.name,
+            title: el.name.split('.')[0],
         }
         if(el.directory){
             obj.directory = true
             obj.children = []
         } else {
-            obj.to = `/definitions/${el.path}`
+            obj.to = `/definitions/${el.path.split('.')[0]}`
         }
         menu.push(obj);
     })

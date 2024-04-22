@@ -83,7 +83,7 @@ class UEngineBackend implements Backend {
             alert(e);
         }
     }
-    async putRawDefinition(definition: any, requestPath: string, options) {
+    async putRawDefinition(definition: any, requestPath: string, options: any) {
         try {
             let req = {
                 definition: definition
