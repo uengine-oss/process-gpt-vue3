@@ -1,6 +1,6 @@
 <template>
-    <v-menu v-model="showMenu" :position-x="positionX" :position-y="positionY" absolute open-on-hover close-on-content-click="false">
-        <v-list v-model:opened="open">
+    <v-menu v-model="showMenu" :position-x="positionX" :position-y="positionY" absolute close-on-content-click="false">
+        <v-list v-model:opened="open" class="unselectable">
             <v-list-item v-for="(item, index) in filteredMenuItems" :key="`item-${index}`" @click.stop="selectItem(item)">
                 <v-list-item-content>
                     <v-list-item-title>{{ item.title }}</v-list-item-title>
@@ -69,5 +69,11 @@ export default {
 <style scoped>
 .align-left {
     text-align: left;
+}
+.unselectable {
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE10+/Edge */
+    user-select: none; /* Standard */
 }
 </style>

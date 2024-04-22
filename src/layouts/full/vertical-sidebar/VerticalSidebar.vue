@@ -39,10 +39,14 @@ const customizer = useCustomizerStore();
                 </template>
                 <!-- Process Definition List -->
                 <template v-if="definitionList">
-                    <NavCollapse class="leftPadding" :item="definitionList" :level="0" />
+                    
+                    <NavCollapse class="leftPadding" :item="definitionList"  @update:item="def => definitionList = def" :level="0" />
                 </template>
                 <!-- <Moreoption/> -->
             </v-list>
+
+            <ProcessInstanceList />
+
             <div class="pa-6 px-4 userbottom bg-containerBg mt-10">
                 <ExtraBox />
             </div>
@@ -53,7 +57,12 @@ const customizer = useCustomizerStore();
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 
+import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
+
 export default {
+    components: {
+        ProcessInstanceList
+    },
     data: () => ({
         sidebarItem: [
             {
@@ -85,15 +94,11 @@ export default {
                 disable: true,
             },
             {
-                header: 'instance.title',
-                disable: true,
-            },
-            {
-                title: "processExecution.title",
-                icon: 'solar:chat-dots-linear',
+                title: "processDefinitionMap.title",
+                icon: 'carbon:flow-connection',
                 BgColor: 'primary',
-                to: '/instances/chat',
-                disable: true,
+                to: "/definition-map",
+                disable: false,
             },
             {
                 header: 'definitionManagement.title',
@@ -105,13 +110,6 @@ export default {
                 BgColor: 'primary',
                 to: "/organization",
                 disable: true,
-            },
-            {
-                title: "processDefinitionMap.title",
-                icon: 'carbon:flow-connection',
-                BgColor: 'primary',
-                to: "/definition-map",
-                disable: false,
             },
             {
                 title: "uiDefinition.title",
@@ -157,6 +155,15 @@ export default {
                     children: []
                 };
                 list.forEach(item => {
+                    console.log(item)
+                    if (item.directory) {
+                        var obj = {
+                            title: item.name,
+                            // to: `/definitions/${item.definition.processDefinitionId}`,
+                            directory: true
+                        }
+                        menu.children.push(obj);
+                    }
                     if (item && item.definition) {
                         var obj = {
                             title: item.definition.processDefinitionName,

@@ -77,7 +77,7 @@ export default {
     computed: {
         filteredNotiList() {
             var list = [];
-            if (this.notifications.length > 0) {
+            if (this.notifications && this.notifications.length > 0) {
                 list = this.notifications.filter(item => !item.isChecked);
                 list = JSON.parse(JSON.stringify(list));
                 if (list.length > 0) {

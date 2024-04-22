@@ -17,13 +17,25 @@
                             <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
                         </div>
                     </div>
+                    <!-- 폼 저장을 위해서 -->
+                    <span v-if="type == 'form'" class="d-flex gap-2 flex-row-reverse" style="height: 0px">
+                        <v-tooltip>
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props"
+                                    icon variant="text"
+                                    class="text-medium-emphasis"
+                                    style="bottom: 35px; left: 15px;"
+                                    @click="$emit('onClickSaveFormButton')"
+                                >
+                                    <Icon icon="material-symbols:save" width="24" height="24" />
+                                </v-btn>
+                            </template>
+                            <span>{{ $t('uiDefinition.save') }}</span>
+                        </v-tooltip>
+                    </span>
 
                     <!-- 프로세스 정의 & 실행 -->
                     <div class="d-flex">
-                        <v-btn v-if="type == 'instances'" icon variant="text" class="text-medium-emphasis"
-                            @click="viewProcess">
-                            <Icon icon="fluent:flowchart-16-regular" :style="{ fontSize: '28px' }" />
-                        </v-btn>
                         <v-tooltip v-if="type == 'definitions'"
                             :disabled="!isChanged"
                             location="bottom"
@@ -256,18 +268,27 @@
                     </v-tooltip>
                     <v-tooltip text="Draft Agent">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-if="type == 'instances' && !agentInfo.isRunning"
+                            <v-btn v-if="(type == 'instances' || type == 'chats') && !agentInfo.isRunning"
                                 :disabled="!(newMessage || agentInfo.draftPrompt)" icon variant="text"
                                 class="text-medium-emphasis" @click="requestDraftAgent" v-bind="props"
                                 style="width:30px; height:30px;">
                                 <Icon icon="fluent:document-one-page-sparkle-16-regular" width="20" height="20" />
                             </v-btn>
-                            <v-btn v-if="type == 'instances' && agentInfo.isRunning" icon variant="text"
+                            <v-btn v-if="(type == 'instances' || type == 'chats') && agentInfo.isRunning" icon variant="text"
                                 class="text-medium-emphasis" style="width:30px; height:30px;">
                                 <v-progress-circular :size="20" indeterminate color="primary"></v-progress-circular>
                             </v-btn>
                         </template>
                     </v-tooltip>
+                    <v-form ref="uploadForm" @submit.prevent="submitFile">
+                        <v-file-input
+                            v-model="file"
+                            label="Choose a file"
+                            prepend-icon="mdi-paperclip"
+                            outlined
+                        ></v-file-input>
+                        <v-btn type="submit" color="primary">Upload</v-btn>
+                    </v-form>
                 </v-row>
             </div>
             <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
@@ -275,14 +296,14 @@
             </div> -->
         </div>
         <v-divider />
-        <div v-if="showNewMessageNoti"
+        <!-- <div v-if="showNewMessageNoti"
             style="position: absolute; z-index: 9; max-width: 1000px; left: 50%; transform: translateX(-50%); bottom: 150px;">
             <v-chip color="primary" closable @click:close="showNewMessageNoti = false" style="cursor: pointer;">
                 <div @click="clickToScroll">
                     <span>{{ lastMessage.name }}: {{ lastMessage.content }}</span>
                 </div>
             </v-chip>
-        </div>
+        </div> -->
         <div class="text-body-1" v-if="isReply" style="margin-left: 10px">
             {{ replyUser.name }}님에게 답장
             <v-icon @click="cancelReply()">mdi-close</v-icon>
@@ -326,18 +347,6 @@
                 </div>
             </div>
         </form>
-
-        <v-dialog v-model="alertDialog" max-width="500" persistent>
-            <v-card>
-                <v-card-text class="mt-2">
-                    {{ alertMessage }}
-                </v-card-text>
-                <v-card-actions class="justify-center">
-                    <v-btn color="primary" variant="flat" @click="complete">확인</v-btn>
-                    <v-btn color="error" variant="flat" @click="alertDialog=false">닫기</v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
     </div>
 </template>
 
@@ -348,6 +357,7 @@ import partialParse from "partial-json-parser";
 import ProgressAnimated from '@/components/ui/ProgressAnimated.vue';
 import ScrollBottomHandle from '@/components/ui/ScrollBottomHandle.vue';
 import AgentsChat from './AgentsChat.vue';
+import axios from 'axios';
 import { HistoryIcon } from 'vue-tabler-icons';
 
 export default {
@@ -391,8 +401,7 @@ export default {
             showUserList: false,
             mentionStartIndex: null,
             mentionedUsers: [], // Mention된 유저들의 정보를 저장할 배열
-            alertDialog: false,
-            alertMessage: '',
+            file: null,
         };
     },
     computed: {
@@ -459,6 +468,25 @@ export default {
         },
     },
     methods: {
+        async submitFile() {
+            if (!this.file) return; // 파일이 없으면 함수 종료
+
+            const formData = new FormData();
+            formData.append('file', this.file[0]); // 'file' 키에 파일 데이터 추가
+
+            try {
+                const response = await axios.post('http://localhost:8005/uploadfile/', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
+                console.log(response.data); // 응답 로그 출력
+                // 성공적으로 파일을 전송한 후의 로직을 여기에 작성하세요.
+            } catch (error) {
+                console.error(error); // 에러 로그 출력
+                // 파일 전송 실패 시의 로직을 여기에 작성하세요.
+            }
+        },
         openVerMangerDialog() {
             this.$emit('openVerMangerDialog', true)
         },
@@ -672,17 +700,9 @@ export default {
         openAlertDialog() {
             if (this.type == 'definitions') {
                 this.$emit('toggleLock')
-                // if (this.lock) {
-                //     this.alertMessage = '저장 및 체크아웃 하시겠습니까?';
-                // } else {
-                //     this.alertMessage = '체크인 및 프로세스 편집을 시작하시겠습니까?';
-                // }
-                // this.alertDialog = true;
             }
         },
         complete() {
-            this.alertDialog = false;
-            this.alertMessage = '';
             this.$emit('complete');
         },
     }

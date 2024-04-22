@@ -42,9 +42,26 @@ export default {
                         var summaryText = event.data.substring(summaryIndex).replace(/\n/g, "<br>");
                         // me.log += summaryText + "<br>";
                     }
-                } else if (event.data.includes('"agents":')) {
+                } else if (event.data.includes('"agents":') 
+                || event.data.includes("{'tools':") 
+                || event.data.includes("{'tool_names':") 
+                || event.data.includes("{'input':") 
+                || (event.data.includes("{'output':") && !event.data.includes("return_values="))) {
                     try {
-                        let data = JSON.parse(event.data);
+                        let data;
+                        let modifiedStr
+
+                        modifiedStr = event.data.replaceAll(/'/g, '"');
+                        modifiedStr = modifiedStr.replaceAll(/\n/g, "")
+                                                .replaceAll(/\\'/g, "\\'")
+                                                .replaceAll(/\\"/g, '\\"')
+                                                .replaceAll(/\\&/g, "\\&")
+                                                .replaceAll(/\\r/g, "\\r")
+                                                .replaceAll(/\\t/g, "\\t")
+                                                .replaceAll(/\\b/g, "\\b")
+                                                .replaceAll(/\\f/g, "\\f");
+
+                        data = JSON.parse(modifiedStr);
                         // setting 
                         me.agentInfo.agents = data.agents.map((agent, index) => ({ ...agent, profile: `/src/assets/images/profile/user-${index + 1}.jpg`}));
                         me.agentInfo.tools = {
@@ -53,7 +70,7 @@ export default {
                             "Search news on the internet": '인터넷 뉴스 검색'
                         }
 
-                        result = me.convertAgentsContent(event.data, me.agentInfo.agents)
+                        result = me.convertAgentsContent(modifiedStr, me.agentInfo.agents)
                     } catch (e) {
                         console.error("Error parsing JSON:", e);
                     }

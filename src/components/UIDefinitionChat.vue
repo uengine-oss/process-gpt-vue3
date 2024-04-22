@@ -3,26 +3,64 @@
         <AppBaseCard>
             <template v-slot:leftpart>
                 <div class="no-scrollbar">
-                    <Chat :chatInfo="chatInfo" :messages="messages" :userInfo="userInfo"
+                    <Chat :chatInfo="chatInfo" :messages="messages" :userInfo="userInfo" type="form" @onClickSaveFormButton="openSaveDialog"
                         @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage"
                     ></Chat>
                 </div>
             </template>
             <template v-slot:rightpart>
-                <mashup v-if="isShowMashup" ref="mashup" v-model="kEditorInput" :key="mashupKey" 
-                        @onSaveFormDefinition="saveFormDefinition" :storedFormDefData="storedFormDefData"/>
-                <card v-else class="d-flex align-center justify-center fill-height">
-                    <v-progress-circular color="primary" indeterminate></v-progress-circular>
-                </card>
+                <v-tabs
+                    v-model="currentTabName"
+                    style="position: fixed; z-index: 999;"
+                    class="text-black"
+                    fixed-tabs
+                >
+                    <v-tab value="edit">편집</v-tab>
+                    <v-tab value="preview">미리보기</v-tab>
+                </v-tabs>
+                <v-window v-model="currentTabName" class="fill-height">
+                    <v-window-item value="edit" class="fill-height" style="overflow-y: auto;">
+                        <mashup v-if="isShowMashup" ref="mashup" v-model="kEditorInput" :key="mashupKey" 
+                            @onSaveFormDefinition="saveFormDefinition" :storedFormDefData="storedFormDefData"/>
+                        <card v-else class="d-flex align-center justify-center fill-height">
+                            <v-progress-circular color="primary" indeterminate></v-progress-circular>
+                        </card>
+                    </v-window-item>
+
+                    <v-window-item value="preview" class="fill-height mt-15 pa-5" style="overflow-y: auto;">
+                        <template v-if="isShowPreview">
+                            <DynamicForm  :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
+
+                            <template v-if="dev.isDevMode">
+                                <v-textarea label="previewFormValuesToTest" rows="10" v-model="dev.previewFormValues"></v-textarea>
+                                <v-btn color="primary" class="full-width my-5" @click="onClickPreviewApplyButton">적용</v-btn>
+                            </template>
+
+                            <v-btn color="primary" class="full-width" @click="onClickPreviewSubmitButton">제출</v-btn>
+                        </template>
+                        <card v-else class="d-flex align-center justify-center fill-height">
+                            <v-progress-circular color="primary" indeterminate></v-progress-circular>
+                        </card>
+                    </v-window-item>
+                </v-window>
             </template>
 
             <template v-slot:mobileLeftContent>
-                <Chat :chatInfo="chatInfo" :messages="messages" :userInfo="userInfo"
+                <Chat :chatInfo="chatInfo" :messages="messages" :userInfo="userInfo" type="form"  @onClickSaveFormButton="openSaveDialog"
                         @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage"
                 ></Chat>
             </template>
         </AppBaseCard>
     </v-card>
+
+    <v-dialog v-model="isOpenSaveDialog">
+        <form-design-save-panel
+          @onClose="isOpenSaveDialog = false"
+          @onSave="tryToSaveFormDefinition"
+          :savedId="storedFormDefData.id"
+        >
+        </form-design-save-panel>
+    </v-dialog>
 </template>
 
 <script>
@@ -32,9 +70,11 @@ import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import Mashup from '@/components/designer/Mashup.vue';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
+import FormDesignSavePanel from '@/components/designer/FormDesignSavePanel.vue';
 import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/FormDesignGenerator';
 import Chat from './ui/Chat.vue';
+import DynamicForm from '@/components/designer/DynamicForm.vue'
 
 
 var jsondiffpatch = jsondiff.create({
@@ -53,7 +93,9 @@ export default {
         ChatDetail,
         ChatProfile,
         Mashup,
-        ChatGenerator
+        ChatGenerator,
+        FormDesignSavePanel,
+        DynamicForm
     },
     data: () => ({
         path: 'form_def',
@@ -69,7 +111,18 @@ export default {
         prevMessageFormat: "", // 사용자가 KEditor를 변경할때마다 해당 포맷을 기반으로 System 메세지를 재구축해서 보내기 위해서
 
         storedFormDefData: {},
-        isShowMashup: false
+        isOpenSaveDialog: false,
+        currentTabName: "",
+        isShowMashup: false,
+
+        previewHTML: "",
+        previewFormValues: {},
+        isShowPreview: false,
+
+        dev: {
+            isDevMode: window.localStorage.getItem('isDevMode') === 'true',
+            previewFormValues: ""
+        }
     }),
     async created() {
         this.generator = new ChatGenerator(this, {
@@ -93,37 +146,159 @@ export default {
                 } else
                     this.isShowMashup = true
             }
-        }, 
+        },
+        
+        currentTabName: {
+            handler() {
+                if(this.currentTabName === "edit") 
+                    $("div[id^='keditor-content-area-']").css("display", "block");
+
+                // 미리보기에 KEditor에서 편집한 HTML을 로드시키기 위해서
+                else {
+                    $("div[id^='keditor-content-area-']").css("display", "none");
+                    var me = this
+
+                    me.isShowPreview = false
+
+                    me.$try({
+                        context: me,
+                        action: async () => {
+                            me.previewHTML = this.keditorContentHTMLToDynamicFormHTML(
+                                me.$refs.mashup.getKEditorContentHtml()
+                            )
+                        },
+                        onFail: () => {
+                            me.previewHTML = ""
+                        }
+                    })
+                    me.previewFormValues = {}
+                    me.isShowPreview = true
+
+                    this.$nextTick(() => {
+                        this.dev.previewFormValues = JSON.stringify(this.previewFormValues)
+                    })
+                }
+            }
+        }
     },
     methods: {
+        openSaveDialog() {
+            this.isOpenSaveDialog = true
+        },
+
         /**
-         * 'Save' 버튼을 누를 경우, 최종 결과를 Supabase에 저장하기 위해서
+         * ID 정보를 제공하고, 'Save' 버튼을 누를 경우, 최종 결과를 DB에 저장시키기 위해서
          */
-        async saveFormDefinition({id, name, html}){
+        async tryToSaveFormDefinition({id}){
+            var me = this
+            me.$try({
+                context: me,
+                action: async () => {
+                    const kEditorContentHTML = me.$refs.mashup.getKEditorContentHtml()
+                    const DynamicFormHTML = me.keditorContentHTMLToDynamicFormHTML(kEditorContentHTML)
+
+                    await me.saveFormDefinition({
+                        id: id,
+                        html: DynamicFormHTML
+                    })
+                },
+                successMsg: '저장되었습니다.'
+            })
+        },
+
+        /**
+         * KEditor에서 추출한 내용을 실제로 DynamicForm 컴포넌트에 적용할 수 있는 형태로 변환시키기 위해서
+         */
+        keditorContentHTMLToDynamicFormHTML(html) {
+            const dom = new DOMParser().parseFromString(html, 'text/html')
+            const formValues = dom.querySelectorAll('[name]')
+
+            const nameSet = new Set();
+            formValues.forEach(el => {
+                const name = el.getAttribute('name');
+                if (nameSet.has(name)) {
+                    throw new Error(`'${name}' 이름이 중복되어 있습니다.`);
+                }
+                nameSet.add(name);
+            });
+
+            formValues.forEach(el => {
+                el.setAttribute('v-model', `formValues['${el.getAttribute('name')}']`)
+            })
+
+            return dom.body.innerHTML
+        },
+
+        /**
+         * DB에서 로드된 내용을 KEditor에 적용할 수 있는 형태로 바꾸기 위해서
+         */
+        dynamicFormHTMLToKeditorContentHTML(html) {
+            const dom = new DOMParser().parseFromString(html, 'text/html')
+
+            const formValues = dom.querySelectorAll('[v-model]')
+            formValues.forEach(el => {
+                el.removeAttribute('v-model')
+            })
+
+            return dom.body.innerHTML
+        },
+
+        /**
+         * 'Save' 버튼을 누를 경우, 최종 결과를 DB에 저장하기 위해서
+         */
+        async saveFormDefinition({id, html}){
+            const isNewSave = (this.$route.params.id !== id)
+            if(isNewSave) {
+                const isFormAlreadyExist = await this.backend.getRawDefinition(id, { type: "form" })
+                if(isFormAlreadyExist) {
+                    if(!confirm(`'${id}'는 이미 존재하는 폼 디자인 ID 입니다! 그래도 저장하시겠습니까?`))
+                        return
+                }
+            }
             
-            this.backend.putRawDefinition(html, id, {'type': 'form'});
+            await this.backend.putRawDefinition(html, id, {'type': 'form'});
+            this.isOpenSaveDialog = false
+
+
+            if(isNewSave) {
+                this.$router.push(`/ui-definitions/${id}`)
+            }
+        },
+
+
+        onClickPreviewSubmitButton() {
+            if(this.dev.isDevMode)
+                this.dev.previewFormValues = JSON.stringify(this.previewFormValues) 
+            else
+                alert(JSON.stringify(this.previewFormValues))
+            
+        },
+
+        onClickPreviewApplyButton() {
+            this.previewFormValues = JSON.parse(this.dev.previewFormValues)
         },
 
 
         /**
-         * Supabase에서 Form 관련 데이터를 가져와서 KEditor에 반영하기 위해서 사용
+         * DB에서 Form 관련 데이터를 가져와서 KEditor에 반영하기 위해서 사용
          * @param {*} path 
          */
         async loadData(path) {
             if (this.$route.params.id && this.$route.params.id != 'chat') {
                 path = `${this.path}/${this.$route.params.id}`
-                this.storedFormDefData = await this.getData(path, { key: "id" })
-                if(!this.storedFormDefData) {
+
+                this.storedFormDefData = (await this.backend.getRawDefinition(this.$route.params.id, { type: "form" })) ?? {}   
+                if(!(this.storedFormDefData.id)) {
                     alert(`'${this.$route.params.id}' ID 를 가지는 폼 디자인 정보가 없습니다! 새 폼 만들기 화면으로 이동됩니다.`)
                     this.$router.push(`/ui-definitions/chat`)
                     this.isShowMashup = true
                     return
                 }
 
-                this.messages = this.storedFormDefData.messages
-                this.applyNewSrcToMashup(
-                    this.loadHTMLToKEditorContent(this.storedFormDefData.html)
-                )
+                const kEditorContentHTML = this.dynamicFormHTMLToKeditorContentHTML(this.storedFormDefData.html)
+                const kEditorContent = this.loadHTMLToKEditorContent(kEditorContentHTML)
+                this.applyNewSrcToMashup(kEditorContent)
+                
                 this.isShowMashup = true
             }
             else

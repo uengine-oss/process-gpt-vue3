@@ -371,6 +371,33 @@ class UEngineBackend implements Backend {
         }
     }
 
+    async getWorkListByInstId(instId: number) {
+        try {
+            const response = await axiosInstance.get(`/worklist/search/findWorkListByInstId`, { params: { instId: instId } });
+
+            if (!response.data) return null;
+            if (!response.data._embedded) return null;
+            let mappedResult = response.data._embedded.worklist.map((task: any) => ({
+                defId: task.defId,
+                endpoint: task.endpoint,
+                instId: task.instId,
+                rootInstId: task.rootInstId,
+                taskId: parseInt(task._links.self.href.split('/').pop()),
+                startDate: task.startDate,
+                dueDate: task.dueDate,
+                status: task.status,
+                title: task.title,
+                tool: task.tool,
+                description: task.description || '', // description이 null일 경우 빈 문자열로 처리
+                task: task
+            }));
+
+            return mappedResult;
+        } catch (e) {
+            alert(e);
+        }
+    }
+
     async getPendingList() {
         try {
             const response = await axiosInstance.get(`/worklist/search/findPending`);
@@ -450,6 +477,26 @@ class UEngineBackend implements Backend {
         try {
             definitionMap = JSON.stringify(definitionMap);
             const response = await axiosInstance.put(`/definition/map`, definitionMap, { headers: { 'Content-Type': 'text/plain' } });
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
+    }
+
+    // Running Instance API
+    async getInstanceList() {
+        try {
+            const response = await axiosInstance.get(`/instances/search/findFilterICanSee`);
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
+    }
+
+    // Complate Instance API
+    async getComplateInstanceList() {
+        try {
+            const response = await axiosInstance.get(`/instances/search/findFilterICanSee`);
             return response.data;
         } catch (e) {
             alert(e);

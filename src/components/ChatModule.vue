@@ -3,9 +3,11 @@ import jp from 'jsonpath';
 
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { encodingForModel } from "js-tiktoken";
+import GeneratorAgent from "./GeneratorAgent.vue"
 import _ from 'lodash';
 import BackendFactory from '@/components/api/BackendFactory';
 export default {
+    mixins: [GeneratorAgent],
     data: () => ({
         replyUser: null,
         isInitDone: false,
@@ -16,8 +18,43 @@ export default {
         disableChat: false,
         chatRoomList: [],
         openaiToken: null,
+        agentInfo: {
+            draftPrompt: '',
+            isRunning: false,
+            isConnection: false,
+        },
         backend: null
     }),
+    mounted() {
+        var me = this
+        me.connectAgent()
+        me.receiveAgent(function (callback) {
+            if (callback.connection) {
+                me.agentInfo.isConnection = true
+                if (callback.data) {
+                    let message = callback.data
+                    let duplication = me.messages.find(mes => mes.role == message.role && JSON.stringify(mes.content) === JSON.stringify(message.content))
+                    if (duplication) return;
+
+                    message['_template'] = 'agent'
+                    me.messages.push(message)
+                    // me.saveMessages(me.messages)
+                }
+
+                if (callback.isFinished) {
+                    me.agentInfo.isRunning = false
+                } else {
+                    me.agentInfo.isRunning = true
+                }
+            } else {
+                me.agentInfo.isConnection = false
+                me.agentInfo.isRunning = false
+            }
+        })
+    },
+    beforeUnmount() {
+        this.releaseAgent()
+    },
     async created() {
         var me = this;
         this.storage = StorageBaseFactory.getStorage();
@@ -26,6 +63,21 @@ export default {
         this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
     },
     methods: {
+        requestDraftAgent(newVal) {
+            var me = this
+            me.$try({
+                context: me,
+                action() {
+                    if (newVal) me.agentInfo.draftPrompt = newVal
+
+                    if (!me.agentInfo.draftPrompt) return;
+                    me.agentInfo.isRunning = true
+                    me.requestAgent(me.agentInfo.draftPrompt)
+                },
+                // onFail() {
+                // }
+            })
+        },
         async getToken(){
             let option = {
                 key: "key"

@@ -822,7 +822,20 @@ export default {
             collaboration.appendChild(pc);
 
 
-
+            // Data 매핑
+            const extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
+            const root = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
+            if (jsonModel.data) {
+                jsonModel.data.forEach(data => {
+                    const variable = xmlDoc.createElementNS('http://uengine', 'uengine:variable');
+                    variable.setAttribute('name', data.name);
+                    variable.setAttribute('type', data.type);
+                    root.appendChild(variable);
+                });
+            }
+                
+            extensionElements.appendChild(root);
+            process.appendChild(extensionElements);
             // Lane 및 Activity 매핑
             const laneActivityMapping = {};
             if (jsonModel.activities)
@@ -865,19 +878,12 @@ export default {
                     sequenceFlow.setAttribute('sourceRef', sequence.source);
                     sequenceFlow.setAttribute('targetRef', sequence.target);
                     let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
-                    let root = xmlDoc.createElementNS('http://uengine', 'uengine:Uengine-params');
-                    let params = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
-                    let param = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
-                    // let role = xmlDoc.createElementNS('http://uengine', 'uengine:role');
-                    // let desc = xmlDoc.createElementNS('http://uengine', 'uengine:description');
-                    // let checkpoints = xmlDoc.createElementNS('http://uengine', 'uengine:checkpoint');
-                    //             <uengine:description>asdf</uengine:description>
-                    //   <uengine:checkpoint>
-                    //     <uengine:checkpoint>asdf</uengine:checkpoint>
-                    //   </uengine:checkpoint>
-                    param.setAttribute('key', "condition")
-                    param.textContent = sequence.condition ? sequence.condition : ""
-                    params.appendChild(param)
+                    let root = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
+                    let params = xmlDoc.createElementNS('http://uengine', 'uengine:json');
+                    params.setAttribute('key', "condition")
+                    params.textContent = JSON.stringify({
+                        "condition": sequence.condition ? sequence.condition : ""
+                    })
                     // }
                     root.appendChild(params)
                     extensionElements.appendChild(root)
@@ -909,45 +915,75 @@ export default {
                         userTask.appendChild(inComingSeq)
                     }
                     let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
-                    let root = xmlDoc.createElementNS('http://uengine', 'uengine:Uengine-params');
-                    let role = xmlDoc.createElementNS('http://uengine', 'uengine:Role');
-                    // role.textContent = activity.role
-                    // root.appendChild(role)
-                    let desc = xmlDoc.createElementNS('http://uengine', 'uengine:Description');
-                    // desc.textContent = activity.description
-                    // root.appendChild(desc)
-                    let checkpoints = xmlDoc.createElementNS('http://uengine', 'uengine:Checkpoint');
-                    if (activity.checkpoints) {
-                        activity.checkpoints.forEach((checkpoint) => {
-                            console.log(checkpoint)
-                            let check = xmlDoc.createElementNS('http://uengine', 'uengine:Checkpoint');
-                            check.textContent = checkpoint
-                            checkpoints.appendChild(check)
+                    let root = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
+                    let params = xmlDoc.createElementNS('http://uengine', 'uengine:json');
+                    params.setAttribute('key', "condition")
+                    // {"argument":{"text":"symptom"}, "variable":{"name": "symptom"}, "direction":
+                    //     "OUT"}
+                    let inputDataList = []
+                    let outputDataList = []
+                    activity?.inputData?.forEach(data => {
+                        inputDataList.push({
+                            "argument": {"text": data.name},
+                            "variable": {"name": data.name},
+                            "direction": "OUT"
                         })
-                    }
-                    root.appendChild(checkpoints)
+                    })
+                    activity?.outputData?.forEach(data => {
+                        outputDataList.push({
+                            "argument": {"text": data.name},
+                            "variable": {"name": data.name},
+                            "direction": "IN"
+                        })
+                    })
 
-                    // Params
-                    let params = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
-                    if (activity.inputData) {
-                        activity.inputData.forEach((data) => {
-                            let param = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
-                            param.setAttribute('key', data.name)
-                            param.setAttribute('category', "input")
-                            params.appendChild(param)
-                        })
+                    let activityData = {
+                        "role": {"name":activity.role},
+                        "parameters": [...inputDataList, ...outputDataList]
                     }
-                    if (activity.outputData) {
-                        activity.outputData.forEach((data) => {
-                            let param = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
-                            param.setAttribute('key', data.name)
-                            param.setAttribute('category', "output")
-                            params.appendChild(param)
-                        })
-                    }
+                    params.textContent = JSON.stringify(activityData)
                     root.appendChild(params)
                     extensionElements.appendChild(root)
                     userTask.appendChild(extensionElements)
+                    // let root = xmlDoc.createElementNS('http://uengine', 'uengine:Uengine-params');
+                    // let role = xmlDoc.createElementNS('http://uengine', 'uengine:Role');
+                    // // role.textContent = activity.role
+                    // // root.appendChild(role)
+                    // let desc = xmlDoc.createElementNS('http://uengine', 'uengine:Description');
+                    // // desc.textContent = activity.description
+                    // // root.appendChild(desc)
+                    // let checkpoints = xmlDoc.createElementNS('http://uengine', 'uengine:Checkpoint');
+                    // if (activity.checkpoints) {
+                    //     activity.checkpoints.forEach((checkpoint) => {
+                    //         console.log(checkpoint)
+                    //         let check = xmlDoc.createElementNS('http://uengine', 'uengine:Checkpoint');
+                    //         check.textContent = checkpoint
+                    //         checkpoints.appendChild(check)
+                    //     })
+                    // }
+                    // root.appendChild(checkpoints)
+
+                    // // Params
+                    // let params = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
+                    // if (activity.inputData) {
+                    //     activity.inputData.forEach((data) => {
+                    //         let param = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
+                    //         param.setAttribute('key', data.name)
+                    //         param.setAttribute('category', "input")
+                    //         params.appendChild(param)
+                    //     })
+                    // }
+                    // if (activity.outputData) {
+                    //     activity.outputData.forEach((data) => {
+                    //         let param = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
+                    //         param.setAttribute('key', data.name)
+                    //         param.setAttribute('category', "output")
+                    //         params.appendChild(param)
+                    //     })
+                    // }
+                    // root.appendChild(params)
+                    // extensionElements.appendChild(root)
+                    // userTask.appendChild(extensionElements)
 
                     if (idx == 0) {
                         // 시작일땐 StartEvent와 연결
@@ -1008,7 +1044,7 @@ export default {
                     process.appendChild(userTask);
                 });
 
-
+            // BPMN Diagram Draw
             const bpmnDiagram = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNDiagram');
             bpmnDiagram.setAttribute('id', 'BPMNDiagram_1');
             bpmnDefinitions.appendChild(bpmnDiagram);
