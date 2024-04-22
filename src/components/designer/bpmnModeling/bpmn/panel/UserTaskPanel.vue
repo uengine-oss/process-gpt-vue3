@@ -357,7 +357,7 @@ export default {
             this.copyUengineProperties.mappingContext.mappingElement = JSON.parse(jsonString)
             this.$emit('update:uEngineProperties', this.copyUengineProperties)
 
-            this.openFieldMapper = false;
+            this.isOpenFieldMapper = false;
         },
         async openFormMapper(){
             var me = this
