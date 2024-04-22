@@ -19,7 +19,7 @@
                     <v-tab value="preview">미리보기</v-tab>
                 </v-tabs>
                 <v-window v-model="currentTabName" class="fill-height">
-                    <v-window-item value="edit" class="fill-height" style="overflow-y: auto;">
+                    <v-window-item value="edit" class="fill-height mt-15" style="overflow-y: auto;">
                         <mashup v-if="isShowMashup" ref="mashup" v-model="kEditorInput" :key="mashupKey" 
                             @onSaveFormDefinition="saveFormDefinition" :storedFormDefData="storedFormDefData"/>
                         <card v-else class="d-flex align-center justify-center fill-height">

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div id="kEditor1">
+    <div id="kEditor1" style="position: relative; top: -60px;">
     </div>
     
     
