@@ -50,7 +50,7 @@ const MainRoutes = {
         },
         {
             name: 'definitions',
-            path: '/definitions/:id',
+            path: '/definitions/:pathMatch(.*)*',
             component: () => import('@/components/ProcessDefinitionChat.vue'),
         },
         {

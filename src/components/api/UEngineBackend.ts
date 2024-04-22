@@ -370,7 +370,7 @@ class UEngineBackend implements Backend {
             alert(e);
         }
     }
-    
+
     async getWorkListByInstId(instId: number) {
         try {
             const response = await axiosInstance.get(`/worklist/search/findWorkListByInstId`, { params: { instId: instId } });
@@ -477,6 +477,26 @@ class UEngineBackend implements Backend {
         try {
             definitionMap = JSON.stringify(definitionMap);
             const response = await axiosInstance.put(`/definition/map`, definitionMap, { headers: { 'Content-Type': 'text/plain' } });
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
+    }
+
+    // Running Instance API
+    async getInstanceList() {
+        try {
+            const response = await axiosInstance.get(`/instances/search/findFilterICanSee`);
+            return response.data;
+        } catch (e) {
+            alert(e);
+        }
+    }
+
+    // Complate Instance API
+    async getComplateInstanceList() {
+        try {
+            const response = await axiosInstance.get(`/instances/search/findFilterICanSee`);
             return response.data;
         } catch (e) {
             alert(e);
