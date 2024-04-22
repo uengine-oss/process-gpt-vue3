@@ -1,10 +1,5 @@
 <template>
   <div>
-    <v-btn @click="onClickSave">
-      save
-    </v-btn>
-
-
     <div id="kEditor1">
     </div>
     
@@ -17,14 +12,6 @@
         >
         </form-definition-panel>
     </v-dialog>
-
-    <v-dialog v-model="isOpenSaveDialog">
-        <form-design-save-panel
-          @onClose="isOpenSaveDialog = false"
-          @onSave="saveFormDefinition"
-        >
-        </form-design-save-panel>
-    </v-dialog>
   </div>
 </template>
 
@@ -34,17 +21,15 @@ import axios from 'axios';
 import vuetify from "@/plugins/vuetify";
 import ChatModule from "@/components/ChatModule.vue";
 import FormDefinitionPanel from '@/components/designer/modeling/FormDefinitionPanel.vue';
-import FormDesignSavePanel from '@/components/designer/FormDesignSavePanel.vue';
-import DynamicForm from './DynamicForm.vue';
+import DynamicComponent from './DynamicComponent.vue';
 
 export default {
   name: 'mash-up',
 
   mixins: [ChatModule],
   components: {
-    DynamicForm,
-    FormDefinitionPanel,
-    FormDesignSavePanel
+    DynamicComponent,
+    FormDefinitionPanel
   },
   props: {
     modelValue: String,
@@ -53,6 +38,9 @@ export default {
   emits: [
     "onChangeKEditorContent",
     "onSaveFormDefinition"
+  ],
+  expose: [
+    "getKEditorContentHtml"
   ],
 
   data: () => ({
@@ -67,13 +55,14 @@ export default {
       items: "",
       label: ""
     },
-    isOpenSettingDialog: false,
-    isOpenSaveDialog: false
+    isOpenSettingDialog: false
   }),
 
   methods: {
     /**
      * KEditor에 어떠한 변화가 있을 경우, 이를 부모 컴포넌트에 전달하기 위해서
+     * [!] 적제된 컴포넌트를 화살표 버튼으로 위치를 이동시켰을 경우, 발생하는 이벤트는 KEditor에 존재하지 않음에 유의
+     *  이경우, 노출된 getKEditorContentHtml 함수를 통해서 직접 최신 HTML을 얻을 것
      */
     onchangeKEditor(evt, fnNm) {
       window.mashup.kEditorContent  = window.mashup.kEditor[0].children[0].innerHTML
@@ -128,34 +117,11 @@ export default {
 
 
     /**
-     * Save 버튼을 누를 경우, 이미 Supabase에 관련데이터가 있으면 바로 저장하고, 없을 경우, ID, Name 입력 다이얼로그를 표시시키기 위해서
+     * KEditor의 content에 대해서 저장되는 HTML 내용을 얻기 위해서
      */
-    onClickSave() {
-      if(this.storedFormDefData)
-        this.saveFormDefinition(this.storedFormDefData)
-      else
-        this.isOpenSaveDialog = true
+    getKEditorContentHtml() {
+      return window.mashup.kEditorContentToHtml(window.mashup.kEditor[0].children[0].innerHTML)
     },
-
-    /**
-     * 'Save' 버튼을 누를 경우, 최종 결과를 Supabase에 저장하기 위해서
-     */
-    saveFormDefinition({id, name}){
-      try {
-
-        window.mashup.$emit('onSaveFormDefinition', {
-          id: id,
-          name: name,
-          html: window.mashup.kEditorContentToHtml(window.mashup.kEditor[0].children[0].innerHTML)
-        })
-
-      } catch(e) {
-        console.error(e)
-      } finally {
-        window.mashup.isOpenSaveDialog = false
-      }
-    },
-
 
     /**
      * KEditor의 Content를 HTML로 변환하기 위해서
@@ -195,6 +161,7 @@ export default {
       const formContentHTML = Array.from(doc.querySelectorAll('.row')).map(row => row.outerHTML).join('').replace(/&quot;/g, `'`);
       return (isWithSection) ? `<section>${formContentHTML}</section>` : formContentHTML
     },
+
 
     /**
      * 유저가 설정창을 통해서 변경한 값을 컴포넌트에 반영시키기 위해서
@@ -251,7 +218,7 @@ export default {
       niceScrollEnabled: false,
       tabTooltipEnabled: false,
       snippetsTooltipEnabled: false,
-      containerSettingEnabled: true,
+      containerSettingEnabled: false,
       onInitSidebar: function (self) {
         const headers = {
           'Content-type': 'html; charset=UTF-8',
@@ -297,7 +264,13 @@ export default {
       onContentChanged: function (event, snippetContent, vueRenderUUID) {  
         if(vueRenderUUID && vueRenderUUID.includes("vuemount_"))
         {
-          const app = createApp(DynamicForm, {content:snippetContent, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
+          const nameSeq = Object.values(window.mashup.componentRefs).filter(componentRef => componentRef.localName).length + 1
+          const snipptDom = new DOMParser().parseFromString(snippetContent, 'text/html')
+          snipptDom.body.querySelectorAll("[name]").forEach(
+            (el) => el.setAttribute("name", el.getAttribute("name") + `-${nameSeq}`)
+          )
+          
+          const app = createApp(DynamicComponent, {content:snipptDom.body.innerHTML, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
           window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
         }
           
@@ -376,6 +349,8 @@ export default {
       },
 
       onReady: function () {
+        // 컴포넌트 설정 버튼 클릭시, 오른쪽 설정 패널이 뜨는 버그 수정
+        $("#keditor-setting-panel").remove()
       },
     });
 
@@ -387,7 +362,7 @@ export default {
 
       doc.querySelectorAll("div[id^='vuemount_']").forEach(vueRenderElement => {
         const vueRenderUUID = vueRenderElement.id
-        const app = createApp(DynamicForm, {content:vueRenderElement.innerHTML, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
+        const app = createApp(DynamicComponent, {content:vueRenderElement.innerHTML, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
         window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
       })
     }
@@ -395,6 +370,7 @@ export default {
 
   beforeUnmount() {
     window.mashup.removeStylesForKEditor();
+    window.mashup.completeClearKEditor();
   }
 }
 </script>

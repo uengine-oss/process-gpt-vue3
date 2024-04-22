@@ -12,6 +12,11 @@ const MainRoutes = {
             component: () => import('@/components/apps/todolist/TodolistCard.vue'),
         },
         {
+            name: 'WorkItem',
+            path: '/todolist/:taskId',
+            component: () => import('@/components/apps/todolist/WorkItem.vue'),
+        },
+        {
             name: 'Chats',
             path: '/chats',
             component: () => import('@/views/apps/chat/Chats.vue')

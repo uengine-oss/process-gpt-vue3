@@ -2,19 +2,18 @@
     <!-- ---------------------------------------------------- -->
     <!-- Table Basic -->
     <!-- ---------------------------------------------------- -->
-    <v-card elevation="10" class="mb-5 cursor-pointer" @dblclick="openDetail">
+    <v-card elevation="10" class="mb-5 cursor-pointer" @click="executeTask">
         <div class="d-flex align-center justify-space-between px-4 py-2 pr-3">
             <h5 class="text-subtitle-2 font-weight-semibold pr-4">
-                {{ task.activity_id }}
+                {{ formattedTitle }}
             </h5>
-            <RouterLink to="" class="px-0 ">
+            
+            <RouterLink v-if="managed" to="" class="px-0">
                 <DotsVerticalIcon size="15" />
                 <v-menu activator="parent">
                     <v-list density="compact">
-                        <v-list-item @click="deleteTask(task)">
-                            <v-list-item-title >
-                                삭제
-                            </v-list-item-title>
+                        <v-list-item @click="deleteTask">
+                            <v-list-item-title>삭제</v-list-item-title>
                         </v-list-item>
                     </v-list>
                 </v-menu>
@@ -22,7 +21,7 @@
         </div>
 
         <p class="text-subtitle-2 px-4">
-            {{ instance ? instance.proc_inst_name : task.description }}
+            {{ task.description }}
         </p>
         
         <div class="d-flex align-center justify-space-between px-4 py-3">
@@ -32,16 +31,15 @@
                     {{ formattedDate }}
                 </div>
             </div>
-            <!-- <div :class="'rounded-sm body-text-1 px-1 py-0 bg-' + task?.categorybg" size="small">
-                {{ task?.category }}
-            </div> -->
+            <div v-if="category" :class="'rounded-sm body-text-1 px-1 py-0 bg-' + category.color" size="small">
+                {{ category.name }}
+            </div>
         </div>
 
         <v-dialog v-model="dialog" max-width="500">
             <TodoDialog 
                 :type="dialogType"
                 :task="task"
-                @edit="editTask"
                 @close="closeDialog"
             />
         </v-dialog>
@@ -50,82 +48,82 @@
 
 <script>
 import { format } from 'date-fns';
-
 import TodoDialog from './TodoDialog.vue'
-
+/*
+task: {
+    "defId": "sales/testProcess.xml",
+    "endpoint": "manager",      
+    "instId": 9,                
+    "rootInstId": 9,     
+    "taskId": 10,     
+    "startDate": "2024-04-12",  
+    "dueDate": "2024-04-17", 
+    "status": "NEW",            
+    "title": "Task_b",
+    "description": "",  
+    "tool": "defaultHandler","formHandler:definitionId"  
+}
+*/
 export default {
     components: {
         TodoDialog,
     },
     props: {
-        path: String,
-        userInfo: Object,
         task: Object,
-        storage: Object,
     },
-    emits: ['onDeleteTask'],
     data: () => ({
-        instance: null,
+        managed: false,
         dialog: false,
         dialogType: '',
     }),
     computed: {
         formattedDate() {
             var dateString = "";
-            if (this.task.start_date) {
-                dateString += format(new Date(this.task.start_date), "yyyy.MM.dd HH:mm") + " ~";
+            if (this.task.startDate) {
+                dateString += format(new Date(this.task.startDate), "yyyy.MM.dd") + " ~";
             } 
-            if (this.task.end_date) {
+            if (this.task.dueDate) {
                 if (!dateString.includes("~")) dateString += "~ "
-                dateString += format(new Date(this.task.end_date), "yyyy.MM.dd HH:mm");
+                dateString += format(new Date(this.task.dueDate), "yyyy.MM.dd");
             }
             return dateString;
+        },
+        formattedTitle() {
+            if (window.$mode == 'ProcessGPT') {
+                return this.task.title;
+            } else if (window.$mode == 'uEngine') {
+                return `${this.task.title}  (TaskId: ${this.task.taskId}/InstId: ${this.task.instId})`;
+            }
+        },
+        category() {
+            if (!this.task.instId) {
+                return null
+            } else {
+                return { name: 'BPM', color: 'primary' };
+            }
         }
     },
     created() {
-        this.init();
+        if (!this.task.instId) {
+            this.managed = true;
+        } else {
+            this.managed = false;
+        }
     },
     methods: {
-        async init() {
-            if (this.task.proc_def_id) {
-                this.instance = await this.storage.getObject(`${this.task.proc_def_id}/${this.task.proc_inst_id}`, 
-                    {key: 'proc_inst_id'}
-                );
-            
-                if (this.instance) {
-                    var isUpdated = false
-                    if (!this.task.activity_id) {
-                        isUpdated = true
-                        this.task.activity_id = this.instance.current_activity_ids[0];
-                    }
-                    if (this.task.status == "IN_PROGRESS" && !this.task.start_date) {
-                        isUpdated = true
-                        this.task.start_date = this.task.end_date;
-                    }
-
-                    if (isUpdated) {
-                        await this.storage.putObject('todolist', this.task);
-                    }
-                }
-            }
-        },
-        openDetail() {
-            if (this.task.proc_inst_id) {
-                this.$router.push(`/instances/chat?id=${this.task.proc_inst_id}`);
+        executeTask() {
+            if (!this.managed) {
+                this.$emit('executeTask', this.task);
             } else {
                 this.dialogType = 'view';
                 this.dialog = true;
             }
         },
-        deleteTask(task) {
-            this.$emit('onDeleteTask', task);
-        },
-        async editTask() {
-            await this.storage.putObject('todolist', this.task);
-            this.closeDialog();
-        },
         closeDialog() {
             this.dialog = false;
+        },
+        deleteTask() {
+            this.$emit('deleteTask', this.task);
         }
     },
 }

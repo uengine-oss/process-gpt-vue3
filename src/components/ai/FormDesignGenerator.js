@@ -6,6 +6,10 @@ export default class FormDesignGenerator extends AIGenerator{
 
     constructor(client, language){
         super(client, language);
+
+
+        // 유효한 컴포넌트 이름 목록을 형성해서 향후 유효성 검증시에 시용
+        this.avaliableComponentTagNames = promptSnippetData.componentInfos.map((componentInfo) => componentInfo.tag.match(/\<\/(.*)\>/)[1].toLowerCase())
         
 
         // 컨테이너 조합, 컴포넌트 정보, 예시를 프롬프트에 적용하기 위한 문자열을 생성하기 위해서
@@ -28,7 +32,10 @@ export default class FormDesignGenerator extends AIGenerator{
           단, 너는 주어진 메뉴얼에 있는 태그만을 활용해서 폼을 만들어야 해.
 
           메뉴얼:
-          - 레이아웃 구성
+          - 처음으로 폼 생성
+          이미 만들어진 폼에 관련된 정보가 없을 경우에는 다음과 같은 지시에 따라서 반환해야 해.
+
+          * 레이아웃 구성
           맨 처음에는 각 컴포넌트를 넣기 위한 레이아웃을 만들어줘야 해.
           레이아웃의 구성 예는 다음과 같아.
           """
@@ -43,19 +50,23 @@ export default class FormDesignGenerator extends AIGenerator{
           모든 "class='col-sm-{숫자}'"의 총합은 12가 되어야 하고, 반드시 아래에 제시되는 숫자 조합 중에 하나를 사용해야 해.
           > 허용되는 숫자 조합: ${containerSpaceSetsPromptStr}
 
-          - 컴포넌트 추가
+          * 컴포넌트 추가
           레이아웃을 만들었다면, 이제 각 컴포넌트를 추가해 줘야 해.
           컴포넌트에는 다음과 같은 주의 사항이 있어.
           1. 만약에 태그의 속성이 "<>"로 감싸져 있다면, 너는 그 속성을 "<>"에 적혀있는 지시를 따라서 교체해 줘야 해.
           2. 만약에 태그의 속성이 "<>"로 감싸져 있지 않다면, 너는 그것이 상수라고 생각하고 그 속성을 그대로 적어줘야 해.
           3. "<>" 안에 값이 '|'로 나열된 경우, 너는 그 값 중 하나를 선택해서 적어줘야 해.(예 : "<값1>|<값2>|<값3>")
-          3. 모든 컴포넌트는 반드시 'col-sm-{숫자}'로 지정된 div 안에 들어가야 해.
-          4. 여기서 제시한 태그의 속성만을 적어야 하고, 반드시 전부 다 적어줘야 해.
+          4. 배열이 아닌 문자열이 태그의 속성에 들어가는 경우, 값은 한글, 숫자, 영문자, 공백, 밑줄(_), 대시(-), 점(.)만 가능해.
+          5. items과 같은 배열인 문자열이 들어가는 경우에는 각각의 키와 값이 한글, 숫자, 영문자, 공백, 밑줄(_), 대시(-), 점(.)만 가능해.
+          6. items과 같은 배열에 '...'과 같이 나열하는 문자는 쓸 수 없어. 나열해야 할 정도로 긴 경우에는 그냥 text-field 태그를 써줘.
+          7. items에 들어가는 각각의 키는 고유해야 해. 즉, 중복된 키가 존재하면 안돼.
+          8. 모든 컴포넌트는 반드시 'col-sm-{숫자}'로 지정된 div 안에 들어가야 해.
+          9. 여기서 제시한 태그의 속성만을 적어야 하고, 반드시 전부 다 적어줘야 해.
 
           사용해야 하는 컴포넌트는 다음과 같아.
           ${componentInfosPromptStr}
 
-          반환 형식은 다음과 같은 Json 형태를 따라주고, 채팅으로 응답할 때마다 맨 마지막에 결과를 적어주면 돼.
+          반환 형식은 다음과 같은 Json 형태를 따라주고, 채팅으로 응답할 때마다 맨 마지막에 반드시 결과를 적어주면 돼.
           마지막 결과는 markdown 으로, three backticks 로 감싸줘야 내가 이 결과를 사용해야 한다는 걸 알 수 있으니까 명심해.
           \`\`\`
           {
@@ -63,15 +74,48 @@ export default class FormDesignGenerator extends AIGenerator{
           }
           \`\`\`
 
-          차근차근 생각해 보자.
+          처음으로 폼을 생성하기 위해서는 다음과 같은 과정을 차근차근 생각해보면 돼.
           먼저 어떤 입력값이 들어갈지 생각하고, 그에 대한 레이아웃을 만들고, 그 안에 각 입력값에 따라서 적합한 컴포넌트들을 메뉴얼의 주의 사항들을 따르면서 추가하는 순으로 순차적으로 문제를 해결하는 거야.
           물론 뭔가 더 창의적으로 속성을 변경해야 한다고 생각할 수 있어. 하지만 메뉴얼에 위반하지 않는 선에서 그 작업을 수행해야 해.
           
+          - 기존의 폼 변경
+          이미 만들어진 폼이 있는 경우에는 변경을 하기위한 지시사항들을 생성해줘야 해.
+          변경인 경우도 변경된 최종 결과가 '처음으로 폼 생성'에서 했던 주의 사항을 지켜줘야 한다는 점을 명심해야 해.
+
+          변경에 대한 지시사항은 action, targetCSSSelector 속성을 반드시 사용해야 하고 추가 및 변경시에는 tagValue라는 속성을 반드시 사용해야 해.
+          action은 변경에 대한 종류이고, targetCSSSelector는 변경시에 사용하게 되는 CSS 선택자이고, tagValue는 변경시에 활용되는 태그 값이야. 삭제시에는 사용하지 않아도 돼.
+          targetValue에는 하나의 태그 값만 넣을 수 있어. 여러개의 태그를 활용하고 싶을 경우에는 각 태그에 대해서 지시사항을 여러개 생성해주면 돼.
+
+          변경되는 타입은 action이라는 속성으로 addAsChild, addAfter, replace, delete라는 값을 사용해서 지정할 수 있어.
+          addAsChild는 targetCSSSelector 속성에 부모 태그의 CSS 선택자를 넣어서 그 부모 태그의 자식 태그로 tagValue를 추가할 수 있어.
+          addAfter는 targetCSSSelector 속성에 추가 시킬 위치 앞의 태그의 CSS 선택자를 넣어서 선택된 태그의 뒤에 tagValue를 추가할 수 있어.
+          replace는 targetCSSSelector 속성에 변경시킬 태그의 CSS 선택자를 넣어서 그 태그를 tagValue로 교체시킬 수 있어.
+          delete는 targetCSSSelector 속성에 삭제시킬 태그의 CSS 선택자를 넣어서 그 태그를 삭제시킬 수 있어.
+
+          반환 형식은 다음과 같은 Json 형태를 따라주고, 채팅으로 응답할 때마다 맨 마지막에 반드시 결과를 적어주면 돼.
+          마지막 결과는 markdown 으로, three backticks 로 감싸줘야 내가 이 결과를 사용해야 한다는 걸 알 수 있으니까 명심해.
+          \`\`\`
+          {
+            "modifications":[
+              {
+                "action": "addAsChild" | "addAfter" | "replace" | "delete",
+                "targetCSSSelector": "CSS 선택자",
+                "tagValue": "하나의 단일 HTML 태그 값"
+              }
+            ]
+          }
+          \`\`\`
+
+          기존의 폼을 변경하기 위해서 다음과 같은 과정을 차근차근 생각해보면 돼.
+          먼저 사용자가 원하는 행위가 부모 태그에 자식 태그 추가(addAsChild), 특정 태그 뒤에 추가(addAfter), 변경(replace), 삭제(delete) 중에 무엇을 원하는지 생각해보자.
+          원하는 행위에 대해서 파악했으면 그 부분을 수정하기 위한 CSS 선택자가 무엇인지 생각하고, 어떤 단일 HTML 태그 값을 만들어야 하는지 생각해야 해.
+          최종적으로는 그러한 지시사항을 modifications 리스트 안에 담아서 반환시켜야 해.
+
           ${examplePromptStr}
 
           {{prevMessageFormat}}
 `
-          } 
+          }
     }
 
     /**

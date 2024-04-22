@@ -37,7 +37,7 @@
                 <div>Parameter Context</div>
                 <v-spacer></v-spacer>
                 <bpmn-parameter-contexts
-                    :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
+                :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
             </v-row>
         </div>
         <v-spacer></v-spacer>
@@ -63,15 +63,18 @@
             </div>
             <div>
                 <v-row  class="ma-0 pa-0">
-                    <v-btn text color="primary" class="my-3" @click="oepnFieldMapper = !oepnFieldMapper">
+                    <v-btn text color="primary" class="my-3" @click="openFieldMapper = !openFieldMapper">
                         Field Mapping
                     </v-btn>
                 </v-row>
             </div>
-            <v-dialog v-model="oepnFieldMapper"  max-width="80%" max-height="80%">
+            <v-dialog  v-model="openFieldMapper"  max-width="80%" max-height="80%" @afterLeave="$refs.formMapper && $refs.formMapper.saveFormMapperJson()">
                 <form-mapper 
+                    ref="formMapper"
                     :definition="definition" 
                     :name="name"    
+                    :formMapperJson="formMapperJson"
+                    @saveFormMapperJson="saveFormMapperJson"
                 />
             </v-dialog>
         </div>
@@ -200,9 +203,10 @@ export default {
             editParam: false,
             paramKey: "",
             paramValue: "",
-            oepnFieldMapper: false,
+            openFieldMapper: false,
             isFormActivity: false,
-            selectedForm: ""
+            selectedForm: "",
+            formMapperJson: ""
         };
     },
     async mounted() {
@@ -216,10 +220,18 @@ export default {
         if (!this.copyUengineProperties.parameters)
             this.copyUengineProperties.parameters = []
 
-        if(this.variableForHtmlFormContext){
+        if(this.copyUengineProperties.variableForHtmlFormContext){
             this.isFormActivity = true
-            this.selectedForm = `${this.variableForHtmlFormContext.name}_${this.variableForHtmlFormContext.alias}`
+            this.selectedForm = `${this.copyUengineProperties.variableForHtmlFormContext.name}_${this.copyUengineProperties.variableForHtmlFormContext.alias}`
         }
+
+        let mapperData = 
+        {}
+
+        this.copyUengineProperties.mappingContext = mapperData
+        this.$emit('update:uEngineProperties', this.copyUengineProperties)
+
+
     },
     computed: {
         inputData() {
@@ -248,7 +260,14 @@ export default {
             if(newVal){
                 const [formName, formAlias] = newVal.split('_');
                 const formItem = this.definition.processVariables.find(item => item.type === 'Form' && item.defaultValue.name === formName && item.defaultValue.alias === formAlias);
-                this.$emit('setVariableForHtmlFormContext', formItem.defaultValue)
+
+                this.copyUengineProperties.variableForHtmlFormContext = formItem.defaultValue
+                this.$emit('update:uEngineProperties', this.copyUengineProperties)
+            }
+        },
+        isFormActivity(newVal){
+            if(newVal){
+                this.copyUengineProperties._type = "org.uengine.kernel.FormActivity"
             }
         }
     },
@@ -309,7 +328,11 @@ export default {
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint })
             this.$emit('update:uEngineProperties', this.copyUengineProperties)
-        },
+        },  
+        saveFormMapperJson(jsonString) {
+            this.formMapperJson = jsonString;
+            this.openFieldMapper = false;
+        }
     }
 };
 </script>

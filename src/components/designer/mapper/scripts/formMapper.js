@@ -1,10 +1,15 @@
 
 
 export function add(a, b) {
-  return {
+  var result = {
     x: a.x + b.x,
     y: a.y + b.y,
   };
+  if (b.appendX != undefined && b.appendY != undefined) {
+    result["appendX"] = a.x + b.appendX;
+    result["appendY"] = a.y + b.appendY;
+  }
+  return result;
 }
 
 export function sub(a, b) {
@@ -27,245 +32,260 @@ export default {
     return {
       blockTemplates: {
         Abs: {
-          size: { width: 150, height: 50 },
+          size: { width: 100, height: 50 },
           ports: {
-            "in input": { x: -75, y: 0 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in input": { x: -50, y: 10 },
+            out: { x: 50, y: 10, direction: "out" },
           },
           parent: "Math",
           class: "org.uengine.processdesigner.mapper.transformers.AbsTransformer",
           isTransform: true,
+          appendable: false,
         },
         Ceil: {
-          size: { width: 150, height: 50 },
+          size: { width: 100, height: 50 },
           ports: {
-            "in input": { x: -75, y: 0 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in input": { x: -50, y: 10 },
+            out: { x: 50, y: 10, direction: "out" },
           },
           parent: "Math",
           class: "org.uengine.processdesigner.mapper.transformers.CeilTransformer",
           isTransform: true,
+          appendable: false,
         },
         Concat: {
-          size: { width: 150, height: 250 },
+          size: { width: 120, height: 120 },
           ports: {
-            "in str1": { x: -75, y: -100 },
-            "in str2": { x: -75, y: -50 },
-            "in str3": { x: -75, y: 0 },
-            "in str4": { x: -75, y: 50 },
-            "in str5": { x: -75, y: 100 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in str1": { x: -60, y: -30 },
+            "in str2": { x: -60, y: -10 },
+            "in str3": { x: -60, y: 10 },
+            "in str4": { x: -60, y: 30 },
+            "in str5": { x: -60, y: 50 },
+            out: { x: 60, y: 10, direction: "out" },
           },
           parent: "String",
           class: "org.uengine.processdesigner.mapper.transformers.ConcatTransformer",
           isTransform: true,
+          appendable: false,
         },
         Floor: {
-          size: { width: 150, height: 50 },
+          size: { width: 100, height: 50 },
           ports: {
-            "in input": { x: -75, y: 0 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in input": { x: -50, y: 10 },
+            out: { x: 50, y: 10, direction: "out" },
           },
           parent: "Math",
           class: "org.uengine.processdesigner.mapper.transformers.FloorTransformer",
           isTransform: true,
+          appendable: false,
         },
         Max: {
-          size: { width: 150, height: 100 },
+          size: { width: 100, height: 60 },
           ports: {
-            "in value1": { x: -75, y: -25 },
-            "in value2": { x: -75, y: 25 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in value1": { x: -50, y: 0 },
+            "in value2": { x: -50, y: 20 },
+            out: { x: 50, y: 10, direction: "out" },
           },
           parent: "Math",
           class: "org.uengine.processdesigner.mapper.transformers.MaxTransformer",
           isTransform: true,
+          appendable: false,
         },
         Min: {
-          size: { width: 150, height: 100 },
+          size: { width: 100, height: 60 },
           ports: {
-            "in value1": { x: -75, y: -25 },
-            "in value2": { x: -75, y: 25 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in value1": { x: -50, y: 0 },
+            "in value2": { x: -50, y: 20 },
+            out: { x: 50, y: 0, direction: "out" },
           },
           parent: "Math",
           class: "org.uengine.processdesigner.mapper.transformers.MinTransformer",
           isTransform: true,
+          appendable: false,
         },
         NumberFormat: {
-          size: { width: 150, height: 100 },
+          size: { width: 150, height: 60, appendWidth: 150, appendHeight: 150 },
           ports: {
-            "in input": { x: -75, y: -25 },
-            "in locale": { x: -75, y: 25 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in input": { x: -75, y: 0, appendX: -75, appendY: -40 },
+            "in locale": { x: -75, y: 20, appendX: -75, appendY: 60 },
+            out: { x: 75, y: 10, direction: "out", appendX: 75, appendY: 10 },
           },
           attributes: {
-            "inputType": { x: -55, y: -30, func: "NumberFormatInput", value: "" },
-            "toType": { x: -55, y: 25, func: "NumberFormatTo", value: "" },
+            "inputType": { x: -55, y: -20, width: 100, height: 50, func: "NumberFormatInput", value: "" },
+            "toType": { x: -55, y: 30, width: 100, height: 50, func: "NumberFormatTo", value: "" },
           },
           parent: "String",
           class: "org.uengine.processdesigner.mapper.transformers.NumberFormatTransformer",
           isTransform: true,
+          appendable: true,
         },
         Round: {
-          size: { width: 150, height: 50 },
+          size: { width: 100, height: 50 },
           ports: {
-            "in input": { x: -75, y: 0 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in input": { x: -50, y: 10 },
+            out: { x: 50, y: 10, direction: "out" },
           },
           parent: "Math",
           class: "org.uengine.processdesigner.mapper.transformers.RoundTransformer",
           isTransform: true,
+          appendable: false,
         },
-        Replace: {//직접 값을 입력하는듯 함
-          size: { width: 150, height: 120 },
+        Replace: {
+          size: { width: 120, height: 50, appendWidth: 150, appendHeight: 100 },
           ports: {
-            "in input": { x: -75, y: 0 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in input": { x: -60, y: 10, appendX: -75, appendY: 10 },
+            out: { x: 60, y: 10, direction: "out", appendX: 75, appendY: 10 },
           },
           attributes: {
-            "from": { x: -55, y: -30, func: "input", value: "" },
-            "to": { x: -55, y: 25, func: "input", value: "" },
+            "oldString": { x: -55, y: -15, func: "input", value: "" },
+            "newString": { x: -55, y: 30, func: "input", value: "" },
           },
           parent: "String",
           class: "org.uengine.processdesigner.mapper.transformers.ReplaceTransformer",
           isTransform: true,
+          appendable: true,
         },
         Sum: {
-          size: { width: 150, height: 250 },
+          size: { width: 100, height: 120 },
           ports: {
-            "in val1": { x: -75, y: -100 },
-            "in val2": { x: -75, y: -50 },
-            "in val3": { x: -75, y: 0 },
-            "in val4": { x: -75, y: 50 },
-            "in val5": { x: -75, y: 100 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in val1": { x: -50, y: -30 },
+            "in val2": { x: -50, y: -10 },
+            "in val3": { x: -50, y: 10 },
+            "in val4": { x: -50, y: 30 },
+            "in val5": { x: -50, y: 50 },
+            out: { x: 50, y: 10, direction: "out" },
           },
           parent: "Math",
           class: "org.uengine.processdesigner.mapper.transformers.SumTransformer",
           isTransform: true,
-        },
-        MergerValidator: {
-          size: { width: 150, height: 500 },
-          ports: {
-            "in in1": { x: -75, y: -225 },
-            "in in2": { x: -75, y: -175 },
-            "in in3": { x: -75, y: -125 },
-            "in in4": { x: -75, y: -75 },
-            "in in5": { x: -75, y: -25 },
-            "in in6": { x: -75, y: 25 },
-            "in in7": { x: -75, y: 75 },
-            "in in8": { x: -75, y: 125 },
-            "in in9": { x: -75, y: 175 },
-            "in in10": { x: -75, y: 225 },
-            out: { x: 75, y: 0, direction: "out" },
-          },
-          parent: "Validator",
-          class: "org.uengine.processdesigner.mapper.transformers.MergerValidator",
-          isTransform: true,
+          appendable: false,
         },
         NotNullValidator: {
-          size: { width: 150, height: 500 },
+          size: { width: 140, height: 220, appendWidth: 140, appendHeight: 270 },
           ports: {
-            "in in1": { x: -75, y: -225 },
-            "in in2": { x: -75, y: -175 },
-            "in in3": { x: -75, y: -125 },
-            "in in4": { x: -75, y: -75 },
-            "in in5": { x: -75, y: -25 },
-            "in in6": { x: -75, y: 25 },
-            "in in7": { x: -75, y: 75 },
-            "in in8": { x: -75, y: 125 },
-            "in in9": { x: -75, y: 175 },
-            "in in10": { x: -75, y: 225 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in in1": { x: -70, y: -80, appendX: -70, appendY: -60 },
+            "in in2": { x: -70, y: -60, appendX: -70, appendY: -40 },
+            "in in3": { x: -70, y: -40, appendX: -70, appendY: -20 },
+            "in in4": { x: -70, y: -20, appendX: -70, appendY: 0 },
+            "in in5": { x: -70, y: 0, appendX: -70, appendY: 20 },
+            "in in6": { x: -70, y: 20, appendX: -70, appendY: 40 },
+            "in in7": { x: -70, y: 40, appendX: -70, appendY: 60 },
+            "in in8": { x: -70, y: 60, appendX: -70, appendY: 80 },
+            "in in9": { x: -70, y: 80, appendX: -70, appendY: 100 },
+            "in in10": { x: -70, y: 100, appendX: -70, appendY: 120 },
+            out: { x: 70, y: 10, direction: "out" },
+          },
+          attributes: {
+            "validationMessage": { x: -55, y: -90, func: "input", value: "" },
           },
           parent: "Validator",
           class: "org.uengine.processdesigner.mapper.transformers.NotNullValidator",
           isTransform: true,
+          appendable: true,
         },
         RegularExpValidator: {
-          size: { width: 150, height: 500 },
+          size: { width: 160, height: 220, appendWidth: 160, appendHeight: 290 },
           ports: {
-            "in in1": { x: -75, y: -225 },
-            "in in2": { x: -75, y: -175 },
-            "in in3": { x: -75, y: -125 },
-            "in in4": { x: -75, y: -75 },
-            "in in5": { x: -75, y: -25 },
-            "in in6": { x: -75, y: 25 },
-            "in in7": { x: -75, y: 75 },
-            "in in8": { x: -75, y: 125 },
-            "in in9": { x: -75, y: 175 },
-            "in in10": { x: -75, y: 225 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in in1": { x: -80, y: -80, appendX: -80, appendY: -50 },
+            "in in2": { x: -80, y: -60, appendX: -80, appendY: -30 },
+            "in in3": { x: -80, y: -40, appendX: -80, appendY: -10 },
+            "in in4": { x: -80, y: -20, appendX: -80, appendY: 10 },
+            "in in5": { x: -80, y: 0, appendX: -80, appendY: 30 },
+            "in in6": { x: -80, y: 20, appendX: -80, appendY: 50 },
+            "in in7": { x: -80, y: 40, appendX: -80, appendY: 70 },
+            "in in8": { x: -80, y: 60, appendX: -80, appendY: 90 },
+            "in in9": { x: -80, y: 80, appendX: -80, appendY: 110 },
+            "in in10": { x: -80, y: 100, appendX: -80, appendY: 130 },
+            out: { x: 80, y: 10, direction: "out" },
+          },
+          attributes: {
+            "validationMessage": { x: -55, y: -110, func: "input", value: "" },
+            "regularExpression": { x: -55, y: -80, func: "input", value: "" },
           },
           parent: "Validator",
           class: "org.uengine.processdesigner.mapper.transformers.RegularExpValidator",
           isTransform: true,
+          appendable: true,
         },
         SizeValidator: {
-          size: { width: 150, height: 500 },
+          size: { width: 120, height: 220, appendWidth: 150, appendHeight: 290 },
           ports: {
-            "in in1": { x: -75, y: -225 },
-            "in in2": { x: -75, y: -175 },
-            "in in3": { x: -75, y: -125 },
-            "in in4": { x: -75, y: -75 },
-            "in in5": { x: -75, y: -25 },
-            "in in6": { x: -75, y: 25 },
-            "in in7": { x: -75, y: 75 },
-            "in in8": { x: -75, y: 125 },
-            "in in9": { x: -75, y: 175 },
-            "in in10": { x: -75, y: 225 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in in1": { x: -60, y: -80, appendX: -75, appendY: -50 },
+            "in in2": { x: -60, y: -60, appendX: -75, appendY: -30 },
+            "in in3": { x: -60, y: -40, appendX: -75, appendY: -10 },
+            "in in4": { x: -60, y: -20, appendX: -75, appendY: 10 },
+            "in in5": { x: -60, y: 0, appendX: -75, appendY: 30 },
+            "in in6": { x: -60, y: 20, appendX: -75, appendY: 50 },
+            "in in7": { x: -60, y: 40, appendX: -75, appendY: 70 },
+            "in in8": { x: -60, y: 60, appendX: -75, appendY: 90 },
+            "in in9": { x: -60, y: 80, appendX: -75, appendY: 110 },
+            "in in10": { x: -60, y: 100, appendX: -75, appendY: 130 },
+            out: { x: 60, y: 10, direction: "out" },
+          },
+          attributes: {
+            "validationMessage": { x: -55, y: -110, func: "input", value: "" },
+            "size": { x: -55, y: -80, func: "input", value: "" },
           },
           parent: "Validator",
           class: "org.uengine.processdesigner.mapper.transformers.SizeValidator",
           isTransform: true,
+          appendable: true,
         },
-        DirectSql: {//직접 값을 입력하는듯 함
-          size: { width: 150, height: 100 },
+        BeanValue: {
+          size: { width: 120, height: 50, appendWidth: 150, appendHeight: 80 },
+          ports: {
+            "in in": { x: -60, y: 10, appendX: -75, appendY: -10 },
+            out: { x: 60, y: 10, direction: "out", appendX: 75, appendY: -10 },
+          },
+          attributes: {
+            "className": { x: -55, y: 15, func: "input", value: "" },
+          },
+          parent: "Resolver",
+          class: "org.uengine.processdesigner.mapper.transformers.BeanValueTransformer",
+          isTransform: true,
+          appendable: true,
+        },
+        DirectSql: {
+          size: { width: 150, height: 80 },
           ports: {
             out: { x: 75, y: 0, direction: "out" },
           },
           attributes: {
-            "input": { x: -55, y: 25, func: "input", value: "" },
+            "input": { x: -55, y: 15, func: "input", value: "" },
           },
           parent: "ETC",
           class: "org.uengine.processdesigner.mapper.transformers.DirectSqlTransformer",
           isTransform: true,
+          appendable: false,
         },
-        BeanValue: {
-          size: { width: 150, height: 50 },
+        DirectValue: {
+          size: { width: 120, height: 50, appendWidth: 150, appendHeight: 80 },
           ports: {
-            "in in": { x: -75, y: 0 },
-            out: { x: 75, y: 0, direction: "out" },
-          },
-          parent: "ETC",
-          class: "org.uengine.processdesigner.mapper.transformers.BeanValueTransformer",
-          isTransform: true,
-        },
-        DirectValue: {//직접 값을 입력하는듯 함
-          size: { width: 150, height: 100 },
-          ports: {
-            out: { x: 75, y: 0, direction: "out" },
+            out: { x: 60, y: 10, direction: "out", appendX: 75, appendY: -10 },
           },
           attributes: {
-            "input": { x: -55, y: 25, func: "input", value: "" },
+            "value": { x: -55, y: 15, func: "input", value: "" },
           },
           parent: "ETC",
           class: "org.uengine.processdesigner.mapper.transformers.DirectValueTransformer",
           isTransform: true,
+          appendable: true,
         },
-        Number: {
-          size: { width: 150, height: 50 },
+        ToNumber: {
+          size: { width: 120, height: 50, appendWidth: 150, appendHeight: 80 },
           ports: {
-            "in input": { x: -75, y: 0 },
-            out: { x: 75, y: 0, direction: "out" },
+            "in input": { x: -60, y: 10, appendX: -75, appendY: -10 },
+            out: { x: 60, y: 10, direction: "out", appendX: 75, appendY: -10 },
           },
-          parent: "ETC",
+          attributes: {
+            "toType": { x: -55, y: 15, func: "NumberFormatInput", value: "" },
+          },
+          parent: "Math",
           class: "org.uengine.processdesigner.mapper.transformers.NumberTransformer",
           isTransform: true,
+          appendable: true,
         },
-        SequenceGenerator: {//직접 값을 입력하는듯 함
+        SequenceGenerator: {
           size: { width: 150, height: 50 },
           ports: {
             out: { x: 75, y: 0, direction: "out" },
@@ -273,6 +293,7 @@ export default {
           parent: "ETC",
           class: "org.uengine.processdesigner.mapper.transformers.SequenceGeneratorTransformer",
           isTransform: true,
+          appendable: false,
         },
         XMLParsing: {//직접 값을 입력하는듯 함
           size: { width: 150, height: 100 },
@@ -285,6 +306,7 @@ export default {
           parent: "ETC",
           class: "org.uengine.processdesigner.mapper.transformers.XMLParsingTransformer",
           isTransform: true,
+          appendable: false,
         },
         Source: {//소스
           size: { width: 0, height: 0 },
@@ -310,8 +332,8 @@ export default {
       tempConnections: [
       ],
       attributes: {
-
       },
+      appendComponent: {},
       pendingConnection: null,
       pendingConnectionEnd: null,
       draggedBlockPos: null,
@@ -321,7 +343,7 @@ export default {
   methods: {
     getBlock(name) {
       const block = this.blocks[name];
-      if(block) {
+      if (block) {
         return {
           ...this.blockTemplates[block.type],
           ...block,
@@ -335,12 +357,14 @@ export default {
         return spec;
       }
       const block = this.getBlock(spec[0]);
-      if(block != null) {
-        var pos = add(block.pos, block.ports[spec[1]] || { x: 0, y: 0 });
-        if(block.ports[spec[1]].parentNode) {
-          var parentOffset = block.ports[spec[1]].parentNode.offset;
-          pos = add(pos, parentOffset);
+      if (block != null) {
+        var ports = block.ports[spec[1]];
+        if (block.appendable == true) {
+          if (this.appendComponent != undefined && this.appendComponent[spec[0]] == true) {
+            ports = { x: block.ports[spec[1]].appendX, y: block.ports[spec[1]].appendY };
+          }
         }
+        var pos = add(block.pos, ports || { x: 0, y: 0 });
         return pos;
       }
       return { x: 0, y: 0 };
@@ -404,8 +428,6 @@ export default {
         }
       }
       this.blocks[nextBlockName] = newBlock;
-      console.log(this.blocks);
-      console.log(this.attributes);
     },
     deleteBlock(name) {
       if (this.blocks[name]) {
@@ -512,6 +534,7 @@ export default {
         var argumentSourceMap = this.createArgumentSourceMap(connections);
         if (mappingElement.transformerMapping) {
           mappingElement.transformerMapping.transformer.argumentSourceMap = argumentSourceMap;
+          this.updateMappingElementVariables(block, mappingElement.transformerMapping);
         }
         computedTransformers.mappingElements.push(mappingElement);
       });
@@ -519,10 +542,11 @@ export default {
     },
     createArgumentSourceMap(connections) {
       var argumentSourceMap = {};
+      const rootNodeName = Object.keys(this.nodes)[0];
       connections.forEach(conn => {
         var argument = conn.to[1].replace("in ", "");
         if (this.checkGlobalType(conn.from[0])) {
-          argumentSourceMap[argument] = "" + conn.from[1];
+          argumentSourceMap[argument] = "" + conn.from[1].replace(rootNodeName + ".", "");
         } else {
           argumentSourceMap[argument] = this.createFormMappingData(conn);
         }
@@ -533,7 +557,7 @@ export default {
       var block = this.blocks[conn.from[0]];
       var blockData = this.blockTemplates[block.type];
       var transformerMapping = {
-        "_type": "java.lang.Object",
+        "_type": "org.uengine.processdesigner.mapper.TransformerMapping",
         "transformer": {
           "_type": blockData.class,
           "name": block.type,
@@ -545,22 +569,24 @@ export default {
       var connections = this.connections.filter(childConn => childConn.to[0] === conn.from[0]);
       var argumentSourceMap = this.createArgumentSourceMap(connections);
       transformerMapping.transformer.argumentSourceMap = argumentSourceMap;
+      this.updateMappingElementVariables(block, transformerMapping);
       return transformerMapping;
     },
     checkGlobalType(type) {
       return type == "Source" || type == "Target" || type == "Direct";
     },
-    createMappingElement(conn, block, blockData, argument) {
+    createMappingElement(conn, block, blockData, arg) {
       var mappingElement = {};
-      var blockName = conn.from[0];
+      const blockName = conn.from[0];
+      const rootNodeName = Object.keys(this.nodes)[0];
+      var argument = arg.replace(rootNodeName + ".", "");
       if (blockName == "Source") {
         mappingElement = {
-          "_type": "org.uengine.kernel.MappingElement",
           "argument": {
             "text": argument
           },
           "variable": {
-            "name": conn.from[1],
+            "name": conn.from[1].replace(rootNodeName + ".", ""),
             "askWhenInit": false,
             "isVolatile": false
           },
@@ -568,7 +594,6 @@ export default {
         }
       } else {
         mappingElement = {
-          "_type": "org.uengine.kernel.MappingElement",
           "argument": {
             "text": argument
           },
@@ -587,156 +612,17 @@ export default {
       }
       return mappingElement;
     },
-    updateMappingElementForReplaceType(block, mappingElement) {
-      if (block.type == "Replace") {
-        mappingElement.transformerMapping.transformer["oldString"] = block.attributes["from"];
-        mappingElement.transformerMapping.transformer["newString"] = block.attributes["to"];
-        mappingElement.transformerMapping.transformer["isRegularExp"] = false;
-      }
+    updateMappingElementVariables(block, transformerMapping) {
+      Object.keys(block.attributes).forEach(key => {
+        transformerMapping.transformer[key] = block.attributes[key];
+      });
     },
     renderFormMapperFromMappingElementJson(json) {
-      // if (!json) {
-      //   console.error("JSON 데이터가 제공되지 않았습니다.");
-      //   return;
-      // }
+      if (!json) {
+        return;
+      }
       try {
-        // const mappingContent = JSON.parse(json);
-
-
-        const mappingContent = {
-          "mappingElements": [
-            {
-              "_type": "org.uengine.kernel.MappingElement",
-              "argument": {
-                "text": "Variables"
-              },
-              "transformerMapping": {
-                "transformer": {
-                  "_type": "org.uengine.processdesigner.mapper.transformers.MinTransformer",
-                  "name": "Min 2",
-                  "location": {
-                    "x": 803.5,
-                    "y": 276.09375
-                  },
-                  "argumentSourceMap": {
-                    "value1": {
-                      "_type": "java.lang.Object",
-                      "transformer": {
-                        "_type": "org.uengine.processdesigner.mapper.transformers.MaxTransformer",
-                        "name": "Max",
-                        "location": {
-                          "x": 400.5,
-                          "y": 189.09375
-                        },
-                        "argumentSourceMap": {
-                          "value1": "Variables",
-                          "value2": "Variables.test1"
-                        }
-                      },
-                      "linkedArgumentName": "out"
-                    },
-                    "value2": {
-                      "_type": "java.lang.Object",
-                      "transformer": {
-                        "_type": "org.uengine.processdesigner.mapper.transformers.MinTransformer",
-                        "name": "Min",
-                        "location": {
-                          "x": 395.5,
-                          "y": 318.09375
-                        },
-                        "argumentSourceMap": {
-                          "value1": "Variables.test2",
-                          "value2": "Variables.test3"
-                        }
-                      },
-                      "linkedArgumentName": "out"
-                    }
-                  }
-                },
-                "linkedArgumentName": "Variables"
-              },
-              "isKey": false
-            },
-            {
-              "_type": "org.uengine.kernel.MappingElement",
-              "argument": {
-                "text": "Variables.test3"
-              },
-              "transformerMapping": {
-                "transformer": {
-                  "_type": "org.uengine.processdesigner.mapper.transformers.MinTransformer",
-                  "name": "Min 2",
-                  "location": {
-                    "x": 803.5,
-                    "y": 276.09375
-                  },
-                  "argumentSourceMap": {
-                    "value1": {
-                      "_type": "java.lang.Object",
-                      "transformer": {
-                        "_type": "org.uengine.processdesigner.mapper.transformers.MaxTransformer",
-                        "name": "Max",
-                        "location": {
-                          "x": 400.5,
-                          "y": 189.09375
-                        },
-                        "argumentSourceMap": {
-                          "value1": "Variables",
-                          "value2": "Variables.test1"
-                        }
-                      },
-                      "linkedArgumentName": "out"
-                    },
-                    "value2": {
-                      "_type": "java.lang.Object",
-                      "transformer": {
-                        "_type": "org.uengine.processdesigner.mapper.transformers.MinTransformer",
-                        "name": "Min",
-                        "location": {
-                          "x": 395.5,
-                          "y": 318.09375
-                        },
-                        "argumentSourceMap": {
-                          "value1": "Variables.test2",
-                          "value2": "Variables.test3"
-                        }
-                      },
-                      "linkedArgumentName": "out"
-                    }
-                  }
-                },
-                "linkedArgumentName": "Variables.test3"
-              },
-              "isKey": false
-            },
-            {
-              "_type": "org.uengine.kernel.MappingElement",
-              "argument": {
-                "text": "Variables.test1"
-              },
-              "variable": {
-                "name": "Variables.test1",
-                "askWhenInit": false,
-                "isVolatile": false
-              },
-              "isKey": false
-            },
-            {
-              "_type": "org.uengine.kernel.MappingElement",
-              "argument": {
-                "text": "Variables.test2"
-              },
-              "variable": {
-                "name": "Variables.test3",
-                "askWhenInit": false,
-                "isVolatile": false
-              },
-              "isKey": false
-            }
-          ]
-        };
-
-        // mappingContent = {};
+        const mappingContent = JSON.parse(json);
 
         mappingContent.mappingElements.forEach(element => {
           this.createMappingElementFromJson(element);
@@ -775,6 +661,8 @@ export default {
         }
       });
 
+      this.addAttributeFromJson(newBlock, transformerMapping);
+
 
       if (transformerMapping.transformer.argumentSourceMap) {
         this.addConnectionJson(blockName, "Target", transformerMapping.transformer.argumentSourceMap, targetArgument);
@@ -782,7 +670,16 @@ export default {
 
       this.blocks[blockName] = newBlock;
     },
+    addAttributeFromJson(block, transformerMapping) {
+      var attributeTemplate = this.blockTemplates[block.type].attributes;
+      if(attributeTemplate != undefined) {
+        Object.keys(attributeTemplate).forEach(key => {
+          block.attributes[key] = transformerMapping.transformer[key];
+        });
+      }
+    },
     addConnectionJson(fromBlockName, toBlockName, argumentSourceMap, targetArgument = null) {
+      const rootNodeName = "Variables";
       Object.entries(argumentSourceMap).forEach(([argument, source]) => {
         let connection;
         if (typeof source === 'object' && source.transformer) {
@@ -794,7 +691,7 @@ export default {
           };
         } else {
           connection = {
-            from: ["Source", source],
+            from: ["Source", rootNodeName + "." + source],
             to: [fromBlockName, "in " + argument],
           };
         }
@@ -806,7 +703,7 @@ export default {
       if (toBlockName === "Target" && targetArgument) {
         const connection = {
           from: [fromBlockName, "out"],
-          to: ["Target", targetArgument],
+          to: ["Target", rootNodeName + "." + targetArgument],
         };
         if (!this.isConnectionDuplicate(connection)) {
           this.tempConnections.push(connection);
@@ -814,9 +711,10 @@ export default {
       }
     },
     addConnectionDirect(variable, targetArgument) {
+      const rootNodeName = "Variables";
       const connection = {
-        from: ["Source", variable],
-        to: ["Target", targetArgument],
+        from: ["Source", rootNodeName + "." + variable],
+        to: ["Target", rootNodeName + "." + targetArgument],
       };
       if (!this.isConnectionDuplicate(connection)) {
         this.tempConnections.push(connection);
@@ -866,7 +764,7 @@ export default {
     attributes_() {
       return _.flatMap(this.blocks, ({ type, pos }, blockName) => {
         const template = this.blockTemplates[type];
-        return _.map(template.attributes, (attribute, name) => ({
+        var result = _.map(template.attributes, (attribute, name) => ({
           ...attribute,
           func: attribute.func,
           name,
@@ -874,6 +772,12 @@ export default {
           blockName,
           pos: add(pos, attribute),
         }));
+        if(result.length > 0 && this.blocks) {
+          if(this.blocks[blockName].attributes) {
+            result[0].value = this.blocks[blockName].attributes[result[0].name];
+          }
+        }
+        return result;
       });
     },
   },

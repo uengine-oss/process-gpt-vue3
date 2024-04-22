@@ -12,8 +12,8 @@ const customizer = useCustomizerStore();
 
 <template>
     <v-navigation-drawer left v-model="customizer.Sidebar_drawer" rail-width="70" :mobile-breakpoint="960" app
-        class="leftSidebar ml-sm-5 mt-sm-5 bg-containerBg" elevation="10" :rail="customizer.mini_sidebar" expand-on-hover
-        width="270">
+        class="leftSidebar ml-sm-5 mt-sm-5 bg-containerBg" elevation="10" :rail="customizer.mini_sidebar"
+        expand-on-hover width="270">
         <div class="pa-5 pl-4 ">
             <Logo />
         </div>
@@ -39,10 +39,14 @@ const customizer = useCustomizerStore();
                 </template>
                 <!-- Process Definition List -->
                 <template v-if="definitionList">
-                    <NavCollapse class="leftPadding" :item="definitionList" :level="0" />
+                    
+                    <NavCollapse class="leftPadding" :item="definitionList"  @update:item="def => definitionList = def" :level="0" />
                 </template>
                 <!-- <Moreoption/> -->
             </v-list>
+
+            <ProcessInstanceList />
+
             <div class="pa-6 px-4 userbottom bg-containerBg mt-10">
                 <ExtraBox />
             </div>
@@ -51,13 +55,15 @@ const customizer = useCustomizerStore();
 </template>
 
 <script>
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import BackendFactory from '@/components/api/BackendFactory';
 
-const storageKey = 'proc_def'
+import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 
 export default {
+    components: {
+        ProcessInstanceList
+    },
     data: () => ({
-        storage: null,
         sidebarItem: [
             {
                 title: "dashboard.title",
@@ -88,15 +94,11 @@ export default {
                 disable: true,
             },
             {
-                header: 'instance.title',
-                disable: true,
-            },
-            {
-                title: "processExecution.title",
-                icon: 'solar:chat-dots-linear',
+                title: "processDefinitionMap.title",
+                icon: 'carbon:flow-connection',
                 BgColor: 'primary',
-                to: '/instances/chat',
-                disable: true,
+                to: "/definition-map",
+                disable: false,
             },
             {
                 header: 'definitionManagement.title',
@@ -110,13 +112,6 @@ export default {
                 disable: true,
             },
             {
-                title: "processDefinitionMap.title",
-                icon: 'carbon:flow-connection',
-                BgColor: 'primary',
-                to: "/definition-map",
-                disable: false,
-            },
-            {
                 title: "uiDefinition.title",
                 icon: 'icon-park-outline:layout-five',
                 BgColor: 'primary',
@@ -127,8 +122,6 @@ export default {
         definitionList: null,
     }),
     async created() {
-        this.storage = await StorageBaseFactory.getStorage();
-
         const isAdmin = localStorage.getItem("isAdmin");
         if (isAdmin == 'true') {
             this.definition = {
@@ -151,8 +144,9 @@ export default {
     },
     methods: {
         async getDefinitionList() {
-            let def = await this.storage.list(storageKey);
-            if (def) {
+            const backend = BackendFactory.createBackend();
+            const list = await backend.listDefinition();
+            if (list && list.length > 0) {
                 var menu = {
                     title: 'processList.title',
                     icon: 'solar:list-bold',
@@ -160,18 +154,24 @@ export default {
                     to: `/`,
                     children: []
                 };
-                var list = Object.values(def);
-                if (list.length > 0) {
-                    list.forEach(item => {
-                        if (item && item.definition) {
-                            var obj = {
-                                title: item.definition.processDefinitionName,
-                                to: `/definitions/${item.definition.processDefinitionId}`
-                            }
-                            menu.children.push(obj);
+                list.forEach(item => {
+                    console.log(item)
+                    if (item.directory) {
+                        var obj = {
+                            title: item.name,
+                            // to: `/definitions/${item.definition.processDefinitionId}`,
+                            directory: true
                         }
-                    });
-                }
+                        menu.children.push(obj);
+                    }
+                    if (item && item.definition) {
+                        var obj = {
+                            title: item.definition.processDefinitionName,
+                            to: `/definitions/${item.definition.processDefinitionId}`
+                        }
+                        menu.children.push(obj);
+                    }
+                });
                 this.definitionList = menu;
             }
         }

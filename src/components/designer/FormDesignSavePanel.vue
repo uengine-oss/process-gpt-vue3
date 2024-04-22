@@ -4,21 +4,20 @@
     elevation="16"
     max-width="400"
     >
-        <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{ "NewForm" }}</v-card-title>
+        <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{ ((savedId) ? "UpdateForm" : "NewForm") }}</v-card-title>
         <v-btn icon style="position:absolute; right:5px; top:5px;" @click="$emit('onClose')">
             <v-icon>mdi-close</v-icon>
         </v-btn>
 
         <v-card-text>
             <v-col>
-                <v-text-field ref="inputId" v-model.trim="infoToSave.id" label="ID"
-                    :rules="[v => !!v || 'ID is required']" required @keyup.enter="save"></v-text-field>
-                <v-text-field v-model.trim="infoToSave.name" label="Name" @keyup.enter="save"></v-text-field>
+                <v-text-field ref="inputId" v-model.trim="infoToSave.id" label="ID" @keyup.enter="save" 
+                              :placeholder="placeholder.id" persistent-placeholder :disabled="!!savedId"></v-text-field>
             </v-col>
         </v-card-text>
 
         <v-card-actions style="justify-content: right;">
-            <v-btn @click="save"> SAVE </v-btn>
+            <v-btn ref="saveButton" @click="save" @keyup.enter="save" > SAVE </v-btn>
         </v-card-actions>
     </v-card>
 </template>
@@ -30,46 +29,61 @@ export default {
         "onClose",
         "onSave"
     ],
+    props: {
+        savedId: String
+    },
     data: () => ({
         infoToSave: {
-            id: "",
-            name: ""
+            id: ""
         },
 
-        regexStr: /^[가-힣a-zA-Z0-9_\-.]+$/,
-        regexErrorMsg: "'{{propName}}'은 한글, 영문, 숫자, 밑줄(_), 대시(-), 점(.) 만 입력 가능합니다!"
+        placeholder: {
+            id: ""
+        },
+
+        default: {
+            id: `untitled-${Date.now()}`
+        },
+
+        regexStr: /^[가-힣a-zA-Z0-9_\-. ]+$/,
+        regexErrorMsg: "'{{propName}}'은 한글, 영문, 숫자, 공백, 밑줄(_), 대시(-), 점(.) 만 입력 가능합니다!"
     }),
     methods: {
         save() {
-            //#region 유효성 검사
+            //#region 입력값 처리
             if(!(this.infoToSave.id) || this.infoToSave.id.length <= 0) {
-                alert("ID is required")
-                return
-            }
-            if(!this.regexStr.test(this.infoToSave.id)) {
-                alert(this.regexErrorMsg.replace("{{propName}}", "ID"))
-                return
-            }
-            if(this.infoToSave.name && this.infoToSave.name.length > 0) {
-                if(!this.regexStr.test(this.infoToSave.name)) {
-                    alert(this.regexErrorMsg.replace("{{propName}}", "Name"))
-                    return
-                }
+                this.infoToSave.id = this.default.id
             }
             //#endregion
-            //#region 입력값 처리
-            if(!(this.infoToSave.name) || this.infoToSave.name.length <= 0) {
-                this.infoToSave.name = this.infoToSave.id
+            //#region 유효성 검사
+            if(!this.regexStr.test(this.infoToSave.id)) {
+                alert(this.regexErrorMsg.replace("{{propName}}", "ID"))
+                this.$refs.inputId.focus();
+                return
             }
             //#endregion
 
             this.$emit('onSave', this.infoToSave)
+        },
+    },
+    
+    created() {
+        this.placeholder.id = this.default.id
+
+        if(this.savedId) {
+            this.infoToSave.id = this.savedId
         }
     },
     mounted() {
-        this.$nextTick(() => {
-            this.$refs.inputId.focus();
-        });
+        if(this.savedId) {
+            this.$nextTick(() => {
+                this.$refs.saveButton.$el.focus();
+            });
+        } else {
+            this.$nextTick(() => {
+                this.$refs.inputId.focus();
+            });
+        }
     },
 };
 </script>

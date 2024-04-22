@@ -71,8 +71,29 @@ export default class StorageBaseSupabase {
         return await window.$supabase.auth.signOut();
     }
 
+    async createUser(userInfo) {
+        const result = await window.$supabase.auth.admin.createUser({
+            email: userInfo.email, 
+            password: userInfo.password,
+            options: {
+                data: {
+                    name: userInfo.username,
+                }
+            }
+        });
+
+        if (!result.error) {
+            return result.data;
+        } else {
+            result.errorMsg = result.error.message;
+            return result;
+        }
+    }
+
     async getUserInfo() {
-        var { data, error } = await window.$supabase.auth.getUser();
+        // var { data, error } = await window.$supabase.auth.getUser();
+        const uid = window.localStorage.getItem("uid");
+        var { data, error } = await window.$supabase.auth.admin.getUserById(uid);
         const user = data.user;
 
         if (!error && user) {
@@ -101,40 +122,53 @@ export default class StorageBaseSupabase {
     async getString(path, options) {
         try {
             let obj = this.formatDataPath(path, options);
+            const column = options.column ? options.column : "*";
             if (options && options.match) {
                 const { data, error } = await window.$supabase
                     .from(obj.table)
-                    .select()
+                    .select(column)
                     .match(options.match)
                     .maybeSingle()
 
                 if (error) {
                     throw error;
                 } else {
-                    return data;
+                    if (column != "*") {
+                        return data[column];
+                    } else {
+                        return data;
+                    }
                 }
             } else if (obj.searchVal) {
                 const { data, error } = await window.$supabase
                     .from(obj.table)
-                    .select()
+                    .select(column)
                     .eq(obj.searchKey, obj.searchVal)
                     .maybeSingle()
 
                 if (error) {
                     throw error;
                 } else {
-                    return data;
+                    if (column != "*") {
+                        return data[column];
+                    } else {
+                        return data;
+                    }
                 }
             } else {
                 const { data, error } = await window.$supabase
                     .from(obj.table)
-                    .select()
+                    .select(column)
                     .maybeSingle()
 
                 if (error) {
                     throw error;
                 } else {
-                    return data;
+                    if (column != "*") {
+                        return data[column];
+                    } else {
+                        return data;
+                    }
                 }
             }
         } catch(error) {
@@ -454,7 +488,7 @@ export default class StorageBaseSupabase {
 
             const { data, error } = await query;
             if (error) {
-                throw error;
+                return error;
             } else {
                 return data;
             }
@@ -554,6 +588,22 @@ export default class StorageBaseSupabase {
             }
         } catch (error) {
             throw new StorageBaseError('error in getCount', error, arguments);
+        }
+    }
+
+    async callProcedure(procedure, params) {
+        try {
+            const { data, error } = await window.$supabase.rpc(procedure, params);
+    
+            if (error) {
+                console.error('Error calling function:', error);
+                return null;
+            }
+    
+            return data;
+        } catch (error) {
+            console.error('Error in callProcedure:', error);
+            throw error;
         }
     }
 }

@@ -14,8 +14,8 @@
 
         <template v-slot:rightpart>
             <OrganizationChart
-                    :nodes="organizationChart"
-                    :key="organizationChart.length"
+                    :node="organizationChart"
+                    :key="organizationChart.id"
             ></OrganizationChart>
         </template>
 
@@ -67,7 +67,6 @@ export default {
             isStream: true,
             preferredLanguage: "Korean"
         });
-
     },
     methods: {
         async loadData(path) {
@@ -76,13 +75,14 @@ export default {
             if (data && data.value) {
                 if (data.value.chart) {
                     this.organizationChart = data.value.chart;
+                    console.log(data.value.chart)
                     if (!this.organizationChart) {
                         this.organizationChart = [];
                     }
                 }
             }
 
-            const message = await this.getData(`${storageKey}/organization_message`, {key: 'key'});
+            const message = await this.getData(`${storageKey}/organization_chat`, {key: 'key'});
             if (message && message.value) {
                 if (message.value.message) {
                     this.messages = message.value.message
@@ -152,19 +152,19 @@ export default {
                 if (unknown && unknown.deleteUsers) {
                     this.deleteUser(unknown.deleteUsers);
                 }
+
+                const putObj =  {
+                    key: 'organization',
+                    value: {
+                        chart: this.organizationChart,
+                    }
+                };
+                this.drawChart(this.organizationChart);
+                this.putObject(storageKey, putObj);
             }
 
-            const putObj =  {
-                key: 'organization',
-                value: {
-                    chart: this.organizationChart,
-                }
-            };
-            this.drawChart(this.organizationChart);
-            this.putObject(storageKey, putObj);
-
             const msgObj =  {
-                key: 'organization_message',
+                key: 'organization_chat',
                 value: {
                     message: this.messages,
                 }
@@ -174,7 +174,7 @@ export default {
 
         afterModelStopped(response) {
             const putObj =  {
-                key: 'organization_message',
+                key: 'organization_chat',
                 value: {
                     message: this.messages,
                 }
@@ -190,7 +190,7 @@ export default {
                         email: user.email,
                         password: '000000',
                     }
-                    const result = await this.storage.signUp(userInfo);
+                    const result = await this.storage.createUser(userInfo);
                     if (result.user) {
                         userInfo = {
                             id: result.user.id,

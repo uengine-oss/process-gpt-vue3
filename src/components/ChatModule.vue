@@ -5,7 +5,7 @@ import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { encodingForModel } from "js-tiktoken";
 import GeneratorAgent from "./GeneratorAgent.vue"
 import _ from 'lodash';
-
+import BackendFactory from '@/components/api/BackendFactory';
 export default {
     mixins: [GeneratorAgent],
     data: () => ({
@@ -22,7 +22,8 @@ export default {
             draftPrompt: '',
             isRunning: false,
             isConnection: false,
-        }
+        },
+        backend: null
     }),
     mounted() {
         var me = this
@@ -87,6 +88,7 @@ export default {
         async init() {
             this.disableChat = false;
             this.userInfo = await this.storage.getUserInfo();
+            this.backend = BackendFactory.createBackend();
 
             await this.loadData(this.getDataPath());
             // await this.loadMessages(this.getDataPath());

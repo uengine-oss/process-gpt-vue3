@@ -6,10 +6,29 @@ hr {
     opacity: 1 !important;
 }
 
+.proc-menu-btn-box button {
+    margin-right:3px;
+    cursor: pointer;
+    background: none;
+    width:20px !important;
+    height:20px !important;
+}
+
+.definitionMap-add-card { 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #5EB2E8;
+    font-weight: 700;
+}
 
 .vue-bpmn-diagram-container {
     height: 100%;
     width: 100%;
+}
+
+.edit-process-text-field .v-input__details{
+    display: none;
 }
 
 .highlight:not(.djs-connection) .djs-visual> :nth-child(1) {
@@ -96,9 +115,18 @@ hr {
     height: calc(100vh - 155px);
 }
 
+.task-btn{
+    position: absolute;
+    top: 10px;
+    right: 5px
+}
+
 @media only screen and (max-width:800px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 325px !important;
         height: 94px !important;
     }
 }
+
+
+

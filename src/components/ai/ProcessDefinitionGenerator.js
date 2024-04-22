@@ -50,14 +50,14 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   "description": "description of activity",
                   "instruction": "instruction to user",
                   "role": "role name",
-                  "inputData": [
-                {"name": "name of data for input"}
-                   ],
+                  "inputData": [{"name": "name of data for input"}],
                    "outputData": [
                      {"name": "name of data for output"}
                    ],
                    "checkpoints":["checkpoint 1", "checkpoint 2"]
               }],
+              "gateways":[],
+              "events":[],
               "sequences": [
                 {
                     "source": "activity id of source activity",

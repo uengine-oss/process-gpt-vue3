@@ -2,37 +2,30 @@
     <v-card elevation="10" style="background-color: rgba(255, 255, 255, 0)">
         <AppBaseCard>
             <template v-slot:leftpart>
-                <process-definition class="process-definition-resize"
-                    :bpmn="bpmn" :processDefinition="processDefinition" :key="definitionChangeCount"
-                    :isViewMode="isViewMode"
-                    :definitionChat="this"
-                    @update="updateDefinition"
-                ></process-definition>
-                <process-definition-version-dialog :process="processDefinition" :loading="loading" :open="versionDialog" @close="toggleVersionDialog" @save="saveDefinition"></process-definition-version-dialog>
-                <ProcessDefinitionVersionManager   :process="processDefinition" :open="verMangerDialog"  @close="toggleVerMangerDialog" @changeXML="changeXML"></ProcessDefinitionVersionManager>
+                <process-definition class="process-definition-resize" :bpmn="bpmn"
+                    :processDefinition="processDefinition" :key="definitionChangeCount" :isViewMode="isViewMode"
+                    :definitionChat="this" @update="updateDefinition"></process-definition>
+                <process-definition-version-dialog :process="processDefinition" :loading="loading" :open="versionDialog"
+                    @close="toggleVersionDialog" @save="saveDefinition"></process-definition-version-dialog>
+                <ProcessDefinitionVersionManager :process="processDefinition" :open="verMangerDialog"
+                    @close="toggleVerMangerDialog" @changeXML="changeXML"></ProcessDefinitionVersionManager>
             </template>
             <template v-slot:rightpart>
                 <div class="no-scrollbar">
                     <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :isChanged="true"
                         :userInfo="userInfo" :type="'definitions'" :lock="lock" :disableChat="disableChat"
-                        @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" 
-                        @stopMessage="stopMessage" @getMoreChat="getMoreChat"
-                        @loadBPMN="bpmn => loadBPMN(bpmn)"
-                        @openVerMangerDialog="toggleVerMangerDialog"
-                        @toggleLock="toggleLock"
-                    ></Chat>
+                        @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage"
+                        @stopMessage="stopMessage" @getMoreChat="getMoreChat" @loadBPMN="bpmn => loadBPMN(bpmn)"
+                        @openVerMangerDialog="toggleVerMangerDialog" @toggleLock="toggleLock"></Chat>
                 </div>
             </template>
 
             <template v-slot:mobileLeftContent>
                 <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :isChanged="isChanged"
                     :userInfo="userInfo" :type="'definitions'" :lock="lock" :disableChat="disableChat"
-                    @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage"
-                    @stopMessage="stopMessage" @getMoreChat="getMoreChat"
-                    @loadBPMN="bpmn => loadBPMN(bpmn)"
-                    @openVerMangerDialog="toggleVerMangerDialog"
-                    @toggleLock="toggleLock"
-                ></Chat>
+                    @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage"
+                    @getMoreChat="getMoreChat" @loadBPMN="bpmn => loadBPMN(bpmn)"
+                    @openVerMangerDialog="toggleVerMangerDialog" @toggleLock="toggleLock"></Chat>
             </template>
         </AppBaseCard>
     </v-card>
@@ -56,8 +49,8 @@ import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/ProcessDefinitionGenerator';
 import Chat from './ui/Chat.vue';
 
-// import BackendFactory from "@/components/api/BackendFactory";
-// const backend = BackendFactory.createBackend();
+import BackendFactory from "@/components/api/BackendFactory";
+const backend = BackendFactory.createBackend();
 
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
 var jsondiffpatch = jsondiff.create({
@@ -148,14 +141,14 @@ export default {
         // }
     },
     methods: {
-        toggleLock(){
+        toggleLock() {
             var me = this
             me.$try({
                 context: me,
                 action: async () => {
-                    if(me.lock){
+                    if (me.lock) {
                         // 잠금 > 수정가능 하도록
-                        if(me.processDefinition) await me.storage.putObject('lock', {
+                        if (me.processDefinition) await me.storage.putObject('lock', {
                             id: me.processDefinition.processDefinitionId,
                             user_id: me.userInfo.email
                         });
@@ -170,15 +163,15 @@ export default {
                 }
             })
         },
-        toggleVerMangerDialog(open){
+        toggleVerMangerDialog(open) {
             // Version Manager Dialog
             this.verMangerDialog = open
         },
-        toggleVersionDialog(open){
+        toggleVersionDialog(open) {
             // Version Dialog
             this.versionDialog = open
         },
-        saveDefinition(info){
+        saveDefinition(info) {
             var me = this
             me.$try({
                 context: me,
@@ -188,18 +181,18 @@ export default {
                     const store = useBpmnStore();
                     const modeler = store.getModeler;
                     const xmlObj = await modeler.saveXML({ format: true, preamble: true });
-                    
+
                     if (me.processDefinition) {
                         info.definition = me.processDefinition;
                     } else if (!me.processDefinition && xmlObj && xmlObj.xml) {
                         me.processDefinition = me.convertXMLToJSON(xmlObj.xml);
                         info.definition = me.processDefinition;
                     }
-                    
+
                     // info.snapshot = xml.xml;
                     // await backend.putRawDefinition(xml.xml, info.proc_def_id, info);
-                    await me.saveModel(info, xmlObj.xml); 
-                    await me.storage.delete(`lock/${info.proc_def_id}`, {key: 'id'});
+                    await me.saveModel(info, xmlObj.xml);
+                    await me.storage.delete(`lock/${info.proc_def_id}`, { key: 'id' });
                     me.bpmn = xmlObj.xml;
 
                     me.disableChat = true;
@@ -208,21 +201,21 @@ export default {
                     me.definitionChangeCount++
 
                     // 신규 프로세스 이동.
-                    if(!me.$route.params.id) me.$router.push(`/definitions/${info.proc_def_id}`);
-                    
+                    if (!me.$route.params.id) me.$router.push(`/definitions/${info.proc_def_id}`);
+
                     me.loading = false
                     me.toggleVersionDialog(false)
                 }
             })
-        
+
         },
-        changeXML(info){
+        changeXML(info) {
             var me = this
             me.$try({
                 context: me,
                 action: async () => {
-                    if(!info) return;
-                    if(!info.id) return;
+                    if (!info) return;
+                    if (!info.id) return;
 
                     await me.storage.putObject(`${me.path}`, {
                         id: info.id,
@@ -281,11 +274,11 @@ export default {
                 // lock
                 const lockObj = await this.getData(`lock/${this.$route.params.id}`, { key: 'id' });
                 if (lockObj && lockObj.id && lockObj.user_id && lockObj.user_id == this.userInfo.email) {
-                    this.lock = false; 
+                    this.lock = false;
                     this.disableChat = false;
                     this.isViewMode = false;
                 } else {
-                    this.lock = true; 
+                    this.lock = true;
                     this.disableChat = true;
                     this.isViewMode = true;
                 }
@@ -314,7 +307,7 @@ export default {
         extractPropertyNameAndIndex(jsonPath) {
             let match
             match = jsonPath.match(/^\$\.(\w+)\[(\d+)\]$/);
-            if(!match){
+            if (!match) {
                 match = jsonPath.match(/^\$\.(\w+)\[\?(.*)\]$/)
                 return match ? { propertyName: match[1], index: match.index } : null;
             } else {
@@ -323,9 +316,9 @@ export default {
         },
         modificationAdd(modification) {
             let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath)
-            if(obj){
+            if (obj) {
                 this.processDefinition[obj.propertyName].splice(obj.index, 0, modification.value)
-            } else if(this.processDefinition[modification.targetJsonPath.replace('$.', '')]){
+            } else if (this.processDefinition[modification.targetJsonPath.replace('$.', '')]) {
                 this.processDefinition[modification.targetJsonPath.replace('$.', '')].push(modification.value)
             }
         },
@@ -537,7 +530,7 @@ export default {
 
         //     return processDefinition;
         // },
-        saveVersion(info, currentXML){
+        saveVersion(info, currentXML) {
             var me = this
             me.$try({
                 context: me,
@@ -547,8 +540,8 @@ export default {
 
                     // diff Logic
                     let diffs = null
-    
-    
+
+
                     await me.storage.putObject('proc_def_arcv', {
                         arcv_id: info.arcv_id,
                         version: info.version,
@@ -570,22 +563,22 @@ export default {
                         me.processDefinition = me.convertXMLToJSON(xml);
                     }
 
-                    me.processDefinition.processDefinitionId = info.proc_def_id ?  info.proc_def_id : prompt("please give a ID for the process definition");
+                    me.processDefinition.processDefinitionId = info.proc_def_id ? info.proc_def_id : prompt("please give a ID for the process definition");
                     // Version 저장시 제외.
-                    if(!me.$route.params.id) me.processDefinition.processDefinitionName = info.name ? info.name : prompt("please give a name for the process definition");
-                        
+                    if (!me.$route.params.id) me.processDefinition.processDefinitionName = info.name ? info.name : prompt("please give a name for the process definition");
+
                     me.projectName = me.processDefinition.processDefinitionName;
                     if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
                         throw new Error("processDefinitionId or processDefinitionName is missing");
                     }
-
-                    await me.putObject(`${me.path}/${me.processDefinition.processDefinitionId}`, {
-                        id: me.processDefinition.processDefinitionId,
-                        name: me.processDefinition.processDefinitionName,
-                        definition: me.processDefinition,
-                        // messages: this.messages,
-                        bpmn: xml   //TODO: model --> definition과 구분이 안됨.  bpmn 혹은 xmlDefinition 혹은 xmlModel 등으로 프로퍼티명 변경할것!
-                    });
+                    await backend.putRawDefinition(xml, info.proc_def_id, info);
+                    // await me.putObject(`${me.path}/${me.processDefinition.processDefinitionId}`, {
+                    //     id: me.processDefinition.processDefinitionId,
+                    //     name: me.processDefinition.processDefinitionName,
+                    //     definition: me.processDefinition,
+                    //     // messages: this.messages,
+                    //     bpmn: xml   //TODO: model --> definition과 구분이 안됨.  bpmn 혹은 xmlDefinition 혹은 xmlModel 등으로 프로퍼티명 변경할것!
+                    // });
 
                     // await me.saveVersion(info, xml)
 
@@ -618,7 +611,7 @@ export default {
                     // } else {
 
 
-                        
+
                     // }
 
 
@@ -637,15 +630,15 @@ export default {
 
                     // const table = await this.getObject(this.processDefinition.processDefinitionId)
                     // if (!table) {
-                        await axios.post('http://localhost:8001/process-db-schema/invoke', {
-                            "input": {
-                                "process_definition_id": me.processDefinition.processDefinitionId
-                            }
-                        }).then(async res => {
-                            console.log(res);
-                        }).catch(error => {
-                            console.log(error);
-                        });
+                    await axios.post('http://localhost:8001/process-db-schema/invoke', {
+                        "input": {
+                            "process_definition_id": me.processDefinition.processDefinitionId
+                        }
+                    }).then(async res => {
+                        console.log(res);
+                    }).catch(error => {
+                        console.log(error);
+                    });
                     // }
                 }
             })
@@ -829,7 +822,20 @@ export default {
             collaboration.appendChild(pc);
 
 
-
+            // Data 매핑
+            const extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
+            const root = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
+            if (jsonModel.data) {
+                jsonModel.data.forEach(data => {
+                    const variable = xmlDoc.createElementNS('http://uengine', 'uengine:variable');
+                    variable.setAttribute('name', data.name);
+                    variable.setAttribute('type', data.type);
+                    root.appendChild(variable);
+                });
+            }
+                
+            extensionElements.appendChild(root);
+            process.appendChild(extensionElements);
             // Lane 및 Activity 매핑
             const laneActivityMapping = {};
             if (jsonModel.activities)
@@ -872,19 +878,12 @@ export default {
                     sequenceFlow.setAttribute('sourceRef', sequence.source);
                     sequenceFlow.setAttribute('targetRef', sequence.target);
                     let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
-                    let root = xmlDoc.createElementNS('http://uengine', 'uengine:Uengine-params');
-                    let params = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
-                    let param = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
-                    // let role = xmlDoc.createElementNS('http://uengine', 'uengine:role');
-                    // let desc = xmlDoc.createElementNS('http://uengine', 'uengine:description');
-                    // let checkpoints = xmlDoc.createElementNS('http://uengine', 'uengine:checkpoint');
-                    //             <uengine:description>asdf</uengine:description>
-                    //   <uengine:checkpoint>
-                    //     <uengine:checkpoint>asdf</uengine:checkpoint>
-                    //   </uengine:checkpoint>
-                    param.setAttribute('key', "condition")
-                    param.textContent = sequence.condition ? sequence.condition : ""
-                    params.appendChild(param)
+                    let root = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
+                    let params = xmlDoc.createElementNS('http://uengine', 'uengine:json');
+                    params.setAttribute('key', "condition")
+                    params.textContent = JSON.stringify({
+                        "condition": sequence.condition ? sequence.condition : ""
+                    })
                     // }
                     root.appendChild(params)
                     extensionElements.appendChild(root)
@@ -916,45 +915,75 @@ export default {
                         userTask.appendChild(inComingSeq)
                     }
                     let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
-                    let root = xmlDoc.createElementNS('http://uengine', 'uengine:Uengine-params');
-                    let role = xmlDoc.createElementNS('http://uengine', 'uengine:Role');
-                    // role.textContent = activity.role
-                    // root.appendChild(role)
-                    let desc = xmlDoc.createElementNS('http://uengine', 'uengine:Description');
-                    // desc.textContent = activity.description
-                    // root.appendChild(desc)
-                    let checkpoints = xmlDoc.createElementNS('http://uengine', 'uengine:Checkpoint');
-                    if (activity.checkpoints) {
-                        activity.checkpoints.forEach((checkpoint) => {
-                            console.log(checkpoint)
-                            let check = xmlDoc.createElementNS('http://uengine', 'uengine:Checkpoint');
-                            check.textContent = checkpoint
-                            checkpoints.appendChild(check)
+                    let root = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
+                    let params = xmlDoc.createElementNS('http://uengine', 'uengine:json');
+                    params.setAttribute('key', "condition")
+                    // {"argument":{"text":"symptom"}, "variable":{"name": "symptom"}, "direction":
+                    //     "OUT"}
+                    let inputDataList = []
+                    let outputDataList = []
+                    activity?.inputData?.forEach(data => {
+                        inputDataList.push({
+                            "argument": {"text": data.name},
+                            "variable": {"name": data.name},
+                            "direction": "OUT"
                         })
-                    }
-                    root.appendChild(checkpoints)
+                    })
+                    activity?.outputData?.forEach(data => {
+                        outputDataList.push({
+                            "argument": {"text": data.name},
+                            "variable": {"name": data.name},
+                            "direction": "IN"
+                        })
+                    })
 
-                    // Params
-                    let params = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
-                    if (activity.inputData) {
-                        activity.inputData.forEach((data) => {
-                            let param = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
-                            param.setAttribute('key', data.name)
-                            param.setAttribute('category', "input")
-                            params.appendChild(param)
-                        })
+                    let activityData = {
+                        "role": {"name":activity.role},
+                        "parameters": [...inputDataList, ...outputDataList]
                     }
-                    if (activity.outputData) {
-                        activity.outputData.forEach((data) => {
-                            let param = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
-                            param.setAttribute('key', data.name)
-                            param.setAttribute('category', "output")
-                            params.appendChild(param)
-                        })
-                    }
+                    params.textContent = JSON.stringify(activityData)
                     root.appendChild(params)
                     extensionElements.appendChild(root)
                     userTask.appendChild(extensionElements)
+                    // let root = xmlDoc.createElementNS('http://uengine', 'uengine:Uengine-params');
+                    // let role = xmlDoc.createElementNS('http://uengine', 'uengine:Role');
+                    // // role.textContent = activity.role
+                    // // root.appendChild(role)
+                    // let desc = xmlDoc.createElementNS('http://uengine', 'uengine:Description');
+                    // // desc.textContent = activity.description
+                    // // root.appendChild(desc)
+                    // let checkpoints = xmlDoc.createElementNS('http://uengine', 'uengine:Checkpoint');
+                    // if (activity.checkpoints) {
+                    //     activity.checkpoints.forEach((checkpoint) => {
+                    //         console.log(checkpoint)
+                    //         let check = xmlDoc.createElementNS('http://uengine', 'uengine:Checkpoint');
+                    //         check.textContent = checkpoint
+                    //         checkpoints.appendChild(check)
+                    //     })
+                    // }
+                    // root.appendChild(checkpoints)
+
+                    // // Params
+                    // let params = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
+                    // if (activity.inputData) {
+                    //     activity.inputData.forEach((data) => {
+                    //         let param = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
+                    //         param.setAttribute('key', data.name)
+                    //         param.setAttribute('category', "input")
+                    //         params.appendChild(param)
+                    //     })
+                    // }
+                    // if (activity.outputData) {
+                    //     activity.outputData.forEach((data) => {
+                    //         let param = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
+                    //         param.setAttribute('key', data.name)
+                    //         param.setAttribute('category', "output")
+                    //         params.appendChild(param)
+                    //     })
+                    // }
+                    // root.appendChild(params)
+                    // extensionElements.appendChild(root)
+                    // userTask.appendChild(extensionElements)
 
                     if (idx == 0) {
                         // 시작일땐 StartEvent와 연결
@@ -1015,7 +1044,7 @@ export default {
                     process.appendChild(userTask);
                 });
 
-
+            // BPMN Diagram Draw
             const bpmnDiagram = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNDiagram');
             bpmnDiagram.setAttribute('id', 'BPMNDiagram_1');
             bpmnDefinitions.appendChild(bpmnDiagram);
@@ -1420,7 +1449,7 @@ export default {
 }
 
 :deep(.left-part) {
-    width: 80%; /* Apply specific width */
+    width: 80%;
+    /* Apply specific width */
 }
-
 </style>

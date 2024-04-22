@@ -26,19 +26,19 @@ const formDesignGeneratorPromptSnipptsData = {
         {
             tag: `<select-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' items='<선택 항목 리스트>'></select-field>`,
             purpose: "여러개의 옵션 중 하나를 선택하기 위해서",
-            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함. '...'으로 나열해야 할 정도로 항목이 많을 경우, text-field를 사용할 것.`
+            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함.`
         },
 
         {
             tag: `<checkbox-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' items='<선택 항목 리스트>'></checkbox-field>`,
             purpose: "여러개의 선택 사항들 중, 여러개를 선택하기 위해서",
-            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함. '...'으로 나열해야 할 정도로 항목이 많을 경우, text-field를 사용할 것.`
+            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함.`
         },
 
         {
             tag: `<radio-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' items='<선택 항목 리스트>'></radio-field>`,
             purpose: "나열된 여러개의 옵션 중 하나를 선택하기 위해서",
-            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함. '...'으로 나열해야 할 정도로 항목이 많을 경우, text-field를 사용할 것.`
+            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함.`
         },
 
         {
@@ -51,32 +51,33 @@ const formDesignGeneratorPromptSnipptsData = {
             tag: `<label-field label='<입력시킬 라벨 값>'></label-field>`,
             purpose: `특정 컴포넌트를 설명하기 위해서`,
             limit: "name, alias가 있는 경우에는 이미 내부적으로 label이 설정되기 때문에 쓸 필요가 없음"
-        },
-
-        {
-            tag: `<submit-field></submit-field>`,
-            purpose: `유저의 입력을 처리하기 위해서`,
-            limit: "반드시 포함되어야 하며, 한 번만 사용 가능"
         }
     ],
 
     // AI에게 참조할만한 예시를 안내해주기 위해서 {title: "제목", description: "설명", result: "결과(Json 객체)"}
     examples: [
         {
-            title: "도서 정보 입력 폼",
-            description: `먼저, 유효한 레이아웃을 생각해 봐야 해.
-            도서 정보 입력 폼은 책 제목, 저자, 책 장르, 책 표지 이미지, 그리고 제출 버튼 정도가 필요하겠네.
+            title: "도서 정보 입력 폼을 생성해줘.",
+            description: `처음에는 아무런 HTML 정보없이 생성하는 것이니까 '처음으로 폼 생성' 메뉴얼을 따라야 겠네.
+
+            먼저, 유효한 레이아웃을 생각해 봐야 해.
+            도서 정보 입력 폼은 책 제목, 저자, 책 장르, 책 표지 이미지 정도가 필요하겠네.
             현재 정보가 그리 많지는 않기 때문에 12의 공간을 차지하는 하나의 col-sm-12로 만들어주면 돼.
+
+            이제 각각의 데이터마다 필요한 컴포넌트를 생각해보자.
+            반드시 메뉴얼에 제시된 컴포넌트 중에서 선택해야 한다는 것에 유의하면서 진행해보자.
+            그리고 각각의 name, alias와 같은 속성이나 items의 키와 값은 한글, 숫자, 영문자, 공백, 밑줄(_), 대시(-), 점(.)만 가능하는 점도 유의하자.
 
             책 제목, 저자는 텍스트로 입력 받으면 되니까 text-field를 사용하면 되겠네.
 
             책 장르는 여러 개의 옵션 중 하나를 선택해야 하니까 select-field를 사용하면 되겠네.
             책 장르인 경우에는 간단하게 '소설', '시', '에세이' 정도로 한다면 모든 요소를 각각 적어야 하니까 items에 들어갈 내용은 '[{"소설": "novel"}, {"시": "poem"}, {"에세이": "essay"}]'로 각각 적으면 되겠네.
+            items에 '...'과 같이 나열하는 문자열이 없고, 각각의 키가 고유하니까 만족되는 값이라고 볼 수 있겠네.
 
             책 표지 이미지는 파일을 입력받아야 하니까 file-field를 사용하면 되겠네.
-
-            제출 버튼은 하나만 추가하라는 제약사항이 있으니까 하나만 마지막에 추가하면 되겠네.
-            마지막으로 '\`\`\`'로 감싸진 코드에 JSON 형식으로 "htmlOutput" 속성에 추가만 해주면 되겠네.`,
+            
+            그리고, 채팅마다 맨 마지막에 값을 반환하라고 했으니까 JSON으로 값을 반환시켜야 겠네.
+            '\`\`\`'로 감싸진 코드에 JSON 형식으로 "htmlOutput" 속성에 추가만 해주면 되겠네.`,
             result: `
             \`\`\`
             {
@@ -87,9 +88,28 @@ const formDesignGeneratorPromptSnipptsData = {
                         <text-field name='book_author' alias='저자'></text-field>
                         <select-field name='book_genre' alias='책 장르' items='[{"소설": "novel"}, {"시": "poem"}, {"에세이": "essay"}]'></select-field>
                         <file-field name='book_cover' alias='책 표지 이미지'></file-field>
-                        <submit-field></submit-field>
                     </div>
                 </div>"
+            }
+            \`\`\``
+        },
+        {
+            title: "도서 정보 입력 폼에서 책 장르에 '공상 과학' 항목을 추가해줘",
+            description: `이미 도서 정보 입력 폼이 있으니까 '기존의 폼 변경' 메뉴얼을 따라야 겠네.
+            
+            현재 사용자는 책 장르 부분 태그를 수정하기를 원하니까 action이 "replace"인 수정 지시 사항 하나면 충분하겠어.
+            책 장르 부분 수정을 위한 CSS 선택자는 "select-field[name='book_genre']" 면 충분하겠으니까 이것을 targetCSSSelector에 적으면 되겠네.
+            교체해야 하는 태그값은 기존 책 장르 태그의 items에 {"공상 과학", "SF"} 항목만 추가하면 되니까 최종적으로 '\`\`\`'로 감싸진 코드에 JSON 형식으로 다음과 같이 반환하면 되겠네.`,
+            result: `
+            \`\`\`
+            {
+                "modifications":[
+                {
+                    "action": "replace",
+                    "targetCSSSelector": "select-field[name='book_genre']",
+                    "tagValue": "<select-field name='book_genre' alias='책 장르' items='[{"소설": "novel"}, {"시": "poem"}, {"에세이": "essay"}, {"공상 과학": "SF"}]'></select-field>"
+                }
+                ]
             }
             \`\`\``
         }

@@ -34,7 +34,13 @@
 
             <template v-slot:mobileLeftContent>
                 <ChatProfile />
-                <ChatListing />
+                <ChatListing 
+                    :chatRoomList="filteredChatRoomList" 
+                    :userList="userList" 
+                    :userInfo="userInfo"
+                    @chat-selected="chatRoomSelected" 
+                    @create-chat-room="createChatRoom"
+                />
             </template>
         </AppBaseCard>
     </v-card>
