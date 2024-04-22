@@ -1,11 +1,11 @@
 <template>
-     <v-card elevation="10" v-if="workItem" style="height:calc(100vh - 155px)">
-        <v-card-title style="font-size: larger;"> {{workItem.activity.name}} </v-card-title>
+     <v-card elevation="10" v-if="workItem" style="height:calc(100vh - 155px)" :key="updatedKey">
+        <v-card-title style="font-size: larger;"> {{workItem.activity.name}} ({{workItemStatus}})</v-card-title>
         <v-row class="ma-0 pa-0">
              <!-- Left -->
             <v-col class="pa-0" cols="4">
                 <div v-if="currentComponent">
-                    <component :is="currentComponent" :work-item="workItem"></component>
+                    <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus" @undoTask="undoTask"></component>
                 </div>
                 <div v-else>
                     <div v-if="loading">Loading...</div>
@@ -21,7 +21,7 @@
                         <v-card-title>프로세스 진행상태</v-card-title>
                         <div class="pa-0" style="overflow:auto; height: calc(100vh - 620px);">
                             <div v-if="bpmn">
-                                <process-definition class="process-definition-resize work-item-definition"  :currentActivities="currentActivities" :bpmn="bpmn" :key="updatedKey" :isViewMode="true"></process-definition>
+                                <process-definition class="process-definition-resize work-item-definition" :currentActivities="currentActivities" :bpmn="bpmn" :key="updatedDefKey" :isViewMode="true"></process-definition>
                             </div>
                             <dif v-else>
                                 No BPMN found
@@ -84,7 +84,7 @@ import MessageLayout from "@/components/ui/MessageLayout.vue";
 import DefaultWorkItem from './DefaultWorkItem.vue'; // DefaultWorkItem 컴포넌트 임포트
 import FormWorkItem from './FormWorkItem.vue'; // FormWorkItem 컴포넌트 임포트
 
-
+const backend = BackendFactory.createBackend()
 export default {
     components: {
         ProcessDefinition,
@@ -101,6 +101,7 @@ export default {
         currentActivities: [],
         // status variables
         updatedKey: 0,
+        updatedDefKey: 0,
         loading: false,
     }),
     created() {
@@ -115,8 +116,10 @@ export default {
             if(!this.workHistoryList) return []
             return this.workHistoryList.map(workHistory => ({
                 role: 'user',
+                _item: workHistory,
                 content: workHistory.title,
-                description: 'TEST'
+                description: workHistory.description,
+                timeStamp: workHistory.startDate,
             }))
         },
         id() {
@@ -128,19 +131,42 @@ export default {
                 return null
             }
         },
+        workItemStatus(){
+            if(!this.workItem) return null
+            return this.workItem.worklist.status
+        }
     },
     methods: {
         async init() {
             var me = this
-            const backend = BackendFactory.createBackend()
             me.loading = true;
             me.workItem = await backend.getWorkItem(this.id);
             me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, {type: 'bpmn'});
             me.workHistoryList = await backend.getWorkListByInstId(me.workItem.worklist.instId);
             me.currentComponent = me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem';
-            me.currentActivities = [me.workItem.activity.id || me.workItem.activity.tracingTag ];
-            me.updatedKey ++
+            me.currentActivities = [ me.workItem.activity.tracingTag ];
+            me.updatedDefKey++
             me.loading = false
+        },
+        async undoTask(){
+            var me = this
+            if(!me.workItem) return
+            await backend.backToHere(me.workItem.worklist.instId, me.workItem.activity.tracingTag)
+            me.$router.push('/todolist')
+        },
+        navigateToWorkItemByTaskId(obj){
+            var me = this
+            me.$router.push(`/todolist/${obj._item.taskId}`);
+            this.$nextTick(() => {
+                me.delay(500)
+                .then(() => {
+                    me.init();
+                    me.updatedKey++;
+                });
+            });
+        },
+        delay(time) {
+            return new Promise(resolve => setTimeout(resolve, time));
         },
     },
 }
