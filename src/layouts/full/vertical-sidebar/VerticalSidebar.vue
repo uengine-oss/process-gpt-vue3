@@ -11,17 +11,25 @@ const customizer = useCustomizerStore();
 </script>
 
 <template>
-    <v-navigation-drawer left v-model="customizer.Sidebar_drawer" rail-width="70" :mobile-breakpoint="960" app
-        class="leftSidebar ml-sm-5 mt-sm-5 bg-containerBg" elevation="10" :rail="customizer.mini_sidebar"
-        expand-on-hover width="270">
-        <div class="pa-5 pl-4 ">
+    <v-navigation-drawer
+        left
+        v-model="customizer.Sidebar_drawer"
+        rail-width="70"
+        :mobile-breakpoint="960"
+        app
+        class="leftSidebar ml-sm-5 mt-sm-5 bg-containerBg"
+        elevation="10"
+        :rail="customizer.mini_sidebar"
+        expand-on-hover
+        width="270"
+    >
+        <div class="pa-5 pl-4">
             <Logo />
         </div>
         <!-- ---------------------------------------------- -->
         <!---Navigation -->
         <!-- ---------------------------------------------- -->
         <perfect-scrollbar class="scrollnavbar bg-containerBg overflow-y-hidden">
-
             <v-list class="py-4 px-4 bg-containerBg">
                 <!---Menu Loop -->
                 <template v-for="item in sidebarItem" :key="item.title">
@@ -39,8 +47,7 @@ const customizer = useCustomizerStore();
                 </template>
                 <!-- Process Definition List -->
                 <template v-if="definitionList">
-                    
-                    <NavCollapse class="leftPadding" :item="definitionList"  @update:item="def => definitionList = def" :level="0" />
+                    <NavCollapse class="leftPadding" :item="definitionList" @update:item="(def) => (definitionList = def)" :level="0" />
                 </template>
                 <!-- <Moreoption/> -->
             </v-list>
@@ -66,76 +73,76 @@ export default {
     data: () => ({
         sidebarItem: [
             {
-                title: "dashboard.title",
+                title: 'dashboard.title',
                 icon: 'lucide:layout-panel-top',
                 BgColor: 'primary',
-                to: "/dashboard2",
-                disable: true,
+                to: '/dashboard2',
+                disable: true
             },
             {
-                title: "todoList.title",
+                title: 'todoList.title',
                 icon: 'pajamas:overview',
                 BgColor: 'primary',
-                to: "/todolist",
-                disable: true,
+                to: '/todolist',
+                disable: true
             },
             {
                 title: 'calendar.title',
                 icon: 'solar:calendar-line-duotone',
                 BgColor: 'primary',
                 to: '/calendar',
-                disable: true,
+                disable: true
             },
             {
-                title: "chats.title",
+                title: 'chats.title',
                 icon: 'solar:chat-round-unread-line-duotone',
                 BgColor: 'primary',
-                to: "/chats",
-                disable: true,
+                to: '/chats',
+                disable: true
             },
             {
-                title: "processDefinitionMap.title",
+                title: 'processDefinitionMap.title',
                 icon: 'carbon:flow-connection',
                 BgColor: 'primary',
-                to: "/definition-map",
-                disable: false,
+                to: '/definition-map',
+                disable: false
             },
             {
                 header: 'definitionManagement.title',
-                disable: false,
+                disable: false
             },
             {
-                title: "organizationChartDefinition.title",
+                title: 'organizationChartDefinition.title',
                 icon: 'solar:users-group-rounded-line-duotone',
                 BgColor: 'primary',
-                to: "/organization",
-                disable: true,
+                to: '/organization',
+                disable: true
             },
             {
-                title: "uiDefinition.title",
+                title: 'uiDefinition.title',
                 icon: 'icon-park-outline:layout-five',
                 BgColor: 'primary',
-                to: "/ui-definitions/chat",
-            },
+                to: '/ui-definitions/chat'
+            }
         ],
         definition: null,
-        definitionList: null,
+        definitionList: null
     }),
     async created() {
-        const isAdmin = localStorage.getItem("isAdmin");
+        const isAdmin = localStorage.getItem('isAdmin');
         if (isAdmin == 'true') {
             this.definition = {
-                title: "processDefinition.title",
+                title: 'processDefinition.title',
                 icon: 'tabler:device-imac-cog',
                 BgColor: 'primary',
-                to: "/definitions/chat",
-            }
+                to: '/definitions/chat'
+            };
             this.getDefinitionList();
         }
 
-        const execution = localStorage.getItem("execution");
+        const execution = localStorage.getItem('execution');
         if (execution == 'true') {
-            this.sidebarItem.forEach(item => {
+            this.sidebarItem.forEach((item) => {
                 if (item.disable) {
                     item.disable = false;
                 }
@@ -154,21 +161,21 @@ export default {
                     to: `/`,
                     children: []
                 };
-                list.forEach(item => {
-                    console.log(item)
+                list.forEach((item) => {
+                    console.log(item.name != 'instances');
                     if (item.directory) {
                         var obj = {
                             title: item.name,
                             // to: `/definitions/${item.definition.processDefinitionId}`,
                             directory: true
-                        }
+                        };
                         menu.children.push(obj);
                     }
                     if (item && item.definition) {
                         var obj = {
                             title: item.definition.processDefinitionName,
                             to: `/definitions/${item.definition.processDefinitionId}`
-                        }
+                        };
                         menu.children.push(obj);
                     }
                 });
@@ -176,5 +183,5 @@ export default {
             }
         }
     }
-}
+};
 </script>
