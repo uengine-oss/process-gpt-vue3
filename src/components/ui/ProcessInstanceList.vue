@@ -2,6 +2,7 @@
     <v-list class="py-4 px-4 bg-containerBg">
         <NavGroup :item="instMenu" :key="instMenu.header" />
         <NavItem class="leftPadding" :item="instExecution" />
+        <NavItem class="leftPadding" :item="definitionMap" />
         <NavCollapse v-if="runningInstances.children.length" class="leftPadding" :item="runningInstances" :level="0" />
         <NavCollapse v-if="completeInstances.children.length" class="leftPadding" :item="completeInstances" :level="0" />
     </v-list>
@@ -31,6 +32,13 @@ export default {
             icon: 'solar:chat-dots-linear',
             BgColor: 'primary',
             to: '/instances/chat',
+            disable: false,
+        },
+        definitionMap: {
+            title: "processDefinitionMap.title",
+            icon: 'carbon:flow-connection',
+            BgColor: 'primary',
+            to: "/definition-map",
             disable: false,
         },
         runningInstances: {
