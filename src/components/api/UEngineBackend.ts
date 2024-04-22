@@ -190,7 +190,7 @@ class UEngineBackend implements Backend {
                 },
                 responseType: 'text' as const
             };
-            
+
             const response = await axiosInstance.post(`/instance/${instanceId}/variable/${varName}`, JSON.stringify(varValue), config);
             return response.data;
         } catch (e) {
@@ -250,7 +250,7 @@ class UEngineBackend implements Backend {
             alert(e);
         }
     }
-    
+
     async putWorkItemComplate(taskId: string, workItem: any) {
         try {
             const response = await axiosInstance.post(`/work-item/${taskId}/complate`, workItem);
@@ -259,7 +259,7 @@ class UEngineBackend implements Backend {
             alert(e);
         }
     }
-    
+
     async putWorklist(taskId: string, workItem: any) {
         try {
             let url = `/worklist`;
@@ -486,8 +486,9 @@ class UEngineBackend implements Backend {
     // Running Instance API
     async getInstanceList() {
         try {
-            const response = await axiosInstance.get(`/instances/search/findFilterICanSee`);
-            return response.data;
+            // const response = await axiosInstance.get(`/instances/search/findFilterICanSee`);
+            // return response.data;
+            return [];
         } catch (e) {
             alert(e);
         }
