@@ -70,11 +70,10 @@ import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import Chat from "@/components/ui/Chat.vue";
 import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 import { VDataTable } from 'vuetify/labs/VDataTable';
-import GeneratorAgent from './GeneratorAgent.vue';
 
 
 export default {
-    mixins: [ChatModule, GeneratorAgent],
+    mixins: [ChatModule],
     components: {
         AppBaseCard,
         Chat,
@@ -106,11 +105,6 @@ export default {
 
         // temp
         isRunningId: null,
-        agentInfo: {
-            draftPrompt: '',
-            isRunning: false,
-            isConnection: false,
-        }
     }),
     async created() {
         await this.init();
@@ -125,34 +119,10 @@ export default {
         }
     },
     mounted() {
-        var me = this
-        me.connectAgent()
-        me.receiveAgent(function (callback) {
-            if (callback.connection) {
-                me.agentInfo.isConnection = true
-                if (callback.data) {
-                    let message = callback.data
-                    let duplication = me.messages.find(mes => mes.role == message.role && JSON.stringify(mes.content) === JSON.stringify(message.content))
-                    if (duplication) return;
-
-                    message['_template'] = 'agent'
-                    me.messages.push(message)
-                    me.saveMessages(me.messages)
-                }
-
-                if (callback.isFinished) {
-                    me.agentInfo.isRunning = false
-                } else {
-                    me.agentInfo.isRunning = true
-                }
-            } else {
-                me.agentInfo.isConnection = false
-                me.agentInfo.isRunning = false
-            }
-        })
+        // 
     },
     beforeUnmount() {
-        this.releaseAgent()
+
     },
     watch: {
         "$route": {
@@ -168,21 +138,6 @@ export default {
         },
     },
     methods: {
-        requestDraftAgent(newVal) {
-            var me = this
-            me.$try({
-                context: me,
-                action(me) {
-                    if (newVal) me.agentInfo.draftPrompt = newVal
-
-                    if (!me.agentInfo.draftPrompt) return;
-                    me.agentInfo.isRunning = true
-                    me.requestAgent(me.agentInfo.draftPrompt)
-                },
-                // onFail() {
-                // }
-            })
-        },
         async viewProcess() {
             this.onLoad = false;
             let id = "";

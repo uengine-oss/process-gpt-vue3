@@ -17,9 +17,11 @@
                 <Chat
                     :messages="messages"
                     :userInfo="userInfo"
+                    :agentInfo="agentInfo"
                     :userList="userList"
                     :currentChatRoom="currentChatRoom"
                     :type="path"
+                    @requestDraftAgent="requestDraftAgent"
                     @beforeReply="beforeReply"
                     @sendMessage="beforeSendMessage"
                     @startProcess="startProcess"
