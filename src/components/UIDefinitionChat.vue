@@ -30,6 +30,12 @@
                     <v-window-item value="preview" class="fill-height mt-15 pa-5" style="overflow-y: auto;">
                         <template v-if="isShowPreview">
                             <DynamicForm  :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
+
+                            <template v-if="dev.isDevMode">
+                                <v-textarea label="previewFormValuesToTest" rows="10" v-model="dev.previewFormValues"></v-textarea>
+                                <v-btn color="primary" class="full-width my-5" @click="onClickPreviewApplyButton">적용</v-btn>
+                            </template>
+
                             <v-btn color="primary" class="full-width" @click="onClickPreviewSubmitButton">제출</v-btn>
                         </template>
                         <card v-else class="d-flex align-center justify-center fill-height">
@@ -111,7 +117,12 @@ export default {
 
         previewHTML: "",
         previewFormValues: {},
-        isShowPreview: false
+        isShowPreview: false,
+
+        dev: {
+            isDevMode: window.localStorage.getItem('isDevMode') === 'true',
+            previewFormValues: ""
+        }
     }),
     async created() {
         this.generator = new ChatGenerator(this, {
@@ -251,8 +262,17 @@ export default {
             }
         },
 
+
         onClickPreviewSubmitButton() {
-            alert(JSON.stringify(this.previewFormValues))
+            if(this.dev.isDevMode)
+                this.dev.previewFormValues = JSON.stringify(this.previewFormValues) 
+            else
+                alert(JSON.stringify(this.previewFormValues))
+            
+        },
+
+        onClickPreviewApplyButton() {
+            this.previewFormValues = JSON.parse(this.dev.previewFormValues)
         },
 
 
