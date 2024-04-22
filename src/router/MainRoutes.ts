@@ -54,13 +54,18 @@ const MainRoutes = {
             component: () => import('@/components/ProcessDefinitionChat.vue'),
         },
         {
+            name: 'forms',
+            path: '/forms/:pathMatch(.*)*',
+            component: () => import('@/components/ProcessDefinitionChat.vue'),
+        },
+        {
             name: 'ui-definitions',
             path: '/ui-definitions/chat',
             component: () => import('@/components/UIDefinitionChat.vue'),
         },
         {
             name: 'ui-definitions',
-            path: '/ui-definitions/:id',
+            path: '/ui-definitions/:pathMatch(.*)*',
             component: () => import('@/components/UIDefinitionChat.vue'),
         },
         {

@@ -2,6 +2,7 @@
     <v-list class="py-4 px-4 bg-containerBg">
         <NavGroup :item="instMenu" :key="instMenu.header" />
         <NavItem class="leftPadding" :item="instExecution" />
+        <NavItem class="leftPadding" :item="definitionMap" />
         <NavCollapse v-if="runningInstances.children.length" class="leftPadding" :item="runningInstances" :level="0" />
         <NavCollapse v-if="completeInstances.children.length" class="leftPadding" :item="completeInstances" :level="0" />
     </v-list>
@@ -33,6 +34,13 @@ export default {
             to: '/instances/chat',
             disable: false,
         },
+        definitionMap: {
+            title: "processDefinitionMap.title",
+            icon: 'carbon:flow-connection',
+            BgColor: 'primary',
+            to: "/definition-map",
+            disable: false,
+        },
         runningInstances: {
             title: 'runningInstance.title',
             icon: 'solar:list-bold',
@@ -57,16 +65,18 @@ export default {
     },
     methods: {
         async loadInstances() {
-            this.runningInstances.children = await backend.getInstanceList();
-            this.runningInstances.children = this.runningInstances.children.map((item) => {
+            let result = await backend.getInstanceList();
+            if(!result) result = []
+            this.runningInstances.children = result.map((item) => {
                 item = {
                     title: item.instName,
                     to: `/todolist/${item.instId}`,
                 }
                 return item;
             });
-            this.completeInstances.children = await backend.getCompleteInstanceList();
-            this.completeInstances.children = this.completeInstances.children.map((item) => {
+            let complatedResult = await backend.getCompleteInstanceList();
+            if(!complatedResult) complatedResult = []
+            this.completeInstances.children = complatedResult.map((item) => {
                 item = {
                     title: item.instName,
                     to: `/todolist/${item.isntid}`,

@@ -81,7 +81,7 @@ export default {
                 action: async () => {
                     let back = BackendFactory.createBackend();
                     let worklist = await back.getWorkList()
-                    console.log(worklist)
+                    if(!worklist) worklist = []
                     worklist.forEach(function(item) {
                         if (item.status == 'TODO' || item.status == 'NEW' || item.status == 'DRAFT') {
                             me.todolist.find(x => x.id == 'TODO').tasks.push(item);

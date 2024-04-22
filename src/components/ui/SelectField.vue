@@ -1,7 +1,7 @@
 <template>
     <div>
         <v-select
-            :items="localKeyValueStrs"
+            :items="localKeys"
             v-model="inputedValue"
         >
         <template v-slot:label>
@@ -27,15 +27,14 @@ export default {
 
     computed: {
         label() {
-            if(this.localAlias && this.localName) return `${this.localAlias}(${this.localName})`
-            else if (this.localAlias) return this.localAlias
+            if (this.localAlias) return this.localAlias
             else if (this.localName) return this.localName
             else return ""
         },
-        localKeyValueStrs() {
+        localKeys() {
             if(this.localItems === undefined || this.localItems === null || this.localItems.length === 0) return []
-            return this.localItems.map((item) => `${Object.keys(item)[0]}(${Object.values(item)[0]})`)
-        },
+            return this.localItems.map(item => Object.keys(item)[0])
+        }
     },
 
     data() {
@@ -57,12 +56,12 @@ export default {
                     const foundItem = this.localItems.find(item => Object.keys(item)[0] === this.modelValue)
                     if(!foundItem) return
 
-                    this.inputedValue = `${this.modelValue}(${Object.values(foundItem)[0]})`
+                    this.inputedValue = Object.keys(foundItem)[0]
                 }
                 else
                 {
                     if(this.localItems.length > 0)
-                        this.inputedValue = `${Object.keys(this.localItems[0])[0]}(${Object.values(this.localItems[0])[0]})`
+                        this.inputedValue = Object.keys(this.localItems[0])[0]
                 }
             },
             deep: true,
@@ -71,7 +70,7 @@ export default {
 
         inputedValue: {
             handler() {
-                this.$emit('update:modelValue', this.inputedValue.split("(")[0])
+                this.$emit('update:modelValue', this.inputedValue)
             },
             deep: true,
             immediate: true

@@ -263,21 +263,26 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    if (me.$route.params.pathMatch) {
-                        const lastPath = me.$route.params.pathMatch[me.$route.params.pathMatch.length-1];
-                        const defId = lastPath;
-                        const value = await backend.getRawDefinition(defId);
-                        if (value) {
-                            me.processDefinition = value.definition;
-                            me.projectName = value.name;
-                            me.bpmn = value.bpmn;
+                    const fullPath = me.$route.params.pathMatch.join('/');
+                    if (fullPath.startsWith('/')) {
+                        fullPath = fullPath.substring(1);
+                    }
+                    let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length-1]
+                    if (fullPath && lastPath != "chat") {
+                        let definition = await backend.getRawDefinition(fullPath, {type: "bpmn"})
+                        if (definition) {
+                            me.bpmn = definition;
                             me.definitionChangeCount++;
                         }
-
                         if (me.useLock) {
-                            me.checkedLock(defId);
+                            const value = await backend.getRawDefinition(fullPath);
+                            if (value) {
+                                me.processDefinition = value.definition;
+                                me.projectName = value.name;
+                            }
+                            me.checkedLock(lastPath);
                         }
-                    } else {
+                    } else if (lastPath == "chat") {
                         me.processDefinition = null;
                         me.projectName = null;
                         me.bpmn = null;
@@ -543,7 +548,7 @@ export default {
                     if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
                         throw new Error("processDefinitionId or processDefinitionName is missing");
                     }
-                    await backend.putRawDefinition(xml, info.proc_def_id, info);
+                    await backend.putRawDefinition(xml, info.proc_def_id, info, {type: "bpmn"});
                     await this.saveToVectorStore(me.processDefinition);;
                 }
             })

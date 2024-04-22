@@ -90,7 +90,6 @@ class ProcessGPTBackend implements Backend {
                     return data;
                 } else if(options.type === "bpmn") {
                     const data = await storage.getString(`proc_def/${defId}`, { key: 'id', column: 'bpmn' });
-                    console.log(data)
                     return data;
                 }
             } else {
