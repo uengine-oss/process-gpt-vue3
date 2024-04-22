@@ -43,11 +43,11 @@ const MainRoutes = {
             path: '/organization',
             component: () => import('@/views/apps/organization/Organization.vue'),
         },
-        {
-            name: 'Definition Chat',
-            path: '/definitions/chat',
-            component: () => import('@/components/ProcessDefinitionChat.vue'),
-        },
+        // {
+        //     name: 'Definition Chat',
+        //     path: '/definitions/chat',
+        //     component: () => import('@/components/ProcessDefinitionChat.vue'),
+        // },
         {
             name: 'definitions',
             path: '/definitions/:pathMatch(.*)*',
