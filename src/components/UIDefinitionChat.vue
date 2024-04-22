@@ -372,7 +372,8 @@ export default {
          * 모델 생성을 도중에 멈춰도 결과를 처리가 가능한 경우에는 최대한 처리시키기 위해서
          */
         afterModelStopped(response) {
-            this.processResponse(response)
+            // AI 생성을 멈춘 경우, 아무것도 반영시키기 않기 위해서
+            console.log(response)
         },
 
 
