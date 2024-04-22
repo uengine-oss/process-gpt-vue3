@@ -57,16 +57,18 @@ export default {
     },
     methods: {
         async loadInstances() {
-            this.runningInstances.children = await backend.getInstanceList();
-            this.runningInstances.children = this.runningInstances.children.map((item) => {
+            let result = await backend.getInstanceList();
+            if(!result) result = []
+            this.runningInstances.children = result.map((item) => {
                 item = {
                     title: item.instName,
                     to: `/todolist/${item.instId}`,
                 }
                 return item;
             });
-            this.completeInstances.children = await backend.getCompleteInstanceList();
-            this.completeInstances.children = this.completeInstances.children.map((item) => {
+            let complatedResult = await backend.getCompleteInstanceList();
+            if(!complatedResult) complatedResult = []
+            this.completeInstances.children = complatedResult.map((item) => {
                 item = {
                     title: item.instName,
                     to: `/todolist/${item.isntid}`,
