@@ -3,19 +3,19 @@
         <v-card-title style="font-size: larger;"> {{workItem.activity.name}} ({{workItemStatus}})</v-card-title>
         <v-row class="ma-0 pa-0">
              <!-- Left -->
-            <v-col class="pa-4" cols="4">
+            <v-col class="pa-0" cols="4">
                 <div v-if="currentComponent">
                     <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus" @undoTask="undoTask"></component>
                 </div>
             </v-col>
              <!-- Right -->
-            <v-col class="pa-4" cols="8">
-                <div style="height: 50%; margin-bottom: 15px;" >
-                    <v-card elevation="10">
-                        프로세스 진행상태
-                        <div>
+            <v-col class="pa-0" cols="8">
+                <div style="margin-bottom: 15px;" >
+                    <v-card elevation="10" class="process-card-resized">
+                        <v-card-title>프로세스 진행상태</v-card-title>
+                        <div class="pa-0" style="overflow:auto; height: calc(100vh - 620px);">
                             <div v-if="bpmn">
-                                <process-definition class="process-definition-resize"  :currentActivities="currentActivities" :bpmn="bpmn" :key="updatedDefKey" :isViewMode="true"></process-definition>
+                                <process-definition class="process-definition-resize work-item-definition" :currentActivities="currentActivities" :bpmn="bpmn" :key="updatedDefKey" :isViewMode="true"></process-definition>
                             </div>
                             <dif v-else>
                                 No BPMN found
@@ -23,52 +23,49 @@
                         </div>
                     </v-card>
                 </div>
-                <div style="height: 50%;">
-                    <v-row style="height: 100%; width: 100%; margin-left: 1px;">
-                        <div style="width: 50%; height: 100%;">
-                            <v-card elevation="10">
-                                CheckPoint ({{checkedCount}}/{{ checkPoints ? checkPoints.length : 0 }})
-                                <div style="width: 99%; height:70%; max-height:70%; overflow-y: scroll;">
-                                    <div v-if="checkPoints" v-for="(checkPoint, index) in checkPoints" :key="index">
-                                        <v-checkbox v-model="checkPoint.checked" :label="checkPoint.name" color="primary" hide-details></v-checkbox>
-                                    </div>
-                                    <div v-else>
-                                        <v-checkbox disabled value-model="true" label="Check Point Description" color="primary" hide-details></v-checkbox>
-                                    </div>
+                <v-row class="ma-0 pa-0">
+                    <v-col class="ma-0 pa-0">
+                        <v-card elevation="10">
+                            <v-card-title>CheckPoint ({{checkedCount}}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>
+                            <div style="width: 99%; height:70%; max-height:70%; overflow-y: scroll;">
+                                <div v-if="checkPoints" v-for="(checkPoint, index) in checkPoints" :key="index">
+                                    <v-checkbox v-model="checkPoint.checked" :label="checkPoint.name" color="primary" hide-details></v-checkbox>
                                 </div>
-                            </v-card>
-                            
-                            <v-card elevation="10">
-                                <div style="width: 99%; height: 23%;margin-top: 4%;">
-                                    <v-row style="width: 100%; height: 100%; margin-left: 0%;">
-                                        <div style="align-self: center; margin-left: 2%;">
-                                            <v-avatar color="brown" size="large">
-                                                <v-img src="https://avatars0.githubusercontent.com/u/9064066?v=4&s=460"></v-img>
-                                            </v-avatar>
-                                        </div>
-                                        <v-col style="align-self: center;height: 100%;">
-                                            <div> 다음 담당자 / 업무</div>
-                                            <div> 홍길동 / 정보 수집 및 영상제작</div>
-                                        </v-col>
-                                    </v-row>
+                                <div v-else>
+                                    <v-checkbox disabled value-model="true" label="Check Point Description" color="primary" hide-details></v-checkbox>
                                 </div>
-                            </v-card>
-                            
-                        </div>
-                        <div style="width: 50%; height: 98%;">
-                            <v-card elevation="10">
-                                워크 히스토리
-                                <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                                    <div class="d-flex w-100" style="height: calc(100vh - 300px);">
-                                        <MessageLayout :messages="workHistoryMessages" @clickMessage="navigateToWorkItemByTaskId">
-                                            <template v-slot:messageProfile="{ message }"><div></div></template>
-                                        </MessageLayout>
+                            </div>
+                        </v-card>
+                        
+                        <v-card elevation="10">
+                            <div style="width: 99%; height: 23%;margin-top: 4%;">
+                                <v-row style="width: 100%; height: 100%; margin-left: 0%;">
+                                    <div style="align-self: center; margin-left: 2%;">
+                                        <v-avatar color="brown" size="large">
+                                            <v-img src="https://avatars0.githubusercontent.com/u/9064066?v=4&s=460"></v-img>
+                                        </v-avatar>
                                     </div>
-                                </perfect-scrollbar>
-                            </v-card>
-                        </div>
-                    </v-row>
-                </div>
+                                    <v-col style="align-self: center;height: 100%;">
+                                        <div> 다음 담당자 / 업무</div>
+                                        <div> 홍길동 / 정보 수집 및 영상제작</div>
+                                    </v-col>
+                                </v-row>
+                            </div>
+                        </v-card>
+                    </v-col>
+                    <v-col class="ma-0 pa-0">
+                        <v-card elevation="10">
+                            <v-card-title>워크 히스토리</v-card-title>
+                            <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
+                                <div class="d-flex w-100" style="height: calc(100vh - 620px);">
+                                    <MessageLayout :messages="workHistoryMessages">
+                                        <template v-slot:messageProfile="{ message }"><div></div></template>
+                                    </MessageLayout>
+                                </div>
+                            </perfect-scrollbar>
+                        </v-card>
+                    </v-col>
+                </v-row>
             </v-col>
         </v-row>
     </v-card>
@@ -178,3 +175,19 @@ export default {
     },
 }
 </script>
+<style>
+    .work-item-definition svg {
+        transform: scale(0.8);
+        transform-origin: top left;
+    }
+    .work-item-definition {
+        height: 100vh;
+        padding-bottom:35px;
+    }
+    .process-card-resized {
+        width: auto; /* 너비를 자동으로 조정 */
+        height: auto; /* 높이를 자동으로 조정 */
+        min-height: 100%; /* 최소 높이를 100%로 설정하여 내용물을 모두 포함하도록 함 */
+        overflow: visible; /* 확대된 내용이 보이도록 overflow 설정 변경 */
+    }
+</style>
