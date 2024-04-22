@@ -172,8 +172,11 @@ export default {
                         }
                     })
                     me.previewFormValues = {}
-
                     me.isShowPreview = true
+
+                    this.$nextTick(() => {
+                        this.dev.previewFormValues = JSON.stringify(this.previewFormValues)
+                    })
                 }
             }
         }
