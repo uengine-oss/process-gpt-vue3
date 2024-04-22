@@ -311,10 +311,6 @@ export default {
          * @param {*} newMessage 
          */
         beforeSendMessage(newMessage) {
-            // 생성 도중에 엔터로 멈춰도 계속 메세지를 보내는 동작을 막기 위해서
-            if(this.generator.state === 'running')
-                return
-
             this.prevFormOutput = this.$refs.mashup.getKEditorContentHtml()
             this.generator.sendMessageWithPrevFormOutput(newMessage)
         },
