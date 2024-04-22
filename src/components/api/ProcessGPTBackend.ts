@@ -369,10 +369,17 @@ class ProcessGPTBackend implements Backend {
             if (list && list.length > 0) {
                 for (const item of list) {
                     const defId = item.id.split(".")[0];
-                    const instance = await storage.getObject(defId, { match: { proc_inst_id: item.id } });
+                    const instance = await this.getInstance(item.id);
                     if (instance.current_activity_ids.length > 0) {
+                        const taskId = await storage.getString('todolist', {
+                            match: { 
+                                proc_inst_id: item.id,
+                                activity_id: instance.current_activity_ids[0]
+                            },
+                            column: 'id'
+                        });
                         const instItem = {
-                            instId: item.id,
+                            instId: taskId,
                             instName: item.name,
                             status: "IN_PROGRESS",
                             startedDate: instance.start_date,
@@ -384,7 +391,7 @@ class ProcessGPTBackend implements Backend {
             }
             return instList;
         } catch (error) {
-            throw new Error('error in listInstance');
+            throw new Error('error in getInstanceList');
         }
     }
 
@@ -398,7 +405,7 @@ class ProcessGPTBackend implements Backend {
             if (list && list.length > 0) {
                 for (const item of list) {
                     const defId = item.id.split(".")[0];
-                    const instance = await storage.getObject(defId, { match: { proc_inst_id: item.id } });
+                    const instance = await this.getInstance(item.id);
                     if (!instance.current_activity_ids.length) {
                         const instItem = {
                             instId: item.id,
@@ -413,7 +420,32 @@ class ProcessGPTBackend implements Backend {
             }
             return instList;
         } catch (error) {
-            throw new Error('error in listInstance');
+            throw new Error('error in getCompleteInstanceList');
+        }
+    }
+
+    async getWorkListByInstId(instId: number) {
+        try {
+            const list = await storage.list(`todolist`, { match: { 'proc_inst_id': instId } });
+            const worklist: any[] = list.map((task: any) => {
+                return {
+                    defId: task.proc_def_id,
+                    endpoint: task.user_id,
+                    instId: task.proc_inst_id,
+                    rootInstId: task.proc_inst_id,
+                    taskId: task.id,
+                    startDate: task.start_date,
+                    dueDate: task.end_date,
+                    status: task.status,
+                    title: task.activity_id,
+                    tool: task.tool || '',
+                    description: task.description || '',
+                    task: task
+                }
+            })
+            return worklist;
+        } catch (e) {
+            throw new Error(`error in getWorkListByInstId`);
         }
     }
 }

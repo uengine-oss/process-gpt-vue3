@@ -14,7 +14,8 @@ const MainRoutes = {
         {
             name: 'WorkItem',
             path: '/todolist/:taskId',
-            component: () => import('@/components/apps/todolist/WorkItem.vue'),
+            component: () => import('@/components/ProcessInstance.vue')
+            // component: () => import('@/components/apps/todolist/WorkItem.vue'),
         },
         {
             name: 'Chats',
@@ -29,13 +30,13 @@ const MainRoutes = {
         {
             name: 'Instance Chat',
             path: '/instances/chat',
-            component: () => import('@/views/apps/instance-list/InstanceList.vue')
+            component: () => import('@/components/ProcessInstance.vue')
         },
-        {
-            name: 'instances',
-            path: '/instances/:id',
-            component: () => import('@/views/apps/instance-list/InstanceList.vue')
-        },
+        // {
+        //     name: 'instances',
+        //     path: '/instances/:id',
+        //     component: () => import('@/views/apps/instance-list/InstanceList.vue')
+        // },
         
         {
             name: 'organization',
