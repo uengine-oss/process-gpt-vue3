@@ -80,7 +80,7 @@
                                 <td>
                                     {{ item.type }}
                                 </td>
-                                <td v-if="item.defaultValue" class="text-subtitle-1">{{ item.defaultValue.name+"_"+item.defaultValue.alias }}</td><td v-else class="text-subtitle-1"></td>
+                                <td v-if="item.defaultValue" class="text-subtitle-1">{{ item.defaultValue.formDefId }}</td><td v-else class="text-subtitle-1"></td>
                                 <td class="text-subtitle-1">{{ item.description }}</td>
                                 <td class="text-subtitle-1">{{
                         item.datasource ? item.datasource.type : 'None' }}</td>
@@ -313,6 +313,15 @@ export default {
             })
         },
         addUengineVariable(val) {
+            if(val.type == 'Form'){
+                let defaultValue = {
+                    "_type": "org.uengine.contexts.HtmlFormContext",
+                    "formDefId": `${val.defaultValue}`,
+                    "filePath": `${val.defaultValue}.form`
+                }
+                val.defaultValue = defaultValue
+            }
+
             // definitions 객체에서 bpmn2:process 요소를 찾습니다.
             const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
             const processElement = this.definitions.rootElements.find(element => element.$type === 'bpmn:Process');
@@ -342,7 +351,8 @@ export default {
             // 새로운 uengine:variable 요소를 생성하고 속성을 설정합니다.
             const newVariable = bpmnFactory.create('uengine:Variable', {
                 name: val.name,
-                type: val.type
+                type: val.type,
+                json: JSON.stringify({'defaultValue':JSON.stringify(val.defaultValue)})
             });
 
             // 생성된 uengine:variable 요소를 uengine:properties 요소에 추가합니다.

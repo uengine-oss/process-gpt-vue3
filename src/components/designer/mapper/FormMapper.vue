@@ -228,10 +228,8 @@ export default {
             };
         },
         async fetchAndProcessFormDefinitions(variable) {
-            let formDefs = await this.storage.list('form_def');
-            let name = variable.defaultValue.name;
-            let alias = variable.defaultValue.alias;
-            let matchingForm = formDefs.find((form) => form.name === name && form.alias === alias);
+            let name = variable.name;
+            let matchingForm = this.definition.processVariables.find((form) => form.name === name && form.type === 'Form' && form.fields);
 
             if (matchingForm) {
                 matchingForm.fields.forEach((field) => {
