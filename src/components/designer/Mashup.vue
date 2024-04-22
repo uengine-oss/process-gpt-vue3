@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div id="kEditor1">
+    <div id="kEditor1" style="position: relative; top: -60px;">
     </div>
     
     
@@ -181,8 +181,18 @@ export default {
      * KEditor를 완전하게 제거시키기 위해서
      */
     completeClearKEditor() {
+      $("body").off('click', '.btn-container-setting')
+      $("body").off('click', '.btn-container-duplicate')
+      $("body").off('click', '.btn-container-delete')
+
+      $("body").off('click', '.btn-component-setting')
+      $("body").off('click', '.btn-component-duplicate')
+      $("body").off('click', '.btn-component-delete')
+      $("body").off('dblclick', '.keditor-component')
+
       document.body.classList.remove('initialized-click-event-handlers')
       document.body.classList.remove('initialized-snippets-list')
+
       $('.keditor-content-area').remove()
       $(".keditor-ui").remove()
       $('#kEditor1').data('keditor', null)

@@ -84,7 +84,7 @@
                         v-model="newProcess.label"
                         :label="`${addType.toUpperCase()} 프로세스 추가`"
                         autofocus
-                        @keyup.enter="addProcess"
+                        @keypress.enter="addProcess"
                     ></v-text-field>
                 </v-col>
             </v-row>
@@ -109,7 +109,7 @@
                         v-model="newProcess.label"
                         autofocus
                         label="프로세스 수정"
-                        @keyup.enter="updateProcess"
+                        @keypress.enter="updateProcess"
                     ></v-text-field>
                 </div>
             </v-col>

@@ -632,6 +632,7 @@ export default {
             if ($event.shiftKey) return;
             if (this.isLoading) {
                 this.isLoading = false;
+                this.$emit('stopMessage');
             }
             var copyMsg = this.newMessage.replace(/(?:\r\n|\r|\n)/g, '');
             if (copyMsg.length > 0)
