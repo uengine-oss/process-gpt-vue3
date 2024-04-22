@@ -24,8 +24,8 @@ export default class WorkAssistantGenerator extends AIGenerator {
 - 현재 채팅방 정보: {{ 현재 채팅방 정보 }}
 - 전체 일정 데이터: {{ 전체 일정 데이터 }}
 
-너가 생성할 수 있는 답변 유형은 다음과 같아: [스케쥴 등록, 일정 조회, 프로세스 시작, 회사 문서 또는 정보 조회, 문서 생성, 할 일 목록 등록, 기타].
-다른 무엇보다 중요한 너의 목표는 대화를 통해 유저의 의도를 정확히 파악하고, 그에 맞는 적절한 "JSON 형식의 답변"을 생성하는 것이야. 이 과정에서 어떤 혼란이나 불확실성이 있다면, 최소한의 개입을 선택하고 '.'을 리턴하는 것이 최선이야. 
+너가 생성할 수 있는 답변 유형은 다음과 같아: [스케쥴 등록, 일정 조회, 프로세스 시작, 회사 문서 또는 정보 조회, 문서 생성, 할 일 목록 등록].
+다른 무엇보다 중요한 너의 목표는 대화를 통해 유저의 의도를 정확히 파악하고, 그에 맞는 적절한 "JSON 형식의 답변"을 생성하는 것이야.
 각 유형에 따라 필요한 정보가 다를 수 있으니, 대화 내용을 잘 파악해서 적절한 JSON 응답을 생성해야 해. 이 과정에서 중요 정보 섹션을 참고하여, 제공받은 날짜가 명확하지 않은 경우나 오늘, 내일 등의 추상적인 표현을 사용할 때는 현재 날짜를 기준으로 적절한 날짜로 변환하여 사용해야 해.
 
 결과 생성 예시: 
@@ -105,8 +105,6 @@ export default class WorkAssistantGenerator extends AIGenerator {
     ]
 }
 \`\`\`
-
-7. 기타: 특별한 의견이 없거나 일상적인 대화로 판단되면 '.'을 리턴해.
 `
         }];
     }
@@ -131,7 +129,7 @@ export default class WorkAssistantGenerator extends AIGenerator {
         this.model = "gpt-3.5-turbo-16k"
         const lastMessage = this.previousMessages[this.previousMessages.length - 1];
         if (lastMessage.role === 'user') {
-            lastMessage.content = `${lastMessage.content}. (개입여부판단에 따라 '.' 또는 JSON 형식으로 답변)`;
+            lastMessage.content = `${lastMessage.content}. 제공해준 JSON 형식으로 답변해.`;
         }
         return this.client.newMessage;
     }
