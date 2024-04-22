@@ -7,12 +7,6 @@
                 <div v-if="currentComponent">
                     <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus" @undoTask="undoTask"></component>
                 </div>
-                <div v-else>
-                    <div v-if="loading">Loading...</div>
-                    <div v-else>
-                        <div>No work item found</div>
-                    </div>
-                </div>
             </v-col>
              <!-- Right -->
             <v-col class="pa-4" cols="8">
@@ -140,22 +134,32 @@ export default {
         }
     },
     methods: {
-        async init() {
+        init() {
             var me = this
-            me.loading = true;
-            me.workItem = await backend.getWorkItem(this.id);
-            me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, {type: 'bpmn'});
-            me.workHistoryList = await backend.getWorkListByInstId(me.workItem.worklist.instId);
-            me.currentComponent = me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem';
-            me.currentActivities = [ me.workItem.activity.tracingTag ];
-            me.updatedDefKey++
-            me.loading = false
+            me.$try({
+                context: me,
+                action: async () => {
+                    me.workItem = await backend.getWorkItem(this.id);
+                    me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, {type: 'bpmn'});
+                    me.workHistoryList = await backend.getWorkListByInstId(me.workItem.worklist.instId);
+                    me.currentComponent = me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem';
+                    me.currentActivities = [ me.workItem.activity.tracingTag ];
+                    me.updatedDefKey++
+                }
+            })
         },
         async undoTask(){
             var me = this
-            if(!me.workItem) return
-            await backend.backToHere(me.workItem.worklist.instId, me.workItem.activity.tracingTag)
-            me.$router.push('/todolist')
+            me.$try({
+                context: me,
+                action: async () => {
+                    if(!me.workItem) return
+                    await backend.backToHere(me.workItem.worklist.instId, me.workItem.activity.tracingTag)
+                    me.$router.push('/todolist')
+                },
+                successMsg: '되돌리기 완료'
+            })
+          
         },
         navigateToWorkItemByTaskId(obj){
             var me = this
