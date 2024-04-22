@@ -89,6 +89,8 @@ export default {
                             me.todolist.find(x => x.id == 'IN_PROGRESS').tasks.push(item);
                         } else if (item.status == 'PENDING') {
                             me.todolist.find(x => x.id == 'PENDING').tasks.push(item);
+                        } else if (item.status == 'DONE') {
+                            me.todolist.find(x => x.id == 'DONE').tasks.push(item);
                         }
                     })
                     // me.todolist.find(x => x.id == 'TODO').tasks.push(...worklist);
