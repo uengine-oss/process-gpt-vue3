@@ -4,7 +4,7 @@
         <v-radio-group v-model="inputedValue">
             <div v-for="(item, index) in localItems" :key="index">
                 <div v-for="(value, key) in item" :key="key">
-                    <v-radio :label="`${key}(${value})`" :value="key"></v-radio>
+                    <v-radio :label="key" :value="key"></v-radio>
                 </div>
             </div>
         </v-radio-group>
@@ -25,8 +25,7 @@ export default {
 
     computed: {
         label() {
-            if(this.localAlias && this.localName) return `${this.localAlias}(${this.localName})`
-            else if (this.localAlias) return this.localAlias
+            if (this.localAlias) return this.localAlias
             else if (this.localName) return this.localName
             else return ""
         }
