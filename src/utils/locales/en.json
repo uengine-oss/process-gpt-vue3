@@ -47,6 +47,12 @@
         "sortByTime": "Sort by Time",
         "sortByCompleted": "Sort by Completed"
     },
+    "runningInstance": {
+        "title": "Running Instance"
+    },
+    "completeInstance": {
+        "title": "Complete Instance"
+    },
     "definitionManagement": {
         "title": "Definition Management"
     },

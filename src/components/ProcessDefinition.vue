@@ -39,8 +39,8 @@
                         v-on:change-shape="onChangeShape"></vue-bpmn> -->
                 </v-card>
             </v-col>
-            <div v-if="panel" style="position: fixed; z-index:999; right: 0; width: 30%; height: 100%">
-                <v-card elevation="1" style="height: 100%">
+            <div v-if="panel" style="position: fixed; z-index:999; right: 0; height: 100%">
+                <v-card elevation="1" style="height: calc(100vh - 155px);">
                     <bpmn-property-panel :element="element" @close="closePanel" :key="element.id"
                         :isViewMode="isViewMode" v-on:updateElement="(val) => updateElement(val)" :definition="thisDefinition"></bpmn-property-panel>
                     <!-- {{ definition }} -->

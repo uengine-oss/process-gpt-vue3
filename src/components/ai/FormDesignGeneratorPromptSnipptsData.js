@@ -51,12 +51,6 @@ const formDesignGeneratorPromptSnipptsData = {
             tag: `<label-field label='<입력시킬 라벨 값>'></label-field>`,
             purpose: `특정 컴포넌트를 설명하기 위해서`,
             limit: "name, alias가 있는 경우에는 이미 내부적으로 label이 설정되기 때문에 쓸 필요가 없음"
-        },
-
-        {
-            tag: `<submit-field></submit-field>`,
-            purpose: `유저의 입력을 처리하기 위해서`,
-            limit: "반드시 포함되어야 하며, 한 번만 사용 가능"
         }
     ],
 
@@ -67,7 +61,7 @@ const formDesignGeneratorPromptSnipptsData = {
             description: `처음에는 아무런 HTML 정보없이 생성하는 것이니까 '처음으로 폼 생성' 메뉴얼을 따라야 겠네.
 
             먼저, 유효한 레이아웃을 생각해 봐야 해.
-            도서 정보 입력 폼은 책 제목, 저자, 책 장르, 책 표지 이미지, 그리고 제출 버튼 정도가 필요하겠네.
+            도서 정보 입력 폼은 책 제목, 저자, 책 장르, 책 표지 이미지 정도가 필요하겠네.
             현재 정보가 그리 많지는 않기 때문에 12의 공간을 차지하는 하나의 col-sm-12로 만들어주면 돼.
 
             이제 각각의 데이터마다 필요한 컴포넌트를 생각해보자.
@@ -81,8 +75,6 @@ const formDesignGeneratorPromptSnipptsData = {
             items에 '...'과 같이 나열하는 문자열이 없고, 각각의 키가 고유하니까 만족되는 값이라고 볼 수 있겠네.
 
             책 표지 이미지는 파일을 입력받아야 하니까 file-field를 사용하면 되겠네.
-
-            제출 버튼은 하나만 추가하라는 제약사항이 있으니까 하나만 마지막에 추가하면 되겠네.
             
             그리고, 채팅마다 맨 마지막에 값을 반환하라고 했으니까 JSON으로 값을 반환시켜야 겠네.
             '\`\`\`'로 감싸진 코드에 JSON 형식으로 "htmlOutput" 속성에 추가만 해주면 되겠네.`,
@@ -96,7 +88,6 @@ const formDesignGeneratorPromptSnipptsData = {
                         <text-field name='book_author' alias='저자'></text-field>
                         <select-field name='book_genre' alias='책 장르' items='[{"소설": "novel"}, {"시": "poem"}, {"에세이": "essay"}]'></select-field>
                         <file-field name='book_cover' alias='책 표지 이미지'></file-field>
-                        <submit-field></submit-field>
                     </div>
                 </div>"
             }

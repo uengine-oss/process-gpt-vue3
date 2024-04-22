@@ -39,10 +39,14 @@ const customizer = useCustomizerStore();
                 </template>
                 <!-- Process Definition List -->
                 <template v-if="definitionList">
-                    <NavCollapse class="leftPadding" :item="definitionList" :level="0" />
+                    
+                    <NavCollapse class="leftPadding" :item="definitionList"  @update:item="def => definitionList = def" :level="0" />
                 </template>
                 <!-- <Moreoption/> -->
             </v-list>
+
+            <ProcessInstanceList />
+
             <div class="pa-6 px-4 userbottom bg-containerBg mt-10">
                 <ExtraBox />
             </div>
@@ -53,7 +57,12 @@ const customizer = useCustomizerStore();
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 
+import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
+
 export default {
+    components: {
+        ProcessInstanceList
+    },
     data: () => ({
         sidebarItem: [
             {
@@ -82,17 +91,6 @@ export default {
                 icon: 'solar:chat-round-unread-line-duotone',
                 BgColor: 'primary',
                 to: "/chats",
-                disable: true,
-            },
-            {
-                header: 'instance.title',
-                disable: true,
-            },
-            {
-                title: "processExecution.title",
-                icon: 'solar:chat-dots-linear',
-                BgColor: 'primary',
-                to: '/instances/chat',
                 disable: true,
             },
             {

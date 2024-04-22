@@ -4,11 +4,26 @@ import DropDown from "../DropDown/index.vue";
 import { Icon } from '@iconify/vue';
 const props = defineProps({ item: Object, level: Number });
 import BackendFactory from '@/components/api/BackendFactory';
+const emit = defineEmits(['update:item']);
 const backend = BackendFactory.createBackend();
 const getChild = async (subitem, i) => {
     let res = await backend.listDefinition(subitem.title)
-
-    props.item.children[i]["children"] = res
+    let menu = []
+    res.forEach(el => {
+        var obj = {
+            title: el.name,
+        }
+        if(el.directory){
+            obj.directory = true
+            obj.children = []
+        } else {
+            obj.to = `/definitions/${el.path}`
+        }
+        menu.push(obj);
+    })
+    props.item.children[i]["children"] = menu
+    let copy = JSON.parse(JSON.stringify(props.item))
+    emit('update:item', copy)
 }
 </script>
 
@@ -22,8 +37,8 @@ const getChild = async (subitem, i) => {
             <!---Dropdown  -->
             <!-- ---------------------------------------------- -->
             <template v-slot:activator="{ props }">
-                <v-list-item v-if="item" v-bind="props" :value="item.title" :ripple="false"
-                    :class="' bg-hover-' + item.BgColor" :color="item.BgColor">
+                <v-list-item v-bind="props" :value="item.title" :ripple="false" :class="' bg-hover-' + item.BgColor"
+                    :color="item.BgColor">
                     <!---Icon  -->
                     <template v-slot:prepend>
                         <div :class="'navbox  bg-hover-' + item.BgColor" :color="item.BgColor">
@@ -49,17 +64,17 @@ const getChild = async (subitem, i) => {
             <!---Sub Item-->
             <!-- ---------------------------------------------- -->
             <div class="mb-4 sublinks">
-                <template v-if="item.children" v-for="(subitem, i) in item.children" :key="i">
-                    <NavCollapse :item="subitem.children" v-if="subitem.directory" :level="level + 1"
+                <template v-for="(subitem, i) in item.children" :key="i" v-if="item.children">
+                    <NavCollapse :item="subitem" v-if="subitem.directory" :level="level + 1"
                         @click="getChild(subitem, i)" />
-                    <NavCollapse :item="subitem.children" v-else-if="subitem.children" :level="level + 1" />
+                    <NavCollapse :item="subitem" v-else-if="subitem.children" :level="level + 1" />
                     <DropDown :item="subitem" :level="level + 1" v-else></DropDown>
                 </template>
-                <template v-if="item.directory" v-for="(subitem, i) in item.children" :key="i">
-                    <NavCollapse :item="subitem.children" v-if="subitem.directory" :level="level + 1"
+                <!-- <template v-for="(subitem, i) in item.children" :key="i" v-if="item.directory">
+                    <NavCollapse :item="subitem" v-if="subitem.directory" :level="level + 1"
                         @click="getChild(subitem, i)" />
                     <DropDown :item="subitem" :level="level + 1" v-else></DropDown>
-                </template>
+                </template> -->
             </div>
         </v-list-group>
     </div>

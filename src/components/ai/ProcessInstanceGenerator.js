@@ -26,8 +26,8 @@ export default class ProcessInstanceGenerator extends AIGenerator {
         }
 
         if (isNew) {
-            if (this.client.processDefinition.length > 0) {
-                var procDef = this.client.processDefinition[0];
+            if (this.client.processDefinitions.length > 0) {
+                var procDef = this.client.processDefinitions[0];
                 this.input.process_definition_id = procDef.processDefinitionId;
             };
             this.input.process_instance_id = "new";
@@ -35,7 +35,6 @@ export default class ProcessInstanceGenerator extends AIGenerator {
             var procInst = this.client.processInstance;
             this.input.activity_id = procInst.current_activity_ids[0];
             this.input.process_instance_id = procInst.proc_inst_id;
-            this.input.process_definition_id = "";
         }
     }
 
