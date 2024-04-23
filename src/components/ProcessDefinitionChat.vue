@@ -542,13 +542,13 @@ export default {
 
                     me.processDefinition.processDefinitionId = info.proc_def_id ? info.proc_def_id : prompt("please give a ID for the process definition");
                     // Version 저장시 제외.
-                    if (!me.$route.params.pathMatch) me.processDefinition.processDefinitionName = info.name ? info.name : prompt("please give a name for the process definition");
+                    me.processDefinition.processDefinitionName = info.name ? info.name : prompt("please give a name for the process definition");
 
                     me.projectName = me.processDefinition.processDefinitionName;
                     if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
                         throw new Error("processDefinitionId or processDefinitionName is missing");
                     }
-                    await backend.putRawDefinition(xml, info.proc_def_id, info, {type: "bpmn"});
+                    await backend.putRawDefinition(xml, info.proc_def_id, info);
                     await this.saveToVectorStore(me.processDefinition);;
                 }
             })

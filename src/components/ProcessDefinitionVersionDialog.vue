@@ -131,6 +131,7 @@ export default {
                         proc_def_id: me.process ? me.process.processDefinitionId : me.information.proc_def_id,
                         prevSnapshot: me.information.snapshot,
                         prevDiff: me.information.diff,
+                        type: 'bpmn'
                     })
                 },
                 successMsg: '저장되었습니다.'
