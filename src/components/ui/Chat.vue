@@ -89,7 +89,7 @@
                 <!-- <v-btn v-if="type == 'chats' && filteredMessages.length > 0" style="position: absolute; left: 45%"
                     @click="getMoreChat()">get more chat</v-btn> -->
 
-                <div class="d-flex w-100" style="height: calc(100vh - 300px);">
+                <div class="d-flex w-100" style="height: calc(100vh - 340px);">
                     <v-col>
                         <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
                             <template v-slot:title>
@@ -258,7 +258,7 @@
             </perfect-scrollbar>
             <div style="position:relative">
                 <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
-                    <v-tooltip text="Add image">
+                    <v-tooltip :text="$t('chat.addImage')">
                         <template v-slot:activator="{ props }">
                             <v-btn icon variant="text" class="text-medium-emphasis" @click="uploadImage" v-bind="props"
                                 style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
@@ -271,7 +271,7 @@
                             <v-btn v-if="(type == 'instances' || type == 'chats') && !agentInfo.isRunning"
                                 :disabled="!(newMessage || agentInfo.draftPrompt)" icon variant="text"
                                 class="text-medium-emphasis" @click="requestDraftAgent" v-bind="props"
-                                style="width:30px; height:30px;">
+                                style="width:30px; height:30px; margin:1px 0px 0px 3px;">
                                 <Icon icon="fluent:document-one-page-sparkle-16-regular" width="20" height="20" />
                             </v-btn>
                             <v-btn v-if="(type == 'instances' || type == 'chats') && agentInfo.isRunning" icon variant="text"
@@ -280,14 +280,37 @@
                             </v-btn>
                         </template>
                     </v-tooltip>
-                    <v-form ref="uploadForm" @submit.prevent="submitFile">
-                        <v-file-input
-                            v-model="file"
-                            label="Choose a file"
-                            prepend-icon="mdi-paperclip"
-                            outlined
-                        ></v-file-input>
-                        <v-btn type="submit" color="primary">Upload</v-btn>
+                    <v-form v-if="(type == 'instances' || type == 'chats') && !agentInfo.isRunning"
+                        ref="uploadForm" @submit.prevent="submitFile"
+                        style="height:30px;"
+                        class="chat-selected-file"
+                    >
+                        <v-row class="ma-0 pa-0"
+                            :style="file && file.length > 0 ? 'margin:-13px 0px 0px 7px !important;' : ''"
+                        >
+                            <v-file-input class="chat-file-up-load"
+                                :class="{'chat-file-up-load-display': file && file.length > 0}"
+                                :style="file && file.length > 0 ? '' : 'padding:5px 0px 0px 8px !important;'"
+                                v-model="file"
+                                label="Choose a file"
+                                prepend-icon="mdi-paperclip"
+                                outlined
+                            ></v-file-input>
+                            <v-tooltip :text="$t('chat.fileUpLoad')">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-if="file && file.length > 0" type="submit" 
+                                        v-bind="props"
+                                        icon variant="text"
+                                        class="text-medium-emphasis"
+                                        style="width:30px;
+                                            height:30px;
+                                            margin:8px 0px 0px 5px;"
+                                    >
+                                        <Icon icon="material-symbols:upload" width="24" height="24" />
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                        </v-row>
                     </v-form>
                 </v-row>
             </div>
@@ -711,6 +734,14 @@ export default {
 </script>
 
 <style lang="scss">
+.chat-file-up-load .v-input__control {
+    display: none;
+}
+
+.chat-file-up-load-display .v-input__control {
+    display: block;
+}
+
 .message-input-box .v-field__input {
     font-size: 16px;
     padding-left: 12px;

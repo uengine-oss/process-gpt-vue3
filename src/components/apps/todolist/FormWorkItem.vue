@@ -10,11 +10,10 @@
         </div>
         
     </v-row>
-   <div style="height:calc(100vh - 255px)">
+   <div class="pa-4" style="height:calc(100vh - 255px);">
         <!-- <FormMapper></FormMapper> -->
         <DynamicForm :formHTML="html" v-model="formData"></DynamicForm>
     </div>
-   
 </template>
 
 <script>

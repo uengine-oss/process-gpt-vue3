@@ -102,7 +102,9 @@
         "lock": "Please press the lock to lock it in order to check in (save).",
         "unlock": "Please press the lock to unlock it in order to check out (edit).",
         "history": "history button",
-        "import": "Import BPMN File"
+        "import": "Import BPMN File",
+        "addImage": "Add Image",
+        "fileUpLoad": "File Up Load"
     },
     "accountTab": {
         "accountSetting": "Account Settings",
