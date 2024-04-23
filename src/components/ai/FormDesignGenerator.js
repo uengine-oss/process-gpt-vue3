@@ -21,8 +21,8 @@ export default class FormDesignGenerator extends AIGenerator{
             (componentInfo) => `{태그: '${componentInfo.tag}', 목적: ${componentInfo.purpose}${(componentInfo.limit) ? `, 주의사항: ${componentInfo.limit}` : ""}}`)
             .join(",") + "]"
         
-        const examplePromptStr = (promptSnippetData.examples && (promptSnippetData.examples.length > 0)) ? ("예시를 들어줄께.\n" + 
-          promptSnippetData.examples.map((example) => `- ${example.title}\n${example.description}\n${example.result}`).join("\n")) : ""
+        const examplePromptStr = (promptSnippetData.examples && (promptSnippetData.examples.length > 0)) ? ("* 예시\n" + 
+          promptSnippetData.examples.map((example) => `- 입력: ${example.input}\n- 출력: ${example.output}`).join("\n")) : ""
 
         
         this.prevMessageFormat = {
@@ -66,17 +66,13 @@ export default class FormDesignGenerator extends AIGenerator{
           사용해야 하는 컴포넌트는 다음과 같아.
           ${componentInfosPromptStr}
 
-          반환 형식은 다음과 같은 Json 형태를 따라주고, 채팅으로 응답할 때마다 맨 마지막에 반드시 결과를 적어주면 돼.
-          마지막 결과는 markdown 으로, three backticks 로 감싸줘야 내가 이 결과를 사용해야 한다는 걸 알 수 있으니까 명심해.
+          응답 시에는 절차나 과정 같은 것은 따로 설명하지 말고, 바로 JSON 응답만 출력하도록 하면 돼.
+          JSON 응답은 markdown 으로, three backticks 로 감싸줘야 내가 이 결과를 사용해야 한다는 걸 알 수 있으니까 명심해.
           \`\`\`
           {
             "htmlOutput": "생성된 폼 HTML 코드"
           }
           \`\`\`
-
-          처음으로 폼을 생성하기 위해서는 다음과 같은 과정을 차근차근 생각해보면 돼.
-          먼저 어떤 입력값이 들어갈지 생각하고, 그에 대한 레이아웃을 만들고, 그 안에 각 입력값에 따라서 적합한 컴포넌트들을 메뉴얼의 주의 사항들을 따르면서 추가하는 순으로 순차적으로 문제를 해결하는 거야.
-          물론 뭔가 더 창의적으로 속성을 변경해야 한다고 생각할 수 있어. 하지만 메뉴얼에 위반하지 않는 선에서 그 작업을 수행해야 해.
           
           - 기존의 폼 변경
           이미 만들어진 폼이 있는 경우에는 변경을 하기위한 지시사항들을 생성해줘야 해.
@@ -92,8 +88,8 @@ export default class FormDesignGenerator extends AIGenerator{
           replace는 targetCSSSelector 속성에 변경시킬 태그의 CSS 선택자를 넣어서 그 태그를 tagValue로 교체시킬 수 있어.
           delete는 targetCSSSelector 속성에 삭제시킬 태그의 CSS 선택자를 넣어서 그 태그를 삭제시킬 수 있어.
 
-          반환 형식은 다음과 같은 Json 형태를 따라주고, 채팅으로 응답할 때마다 맨 마지막에 반드시 결과를 적어주면 돼.
-          마지막 결과는 markdown 으로, three backticks 로 감싸줘야 내가 이 결과를 사용해야 한다는 걸 알 수 있으니까 명심해.
+          응답 시에는 절차나 과정 같은 것은 따로 설명하지 말고, 바로 JSON 응답만 출력하도록 하면 돼.
+          JSON 응답은 markdown 으로, three backticks 로 감싸줘야 내가 이 결과를 사용해야 한다는 걸 알 수 있으니까 명심해.
           \`\`\`
           {
             "modifications":[
@@ -106,14 +102,9 @@ export default class FormDesignGenerator extends AIGenerator{
           }
           \`\`\`
 
-          기존의 폼을 변경하기 위해서 다음과 같은 과정을 차근차근 생각해보면 돼.
-          먼저 사용자가 원하는 행위가 부모 태그에 자식 태그 추가(addAsChild), 특정 태그 뒤에 추가(addAfter), 변경(replace), 삭제(delete) 중에 무엇을 원하는지 생각해보자.
-          원하는 행위에 대해서 파악했으면 그 부분을 수정하기 위한 CSS 선택자가 무엇인지 생각하고, 어떤 단일 HTML 태그 값을 만들어야 하는지 생각해야 해.
-          최종적으로는 그러한 지시사항을 modifications 리스트 안에 담아서 반환시켜야 해.
+          {{prevMessageFormat}}
 
           ${examplePromptStr}
-
-          {{prevMessageFormat}}
 `
           }
     }
@@ -122,7 +113,7 @@ export default class FormDesignGenerator extends AIGenerator{
      * 이전에 이미 만들어 놓은 HTML 폼 데이터가 있을 경우, 이 데이터를 System 메세지에 포함시키기 위해서
      */
     sendMessageWithPrevFormOutput(newMessage) {
-          const prevFormOutput = (this.client.prevFormOutput ? (
+          const prevFormOutput = ((this.client.prevFormOutput !== '<section></section>') ? (
             `이전에 만들어진 폼이 있고, 현재 수정하려고 해.
             이 폼은 무조건 최신 결과라고 생각하면 돼.
             이 이후의 채팅과 관계없이 해당 폼 HTML을 기준으로 작업해줘.
@@ -139,6 +130,11 @@ export default class FormDesignGenerator extends AIGenerator{
           this.client.sendMessage(newMessage);
     }
 
+    createMessages() {
+      let messages = super.createMessages();
+      messages[messages.length - 1].content = `- 입력: ${messages[messages.length - 1].content}\n- 출력: `
+      return [messages[0], messages[messages.length - 1]];
+    }
 
     createPrompt(){
        return this.client.newMessage

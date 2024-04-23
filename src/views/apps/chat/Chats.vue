@@ -390,50 +390,46 @@ export default {
             // console.log(response)
         },
         async afterGenerationFinished(response) {
-            if(response == '.' || response == '.\n' || response == '{}' || response == '...') {
-                this.messages.splice(this.messages.length - 1, 1)
-            } else {
-                let obj = this.createMessageObj(response, 'system')
-                if(response && response.includes("{")){
-                    let responseObj = partialParse(response)
-                    if(responseObj.messageForUser){
-                        obj.messageForUser = responseObj.messageForUser
-                    }
-
-                    if(responseObj.work == 'CompanyQuery'){
-                        try{
-                            let responseMemento = await axios.post('http://localhost:8005/query', { query: responseObj.content});
-                            obj.memento = {}
-                            obj.memento.response = responseMemento.data.response
-                            if (!responseMemento.data.metadata) return {};
-                            const unique = {};
-                            const sources = Object.values(responseMemento.data.metadata).filter(obj => {
-                                if (!unique[obj.file_path]) {
-                                    unique[obj.file_path] = true;
-                                    return true;
-                                }
-                            });
-                            obj.memento.sources = sources
-
-                            const responseTable = await axios.post('http://localhost:8006/process-data-query/invoke', {
-                                input: {
-                                    var_name: responseObj.content
-                                }
-                            });
-                            obj.tableData = responseTable.data.output
-                        } catch(error){
-                            alert(error);
-                        }
-                    } else if(responseObj.work == 'ScheduleQuery'){
-                        console.log(responseObj)
-                    } else {
-                        obj.uuid = this.uuid()
-                        obj.systemRequest = true
-                        obj.requestUserEmail = this.userInfo.email
-                    }
+            let obj = this.createMessageObj(response, 'system')
+            if(response && response.includes("{")){
+                let responseObj = partialParse(response)
+                if(responseObj.messageForUser){
+                    obj.messageForUser = responseObj.messageForUser
                 }
-                this.putMessage(obj)
+
+                if(responseObj.work == 'CompanyQuery'){
+                    try{
+                        let responseMemento = await axios.post('http://localhost:8005/query', { query: responseObj.content});
+                        obj.memento = {}
+                        obj.memento.response = responseMemento.data.response
+                        if (!responseMemento.data.metadata) return {};
+                        const unique = {};
+                        const sources = Object.values(responseMemento.data.metadata).filter(obj => {
+                            if (!unique[obj.file_path]) {
+                                unique[obj.file_path] = true;
+                                return true;
+                            }
+                        });
+                        obj.memento.sources = sources
+
+                        const responseTable = await axios.post('http://localhost:8006/process-data-query/invoke', {
+                            input: {
+                                var_name: responseObj.content
+                            }
+                        });
+                        obj.tableData = responseTable.data.output
+                    } catch(error){
+                        alert(error);
+                    }
+                } else if(responseObj.work == 'ScheduleQuery'){
+                    console.log(responseObj)
+                } else {
+                    obj.uuid = this.uuid()
+                    obj.systemRequest = true
+                    obj.requestUserEmail = this.userInfo.email
+                }
             }
+            this.putMessage(obj)
         },
 
         async sendTodolist() {

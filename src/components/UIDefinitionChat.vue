@@ -21,15 +21,9 @@
                     <v-tab value="preview">미리보기</v-tab>
                 </v-tabs>
                 <v-window v-model="currentTabName" class="fill-height">
-                    <v-window-item value="edit" class="fill-height" style="overflow-y: auto">
-                        <mashup
-                            v-if="isShowMashup"
-                            ref="mashup"
-                            v-model="kEditorInput"
-                            :key="mashupKey"
-                            @onSaveFormDefinition="saveFormDefinition"
-                            :storedFormDefData="storedFormDefData"
-                        />
+                    <v-window-item value="edit" class="fill-height mt-15" style="overflow-y: auto;">
+                        <mashup v-if="isShowMashup" ref="mashup" v-model="kEditorInput" :key="mashupKey" 
+                            @onSaveFormDefinition="saveFormDefinition" :storedFormDefData="storedFormDefData"/>
                         <card v-else class="d-flex align-center justify-center fill-height">
                             <v-progress-circular color="primary" indeterminate></v-progress-circular>
                         </card>
@@ -132,7 +126,8 @@ export default {
         dev: {
             isDevMode: window.localStorage.getItem('isDevMode') === 'true',
             previewFormValues: ''
-        }
+        },
+        loadFormId: ""
     }),
     async created() {
         this.generator = new ChatGenerator(this, {
@@ -149,7 +144,10 @@ export default {
             deep: true,
             handler(newVal, oldVal) {
                 if (newVal.path !== oldVal.path) {
-                    if (newVal.params.id && newVal.params.id != 'chat') this.loadData();
+                    const pathMatchParams = this.$route.params.pathMatch
+                    this.loadFormId = pathMatchParams[pathMatchParams.length - 1]
+
+                    if (this.loadFormId && this.loadFormId != 'chat') this.loadData();
                     else this.isShowMashup = true;
                 } else this.isShowMashup = true;
             }
@@ -250,7 +248,7 @@ export default {
          * 'Save' 버튼을 누를 경우, 최종 결과를 DB에 저장하기 위해서
          */
         async saveFormDefinition({ id, html }) {
-            const isNewSave = this.$route.params.id !== id;
+            const isNewSave = this.loadFormId !== id;
             if (isNewSave) {
                 const isFormAlreadyExist = await this.backend.getRawDefinition(id, { type: 'form' });
                 if (isFormAlreadyExist) {
@@ -262,7 +260,7 @@ export default {
             this.isOpenSaveDialog = false;
 
             if (isNewSave) {
-                this.$router.push(`/ui-definitions/${id}`);
+                this.$router.push(`/ui-definitions/form/${id}`);
             }
         },
 
@@ -280,17 +278,13 @@ export default {
          * @param {*} path
          */
         async loadData(path) {
-            const fullPath = this.$route.params.pathMatch.join('/');
-            if (fullPath.startsWith('/')) {
-                fullPath = fullPath.substring(1);
-            }
-            let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
-            if (fullPath && lastPath != 'chat') {
-                path = `${this.path}/${fullPath}`;
+            const pathMatchParams = this.$route.params.pathMatch
+            this.loadFormId = pathMatchParams[pathMatchParams.length - 1]
 
-                this.storedFormDefData = (await this.backend.getRawDefinition(fullPath, { type: 'form' })) ?? {};
+            if (this.loadFormId && this.loadFormId != 'chat') {
+                this.storedFormDefData = (await this.backend.getRawDefinition(this.loadFormId, { type: 'form' })) ?? {};
                 if (!this.storedFormDefData.id) {
-                    alert(`'${fullPath}' ID 를 가지는 폼 디자인 정보가 없습니다! 새 폼 만들기 화면으로 이동됩니다.`);
+                    alert(`'${this.loadFormId}' ID 를 가지는 폼 디자인 정보가 없습니다! 새 폼 만들기 화면으로 이동됩니다.`);
                     this.$router.push(`/ui-definitions/chat`);
                     this.isShowMashup = true;
                     return;
@@ -310,6 +304,7 @@ export default {
          */
         beforeSendMessage(newMessage) {
             this.prevFormOutput = this.$refs.mashup.getKEditorContentHtml();
+            newMessage.mentionedUsers = null
             this.generator.sendMessageWithPrevFormOutput(newMessage);
         },
 
@@ -352,6 +347,15 @@ export default {
                 console.log(error);
             }
         },
+
+        /**
+         * 모델 생성을 도중에 멈춰도 결과를 처리가 가능한 경우에는 최대한 처리시키기 위해서
+         */
+        afterModelStopped(response) {
+            // AI 생성을 멈춘 경우, 아무것도 반영시키기 않기 위해서
+            console.log(response)
+        },
+
 
         /**
          * 마지막 최종 결과 Html이 표시된 JSON을 추출하기 위해서

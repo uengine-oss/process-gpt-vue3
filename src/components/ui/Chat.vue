@@ -316,7 +316,7 @@
         <form class="d-flex align-center pa-0">
             <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                 class="shadow-none message-input-box cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
-                auto-grow rows="1" @keydown.enter="beforeSend" :disabled="disableChat"
+                auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
                 style="font-size:20px !important;" @input="handleTextareaInput">
                 <template v-slot:append-inner>
                     <div style="height: -webkit-fill-available; margin-right: 10px; margin-top: 10px;">

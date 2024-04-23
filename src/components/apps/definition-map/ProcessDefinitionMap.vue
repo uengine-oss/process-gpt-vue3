@@ -57,16 +57,6 @@
                         <Icon icon="mage:image-download" width="24" height="24" />
                     </v-btn>
 
-                    <!-- <ProcessMenu
-                        class="ml-3 cp-add-process"
-                        :size="24" 
-                        :type="type" 
-                        :enableEdit="enableEdit"
-                        :process="value"
-                        :storage="storage"
-                        @add="addProcess"
-                    /> -->
-
                     <!-- 프로세스 정의 체계도 캔버스 확대 축소 버튼 및 아이콘 -->
                     <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
@@ -155,9 +145,10 @@ import DefinitionMapList from './DefinitionMapList.vue';
 import ProcessMenu from './ProcessMenu.vue';
 import SubProcessDetail from './SubProcessDetail.vue';
 import ViewProcessDetails from './ViewProcessDetails.vue';
-const storageKey = 'configuration'
+
 import BackendFactory from '@/components/api/BackendFactory';
-const uengine = BackendFactory.createBackend();
+const backend = BackendFactory.createBackend();
+
 export default {
     components: {
         ProcessMenu,
@@ -187,18 +178,29 @@ export default {
         alertMessage: '',
         isAdmin: false,
     }),
+    computed: {
+        useLock() {
+            if (window.$mode == "ProcessGPT") {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    },
     async created() {
         var me = this;
         me.$try({
             action: async () => {
-                this.storage = StorageBaseFactory.getStorage();
                 await me.getProcessMap();
-                await me.init();
+                if (me.useLock) {
+                    this.storage = StorageBaseFactory.getStorage();
+                    await me.checkedLock();
+                }
             },
         });
     },
     methods: {
-        async init() {
+        async checkedLock() {
             this.userInfo = await this.storage.getUserInfo();
             const isAdmin = localStorage.getItem("isAdmin");
             this.enableExecution = true;
@@ -242,9 +244,8 @@ export default {
             this.$router.push(`/definition-map`);
         },
         async getProcessMap() {
-            let map = await uengine.getProcessDefinitionMap();
-            this.value = map
-            
+            let map = await backend.getProcessDefinitionMap();
+            this.value = map;
         },
         addProcess(newProcess) {
             var newMegaProc = {
@@ -254,9 +255,8 @@ export default {
             };
             this.value.mega_proc_list.push(newMegaProc);
         },
-        async saveProcess() {
-            
-            await uengine.putProcessDefinitionMap(this.value);
+        async saveProcess() {            
+            await backend.putProcessDefinitionMap(this.value);
             
             this.closeAlertDialog();
         },
@@ -264,19 +264,23 @@ export default {
             this.lock = false;
             this.enableEdit = false;
             await this.saveProcess();
-            await this.storage.delete('lock/process-map', { key: 'id' });
+            if (this.useLock) {
+                await this.storage.delete('lock/process-map', { key: 'id' });
+            }
             this.closeAlertDialog();
         },
         async checkOut() {
             this.lock = true;
             this.enableEdit = true;
-            this.editUser = this.userInfo.email;
             this.closeAlertDialog();
-            let lockObj = {
-                id: 'process-map',
-                user_id: this.editUser,
+            if (this.useLock) {
+                this.editUser = this.userInfo.email;
+                let lockObj = {
+                    id: 'process-map',
+                    user_id: this.editUser,
+                }
+                await this.storage.putObject('lock', lockObj);
             }
-            await this.storage.putObject('lock', lockObj);
         },
         openAlertDialog(type) {
             this.alertType = type;
