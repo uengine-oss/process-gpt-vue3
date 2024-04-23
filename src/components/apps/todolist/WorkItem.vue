@@ -10,7 +10,7 @@
              <!-- Left -->
             <v-col class="pa-0" cols="4">
                 <div v-if="currentComponent">
-                    <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus" @undoTask="undoTask"></component>
+                    <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus"></component>
                 </div>
             </v-col>
              <!-- Right -->
@@ -31,30 +31,21 @@
                                     No BPMN found
                                 </dif>
                             </div>
-                            <v-card-title>CheckPoint ({{checkedCount}}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>
-                            <div style="width: 99%; height:70%; max-height:70%; overflow-y: scroll;">
-                                <div v-if="checkPoints" v-for="(checkPoint, index) in checkPoints" :key="index">
-                                    <v-checkbox v-model="checkPoint.checked" :label="checkPoint.name" color="primary" hide-details></v-checkbox>
-                                </div>
-                                <div v-else>
-                                    <v-checkbox disabled value-model="true" label="Check Point Description" color="primary" hide-details></v-checkbox>
-                                </div>
-                            </div>
-                        </v-card>
-                    </v-window-item>
-                    <v-window-item value="history">
-                        <v-card elevation="10">
-                            <v-card-title>워크 히스토리</v-card-title>
-                            <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                                <div class="d-flex w-100" style="height: calc(100vh - 620px);">
-                                    <MessageLayout :messages="workHistoryMessages" @clickMessage="navigateToWorkItemByTaskId">
-                                        <template v-slot:messageProfile="{ message }"><div></div></template>
-                                    </MessageLayout>
-                                </div>
-                            </perfect-scrollbar>
-                        </v-card>
-                    </v-window-item>
-                </v-window>
+                        </v-window-item>
+                        <v-window-item value="history">
+                            <v-card elevation="10">
+                                <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
+                                    <div class="d-flex w-100" style="height: calc(100vh - 320px); overflow: auto;">
+                                        <MessageLayout :messages="messages" @clickMessage="navigateToWorkItemByTaskId">
+                                            <template v-slot:messageProfile="{ message }"></template>
+                                        </MessageLayout>
+                                    </div>
+                                </perfect-scrollbar>
+                            </v-card>
+                        </v-window-item>
+
+                    </v-window>
+                </v-card-text>
             </v-col>
         </v-row>
     </v-card>
@@ -79,7 +70,7 @@ export default {
         bpmn: null,
         workItem: null,
         checkPoints: null,
-        workHistoryList: null,
+        workListByInstId: null,
         currentComponent: null,
         currentActivities: [],
         // status variables
@@ -96,14 +87,14 @@ export default {
             if(!this.checkPoints) return 0
             return this.checkPoints.filter(checkPoint => checkPoint.checked).length;
         },
-        workHistoryMessages(){
-            if(!this.workHistoryList) return []
-            return this.workHistoryList.map(workHistory => ({
-                role: 'user',
-                _item: workHistory,
-                content: workHistory.title,
-                description: workHistory.description,
-                timeStamp: workHistory.startDate,
+        messages(){
+            if(!this.workListByInstId) return []
+            return this.workListByInstId.map(workItem => ({
+                roleName: workItem.task.roleName,
+                _item: workItem,
+                content: workItem.title,
+                description: workItem.description,
+                timeStamp: workItem.startDate
             }))
         },
         id() {
@@ -128,25 +119,12 @@ export default {
                 action: async () => {
                     me.workItem = await backend.getWorkItem(this.id);
                     me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, {type: 'bpmn'});
-                    me.workHistoryList = await backend.getWorkListByInstId(me.workItem.worklist.instId);
+                    me.workListByInstId = await backend.getWorkListByInstId(me.workItem.worklist.instId);
                     me.currentComponent = me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem';
                     me.currentActivities = [ me.workItem.activity.tracingTag ];
                     me.updatedDefKey++
                 }
             })
-        },
-        async undoTask(){
-            var me = this
-            me.$try({
-                context: me,
-                action: async () => {
-                    if(!me.workItem) return
-                    await backend.backToHere(me.workItem.worklist.instId, me.workItem.activity.tracingTag)
-                    me.$router.push('/todolist')
-                },
-                successMsg: '되돌리기 완료'
-            })
-          
         },
         navigateToWorkItemByTaskId(obj){
             var me = this
