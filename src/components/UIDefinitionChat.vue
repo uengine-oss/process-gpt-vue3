@@ -145,8 +145,9 @@ export default {
             handler(newVal, oldVal) {
                 if (newVal.path !== oldVal.path) {
                     const pathMatchParams = this.$route.params.pathMatch
-                    this.loadFormId = pathMatchParams[pathMatchParams.length - 1]
+                    if(!pathMatchParams) return
 
+                    this.loadFormId = pathMatchParams[pathMatchParams.length - 1]
                     if (this.loadFormId && this.loadFormId != 'chat') this.loadData();
                     else this.isShowMashup = true;
                 } else this.isShowMashup = true;
@@ -159,25 +160,7 @@ export default {
                 // 미리보기에 KEditor에서 편집한 HTML을 로드시키기 위해서
                 else {
                     $("div[id^='keditor-content-area-']").css('display', 'none');
-                    var me = this;
-
-                    me.isShowPreview = false;
-
-                    me.$try({
-                        context: me,
-                        action: async () => {
-                            me.previewHTML = this.keditorContentHTMLToDynamicFormHTML(me.$refs.mashup.getKEditorContentHtml());
-                        },
-                        onFail: () => {
-                            me.previewHTML = '';
-                        }
-                    });
-                    me.previewFormValues = {};
-                    me.isShowPreview = true;
-
-                    this.$nextTick(() => {
-                        this.dev.previewFormValues = JSON.stringify(this.previewFormValues);
-                    });
+                    this.applyToPreviewTab()
                 }
             }
         }
@@ -428,10 +411,13 @@ export default {
 
         /**
          * AI가 생성한 결과물을 KEditor에 적합한 Html 형식으로 변환하기 위해서
-         * @param {*} aiResult AI가 생성한 결과물
+         * @param {*} htmlTextToLoad KEditor에 적합하게 변환시킬 로드된 HTML 코드
          */
-        loadHTMLToKEditorContent(aiResult) {
-            const dom = new DOMParser().parseFromString(aiResult, 'text/html');
+        loadHTMLToKEditorContent(htmlTextToLoad) {
+            console.log('### 로드시킬 HTML 텍스트 ###');
+            console.log(htmlTextToLoad);
+
+            const dom = new DOMParser().parseFromString(htmlTextToLoad, 'text/html');
 
             // 컨테이너인 경우, data-type 속성을 추가해서 KEditor에서 인식할 수 있도록 만들기 위해서서
             const nodes = dom.querySelectorAll('[class^="col-sm-"]');
@@ -544,6 +530,11 @@ export default {
         applyNewSrcToMashup(kEditorInput) {
             this.kEditorInput = kEditorInput;
             this.mashupKey += 1;
+
+            if(this.currentTabName === 'preview')
+                this.$nextTick(() => {
+                    this.applyToPreviewTab();
+                })
         },
 
         /**
@@ -575,6 +566,32 @@ export default {
             console.log('### 수정된 이전 폼 출력 ###');
             console.log(modifiedPrevFormOutput);
             return modifiedPrevFormOutput;
+        },
+
+
+        /**
+         * 편집에서 변경된 사항들을 Preview쪽으로 전달시키기 위해서
+         */
+        applyToPreviewTab() {
+            var me = this;
+
+            me.isShowPreview = false;
+
+            me.$try({
+                context: me,
+                action: async () => {
+                    me.previewHTML = me.keditorContentHTMLToDynamicFormHTML(me.$refs.mashup.getKEditorContentHtml());
+                },
+                onFail: () => {
+                    me.previewHTML = '';
+                }
+            });
+            me.previewFormValues = {};
+            me.isShowPreview = true;
+
+            me.$nextTick(() => {
+                me.dev.previewFormValues = JSON.stringify(me.previewFormValues);
+            });
         }
     },
 

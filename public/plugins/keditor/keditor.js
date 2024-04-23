@@ -109,7 +109,7 @@
         this.init(target);
     };
     // Turn on/off debug mode
-    KEditor.debug = true;
+    KEditor.debug = false;
     
     // Version of KEditor
     KEditor.version = '@{version}';
