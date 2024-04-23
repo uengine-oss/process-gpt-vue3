@@ -50,7 +50,6 @@ const backend = BackendFactory.createBackend()
 export default {
     props: {
         messages: Array,
-        lock: Boolean,
     },
     data() {
         return {

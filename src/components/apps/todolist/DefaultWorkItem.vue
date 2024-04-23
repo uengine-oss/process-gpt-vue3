@@ -1,7 +1,7 @@
 <template>
     <v-row class="ma-0 pa-0 task-btn">
         <v-spacer></v-spacer>
-        <div v-if="workItemStatus == 'NEW' || workItemStatus == 'DRAFT'">
+        <div>
             <v-btn @click="completeTask()" color="#0085DB" style="color: white;" rounded>완료</v-btn>
         </div>
     </v-row>
