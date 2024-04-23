@@ -71,9 +71,6 @@ export default {
             }
             window.open(url, '_blank'); // '_blank'는 새 탭에서 열기
         },
-        viewProcess() {
-            this.$emit('view', this.value);
-        },
     },
 }
 </script>

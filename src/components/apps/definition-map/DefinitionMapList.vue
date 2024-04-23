@@ -6,7 +6,7 @@
                 <v-col v-for="item in value.mega_proc_list" :key="item.id" class="cursor-pointer draggable-item"
                     cols="12" md="2" sm="6">
                     <MegaProcess :value="item" :parent="value" :storage="storage" :userInfo="userInfo"
-                        :enableEdit="enableEdit" :enableExecution="enableExecution" @view="viewProcess" />
+                        :enableEdit="enableEdit" :enableExecution="enableExecution" />
                 </v-col>
                 <!-- 실제 카드가 들어가야 할 위치 -->
                 <v-col class="cursor-pointer"
@@ -42,8 +42,7 @@
         <v-row v-else>
             <v-col v-for="item in value.mega_proc_list" :key="item.id" class="cursor-pointer" cols="12" md="2" sm="6">
                 <MegaProcess :value="item" :parent="value" :storage="storage" :userInfo="userInfo"
-                    :enableEdit="enableEdit" :enableExecution="enableExecution" @view="viewProcess"
-                    @click="viewProcessDetail(item)" />
+                    :enableEdit="enableEdit" :enableExecution="enableExecution" @view="viewProcess" />
             </v-col>
         </v-row>
     </div>
@@ -73,12 +72,6 @@ export default {
         processRenderer: 0
     }),
     methods: {
-        viewProcess(process) {
-            this.$router.push(`/definition-map/sub/${process.id}`)
-        },
-        viewProcessDetail(process) {
-            this.$router.push(`/definition-map/mega/${process.label}`)
-        },
         addProcess(newProcess) {
             let id = 0;
             if(this.value.mega_proc_list.length != 0) {
