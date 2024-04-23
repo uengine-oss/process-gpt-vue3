@@ -9,7 +9,7 @@ const MainRoutes = {
         {
             name: 'Todolist',
             path: '/todolist',
-            component: () => import('@/components/apps/todolist/TodolistCard.vue'),
+            component: () => import('@/components/apps/todolist/TodolistCard.vue')
         },
         {
             name: 'WorkItem',
@@ -37,11 +37,11 @@ const MainRoutes = {
         //     path: '/instances/:id',
         //     component: () => import('@/views/apps/instance-list/InstanceList.vue')
         // },
-        
+
         {
             name: 'organization',
             path: '/organization',
-            component: () => import('@/views/apps/organization/Organization.vue'),
+            component: () => import('@/views/apps/organization/Organization.vue')
         },
         // {
         //     name: 'Definition Chat',
@@ -51,22 +51,22 @@ const MainRoutes = {
         {
             name: 'definitions',
             path: '/definitions/:pathMatch(.*)*',
-            component: () => import('@/components/ProcessDefinitionChat.vue'),
+            component: () => import('@/components/ProcessDefinitionChat.vue')
         },
         {
             name: 'forms',
             path: '/forms/:pathMatch(.*)*',
-            component: () => import('@/components/ProcessDefinitionChat.vue'),
+            component: () => import('@/components/ProcessDefinitionChat.vue')
         },
         {
             name: 'ui-definitions',
             path: '/ui-definitions/chat',
-            component: () => import('@/components/UIDefinitionChat.vue'),
+            component: () => import('@/components/UIDefinitionChat.vue')
         },
         {
             name: 'ui-definitions',
             path: '/ui-definitions/:pathMatch(.*)*',
-            component: () => import('@/components/UIDefinitionChat.vue'),
+            component: () => import('@/components/UIDefinitionChat.vue')
         },
         {
             name: 'Definition Map',
@@ -83,7 +83,7 @@ const MainRoutes = {
         {
             name: 'Major Process Detail',
             path: '/definition-map/major/:id',
-            component: () => import('@/components/apps/definition-map/ProcessDefinitionMap.vue'),
+            component: () => import('@/components/apps/definition-map/ProcessDefinitionMap.vue')
         },
         {
             name: 'Sub Process Detail',
@@ -91,12 +91,11 @@ const MainRoutes = {
             component: () => import('@/components/apps/definition-map/ProcessDefinitionMap.vue'),
             props: { componentName: 'SubProcessDetail' }
         },
-        
 
         {
             name: 'dashboard 2',
             path: '/dashboard2',
-            component: () => import('@/views/dashboard/dashboard2.vue'),
+            component: () => import('@/views/dashboard/dashboard2.vue')
         },
         {
             name: 'Email',
@@ -260,19 +259,19 @@ const MainRoutes = {
             component: () => import('@/views/forms/plugins/editor/Editor.vue')
         },
         {
-            name: "Tabler",
-            path: "/icons/tabler",
-            component: () => import("@/views/icons/TablerIcons.vue"),
+            name: 'Tabler',
+            path: '/icons/tabler',
+            component: () => import('@/views/icons/TablerIcons.vue')
         },
         {
-            name: "Classes",
-            path: "/school-pages/classes",
-            component: () => import("@/views/school-pages/classes/Classes.vue"),
+            name: 'Classes',
+            path: '/school-pages/classes',
+            component: () => import('@/views/school-pages/classes/Classes.vue')
         },
         {
-            name: "Attendence",
-            path: "/school-pages/attendance",
-            component: () => import("@/views/school-pages/attendence/index.vue"),
+            name: 'Attendence',
+            path: '/school-pages/attendance',
+            component: () => import('@/views/school-pages/attendence/index.vue')
         },
         {
             name: 'Class Detail',
@@ -283,7 +282,7 @@ const MainRoutes = {
             name: 'API Test',
             path: '/api/test',
             component: () => import('@/components/TestPage.vue')
-        },
+        }
     ]
 };
 

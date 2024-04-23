@@ -47,7 +47,7 @@ const getChild = async (subitem, i) => {
                     <template v-slot:prepend>
                         <div :class="'navbox  bg-hover-' + item.BgColor" :color="item.BgColor">
                             <span class="icon-box" v-if="level > 0">
-                                <div class="sublink-dot" width="30"></div>
+                                <Icon icon="ic:outline-folder" width="24" height="24" />
                             </span>
                             <span class="icon-box" v-else>
                                 <Icon

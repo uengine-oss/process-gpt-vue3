@@ -2,7 +2,7 @@
     <div>
         <v-row style="height: 100%" class="ma-0">
             <v-col class="d-flex ma-0 pa-0">
-                <v-card style="border-radius: 0px !important; border: none;" flat>
+                <v-card style="border-radius: 0px !important; border: none" flat>
                     <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
                         <template v-slot:activator="{ props }">
                             <v-btn @click="openProcessVariables" icon v-bind="props" class="processVariables-btn">
@@ -12,24 +12,47 @@
                     </v-tooltip>
                     <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
-                            <v-btn icon v-bind="props" class="processVariables-zoom"
-                                @click="$globalState.methods.toggleZoom()">
+                            <v-btn icon v-bind="props" class="processVariables-zoom" @click="$globalState.methods.toggleZoom()">
                                 <!-- 캔버스 확대 -->
-                                <Icon v-if="!$globalState.state.isZoomed" icon="material-symbols:zoom-out-map-rounded"
-                                    width="32" height="32" />
+                                <Icon
+                                    v-if="!$globalState.state.isZoomed"
+                                    icon="material-symbols:zoom-out-map-rounded"
+                                    width="32"
+                                    height="32"
+                                />
                                 <!-- 캔버스 축소 -->
-                                <Icon v-else icon="material-symbols:zoom-in-map-rounded" width="32"
-                                    height="32" />
+                                <Icon v-else icon="material-symbols:zoom-in-map-rounded" width="32" height="32" />
                             </v-btn>
                         </template>
                     </v-tooltip>
-                    <component :is="`bpmn`+mode" ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
-                        :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
-                        v-on:openDefinition="ele => openSubProcess(ele)" v-on:loading="handleLoading"
-                        v-on:openPanel="(id) => openPanel(id)" v-on:update-xml="val => $emit('update-xml', val)"
-                        v-on:definition="(def) => (definitions = def)" v-on:add-shape="onAddShape"
-                        v-on:done="setDefinition" v-on:change-sequence="onChangeSequence"
-                        v-on:remove-shape="onRemoveShape" v-on:change-shape="onChangeShape"></component>
+                    <v-tooltip :text="$t('processDefinition.execution')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn :disabled="isViewMode" icon v-bind="props" class="processExecute" @click="executeProcess">
+                                <!-- 캔버스 확대 -->
+                                <Icon icon="gridicons:play" width="32" height="32" />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+                    <component
+                        :is="`bpmn` + mode"
+                        ref="bpmnVue"
+                        :bpmn="bpmn"
+                        :options="options"
+                        :isViewMode="isViewMode"
+                        :currentActivities="currentActivities"
+                        v-on:error="handleError"
+                        v-on:shown="handleShown"
+                        v-on:openDefinition="(ele) => openSubProcess(ele)"
+                        v-on:loading="handleLoading"
+                        v-on:openPanel="(id) => openPanel(id)"
+                        v-on:update-xml="(val) => $emit('update-xml', val)"
+                        v-on:definition="(def) => (definitions = def)"
+                        v-on:add-shape="onAddShape"
+                        v-on:done="setDefinition"
+                        v-on:change-sequence="onChangeSequence"
+                        v-on:remove-shape="onRemoveShape"
+                        v-on:change-shape="onChangeShape"
+                    ></component>
                     <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
                         :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
                         v-on:openDefinition="ele => openSubProcess(ele)" v-on:loading="handleLoading"
@@ -39,39 +62,39 @@
                         v-on:change-shape="onChangeShape"></vue-bpmn> -->
                 </v-card>
             </v-col>
-            <div v-if="panel" style="position: fixed; z-index:999; right: 0; height: 100%">
-                <v-card elevation="1" style="height: calc(100vh - 155px);">
-                    <bpmn-property-panel :element="element" @close="closePanel" :key="element.id"
-                        :isViewMode="isViewMode" v-on:updateElement="(val) => updateElement(val)" :definition="thisDefinition"></bpmn-property-panel>
+            <div v-if="panel" style="position: fixed; z-index: 999; right: 0; height: 100%">
+                <v-card elevation="1" style="height: calc(100vh - 155px)">
+                    <bpmn-property-panel
+                        :element="element"
+                        @close="closePanel"
+                        :key="element.id"
+                        :isViewMode="isViewMode"
+                        v-on:updateElement="(val) => updateElement(val)"
+                        :definition="thisDefinition"
+                    ></bpmn-property-panel>
                     <!-- {{ definition }} -->
                 </v-card>
             </div>
         </v-row>
         <v-dialog v-model="isViewProcessVariables" max-width="1000">
             <v-card>
-                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{
-                        $t('processDefinition.editProcessData') }}</v-card-title>
-                <v-btn icon style="position:absolute; right:5px; top:5px;" @click="isViewProcessVariables = false">
+                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important">{{
+                    $t('processDefinition.editProcessData')
+                }}</v-card-title>
+                <v-btn icon style="position: absolute; right: 5px; top: 5px" @click="isViewProcessVariables = false">
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
-                <v-card-text style="height: 1000px; width: 1000px;">
-                    <VDataTable class="border rounded-md" :items-per-page="5"
-                        :items-per-page-text="$t('processDefinition.itemsPerPage')">
+                <v-card-text style="height: 1000px; width: 1000px">
+                    <VDataTable class="border rounded-md" :items-per-page="5" :items-per-page-text="$t('processDefinition.itemsPerPage')">
                         <thead>
                             <tr>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.name') }}</th>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.type') }}</th>
                                 <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.form') }}</th>
-                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.description')
-                                    }}
-                                </th>
-                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.dataSource')
-                                    }}
-                                </th>
-                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.query') }}
-                                </th>
-                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.actions') }}
-                                </th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.description') }}</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.dataSource') }}</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.query') }}</th>
+                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -80,10 +103,10 @@
                                 <td>
                                     {{ item.type }}
                                 </td>
-                                <td v-if="item.defaultValue" class="text-subtitle-1">{{ item.defaultValue.formDefId }}</td><td v-else class="text-subtitle-1"></td>
+                                <td v-if="item.defaultValue" class="text-subtitle-1">{{ item.defaultValue.formDefId }}</td>
+                                <td v-else class="text-subtitle-1"></td>
                                 <td class="text-subtitle-1">{{ item.description }}</td>
-                                <td class="text-subtitle-1">{{
-                        item.datasource ? item.datasource.type : 'None' }}</td>
+                                <td class="text-subtitle-1">{{ item.datasource ? item.datasource.type : 'None' }}</td>
                                 <td>
                                     {{ item.datasource ? item.datasource.query : 'None' }}
                                 </td>
@@ -108,27 +131,40 @@
                             </tr>
                         </tbody>
                     </VDataTable>
-                    <v-row class="ma-0" style="margin:10px 0px 10px 0px !important;">
-                        <v-card @click="addProcessVariables" elevation="9" variant="outlined"
-                            style="padding: 10px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;">
-                            <div style="display: flex; justify-content: center; align-items: center;">
-                                <Icon icon="streamline:add-1-solid" width="24" height="24" style="color: #5EB2E8" />
+                    <v-row class="ma-0" style="margin: 10px 0px 10px 0px !important">
+                        <v-card
+                            @click="addProcessVariables"
+                            elevation="9"
+                            variant="outlined"
+                            style="
+                                padding: 10px;
+                                display: flex;
+                                justify-content: center;
+                                align-items: center;
+                                border-radius: 10px !important;
+                            "
+                        >
+                            <div style="display: flex; justify-content: center; align-items: center">
+                                <Icon icon="streamline:add-1-solid" width="24" height="24" style="color: #5eb2e8" />
                             </div>
                         </v-card>
                     </v-row>
                     <div v-if="processVariablesWindow">
                         <v-card variant="outlined">
                             <v-card-text class="ma-0 pa-0">
-                                <process-variable mode="add"
-                                    @add-variables="val => addUengineVariable(val)"></process-variable>
+                                <process-variable mode="add" @add-variables="(val) => addUengineVariable(val)"></process-variable>
                             </v-card-text>
                         </v-card>
                     </div>
                     <div v-if="editDialog">
                         <v-card variant="outlined">
                             <v-card-text class="ma-0 pa-0">
-                                <process-variable :key="editComponentKey" :variable="editedItem" mode="edit"
-                                    @update-variables="val => updateVariable(val)"></process-variable>
+                                <process-variable
+                                    :key="editComponentKey"
+                                    :variable="editedItem"
+                                    mode="edit"
+                                    @update-variables="(val) => updateVariable(val)"
+                                ></process-variable>
                             </v-card-text>
                         </v-card>
                     </div>
@@ -136,14 +172,9 @@
             </v-card>
         </v-dialog>
 
-        <!-- <v-dialog v-model="editDialog" max-width="1000">
-            <v-card>
-                <v-card-text class="px-4">
-                    <process-variable :variable="editedItem" mode="edit"
-                        @update-variables="val => updateVariable(val)"></process-variable>
-                </v-card-text>
-            </v-card>
-        </v-dialog> -->
+        <v-dialog v-model="executeDialog" max-width="1000">
+            <process-execute-dialog></process-execute-dialog>
+        </v-dialog>
 
         <!-- <v-navigation-drawer permanent location="right" :width="400"> {{ panelId }} </v-navigation-drawer> -->
     </div>
@@ -159,7 +190,7 @@ import BpmnuEngine from './BpmnUengine.vue';
 import customBpmnModule from './customBpmn';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
-
+import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
 export default {
     name: 'ProcessDefinition',
     components: {
@@ -168,7 +199,8 @@ export default {
         BpmnPropertyPanel,
         ProcessVariable,
         Icon,
-        VDataTable
+        VDataTable,
+        ProcessExecuteDialog
     },
     props: {
         processDefinition: Object,
@@ -182,7 +214,7 @@ export default {
         panelId: null,
         options: {
             propertiesPanel: {},
-            additionalModules: [customBpmnModule],
+            additionalModules: [customBpmnModule]
         },
         element: null,
         definitions: null,
@@ -207,17 +239,16 @@ export default {
         },
         thisDefinition() {
             return {
-                processVariables: this.processVariables,
-
-            }
+                processVariables: this.processVariables
+            };
         }
     },
     watch: {
         copyProcessDefinition: {
             deep: true,
             handler(newVal) {
-                console.log("********* watch  ********")
-                this.$emit("updateDefinition", newVal)
+                console.log('********* watch  ********');
+                this.$emit('updateDefinition', newVal);
             }
         },
         definitions: {
@@ -245,36 +276,33 @@ export default {
                     return value;
                 };
                 let str = JSON.stringify(newVal, replacer);
-                this.$emit("valueToStr", str)
+                this.$emit('valueToStr', str);
             }
         }
     },
-    created() {
-
-    },
+    created() {},
     mounted() {
         // Initial Data
-        if (this.processDefinition)
-            this.copyProcessDefinition = this.processDefinition
+        if (this.processDefinition) this.copyProcessDefinition = this.processDefinition;
         else
             this.copyProcessDefinition = {
-                "megaProcessId": "",
-                "majorProcessId": "",
-                "processDefinitionName": "",
-                "processDefinitionId": this.uuid(),
-                "events": [],
-                "gateways": [],
-                "participants": [],
-                "description": "",
-                "data": [],
-                "roles": [],
-                "activities": [],
-                "sequences": []
-            }
+                megaProcessId: '',
+                majorProcessId: '',
+                processDefinitionName: '',
+                processDefinitionId: this.uuid(),
+                events: [],
+                gateways: [],
+                participants: [],
+                description: '',
+                data: [],
+                roles: [],
+                activities: [],
+                sequences: []
+            };
         const store = useBpmnStore();
         store.setProcessDefinition(this);
         this.bpmnModeler = store.getModeler;
-        
+
         // const def = this.bpmnModeler.getDefinitions();
         // console.log(this.definitions)
         // LLM과 uEngine 각각 처리 필요.
@@ -282,10 +310,10 @@ export default {
     },
     methods: {
         setDefinition() {
-            let self = this
+            let self = this;
             const def = this.bpmnModeler.getDefinitions();
-            let bpmnFactory = this.bpmnModeler.get('bpmnFactory')
-            const processElement = def.rootElements.find(element => element.$type === 'bpmn:Process');
+            let bpmnFactory = this.bpmnModeler.get('bpmnFactory');
+            const processElement = def.rootElements.find((element) => element.$type === 'bpmn:Process');
             if (!processElement) {
                 console.error('bpmn:Process element not found');
                 return;
@@ -299,9 +327,9 @@ export default {
             }
 
             // // uengine:properties 요소를 찾거나 새로 생성합니다.
-            let uengineProperties
+            let uengineProperties;
             if (extensionElements.values) {
-                uengineProperties = extensionElements.values.find(val => val.$type === 'uengine:Properties');
+                uengineProperties = extensionElements.values.find((val) => val.$type === 'uengine:Properties');
             }
 
             if (!uengineProperties) {
@@ -313,22 +341,25 @@ export default {
                 self.processVariables.push({
                     name: variable.$attrs.name,
                     type: variable.$attrs.type
-                })
-            })
+                });
+            });
+        },
+        executeProcess() {
+            this.executeDialog = !this.executeDialog;
         },
         addUengineVariable(val) {
-            if(val.type == 'Form'){
+            if (val.type == 'Form') {
                 let defaultValue = {
-                    "_type": "org.uengine.contexts.HtmlFormContext",
-                    "formDefId": `${val.defaultValue}`,
-                    "filePath": `${val.defaultValue}.form`
-                }
-                val.defaultValue = defaultValue
+                    _type: 'org.uengine.contexts.HtmlFormContext',
+                    formDefId: `${val.defaultValue}`,
+                    filePath: `${val.defaultValue}.form`
+                };
+                val.defaultValue = defaultValue;
             }
 
             // definitions 객체에서 bpmn2:process 요소를 찾습니다.
             const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
-            const processElement = this.definitions.rootElements.find(element => element.$type === 'bpmn:Process');
+            const processElement = this.definitions.rootElements.find((element) => element.$type === 'bpmn:Process');
             if (!processElement) {
                 console.error('bpmn:Process element not found');
                 return;
@@ -342,9 +373,9 @@ export default {
             }
 
             // // uengine:properties 요소를 찾거나 새로 생성합니다.
-            let uengineProperties
+            let uengineProperties;
             if (extensionElements.values) {
-                uengineProperties = extensionElements.values.find(val => val.$type === 'uengine:Properties');
+                uengineProperties = extensionElements.values.find((val) => val.$type === 'uengine:Properties');
             }
 
             if (!uengineProperties) {
@@ -356,16 +387,17 @@ export default {
             const newVariable = bpmnFactory.create('uengine:Variable', {
                 name: val.name,
                 type: val.type,
-                json: JSON.stringify({'defaultValue':JSON.stringify(val.defaultValue)})
+                json: JSON.stringify({ defaultValue: val.defaultValue }) // fix string to json
+                // json: JSON.stringify({ defaultValue: JSON.stringify(val.defaultValue) })
             });
 
             // 생성된 uengine:variable 요소를 uengine:properties 요소에 추가합니다.
             uengineProperties.get('variables').push(newVariable);
-            this.processVariables.push(val)
+            this.processVariables.push(val);
             // console.log(this.processVariables)
         },
         openSubProcess(e) {
-            this.$emit('openSubProcess', e)
+            this.$emit('openSubProcess', e);
         },
         uuid() {
             function s4() {
@@ -374,77 +406,76 @@ export default {
                     .substring(1);
             }
 
-            return s4() + s4() + '-' + s4() + '-' +
-                s4() + '-' + s4() + s4() + s4();
+            return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
         },
         onAddShape(e) {
-            console.log(e)
+            console.log(e);
             let element;
-            if (e.type.includes("Task")) {
-                element = this.createActivity(e)
-                this.copyProcessDefinition.activities.push(element)
-            } else if (e.type.includes("Participant")) {
-                element = this.createParticipant(e)
-                this.copyProcessDefinition.participants.push(element)
-            } else if (e.type.includes("Lane")) {
-                element = this.createRole(e)
-                this.copyProcessDefinition.roles.push(element)
+            if (e.type.includes('Task')) {
+                element = this.createActivity(e);
+                this.copyProcessDefinition.activities.push(element);
+            } else if (e.type.includes('Participant')) {
+                element = this.createParticipant(e);
+                this.copyProcessDefinition.participants.push(element);
+            } else if (e.type.includes('Lane')) {
+                element = this.createRole(e);
+                this.copyProcessDefinition.roles.push(element);
             }
-
         },
         onChangeShape(e) {
-            console.log(e)
+            console.log(e);
         },
         onChangeSequence(e) {
-            console.log(e)
+            console.log(e);
         },
         onRemoveShape(e) {
-            console.log(e)
+            console.log(e);
         },
         createParticipant(element) {
             let participant = {
-                "name": element.name,
-                "resolutionRule": "",
-                "pos": {
+                name: element.name,
+                resolutionRule: '',
+                pos: {
                     x: element.x,
                     y: element.y,
                     width: element.width,
                     height: element.height
                 }
-            }
-            return participant
+            };
+            return participant;
         },
         createRole(element) {
             let role = {
-                "name": element.name,
-                "resolutionRule": "",
-                "pos": {
+                name: element.name,
+                resolutionRule: '',
+                pos: {
                     x: element.x,
                     y: element.y,
                     width: element.width,
                     height: element.height
                 }
-            }
-            return role
+            };
+            return role;
         },
         createActivity(element) {
-            let task = this.taskMapping(element.type)
+            let task = this.taskMapping(element.type);
             let activity = {
-                "name": "",
-                "id": element.id,
-                "type": task,
-                "description": "",
-                "role": "",
-                "outputData": [],
-                "inputData": [],
-                "pos": {
+                name: '',
+                id: element.id,
+                type: task,
+                description: '',
+                role: '',
+                outputData: [],
+                executeDialog: false,
+                inputData: [],
+                pos: {
                     x: element.x,
                     y: element.y,
                     width: element.width,
                     height: element.height
                 }
-            }
-            return activity
+            };
+            return activity;
         },
         editItem(item) {
             this.editedIndex = this.copyProcessDefinition.data.indexOf(item);
@@ -456,11 +487,11 @@ export default {
             this.editComponentKey ^= 1; // ProcessVariable 컴포넌트 새로고침용 변수
 
             if (this.lastEditedIndex == this.editedIndex) {
-                this.editDialog = !this.editDialog
+                this.editDialog = !this.editDialog;
             } else {
-                this.editDialog = true
+                this.editDialog = true;
             }
-            this.lastEditedIndex = this.editedIndex
+            this.lastEditedIndex = this.editedIndex;
         },
         deleteItem(item) {
             const index = this.copyProcessDefinition.data.indexOf(item);
@@ -483,32 +514,32 @@ export default {
             return null;
         },
         updateItemByKey(array, key, id, newItem) {
-            const index = array.findIndex(item => item[key] === id);
+            const index = array.findIndex((item) => item[key] === id);
             if (index !== -1) {
                 array[index] = newItem;
             }
         },
         updateVariable(val) {
             this.copyProcessDefinition.data[this.editedIndex] = val;
-            this.editDialog = false
+            this.editDialog = false;
         },
         openProcessVariables() {
-            this.isViewProcessVariables = !this.isViewProcessVariables
+            this.isViewProcessVariables = !this.isViewProcessVariables;
         },
         addProcessVariables() {
             if (this.editDialog == true) {
-                this.editDialog = false
+                this.editDialog = false;
             }
-            this.processVariablesWindow = !this.processVariablesWindow
+            this.processVariablesWindow = !this.processVariablesWindow;
         },
         updateElement(element) {
-            this.$emit('update')
+            this.$emit('update');
         },
         openPanel(id) {
-            console.log(id)
+            console.log(id);
             this.panel = true;
             this.element = this.findElement(this.definitions, 'id', id);
-            this.$refs.bpmnVue.extendUEngineProperties(this.element)
+            this.$refs.bpmnVue.extendUEngineProperties(this.element);
         },
         closePanel() {
             this.element = null;
@@ -526,60 +557,59 @@ export default {
         taskMapping(activity) {
             switch (activity) {
                 case 'bpmn:ScriptTask':
-                    return "ScriptActivity";
+                    return 'ScriptActivity';
                 case 'bpmn:sendTask':
-                    return "EmailActivity";
+                    return 'EmailActivity';
                 default:
                     return 'UserActivity';
             }
         },
         convertElementToJSON(element) {
-            console.log(element.name)
-            if (element.$type.includes("Task")) {
+            console.log(element.name);
+            if (element.$type.includes('Task')) {
                 // Task Parser
-                let taskType = this.taskMapping(element.$type)
-                let inputData = {}
-                let outputData = {}
+                let taskType = this.taskMapping(element.$type);
+                let inputData = {};
+                let outputData = {};
                 this.copyElement?.extensionElements?.values?.[0]?.$children?.[0]?.$children.forEach(function (data) {
-                    console.log(data)
+                    console.log(data);
                     if (data.category == 'input') {
-                        inputData[data.key] = { "mandatory": data.mandatory ? data.mandatory : false };
+                        inputData[data.key] = { mandatory: data.mandatory ? data.mandatory : false };
                         // inputData.push(obj)
                     } else if (data.category == 'output') {
-                        outputData[data.key] = { "mandatory": data.mandatory ? data.mandatory : false };
+                        outputData[data.key] = { mandatory: data.mandatory ? data.mandatory : false };
                     }
-                })
-                let resultInputData = Object.keys(inputData).length > 0 ? [inputData] : []
-                let resultOutputData = Object.keys(outputData).length > 0 ? [outputData] : []
-                let checkpoints = []
+                });
+                let resultInputData = Object.keys(inputData).length > 0 ? [inputData] : [];
+                let resultOutputData = Object.keys(outputData).length > 0 ? [outputData] : [];
+                let checkpoints = [];
                 element.extensionElements?.values[0]?.$children[0]?.$children.forEach(function (checkpoint) {
-                    checkpoints.push(checkpoint.checkpoint)
-                })
+                    checkpoints.push(checkpoint.checkpoint);
+                });
                 let task = {
                     checkpoints: checkpoints,
                     description: element.extensionElements.values[0].description,
                     id: element.id,
                     inputData: resultInputData,
-                    instruction: "",
+                    instruction: '',
                     name: element.name,
                     outputData: resultOutputData,
                     role: element.extensionElements.values[0].role,
                     type: taskType
-                }
-                if (element.extensionElements.values[0].pythonCode)
-                    task['pythonCode'] = element.extensionElements.values[0].pythonCode
-                console.log(task)
-                this.updateItemByKey(this.copyProcessDefinition.activities, "id", task.id, task)
-            } else if (element.$type.includes("Flow")) {
+                };
+                if (element.extensionElements.values[0].pythonCode) task['pythonCode'] = element.extensionElements.values[0].pythonCode;
+                console.log(task);
+                this.updateItemByKey(this.copyProcessDefinition.activities, 'id', task.id, task);
+            } else if (element.$type.includes('Flow')) {
                 // Sequence Parser
                 let sequence = {
                     name: element.name,
                     source: element.sourceRef.id,
                     target: element.targetRef.id,
                     condition: element.extensionElements.values[0].$children[0].$children[0].$body
-                }
-                this.updateItemByKey(this.copyProcessDefinition.sequences, "source", sequence.source, sequence)
-            } else if (element.$type.includes("Lane")) {
+                };
+                this.updateItemByKey(this.copyProcessDefinition.sequences, 'source', sequence.source, sequence);
+            } else if (element.$type.includes('Lane')) {
                 // Role Parser
             }
         }
@@ -592,9 +622,14 @@ export default {
     position: absolute;
     right: 20px;
     top: 20px;
-    z-index: 1
+    z-index: 1;
 }
-
+.processExecute {
+    position: absolute;
+    right: 80px;
+    top: 20px;
+    z-index: 1;
+}
 .processVariables-btn {
     position: absolute;
     left: 5px;
