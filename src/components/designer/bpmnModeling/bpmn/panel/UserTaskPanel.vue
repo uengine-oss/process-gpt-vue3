@@ -353,8 +353,8 @@ export default {
         },  
         saveFormMapperJson(jsonString) {
             this.formMapperJson = jsonString;
-
-            this.copyUengineProperties.mappingContext.mappingElement = JSON.parse(jsonString)
+            this.copyUengineProperties._type = "org.uengine.kernel.FormActivity";
+            this.copyUengineProperties.mappingContext = JSON.parse(jsonString)
             this.$emit('update:uEngineProperties', this.copyUengineProperties)
 
             this.isOpenFieldMapper = false;

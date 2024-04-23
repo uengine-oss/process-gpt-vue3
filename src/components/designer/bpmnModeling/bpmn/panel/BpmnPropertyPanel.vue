@@ -43,6 +43,10 @@ export default {
         definition: Object
     },
     created() {
+        if(!this.element.extensionElements.values[0].json) {
+            this.$emit('close');
+            return;
+        }
         this.uengineProperties = JSON.parse(this.element.extensionElements.values[0].json)
         if (this.element.lanes?.length > 0) {
             this.role = this.element.lanes[0].name
