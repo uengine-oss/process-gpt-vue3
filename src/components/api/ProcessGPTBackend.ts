@@ -164,6 +164,24 @@ class ProcessGPTBackend implements Backend {
     async getWorkItem(taskId: string) {
         try {
             const data = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
+            const defInfo = await this.getRawDefinition(data.proc_def_id, null);
+            let activityInfo: any = null;
+            let parameters: any[] = [];
+            if (defInfo && defInfo.definition) {
+                activityInfo = defInfo.definition.activities.find((activity: any) => activity.id === data.activity_id);
+                if (activityInfo.outputData) {
+                    parameters = activityInfo.outputData.map((item: any) => {
+                        const key = Object.keys(item)[0];
+                        return {
+                            direction: 'OUT',
+                            variable: {
+                                name: key,
+                            }
+                        }
+                    });
+                }
+
+            }
             const workItem = {
                 worklist: {
                     defId: data.proc_def_id,
@@ -178,8 +196,9 @@ class ProcessGPTBackend implements Backend {
                     tool: ""
                 },
                 activity: {
+                    name: data.activity_id,
                     tracingTag: data.activity_id,
-                    parameters: []
+                    parameters: parameters || []
                 }
             }
             return workItem;
@@ -314,7 +333,7 @@ class ProcessGPTBackend implements Backend {
     }
 
     async backToHere(instanceId: string, tracingTag: string) {
-        throw new Error("Method not implemented.");
+        //
     }
 
     async getProcessVariables(instanceId: string) {
@@ -357,9 +376,36 @@ class ProcessGPTBackend implements Backend {
         throw new Error("Method not implemented.");
     }
 
-    async putWorkItemComplate() {
-        throw new Error("Method not implemented.");
+    async putWorkItemComplate(taskId: string, workItem: any) {
+        try {
+            let url = '/complete/invoke';
+            const userInfo = await storage.getUserInfo();
+            const input = {
+                answer: JSON.stringify(workItem),
+                process_instance_id: "",
+                process_definition_id: "",
+                userInfo: userInfo,
+            };
+            const req = {
+                input: input
+            };
+
+            await axios.post(url, req).then(async res => {
+                if (res.data) {
+                    const data = res.data;
+                    if (data.output) {
+                    }
+                }
+            })
+            .catch(error => {
+                return error;
+            });
+
+        } catch (error) {
+            throw new Error('error in putWorkItemComplate');
+        }
     }
+
 
     async getInstanceList() {
         try {
