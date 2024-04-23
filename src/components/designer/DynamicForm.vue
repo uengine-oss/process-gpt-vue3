@@ -10,6 +10,7 @@
  *    file-field: Read(선택된 파일의 Base64 URL 주소) / Write(지원하지 않음)
  *    label-field: Read(지원하지 않음) / Write(지원하지 않음)
  *    boolean-field: Read(true/false) / Write(true/false)
+ *    textarea-field: Read("value1"과 같은 문자열 값) / Write("value1"과 같은 문자열 값) 
  */
 import { h } from 'vue';
 import TextField from '@/components/ui/field/TextField.vue';
@@ -19,6 +20,7 @@ import RadioField from '@/components/ui/field/RadioField.vue';
 import FileField from '@/components/ui/field/FileField.vue';
 import LabelField from '@/components/ui/field/LabelField.vue';
 import BooleanField from '@/components/ui/field/BooleanField.vue';
+import TextareaField from '@/components/ui/field/TextareaField.vue';
 
 export default {
   props: {
@@ -74,7 +76,8 @@ export default {
         RadioField,
         FileField,
         LabelField,
-        BooleanField
+        BooleanField,
+        TextareaField
       },
       data() {
         return {
