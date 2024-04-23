@@ -50,7 +50,7 @@
                                     </div>
                                 </perfect-scrollbar>
                             </v-card>
-                        </v-window-item>
+                    </v-window-item>
                 </v-window>
             </v-col>
         </v-row>
