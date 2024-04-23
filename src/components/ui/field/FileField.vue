@@ -1,36 +1,35 @@
 <template>
     <div>
         <v-file-input
-            :label="label"
+            :label="localAlias ?? localName"
             v-model="selectedFiles"
         ></v-file-input>
     </div>
 </template>
 
 <script>
+import { commonSettingInfos } from "./CommonSettingInfos.vue"
 
 export default {
     props: {
         modelValue: String,
         vueRenderUUID: String,
         tagName: String,
+
         name: String,
         alias: String
-    },
-
-    computed: {
-        label() {
-            if (this.localAlias) return this.localAlias
-            else if (this.localName) return this.localName
-            else return ""
-        }
     },
 
     data() {
         return {
             localName: this.name,
             localAlias: this.alias,
-            selectedFiles: null
+            selectedFiles: null,
+
+            settingInfos: [
+                commonSettingInfos["localName"],
+                commonSettingInfos["localAlias"]
+            ]
         };
     },
 

@@ -1,7 +1,7 @@
 <template>
     <div>
-        <label>{{ label }}</label>
-        <v-radio-group v-model="inputedValue">
+        <label>{{ localAlias ?? localName }}</label>
+        <v-radio-group v-model="localModelValue">
             <div v-for="(item, index) in localItems" :key="index">
                 <div v-for="(value, key) in item" :key="key">
                     <v-radio :label="key" :value="key"></v-radio>
@@ -12,31 +12,32 @@
 </template>
 
 <script>
+import { commonSettingInfos } from "./CommonSettingInfos.vue"
 
 export default {
     props: {
         modelValue: String,
         vueRenderUUID: String,
         tagName: String,
+
         name: String,
         alias: String,
         items: String
     },
 
-    computed: {
-        label() {
-            if (this.localAlias) return this.localAlias
-            else if (this.localName) return this.localName
-            else return ""
-        }
-    },
-
     data() {
         return {
+            localModelValue: this.modelValue,
+
             localName: this.name,
             localAlias: this.alias,
-            localItems: [],
-            inputedValue: ""
+            localItems: this.items,
+
+            settingInfos: [
+                commonSettingInfos["localName"],
+                commonSettingInfos["localAlias"],
+                commonSettingInfos["localItems"]
+            ]
         };
     },
 
@@ -46,22 +47,17 @@ export default {
                 this.loadLocalItems()
                 
                 if(this.modelValue && this.modelValue.length > 0)
-                {
-                    this.inputedValue = this.modelValue
-                }
-                else
-                {
-                    if(this.localItems.length > 0)
-                        this.inputedValue = Object.keys(this.localItems[0])[0]
-                }
+                    this.localModelValue = this.modelValue
+                else if(this.localItems.length > 0)
+                    this.localModelValue = Object.keys(this.localItems[0])[0]
             },
             deep: true,
             immediate: true
         },
 
-        inputedValue: {
+        localModelValue: {
             handler() {
-                this.$emit('update:modelValue', this.inputedValue)
+                this.$emit('update:modelValue', this.localModelValue)
             },
             deep: true,
             immediate: true
