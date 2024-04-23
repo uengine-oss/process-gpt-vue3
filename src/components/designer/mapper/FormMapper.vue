@@ -132,7 +132,8 @@ export default {
         formMapperJson: {
             type: String,
             required: true
-        }
+        },
+        roles : Array,
     },
     components: {
         BlockComponent,

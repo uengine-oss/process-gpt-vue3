@@ -286,6 +286,7 @@ export default {
         panel: {
             handler() {
                 let me = this;
+                me.roles = [];
 
                 let def = this.bpmnModeler.getDefinitions();
                 const processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
@@ -306,6 +307,7 @@ export default {
         },
         executeDialog() {
             let me = this;
+            me.roles = [];
             let def = this.bpmnModeler.getDefinitions();
             const processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
             if (!processElement) {

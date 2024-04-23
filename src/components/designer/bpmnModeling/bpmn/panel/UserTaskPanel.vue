@@ -82,6 +82,7 @@
                     ref="formMapper"
                     :definition="copyDefinition" 
                     :name="name"    
+                    :roles="roles"
                     :formMapperJson="formMapperJson"
                     @saveFormMapperJson="saveFormMapperJson"
                 />
@@ -180,6 +181,7 @@ export default {
         processDefinitionId: String,
         isViewMode: Boolean,
         role: String,
+        roles: Array,
         variableForHtmlFormContext: Object,
         definition: Object,
         name: String
