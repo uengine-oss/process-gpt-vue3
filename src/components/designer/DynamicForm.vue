@@ -12,12 +12,12 @@
  *    label-field: Read(지원하지 않음) / Write(지원하지 않음)
  */
 import { h } from 'vue';
-import TextField from '@/components/ui/TextField.vue';
-import SelectField from '@/components/ui/SelectField.vue';
-import CheckboxField from '@/components/ui/CheckboxField.vue';
-import RadioField from '@/components/ui/RadioField.vue';
-import FileField from '@/components/ui/FileField.vue';
-import LabelField from '@/components/ui/LabelField.vue';
+import TextField from '@/components/ui/field/TextField.vue';
+import SelectField from '@/components/ui/field/SelectField.vue';
+import CheckboxField from '@/components/ui/field/CheckboxField.vue';
+import RadioField from '@/components/ui/field/RadioField.vue';
+import FileField from '@/components/ui/field/FileField.vue';
+import LabelField from '@/components/ui/field/LabelField.vue';
 
 export default {
   props: {
