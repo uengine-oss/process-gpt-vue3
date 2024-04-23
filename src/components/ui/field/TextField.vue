@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-text-field v-model="localModelValue">
+        <v-text-field v-model="localModelValue" :type="localType">
             <template v-slot:label>
                 <span style="color:black;">
                     {{localAlias ?? localName}}
@@ -22,7 +22,8 @@ export default {
         tagName: String,
 
         name: String,
-        alias: String
+        alias: String,
+        type: String
     },
 
     data() {
@@ -31,10 +32,19 @@ export default {
 
             localName: this.name,
             localAlias: this.alias,
+            localType: this.type ?? "text",
 
             settingInfos: [
                 commonSettingInfos["localName"],
-                commonSettingInfos["localAlias"]
+                commonSettingInfos["localAlias"],
+
+                {
+                    dataToUse: "localType",
+                    htmlAttribute: "type",
+                    settingLabel: "Type",
+                    settingType: "select",
+                    settingValue: ["text", "number"]
+                }
             ]
         };
     },
