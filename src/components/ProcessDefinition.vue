@@ -208,7 +208,8 @@ export default {
         bpmn: String,
         isViewMode: Boolean,
         currentActivities: Array,
-        definitionChat: Object
+        definitionChat: Object,
+        definitionPath: String
     },
     data: () => ({
         panel: false,
@@ -231,7 +232,7 @@ export default {
         bpmnModeler: null,
         processVariables: [],
         executeDialog: false,
-        definitionPath: null
+        // definitionPath: null
     }),
     computed: {
         mode() {
@@ -326,11 +327,11 @@ export default {
         }
     },
     created() {
-        const fullPath = this.$route.params.pathMatch.join('/');
-        if (fullPath.startsWith('/')) {
-            fullPath = fullPath.substring(1);
-        }
-        this.definitionPath = fullPath;
+        // const fullPath = this.$route.params.pathMatch.join('/');
+        // if (fullPath.startsWith('/')) {
+        //     fullPath = fullPath.substring(1);
+        // }
+        // this.definitionPath = fullPath;
     },
     mounted() {
         // Initial Data

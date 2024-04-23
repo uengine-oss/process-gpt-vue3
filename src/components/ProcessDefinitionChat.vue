@@ -2,30 +2,71 @@
     <v-card elevation="10" style="background-color: rgba(255, 255, 255, 0)">
         <AppBaseCard>
             <template v-slot:leftpart>
-                <process-definition class="process-definition-resize" :bpmn="bpmn"
-                    :processDefinition="processDefinition" :key="definitionChangeCount" :isViewMode="isViewMode"
-                    :definitionChat="this" @update="updateDefinition"></process-definition>
-                <process-definition-version-dialog :process="processDefinition" :loading="loading" :open="versionDialog"
-                    @close="toggleVersionDialog" @save="saveDefinition"></process-definition-version-dialog>
-                <ProcessDefinitionVersionManager :process="processDefinition" :open="verMangerDialog"
-                    @close="toggleVerMangerDialog" @changeXML="changeXML"></ProcessDefinitionVersionManager>
+                <process-definition
+                    class="process-definition-resize"
+                    :bpmn="bpmn"
+                    :processDefinition="processDefinition"
+                    :key="definitionChangeCount"
+                    :isViewMode="isViewMode"
+                    :definitionPath="fullPath"
+                    :definitionChat="this"
+                    @update="updateDefinition"
+                ></process-definition>
+                <process-definition-version-dialog
+                    :process="processDefinition"
+                    :loading="loading"
+                    :open="versionDialog"
+                    :definitionPath="fullPath"
+                    @close="toggleVersionDialog"
+                    @save="saveDefinition"
+                ></process-definition-version-dialog>
+                <ProcessDefinitionVersionManager
+                    :process="processDefinition"
+                    :open="verMangerDialog"
+                    @close="toggleVerMangerDialog"
+                    @changeXML="changeXML"
+                ></ProcessDefinitionVersionManager>
             </template>
             <template v-slot:rightpart>
                 <div class="no-scrollbar">
-                    <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :isChanged="true"
-                        :userInfo="userInfo" :type="'definitions'" :lock="lock" :disableChat="disableChat"
-                        @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage"
-                        @stopMessage="stopMessage" @getMoreChat="getMoreChat" @loadBPMN="bpmn => loadBPMN(bpmn)"
-                        @openVerMangerDialog="toggleVerMangerDialog" @toggleLock="toggleLock"></Chat>
+                    <Chat
+                        :name="projectName"
+                        :messages="messages"
+                        :chatInfo="chatInfo"
+                        :isChanged="true"
+                        :userInfo="userInfo"
+                        :type="'definitions'"
+                        :lock="lock"
+                        :disableChat="disableChat"
+                        @sendMessage="beforeSendMessage"
+                        @sendEditedMessage="sendEditedMessage"
+                        @stopMessage="stopMessage"
+                        @getMoreChat="getMoreChat"
+                        @loadBPMN="(bpmn) => loadBPMN(bpmn)"
+                        @openVerMangerDialog="toggleVerMangerDialog"
+                        @toggleLock="toggleLock"
+                    ></Chat>
                 </div>
             </template>
 
             <template v-slot:mobileLeftContent>
-                <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :isChanged="isChanged"
-                    :userInfo="userInfo" :type="'definitions'" :lock="lock" :disableChat="disableChat"
-                    @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage"
-                    @getMoreChat="getMoreChat" @loadBPMN="bpmn => loadBPMN(bpmn)"
-                    @openVerMangerDialog="toggleVerMangerDialog" @toggleLock="toggleLock"></Chat>
+                <Chat
+                    :name="projectName"
+                    :messages="messages"
+                    :chatInfo="chatInfo"
+                    :isChanged="isChanged"
+                    :userInfo="userInfo"
+                    :type="'definitions'"
+                    :lock="lock"
+                    :disableChat="disableChat"
+                    @sendMessage="beforeSendMessage"
+                    @sendEditedMessage="sendEditedMessage"
+                    @stopMessage="stopMessage"
+                    @getMoreChat="getMoreChat"
+                    @loadBPMN="(bpmn) => loadBPMN(bpmn)"
+                    @openVerMangerDialog="toggleVerMangerDialog"
+                    @toggleLock="toggleLock"
+                ></Chat>
             </template>
         </AppBaseCard>
     </v-card>
@@ -49,14 +90,14 @@ import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/ProcessDefinitionGenerator';
 import Chat from './ui/Chat.vue';
 
-import BackendFactory from "@/components/api/BackendFactory";
+import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
 var jsondiffpatch = jsondiff.create({
     objectHash: function (obj, index) {
         return '$$index:' + index;
-    },
+    }
 });
 export default {
     mixins: [ChatModule],
@@ -76,14 +117,14 @@ export default {
     data: () => ({
         processDefinition: null,
         bpmn: null,
-        changedXML: "",
+        changedXML: '',
         projectName: '',
         path: 'proc_def',
         definitionChangeCount: 0,
         isChanged: false,
         chatInfo: {
             title: 'processDefinition.cardTitle',
-            text: "processDefinition.processDefinitionExplanation"
+            text: 'processDefinition.processDefinitionExplanation'
         },
         processDefinitionMap: null,
         modeler: null,
@@ -93,7 +134,7 @@ export default {
         // version
         versionDialog: false,
         verMangerDialog: false,
-        loading: false,
+        loading: false
     }),
     async created() {
         await this.init();
@@ -112,13 +153,20 @@ export default {
                     }
                 }
             }
-        },
+        }
     },
     computed: {
+        fullPath() {
+            const path = this.$route.params.pathMatch.join('/');
+            if (path.startsWith('/')) {
+                path = fullPath.substring(1);
+            }
+            return path;
+        }
     },
     methods: {
         checkedLock(defId) {
-            var me = this
+            var me = this;
             me.$try({
                 context: me,
                 action: async () => {
@@ -133,10 +181,10 @@ export default {
                         me.isViewMode = true;
                     }
                 }
-            })
+            });
         },
         toggleLock() {
-            var me = this
+            var me = this;
             me.$try({
                 context: me,
                 action: async () => {
@@ -150,29 +198,29 @@ export default {
                         }
                         me.disableChat = false;
                         me.isViewMode = false;
-                        me.lock = false
+                        me.lock = false;
                         me.definitionChangeCount++;
                     } else {
                         // 현재 수정가능 > 잠금 상태로 (저장)
                         me.toggleVersionDialog(true);
                     }
                 }
-            })
+            });
         },
         toggleVerMangerDialog(open) {
             // Version Manager Dialog
-            this.verMangerDialog = open
+            this.verMangerDialog = open;
         },
         toggleVersionDialog(open) {
             // Version Dialog
-            this.versionDialog = open
+            this.versionDialog = open;
         },
         saveDefinition(info) {
-            var me = this
+            var me = this;
             me.$try({
                 context: me,
                 action: async () => {
-                    me.loading = true
+                    me.loading = true;
 
                     const store = useBpmnStore();
                     const modeler = store.getModeler;
@@ -190,22 +238,21 @@ export default {
 
                     me.disableChat = true;
                     me.isViewMode = true;
-                    me.lock = true // 잠금처리 ( 수정 불가 )
-                    me.definitionChangeCount++
+                    me.lock = true; // 잠금처리 ( 수정 불가 )
+                    me.definitionChangeCount++;
 
                     // 신규 프로세스 이동.
                     if (!me.$route.params.pathMatch) {
                         me.$router.push(`/definitions/${info.proc_def_id}`);
                     }
 
-                    me.loading = false
-                    me.toggleVersionDialog(false)
+                    me.loading = false;
+                    me.toggleVersionDialog(false);
                 }
-            })
-
+            });
         },
         changeXML(info) {
-            var me = this
+            var me = this;
             me.$try({
                 context: me,
                 action: async () => {
@@ -217,25 +264,25 @@ export default {
                         name: info.name,
                         bpmn: info.xml
                     });
-                    me.bpmn = info.xml
-                    me.definitionChangeCount++
-                    me.toggleVerMangerDialog(false)
+                    me.bpmn = info.xml;
+                    me.definitionChangeCount++;
+                    me.toggleVerMangerDialog(false);
                 }
-            })
+            });
         },
         loadBPMN(bpmn) {
-            this.bpmn = bpmn
-            this.definitionChangeCount++
+            this.bpmn = bpmn;
+            this.definitionChangeCount++;
         },
         removePositionKey(obj) {
             // 배열인 경우, 각 요소에 대해 재귀적으로 함수를 호출
             if (Array.isArray(obj)) {
-                return obj.map(item => removePositionKey(item));
+                return obj.map((item) => removePositionKey(item));
             }
             // 객체인 경우, 키를 순회하며 'position' 키를 제외한 새 객체 생성
             else if (typeof obj === 'object' && obj !== null) {
                 const newObj = {};
-                Object.keys(obj).forEach(key => {
+                Object.keys(obj).forEach((key) => {
                     if (key !== 'position') {
                         // 'position' 키가 아닌 경우, 재귀적으로 처리
                         newObj[key] = removePositionKey(obj[key]);
@@ -247,16 +294,15 @@ export default {
             return obj;
         },
         async updateDefinition() {
-
             const store = useBpmnStore();
             let modeler = store.getModeler;
             let xml = await modeler.saveXML({ format: true, preamble: true });
-            console.log(xml.xml)
-            this.bpmn = xml.xml
-            this.definitionChangeCount++
+            console.log(xml.xml);
+            this.bpmn = xml.xml;
+            this.definitionChangeCount++;
             // this.processDefinition = val
             // this.bpmn = this.createBpmnXml(val)
-            this.isChanged = true
+            this.isChanged = true;
         },
         async loadData(path) {
             const me = this;
@@ -267,9 +313,9 @@ export default {
                     if (fullPath.startsWith('/')) {
                         fullPath = fullPath.substring(1);
                     }
-                    let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length-1]
-                    if (fullPath && lastPath != "chat") {
-                        let definition = await backend.getRawDefinition(fullPath, {type: "bpmn"})
+                    let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
+                    if (fullPath && lastPath != 'chat') {
+                        let definition = await backend.getRawDefinition(fullPath, { type: 'bpmn' });
                         if (definition) {
                             me.bpmn = definition;
                             me.definitionChangeCount++;
@@ -282,7 +328,7 @@ export default {
                             }
                             me.checkedLock(lastPath);
                         }
-                    } else if (lastPath == "chat") {
+                    } else if (lastPath == 'chat') {
                         me.processDefinition = null;
                         me.projectName = null;
                         me.bpmn = null;
@@ -290,7 +336,7 @@ export default {
                         if (me.$route.query && me.$route.query.id) {
                             me.processDefinition = {
                                 processDefinitionId: me.$route.query.id
-                            }
+                            };
                             if (me.$route.query.name) {
                                 me.projectName = me.$route.query.name;
                                 me.processDefinition.processDefinitionName = me.projectName;
@@ -306,44 +352,44 @@ export default {
             this.sendMessage(newMessage);
         },
         extractPropertyNameAndIndex(jsonPath) {
-            let match
+            let match;
             match = jsonPath.match(/^\$\.(\w+)\[(\d+)\]$/);
             if (!match) {
-                match = jsonPath.match(/^\$\.(\w+)\[\?(.*)\]$/)
+                match = jsonPath.match(/^\$\.(\w+)\[\?(.*)\]$/);
                 return match ? { propertyName: match[1], index: match.index } : null;
             } else {
-                return { propertyName: match[1], index: parseInt(match[2], 10) }
+                return { propertyName: match[1], index: parseInt(match[2], 10) };
             }
         },
         modificationAdd(modification) {
-            let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath)
+            let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath);
             if (obj) {
-                this.processDefinition[obj.propertyName].splice(obj.index, 0, modification.value)
+                this.processDefinition[obj.propertyName].splice(obj.index, 0, modification.value);
             } else if (this.processDefinition[modification.targetJsonPath.replace('$.', '')]) {
-                this.processDefinition[modification.targetJsonPath.replace('$.', '')].push(modification.value)
+                this.processDefinition[modification.targetJsonPath.replace('$.', '')].push(modification.value);
             }
         },
         modificationReplace(modification) {
-            let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath)
+            let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath);
             // const updateAtIndex = (array, index, newValue) => (array[index] = newValue, array);
-            this.processDefinition[obj.propertyName][obj.index] = modification.value
+            this.processDefinition[obj.propertyName][obj.index] = modification.value;
             // this.processDefinition[obj.propertyName].splice(obj.index, 0, modification.value)
         },
         modificationRemove(modification) {
-            let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath)
-            this.processDefinition[obj.propertyName].splice(obj.index, 1)
+            let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath);
+            this.processDefinition[obj.propertyName].splice(obj.index, 1);
             // {
             //     action: "replace",
-            //     index: 2, 
+            //     index: 2,
             //     targetJsonPath: "$.sequences[2]",
             //     value: {
             //         "source": "AcceptLeader",
-            //         "target": "ReturnFromLeave" 
-            //     }   
-            // }    
+            //         "target": "ReturnFromLeave"
+            //     }
+            // }
         },
         async afterModelCreated(response) {
-            let jsonProcess
+            let jsonProcess;
             try {
                 jsonProcess = this.extractJSON(response);
 
@@ -364,26 +410,23 @@ export default {
                     // if (res) {
                     //     console.log(res)
                     // }
-
                 }
             } catch (error) {
-                console.log(jsonProcess)
+                console.log(jsonProcess);
                 console.log(error);
             }
         },
 
         afterGenerationFinished(response) {
-
             let jsonProcess = this.extractJSON(response);
 
             if (jsonProcess) {
                 let unknown = JSON.parse(jsonProcess);
                 if (unknown.modifications) {
-
                     unknown.modifications.forEach((modification) => {
                         if (modification.action == 'replace') {
                             this.jsonPathReplace(this.processDefinition, modification.targetJsonPath, modification.value);
-                            console.log(this.processDefinition)
+                            console.log(this.processDefinition);
                             this.bpmn = this.createBpmnXml(this.processDefinition);
                         } else if (modification.action == 'add') {
                             this.modificationAdd(modification);
@@ -395,22 +438,21 @@ export default {
                     });
 
                     this.definitionChangeCount++;
-
                 }
             }
 
-            this.isChanged = true
+            this.isChanged = true;
         },
 
         convertXMLToJSON(xmlString) {
             const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+            const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
             // Lanes (Roles) 추출
-            const lanes = xmlDoc.getElementsByTagName("bpmn:lane");
+            const lanes = xmlDoc.getElementsByTagName('bpmn:lane');
             const laneMap = Array.from(lanes).reduce((acc, lane) => {
-                const laneName = lane.getAttribute("name");
-                const flowNodeRefs = lane.getElementsByTagName("bpmn:flowNodeRef");
-                Array.from(flowNodeRefs).forEach(flowNodeRef => {
+                const laneName = lane.getAttribute('name');
+                const flowNodeRefs = lane.getElementsByTagName('bpmn:flowNodeRef');
+                Array.from(flowNodeRefs).forEach((flowNodeRef) => {
                     const activityId = flowNodeRef.textContent;
                     acc[activityId] = laneName; // Map activity ID to lane (role) name
                 });
@@ -418,31 +460,33 @@ export default {
             }, {});
 
             // User Tasks 추출
-            const userTasks = xmlDoc.getElementsByTagName("bpmn:userTask");
-            const activities = Array.from(userTasks).map(task => {
-                const id = task.getAttribute("id");
+            const userTasks = xmlDoc.getElementsByTagName('bpmn:userTask');
+            const activities = Array.from(userTasks).map((task) => {
+                const id = task.getAttribute('id');
                 return {
-                    name: task.getAttribute("name"),
+                    name: task.getAttribute('name'),
                     id: id,
-                    type: "UserActivity",
-                    description: "", // XML에서 제공되지 않음
-                    instruction: "", // XML에서 제공되지 않음
-                    role: laneMap[id] || "", // LaneMap에서 Role 할당
+                    type: 'UserActivity',
+                    description: '', // XML에서 제공되지 않음
+                    instruction: '', // XML에서 제공되지 않음
+                    role: laneMap[id] || '', // LaneMap에서 Role 할당
                     inputData: [], // XML에서 제공되지 않음
                     outputData: [], // XML에서 제공되지 않음
-                    checkpoints: [], // XML에서 제공되지 않음
+                    checkpoints: [] // XML에서 제공되지 않음
                 };
             });
 
             // Sequence Flows 추출
-            const sequenceFlows = xmlDoc.getElementsByTagName("bpmn:sequenceFlow");
-            const sequences = Array.from(sequenceFlows).map(flow => {
-                if ((flow.getAttribute("sourceRef") != "StartEvent_1") && (flow.getAttribute("targetRef") != "EndEvent"))
-                    return {
-                        source: flow.getAttribute("sourceRef"),
-                        target: flow.getAttribute("targetRef")
-                    }
-            }).filter(flow => flow);
+            const sequenceFlows = xmlDoc.getElementsByTagName('bpmn:sequenceFlow');
+            const sequences = Array.from(sequenceFlows)
+                .map((flow) => {
+                    if (flow.getAttribute('sourceRef') != 'StartEvent_1' && flow.getAttribute('targetRef') != 'EndEvent')
+                        return {
+                            source: flow.getAttribute('sourceRef'),
+                            target: flow.getAttribute('targetRef')
+                        };
+                })
+                .filter((flow) => flow);
 
             // activities 배열을 sequenceFlow의 순서에 따라 정렬
             // const orderedActivities = [];
@@ -458,25 +502,23 @@ export default {
             //     }
             //     currentId = currentSequence.target;
             // }
-            let orderedActivities = this.orderActivitiesBySequence(activities, sequences)
+            let orderedActivities = this.orderActivitiesBySequence(activities, sequences);
 
             return { activities: orderedActivities, sequences };
         },
         orderActivitiesBySequence(activities, sequences) {
             // 시작 활동 찾기: 'source'가 되지만 'target'이 되지 않는 항목
-            let currentId = sequences.find(seq =>
-                !sequences.some(innerSeq => innerSeq.target === seq.source)
-            )?.source;
-            let startActivity = activities.findIndex(act => act.id === currentId)
+            let currentId = sequences.find((seq) => !sequences.some((innerSeq) => innerSeq.target === seq.source))?.source;
+            let startActivity = activities.findIndex((act) => act.id === currentId);
             const orderedActivities = [activities[startActivity]];
             const visitedSequences = new Set(); // 중복 방문 방지
             // orderedActivities.push(ac)
             while (currentId && sequences.length > visitedSequences.size) {
-                const sequence = sequences.find(seq => seq.source === currentId && !visitedSequences.has(seq.source + seq.target));
+                const sequence = sequences.find((seq) => seq.source === currentId && !visitedSequences.has(seq.source + seq.target));
                 if (!sequence) break; // 다음 시퀀스를 찾을 수 없으면 중단
 
                 visitedSequences.add(sequence.source + sequence.target); // 시퀀스 방문 기록
-                const activityIndex = activities.findIndex(act => act.id === sequence.target);
+                const activityIndex = activities.findIndex((act) => act.id === sequence.target);
                 if (activityIndex !== -1) {
                     orderedActivities.push(activities[activityIndex]);
                 }
@@ -532,7 +574,7 @@ export default {
         //     return processDefinition;
         // },
         async saveModel(info, xml) {
-            var me = this
+            var me = this;
             me.$try({
                 context: me,
                 action: async () => {
@@ -540,18 +582,22 @@ export default {
                         me.processDefinition = me.convertXMLToJSON(xml);
                     }
 
-                    me.processDefinition.processDefinitionId = info.proc_def_id ? info.proc_def_id : prompt("please give a ID for the process definition");
+                    me.processDefinition.processDefinitionId = info.proc_def_id
+                        ? info.proc_def_id
+                        : prompt('please give a ID for the process definition');
                     // Version 저장시 제외.
-                    me.processDefinition.processDefinitionName = info.name ? info.name : prompt("please give a name for the process definition");
+                    me.processDefinition.processDefinitionName = info.name
+                        ? info.name
+                        : prompt('please give a name for the process definition');
 
                     me.projectName = me.processDefinition.processDefinitionName;
                     if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
-                        throw new Error("processDefinitionId or processDefinitionName is missing");
+                        throw new Error('processDefinitionId or processDefinitionName is missing');
                     }
                     await backend.putRawDefinition(xml, info.proc_def_id, info);
-                    await this.saveToVectorStore(me.processDefinition);;
+                    await this.saveToVectorStore(me.processDefinition);
                 }
-            })
+            });
         },
         async saveToVectorStore(definition) {
             // Create an instance of VectorStorage
@@ -691,9 +737,9 @@ export default {
         // }
         taskMapping(activity) {
             switch (activity) {
-                case "ScriptActivity":
+                case 'ScriptActivity':
                     return 'bpmn:scriptTask';
-                case "EmailActivity":
+                case 'EmailActivity':
                     return 'bpmn:sendTask';
                 default:
                     return 'bpmn:userTask';
@@ -703,7 +749,10 @@ export default {
             // XML 문서 초기화
             let me = this;
             const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString('<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_0bfky9r" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0"></bpmn:definitions>', 'application/xml');
+            const xmlDoc = parser.parseFromString(
+                '<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_0bfky9r" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0"></bpmn:definitions>',
+                'application/xml'
+            );
             const bpmnDefinitions = xmlDoc.documentElement;
 
             bpmnDefinitions.setAttribute('id', 'Definitions_' + jsonModel.processDefinitionId);
@@ -726,25 +775,24 @@ export default {
             pc.setAttribute('processRef', jsonModel.processDefinitionId);
             collaboration.appendChild(pc);
 
-
             // Data 매핑
             const extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
             const root = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
             if (jsonModel.data) {
-                jsonModel.data.forEach(data => {
+                jsonModel.data.forEach((data) => {
                     const variable = xmlDoc.createElementNS('http://uengine', 'uengine:variable');
                     variable.setAttribute('name', data.name);
                     variable.setAttribute('type', data.type);
                     root.appendChild(variable);
                 });
             }
-                
+
             extensionElements.appendChild(root);
             process.appendChild(extensionElements);
             // Lane 및 Activity 매핑
             const laneActivityMapping = {};
             if (jsonModel.activities)
-                jsonModel.activities.forEach(activity => {
+                jsonModel.activities.forEach((activity) => {
                     if (!laneActivityMapping[activity?.role]) {
                         laneActivityMapping[activity?.role] = [];
                     }
@@ -763,7 +811,7 @@ export default {
                     laneSet.appendChild(lane);
                     // Activity를 Lane에 할당
                     if (laneActivityMapping[role.name]) {
-                        laneActivityMapping[role.name].forEach(activityId => {
+                        laneActivityMapping[role.name].forEach((activityId) => {
                             const flowNodeRef = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:flowNodeRef');
                             flowNodeRef.textContent = activityId;
                             lane.appendChild(flowNodeRef);
@@ -772,38 +820,37 @@ export default {
                 });
             }
 
-            let inComing = {}
-            let outGoing = {}
+            let inComing = {};
+            let outGoing = {};
             // Sequences 생성
             if (jsonModel.sequences)
-                jsonModel.sequences.forEach(sequence => {
+                jsonModel.sequences.forEach((sequence) => {
                     const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:sequenceFlow');
                     sequenceFlow.setAttribute('id', 'SequenceFlow_' + sequence.source + '_' + sequence.target);
-                    sequenceFlow.setAttribute('name', sequence.name ? sequence.name : "")
+                    sequenceFlow.setAttribute('name', sequence.name ? sequence.name : '');
                     sequenceFlow.setAttribute('sourceRef', sequence.source);
                     sequenceFlow.setAttribute('targetRef', sequence.target);
                     let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
                     let root = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
                     let params = xmlDoc.createElementNS('http://uengine', 'uengine:json');
-                    params.setAttribute('key', "condition")
+                    params.setAttribute('key', 'condition');
                     params.textContent = JSON.stringify({
-                        "condition": sequence.condition ? sequence.condition : ""
-                    })
+                        condition: sequence.condition ? sequence.condition : ''
+                    });
                     // }
-                    root.appendChild(params)
-                    extensionElements.appendChild(root)
-                    sequenceFlow.appendChild(extensionElements)
+                    root.appendChild(params);
+                    extensionElements.appendChild(root);
+                    sequenceFlow.appendChild(extensionElements);
                     process.appendChild(sequenceFlow);
 
-                    outGoing[sequence.source] = 'SequenceFlow_' + sequence.source + '_' + sequence.target
-                    inComing[sequence.target] = 'SequenceFlow_' + sequence.source + '_' + sequence.target
+                    outGoing[sequence.source] = 'SequenceFlow_' + sequence.source + '_' + sequence.target;
+                    inComing[sequence.target] = 'SequenceFlow_' + sequence.source + '_' + sequence.target;
                 });
 
             // Activities 생성
             if (jsonModel.activities)
                 jsonModel.activities.forEach((activity, idx) => {
-
-                    const userTaskType = me.taskMapping(activity.type)
+                    const userTaskType = me.taskMapping(activity.type);
 
                     const userTask = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', userTaskType);
                     userTask.setAttribute('id', activity.id);
@@ -811,45 +858,45 @@ export default {
                     // let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:description');
                     if (outGoing[activity.id]) {
                         let outGoingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:outgoing');
-                        outGoingSeq.textContent = outGoing[activity.id]
-                        userTask.appendChild(outGoingSeq)
+                        outGoingSeq.textContent = outGoing[activity.id];
+                        userTask.appendChild(outGoingSeq);
                     }
                     if (inComing[activity.id]) {
                         let inComingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:incoming');
-                        inComingSeq.textContent = inComing[activity.id]
-                        userTask.appendChild(inComingSeq)
+                        inComingSeq.textContent = inComing[activity.id];
+                        userTask.appendChild(inComingSeq);
                     }
                     let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
                     let root = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
                     let params = xmlDoc.createElementNS('http://uengine', 'uengine:json');
-                    params.setAttribute('key', "condition")
+                    params.setAttribute('key', 'condition');
                     // {"argument":{"text":"symptom"}, "variable":{"name": "symptom"}, "direction":
                     //     "OUT"}
-                    let inputDataList = []
-                    let outputDataList = []
-                    activity?.inputData?.forEach(data => {
+                    let inputDataList = [];
+                    let outputDataList = [];
+                    activity?.inputData?.forEach((data) => {
                         inputDataList.push({
-                            "argument": {"text": data.name},
-                            "variable": {"name": data.name},
-                            "direction": "OUT"
-                        })
-                    })
-                    activity?.outputData?.forEach(data => {
+                            argument: { text: data.name },
+                            variable: { name: data.name },
+                            direction: 'OUT'
+                        });
+                    });
+                    activity?.outputData?.forEach((data) => {
                         outputDataList.push({
-                            "argument": {"text": data.name},
-                            "variable": {"name": data.name},
-                            "direction": "IN"
-                        })
-                    })
+                            argument: { text: data.name },
+                            variable: { name: data.name },
+                            direction: 'IN'
+                        });
+                    });
 
                     let activityData = {
-                        "role": {"name":activity.role},
-                        "parameters": [...inputDataList, ...outputDataList]
-                    }
-                    params.textContent = JSON.stringify(activityData)
-                    root.appendChild(params)
-                    extensionElements.appendChild(root)
-                    userTask.appendChild(extensionElements)
+                        role: { name: activity.role },
+                        parameters: [...inputDataList, ...outputDataList]
+                    };
+                    params.textContent = JSON.stringify(activityData);
+                    root.appendChild(params);
+                    extensionElements.appendChild(root);
+                    userTask.appendChild(extensionElements);
                     // let root = xmlDoc.createElementNS('http://uengine', 'uengine:Uengine-params');
                     // let role = xmlDoc.createElementNS('http://uengine', 'uengine:Role');
                     // // role.textContent = activity.role
@@ -899,24 +946,27 @@ export default {
 
                         const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:sequenceFlow');
                         sequenceFlow.setAttribute('id', 'SequenceFlow_' + 'StartEvent' + '_' + activity.id);
-                        sequenceFlow.setAttribute('name', "")
+                        sequenceFlow.setAttribute('name', '');
                         sequenceFlow.setAttribute('sourceRef', 'StartEvent_1');
                         sequenceFlow.setAttribute('targetRef', activity.id);
-                        let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
+                        let extensionElements = xmlDoc.createElementNS(
+                            'http://www.omg.org/spec/BPMN/20100524/MODEL',
+                            'bpmn:extensionElements'
+                        );
                         let root = xmlDoc.createElementNS('http://uengine', 'uengine:Uengine-params');
                         let conditionParam = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
                         let conditionParams = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
-                        conditionParam.setAttribute('key', "condition")
-                        conditionParam.textContent = ""
-                        conditionParams.appendChild(conditionParam)
-                        root.appendChild(conditionParams)
-                        extensionElements.appendChild(root)
-                        sequenceFlow.appendChild(extensionElements)
+                        conditionParam.setAttribute('key', 'condition');
+                        conditionParam.textContent = '';
+                        conditionParams.appendChild(conditionParam);
+                        root.appendChild(conditionParams);
+                        extensionElements.appendChild(root);
+                        sequenceFlow.appendChild(extensionElements);
                         process.appendChild(sequenceFlow);
 
                         let inComingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:incoming');
-                        inComingSeq.textContent = 'SequenceFlow_' + 'StartEvent' + '_' + activity.id
-                        userTask.appendChild(inComingSeq)
+                        inComingSeq.textContent = 'SequenceFlow_' + 'StartEvent' + '_' + activity.id;
+                        userTask.appendChild(inComingSeq);
                     } else if (idx == jsonModel.activities.length - 1) {
                         // 마지막엔 EndEvent와 연결
                         // EndEvent 요소 추가
@@ -927,24 +977,27 @@ export default {
 
                         const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:sequenceFlow');
                         sequenceFlow.setAttribute('id', 'SequenceFlow_' + activity.id + '_' + 'EndEvent');
-                        sequenceFlow.setAttribute('name', "")
+                        sequenceFlow.setAttribute('name', '');
                         sequenceFlow.setAttribute('sourceRef', activity.id);
                         sequenceFlow.setAttribute('targetRef', 'EndEvent');
-                        let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
+                        let extensionElements = xmlDoc.createElementNS(
+                            'http://www.omg.org/spec/BPMN/20100524/MODEL',
+                            'bpmn:extensionElements'
+                        );
                         let root = xmlDoc.createElementNS('http://uengine', 'uengine:Uengine-params');
                         let conditionParam = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
                         let conditionParams = xmlDoc.createElementNS('http://uengine', 'uengine:Parameter');
-                        conditionParam.setAttribute('key', "condition")
-                        conditionParam.textContent = ""
-                        conditionParams.appendChild(conditionParam)
-                        root.appendChild(conditionParams)
-                        extensionElements.appendChild(root)
-                        sequenceFlow.appendChild(extensionElements)
+                        conditionParam.setAttribute('key', 'condition');
+                        conditionParam.textContent = '';
+                        conditionParams.appendChild(conditionParam);
+                        root.appendChild(conditionParams);
+                        extensionElements.appendChild(root);
+                        sequenceFlow.appendChild(extensionElements);
                         process.appendChild(sequenceFlow);
 
                         let outGoingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:outgoing');
-                        outGoingSeq.textContent = 'SequenceFlow_' + activity.id + '_' + 'EndEvent'
-                        userTask.appendChild(outGoingSeq)
+                        outGoingSeq.textContent = 'SequenceFlow_' + activity.id + '_' + 'EndEvent';
+                        userTask.appendChild(outGoingSeq);
                     }
                     process.appendChild(userTask);
                 });
@@ -958,7 +1011,7 @@ export default {
             bpmnPlane.setAttribute('id', 'BPMNPlane_1');
             bpmnPlane.setAttribute('bpmnElement', 'Collaboration_1');
             bpmnDiagram.appendChild(bpmnPlane);
-            let participantHeight = jsonModel?.roles.length > 0 ? jsonModel?.roles.length * 100 : 100
+            let participantHeight = jsonModel?.roles.length > 0 ? jsonModel?.roles.length * 100 : 100;
             const participantShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
             participantShape.setAttribute('id', 'Participant_1');
             participantShape.setAttribute('bpmnElement', 'Participant');
@@ -967,8 +1020,8 @@ export default {
             dcBoundsParticipant.setAttribute('y', `100`);
             dcBoundsParticipant.setAttribute('width', '830');
             dcBoundsParticipant.setAttribute('height', participantHeight);
-            participantShape.appendChild(dcBoundsParticipant)
-            bpmnPlane.appendChild(participantShape)
+            participantShape.appendChild(dcBoundsParticipant);
+            bpmnPlane.appendChild(participantShape);
             // if (jsonModel.roles) {
 
             // }
@@ -976,7 +1029,7 @@ export default {
             //         <bpmndi:BPMNShape id="Participant_0r9od0v_di" bpmnElement="Participant_0r9od0v" isHorizontal="true">
             //     <dc:Bounds x="156" y="62" width="600" height="250" />
             //   </bpmndi:BPMNShape>
-            let rolePos = {}
+            let rolePos = {};
             let activityPos = {};
 
             // Lane 및 Activity에 대한 시각적 표현 추가
@@ -985,7 +1038,7 @@ export default {
                     const laneShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
                     laneShape.setAttribute('id', `BPMNShape_${roleIndex}`);
                     laneShape.setAttribute('bpmnElement', `Lane_${roleIndex}`);
-                    laneShape.setAttribute('isHorizontal', true)
+                    laneShape.setAttribute('isHorizontal', true);
                     const dcBoundsLane = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
                     dcBoundsLane.setAttribute('x', '100');
                     dcBoundsLane.setAttribute('y', `${100 + roleIndex * 100}`);
@@ -996,7 +1049,7 @@ export default {
                     rolePos[role.name] = {
                         x: dcBoundsLane.getAttribute('x'),
                         y: dcBoundsLane.getAttribute('y')
-                    }
+                    };
                 });
             let lastXPos = 140;
 
@@ -1009,7 +1062,7 @@ export default {
                     }
                     if (activityIndex == 0 && firstActivity.role) {
                         // StartEvent의 BPMNShape 추가
-                        let eventY = parseInt(rolePos[firstActivity.role].y) + 32
+                        let eventY = parseInt(rolePos[firstActivity.role].y) + 32;
                         const startEventShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
                         startEventShape.setAttribute('id', `StartEvent_di`);
                         startEventShape.setAttribute('bpmnElement', `StartEvent_1`);
@@ -1025,11 +1078,11 @@ export default {
                             y: eventY,
                             width: 36,
                             height: 36
-                        }
-                        lastXPos = lastXPos
-                        lastXPos += 120
+                        };
+                        lastXPos = lastXPos;
+                        lastXPos += 120;
                     }
-                    let activityY = parseInt(rolePos[activity.role].y)
+                    let activityY = parseInt(rolePos[activity.role].y);
                     const activityShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
                     activityShape.setAttribute('id', `BPMNShape_${activity.id}`);
                     activityShape.setAttribute('bpmnElement', activity.id);
@@ -1044,7 +1097,7 @@ export default {
                         y: activityY + 10,
                         width: 100,
                         height: 80
-                    }
+                    };
                     // if (!activity.pos)
                     //     activity.pos = {}
                     // activity.pos.x = lastXPos
@@ -1054,12 +1107,12 @@ export default {
 
                     activityShape.appendChild(dcBoundsActivity);
                     bpmnPlane.appendChild(activityShape);
-                    lastXPos = lastXPos
-                    lastXPos += 120
+                    lastXPos = lastXPos;
+                    lastXPos += 120;
 
                     if (activityIndex == jsonModel.activities.length - 1 && lastActivity.role) {
                         // EndEvent의 BPMNShape 추가
-                        let eventY = parseInt(rolePos[lastActivity.role].y) + 32
+                        let eventY = parseInt(rolePos[lastActivity.role].y) + 32;
                         const endEventShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
                         endEventShape.setAttribute('id', `EndEvent_di`);
                         endEventShape.setAttribute('bpmnElement', `EndEvent`);
@@ -1081,23 +1134,38 @@ export default {
                         const startWaypoint1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
                         // let startX, startY, endX, endY;
 
-                        startWaypoint1.setAttribute('x', parseInt(activityPos['startEvent']?.x) + parseInt(activityPos['startEvent']?.width));
-                        startWaypoint1.setAttribute('y', parseInt(activityPos['startEvent']?.y) + (parseInt(activityPos['startEvent']?.height) / 2));
+                        startWaypoint1.setAttribute(
+                            'x',
+                            parseInt(activityPos['startEvent']?.x) + parseInt(activityPos['startEvent']?.width)
+                        );
+                        startWaypoint1.setAttribute(
+                            'y',
+                            parseInt(activityPos['startEvent']?.y) + parseInt(activityPos['startEvent']?.height) / 2
+                        );
                         startBpmnEdge.appendChild(startWaypoint1);
                         const startWaypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
 
                         startWaypoint2.setAttribute('x', parseInt(activityPos[firstActivity.id]?.x));
-                        startWaypoint2.setAttribute('y', parseInt(activityPos[firstActivity.id]?.y) + (parseInt(activityPos[firstActivity.id]?.height) / 2));
+                        startWaypoint2.setAttribute(
+                            'y',
+                            parseInt(activityPos[firstActivity.id]?.y) + parseInt(activityPos[firstActivity.id]?.height) / 2
+                        );
                         startBpmnEdge.appendChild(startWaypoint2);
 
                         const endBpmnEdge = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNEdge');
                         endBpmnEdge.setAttribute('id', `BPMNEdge_${lastActivity.id}_EndEvent`);
                         endBpmnEdge.setAttribute('bpmnElement', 'SequenceFlow_' + lastActivity.id + '_' + 'EndEvent');
                         const endWaypoint1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                        // startX = 
-                        // startY = 
-                        endWaypoint1.setAttribute('x', parseInt(activityPos[lastActivity.id]?.x) + parseInt(activityPos[lastActivity.id]?.width));
-                        endWaypoint1.setAttribute('y', parseInt(activityPos[lastActivity.id]?.y) + (parseInt(activityPos[lastActivity.id]?.height) / 2));
+                        // startX =
+                        // startY =
+                        endWaypoint1.setAttribute(
+                            'x',
+                            parseInt(activityPos[lastActivity.id]?.x) + parseInt(activityPos[lastActivity.id]?.width)
+                        );
+                        endWaypoint1.setAttribute(
+                            'y',
+                            parseInt(activityPos[lastActivity.id]?.y) + parseInt(activityPos[lastActivity.id]?.height) / 2
+                        );
                         endBpmnEdge.appendChild(endWaypoint1);
                         const endWaypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
                         // endX = parseInt(activityPos['endEvent'].x)
@@ -1112,7 +1180,7 @@ export default {
             }
 
             if (jsonModel.sequences)
-                jsonModel.sequences.forEach(sequence => {
+                jsonModel.sequences.forEach((sequence) => {
                     if (!activityPos[sequence.source] || !activityPos[sequence.target]) {
                         return false;
                     }
@@ -1124,15 +1192,15 @@ export default {
                     const waypoint1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
                     // activity
                     let startX, startY, endX, endY;
-                    startX = parseInt(activityPos[sequence.source].x) + parseInt(activityPos[sequence.source].width)
-                    startY = parseInt(activityPos[sequence.source].y) + (parseInt(activityPos[sequence.source].height) / 2)
+                    startX = parseInt(activityPos[sequence.source].x) + parseInt(activityPos[sequence.source].width);
+                    startY = parseInt(activityPos[sequence.source].y) + parseInt(activityPos[sequence.source].height) / 2;
                     waypoint1.setAttribute('x', startX);
                     waypoint1.setAttribute('y', startY);
                     bpmnEdge.appendChild(waypoint1);
 
                     const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                    endX = parseInt(activityPos[sequence.target].x)
-                    endY = parseInt(activityPos[sequence.target].y) + (parseInt(activityPos[sequence.target].height) / 2)
+                    endX = parseInt(activityPos[sequence.target].x);
+                    endY = parseInt(activityPos[sequence.target].y) + parseInt(activityPos[sequence.target].height) / 2;
                     waypoint2.setAttribute('x', endX);
                     waypoint2.setAttribute('y', endY);
                     bpmnEdge.appendChild(waypoint2);
@@ -1346,7 +1414,7 @@ export default {
     height: 100%;
 }
 
-@media only screen and (max-width:1279px) {
+@media only screen and (max-width: 1279px) {
     .process-definition-resize {
         width: 100%;
         height: calc(100vh - 192px);
