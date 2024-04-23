@@ -24,6 +24,12 @@ const formDesignGeneratorPromptSnipptsData = {
         },
 
         {
+            tag: `<textarea-field name='<이 입력창의 고유한 이름>' alias='<이 입력창의 별명>' rows='<입력창의 행 크기>' disabled='<true|false>'></textarea-field>`,
+            purpose: "여러 행에 걸쳐서 텍스트를 입력받기 위해서",
+            limit: ""
+        },
+
+        {
             tag: `<boolean-field name='<이 입력창의 고유한 이름>' alias='<이 입력창의 별명>' disabled='<true|false>'></boolean-field>`,
             purpose: `'true' 또는 'false' 중 하나를 선택하기 위해서`,
             limit: ""

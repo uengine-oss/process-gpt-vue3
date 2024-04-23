@@ -21,6 +21,13 @@
                     @keyup.enter="save" persistent-placeholder></v-text-field>
     </v-card-text>
 
+    <!-- 'number' 유형의 값들을 입력받기 위해서 -->
+    <v-card-text>
+      <v-text-field v-for="(settingInfo, index) in componentRef.settingInfos.filter(info => info.settingType === 'number')" type="number" :key="index"
+                    :ref="settingInfo.dataToUse" :label="settingInfo.settingLabel" v-model.trim="componentProps[settingInfo.dataToUse]"
+                    @keyup.enter="save" persistent-placeholder></v-text-field>
+    </v-card-text>
+
     <!-- 'select' 유형의 값들을 입력받기 위해서 -->
     <v-card-text>
       <v-select v-for="(settingInfo, index) in componentRef.settingInfos.filter(info => info.settingType === 'select')" :key="index"

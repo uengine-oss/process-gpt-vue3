@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-textarea v-model="localModelValue" :disabled="localDisabled">
+        <v-textarea v-model="localModelValue" :disabled="localDisabled" :rows="rows">
             <template v-slot:label>
                 <span style="color:black;">
                     {{localAlias ?? localName}}
@@ -23,6 +23,7 @@ export default {
 
         name: String,
         alias: String,
+        rows: String,
         disabled: String
     },
 
@@ -32,12 +33,24 @@ export default {
 
             localName: this.name,
             localAlias: this.alias,
+            localRows: this.rows,
             localDisabled: this.disabled === "true",
 
             settingInfos: [
                 commonSettingInfos["localName"],
                 commonSettingInfos["localAlias"],
-                commonSettingInfos["localDisabled"]
+                commonSettingInfos["localDisabled"],
+
+                {
+                    dataToUse: "localRows",
+                    htmlAttribute: "rows",
+                    settingLabel: "Rows",
+                    settingType: "number",
+                    validCheck: (value) => {
+                        if(!value || Number(value) <= 0) return "Rows 속성에 0 이상의 값을 입력해 주세요."
+                        return null
+                    }
+                },
             ]
         };
     },
