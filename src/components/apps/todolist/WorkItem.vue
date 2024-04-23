@@ -23,7 +23,7 @@
                         <v-window-item value="progress">
                             <v-card-title>프로세스 진행상태</v-card-title>
                             <div class="pa-0" style="overflow:auto; height: calc(100vh - 620px);">
-                                <div v-if="bpmn">
+                                <div v-if="bpmn" style="height: 100%;">
                                     <process-definition class="work-item-definition" :currentActivities="currentActivities" :bpmn="bpmn" :key="updatedDefKey" :isViewMode="true"></process-definition>
                                 </div>
                                 <dif v-else>
@@ -79,6 +79,7 @@ export default {
         workListByInstId: null,
         currentComponent: null,
         currentActivities: [],
+
         // status variables
         updatedKey: 0,
         updatedDefKey: 0,
@@ -104,13 +105,7 @@ export default {
             }))
         },
         id() {
-            if (this.$route.params.taskId) {
-                return this.$route.params.taskId
-            } else if (this.$route.query.id) {
-                return this.$route.query.id
-            } else {
-                return null
-            }
+            return this.$route.params.taskId ? this.$route.params.taskId : this.$route.query.id
         },
         workItemStatus(){
             if(!this.workItem) return null
@@ -150,10 +145,10 @@ export default {
 }
 </script>
 <style>
-    .work-item-definition svg {
+    /* .work-item-definition svg {
         transform: scale(1);
         transform-origin: top left;
-    }
+    } */
     .process-card-resized {
         width: auto; /* 너비를 자동으로 조정 */
         height: auto; /* 높이를 자동으로 조정 */

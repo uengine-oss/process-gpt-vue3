@@ -1,8 +1,8 @@
 <template>
-    <div>
+    <div style="height: 100%">
         <v-row style="height: 100%" class="ma-0">
-            <v-col class="d-flex ma-0 pa-0">
-                <v-card style="border-radius: 0px !important; border: none" flat>
+            <v-col class="d-flex ma-0 pa-0" style="height: 100%">
+                <v-card style="border-radius: 0px !important; border: none; height: 100%" flat>
                     <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
                         <template v-slot:activator="{ props }">
                             <v-btn @click="openProcessVariables" icon v-bind="props" class="processVariables-btn">
@@ -52,6 +52,7 @@
                         v-on:change-sequence="onChangeSequence"
                         v-on:remove-shape="onRemoveShape"
                         v-on:change-shape="onChangeShape"
+                        style="height: 100%"
                     ></component>
                     <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
                         :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
