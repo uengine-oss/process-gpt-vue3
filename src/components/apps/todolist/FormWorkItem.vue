@@ -1,20 +1,16 @@
 <template>
     <v-row class="ma-0 pa-0 task-btn" >
         <v-spacer></v-spacer>
-        <div v-if="workItemStatus == 'COMPLETED'">
-            <v-btn @click="undoTask()" color="#0085DB" style="color: white;" rounded >현 시점 되돌리기</v-btn>
-        </div>
         <div v-if="workItemStatus == 'NEW' || workItemStatus == 'DRAFT'">
             <v-btn @click="saveTask()" color="#0085DB" style="color: white;" rounded >중간 저장</v-btn>
             <v-btn @click="completeTask()" variant="tex" rounded>제출 완료</v-btn>
         </div>
         
     </v-row>
-   <div style="height:calc(100vh - 255px)">
+   <div class="pa-4" style="height:calc(100vh - 255px);">
         <!-- <FormMapper></FormMapper> -->
         <DynamicForm :formHTML="html" v-model="formData"></DynamicForm>
     </div>
-   
 </template>
 
 <script>
@@ -42,7 +38,6 @@ export default {
         formData: {},
     }),
     components: {
-        // FormMapper
         DynamicForm
     },
     created() {
@@ -54,20 +49,19 @@ export default {
             let formName = me.workItem.worklist.tool.split(':')[1];
             me.html = await backend.getRawDefinition(formName, {'type': 'form'});            
         },
-        undoTask(){
-            this.$emit('undoTask')
-        },
         async saveTask(){
             var me = this
             me.$try({
                 context: me,
                 action: async () => {
-                    let varName = true ? '장애신고' : me.workItem.activity.name
+                    // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드 
+                    let varName = me.workItem.activity.variableForHtmlFormContext.name
                     let variable = await backend.getVariable(me.workItem.worklist.instId, varName)
                     variable._type = "org.uengine.contexts.HtmlFormContext"
                     variable.valueMap = this.formData
                     variable.valueMap._type = "java.util.HashMap"
                     await backend.setVariable(me.workItem.worklist.instId, varName, variable)
+                    ///////////////////////////////////
                     await backend.putWorkItem(me.$route.params.taskId, {"parameterValues": {}})
                 },
                 successMsg: '중간 저장 완료'
@@ -78,6 +72,14 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
+                    // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드 
+                    let varName = me.workItem.activity.variableForHtmlFormContext.name
+                    let variable = await backend.getVariable(me.workItem.worklist.instId, varName)
+                    variable._type = "org.uengine.contexts.HtmlFormContext"
+                    variable.valueMap = this.formData
+                    variable.valueMap._type = "java.util.HashMap"
+                    await backend.setVariable(me.workItem.worklist.instId, varName, variable)
+                    ///////////////////////////////////
                     await backend.putWorkItemComplate(me.$route.params.taskId, {"parameterValues": {}})
                     me.$router.push('/todolist')
                 },

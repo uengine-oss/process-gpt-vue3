@@ -542,7 +542,7 @@ export default {
     },
     createArgumentSourceMap(connections) {
       var argumentSourceMap = {};
-      const rootNodeName = Object.keys(this.nodes)[0];
+      const rootNodeName = "Variables";
       connections.forEach(conn => {
         var argument = conn.to[1].replace("in ", "");
         if (this.checkGlobalType(conn.from[0])) {
@@ -578,7 +578,7 @@ export default {
     createMappingElement(conn, block, blockData, arg) {
       var mappingElement = {};
       const blockName = conn.from[0];
-      const rootNodeName = Object.keys(this.nodes)[0];
+      const rootNodeName = "Variables";
       var argument = arg.replace(rootNodeName + ".", "");
       if (blockName == "Source") {
         mappingElement = {
