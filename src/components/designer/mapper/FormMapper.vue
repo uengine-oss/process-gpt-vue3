@@ -246,7 +246,7 @@ export default {
                 roots: []
             };
         },
-        async fetchAndProcessFormDefinitions(nodes, variable, blockName) {
+        async fetchAndProcessFormDefinitions(nodes, variable) {
             let name = variable.name;
             let matchingForm = this.definition.processVariables.find((form) => form.name === name && form.type === 'Form' && form.fields);
 
@@ -266,8 +266,6 @@ export default {
                     };
                 });
             }
-
-            this.updateBlockTemplates(nodes, blockName);
         },
         async processVariables(nodes, blockName) {
             const definition = this.definition;
@@ -292,65 +290,75 @@ export default {
                     };
                 }
 
-                await this.fetchAndProcessFormDefinitions(nodes, variable, blockName);
+                await this.fetchAndProcessFormDefinitions(nodes, variable);
             }
+
+            if (this.roles.length > 0) {
+                if (!this.config.roots.includes('roles')) {
+                    this.config.roots.push('roles');
+                }
+
+                if (!nodes['roles']) {
+                    nodes['roles'] = {
+                        text: 'roles',
+                        children: [],
+                        parent: null
+                    };
+                }
+
+                this.roles.forEach((role) => {
+                    if (nodes['roles']) {
+                        nodes['roles'].children.push(role);
+                        nodes[role] = {
+                            text: role,
+                            children: []
+                        };
+                    }
+                });
+            }
+
+            this.updateBlockTemplates(nodes, blockName);
         },
         updateBlockTemplates(nodes, blockName) {
             const treeStructure = this.transformData(nodes);
             const nodeHeight = 24;
+            this.resetTreeviewPorts(blockName);
 
             const updatePorts = (treeNode, path = '', yOffset = 0, isRootClosed = false) => {
-                if (!treeNode) return;
+                if (!treeNode) return yOffset;
 
-                const effectiveYOffset = isRootClosed ? yOffset : yOffset + nodeHeight;
                 const treeNodeText = Object.keys(treeNode)[0];
                 const currentPath = path ? `${path}.${treeNodeText}` : treeNodeText;
-                if (path != '') {
-                    // 최상위 노드가 아닐 때 포트를 표시합니다.
-                    if (!isRootClosed) {
-                        this.addPortToBlockTemplates(currentPath, effectiveYOffset - nodeHeight, blockName);
-                    } else {
-                        this.addPortToBlockTemplates(currentPath, effectiveYOffset, blockName);
-                    }
+                let effectiveYOffset = yOffset + (isRootClosed ? 0 : nodeHeight);
+
+                if (nodes[treeNodeText].parent != null || nodes[treeNodeText].parent == undefined) {
+                    this.addPortToBlockTemplates(currentPath, effectiveYOffset - (isRootClosed ? 0 : nodeHeight), blockName);
                 }
 
-                if (treeNode[Object.keys(treeNode)[0]].length > 0) {
+                const children = treeNode[treeNodeText];
+                if (children.length > 0) {
                     const nodeOpened = nodes[treeNodeText].state && nodes[treeNodeText].state.opened;
-                    let cumulativeOffset = effectiveYOffset;
-                    if (!nodeOpened && !isRootClosed) {
-                        cumulativeOffset -= nodeHeight;
-                    }
-
-                    treeNode[Object.keys(treeNode)[0]].forEach((childNode, index) => {
-                        const childNodeText = Object.keys(childNode)[0];
-                        const child = nodes[childNodeText]; // 수정: childNode가 객체이므로 text 속성 접근 필요
-                        updatePorts(childNode, currentPath, cumulativeOffset, isRootClosed || !nodeOpened);
-                        if (nodeOpened && !isRootClosed) {
-                            cumulativeOffset += this.getNodeHeight(child);
-                        }
-                    });
-                }
-            };
-
-            this.getNodeHeight = function (node) {
-                let totalHeight = nodeHeight;
-
-                const nodeOpened = node.state && node.state.opened;
-                if (nodeOpened && node.children) {
-                    node.children.forEach((childNode) => {
-                        const child = nodes[childNode];
-                        totalHeight += this.getNodeHeight(child);
+                    children.forEach((childNode) => {
+                        effectiveYOffset = updatePorts(childNode, currentPath, effectiveYOffset, isRootClosed || !nodeOpened);
                     });
                 }
 
-                return totalHeight;
+                return effectiveYOffset;
             };
 
+            var rootYOffset = 0;
             treeStructure.forEach((rootNode, index) => {
-                const rootYOffset = index * nodeHeight;
                 const rootText = Object.keys(rootNode)[0];
                 const rootClosed = !(nodes[rootText].state && nodes[rootText].state.opened);
-                updatePorts(rootNode, '', rootYOffset, rootClosed);
+                if (index > 0) {
+                    const higherText = Object.keys(treeStructure[index - 1])[0];
+                    const higherClosed = !(nodes[higherText].state && nodes[higherText].state.opened);
+                    if (higherClosed) {
+                        rootYOffset += index * nodeHeight;
+                    }
+                }
+
+                rootYOffset += updatePorts(rootNode, '', rootYOffset, rootClosed);
             });
         },
         addPortToBlockTemplates(nodePath, yOffset, blockName) {
@@ -366,6 +374,11 @@ export default {
                     y: yOffset,
                     direction: 'in'
                 };
+            }
+        },
+        resetTreeviewPorts(blockName) {
+            if (this.blockTemplates[blockName] && this.blockTemplates[blockName].ports) {
+                this.blockTemplates[blockName].ports = {};
             }
         },
         transformData(nodes) {
