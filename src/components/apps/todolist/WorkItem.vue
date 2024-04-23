@@ -37,9 +37,11 @@
                         <v-card elevation="10">
                             <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
                                 <div class="d-flex w-100" style="height: calc(100vh - 320px); overflow: auto;">
-                                    <MessageLayout :messages="messages" @clickMessage="navigateToWorkItemByTaskId">
+                                    <!-- <MessageLayout :messages="messages" @clickMessage="navigateToWorkItemByTaskId">
                                         <template v-slot:messageProfile="{ message }"></template>
-                                    </MessageLayout>
+                                    </MessageLayout> -->
+                                    <component :is="'work-history-'+mode" :messages="messages"
+                                        @clickMessage="navigateToWorkItemByTaskId" />
                                 </div>
                             </perfect-scrollbar>
                         </v-card>
@@ -54,6 +56,7 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import MessageLayout from "@/components/ui/MessageLayout.vue";
+import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
 import DefaultWorkItem from './DefaultWorkItem.vue'; // DefaultWorkItem 컴포넌트 임포트
 import FormWorkItem from './FormWorkItem.vue'; // FormWorkItem 컴포넌트 임포트
 
@@ -61,9 +64,10 @@ const backend = BackendFactory.createBackend()
 export default {
     components: {
         ProcessDefinition,
-        MessageLayout,
         DefaultWorkItem,
-        FormWorkItem
+        FormWorkItem,
+        'work-history-uEngine': MessageLayout,
+        'work-history-ProcessGPT': ProcessInstanceChat
     },
     data: () => ({
         bpmn: null,
@@ -82,6 +86,9 @@ export default {
         this.init();
     },
     computed:{
+        mode(){
+            return window.$mode;
+        },
         checkedCount(){
             if(!this.checkPoints) return 0
             return this.checkPoints.filter(checkPoint => checkPoint.checked).length;
@@ -96,11 +103,9 @@ export default {
                 timeStamp: workItem.startDate
             }))
         },
-        id() {
+        id(){
             if (this.$route.params.taskId) {
                 return this.$route.params.taskId
-            } else if (this.$route.query.id) {
-                return this.$route.query.id
             } else {
                 return null
             }
