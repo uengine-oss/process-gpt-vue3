@@ -3,6 +3,7 @@
         <v-select
             :items="localKeys"
             v-model="localModelValue"
+            :disabled="localDisabled"
         >
         <template v-slot:label>
             <span style="color:black;">
@@ -24,7 +25,8 @@ export default {
 
         name: String,
         alias: String,
-        items: String
+        items: String,
+        disabled: String
     },
 
     computed: {
@@ -41,11 +43,13 @@ export default {
             localName: this.name,
             localAlias: this.alias,
             localItems: this.items,
+            localDisabled: this.disabled === "true",
 
             settingInfos: [
                 commonSettingInfos["localName"],
                 commonSettingInfos["localAlias"],
-                commonSettingInfos["localItems"]
+                commonSettingInfos["localItems"],
+                commonSettingInfos["localDisabled"]
             ]
         };
     },

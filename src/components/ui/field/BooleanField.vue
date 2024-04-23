@@ -1,10 +1,10 @@
 <template>
     <div>
-        <v-file-input
-            :label="localAlias ?? localName"
-            v-model="selectedFiles"
+        <v-checkbox 
+            :label="localAlias ?? localName" 
+            v-model="localModelValue"
             :disabled="localDisabled"
-        ></v-file-input>
+        ></v-checkbox>
     </div>
 </template>
 
@@ -12,6 +12,8 @@
 import { commonSettingInfos } from "./CommonSettingInfos.vue"
 
 export default {
+    name: "BooleanField",
+    
     props: {
         modelValue: String,
         vueRenderUUID: String,
@@ -24,11 +26,11 @@ export default {
 
     data() {
         return {
+            localModelValue: this.modelValue ?? false,
+
             localName: this.name,
             localAlias: this.alias,
             localDisabled: this.disabled === "true",
-            
-            selectedFiles: null,
 
             settingInfos: [
                 commonSettingInfos["localName"],
@@ -39,24 +41,23 @@ export default {
     },
 
     watch: {
-        selectedFiles() {
-            if (!this.selectedFiles || this.selectedFiles.length <= 0) {
-                this.$emit('update:modelValue', "")
-                return
-            }
+        modelValue: {
+            handler() {
+                this.localModelValue = this.modelValue ?? false
+            },
+            deep: true,
+            immediate: true
+        },
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                this.$emit('update:modelValue', e.target.result)
-            }
-            reader.readAsDataURL(this.selectedFiles[0])
+        localModelValue: {
+            handler() {
+                this.$emit('update:modelValue', this.localModelValue)
+            },
+            deep: true,
+            immediate: true
         }
     },
-
-    created() {
-        this.$emit('update:modelValue', "")
-    }
-};
+}
 </script>
 
 <style lang="scss">

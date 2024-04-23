@@ -21,21 +21,28 @@
                 </v-tabs>
                 <v-window v-model="selectedTab">
                     <v-window-item value="progress">
-                        <v-card elevation="10">
-                            <v-card-title>프로세스 진행상태</v-card-title>
-                            <div class="pa-0" style="overflow:auto; height: calc(100vh - 620px);">
-                                <div v-if="bpmn">
-                                    <process-definition class="work-item-definition" :currentActivities="currentActivities" :bpmn="bpmn" :key="updatedDefKey" :isViewMode="true"></process-definition>
-                                </div>
-                                <dif v-else>
-                                    No BPMN found
-                                </dif>
+                        <v-card-title>프로세스 진행상태</v-card-title>
+                        <div class="pa-0" style="overflow:auto; height: calc(100vh - 620px);">
+                            <div v-if="bpmn" style="height: 100%;">
+                                <process-definition class="work-item-definition" :currentActivities="currentActivities" :bpmn="bpmn" :key="updatedDefKey" :isViewMode="true"></process-definition>
                             </div>
-                        </v-card>
+                            <dif v-else>
+                                No BPMN found
+                            </dif>
+                        </div>
+                        <v-card-title>CheckPoint ({{checkedCount}}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>
+                        <div style="width: 99%; height:70%; max-height:70%; overflow-y: scroll;">
+                            <div v-if="checkPoints" v-for="(checkPoint, index) in checkPoints" :key="index">
+                                <v-checkbox v-model="checkPoint.checked" :label="checkPoint.name" color="primary" hide-details></v-checkbox>
+                            </div>
+                            <div v-else>
+                                <v-checkbox disabled value-model="true" label="Check Point Description" color="primary" hide-details></v-checkbox>
+                            </div>
+                        </div>
                     </v-window-item>
                     <v-window-item value="history">
                         <v-card elevation="10">
-                            <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
+                            <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll" >
                                 <div class="d-flex w-100" style="height: calc(100vh - 320px); overflow: auto;">
                                     <!-- <MessageLayout :messages="messages" @clickMessage="navigateToWorkItemByTaskId">
                                         <template v-slot:messageProfile="{ message }"></template>
@@ -44,6 +51,9 @@
                                         @clickMessage="navigateToWorkItemByTaskId" />
                                 </div>
                             </perfect-scrollbar>
+                            <div v-else>
+                                Work History not found.
+                            </div>
                         </v-card>
                     </v-window-item>
                 </v-window>
@@ -76,6 +86,7 @@ export default {
         workListByInstId: null,
         currentComponent: null,
         currentActivities: [],
+
         // status variables
         updatedKey: 0,
         updatedDefKey: 0,
@@ -103,12 +114,8 @@ export default {
                 timeStamp: workItem.startDate
             }))
         },
-        id(){
-            if (this.$route.params.taskId) {
-                return this.$route.params.taskId
-            } else {
-                return null
-            }
+        id() {
+            return this.$route.params.taskId ? this.$route.params.taskId : null;
         },
         workItemStatus(){
             if(!this.workItem) return null
@@ -148,10 +155,10 @@ export default {
 }
 </script>
 <style>
-    .work-item-definition svg {
+    /* .work-item-definition svg {
         transform: scale(1);
         transform-origin: top left;
-    }
+    } */
     .process-card-resized {
         width: auto; /* 너비를 자동으로 조정 */
         height: auto; /* 높이를 자동으로 조정 */

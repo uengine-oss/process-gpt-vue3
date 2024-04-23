@@ -7,6 +7,7 @@
                     v-model="localModelValue"
                     :label="key"
                     :value="key"
+                    :disabled="localDisabled"
                 ></v-checkbox>
             </div>
         </div>
@@ -24,7 +25,8 @@ export default {
 
         name: String,
         alias: String,
-        items: String
+        items: String,
+        disabled: String
     },
 
     data() {
@@ -34,11 +36,13 @@ export default {
             localName: this.name,
             localAlias: this.alias,
             localItems: this.items,
+            localDisabled: this.disabled === "true",
 
             settingInfos: [
                 commonSettingInfos["localName"],
                 commonSettingInfos["localAlias"],
-                commonSettingInfos["localItems"]
+                commonSettingInfos["localItems"],
+                commonSettingInfos["localDisabled"]
             ]
         };
     },
