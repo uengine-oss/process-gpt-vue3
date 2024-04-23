@@ -51,9 +51,7 @@
     },
 
     data: () => ({
-      componentProps: {},
-
-      testItems: []
+      componentProps: {}
     }),
 
     methods: {
