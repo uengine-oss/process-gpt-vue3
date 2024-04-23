@@ -34,6 +34,13 @@
                                     v-model="componentProps[settingInfo.dataToUse]"></FormDefinitionPanelItemTable>
     </v-card-text>
 
+    <!-- 'checkbox' 유형의 값들을 입력받기 위해서 -->
+    <v-card-text>
+      <v-checkbox v-for="(settingInfo, index) in componentRef.settingInfos.filter(info => info.settingType === 'checkbox')" :key="index"
+                  :ref="settingInfo.dataToUse" :label="settingInfo.settingLabel" v-model="componentProps[settingInfo.dataToUse]"
+                  @keyup.enter="save"></v-checkbox>
+    </v-card-text>
+
     <v-btn @click="save">
       Apply
     </v-btn>
@@ -90,7 +97,7 @@
           if(Object.keys(this.$refs).length > 0)
             this.$refs[Object.keys(this.$refs)[0]][0].focus()
       });
-    },
+    }
   }
 </script>
   

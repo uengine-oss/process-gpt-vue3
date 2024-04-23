@@ -34,6 +34,13 @@ export const commonSettingInfos = {
         }
     },
 
+    "localDisabled": {
+        dataToUse: "localDisabled",
+        htmlAttribute: "disabled",
+        settingLabel: "ReadOnly",
+        settingType: "checkbox"
+    },
+
     "localItems": {
         dataToUse: "localItems",
         htmlAttribute: "items",
