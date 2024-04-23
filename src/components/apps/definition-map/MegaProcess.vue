@@ -1,6 +1,6 @@
 <template>
     <div class="w-100" @mouseover="hover = true" @mouseleave="hover = false">
-        <v-card
+        <v-card @click="viewProcessDetail(value)"
             class="align-center pa-3 mb-3 bg-lightwarning"
             elevation="10"
             style="border-radius: 10px !important;"
@@ -148,8 +148,8 @@ export default {
         deleteProcess() {
             this.parent.mega_proc_list = this.parent.mega_proc_list.filter(item => item.id != this.value.id);
         },
-        viewProcess(process) {
-            this.$emit('view', process);
+        viewProcessDetail(process) {
+            this.$router.push(`/definition-map/mega/${process.label}`)
         },
     },
 }
