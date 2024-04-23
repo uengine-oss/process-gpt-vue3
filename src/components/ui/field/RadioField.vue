@@ -1,44 +1,43 @@
 <template>
     <div>
-        <label>{{ label }}</label>
-        <div v-for="(item, index) in localItems" :key="index">
-            <div v-for="(value, key) in item" :key="key">
-                <v-checkbox
-                    v-model="inputedValue"
-                    :label="key"
-                    :value="key"
-                ></v-checkbox>
+        <label>{{ localAlias ?? localName }}</label>
+        <v-radio-group v-model="localModelValue">
+            <div v-for="(item, index) in localItems" :key="index">
+                <div v-for="(value, key) in item" :key="key">
+                    <v-radio :label="key" :value="key"></v-radio>
+                </div>
             </div>
-        </div>
+        </v-radio-group>
     </div>
 </template>
 
 <script>
+import { commonSettingInfos } from "./CommonSettingInfos.vue"
 
 export default {
     props: {
-        modelValue: Array,
+        modelValue: String,
         vueRenderUUID: String,
         tagName: String,
+
         name: String,
         alias: String,
         items: String
     },
 
-    computed: {
-        label() {
-            if (this.localAlias) return this.localAlias
-            else if (this.localName) return this.localName
-            else return ""
-        }
-    },
-
     data() {
         return {
+            localModelValue: this.modelValue,
+
             localName: this.name,
             localAlias: this.alias,
-            localItems: [],
-            inputedValue: []
+            localItems: this.items,
+
+            settingInfos: [
+                commonSettingInfos["localName"],
+                commonSettingInfos["localAlias"],
+                commonSettingInfos["localItems"]
+            ]
         };
     },
 
@@ -47,26 +46,24 @@ export default {
             handler() {
                 this.loadLocalItems()
                 
-                if(JSON.stringify(this.inputedValue) === JSON.stringify(this.modelValue)) return
                 if(this.modelValue && this.modelValue.length > 0)
-                    this.inputedValue = this.modelValue
-                else
-                    this.inputedValue = []
+                    this.localModelValue = this.modelValue
+                else if(this.localItems.length > 0)
+                    this.localModelValue = Object.keys(this.localItems[0])[0]
             },
             deep: true,
             immediate: true
         },
 
-        inputedValue: {
+        localModelValue: {
             handler() {
-                if(JSON.stringify(this.inputedValue) === JSON.stringify(this.modelValue)) return
-                this.$emit('update:modelValue', this.inputedValue)
+                this.$emit('update:modelValue', this.localModelValue)
             },
             deep: true,
             immediate: true
         }
     },
-
+    
     methods: {
         // 문자열로 형태로 items의 값이 전달되었을 경우, 리스트 형태로 변환해서 반영시키기 위해서
         loadLocalItems() {

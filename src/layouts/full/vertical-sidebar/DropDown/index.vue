@@ -1,6 +1,4 @@
 <script setup>
-import Icon from '../Icon.vue';
-
 const props = defineProps({ item: Object, level: Number });
 </script>
 
@@ -17,11 +15,12 @@ const props = defineProps({ item: Object, level: Number });
         :disabled="item.disabled"
         :target="item.type === 'external' ? '_blank' : ''"
         v-scroll-to="{ el: '#top' }"
+        style="margin-left:20px;"
     >
         <!---If icon-->
         <template v-slot:prepend >
             <!-- <CircleIcon size="15" stroke-width="1.5"  class="ml-1" width="30" /> -->
-            <div class="sublink-dot ml-4"></div>
+            <Icon icon="bx:cog" width="24" height="24" style="margin-right:-10px;" />
         </template>
         <v-list-item-title class="ml-4 text-body-1">{{ $t(item.title) }}</v-list-item-title>
         <!---If Caption-->

@@ -397,7 +397,8 @@ export default {
             const newVariable = bpmnFactory.create('uengine:Variable', {
                 name: val.name,
                 type: val.type,
-                json: JSON.stringify({ defaultValue: JSON.stringify(val.defaultValue) })
+                json: JSON.stringify({ defaultValue: val.defaultValue }) // fix string to json
+                // json: JSON.stringify({ defaultValue: JSON.stringify(val.defaultValue) })
             });
 
             // 생성된 uengine:variable 요소를 uengine:properties 요소에 추가합니다.

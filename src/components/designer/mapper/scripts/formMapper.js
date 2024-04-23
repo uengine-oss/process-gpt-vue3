@@ -754,7 +754,6 @@ export default {
           ...port,
           direction: port.direction || "in",
           name,
-          parentNode: port.parentNode,
           blockName,
           pos: add(pos, port),
         }));
