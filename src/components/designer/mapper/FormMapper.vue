@@ -73,7 +73,6 @@
                         :name="port.name"
                         :block-name="port.blockName"
                         :direction="port.direction"
-                        :parentNode="port.parentNode"
                         :tree-view="nodes"
                         :appendComponent="appendComponent"
                         :onmousedown="newConnection(port.blockName, port.name, port.direction)"
@@ -133,7 +132,8 @@ export default {
         formMapperJson: {
             type: String,
             required: true
-        }
+        },
+        roles : Array,
     },
     components: {
         BlockComponent,
@@ -183,7 +183,6 @@ export default {
         await this.initializeStorage();
         this.initializeNodesAndConfig();
         await this.processVariables();
-        this.updateBlockTemplates();
         this.renderKey++;
     },
     mounted() {
@@ -247,6 +246,8 @@ export default {
                     };
                 });
             }
+            
+            this.updateBlockTemplates();
         },
         async processVariables() {
             const definition = this.definition;
@@ -445,7 +446,7 @@ export default {
             const mouseY = event.clientY;
 
             this.menu_x = mouseX - 50;
-            this.menu_y = (mouseY / 2) + svgRect.y*2;
+            this.menu_y = mouseY / 2 + svgRect.y * 2;
             this.component_x = mouseX;
             this.component_y = mouseY;
             this.$refs.contextMenu.showContextMenu(this.x, this.y);

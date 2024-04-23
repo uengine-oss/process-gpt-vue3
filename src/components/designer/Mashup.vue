@@ -12,7 +12,7 @@
     
     <v-dialog v-model="isOpenSettingDialog">
         <form-definition-panel
-          :value="componentSettingValue"
+          :componentRef="componentRefForSetting"
           @onSave="editFormDefinition"
           @onClose="isOpenSettingDialog = false"
         >
@@ -53,14 +53,7 @@ export default {
     kEditor: null,
     kEditorContent: `<div id="kEditor1"></div>`,
 
-    componentSettingValue: {
-      id: "",
-      type: "",
-      name: "",
-      alias: "",
-      items: "",
-      label: ""
-    },
+    componentRefForSetting: null,
     isOpenSettingDialog: false
   }),
 
@@ -145,10 +138,12 @@ export default {
         const componentRef = window.mashup.componentRefs[vueRenderUUID]
 
         const newElement = document.createElement(componentRef.tagName)
-        if(componentRef.localName) newElement.setAttribute('name', componentRef.localName)
-        if(componentRef.localAlias) newElement.setAttribute('alias', componentRef.localAlias)
-        if(componentRef.localItems) newElement.setAttribute('items', JSON.stringify(componentRef.localItems))
-        if(componentRef.localLabel) newElement.setAttribute('label', componentRef.localLabel)
+        componentRef.settingInfos.forEach(settingInfo => {
+          if(settingInfo.settingType === 'items')
+            newElement.setAttribute(settingInfo.htmlAttribute, JSON.stringify(componentRef[settingInfo.dataToUse]))
+          else
+            newElement.setAttribute(settingInfo.htmlAttribute, componentRef[settingInfo.dataToUse])
+        })
 
         vueRenderElement.innerHTML = newElement.outerHTML
       })
@@ -173,12 +168,10 @@ export default {
      * 유저가 설정창을 통해서 변경한 값을 컴포넌트에 반영시키기 위해서
      * @param {*} newValue 유저가 새롭게 설정한 값
      */
-    editFormDefinition(newValue) {
-      const componentRef = window.mashup.componentRefs[newValue.id]
-      if(newValue.name) componentRef.localName = newValue.name
-      if(newValue.alias) componentRef.localAlias = newValue.alias
-      if(newValue.items) componentRef.localItems = newValue.items
-      if(newValue.label) componentRef.localLabel = newValue.label
+    editFormDefinition(componentRef, componentProps) {
+      componentRef.settingInfos.forEach(settingInfo => {
+        componentRef[settingInfo.dataToUse] = componentProps[settingInfo.dataToUse]
+      })
 
       window.mashup.isOpenSettingDialog = false
     },
@@ -305,37 +298,24 @@ export default {
         try
         {
 
-          const doc = (new DOMParser()).parseFromString(container[0].innerHTML, 'text/html')
-
-
-          const vueRenderElement = doc.querySelectorAll("div[id^='vuemount_']")
+          const vueRenderElement = (new DOMParser()).parseFromString(container[0].innerHTML, 'text/html')
+                                      .querySelectorAll("div[id^='vuemount_']")
           if(vueRenderElement.length == 0)
           {
             alert("선택된 입력 요소가 없습니다.")
             return
           }
 
-          const vueRenderUUID = vueRenderElement[0].id
-          const componentRef = window.mashup.componentRefs[vueRenderUUID]
 
-
-          if(!componentRef.localName && !componentRef.localAlias && !componentRef.localItems && !componentRef.localLabel)
+          const componentRef = window.mashup.componentRefs[vueRenderElement[0].id]
+          if((!(componentRef.settingInfos)) || (componentRef.settingInfos.length <= 0))
           {
             alert("해당 입력 요소에 대해서 추가적으로 세팅할 수 있는 항목이 없습니다.")
             return
           }
 
 
-          const componentSettingValue = {
-            id: componentRef.vueRenderUUID, // 추후에 고유값을 통해서 값을 찾기 위해서
-            type: componentRef.tagName,
-            name: componentRef.localName,
-            alias: componentRef.localAlias,
-            items: ((componentRef.localItems) ? JSON.parse(JSON.stringify(componentRef.localItems)) : null),
-            label: componentRef.localLabel
-          }
-
-          window.mashup.componentSettingValue = { ...componentSettingValue }
+          window.mashup.componentRefForSetting = componentRef
           window.mashup.isOpenSettingDialog = true
 
         }

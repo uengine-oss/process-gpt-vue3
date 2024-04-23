@@ -1,42 +1,52 @@
 <template>
     <div>
-        <label>{{ label }}</label>
-        <v-radio-group v-model="inputedValue">
-            <div v-for="(item, index) in localItems" :key="index">
-                <div v-for="(value, key) in item" :key="key">
-                    <v-radio :label="key" :value="key"></v-radio>
-                </div>
-            </div>
-        </v-radio-group>
+        <v-select
+            :items="localKeys"
+            v-model="localModelValue"
+        >
+        <template v-slot:label>
+            <span style="color:black;">
+                {{localAlias ?? localName}}
+            </span>
+        </template>
+        </v-select>
     </div>
 </template>
 
 <script>
+import { commonSettingInfos } from "./CommonSettingInfos.vue"
 
 export default {
     props: {
         modelValue: String,
         vueRenderUUID: String,
         tagName: String,
+
         name: String,
         alias: String,
         items: String
     },
 
     computed: {
-        label() {
-            if (this.localAlias) return this.localAlias
-            else if (this.localName) return this.localName
-            else return ""
+        localKeys() {
+            if(this.localItems === undefined || this.localItems === null || this.localItems.length === 0) return []
+            return this.localItems.map(item => Object.keys(item)[0])
         }
     },
 
     data() {
         return {
+            localModelValue: this.modelValue,
+
             localName: this.name,
             localAlias: this.alias,
-            localItems: [],
-            inputedValue: ""
+            localItems: this.items,
+
+            settingInfos: [
+                commonSettingInfos["localName"],
+                commonSettingInfos["localAlias"],
+                commonSettingInfos["localItems"]
+            ]
         };
     },
 
@@ -44,30 +54,33 @@ export default {
         modelValue: {
             handler() {
                 this.loadLocalItems()
-                
+
                 if(this.modelValue && this.modelValue.length > 0)
                 {
-                    this.inputedValue = this.modelValue
+                    const foundItem = this.localItems.find(item => Object.keys(item)[0] === this.modelValue)
+                    if(!foundItem) return
+
+                    this.localModelValue = Object.keys(foundItem)[0]
                 }
                 else
                 {
                     if(this.localItems.length > 0)
-                        this.inputedValue = Object.keys(this.localItems[0])[0]
+                        this.localModelValue = Object.keys(this.localItems[0])[0]
                 }
             },
             deep: true,
             immediate: true
         },
 
-        inputedValue: {
+        localModelValue: {
             handler() {
-                this.$emit('update:modelValue', this.inputedValue)
+                this.$emit('update:modelValue', this.localModelValue)
             },
             deep: true,
             immediate: true
         }
     },
-    
+
     methods: {
         // 문자열로 형태로 items의 값이 전달되었을 경우, 리스트 형태로 변환해서 반영시키기 위해서
         loadLocalItems() {

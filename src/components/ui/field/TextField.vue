@@ -1,9 +1,9 @@
 <template>
     <div>
-        <v-text-field v-model="inputedValue">
+        <v-text-field v-model="localModelValue">
             <template v-slot:label>
                 <span style="color:black;">
-                    {{label}}
+                    {{localAlias ?? localName}}
                 </span>
             </template>
         </v-text-field>
@@ -11,46 +11,46 @@
 </template>
 
 <script>
+import { commonSettingInfos } from "./CommonSettingInfos.vue"
+
 export default {
+    name: "TextField",
+    
     props: {
         modelValue: String,
         vueRenderUUID: String,
         tagName: String,
+
         name: String,
         alias: String
     },
 
-    computed: {
-        label() {
-            if (this.localAlias) return this.localAlias
-            else if (this.localName) return this.localName
-            else return ""
-        }
-    },
-    
     data() {
         return {
+            localModelValue: this.modelValue,
+
             localName: this.name,
             localAlias: this.alias,
-            inputedValue: ""
+
+            settingInfos: [
+                commonSettingInfos["localName"],
+                commonSettingInfos["localAlias"]
+            ]
         };
     },
 
     watch: {
         modelValue: {
             handler() {
-                if(this.modelValue && this.modelValue.length > 0)
-                    this.inputedValue = this.modelValue
-                else
-                    this.inputedValue = ""
+                this.localModelValue  = ((this.modelValue && this.modelValue.length > 0) ? this.modelValue : "")
             },
             deep: true,
             immediate: true
         },
 
-        inputedValue: {
+        localModelValue: {
             handler() {
-                this.$emit('update:modelValue', this.inputedValue)
+                this.$emit('update:modelValue', this.localModelValue)
             },
             deep: true,
             immediate: true
