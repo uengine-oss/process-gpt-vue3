@@ -46,7 +46,7 @@ export default {
                     htmlAttribute: "type",
                     settingLabel: "Type",
                     settingType: "select",
-                    settingValue: ["text", "number", "email", "url", "date", "datetime-local", "month", "week", "time", "password", "tel"]
+                    settingValue: ["text", "number", "email", "url", "date", "datetime-local", "month", "week", "time", "password", "tel", "color"]
                 }
             ]
         };
