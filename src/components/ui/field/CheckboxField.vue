@@ -1,12 +1,13 @@
 <template>
     <div>
-        <label>{{ label }}</label>
+        <label>{{ localAlias ?? localName }}</label>
         <div v-for="(item, index) in localItems" :key="index">
             <div v-for="(value, key) in item" :key="key">
                 <v-checkbox
-                    v-model="inputedValue"
+                    v-model="localModelValue"
                     :label="key"
                     :value="key"
+                    :disabled="localDisabled"
                 ></v-checkbox>
             </div>
         </div>
@@ -14,31 +15,35 @@
 </template>
 
 <script>
+import { commonSettingInfos } from "./CommonSettingInfos.vue"
 
 export default {
     props: {
         modelValue: Array,
         vueRenderUUID: String,
         tagName: String,
+
         name: String,
         alias: String,
-        items: String
-    },
-
-    computed: {
-        label() {
-            if (this.localAlias) return this.localAlias
-            else if (this.localName) return this.localName
-            else return ""
-        }
+        items: String,
+        disabled: String
     },
 
     data() {
         return {
+            localModelValue: this.modelValue ?? [],
+
             localName: this.name,
             localAlias: this.alias,
-            localItems: [],
-            inputedValue: []
+            localItems: this.items,
+            localDisabled: this.disabled === "true",
+
+            settingInfos: [
+                commonSettingInfos["localName"],
+                commonSettingInfos["localAlias"],
+                commonSettingInfos["localItems"],
+                commonSettingInfos["localDisabled"]
+            ]
         };
     },
 
@@ -47,20 +52,17 @@ export default {
             handler() {
                 this.loadLocalItems()
                 
-                if(JSON.stringify(this.inputedValue) === JSON.stringify(this.modelValue)) return
-                if(this.modelValue && this.modelValue.length > 0)
-                    this.inputedValue = this.modelValue
-                else
-                    this.inputedValue = []
+                if(JSON.stringify(this.localModelValue) === JSON.stringify(this.modelValue)) return
+                this.localModelValue = (this.modelValue && this.modelValue.length > 0) ? this.modelValue : []
             },
             deep: true,
             immediate: true
         },
 
-        inputedValue: {
+        localModelValue: {
             handler() {
-                if(JSON.stringify(this.inputedValue) === JSON.stringify(this.modelValue)) return
-                this.$emit('update:modelValue', this.inputedValue)
+                if(JSON.stringify(this.localModelValue) === JSON.stringify(this.modelValue)) return
+                this.$emit('update:modelValue', this.localModelValue)
             },
             deep: true,
             immediate: true

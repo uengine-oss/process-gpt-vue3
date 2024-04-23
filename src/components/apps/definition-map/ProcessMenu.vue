@@ -60,7 +60,6 @@ export default {
         size: Number,
         type: String,
         process: Object,
-        // storage: Object,
         enableEdit: Boolean,
         enableExecution: Boolean,
     },
@@ -92,9 +91,6 @@ export default {
         // executeProcessDialog() {
         //     this.executeProcessDialog = true;
         // },
-        openViewProcessDetails(process) {
-            this.$router.push(`/definition-map/mega/${process.id}`);
-        },
         openEditDialog(processType) {
             this.$emit('editProcessdialog', processType);
         },

@@ -1,21 +1,38 @@
 <template>
     <div>
         <slot name="contents">
-            <div v-for="(message, index) in filterMessages" :key="index" class="d-flex">
+            <div v-for="(message, index) in filterMessages" :key="index">
                 <slot name="messageProfile">
-                    <v-avatar class="pr-2" size="40">
-                        <img v-if="!message.profile" src="@/assets/images/chat/chat-icon.png" alt="pro" width="50">
-                        <img v-else :src="message.profile" alt="pro" width="50">
-                    </v-avatar>
+                    <v-row class="ma-0 pa-0" style="margin-bottom:10px !important;">
+                        <v-avatar class="pr-2" size="40">
+                            <img v-if="!message.profile" src="@/assets/images/chat/chat-icon.png" alt="pro" width="50">
+                            <img v-else :src="message.profile" alt="pro" width="50">
+                        </v-avatar>
+                        <div v-if="message.timeStamp" style="font-size:12px; padding-top:20px;">
+                            {{ message.roleName }} 
+                            {{ formatTime(message.timeStamp) }}
+                        </div>     
+                    </v-row>
                 </slot>
                 <slot name="messageContent">
-                    <v-sheet class="bg-lightsecondary rounded-md px-3 py-2">
-                        <div v-html="message.content" @click="clickContent(message)"></div>
-                        <v-btn v-if="message.description" class="mt-2" elevation="0" @click="openDescription(index)">View Detail</v-btn>
-                        <pre v-if="message.open" class="text-body-1">{{ message.description }}</pre>
-                    </v-sheet>
-                    <div v-if="message.timeStamp" style="font-size:12px; padding-top:20px;">
-                        {{ formatTime(message.timeStamp) }}
+                    <div class="w-100 pb-5">
+                        <v-sheet class="bg-lightsecondary rounded-md px-3 py-2" style="width: 50vw;">
+                            <div v-html="message.content" @click="clickContent(message)"></div>
+                            <v-btn class="mt-2" elevation="0" @click="openDescription(index)">View Detail</v-btn>
+                            
+                        
+                            <div v-if="message.open" style="margin-top: 20px;">
+                                <div v-if="toolFormat(message).includes('formHandler')">
+                                    <DynamicForm class="message-layout-dyna" v-if="message.open" :formHTML="message.html" v-model="message.formData"></DynamicForm>
+                                </div>
+                                <div v-else-if="toolFormat(message) == 'defaultHandler'">
+                                    <DefaultForm :inputItems="message.formData"></DefaultForm>
+                                </div>
+                                <div v-else>
+                                    <div v-html="message.description"></div>
+                                </div>
+                            </div>
+                        </v-sheet>
                     </div>
                 </slot>
             </div>
@@ -25,7 +42,11 @@
 </template>
 
 <script>
+import BackendFactory from '@/components/api/BackendFactory';
+import DynamicForm from '@/components/designer/DynamicForm.vue';
+import DefaultForm from '@/components/designer/DefaultForm.vue';
 
+const backend = BackendFactory.createBackend()
 export default {
     props: {
         messages: Array,
@@ -34,32 +55,83 @@ export default {
     data() {
         return {
             filterMessages: [],
-            
         };
     },
-    watch:{
-        "messages":function(){
-            this.convertMessages()
-        },
+    components: {
+        DynamicForm,
+        DefaultForm
+    },
+    created(){
+        this.init()
     },
     methods: {
-        convertMessages(){
+         init(){
             this.filterMessages = this.messages.map(message => {
-                message.open = message.open ? true : false
+                // default Value
+                message.open = false
+                message.html = null
+                message.formData = null
+
                 return message
             })
         },
-        openDescription(index){
-            this.filterMessages[index].open = this.filterMessages[index].open ? false : true
+        toolFormat(message){
+            if(!message._item) return null;
+
+            if(message._item.tool.includes('formHandler')){
+                return 'formHandler'
+            }
+            return message._item.tool 
+        },
+        async openDescription(index){
+            var me = this
+            me.$try({
+                context: me,
+                action: async () => {
+                    const workHistory = me.filterMessages[index]._item 
+                    if(me.filterMessages[index].open) { me.filterMessages[index].open = false; return; } // only close
+                   
+                    if(workHistory.tool.includes('formHandler')){
+                        if(me.filterMessages[index].html && me.filterMessages[index].formData) { me.filterMessages[index].open = true; return; } // only open
+
+                        // FormHandler
+                        const workItem = await backend.getWorkItem(workHistory.taskId);
+                        let varName = workItem.activity.variableForHtmlFormContext.name 
+                        
+                        // get form html
+                        let formName = workHistory.tool.split(':')[1];
+                        me.filterMessages[index].html = await backend.getRawDefinition(formName, {'type': 'form'});   
+
+                        // get variable
+                        let variable = await backend.getVariable(workHistory.instId, varName) 
+                        me.filterMessages[index].formData = variable ? variable.valueMap : {}
+                    } else {
+                        // DefaultHandler
+                        const workItem = await backend.getWorkItem(workHistory.taskId);
+                        let result = []
+
+                        for (const item of workItem.activity.parameters) {
+                            let variable = await backend.getVariable(workHistory.instId, item.variable.name);
+                            result.push({ name: item.variable.name, value: variable });
+                        }
+                        
+                        me.filterMessages[index].formData = result
+                    }
+                   
+                    // open
+                    me.filterMessages[index].open = true
+                }
+            })
+           
+        },
+        clickContent(message){
+            this.$emit('clickMessage', message)
         },
         formatTime(timeStamp) {
             var date = new Date(timeStamp);
             var dateString = date.toString();
             var timeString = dateString.split(' ')[4].substring(0, 5);
             return timeString;
-        },
-        clickContent(message){
-            this.$emit('clickMessage', message)
         }
     }
 };

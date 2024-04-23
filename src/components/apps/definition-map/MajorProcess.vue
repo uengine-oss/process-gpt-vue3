@@ -15,7 +15,6 @@
                                 :size="16"
                                 :type="type"
                                 :process="value"
-                                :storage="storage"
                                 :userInfo="userInfo"
                                 :enableEdit="enableEdit"
                                 @delete="deleteProcess"
@@ -31,7 +30,6 @@
                 :processDialogStatus="processDialogStatus"
                 :processType="processType"
                 :type="type"
-                :storage="storage"
                 @edit="editProcess"
                 @closeProcessDialog="closeProcessDialog"
             />
@@ -52,7 +50,6 @@
                     <SubProcess 
                         :value="item" 
                         :parent="value" 
-                        :storage="storage"
                         :userInfo="userInfo"
                         :enableEdit="enableEdit"
                         :enableExecution="enableExecution"
@@ -68,10 +65,9 @@
                 <SubProcess 
                     :value="item" 
                     :parent="value" 
-                    :storage="storage"
                     :enableEdit="enableEdit"
                     :enableExecution="enableExecution"
-                    @view="viewProcess"
+                    @click="viewProcess"
                 />
             </div>
         </div>
@@ -97,7 +93,6 @@
             :subProcessDialogStauts="subProcessDialogStauts"
             :processType="processType"
             :type="type"
-            :storage="storage"
             @add="addProcess"
             @closeProcessDialog="closeProcessDialog"
             style="margin-top:20px !important;"
@@ -121,7 +116,6 @@ export default {
     props: {
         value: Object,
         parent: Object,
-        storage: Object,
         userInfo: Object,
         enableEdit: Boolean,
         enableExecution: Boolean
@@ -147,7 +141,7 @@ export default {
             this.parent.major_proc_list = this.parent.major_proc_list.filter(item => item.id != this.value.id);
         },
         viewProcess(process) {
-            this.$emit('view', process);
+            this.$router.push(`/definition-map/sub/${process.id}`)
         },
     },
 }

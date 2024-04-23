@@ -63,16 +63,19 @@ class ProcessGPTBackend implements Backend {
             await storage.putObject('proc_def_arcv', procDefArcv);
 
             await storage.delete(`lock/${defId}`, { key: 'id' });
-            
-            await axios.post('/process-db-schema/invoke', {
-                "input": {
-                    "process_definition_id": defId
-                }
-            }).then(res => {
-                return res
-            }).catch(error => {
-                return error
-            });
+
+            const list = await storage.list(defId);
+            if (list.code == "42P01") {
+                await axios.post('/process-db-schema/invoke', {
+                    "input": {
+                        "process_definition_id": defId
+                    }
+                }).then(res => {
+                    return res
+                }).catch(error => {
+                    return error
+                });
+            }
         } catch (e) {
             throw new Error('error in putRawDefinition');
         }
@@ -87,7 +90,6 @@ class ProcessGPTBackend implements Backend {
                     return data;
                 } else if(options.type === "bpmn") {
                     const data = await storage.getString(`proc_def/${defId}`, { key: 'id', column: 'bpmn' });
-                    console.log(data)
                     return data;
                 }
             } else {

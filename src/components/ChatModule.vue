@@ -25,6 +25,15 @@ export default {
         },
         backend: null
     }),
+    computed: {
+        useLock() {
+            if (window.$mode == "ProcessGPT") {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    },
     mounted() {
         var me = this
         me.connectAgent()

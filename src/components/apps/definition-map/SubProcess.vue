@@ -1,6 +1,5 @@
 <template>
-    <div class="align-center pa-2 cursor-pointer sub-process-hover sub-process-style pr-3 pl-3"
-    >
+    <div class="align-center pa-2 cursor-pointer sub-process-hover sub-process-style pr-3 pl-3" @click="viewProcess">
         <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-2 font-weight-semibold">
             <v-row class="ma-0 pa-0">
                 <v-col cols="6" class="ma-0 pa-0 text-left align-center">
@@ -12,7 +11,6 @@
                         :size="16"
                         :type="type"
                         :process="value"
-                        :storage="storage"
                         :enableEdit="enableEdit"
                         @delete="deleteProcess"
                         @editProcessdialog="editProcessdialog"
@@ -27,7 +25,6 @@
             :process="value"
             :processDialogStatus="processDialogStatus"
             :processType="processType"
-            :storage="storage"
             :type="type"
             @edit="editProcess"
             @closeProcessDialog="closeProcessDialog"
@@ -39,7 +36,7 @@
 import ProcessMenu from './ProcessMenu.vue';
 import ProcessDialog from './ProcessDialog.vue'
 import BaseProcess from './BaseProcess.vue';
-
+import BackendFactory from '@/components/api/BackendFactory';
 
 export default {
     components: {
@@ -50,7 +47,6 @@ export default {
     props: {
         value: Object,
         parent: Object,
-        storage: Object,
         enableEdit: Boolean,
         enableExecution: Boolean
     },
@@ -59,21 +55,21 @@ export default {
         definition: null,
     }),
     async created() {
-        this.definition = await this.storage.getObject(`proc_def/${this.value.id}`, {key: 'id'})
     },
     methods: {
         deleteProcess() {
             this.parent.sub_proc_list = this.parent.sub_proc_list.filter(item => item.id != this.value.id);
         },
-        editProcessModel() {
+        async editProcessModel() {
+            const backend = BackendFactory.createBackend();
+            this.definition = await backend.getRawDefinition(this.value.id);
             let url;
             if (this.definition && this.definition.id) {
-                url = `/definitions/${this.value.id}`;
+                url = `/definitions/${this.definition.id}`;
+            } else {
+                url = `/definitions/chat?id=${this.value.id}&name=${this.value.label}`;
             }
             window.open(url, '_blank'); // '_blank'는 새 탭에서 열기
-        },
-        viewProcess() {
-            this.$emit('view', this.value);
         },
     },
 }

@@ -82,6 +82,7 @@
                     ref="formMapper"
                     :definition="copyDefinition" 
                     :name="name"    
+                    :roles="roles"
                     :formMapperJson="formMapperJson"
                     @saveFormMapperJson="saveFormMapperJson"
                 />
@@ -180,6 +181,7 @@ export default {
         processDefinitionId: String,
         isViewMode: Boolean,
         role: String,
+        roles: Array,
         variableForHtmlFormContext: Object,
         definition: Object,
         name: String
@@ -353,8 +355,8 @@ export default {
         },  
         saveFormMapperJson(jsonString) {
             this.formMapperJson = jsonString;
-
-            this.copyUengineProperties.mappingContext.mappingElement = JSON.parse(jsonString)
+            this.copyUengineProperties._type = "org.uengine.kernel.FormActivity";
+            this.copyUengineProperties.mappingContext = JSON.parse(jsonString)
             this.$emit('update:uEngineProperties', this.copyUengineProperties)
 
             this.isOpenFieldMapper = false;

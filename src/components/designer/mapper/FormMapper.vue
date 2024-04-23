@@ -15,11 +15,11 @@
             <div id="app" class="treeviews-container" @contextmenu.prevent="showContextMenu($event)">
                 <v-treeview
                     :config="config"
-                    :nodes="nodes"
+                    :nodes="leftNodes"
                     class="left-treeview"
                     :key="renderKey"
-                    @nodeOpened="handleNodeClick"
-                    @nodeClosed="handleNodeClick()"
+                    @nodeOpened="handleNodeClick(leftNodes, 'Source')"
+                    @nodeClosed="handleNodeClick(leftNodes, 'Source')"
                 >
                 </v-treeview>
 
@@ -73,8 +73,6 @@
                         :name="port.name"
                         :block-name="port.blockName"
                         :direction="port.direction"
-                        :parentNode="port.parentNode"
-                        :tree-view="nodes"
                         :appendComponent="appendComponent"
                         :onmousedown="newConnection(port.blockName, port.name, port.direction)"
                         :onmouseup="completeConnection(port.blockName, port.name, port.direction)"
@@ -94,11 +92,11 @@
 
                 <v-treeview
                     :config="config"
-                    :nodes="nodes"
+                    :nodes="rightNodes"
                     class="right-treeview"
                     :key="renderKey"
-                    @nodeOpened="handleNodeClick"
-                    @nodeClosed="handleNodeClick()"
+                    @nodeOpened="handleNodeClick(rightNodes, 'Target')"
+                    @nodeClosed="handleNodeClick(rightNodes, 'Target')"
                 >
                 </v-treeview>
             </div>
@@ -133,7 +131,8 @@ export default {
         formMapperJson: {
             type: String,
             required: true
-        }
+        },
+        roles: Array
     },
     components: {
         BlockComponent,
@@ -154,7 +153,26 @@ export default {
             component_x: 0,
             component_y: 0,
             portIndex: 0,
-            nodes: {
+            leftNodes: {
+                // id1: {
+                //     text: 'text1',
+                //     children: ['id11', 'id12']
+                // },
+                // id11: {
+                //     text: 'text11'
+                // },
+                // id12: {
+                //     text: 'text12',
+                //     children: ['id123']
+                // },
+                // id2: {
+                //     text: 'text2'
+                // },
+                // id123: {
+                //     text: 'text123'
+                // }
+            },
+            rightNodes: {
                 // id1: {
                 //     text: 'text1',
                 //     children: ['id11', 'id12']
@@ -182,8 +200,8 @@ export default {
     async created() {
         await this.initializeStorage();
         this.initializeNodesAndConfig();
-        await this.processVariables();
-        this.updateBlockTemplates();
+        await this.processVariables(this.leftNodes, 'Source');
+        await this.processVariables(this.rightNodes, 'Target');
         this.renderKey++;
     },
     mounted() {
@@ -222,33 +240,36 @@ export default {
         },
 
         initializeNodesAndConfig() {
-            this.nodes = {};
+            this.leftNodes = {};
+            this.rightNodes = {};
             this.config = {
                 roots: []
             };
         },
-        async fetchAndProcessFormDefinitions(variable) {
+        async fetchAndProcessFormDefinitions(nodes, variable, blockName) {
             let name = variable.name;
             let matchingForm = this.definition.processVariables.find((form) => form.name === name && form.type === 'Form' && form.fields);
 
             if (matchingForm) {
                 matchingForm.fields.forEach((field) => {
-                    if (!this.nodes[variable.name]) {
-                        this.nodes[variable.name] = {
+                    if (!nodes[variable.name]) {
+                        nodes[variable.name] = {
                             text: variable.name,
                             children: []
                         };
                     }
                     let fieldNameAlias = field.name + '_' + field.alias;
-                    this.nodes[variable.name].children.push(field.name);
-                    this.nodes[field.name] = {
+                    nodes[variable.name].children.push(field.name);
+                    nodes[field.name] = {
                         text: field.name,
                         object: field
                     };
                 });
             }
+
+            this.updateBlockTemplates(nodes, blockName);
         },
-        async processVariables() {
+        async processVariables(nodes, blockName) {
             const definition = this.definition;
 
             for (const variable of definition.processVariables) {
@@ -256,26 +277,26 @@ export default {
                     this.config.roots.push('Variables');
                 }
 
-                if (!this.nodes['Variables']) {
-                    this.nodes['Variables'] = {
+                if (!nodes['Variables']) {
+                    nodes['Variables'] = {
                         text: 'Variables',
                         children: []
                     };
                 }
 
-                if (this.nodes['Variables']) {
-                    this.nodes['Variables'].children.push(variable.name);
-                    this.nodes[variable.name] = {
+                if (nodes['Variables']) {
+                    nodes['Variables'].children.push(variable.name);
+                    nodes[variable.name] = {
                         text: variable.name,
                         children: []
                     };
                 }
 
-                await this.fetchAndProcessFormDefinitions(variable);
+                await this.fetchAndProcessFormDefinitions(nodes, variable, blockName);
             }
         },
-        updateBlockTemplates() {
-            const treeStructure = this.transformData();
+        updateBlockTemplates(nodes, blockName) {
+            const treeStructure = this.transformData(nodes);
             const nodeHeight = 24;
 
             const updatePorts = (treeNode, path = '', yOffset = 0, isRootClosed = false) => {
@@ -287,14 +308,14 @@ export default {
                 if (path != '') {
                     // 최상위 노드가 아닐 때 포트를 표시합니다.
                     if (!isRootClosed) {
-                        this.addPortToBlockTemplates(currentPath, effectiveYOffset - nodeHeight);
+                        this.addPortToBlockTemplates(currentPath, effectiveYOffset - nodeHeight, blockName);
                     } else {
-                        this.addPortToBlockTemplates(currentPath, effectiveYOffset);
+                        this.addPortToBlockTemplates(currentPath, effectiveYOffset, blockName);
                     }
                 }
 
                 if (treeNode[Object.keys(treeNode)[0]].length > 0) {
-                    const nodeOpened = this.nodes[treeNodeText].state && this.nodes[treeNodeText].state.opened;
+                    const nodeOpened = nodes[treeNodeText].state && nodes[treeNodeText].state.opened;
                     let cumulativeOffset = effectiveYOffset;
                     if (!nodeOpened && !isRootClosed) {
                         cumulativeOffset -= nodeHeight;
@@ -302,7 +323,7 @@ export default {
 
                     treeNode[Object.keys(treeNode)[0]].forEach((childNode, index) => {
                         const childNodeText = Object.keys(childNode)[0];
-                        const child = this.nodes[childNodeText]; // 수정: childNode가 객체이므로 text 속성 접근 필요
+                        const child = nodes[childNodeText]; // 수정: childNode가 객체이므로 text 속성 접근 필요
                         updatePorts(childNode, currentPath, cumulativeOffset, isRootClosed || !nodeOpened);
                         if (nodeOpened && !isRootClosed) {
                             cumulativeOffset += this.getNodeHeight(child);
@@ -317,7 +338,7 @@ export default {
                 const nodeOpened = node.state && node.state.opened;
                 if (nodeOpened && node.children) {
                     node.children.forEach((childNode) => {
-                        const child = this.nodes[childNode];
+                        const child = nodes[childNode];
                         totalHeight += this.getNodeHeight(child);
                     });
                 }
@@ -328,24 +349,27 @@ export default {
             treeStructure.forEach((rootNode, index) => {
                 const rootYOffset = index * nodeHeight;
                 const rootText = Object.keys(rootNode)[0];
-                const rootClosed = !(this.nodes[rootText].state && this.nodes[rootText].state.opened);
+                const rootClosed = !(nodes[rootText].state && nodes[rootText].state.opened);
                 updatePorts(rootNode, '', rootYOffset, rootClosed);
             });
         },
-        addPortToBlockTemplates(nodePath, yOffset) {
-            this.blockTemplates.Source.ports[nodePath] = {
-                x: 5,
-                y: yOffset,
-                direction: 'out'
-            };
-            this.blockTemplates.Target.ports[nodePath] = {
-                x: -5,
-                y: yOffset,
-                direction: 'in'
-            };
+        addPortToBlockTemplates(nodePath, yOffset, blockName) {
+            if (blockName == 'Source') {
+                this.blockTemplates.Source.ports[nodePath] = {
+                    x: 5,
+                    y: yOffset,
+                    direction: 'out'
+                };
+            } else if (blockName == 'Target') {
+                this.blockTemplates.Target.ports[nodePath] = {
+                    x: -5,
+                    y: yOffset,
+                    direction: 'in'
+                };
+            }
         },
-        transformData() {
-            var data = this.nodes;
+        transformData(nodes) {
+            var data = nodes;
             function processNode(nodeId) {
                 const node = data[nodeId];
                 if (!node) return null;
@@ -375,25 +399,6 @@ export default {
 
             return result;
         },
-        buildTreeStructure() {
-            const buildTree = (nodeKey) => {
-                const node = this.nodes[nodeKey];
-                if (!node) return null;
-
-                let treeNode = { text: node.text, children: node.children || [] };
-                return treeNode;
-            };
-
-            let tree = [];
-            Object.keys(this.nodes).forEach((nodeKey) => {
-                const isRootNode = !Object.values(this.nodes).some((n) => n.children && n.children.includes(nodeKey));
-                if (isRootNode) {
-                    tree.push(buildTree(nodeKey));
-                }
-            });
-
-            return tree;
-        },
         addTreeViewPort() {
             var me = this;
             const formAreaRect = document.getElementById('formArea').getBoundingClientRect();
@@ -416,9 +421,9 @@ export default {
                 attributes: {}
             };
         },
-        handleNodeClick() {
+        handleNodeClick(nodes, blockName) {
             this.portIndex = 0;
-            this.updateBlockTemplates(); // 포트 위치 업데이트 메소드 호출
+            this.updateBlockTemplates(nodes, blockName);
         },
         saveFormMapperJson() {
             var jsonString = JSON.stringify(this.getMappingElementsJson(), null, 2);
@@ -445,7 +450,7 @@ export default {
             const mouseY = event.clientY;
 
             this.menu_x = mouseX - 50;
-            this.menu_y = (mouseY / 2) + svgRect.y*2;
+            this.menu_y = mouseY / 2 + svgRect.y * 2;
             this.component_x = mouseX;
             this.component_y = mouseY;
             this.$refs.contextMenu.showContextMenu(this.x, this.y);

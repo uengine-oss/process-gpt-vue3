@@ -1,36 +1,40 @@
 <template>
     <div>
         <v-file-input
-            :label="label"
+            :label="localAlias ?? localName"
             v-model="selectedFiles"
+            :disabled="localDisabled"
         ></v-file-input>
     </div>
 </template>
 
 <script>
+import { commonSettingInfos } from "./CommonSettingInfos.vue"
 
 export default {
     props: {
         modelValue: String,
         vueRenderUUID: String,
         tagName: String,
-        name: String,
-        alias: String
-    },
 
-    computed: {
-        label() {
-            if (this.localAlias) return this.localAlias
-            else if (this.localName) return this.localName
-            else return ""
-        }
+        name: String,
+        alias: String,
+        disabled: String
     },
 
     data() {
         return {
             localName: this.name,
             localAlias: this.alias,
-            selectedFiles: null
+            localDisabled: this.disabled === "true",
+            
+            selectedFiles: null,
+
+            settingInfos: [
+                commonSettingInfos["localName"],
+                commonSettingInfos["localAlias"],
+                commonSettingInfos["localDisabled"]
+            ]
         };
     },
 

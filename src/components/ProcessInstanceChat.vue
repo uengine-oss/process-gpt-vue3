@@ -58,8 +58,6 @@ import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import Chat from "@/components/ui/Chat.vue";
 import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
-import { VDataTable } from 'vuetify/labs/VDataTable';
-import GeneratorAgent from './GeneratorAgent.vue';
 import WorkItem from './apps/todolist/WorkItem.vue';
 
 import BackendFactory from "@/components/api/BackendFactory";

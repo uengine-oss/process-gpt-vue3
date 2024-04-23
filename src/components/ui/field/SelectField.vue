@@ -2,11 +2,12 @@
     <div>
         <v-select
             :items="localKeys"
-            v-model="inputedValue"
+            v-model="localModelValue"
+            :disabled="localDisabled"
         >
         <template v-slot:label>
             <span style="color:black;">
-                {{label}}
+                {{localAlias ?? localName}}
             </span>
         </template>
         </v-select>
@@ -14,23 +15,21 @@
 </template>
 
 <script>
+import { commonSettingInfos } from "./CommonSettingInfos.vue"
 
 export default {
     props: {
         modelValue: String,
         vueRenderUUID: String,
         tagName: String,
+
         name: String,
         alias: String,
-        items: String
+        items: String,
+        disabled: String
     },
 
     computed: {
-        label() {
-            if (this.localAlias) return this.localAlias
-            else if (this.localName) return this.localName
-            else return ""
-        },
         localKeys() {
             if(this.localItems === undefined || this.localItems === null || this.localItems.length === 0) return []
             return this.localItems.map(item => Object.keys(item)[0])
@@ -39,10 +38,19 @@ export default {
 
     data() {
         return {
+            localModelValue: this.modelValue,
+
             localName: this.name,
             localAlias: this.alias,
-            localItems: [],
-            inputedValue: ""
+            localItems: this.items,
+            localDisabled: this.disabled === "true",
+
+            settingInfos: [
+                commonSettingInfos["localName"],
+                commonSettingInfos["localAlias"],
+                commonSettingInfos["localItems"],
+                commonSettingInfos["localDisabled"]
+            ]
         };
     },
 
@@ -56,21 +64,21 @@ export default {
                     const foundItem = this.localItems.find(item => Object.keys(item)[0] === this.modelValue)
                     if(!foundItem) return
 
-                    this.inputedValue = Object.keys(foundItem)[0]
+                    this.localModelValue = Object.keys(foundItem)[0]
                 }
                 else
                 {
                     if(this.localItems.length > 0)
-                        this.inputedValue = Object.keys(this.localItems[0])[0]
+                        this.localModelValue = Object.keys(this.localItems[0])[0]
                 }
             },
             deep: true,
             immediate: true
         },
 
-        inputedValue: {
+        localModelValue: {
             handler() {
-                this.$emit('update:modelValue', this.inputedValue)
+                this.$emit('update:modelValue', this.localModelValue)
             },
             deep: true,
             immediate: true
