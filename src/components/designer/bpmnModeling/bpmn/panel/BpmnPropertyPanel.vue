@@ -9,7 +9,7 @@
             <!-- <Icon icon="mdi:close" width="24" height="24" @click="$emit('close')" class="cursor-pointer" /> -->
         </v-row>
         <v-card-text style="overflow: auto; height: calc(-155px + 100vh); width:700px;">
-            <div style="float: right">Role: {{ role }}</div>
+            <div style="float: right">Role: {{ role.name }}</div>
             <div>{{ $t('BpnmPropertyPanel.name') }}</div>
             <v-text-field v-model="name" :disabled="isViewMode"></v-text-field>
             <!-- <div>
@@ -21,7 +21,7 @@
                 :isViewMode="isViewMode" 
                 :uengine-properties="uengineProperties" 
                 :name="name"
-                :role="role"
+                :roles="roles"
                 ref="panelComponent"
                 @update:name="val => name = val"
                 :definition="definition"
@@ -40,7 +40,8 @@ export default {
         element: Object,
         processDefinitionId: String,
         isViewMode: Boolean,
-        definition: Object
+        definition: Object,
+        roles: Array,
     },
     created() {
         if(!this.element.extensionElements.values[0].json) {
@@ -49,7 +50,7 @@ export default {
         }
         this.uengineProperties = JSON.parse(this.element.extensionElements.values[0].json)
         if (this.element.lanes?.length > 0) {
-            this.role = this.element.lanes[0].name
+            this.role = this.element.lanes[0]
         }
         // 필수 uEngine Properties의 key가 없다면 작업.
         // Object.keys(this.requiredKeyLists).forEach(key => {
@@ -87,7 +88,7 @@ export default {
             editParam: false,
             paramKey: "",
             paramValue: "",
-            role: "",
+            role: {},
         };
     },
     async mounted() {

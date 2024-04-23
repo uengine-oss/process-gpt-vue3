@@ -1,8 +1,8 @@
 <template>
-    <div>
+    <div style="height: 100%">
         <v-row style="height: 100%" class="ma-0">
-            <v-col class="d-flex ma-0 pa-0">
-                <v-card style="border-radius: 0px !important; border: none" flat>
+            <v-col class="d-flex ma-0 pa-0" style="height: 100%">
+                <v-card style="border-radius: 0px !important; border: none; height: 100%" flat>
                     <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
                         <template v-slot:activator="{ props }">
                             <v-btn @click="openProcessVariables" icon v-bind="props" class="processVariables-btn">
@@ -27,7 +27,7 @@
                     </v-tooltip>
                     <v-tooltip :text="$t('processDefinition.execution')">
                         <template v-slot:activator="{ props }">
-                            <v-btn :disabled="isViewMode" icon v-bind="props" class="processExecute" @click="executeProcess">
+                            <v-btn icon v-bind="props" class="processExecute" @click="executeProcess">
                                 <!-- 캔버스 확대 -->
                                 <Icon icon="gridicons:play" width="32" height="32" />
                             </v-btn>
@@ -52,6 +52,7 @@
                         v-on:change-sequence="onChangeSequence"
                         v-on:remove-shape="onRemoveShape"
                         v-on:change-shape="onChangeShape"
+                        style="height: 100%"
                     ></component>
                     <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
                         :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
@@ -67,6 +68,7 @@
                     <bpmn-property-panel
                         :element="element"
                         @close="closePanel"
+                        :roles="roles"
                         :key="element.id"
                         :isViewMode="isViewMode"
                         v-on:updateElement="(val) => updateElement(val)"
@@ -173,7 +175,7 @@
         </v-dialog>
 
         <v-dialog v-model="executeDialog" max-width="1000">
-            <process-execute-dialog></process-execute-dialog>
+            <process-execute-dialog :definitionId="definitionPath" :roles="roles" @close="executeDialog = false"></process-execute-dialog>
         </v-dialog>
 
         <!-- <v-navigation-drawer permanent location="right" :width="400"> {{ panelId }} </v-navigation-drawer> -->
@@ -207,7 +209,8 @@ export default {
         bpmn: String,
         isViewMode: Boolean,
         currentActivities: Array,
-        definitionChat: Object
+        definitionChat: Object,
+        definitionPath: String
     },
     data: () => ({
         panel: false,
@@ -216,6 +219,7 @@ export default {
             propertiesPanel: {},
             additionalModules: [customBpmnModule]
         },
+        roles: [],
         element: null,
         definitions: null,
         isViewProcessVariables: false,
@@ -227,7 +231,9 @@ export default {
         lastEditedIndex: 0,
         editComponentKey: 0,
         bpmnModeler: null,
-        processVariables: []
+        processVariables: [],
+        executeDialog: false,
+        // definitionPath: null
     }),
     computed: {
         mode() {
@@ -278,9 +284,56 @@ export default {
                 let str = JSON.stringify(newVal, replacer);
                 this.$emit('valueToStr', str);
             }
+        },
+        panel: {
+            handler() {
+                let me = this;
+                me.roles = [];
+
+                let def = this.bpmnModeler.getDefinitions();
+                const processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
+                if (!processElement) {
+                    console.error('bpmn:Process element not found');
+                    return;
+                }
+
+                processElement.forEach((process) => {
+                    (process.laneSets || []).forEach((laneSet) => {
+                        (laneSet.lanes || []).forEach((lane) => {
+                            // 레인의 이름을 배열에 추가합니다.
+                            if (lane?.name?.length > 0) me.roles.push(lane.name);
+                        });
+                    });
+                });
+            }
+        },
+        executeDialog() {
+            let me = this;
+            me.roles = [];
+            let def = this.bpmnModeler.getDefinitions();
+            const processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
+            if (!processElement) {
+                console.error('bpmn:Process element not found');
+                return;
+            }
+
+            processElement.forEach((process) => {
+                (process.laneSets || []).forEach((laneSet) => {
+                    (laneSet.lanes || []).forEach((lane) => {
+                        // 레인의 이름을 배열에 추가합니다.
+                        if (lane?.name?.length > 0) me.roles.push(lane.name);
+                    });
+                });
+            });
         }
     },
-    created() {},
+    created() {
+        // const fullPath = this.$route.params.pathMatch.join('/');
+        // if (fullPath.startsWith('/')) {
+        //     fullPath = fullPath.substring(1);
+        // }
+        // this.definitionPath = fullPath;
+    },
     mounted() {
         // Initial Data
         if (this.processDefinition) this.copyProcessDefinition = this.processDefinition;
@@ -345,6 +398,7 @@ export default {
             });
         },
         executeProcess() {
+            console.log(this.executeDialog);
             this.executeDialog = !this.executeDialog;
         },
         addUengineVariable(val) {

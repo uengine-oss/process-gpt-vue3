@@ -1,11 +1,16 @@
 <template>
      <v-card elevation="10" v-if="workItem" style="height:calc(100vh - 155px)" :key="updatedKey">
-        <v-card-title style="font-size: larger;"> {{workItem.activity.name}} ({{workItemStatus}})</v-card-title>
+        <v-card-title>
+            <v-row class="ma-0 pa-0">
+                <h3>{{workItem.activity.name}}</h3>
+                <v-chip size="x-small" variant="outlined" style="margin:2px 0px 0px 5px !important; display: flex; align-items: center;">{{workItemStatus}}</v-chip>
+            </v-row>
+        </v-card-title>
         <v-row class="ma-0 pa-0">
              <!-- Left -->
             <v-col class="pa-0" cols="4">
                 <div v-if="currentComponent">
-                    <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus" @undoTask="undoTask"></component>
+                    <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus"></component>
                 </div>
             </v-col>
              <!-- Right -->
@@ -14,53 +19,39 @@
                     <v-tab value="progress">진행 상황/체크포인트</v-tab>
                     <v-tab value="history">워크 히스토리</v-tab>
                 </v-tabs>
-
-                <v-card-text>
-                    <v-window v-model="selectedTab">
-
+                <v-window v-model="selectedTab">
                         <v-window-item value="progress">
-                            <div style="margin-bottom: 15px;">
-                                <v-card elevation="10" class="process-card-resized">
-                                    <v-card-title>프로세스 진행상태</v-card-title>
-                                    <div class="pa-0" style="overflow:auto; height: calc(100vh - 620px);">
-                                        <div v-if="bpmn">
-                                            <process-definition class="process-definition-resize work-item-definition" :currentActivities="currentActivities" :bpmn="bpmn" :key="updatedDefKey" :isViewMode="true"></process-definition>
-                                        </div>
-                                        <dif v-else>
-                                            No BPMN found
-                                        </dif>
-                                    </div>
-                                </v-card>
-                                <v-col class="ma-0 pa-0">
-                                    <v-card elevation="10">
-                                        <v-card-title>CheckPoint ({{checkedCount}}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>
-                                        <div style="width: 99%; height:70%; max-height:70%; overflow-y: scroll;">
-                                            <div v-if="checkPoints" v-for="(checkPoint, index) in checkPoints" :key="index">
-                                                <v-checkbox v-model="checkPoint.checked" :label="checkPoint.name" color="primary" hide-details></v-checkbox>
-                                            </div>
-                                            <div v-else>
-                                                <v-checkbox disabled value-model="true" label="Check Point Description" color="primary" hide-details></v-checkbox>
-                                            </div>
-                                        </div>
-                                    </v-card>
-                                </v-col>
+                            <v-card-title>프로세스 진행상태</v-card-title>
+                            <div class="pa-0" style="overflow:auto; height: calc(100vh - 620px);">
+                                <div v-if="bpmn" style="height: 100%;">
+                                    <process-definition class="work-item-definition" :currentActivities="currentActivities" :bpmn="bpmn" :key="updatedDefKey" :isViewMode="true"></process-definition>
+                                </div>
+                                <dif v-else>
+                                    No BPMN found
+                                </dif>
+                            </div>
+                            <v-card-title>CheckPoint ({{checkedCount}}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>
+                            <div style="width: 99%; height:70%; max-height:70%; overflow-y: scroll;">
+                                <div v-if="checkPoints" v-for="(checkPoint, index) in checkPoints" :key="index">
+                                    <v-checkbox v-model="checkPoint.checked" :label="checkPoint.name" color="primary" hide-details></v-checkbox>
+                                </div>
+                                <div v-else>
+                                    <v-checkbox disabled value-model="true" label="Check Point Description" color="primary" hide-details></v-checkbox>
+                                </div>
                             </div>
                         </v-window-item>
                         <v-window-item value="history">
                             <v-card elevation="10">
-                                <v-card-title>워크 히스토리</v-card-title>
                                 <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                                    <div class="d-flex w-100" style="height: calc(100vh - 620px);">
-                                        <MessageLayout :messages="workHistoryMessages" @clickMessage="navigateToWorkItemByTaskId">
-                                            <template v-slot:messageProfile="{ message }"><div></div></template>
+                                    <div class="d-flex w-100" style="height: calc(100vh - 320px); overflow: auto;">
+                                        <MessageLayout :messages="messages" @clickMessage="navigateToWorkItemByTaskId">
+                                            <template v-slot:messageProfile="{ message }"></template>
                                         </MessageLayout>
                                     </div>
                                 </perfect-scrollbar>
                             </v-card>
-                        </v-window-item>
-
-                    </v-window>
-                </v-card-text>
+                    </v-window-item>
+                </v-window>
             </v-col>
         </v-row>
     </v-card>
@@ -85,9 +76,10 @@ export default {
         bpmn: null,
         workItem: null,
         checkPoints: null,
-        workHistoryList: null,
+        workListByInstId: null,
         currentComponent: null,
         currentActivities: [],
+
         // status variables
         updatedKey: 0,
         updatedDefKey: 0,
@@ -102,24 +94,18 @@ export default {
             if(!this.checkPoints) return 0
             return this.checkPoints.filter(checkPoint => checkPoint.checked).length;
         },
-        workHistoryMessages(){
-            if(!this.workHistoryList) return []
-            return this.workHistoryList.map(workHistory => ({
-                role: 'user',
-                _item: workHistory,
-                content: workHistory.title,
-                description: workHistory.description,
-                timeStamp: workHistory.startDate,
+        messages(){
+            if(!this.workListByInstId) return []
+            return this.workListByInstId.map(workItem => ({
+                roleName: workItem.task.roleName,
+                _item: workItem,
+                content: workItem.title,
+                description: workItem.description,
+                timeStamp: workItem.startDate
             }))
         },
         id() {
-            if (this.$route.params.taskId) {
-                return this.$route.params.taskId
-            } else if (this.$route.query.id) {
-                return this.$route.query.id
-            } else {
-                return null
-            }
+            return this.$route.params.taskId ? this.$route.params.taskId : this.$route.query.id
         },
         workItemStatus(){
             if(!this.workItem) return null
@@ -134,25 +120,12 @@ export default {
                 action: async () => {
                     me.workItem = await backend.getWorkItem(this.id);
                     me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, {type: 'bpmn'});
-                    me.workHistoryList = await backend.getWorkListByInstId(me.workItem.worklist.instId);
+                    me.workListByInstId = await backend.getWorkListByInstId(me.workItem.worklist.instId);
                     me.currentComponent = me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem';
                     me.currentActivities = [ me.workItem.activity.tracingTag ];
                     me.updatedDefKey++
                 }
             })
-        },
-        async undoTask(){
-            var me = this
-            me.$try({
-                context: me,
-                action: async () => {
-                    if(!me.workItem) return
-                    await backend.backToHere(me.workItem.worklist.instId, me.workItem.activity.tracingTag)
-                    me.$router.push('/todolist')
-                },
-                successMsg: '되돌리기 완료'
-            })
-          
         },
         navigateToWorkItemByTaskId(obj){
             var me = this
@@ -172,14 +145,10 @@ export default {
 }
 </script>
 <style>
-    .work-item-definition svg {
-        transform: scale(0.8);
+    /* .work-item-definition svg {
+        transform: scale(1);
         transform-origin: top left;
-    }
-    .work-item-definition {
-        height: 100vh;
-        padding-bottom:35px;
-    }
+    } */
     .process-card-resized {
         width: auto; /* 너비를 자동으로 조정 */
         height: auto; /* 높이를 자동으로 조정 */
