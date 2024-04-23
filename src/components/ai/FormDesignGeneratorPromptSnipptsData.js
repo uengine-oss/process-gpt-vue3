@@ -18,31 +18,43 @@ const formDesignGeneratorPromptSnipptsData = {
     // 3. 그냥 속성을 적어주면, 그것이 상수라고 생각하고 그대로 사용함
     componentInfos: [
         {
-            tag: `<text-field name='<이 입력창의 고유한 이름>' alias='<이 입력창의 별명>'></text-field>`,
-            purpose: "텍스트를 입력받기 위해서",
+            tag: `<text-field name='<이 입력창의 고유한 이름>' alias='<이 입력창의 별명>' type='<text|number|email|url|date|datetime-local|month|week|time|password|tel|color>' disabled='<true|false>'></text-field>`,
+            purpose: "다양한 유형의 텍스트를 입력받기 위해서",
             limit: "년도와 같이 선택해야 할 항목이 너무 많은 경우에는 text-field를 사용할 것"
         },
 
         {
-            tag: `<select-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' items='<선택 항목 리스트>'></select-field>`,
+            tag: `<textarea-field name='<이 입력창의 고유한 이름>' alias='<이 입력창의 별명>' rows='<입력창의 행 크기>' disabled='<true|false>'></textarea-field>`,
+            purpose: "여러 행에 걸쳐서 텍스트를 입력받기 위해서",
+            limit: ""
+        },
+
+        {
+            tag: `<boolean-field name='<이 입력창의 고유한 이름>' alias='<이 입력창의 별명>' disabled='<true|false>'></boolean-field>`,
+            purpose: `'true' 또는 'false' 중 하나를 선택하기 위해서`,
+            limit: ""
+        },
+
+        {
+            tag: `<select-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' items='<선택 항목 리스트>' disabled='<true|false>'></select-field>`,
             purpose: "여러개의 옵션 중 하나를 선택하기 위해서",
             limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함.`
         },
 
         {
-            tag: `<checkbox-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' items='<선택 항목 리스트>'></checkbox-field>`,
+            tag: `<checkbox-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' items='<선택 항목 리스트>' disabled='<true|false>'></checkbox-field>`,
             purpose: "여러개의 선택 사항들 중, 여러개를 선택하기 위해서",
             limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함.`
         },
 
         {
-            tag: `<radio-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' items='<선택 항목 리스트>'></radio-field>`,
+            tag: `<radio-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' items='<선택 항목 리스트>' disabled='<true|false>'></radio-field>`,
             purpose: "나열된 여러개의 옵션 중 하나를 선택하기 위해서",
             limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함.`
         },
 
         {
-            tag: `<file-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>'></file-field>`,
+            tag: `<file-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' disabled='<true|false>'></file-field>`,
             purpose: `파일을 입력받기 위해서`,
             limit: ""
         },
