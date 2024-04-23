@@ -20,7 +20,7 @@
                             <div v-html="message.content" @click="clickContent(message)"></div>
                             <v-btn class="mt-2" elevation="0" @click="openDescription(index)">View Detail</v-btn>
                             
-                            <div style="margin-top: 20px;">
+                            <div v-if="message.open" style="margin-top: 20px;">
                                 <div v-if="toolFormat(message).includes('formHandler')">
                                     <DynamicForm class="message-layout-dyna" v-if="message.open" :formHTML="message.html" v-model="message.formData"></DynamicForm>
                                 </div>
@@ -68,7 +68,7 @@ export default {
                 message.open = false
                 message.html = null
                 message.formData = null
-                
+
                 return message
             })
         },
