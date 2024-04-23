@@ -31,21 +31,20 @@
                                     No BPMN found
                                 </dif>
                             </div>
-                        </v-window-item>
-                        <v-window-item value="history">
-                            <v-card elevation="10">
-                                <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                                    <div class="d-flex w-100" style="height: calc(100vh - 320px); overflow: auto;">
-                                        <MessageLayout :messages="messages" @clickMessage="navigateToWorkItemByTaskId">
-                                            <template v-slot:messageProfile="{ message }"></template>
-                                        </MessageLayout>
-                                    </div>
-                                </perfect-scrollbar>
-                            </v-card>
-                        </v-window-item>
-
-                    </v-window>
-                </v-card-text>
+                        </v-card>
+                    </v-window-item>
+                    <v-window-item value="history">
+                        <v-card elevation="10">
+                            <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
+                                <div class="d-flex w-100" style="height: calc(100vh - 320px); overflow: auto;">
+                                    <MessageLayout :messages="messages" @clickMessage="navigateToWorkItemByTaskId">
+                                        <template v-slot:messageProfile="{ message }"></template>
+                                    </MessageLayout>
+                                </div>
+                            </perfect-scrollbar>
+                        </v-card>
+                    </v-window-item>
+                </v-window>
             </v-col>
         </v-row>
     </v-card>
