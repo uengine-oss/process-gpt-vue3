@@ -136,12 +136,19 @@ const openEditDialog = (chat) => {
                     color="blue-grey-lighten-2" item-title="username" :item-value="item => item" multiple label="참여자 선택"
                     small-chips :item-avatar="'image'" :rules="participantsRules">
                     <template v-slot:chip="{ props, item }">
-                        <v-chip v-bind="props" :prepend-avatar="item.raw.profile" :text="item.raw.username"></v-chip>
+                        <v-chip v-if="item.raw.profile" v-bind="props" :prepend-avatar="item.raw.profile" :text="item.raw.username ? item.raw.username:item.raw.email"></v-chip>
+                        <v-chip v-else v-bind="props" prepend-icon="mdi-account-circle" :text="item.raw.username ? item.raw.username:item.raw.email"></v-chip>
                     </template>
 
                     <template v-slot:item="{ props, item }">
-                        <v-list-item v-bind="props" :prepend-avatar="item.raw.profile" :title="item.raw.username"
+                        <v-list-item v-if="item.raw.profile" v-bind="props" :prepend-avatar="item.raw.profile" :title="item.raw.username ? item.raw.username:item.raw.email"
                             :subtitle="item.raw.email"></v-list-item>
+                        <v-list-item v-else v-bind="props" :title="item.raw.username ? item.raw.username:item.raw.email"
+                            :subtitle="item.raw.email">
+                            <template v-slot:prepend>
+                                <v-icon style="position: relative; margin-right: 10px; margin-left: -3px;" size="48">mdi-account-circle</v-icon>
+                            </template>
+                        </v-list-item>
                     </template>
                 </v-autocomplete>
             </v-card-text>

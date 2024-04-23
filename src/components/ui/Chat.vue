@@ -318,6 +318,12 @@
                 class="shadow-none message-input-box cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
                 auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
                 style="font-size:20px !important;" @input="handleTextareaInput">
+                <template v-slot:prepend-inner>
+                    <v-btn icon @click="isRecording ? stopRecording() : startRecording()">
+                        <v-icon v-if="isRecording">mdi-stop</v-icon>
+                        <v-icon v-else>mdi-microphone</v-icon>
+                    </v-btn>
+                </template>
                 <template v-slot:append-inner>
                     <div style="height: -webkit-fill-available; margin-right: 10px; margin-top: 10px;">
                         <v-btn v-if="!isLoading" class="cp-send" icon variant="text" type="submit" @click="beforeSend"
@@ -386,6 +392,9 @@ export default {
     },
     data() {
         return {
+            mediaRecorder: null,
+            audioChunks: [],
+            isRecording: false,
             isReply: false,
             newMessage: '',
             hoverIndex: -1,
@@ -468,6 +477,46 @@ export default {
         },
     },
     methods: {
+        async startRecording() {
+            this.isRecording = true;
+
+            if (!navigator.mediaDevices) {
+                alert('getUserMedia를 지원하지 않는 브라우저입니다.');
+                return;
+            }
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            this.mediaRecorder = new MediaRecorder(stream);
+            this.audioChunks = [];
+            this.mediaRecorder.ondataavailable = e => {
+                this.audioChunks.push(e.data);
+            };
+            this.mediaRecorder.start();
+        },
+        stopRecording() {
+            this.isRecording = false;
+            // MediaRecorder의 상태가 'recording'인 경우에만 stop 메서드를 호출
+            if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+                this.mediaRecorder.stop();
+                this.mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
+                this.uploadAudio(audioBlob);
+                };
+            }
+        },
+        async uploadAudio(audioBlob) {
+            event.preventDefault(); // 추가: 이벤트의 기본 동작 방지, form data 세팅시에 새로고침 되는 문제 해결
+
+            const formData = new FormData();
+            formData.append('audio', audioBlob);
+
+            try {
+                const response = await axios.post('http://localhost:8003/upload', formData);
+                const data = response.data;
+                this.newMessage = data.transcript; 
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        },
         async submitFile() {
             if (!this.file) return; // 파일이 없으면 함수 종료
 
