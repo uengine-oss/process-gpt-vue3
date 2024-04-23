@@ -27,7 +27,7 @@
                     </v-tooltip>
                     <v-tooltip :text="$t('processDefinition.execution')">
                         <template v-slot:activator="{ props }">
-                            <v-btn :disabled="isViewMode" icon v-bind="props" class="processExecute" @click="executeProcess">
+                            <v-btn icon v-bind="props" class="processExecute" @click="executeProcess">
                                 <!-- 캔버스 확대 -->
                                 <Icon icon="gridicons:play" width="32" height="32" />
                             </v-btn>
@@ -173,7 +173,7 @@
         </v-dialog>
 
         <v-dialog v-model="executeDialog" max-width="1000">
-            <process-execute-dialog></process-execute-dialog>
+            <process-execute-dialog :definitionId="definitionPath" :roles="roles" @close="executeDialog = false"></process-execute-dialog>
         </v-dialog>
 
         <!-- <v-navigation-drawer permanent location="right" :width="400"> {{ panelId }} </v-navigation-drawer> -->
@@ -216,6 +216,7 @@ export default {
             propertiesPanel: {},
             additionalModules: [customBpmnModule]
         },
+        roles: [],
         element: null,
         definitions: null,
         isViewProcessVariables: false,
@@ -227,7 +228,9 @@ export default {
         lastEditedIndex: 0,
         editComponentKey: 0,
         bpmnModeler: null,
-        processVariables: []
+        processVariables: [],
+        executeDialog: false,
+        definitionPath: null
     }),
     computed: {
         mode() {
@@ -280,7 +283,13 @@ export default {
             }
         }
     },
-    created() {},
+    created() {
+        const fullPath = this.$route.params.pathMatch.join('/');
+        if (fullPath.startsWith('/')) {
+            fullPath = fullPath.substring(1);
+        }
+        this.definitionPath = fullPath;
+    },
     mounted() {
         // Initial Data
         if (this.processDefinition) this.copyProcessDefinition = this.processDefinition;
@@ -345,6 +354,7 @@ export default {
             });
         },
         executeProcess() {
+            console.log(this.executeDialog);
             this.executeDialog = !this.executeDialog;
         },
         addUengineVariable(val) {
