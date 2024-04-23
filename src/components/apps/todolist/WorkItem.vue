@@ -20,8 +20,7 @@
                     <v-tab value="history">워크 히스토리</v-tab>
                 </v-tabs>
                 <v-window v-model="selectedTab">
-                    <v-window-item value="progress">
-                        <v-card elevation="10">
+                        <v-window-item value="progress">
                             <v-card-title>프로세스 진행상태</v-card-title>
                             <div class="pa-0" style="overflow:auto; height: calc(100vh - 620px);">
                                 <div v-if="bpmn">
@@ -30,6 +29,15 @@
                                 <dif v-else>
                                     No BPMN found
                                 </dif>
+                            </div>
+                            <v-card-title>CheckPoint ({{checkedCount}}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>
+                            <div style="width: 99%; height:70%; max-height:70%; overflow-y: scroll;">
+                                <div v-if="checkPoints" v-for="(checkPoint, index) in checkPoints" :key="index">
+                                    <v-checkbox v-model="checkPoint.checked" :label="checkPoint.name" color="primary" hide-details></v-checkbox>
+                                </div>
+                                <div v-else>
+                                    <v-checkbox disabled value-model="true" label="Check Point Description" color="primary" hide-details></v-checkbox>
+                                </div>
                             </div>
                         </v-window-item>
                         <v-window-item value="history">
@@ -43,9 +51,7 @@
                                 </perfect-scrollbar>
                             </v-card>
                         </v-window-item>
-
-                    </v-window>
-                </v-card-text>
+                </v-window>
             </v-col>
         </v-row>
     </v-card>
