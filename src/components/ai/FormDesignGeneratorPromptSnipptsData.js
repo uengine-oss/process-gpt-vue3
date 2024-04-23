@@ -51,6 +51,12 @@ const formDesignGeneratorPromptSnipptsData = {
             tag: `<label-field label='<입력시킬 라벨 값>'></label-field>`,
             purpose: `특정 컴포넌트를 설명하기 위해서`,
             limit: "name, alias가 있는 경우에는 이미 내부적으로 label이 설정되기 때문에 쓸 필요가 없음"
+        },
+
+        {
+            tag: `<boolean-field name='<이 입력창의 고유한 이름>' alias='<이 입력창의 별명>'></boolean-field>`,
+            purpose: `'true' 또는 'false' 중 하나를 선택하기 위해서`,
+            limit: ""
         }
     ],
 
