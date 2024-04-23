@@ -18,7 +18,7 @@ const formDesignGeneratorPromptSnipptsData = {
     // 3. 그냥 속성을 적어주면, 그것이 상수라고 생각하고 그대로 사용함
     componentInfos: [
         {
-            tag: `<text-field name='<이 입력창의 고유한 이름>' alias='<이 입력창의 별명>' type='<text|number>'></text-field>`,
+            tag: `<text-field name='<이 입력창의 고유한 이름>' alias='<이 입력창의 별명>' type='<text|number|email|url|date|datetime-local|month|week|time|password|tel>'></text-field>`,
             purpose: "다양한 유형의 텍스트를 입력받기 위해서",
             limit: "년도와 같이 선택해야 할 항목이 너무 많은 경우에는 text-field를 사용할 것"
         },
