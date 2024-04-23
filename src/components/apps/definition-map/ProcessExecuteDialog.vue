@@ -53,27 +53,11 @@ export default {
     created() {
         let me = this;
         this.uengine = BackendFactory.createBackend();
-
-        const store = useBpmnStore();
-        this.bpmnModeler = store.getModeler;
-        let def = this.bpmnModeler.getDefinitions();
-        const processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
-        if (!processElement) {
-            console.error('bpmn:Process element not found');
-            return;
-        }
-
-        processElement.forEach((process) => {
-            (process.laneSets || []).forEach((laneSet) => {
-                (laneSet.lanes || []).forEach((lane) => {
-                    // 레인의 이름을 배열에 추가합니다.
-                    if (lane?.name?.length > 0)
-                        me.roleMappings.push({
-                            roleName: lane.name,
-                            roleEndpoint: '',
-                            resourceNames: ''
-                        });
-                });
+        this.roles.forEach(function(role) {
+            me.roleMappings.push({
+                roleName: role,
+                roleEndpoint: '',
+                resourceNames: ''
             });
         });
     },
