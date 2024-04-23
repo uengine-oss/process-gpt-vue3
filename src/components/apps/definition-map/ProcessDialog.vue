@@ -118,6 +118,8 @@
 </template>
 
 <script>
+import BackendFactory from '@/components/api/BackendFactory';
+
 export default {
     props: {
         process: Object,
@@ -125,7 +127,6 @@ export default {
         type: String,
         processDialogStatus: Boolean,
         processType: String,
-        storage: Object,
         subProcessDialogStauts: Boolean
     },
     data: () => ({
@@ -196,8 +197,10 @@ export default {
     },
     methods: {
         async init() {
+            const backend = BackendFactory.createBackend();
             if (this.addType == 'sub') {
-                const list = await this.storage.list(`proc_def`);
+                // const list = await this.storage.list(`proc_def`);
+                const list = await backend.listDefinition();
                 if (list && list.length > 0) {
                     this.definitions = list;
                 } else {

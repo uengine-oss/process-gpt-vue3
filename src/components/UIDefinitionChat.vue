@@ -304,6 +304,7 @@ export default {
          */
         beforeSendMessage(newMessage) {
             this.prevFormOutput = this.$refs.mashup.getKEditorContentHtml();
+            newMessage.mentionedUsers = null
             this.generator.sendMessageWithPrevFormOutput(newMessage);
         },
 

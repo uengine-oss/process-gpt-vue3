@@ -60,7 +60,6 @@ export default {
         size: Number,
         type: String,
         process: Object,
-        // storage: Object,
         enableEdit: Boolean,
         enableExecution: Boolean,
     },

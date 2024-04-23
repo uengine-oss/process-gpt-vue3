@@ -25,6 +25,15 @@ export default {
         },
         backend: null
     }),
+    computed: {
+        useLock() {
+            if (window.$mode == "ProcessGPT") {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    },
     mounted() {
         var me = this
         me.connectAgent()
@@ -288,9 +297,12 @@ export default {
                 this.messages.push(chatObj);
 
                 if (message.mentionedUsers) {
-                    if (message.mentionedUsers.length == 0) {
-                        this.debouncedGenerate();
-                    } else if(message.mentionedUsers.some(user => user.id === 'system_id')){
+                    // if (message.mentionedUsers.length == 0) {
+                    //     this.debouncedGenerate();
+                    // } else if(message.mentionedUsers.some(user => user.id === 'system_id')){
+                    //     this.startGenerate();
+                    // }
+                    if(message.mentionedUsers.some(user => user.id === 'system_id')){
                         this.startGenerate();
                     }
                 } else {

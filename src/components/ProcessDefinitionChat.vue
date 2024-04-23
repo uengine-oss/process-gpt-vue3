@@ -101,47 +101,40 @@ export default {
             isStream: true,
             preferredLanguage: 'Korean'
         });
-        console.log(this.generator)
-    },
-    mounted() {
-        const id = this.$route.params.pathMatch[this.$route.params.pathMatch.length-1];
-        if (id) {
-            this.processDefinition = {
-                processDefinitionId: id
-            }
-            if (this.$route.query.name) {
-                this.projectName = this.$route.query.name;
-                this.processDefinition.processDefinitionName = this.projectName;
-            }
-        }
     },
     watch: {
         $route: {
             deep: true,
             handler(newVal, oldVal) {
                 if (newVal.path !== oldVal.path) {
-                    if (newVal.params.id != 'chat') {
-                        this.loadData();
+                    if (newVal.params.pathMatch) {
+                        this.init();
                     }
                 }
             }
         },
-        // processDefinition: {
-        //     deep: true,
-        //     handler(newVal, oldVal) {
-        //         if (oldVal != null) {
-
-        //         }
-        //     }
-        // }
     },
     computed: {
-        // LLMDefinition() {
-        //     let result = this.removePositionKey(this.processDefinition)
-        //     return result
-        // }
     },
     methods: {
+        checkedLock(defId) {
+            var me = this
+            me.$try({
+                context: me,
+                action: async () => {
+                    const lockObj = await me.getData(`lock/${defId}`, { key: 'id' });
+                    if (lockObj && lockObj.id && lockObj.user_id && lockObj.user_id == this.userInfo.email) {
+                        me.lock = false;
+                        me.disableChat = false;
+                        me.isViewMode = false;
+                    } else {
+                        me.lock = true;
+                        me.disableChat = true;
+                        me.isViewMode = true;
+                    }
+                }
+            })
+        },
         toggleLock() {
             var me = this
             me.$try({
@@ -149,10 +142,12 @@ export default {
                 action: async () => {
                     if (me.lock) {
                         // 잠금 > 수정가능 하도록
-                        if (me.processDefinition) await me.storage.putObject('lock', {
-                            id: me.processDefinition.processDefinitionId,
-                            user_id: me.userInfo.email
-                        });
+                        if (me.processDefinition && me.useLock) {
+                            await me.storage.putObject('lock', {
+                                id: me.processDefinition.processDefinitionId,
+                                user_id: me.userInfo.email
+                            });
+                        }
                         me.disableChat = false;
                         me.isViewMode = false;
                         me.lock = false
@@ -190,10 +185,7 @@ export default {
                         info.definition = me.processDefinition;
                     }
 
-                    // info.snapshot = xml.xml;
-                    // await backend.putRawDefinition(xml.xml, info.proc_def_id, info);
                     await me.saveModel(info, xmlObj.xml);
-                    await me.storage.delete(`lock/${info.proc_def_id}`, { key: 'id' });
                     me.bpmn = xmlObj.xml;
 
                     me.disableChat = true;
@@ -202,7 +194,9 @@ export default {
                     me.definitionChangeCount++
 
                     // 신규 프로세스 이동.
-                    if (!me.$route.params.id) me.$router.push(`/definitions/${info.proc_def_id}`);
+                    if (!me.$route.params.pathMatch) {
+                        me.$router.push(`/definitions/${info.proc_def_id}`);
+                    }
 
                     me.loading = false
                     me.toggleVersionDialog(false)
@@ -265,53 +259,47 @@ export default {
             this.isChanged = true
         },
         async loadData(path) {
-            // this.bpmn = '<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" id="sample-diagram" targetNamespace="http://bpmn.io/schema/bpmn" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL bpmn0.xsd"><bpmn:collaboration id="Collaboration_1tj7ei2"><bpmn:participant id="Participant_1eqhejj" processRef="Process_1"/></bpmn:collaboration><bpmn:process id="Process_1" isExecutable="false"><bpmn:laneSet id="LaneSet_1g2nbpc"><bpmn:lane id="Lane_0wneims" name="Woker"><bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef><bpmn:flowNodeRef>Activity_1ta8n6y</bpmn:flowNodeRef></bpmn:lane><bpmn:lane id="Lane_1lf58ly" name="HR"><bpmn:flowNodeRef>Event_0h4j724</bpmn:flowNodeRef><bpmn:flowNodeRef>Activity_0ji9jev</bpmn:flowNodeRef></bpmn:lane></bpmn:laneSet><bpmn:startEvent id="StartEvent_1" name="시작" magic:spell="Avada Kedavra"><bpmn:outgoing>Flow_0sp25wg</bpmn:outgoing></bpmn:startEvent><bpmn:sequenceFlow id="Flow_0sp25wg" sourceRef="StartEvent_1" targetRef="Activity_1ta8n6y"/><bpmn:sequenceFlow id="Flow_03dbjwz" sourceRef="Activity_1ta8n6y" targetRef="Activity_0ji9jev"/><bpmn:endEvent id="Event_0h4j724" name="종료"><bpmn:incoming>Flow_182335x</bpmn:incoming></bpmn:endEvent><bpmn:sequenceFlow id="Flow_182335x" sourceRef="Activity_0ji9jev" targetRef="Event_0h4j724"/><bpmn:userTask id="Activity_1ta8n6y" name="휴가 신청"><bpmn:documentation>Vacation</bpmn:documentation><bpmn:incoming>Flow_0sp25wg</bpmn:incoming><bpmn:outgoing>Flow_03dbjwz</bpmn:outgoing></bpmn:userTask><bpmn:userTask id="Activity_0ji9jev" name="승인"><bpmn:documentation>confirm</bpmn:documentation><bpmn:incoming>Flow_03dbjwz</bpmn:incoming><bpmn:outgoing>Flow_182335x</bpmn:outgoing></bpmn:userTask></bpmn:process><bpmndi:BPMNDiagram id="BPMNDiagram_1"><bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1tj7ei2"><bpmndi:BPMNShape id="Participant_1eqhejj_di" bpmnElement="Participant_1eqhejj" isHorizontal="true"><dc:Bounds x="270" y="150" width="600" height="250"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="Lane_0wneims_di" bpmnElement="Lane_0wneims" isHorizontal="true"><dc:Bounds x="300" y="150" width="570" height="125"/><bpmndi:BPMNLabel/></bpmndi:BPMNShape><bpmndi:BPMNShape id="Lane_1lf58ly_di" bpmnElement="Lane_1lf58ly" isHorizontal="true"><dc:Bounds x="300" y="275" width="570" height="125"/><bpmndi:BPMNLabel/></bpmndi:BPMNShape><bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1"><dc:Bounds x="352" y="192" width="36" height="36"/><bpmndi:BPMNLabel><dc:Bounds x="361" y="235" width="20" height="14"/></bpmndi:BPMNLabel></bpmndi:BPMNShape><bpmndi:BPMNShape id="Event_0h4j724_di" bpmnElement="Event_0h4j724"><dc:Bounds x="762" y="322" width="36" height="36"/><bpmndi:BPMNLabel><dc:Bounds x="770" y="365" width="20" height="14"/></bpmndi:BPMNLabel></bpmndi:BPMNShape><bpmndi:BPMNShape id="Activity_18762mc_di" bpmnElement="Activity_1ta8n6y"><dc:Bounds x="440" y="170" width="100" height="80"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="Activity_1omaje8_di" bpmnElement="Activity_0ji9jev"><dc:Bounds x="600" y="300" width="100" height="80"/></bpmndi:BPMNShape><bpmndi:BPMNEdge id="Flow_0sp25wg_di" bpmnElement="Flow_0sp25wg"><di:waypoint x="388" y="210"/><di:waypoint x="440" y="210"/></bpmndi:BPMNEdge><bpmndi:BPMNEdge id="Flow_03dbjwz_di" bpmnElement="Flow_03dbjwz"><di:waypoint x="540" y="210"/><di:waypoint x="570" y="210"/><di:waypoint x="570" y="340"/><di:waypoint x="600" y="340"/></bpmndi:BPMNEdge><bpmndi:BPMNEdge id="Flow_182335x_di" bpmnElement="Flow_182335x"><di:waypoint x="700" y="340"/><di:waypoint x="762" y="340"/></bpmndi:BPMNEdge></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>';
-            // this.bpmn = `{"$type":"bpmn:Definitions","id":"sample-diagram","targetNamespace":"http://bpmn.io/schema/bpmn","rootElements":[{"$type":"bpmn:Collaboration","id":"Collaboration_1tj7ei2","participants":[{"$type":"bpmn:Participant","id":"Participant_1eqhejj","$parent":"Collaboration_1tj7ei2"}],"$parent":"sample-diagram"},{"$type":"bpmn:Process","id":"Process_1","isExecutable":false,"laneSets":[{"$type":"bpmn:LaneSet","id":"LaneSet_1g2nbpc","lanes":[{"$type":"bpmn:Lane","id":"Lane_0wneims","name":"Woker","$parent":"LaneSet_1g2nbpc"},{"$type":"bpmn:Lane","id":"Lane_1lf58ly","name":"HR","$parent":"LaneSet_1g2nbpc"}],"$parent":"Process_1"}],"flowElements":[{"$type":"bpmn:StartEvent","id":"StartEvent_1","name":"시작","eventDefinitions":[],"$parent":"Process_1"},{"$type":"bpmn:SequenceFlow","id":"Flow_0sp25wg","$parent":"Process_1","sourceRef":"StartEvent_1","targetRef":"Activity_1ta8n6y"},{"$type":"bpmn:SequenceFlow","id":"Flow_03dbjwz","$parent":"Process_1","sourceRef":"Activity_1ta8n6y","targetRef":"Activity_0ji9jev"},{"$type":"bpmn:EndEvent","id":"Event_0h4j724","name":"종료","eventDefinitions":[],"$parent":"Process_1"},{"$type":"bpmn:SequenceFlow","id":"Flow_182335x","$parent":"Process_1","sourceRef":"Activity_0ji9jev","targetRef":"Event_0h4j724"},{"$type":"bpmn:UserTask","id":"Activity_1ta8n6y","name":"휴가 신청","documentation":[{"$type":"bpmn:Documentation","text":"Vacation","$parent":"Activity_1ta8n6y"}],"uengine-params":{"script": "System.out.println('hello world')"},"$parent":"Process_1"},{"$type":"bpmn:UserTask","id":"Activity_0ji9jev","name":"승인","documentation":[{"$type":"bpmn:Documentation","text":"confirm","$parent":"Activity_0ji9jev"}],"$parent":"Process_1"}],"$parent":"sample-diagram"}],"diagrams":[{"$type":"bpmndi:BPMNDiagram","id":"BPMNDiagram_1","plane":{"$type":"bpmndi:BPMNPlane","id":"BPMNPlane_1","planeElement":[{"$type":"bpmndi:BPMNShape","id":"Lane_1lf58ly_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":300,"y":275,"width":570,"height":125,"$parent":"Lane_1lf58ly_di"},"label":{"$type":"bpmndi:BPMNLabel","$parent":"Lane_1lf58ly_di"},"bpmnElement":"Lane_1lf58ly","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Lane_0wneims_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":300,"y":150,"width":570,"height":125,"$parent":"Lane_0wneims_di"},"label":{"$type":"bpmndi:BPMNLabel","$parent":"Lane_0wneims_di"},"bpmnElement":"Lane_0wneims","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Participant_1eqhejj_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":270,"y":150,"width":600,"height":250,"$parent":"Participant_1eqhejj_di"},"bpmnElement":"Participant_1eqhejj","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"_BPMNShape_StartEvent_2","bounds":{"$type":"dc:Bounds","x":352,"y":192,"width":36,"height":36,"$parent":"_BPMNShape_StartEvent_2"},"label":{"$type":"bpmndi:BPMNLabel","bounds":{"$type":"dc:Bounds","x":361,"y":235,"width":20,"height":14},"$parent":"_BPMNShape_StartEvent_2"},"bpmnElement":"StartEvent_1","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Event_0h4j724_di","bounds":{"$type":"dc:Bounds","x":762,"y":322,"width":36,"height":36,"$parent":"Event_0h4j724_di"},"label":{"$type":"bpmndi:BPMNLabel","bounds":{"$type":"dc:Bounds","x":770,"y":365,"width":20,"height":14},"$parent":"Event_0h4j724_di"},"bpmnElement":"Event_0h4j724","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Activity_18762mc_di","bounds":{"$type":"dc:Bounds","x":440,"y":170,"width":100,"height":80,"$parent":"Activity_18762mc_di"},"bpmnElement":"Activity_1ta8n6y","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Activity_1omaje8_di","bounds":{"$type":"dc:Bounds","x":600,"y":300,"width":100,"height":80,"$parent":"Activity_1omaje8_di"},"bpmnElement":"Activity_0ji9jev","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_0sp25wg_di","waypoint":[{"$type":"dc:Point","x":388,"y":210,"$parent":"Flow_0sp25wg_di"},{"$type":"dc:Point","x":440,"y":210,"$parent":"Flow_0sp25wg_di"}],"bpmnElement":"Flow_0sp25wg","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_03dbjwz_di","waypoint":[{"$type":"dc:Point","x":540,"y":210,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":570,"y":210,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":570,"y":340,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":600,"y":340,"$parent":"Flow_03dbjwz_di"}],"bpmnElement":"Flow_03dbjwz","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_182335x_di","waypoint":[{"$type":"dc:Point","x":700,"y":340,"$parent":"Flow_182335x_di"},{"$type":"dc:Point","x":762,"y":340,"$parent":"Flow_182335x_di"}],"bpmnElement":"Flow_182335x","$parent":"BPMNPlane_1"}],"bpmnElement":"Collaboration_1tj7ei2","$parent":"BPMNDiagram_1"},"$parent":"sample-diagram"}]}`;
-            // this.projectName = this.processDefinition.processDefinitionName;
-            // this.definitionChangeCount++;
-            // alert("loadData!")
-            
-            const fullPath = this.$route.params.pathMatch.join('/');
-            if (fullPath.startsWith('/')) {
-                fullPath = fullPath.substring(1);
-            }
-            console.log(`Full path: /${fullPath}`);
-            let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length-1]
-            if (fullPath && lastPath != "chat") {
-                let definition = await backend.getRawDefinition(fullPath, {type: "bpmn"})
-                if(definition) {
-                    this.bpmn = definition
-                    this.definitionChangeCount++;
-                }
-                // path = `${this.path}/${id}`;
-                // // lock
-                // const lockObj = await this.getData(`lock/${id}`, { key: 'id' });
-                // if (lockObj && lockObj.id && lockObj.user_id && lockObj.user_id == this.userInfo.email) {
-                //     this.lock = false;
-                //     this.disableChat = false;
-                //     this.isViewMode = false;
-                // } else {
-                //     this.lock = true;
-                //     this.disableChat = true;
-                //     this.isViewMode = true;
-                // }
+            const me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    const fullPath = me.$route.params.pathMatch.join('/');
+                    if (fullPath.startsWith('/')) {
+                        fullPath = fullPath.substring(1);
+                    }
+                    let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length-1]
+                    if (fullPath && lastPath != "chat") {
+                        let definition = await backend.getRawDefinition(fullPath, {type: "bpmn"})
+                        if (definition) {
+                            me.bpmn = definition;
+                            me.definitionChangeCount++;
+                        }
+                        if (me.useLock) {
+                            const value = await backend.getRawDefinition(fullPath);
+                            if (value) {
+                                me.processDefinition = value.definition;
+                                me.projectName = value.name;
+                            }
+                            me.checkedLock(lastPath);
+                        }
+                    } else if (lastPath == "chat") {
+                        me.processDefinition = null;
+                        me.projectName = null;
+                        me.bpmn = null;
 
-                // const value = await this.getData(path, { key: "id" });
-                // if (value) {
-                //     this.messages = value.messages
-                //     this.processDefinition = value.definition;
-                //     if (!this.processDefinition) {
-                //         this.processDefinition = [];
-                //     } else {
-                //         this.bpmn = value.bpmn;
-                //         //this.bpmn = this.createBpmnXml(this.processDefinition);
-                //         // this.bpmn = `{"$type":"bpmn:Definitions","id":"sample-diagram","targetNamespace":"http://bpmn.io/schema/bpmn","rootElements":[{"$type":"bpmn:Collaboration","id":"Collaboration_1tj7ei2","participants":[{"$type":"bpmn:Participant","id":"Participant_1eqhejj","$parent":"Collaboration_1tj7ei2"}],"$parent":"sample-diagram"},{"$type":"bpmn:Process","id":"Process_1","isExecutable":false,"laneSets":[{"$type":"bpmn:LaneSet","id":"LaneSet_1g2nbpc","lanes":[{"$type":"bpmn:Lane","id":"Lane_0wneims","name":"Woker","$parent":"LaneSet_1g2nbpc"},{"$type":"bpmn:Lane","id":"Lane_1lf58ly","name":"HR","$parent":"LaneSet_1g2nbpc"}],"$parent":"Process_1"}],"flowElements":[{"$type":"bpmn:StartEvent","id":"StartEvent_1","name":"시작","eventDefinitions":[],"$parent":"Process_1"},{"$type":"bpmn:SequenceFlow","id":"Flow_0sp25wg","$parent":"Process_1","sourceRef":"StartEvent_1","targetRef":"Activity_1ta8n6y"},{"$type":"bpmn:SequenceFlow","id":"Flow_03dbjwz","$parent":"Process_1","sourceRef":"Activity_1ta8n6y","targetRef":"Activity_0ji9jev"},{"$type":"bpmn:EndEvent","id":"Event_0h4j724","name":"종료","eventDefinitions":[],"$parent":"Process_1"},{"$type":"bpmn:SequenceFlow","id":"Flow_182335x","$parent":"Process_1","sourceRef":"Activity_0ji9jev","targetRef":"Event_0h4j724"},{"$type":"bpmn:UserTask","id":"Activity_1ta8n6y","name":"휴가 신청","documentation":[{"$type":"bpmn:Documentation","text":"Vacation","$parent":"Activity_1ta8n6y"}],"$parent":"Process_1"},{"$type":"bpmn:UserTask","id":"Activity_0ji9jev","name":"승인","documentation":[{"$type":"bpmn:Documentation","text":"confirm","$parent":"Activity_0ji9jev"}],"$parent":"Process_1"}],"$parent":"sample-diagram"}],"diagrams":[{"$type":"bpmndi:BPMNDiagram","id":"BPMNDiagram_1","plane":{"$type":"bpmndi:BPMNPlane","id":"BPMNPlane_1","planeElement":[{"$type":"bpmndi:BPMNShape","id":"Participant_1eqhejj_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":270,"y":150,"width":600,"height":250,"$parent":"Participant_1eqhejj_di"},"bpmnElement":"Participant_1eqhejj","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Lane_1lf58ly_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":300,"y":275,"width":570,"height":125,"$parent":"Lane_1lf58ly_di"},"label":{"$type":"bpmndi:BPMNLabel","$parent":"Lane_1lf58ly_di"},"bpmnElement":"Lane_1lf58ly","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Lane_0wneims_di","isHorizontal":true,"bounds":{"$type":"dc:Bounds","x":300,"y":150,"width":570,"height":125,"$parent":"Lane_0wneims_di"},"label":{"$type":"bpmndi:BPMNLabel","$parent":"Lane_0wneims_di"},"bpmnElement":"Lane_0wneims","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"_BPMNShape_StartEvent_2","bounds":{"$type":"dc:Bounds","x":352,"y":192,"width":36,"height":36,"$parent":"_BPMNShape_StartEvent_2"},"label":{"$type":"bpmndi:BPMNLabel","bounds":{"$type":"dc:Bounds","x":361,"y":235,"width":20,"height":14},"$parent":"_BPMNShape_StartEvent_2"},"bpmnElement":"StartEvent_1","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Event_0h4j724_di","bounds":{"$type":"dc:Bounds","x":762,"y":322,"width":36,"height":36,"$parent":"Event_0h4j724_di"},"label":{"$type":"bpmndi:BPMNLabel","bounds":{"$type":"dc:Bounds","x":770,"y":365,"width":20,"height":14},"$parent":"Event_0h4j724_di"},"bpmnElement":"Event_0h4j724","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Activity_18762mc_di","bounds":{"$type":"dc:Bounds","x":440,"y":170,"width":100,"height":80,"$parent":"Activity_18762mc_di"},"bpmnElement":"Activity_1ta8n6y","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNShape","id":"Activity_1omaje8_di","bounds":{"$type":"dc:Bounds","x":600,"y":300,"width":100,"height":80,"$parent":"Activity_1omaje8_di"},"bpmnElement":"Activity_0ji9jev","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_0sp25wg_di","waypoint":[{"$type":"dc:Point","x":388,"y":210,"$parent":"Flow_0sp25wg_di"},{"$type":"dc:Point","x":440,"y":210,"$parent":"Flow_0sp25wg_di"}],"bpmnElement":"Flow_0sp25wg","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_03dbjwz_di","waypoint":[{"$type":"dc:Point","x":540,"y":210,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":570,"y":210,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":570,"y":340,"$parent":"Flow_03dbjwz_di"},{"$type":"dc:Point","x":600,"y":340,"$parent":"Flow_03dbjwz_di"}],"bpmnElement":"Flow_03dbjwz","$parent":"BPMNPlane_1"},{"$type":"bpmndi:BPMNEdge","id":"Flow_182335x_di","waypoint":[{"$type":"dc:Point","x":700,"y":340,"$parent":"Flow_182335x_di"},{"$type":"dc:Point","x":762,"y":340,"$parent":"Flow_182335x_di"}],"bpmnElement":"Flow_182335x","$parent":"BPMNPlane_1"}],"bpmnElement":"Collaboration_1tj7ei2","$parent":"BPMNDiagram_1"},"$parent":"sample-diagram"}]}`;
-                //         this.projectName = this.processDefinition.processDefinitionName;
-                //         this.definitionChangeCount++;
-                //     }
-                // }
-            }
-            this.processDefinitionMap = await this.getData('configuration/proc_map', { key: 'key' });
+                        if (me.$route.query && me.$route.query.id) {
+                            me.processDefinition = {
+                                processDefinitionId: me.$route.query.id
+                            }
+                            if (me.$route.query.name) {
+                                me.projectName = me.$route.query.name;
+                                me.processDefinition.processDefinitionName = me.projectName;
+                            }
+                        }
+                    }
+                    me.processDefinitionMap = await backend.getProcessDefinitionMap();
+                }
+            });
         },
 
         beforeSendMessage(newMessage) {
@@ -543,30 +531,6 @@ export default {
 
         //     return processDefinition;
         // },
-        saveVersion(info, currentXML) {
-            var me = this
-            me.$try({
-                context: me,
-                action: async () => {
-                    const prevSnapshot = info.prevSnapshot
-                    const prevDiff = info.prevDiff
-
-                    // diff Logic
-                    let diffs = null
-
-
-                    await me.storage.putObject('proc_def_arcv', {
-                        arcv_id: info.arcv_id,
-                        version: info.version,
-                        // name: info.name,
-                        proc_def_id: info.proc_def_id,
-                        snapshot: currentXML,
-                        diff: diffs,
-                        timeStamp: new Date()
-                    });
-                }
-            })
-        },
         async saveModel(info, xml) {
             var me = this
             me.$try({
@@ -578,89 +542,17 @@ export default {
 
                     me.processDefinition.processDefinitionId = info.proc_def_id ? info.proc_def_id : prompt("please give a ID for the process definition");
                     // Version 저장시 제외.
-                    if (!me.$route.params.id) me.processDefinition.processDefinitionName = info.name ? info.name : prompt("please give a name for the process definition");
+                    if (!me.$route.params.pathMatch) me.processDefinition.processDefinitionName = info.name ? info.name : prompt("please give a name for the process definition");
 
                     me.projectName = me.processDefinition.processDefinitionName;
                     if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
                         throw new Error("processDefinitionId or processDefinitionName is missing");
                     }
-                    await backend.putRawDefinition(xml, info.proc_def_id, info, {"type": "bpmn"});
-                    // await me.putObject(`${me.path}/${me.processDefinition.processDefinitionId}`, {
-                    //     id: me.processDefinition.processDefinitionId,
-                    //     name: me.processDefinition.processDefinitionName,
-                    //     definition: me.processDefinition,
-                    //     // messages: this.messages,
-                    //     bpmn: xml   //TODO: model --> definition과 구분이 안됨.  bpmn 혹은 xmlDefinition 혹은 xmlModel 등으로 프로퍼티명 변경할것!
-                    // });
-
-                    // await me.saveVersion(info, xml)
-
-                    // =========== Save Version Logic ===============
-                    const prevSnapshot = info.prevSnapshot
-                    const prevDiff = info.prevDiff
-
-                    // diff Logic
-                    let diffs = null
-
-                    // save table
-                    await me.storage.putObject('proc_def_arcv', {
-                        arcv_id: info.arcv_id,
-                        version: info.version,
-                        proc_def_id: info.proc_def_id,
-                        snapshot: xml,
-                        diff: diffs,
-                        timeStamp: new Date()
-                    });
-
-                    // if (window.$mode == "uEngine") {
-                    //     // :9093/definition/raw/sales/testProcess.bpmn < definition-samples/testProcess.bpmn
-                    //     await axios.put(`/definition/raw/sales/${this.processDefinition.processDefinitionId}.bpmn`, xml.xml, {
-                    //         headers: {
-                    //             'Content-Type': 'application/xml' // 적절한 Content-Type 설정
-                    //         }
-                    //     }).then(res => {
-                    //         console.log(res);
-                    //     })
-                    // } else {
-
-
-
-                    // }
-
-
-                    // const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
-                    // let vectorId = await vectorStore.similaritySearch({
-                    //     query: this.projectName,
-                    //     k: 1
-                    // });
-                    // if (vectorId) {
-                    //     console.log(vectorId);
-                    //     // let path = `proc_def/${this.processDefinition.processDefinitionId ? this.processDefinition.processDefinitionId : this.$route.params.id}/model`;
-                    //     // this.pushObject(path, definition);
-                    //     this.deleteVectorStorage(vectorId.similarItems[0].id);
-                    //     this.saveDefinition(definition);
-                    // }
-
-                    // const table = await this.getObject(this.processDefinition.processDefinitionId)
-                    // if (!table) {
-                    await axios.post('http://localhost:8001/process-db-schema/invoke', {
-                        "input": {
-                            "process_definition_id": me.processDefinition.processDefinitionId
-                        }
-                    }).then(async res => {
-                        console.log(res);
-                    }).catch(error => {
-                        console.log(error);
-                    });
-                    // }
+                    await backend.putRawDefinition(xml, info.proc_def_id, info, {type: "bpmn"});
+                    await this.saveToVectorStore(me.processDefinition);;
                 }
             })
         },
-        // parseDefinition(model) {
-        //     let definition = {};
-        //     // 변형 로직 Model to Def
-        //     return definition;
-        // },
         async saveToVectorStore(definition) {
             // Create an instance of VectorStorage
             // const apiToken = this.generator.getToken();
