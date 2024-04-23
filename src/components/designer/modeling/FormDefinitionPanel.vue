@@ -21,9 +21,10 @@
                     @keyup.enter="save" persistent-placeholder></v-text-field>
     </v-card-text>
 
-    <!-- 'item' 유형의 값들을 입력받기 위해서 -->
+    <!-- 'items' 유형의 값들을 입력받기 위해서 -->
     <v-card-text>
-      <FormDefinitionPanelItemTable v-model="testItems"></FormDefinitionPanelItemTable>
+      <FormDefinitionPanelItemTable v-for="(settingInfo, index) in componentRef.settingInfos.filter(info => info.settingType === 'items')" :key="index"
+                                    v-model="componentProps[settingInfo.dataToUse]"></FormDefinitionPanelItemTable>
     </v-card-text>
 
     <v-btn @click="save">
@@ -58,11 +59,14 @@
     methods: {
       save() {
         for(const info of this.componentRef.settingInfos) {
-          const errorMessage = info.validCheck(this.componentProps[info.dataToUse])
+          if(!info.validCheck) continue
 
+          const errorMessage = info.validCheck(this.componentProps[info.dataToUse])
           if(errorMessage) {
             alert(errorMessage)
-            this.$refs[info.dataToUse][0].focus()
+            if(this.$refs[info.dataToUse])
+              this.$refs[info.dataToUse][0].focus()
+            
             return
           }
         }

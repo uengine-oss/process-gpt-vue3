@@ -139,7 +139,10 @@ export default {
 
         const newElement = document.createElement(componentRef.tagName)
         componentRef.settingInfos.forEach(settingInfo => {
-          newElement.setAttribute(settingInfo.htmlAttribute, componentRef[settingInfo.dataToUse])
+          if(settingInfo.settingType === 'items')
+            newElement.setAttribute(settingInfo.htmlAttribute, JSON.stringify(componentRef[settingInfo.dataToUse]))
+          else
+            newElement.setAttribute(settingInfo.htmlAttribute, componentRef[settingInfo.dataToUse])
         })
 
         vueRenderElement.innerHTML = newElement.outerHTML
