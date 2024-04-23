@@ -3,6 +3,7 @@
         <v-file-input
             :label="localAlias ?? localName"
             v-model="selectedFiles"
+            :disabled="localDisabled"
         ></v-file-input>
     </div>
 </template>
@@ -17,18 +18,22 @@ export default {
         tagName: String,
 
         name: String,
-        alias: String
+        alias: String,
+        disabled: String
     },
 
     data() {
         return {
             localName: this.name,
             localAlias: this.alias,
+            localDisabled: this.disabled === "true",
+            
             selectedFiles: null,
 
             settingInfos: [
                 commonSettingInfos["localName"],
-                commonSettingInfos["localAlias"]
+                commonSettingInfos["localAlias"],
+                commonSettingInfos["localDisabled"]
             ]
         };
     },
