@@ -98,7 +98,8 @@
         "editProcessData": "프로세스 데이터 수정",
         "edit": "수정",
         "delete": "삭제",
-        "zoom": "캔버스 확대/축소"
+        "zoom": "캔버스 확대/축소",
+        "execution": "실행"
     },
     "ProcessVariable": {
         "name": "이름",
@@ -167,7 +168,7 @@
         "inputData": "입력 데이터",
         "outputData": "출력 데이터",
         "checkPoints": "체크포인트",
-        "script":"스크립트",
+        "script": "스크립트",
         "add": "추가"
     }
 }

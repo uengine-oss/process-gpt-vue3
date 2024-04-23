@@ -548,7 +548,7 @@ export default {
                     if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
                         throw new Error("processDefinitionId or processDefinitionName is missing");
                     }
-                    await backend.putRawDefinition(xml, info.proc_def_id, info, {type: "bpmn"});
+                    await backend.putRawDefinition(xml, info.proc_def_id, info);
                     await this.saveToVectorStore(me.processDefinition);;
                 }
             })
