@@ -3,7 +3,7 @@
         <v-text-field v-model="localModelValue">
             <template v-slot:label>
                 <span style="color:black;">
-                    {{localLabel ?? localName}}
+                    {{localAlias ?? localName}}
                 </span>
             </template>
         </v-text-field>
@@ -20,7 +20,7 @@ export default {
         tagName: String,
 
         name: String,
-        label: String
+        alias: String
     },
 
     data() {
@@ -28,7 +28,7 @@ export default {
             localModelValue: this.modelValue,
 
             localName: this.name,
-            localLabel: this.label,
+            localAlias: this.alias,
 
             /**
              * 사용되는 속성들을 종합적으로 관리하기 위해서
@@ -52,8 +52,8 @@ export default {
                 },
 
                 {
-                    dataToUse: "localLabel",
-                    htmlAttribute: "label",
+                    dataToUse: "localAlias",
+                    htmlAttribute: "alias",
                     settingLabel: "Label",
                     settingType: "text",
                     validCheck: (value) => {
