@@ -131,8 +131,8 @@ export default class StorageBaseSupabase {
                     .maybeSingle()
 
                 if (error) {
-                    throw error;
-                } else {
+                    return error;
+                } else if (data) {
                     if (column != "*") {
                         return data[column];
                     } else {
@@ -147,8 +147,8 @@ export default class StorageBaseSupabase {
                     .maybeSingle()
 
                 if (error) {
-                    throw error;
-                } else {
+                    return error;
+                } else if (data) {
                     if (column != "*") {
                         return data[column];
                     } else {
@@ -162,8 +162,8 @@ export default class StorageBaseSupabase {
                     .maybeSingle()
 
                 if (error) {
-                    throw error;
-                } else {
+                    return error;
+                } else if (data) {
                     if (column != "*") {
                         return data[column];
                     } else {
@@ -191,8 +191,8 @@ export default class StorageBaseSupabase {
                     .maybeSingle()
 
                 if (error) {
-                    throw error;
-                } else {
+                    return error;
+                } else if (data) {
                     return data;
                 }
             } else if (obj.searchVal) {
@@ -203,8 +203,8 @@ export default class StorageBaseSupabase {
                     .maybeSingle()
 
                 if (error) {
-                    throw error;
-                } else {
+                    return error;
+                } else if (data) {
                     return data;
                 }
             } else {
@@ -214,8 +214,8 @@ export default class StorageBaseSupabase {
                     .maybeSingle()
                 
                 if (error) {
-                    throw error;
-                } else {
+                    return error;
+                } else if (data) {
                     return data;
                 }
             }
@@ -603,7 +603,7 @@ export default class StorageBaseSupabase {
             return data;
         } catch (error) {
             console.error('Error in callProcedure:', error);
-            throw error;
+            return error;
         }
     }
 }
