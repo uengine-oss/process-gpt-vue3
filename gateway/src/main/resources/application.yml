@@ -7,7 +7,7 @@ server:
 
 keycloak-client:
   server-url: http://localhost:9090
-  realm: uengine6
+  realm: uengine
 
 spring:
   config:
@@ -29,7 +29,7 @@ spring:
         - id: instance-servicce
           uri: http://localhost:9094
           predicates:
-            - Path=/worklist/**, /instance/**, /work-item/** 
+            - Path=/worklist/**, /instance/**, /work-item/** , /instances/**
         - id: frontend
           uri: http://localhost:5173
           predicates:

@@ -11,6 +11,7 @@
  *    label-field: Read(지원하지 않음) / Write(지원하지 않음)
  *    boolean-field: Read(true/false) / Write(true/false)
  *    textarea-field: Read("value1"과 같은 문자열 값) / Write("value1"과 같은 문자열 값) 
+ *    user-select-field: Read(["id1", "id2"]) 와 같이 선택된 유저 ID 값들을 담은 리스트) / Write(Read와 동일)
  */
 import { h } from 'vue';
 import TextField from '@/components/ui/field/TextField.vue';
@@ -21,6 +22,7 @@ import FileField from '@/components/ui/field/FileField.vue';
 import LabelField from '@/components/ui/field/LabelField.vue';
 import BooleanField from '@/components/ui/field/BooleanField.vue';
 import TextareaField from '@/components/ui/field/TextareaField.vue';
+import UserSelectField from '@/components/ui/field/UserSelectField.vue';
 
 export default {
   props: {
@@ -77,7 +79,8 @@ export default {
         FileField,
         LabelField,
         BooleanField,
-        TextareaField
+        TextareaField,
+        UserSelectField
       },
       data() {
         return {

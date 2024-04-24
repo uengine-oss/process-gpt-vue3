@@ -17,10 +17,20 @@
                 <slot name="messageContent">
                     <div class="w-100 pb-5">
                         <v-sheet class="bg-lightsecondary rounded-md px-3 py-2" style="width: 50vw;">
-                            <div v-html="message.content" @click="clickContent(message)"></div>
-                            <v-btn class="mt-2" elevation="0" @click="openDescription(index)">View Detail</v-btn>
-                            
-                        
+                            <v-row class="pa-0 ma-0">
+                                <div v-html="message.content" @click="clickContent(message)"></div>
+                                <v-spacer></v-spacer>
+                                <Icon v-if="filterMessages[index].open"
+                                    @click="openDescription(index)"
+                                    icon="iconamoon:arrow-up-2" width="24" height="24"
+                                    style="cursor: pointer;"
+                                />
+                                <Icon v-else
+                                    @click="openDescription(index)"
+                                    icon="iconamoon:arrow-down-2" width="24" height="24"
+                                    style="cursor: pointer;"
+                                />
+                            </v-row>
                             <div v-if="message.open" style="margin-top: 20px;">
                                 <div v-if="toolFormat(message).includes('formHandler')">
                                     <DynamicForm class="message-layout-dyna" v-if="message.open" :formHTML="message.html" v-model="message.formData"></DynamicForm>

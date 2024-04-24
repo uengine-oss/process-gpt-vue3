@@ -1,11 +1,10 @@
 <template>
     <div>
-        <div v-if="inputData.length > 0" style="margin-bottom:20px;">
-            <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.inputData') }}</div>
+        <div v-if="inputData.length > 0" style="margin-bottom: 20px">
+            <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.inputData') }}</div>
             <v-row class="ma-0 pa-0">
                 <div v-for="(input, idx) in inputData" :key="idx" class="mr-2 mt-2">
-                    <v-chip v-if="input.mandatory" color="primary" variant="outlined" class="text-body-2"
-                        @click="deleteInputData(input)">
+                    <v-chip v-if="input.mandatory" color="primary" variant="outlined" class="text-body-2" @click="deleteInputData(input)">
                         {{ input.argument.text }}
                         <CircleXIcon class="ml-2" start size="20" />
                     </v-chip>
@@ -16,12 +15,17 @@
                 </div>
             </v-row>
         </div>
-        <div v-if="outputData.length > 0" style="margin-bottom:20px;">
-            <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.outputData') }}</div>
+        <div v-if="outputData.length > 0" style="margin-bottom: 20px">
+            <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.outputData') }}</div>
             <v-row class="ma-0 pa-0">
                 <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
-                    <v-chip v-if="output.mandatory" color="primary" class="text-body-2" variant="outlined"
-                        @click="deleteOutputData(output)">
+                    <v-chip
+                        v-if="output.mandatory"
+                        color="primary"
+                        class="text-body-2"
+                        variant="outlined"
+                        @click="deleteOutputData(output)"
+                    >
                         {{ output.variable.name }}
                         <CircleXIcon class="ml-2" start size="20" />
                     </v-chip>
@@ -36,8 +40,7 @@
             <v-row class="ma-0 pa-0">
                 <div>Parameter Context</div>
                 <v-spacer></v-spacer>
-                <bpmn-parameter-contexts
-                :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
+                <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
             </v-row>
         </div>
         <v-spacer></v-spacer>
@@ -58,30 +61,32 @@
                             variant="outlined"
                             hide-details>
                         </v-autocomplete> -->
-                        <v-autocomplete 
+                        <v-autocomplete
                             v-model="selectedForm"
-                            :items="definition.processVariables
-                                        .filter(item => item.type === 'Form')
-                                        .map(item => item.name)" 
-                            color="primary" 
+                            :items="definition.processVariables.filter((item) => item.type === 'Form').map((item) => item.name)"
+                            color="primary"
                             variant="outlined"
-                            hide-details>
+                            hide-details
+                        >
                         </v-autocomplete>
                     </v-col>
                 </v-row>
             </div>
             <div>
-                <v-row  class="ma-0 pa-0">
-                    <v-btn text color="primary" class="my-3" @click="openFormMapper()">
-                        Field Mapping
-                    </v-btn>
+                <v-row class="ma-0 pa-0">
+                    <v-btn text color="primary" class="my-3" @click="openFormMapper()"> Field Mapping </v-btn>
                 </v-row>
             </div>
-            <v-dialog  v-model="isOpenFieldMapper"  max-width="80%" max-height="80%" @afterLeave="$refs.formMapper && $refs.formMapper.saveFormMapperJson()">
-                <form-mapper 
+            <v-dialog
+                v-model="isOpenFieldMapper"
+                max-width="80%"
+                max-height="80%"
+                @afterLeave="$refs.formMapper && $refs.formMapper.saveFormMapperJson()"
+            >
+                <form-mapper
                     ref="formMapper"
-                    :definition="copyDefinition" 
-                    :name="name"    
+                    :definition="copyDefinition"
+                    :name="name"
                     :roles="roles"
                     :formMapperJson="formMapperJson"
                     @saveFormMapperJson="saveFormMapperJson"
@@ -186,9 +191,7 @@ export default {
         definition: Object,
         name: String
     },
-    created() {
-        
-    },
+    created() {},
     data() {
         return {
             // requiredKeyLists: {
@@ -196,118 +199,115 @@ export default {
             //     "checkpoints": []
             // },
             requiredKeyLists: {
-                "role": { "name": "" },
-                "parameters": [],
+                role: { name: '' },
+                parameters: []
             },
             copyUengineProperties: this.uengineProperties,
             checkpoints: [],
             editCheckpoint: false,
             checkpointMessage: {
-                "$type": "uengine:Checkpoint",
-                "checkpoint": ""
+                $type: 'uengine:Checkpoint',
+                checkpoint: ''
             },
-            code: "",
-            description: "",
-            selectedDefinition: "",
+            code: '',
+            description: '',
+            selectedDefinition: '',
             bpmnModeler: null,
             stroage: null,
             editParam: false,
-            paramKey: "",
-            paramValue: "",
+            paramKey: '',
+            paramValue: '',
             isOpenFieldMapper: false,
             isFormActivity: false,
-            selectedForm: "",
-            formMapperJson: "",
+            selectedForm: '',
+            formMapperJson: '',
             backend: null,
             copyDefinition: null
         };
     },
-    created(){
-        this.backend = BackendFactory.createBackend()
+    created() {
+        this.backend = BackendFactory.createBackend();
     },
     async mounted() {
-        let me = this
+        let me = this;
 
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
         if (me.role?.length > 0) {
-            this.copyUengineProperties.role = { "name": me.role }
+            this.copyUengineProperties.role = { name: me.role };
         }
-        if (!this.copyUengineProperties.parameters)
-            this.copyUengineProperties.parameters = []
+        if (!this.copyUengineProperties.parameters) this.copyUengineProperties.parameters = [];
 
-        if(this.copyUengineProperties.variableForHtmlFormContext){
-            this.isFormActivity = true
-            this.selectedForm = this.copyUengineProperties.variableForHtmlFormContext.name
+        if (this.copyUengineProperties.variableForHtmlFormContext) {
+            this.isFormActivity = true;
+            this.selectedForm = this.copyUengineProperties.variableForHtmlFormContext.name;
         }
 
-        let mapperData = 
-        {}
+        let mapperData = {};
+        if (!this.copyUengineProperties.mappingContext) {
+            this.copyUengineProperties.mappingContext = mapperData;
+        } else {
+            this.formMapperJson = JSON.stringify(this.copyUengineProperties.mappingContext, null, 2);
+        }
+        this.$emit('update:uEngineProperties', this.copyUengineProperties);
 
-        this.copyUengineProperties.mappingContext = mapperData
-        this.$emit('update:uEngineProperties', this.copyUengineProperties)
-
-        this.copyDefinition = this.definition
-
-
+        this.copyDefinition = this.definition;
     },
     computed: {
         inputData() {
-            let params = this.copyUengineProperties.parameters
-            let result = []
+            let params = this.copyUengineProperties.parameters;
+            let result = [];
             if (params)
-                params.forEach(element => {
-                    if (element.direction == 'IN' || element.direction == 'IN-OUT')
-                        result.push(element)
+                params.forEach((element) => {
+                    if (element.direction == 'IN' || element.direction == 'IN-OUT') result.push(element);
                 });
-            return result
+            return result;
         },
         outputData() {
-            let params = this.copyUengineProperties.parameters
-            let result = []
+            let params = this.copyUengineProperties.parameters;
+            let result = [];
             if (params)
-                params.forEach(element => {
-                    if (element.direction == 'OUT' || element.direction == 'IN-OUT')
-                        result.push(element)
+                params.forEach((element) => {
+                    if (element.direction == 'OUT' || element.direction == 'IN-OUT') result.push(element);
                 });
-            return result
+            return result;
         }
     },
     watch: {
-        selectedForm(newVal){
-            if(newVal){
+        selectedForm(newVal) {
+            if (newVal) {
                 // const [formName, formAlias] = newVal.split('_');
                 // const formItem = this.definition.processVariables.find(item => item.type === 'Form' && item.defaultValue.name === formName && item.defaultValue.alias === formAlias);
 
-                let formItem = this.copyDefinition.processVariables.find(item => item.name === newVal);
-                let variableForHtmlFormContext = ""
-                if(formItem){
-                    variableForHtmlFormContext = {name: formItem.defaultValue.formDefId}
+                let formVariable = this.copyDefinition.processVariables.find((item) => item.name === newVal);
+                let variableForHtmlFormContext = '';
+                if (formVariable) {
+                    variableForHtmlFormContext = { name: formVariable.name };
                 }
 
-                this.copyUengineProperties.variableForHtmlFormContext = variableForHtmlFormContext
-                this.$emit('update:uEngineProperties', this.copyUengineProperties)
+                this.copyUengineProperties.variableForHtmlFormContext = variableForHtmlFormContext;
+                this.$emit('update:uEngineProperties', this.copyUengineProperties);
             }
         },
-        isFormActivity(newVal){
-            if(newVal){
-                this.copyUengineProperties._type = "org.uengine.kernel.FormActivity"
+        isFormActivity(newVal) {
+            if (newVal) {
+                this.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
             }
         }
     },
     methods: {
         deleteInputData(inputData) {
-            const index = this.copyUengineProperties.parameters.findIndex(element => element.key === inputData.key);
+            const index = this.copyUengineProperties.parameters.findIndex((element) => element.key === inputData.key);
             if (index > -1) {
                 this.copyUengineProperties.parameters.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties)
+                this.$emit('update:uEngineProperties', this.copyUengineProperties);
             }
         },
         deleteOutputData(outputData) {
-            const index = this.copyUengineProperties.parameters.findIndex(element => element.key === outputData.key);
+            const index = this.copyUengineProperties.parameters.findIndex((element) => element.key === outputData.key);
             if (index > -1) {
                 this.copyUengineProperties.parameters.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties)
+                this.$emit('update:uEngineProperties', this.copyUengineProperties);
             }
         },
         ensureKeyExists(obj, key, defaultValue) {
@@ -316,22 +316,22 @@ export default {
             }
         },
         deleteExtendedProperty(item) {
-            const index = this.copyUengineProperties.extendedProperties.findIndex(element => element.key === item.key);
+            const index = this.copyUengineProperties.extendedProperties.findIndex((element) => element.key === item.key);
             if (index > -1) {
                 this.copyUengineProperties.extendedProperties.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties)
+                this.$emit('update:uEngineProperties', this.copyUengineProperties);
             }
         },
         deleteCheckPoint(item) {
-            const index = this.copyUengineProperties.checkpoints.findIndex(element => element.checkpoint === item.checkpoint);
+            const index = this.copyUengineProperties.checkpoints.findIndex((element) => element.checkpoint === item.checkpoint);
             if (index > -1) {
                 this.copyUengineProperties.checkpoints.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties)
+                this.$emit('update:uEngineProperties', this.copyUengineProperties);
             }
         },
         addParameter() {
-            this.copyUengineProperties.extendedProperties.push({ key: this.paramKey, value: this.paramValue })
-            this.$emit('update:uEngineProperties', this.copyUengineProperties)
+            this.copyUengineProperties.extendedProperties.push({ key: this.paramKey, value: this.paramValue });
+            this.$emit('update:uEngineProperties', this.copyUengineProperties);
             // const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
             // // this.checkpoints.push(this.checkpointMessage)
             // const parameter = bpmnFactory.create('uengine:ExtendedProperty', { key: this.paramKey, value: this.paramValue });
@@ -350,47 +350,47 @@ export default {
             // return value;
         },
         addCheckpoint() {
-            this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint })
-            this.$emit('update:uEngineProperties', this.copyUengineProperties)
-        },  
+            this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
+            this.$emit('update:uEngineProperties', this.copyUengineProperties);
+        },
         saveFormMapperJson(jsonString) {
             this.formMapperJson = jsonString;
-            this.copyUengineProperties._type = "org.uengine.kernel.FormActivity";
-            this.copyUengineProperties.mappingContext = JSON.parse(jsonString)
-            this.$emit('update:uEngineProperties', this.copyUengineProperties)
+            this.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
+            this.copyUengineProperties.mappingContext = JSON.parse(jsonString);
+            this.$emit('update:uEngineProperties', this.copyUengineProperties);
 
             this.isOpenFieldMapper = false;
         },
-        async openFormMapper(){
-            var me = this
+        async openFormMapper() {
+            var me = this;
 
-            if(this.selectedForm){
-                var forms = []
+            if (this.selectedForm) {
+                var forms = [];
 
                 let formDefs = await me.backend.listDefinition();
                 formDefs.forEach(async (form) => {
-                    if(form.name.includes(".form")){
-                        forms.push(form.name.replace(".form", ""))
+                    if (form.name.includes('.form')) {
+                        forms.push(form.name.replace('.form', ''));
                     }
-                })
+                });
 
                 me.copyDefinition.processVariables.forEach(async (variable) => {
-                    if(forms.find(item => item === variable.defaultValue.formDefId && variable.type === 'Form')){
-                        let formHtml = await me.backend.getRawDefinition(variable.defaultValue.formDefId, {'type': 'form'});
-                        let fields = me.parseFormHtmlField(formHtml)
+                    if (forms.find((item) => item === variable.defaultValue.formDefId && variable.type === 'Form')) {
+                        let formHtml = await me.backend.getRawDefinition(variable.defaultValue.formDefId, { type: 'form' });
+                        let fields = me.parseFormHtmlField(formHtml);
 
-                        variable.fields = fields
+                        variable.fields = fields;
                     }
-                })
+                });
 
-                this.isOpenFieldMapper = true
+                this.isOpenFieldMapper = true;
             }
         },
         parseFormHtmlField(formHtml) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(formHtml, 'text/html');
             const fields = doc.querySelectorAll('text-field, select-field, checkbox-field, radio-field, file-field');
-            const result = Array.from(fields).map(field => {
+            const result = Array.from(fields).map((field) => {
                 const type = field.tagName.toLowerCase().replace('-field', '');
                 const name = field.getAttribute('name') || '';
                 const alias = field.getAttribute('alias') || '';
@@ -402,7 +402,7 @@ export default {
             });
             console.log(result);
             return result;
-        },
+        }
     }
 };
 </script>

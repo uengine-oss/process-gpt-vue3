@@ -385,11 +385,15 @@ class ProcessGPTBackend implements Backend {
         throw new Error("Method not implemented.");
     }
 
+    async getCompletedList() {
+        throw new Error("Method not implemented.");
+    }
+
     async getPendingList() {
         throw new Error("Method not implemented.");
     }
 
-    async putWorkItemComplate(taskId: string, inputData: any) {
+    async putWorkItemComplete(taskId: string, inputData: any) {
         try {
             const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
             const userInfo = await storage.getUserInfo();
@@ -452,7 +456,7 @@ class ProcessGPTBackend implements Backend {
             });
 
         } catch (error) {
-            return new Error('error in putWorkItemComplate');
+            return new Error('error in putWorkItemComplete');
         }
     }
 
