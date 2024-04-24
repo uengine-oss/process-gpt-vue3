@@ -331,7 +331,7 @@ export default {
                 const currentPath = path ? `${path}.${treeNodeText}` : treeNodeText;
                 let effectiveYOffset = yOffset + (isRootClosed ? 0 : nodeHeight);
 
-                if (nodes[treeNodeText].parent != null || nodes[treeNodeText].parent == undefined) {
+                if (path != '') {
                     this.addPortToBlockTemplates(currentPath, effectiveYOffset - (isRootClosed ? 0 : nodeHeight), blockName);
                 }
 

@@ -10,7 +10,6 @@ export default {
     props: {
         vueRenderUUID: String,
         tagName: String,
-
         label: String
     },
 

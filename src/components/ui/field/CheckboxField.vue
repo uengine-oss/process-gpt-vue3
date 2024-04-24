@@ -1,6 +1,6 @@
 <template>
     <div>
-        <label>{{ localAlias ?? localName }}</label>
+        <label class="form">{{ localAlias ?? localName }}</label>
         <div v-for="(item, index) in localItems" :key="index">
             <div v-for="(value, key) in item" :key="key">
                 <v-checkbox
