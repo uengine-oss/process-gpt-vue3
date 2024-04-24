@@ -46,10 +46,14 @@
                     </v-window-item>
                     <v-window-item value="history">
                         <v-card elevation="10">
-                            <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll" >
+                            <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
                                 <div class="d-flex w-100" style="height: calc(100vh - 320px); overflow: auto;">
+<<<<<<< HEAD
                                     <component :is="'work-history-'+mode" :messages="messages"
                                         @clickMessage="navigateToWorkItemByTaskId" />
+=======
+                                    <component :is="'work-history-'+mode" :messages="messages" @clickMessage="navigateToWorkItemByTaskId" />
+>>>>>>> 5c36d21457a05deb0ea038960c673f30edb18430
                                 </div>
                             </perfect-scrollbar>
                         </v-card>
@@ -63,10 +67,11 @@
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
-import MessageLayout from "@/components/ui/MessageLayout.vue";
-import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
 import DefaultWorkItem from './DefaultWorkItem.vue'; // DefaultWorkItem 컴포넌트 임포트
 import FormWorkItem from './FormWorkItem.vue'; // FormWorkItem 컴포넌트 임포트
+
+import WorkItemChat from "@/components/ui/WorkItemChat.vue";
+import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
 
 const backend = BackendFactory.createBackend()
 export default {
@@ -74,7 +79,7 @@ export default {
         ProcessDefinition,
         DefaultWorkItem,
         FormWorkItem,
-        'work-history-uEngine': MessageLayout,
+        'work-history-uEngine': WorkItemChat,
         'work-history-ProcessGPT': ProcessInstanceChat
     },
     data: () => ({
@@ -126,7 +131,7 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    me.workItem = await backend.getWorkItem(this.id);
+                    me.workItem = await backend.getWorkItem(me.id);
                     me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, {type: 'bpmn'});
                     me.workListByInstId = await backend.getWorkListByInstId(me.workItem.worklist.instId);
                     me.currentComponent = me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem';
