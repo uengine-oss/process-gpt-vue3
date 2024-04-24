@@ -199,9 +199,6 @@ export default {
     },
     async created() {
         await this.initializeStorage();
-        this.initializeNodesAndConfig();
-        await this.processVariables(this.leftNodes, 'Source');
-        await this.processVariables(this.rightNodes, 'Target');
         this.renderKey++;
     },
     mounted() {
@@ -220,17 +217,17 @@ export default {
             }, 300);
         });
         // processVariables가 준비되었는지 확인
-        if (this.processVariables && this.processVariables.length > 0) {
-            // processVariables 사용
-            console.log(this.processVariables);
-        } else {
-            // 데이터가 준비되지 않았다면, watch를 사용하거나 다른 방법으로 처리
-            this.$watch('processVariables', (newVal) => {
-                if (newVal && newVal.length > 0) {
-                    console.log(newVal);
-                }
-            });
-        }
+        // if (this.processVariables && this.processVariables.length > 0) {
+        //     // processVariables 사용
+        //     console.log(this.processVariables);
+        // } else {
+        //     // 데이터가 준비되지 않았다면, watch를 사용하거나 다른 방법으로 처리
+        //     this.$watch('processVariables', (newVal) => {
+        //         if (newVal && newVal.length > 0) {
+        //             console.log(newVal);
+        //         }
+        //     });
+        // }
 
         this.renderFormMapperFromMappingElementJson(this.formMapperJson);
     },
@@ -238,15 +235,14 @@ export default {
         async initializeStorage() {
             this.storage = StorageBaseFactory.getStorage('supabase');
         },
-
-        initializeNodesAndConfig() {
+        async initializeNodesAndConfig() {
             this.leftNodes = {};
             this.rightNodes = {};
             this.config = {
                 roots: []
             };
         },
-        async fetchAndProcessFormDefinitions(nodes, variable, blockName) {
+        async fetchAndProcessFormDefinitions(nodes, variable) {
             let name = variable.name;
             let matchingForm = this.definition.processVariables.find((form) => form.name === name && form.type === 'Form' && form.fields);
 
@@ -266,8 +262,6 @@ export default {
                     };
                 });
             }
-
-            this.updateBlockTemplates(nodes, blockName);
         },
         async processVariables(nodes, blockName) {
             const definition = this.definition;
@@ -292,65 +286,73 @@ export default {
                     };
                 }
 
-                await this.fetchAndProcessFormDefinitions(nodes, variable, blockName);
+                await this.fetchAndProcessFormDefinitions(nodes, variable);
             }
+
+            if (this.roles.length > 0) {
+                if (!this.config.roots.includes('roles')) {
+                    this.config.roots.push('roles');
+                }
+
+                if (!nodes['roles']) {
+                    nodes['roles'] = {
+                        text: 'roles',
+                        children: [],
+                        parent: null
+                    };
+                }
+
+                this.roles.forEach((role) => {
+                    if (nodes['roles']) {
+                        nodes['roles'].children.push(role);
+                        nodes[role] = {
+                            text: role,
+                            children: []
+                        };
+                    }
+                });
+            }
+
+            this.updateBlockTemplates(nodes, blockName);
         },
         updateBlockTemplates(nodes, blockName) {
             const treeStructure = this.transformData(nodes);
             const nodeHeight = 24;
+            this.resetTreeviewPorts(blockName);
 
             const updatePorts = (treeNode, path = '', yOffset = 0, isRootClosed = false) => {
-                if (!treeNode) return;
-
-                const effectiveYOffset = isRootClosed ? yOffset : yOffset + nodeHeight;
                 const treeNodeText = Object.keys(treeNode)[0];
                 const currentPath = path ? `${path}.${treeNodeText}` : treeNodeText;
+                let effectiveYOffset = yOffset + (isRootClosed ? 0 : nodeHeight);
+
                 if (path != '') {
-                    // 최상위 노드가 아닐 때 포트를 표시합니다.
-                    if (!isRootClosed) {
-                        this.addPortToBlockTemplates(currentPath, effectiveYOffset - nodeHeight, blockName);
-                    } else {
-                        this.addPortToBlockTemplates(currentPath, effectiveYOffset, blockName);
-                    }
+                    this.addPortToBlockTemplates(currentPath, effectiveYOffset - (isRootClosed ? 0 : nodeHeight), blockName);
                 }
 
-                if (treeNode[Object.keys(treeNode)[0]].length > 0) {
+                const children = treeNode[treeNodeText];
+                if (children.length > 0) {
                     const nodeOpened = nodes[treeNodeText].state && nodes[treeNodeText].state.opened;
-                    let cumulativeOffset = effectiveYOffset;
-                    if (!nodeOpened && !isRootClosed) {
-                        cumulativeOffset -= nodeHeight;
-                    }
-
-                    treeNode[Object.keys(treeNode)[0]].forEach((childNode, index) => {
-                        const childNodeText = Object.keys(childNode)[0];
-                        const child = nodes[childNodeText]; // 수정: childNode가 객체이므로 text 속성 접근 필요
-                        updatePorts(childNode, currentPath, cumulativeOffset, isRootClosed || !nodeOpened);
-                        if (nodeOpened && !isRootClosed) {
-                            cumulativeOffset += this.getNodeHeight(child);
-                        }
-                    });
-                }
-            };
-
-            this.getNodeHeight = function (node) {
-                let totalHeight = nodeHeight;
-
-                const nodeOpened = node.state && node.state.opened;
-                if (nodeOpened && node.children) {
-                    node.children.forEach((childNode) => {
-                        const child = nodes[childNode];
-                        totalHeight += this.getNodeHeight(child);
+                    children.forEach((childNode) => {
+                        effectiveYOffset = updatePorts(childNode, currentPath, effectiveYOffset, isRootClosed || !nodeOpened);
                     });
                 }
 
-                return totalHeight;
+                return effectiveYOffset;
             };
 
+            var rootYOffset = 0;
             treeStructure.forEach((rootNode, index) => {
-                const rootYOffset = index * nodeHeight;
                 const rootText = Object.keys(rootNode)[0];
                 const rootClosed = !(nodes[rootText].state && nodes[rootText].state.opened);
-                updatePorts(rootNode, '', rootYOffset, rootClosed);
+                if (index > 0) {
+                    const higherText = Object.keys(treeStructure[index - 1])[0];
+                    const higherClosed = !(nodes[higherText].state && nodes[higherText].state.opened);
+                    if (higherClosed) {
+                        rootYOffset += index * nodeHeight;
+                    }
+                }
+
+                rootYOffset += updatePorts(rootNode, '', rootYOffset, rootClosed);
             });
         },
         addPortToBlockTemplates(nodePath, yOffset, blockName) {
@@ -366,6 +368,11 @@ export default {
                     y: yOffset,
                     direction: 'in'
                 };
+            }
+        },
+        resetTreeviewPorts(blockName) {
+            if (this.blockTemplates[blockName] && this.blockTemplates[blockName].ports) {
+                this.blockTemplates[blockName].ports = {};
             }
         },
         transformData(nodes) {
@@ -473,6 +480,16 @@ export default {
             };
         }
     },
+    watch: {
+        definition: {
+            async handler() {
+                await this.initializeNodesAndConfig();
+                await this.processVariables(this.leftNodes, 'Source');
+                await this.processVariables(this.rightNodes, 'Target');
+            },
+            deep: true
+        }
+    },
     onBeforeUnmount() {
         this.saveFormMapperJson();
     }
@@ -567,12 +584,15 @@ export default {
     align-items: flex-start;
 }
 
-.form-mapper .right-treeview .node-wrapper {
+.form-mapper .tree .right-treeview {
     transform: scaleX(-1);
 }
 
 .form-mapper .right-treeview .input-wrapper {
     transform: scaleX(-1);
+}
+.form-mapper .tree-node .tree-level{
+    padding-left: 8px !important;
 }
 
 .form-mapper .form-menu {
@@ -598,9 +618,9 @@ export default {
 .form-mapper .right-treeview button {
     margin-left: auto;
 }
-.form-mapper .tree-level {
+/* .form-mapper .tree-level {
     padding-left: 0 !important;
-}
+} */
 .form-mapper .left-treeview {
     width: 200px;
 }

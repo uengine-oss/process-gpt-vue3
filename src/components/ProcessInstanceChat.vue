@@ -1,47 +1,37 @@
 <template>
-    <v-card elevation="10" style="background-color: rgba(255, 255, 255, 0)">
-        <AppBaseCard>
-            <template v-slot:leftpart>
-                <WorkItem v-if="onLoad"></WorkItem>
-                
-                <v-dialog v-model="definitionDialog" max-width="800">
-                    <v-card>
-                        <v-card-title class="text-h5">
-                            프로세스 정의 목록
-                        </v-card-title>
-                        <v-card-text>
-                            <VDataTable v-if="onLoad" v-model="processDefinitions" :headers="headers" :items="definitions"
-                                item-value="id" select-strategy="single" show-select return-object
-                            ></VDataTable>
-                            <div v-else style="height: 100%; text-align: center">
-                                <v-progress-circular style="top: 50%" indeterminate color="primary"></v-progress-circular>
-                            </div>
-                        </v-card-text>
-                        <v-card-actions>
-                            <v-btn color="success" class="px-4 rounded-pill mx-auto" variant="tonal"
-                                @click="beforeSendMessage()">Select</v-btn>
-                        </v-card-actions>
-                    </v-card>
-                </v-dialog>
-            </template>
-
-            <template v-slot:rightpart>
-                <Chat :messages="messages" :agentInfo="agentInfo" :draftAgentPrompt="draftAgentPrompt" :chatInfo="chatInfo"
-                    :userInfo="userInfo" :disableChat="disableChat" :type="'instances'" :name="chatName"
-                    @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
-                    @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
-                ></Chat>
-            </template>
-
-            <template v-slot:mobileLeftContent>
-                <Chat :messages="messages" :agentInfo="agentInfo" :draftAgentPrompt="draftAgentPrompt" :chatInfo="chatInfo"
-                    :userInfo="userInfo" :disableChat="disableChat" :type="'instances'" :name="chatName"
-                    @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
-                    @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
-                ></Chat>
-            </template>
-        </AppBaseCard>
-    </v-card>
+    <div style="background-color: rgba(255, 255, 255, 0)">
+        <v-dialog v-model="definitionDialog" max-width="800">
+            <v-card>
+                <v-card-title class="text-h5">
+                    프로세스 정의 목록
+                </v-card-title>
+                <v-card-text>
+                    <VDataTable v-if="onLoad" v-model="processDefinitions" :headers="headers" :items="definitions"
+                        item-value="id" select-strategy="single" show-select return-object
+                    ></VDataTable>
+                    <div v-else style="height: 100%; text-align: center">
+                        <v-progress-circular style="top: 50%" indeterminate color="primary"></v-progress-circular>
+                    </div>
+                </v-card-text>
+                <v-card-actions>
+                    <v-btn color="success" class="px-4 rounded-pill mx-auto" variant="tonal"
+                        @click="beforeSendMessage()">Select</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+        <Chat :messages="messages" :agentInfo="agentInfo" :draftAgentPrompt="draftAgentPrompt" :chatInfo="chatInfo"
+            :userInfo="userInfo" :disableChat="disableChat" :type="'instances'" :name="chatName"
+            @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
+            @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
+        ></Chat>
+        <!-- <template v-slot:mobileLeftContent>
+            <Chat :messages="messages" :agentInfo="agentInfo" :draftAgentPrompt="draftAgentPrompt" :chatInfo="chatInfo"
+                :userInfo="userInfo" :disableChat="disableChat" :type="'instances'" :name="chatName"
+                @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
+                @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
+            ></Chat>
+        </template> -->
+    </div>
 </template>
 
 <script>
@@ -58,7 +48,7 @@ import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import Chat from "@/components/ui/Chat.vue";
 import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
-import WorkItem from './apps/todolist/WorkItem.vue';
+// import WorkItem from './apps/todolist/WorkItem.vue';
 
 import BackendFactory from "@/components/api/BackendFactory";
 const backend = BackendFactory.createBackend();
@@ -71,7 +61,7 @@ export default {
         ProcessInstanceList,
         ProcessDefinition,
         VDataTable,
-        WorkItem,
+        // WorkItem,
     },
     data: () => ({
         headers: [
@@ -281,10 +271,6 @@ export default {
                 if (jsonData.description) {
                     messageWriting.content = jsonData.description;
                 }
-                if (!this.$route.params.taskId) {
-                    this.$router.replace(`/todolist/${jsonData.instanceId}`);
-                }
-
                 this.saveInstance(jsonData);
                 this.saveTodolist(jsonData);
             }
@@ -352,6 +338,9 @@ export default {
                             status: 'IN_PROGRESS',
                         }
                         await this.putObject('todolist', putObj);
+                        if (!this.$route.params.taskId) {
+                            this.$router.replace(`/todolist/${putObj.id}`);
+                        }
                     }
                 }
 

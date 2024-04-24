@@ -103,12 +103,13 @@ class ProcessGPTBackend implements Backend {
 
     async start(input: any) {
         try {
-            if (input.process_definition_id) {
-                const list = await storage.list(input.process_definition_id);
+            let defId = input.process_definition_id || input.processDefinitionId;
+            if (defId) {
+                const list = await storage.list(defId);
                 if (list.code == "42P01") {
                     await axios.post('/process-db-schema/invoke', {
                         "input": {
-                            "process_definition_id": input.process_definition_id
+                            "process_definition_id": defId
                         }
                     }).then(res => {
                         return res
@@ -117,6 +118,18 @@ class ProcessGPTBackend implements Backend {
                     });
                 }
             }
+
+            input['process_definition_id'] = defId;
+            if (!input.answer) {
+                input.answer = "";
+            }
+            if (!input.process_instance_id) {
+                input.process_instance_id = "new";
+            }
+            if (!input.userInfo) {
+                input.userInfo = await storage.getUserInfo();
+            }
+            
             
             var result: any = null;
             var url = '/complete/invoke';
@@ -164,6 +177,24 @@ class ProcessGPTBackend implements Backend {
     async getWorkItem(taskId: string) {
         try {
             const data = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
+            const defInfo = await this.getRawDefinition(data.proc_def_id, null);
+            let activityInfo: any = null;
+            let parameters: any[] = [];
+            if (defInfo && defInfo.definition) {
+                activityInfo = defInfo.definition.activities.find((activity: any) => activity.id === data.activity_id);
+                if (activityInfo.outputData) {
+                    parameters = activityInfo.outputData.map((item: any) => {
+                        const key = Object.keys(item)[0];
+                        return {
+                            direction: 'OUT',
+                            variable: {
+                                name: key,
+                            }
+                        }
+                    });
+                }
+
+            }
             const workItem = {
                 worklist: {
                     defId: data.proc_def_id,
@@ -178,8 +209,9 @@ class ProcessGPTBackend implements Backend {
                     tool: ""
                 },
                 activity: {
+                    name: data.activity_id,
                     tracingTag: data.activity_id,
-                    parameters: []
+                    parameters: parameters || []
                 }
             }
             return workItem;
@@ -314,7 +346,7 @@ class ProcessGPTBackend implements Backend {
     }
 
     async backToHere(instanceId: string, tracingTag: string) {
-        throw new Error("Method not implemented.");
+        //
     }
 
     async getProcessVariables(instanceId: string) {
@@ -353,13 +385,96 @@ class ProcessGPTBackend implements Backend {
         throw new Error("Method not implemented.");
     }
 
+    async getCompletedList() {
+        throw new Error("Method not implemented.");
+    }
+
     async getPendingList() {
         throw new Error("Method not implemented.");
     }
 
-    async putWorkItemComplate() {
-        throw new Error("Method not implemented.");
+    async putWorkItemComplete(taskId: string, inputData: any) {
+        try {
+            const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
+            const userInfo = await storage.getUserInfo();
+            
+            const newMessage = {
+                role: 'system',
+                timestamp: Date.now(),
+                content: `'${workItem.activity_id}' 를 실행합니다.`
+            }
+            await this.updateInstanceChat(workItem.proc_inst_id, newMessage);
+
+            const input = {
+                answer: JSON.stringify(inputData),
+                process_instance_id: workItem.proc_inst_id,
+                process_definition_id: workItem.proc_def_id,
+                userInfo: userInfo,
+                activity_id: workItem.activity_id,
+            };
+            const req = {
+                input: input
+            };
+            let url = '/complete/invoke';
+            await axios.post(url, req).then(async res => {
+                if (res.data) {
+                    const data = res.data;
+                    if (data.output) {
+                        const output = JSON.parse(data.output);
+
+                        // update todolist
+                        const todo = {
+                            id: taskId,
+                            proc_def_id: output.processDefinitionId,
+                            proc_inst_id: output.instanceId,
+                            end_date: Date.now(),
+                            status: 'DONE',
+                            activity_id: output.completedActivities[0].completedActivityId,
+                        }
+                        await this.putWorklist(taskId, todo);
+
+                        // update instance activity
+                        const inst = {
+                            proc_inst_id: output.instanceId,
+                            current_activity_ids: output.nextActivities,
+                        }
+                        await storage.putObject(output.processDefinitionId, inst);
+                        
+                        // update instance message
+                        const newMessage = {
+                            role: 'system',
+                            timestamp: Date.now(),
+                            content: output.description,
+                            jsonContent: data.output
+                        }
+                        await this.updateInstanceChat(output.instanceId, newMessage);
+                    }
+                }
+            })
+            .catch(error => {
+                return error;
+            });
+
+        } catch (error) {
+            return new Error('error in putWorkItemComplete');
+        }
     }
+
+    async updateInstanceChat(instanceId: string, newMessage: any) {
+        try {
+            const data = await storage.getObject(`proc_inst/${instanceId}`, { key: 'id' });
+            const messages = data.messages;
+            messages.push(newMessage);
+            const putObj = {
+                id: instanceId,
+                messages: messages
+            }
+            await storage.putObject('proc_inst', putObj);
+        } catch (e) {
+            return new Error('error in updateInstanceChat');
+        }
+    }
+
 
     async getInstanceList() {
         try {
@@ -400,17 +515,28 @@ class ProcessGPTBackend implements Backend {
     async getCompleteInstanceList() {
         try {
             const instList: any[] = [];
-            const data = await storage.list('proc_inst');
+            let list = await storage.list('proc_inst');
             const email = localStorage.getItem("email");
-            let list = data.filter((item: any) => item.user_ids.includes(email));
+            list = list.filter((item: any) => item.user_ids.includes(email));
             
             if (list && list.length > 0) {
                 for (const item of list) {
                     const defId = item.id.split(".")[0];
+                    const data = await this.getRawDefinition(defId, null);
+                    if (!data || !data.definition || !data.definition.activities) continue;
+                    const lastActId = data.definition.activities[data.definition.activities.length-1].id || '';
                     const instance = await this.getInstance(item.id);
-                    if (!instance.current_activity_ids.length) {
+                    if (instance.current_activity_ids.length == 0) {
+                        const taskId = await storage.getString('todolist', {
+                            match: { 
+                                proc_inst_id: item.id,
+                                status: 'DONE',
+                                activity_id: lastActId
+                            },
+                            column: 'id'
+                        });
                         const instItem = {
-                            instId: item.id,
+                            instId: taskId,
                             instName: item.name,
                             status: "COMPLETE",
                             startedDate: instance.start_date,

@@ -25,16 +25,15 @@
                             </v-btn>
                         </template>
                     </v-tooltip>
-                    <v-tooltip :text="$t('processDefinition.execution')">
+                    <!-- 실행 버튼  -->
+                    <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.execution')">
                         <template v-slot:activator="{ props }">
                             <v-btn icon v-bind="props" class="processExecute" @click="executeProcess">
-                                <!-- 캔버스 확대 -->
                                 <Icon icon="gridicons:play" width="32" height="32" />
                             </v-btn>
                         </template>
                     </v-tooltip>
-                    <component
-                        :is="`bpmn` + mode"
+                    <bpmnu-engine
                         ref="bpmnVue"
                         :bpmn="bpmn"
                         :options="options"
@@ -53,7 +52,7 @@
                         v-on:remove-shape="onRemoveShape"
                         v-on:change-shape="onChangeShape"
                         style="height: 100%"
-                    ></component>
+                    ></bpmnu-engine>
                     <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
                         :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
                         v-on:openDefinition="ele => openSubProcess(ele)" v-on:loading="handleLoading"
@@ -63,7 +62,7 @@
                         v-on:change-shape="onChangeShape"></vue-bpmn> -->
                 </v-card>
             </v-col>
-            <div v-if="panel" style="position: fixed; z-index: 999; right: 0; height: 100%">
+            <div v-if="panel && !isViewMode" style="position: fixed; z-index: 999; right: 0; height: 100%">
                 <v-card elevation="1" style="height: calc(100vh - 155px)">
                     <bpmn-property-panel
                         :element="element"
@@ -232,7 +231,7 @@ export default {
         editComponentKey: 0,
         bpmnModeler: null,
         processVariables: [],
-        executeDialog: false,
+        executeDialog: false
         // definitionPath: null
     }),
     computed: {
@@ -390,11 +389,16 @@ export default {
                 extensionElements.get('values').push(uengineProperties);
             }
 
+            
             uengineProperties?.variables?.forEach(function (variable) {
-                self.processVariables.push({
+                let obj ={
                     name: variable.$attrs.name,
                     type: variable.$attrs.type
-                });
+                };
+                if(variable.json) {
+                    obj.defaultValue = JSON.parse(variable.json).defaultValue;
+                }
+                self.processVariables.push(obj);
             });
         },
         executeProcess() {
@@ -532,7 +536,7 @@ export default {
             return activity;
         },
         editItem(item) {
-            this.editedIndex = this.copyProcessDefinition.data.indexOf(item);
+            this.editedIndex = this.processVariables.indexOf(item);
             this.editedItem = Object.assign({}, item);
 
             if (this.processVariablesWindow == true) {
@@ -548,8 +552,8 @@ export default {
             this.lastEditedIndex = this.editedIndex;
         },
         deleteItem(item) {
-            const index = this.copyProcessDefinition.data.indexOf(item);
-            confirm('Are you sure you want to delete this item?') && this.copyProcessDefinition.data.splice(index, 1);
+            const index = this.processVariables.indexOf(item);
+            confirm('Are you sure you want to delete this item?') && this.processVariables.splice(index, 1);
         },
         findElement(obj, key, id) {
             if (obj.hasOwnProperty(key) && obj[key] === id) {
@@ -574,7 +578,7 @@ export default {
             }
         },
         updateVariable(val) {
-            this.copyProcessDefinition.data[this.editedIndex] = val;
+            this.processVariables[this.editedIndex] = val;
             this.editDialog = false;
         },
         openProcessVariables() {

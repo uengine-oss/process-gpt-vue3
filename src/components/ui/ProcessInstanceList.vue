@@ -1,8 +1,8 @@
 <template>
     <v-list class="py-4 px-4 bg-containerBg">
         <NavGroup :item="instMenu" :key="instMenu.header" />
-        <NavItem class="leftPadding" :item="instExecution" />
         <NavItem class="leftPadding" :item="definitionMap" />
+        <NavItem class="leftPadding" :item="instExecution" />
         <NavCollapse v-if="runningInstances.children.length" class="leftPadding" :item="runningInstances" :level="0" />
         <NavCollapse v-if="completeInstances.children.length" class="leftPadding" :item="completeInstances" :level="0" />
     </v-list>
@@ -70,7 +70,7 @@ export default {
             this.runningInstances.children = result.map((item) => {
                 item = {
                     title: item.instName,
-                    to: `/todolist/${item.instId}`,
+                    to: `/instancelist/${item.instId}`,
                 }
                 return item;
             });
@@ -79,7 +79,7 @@ export default {
             this.completeInstances.children = complatedResult.map((item) => {
                 item = {
                     title: item.instName,
-                    to: `/todolist/${item.isntid}`,
+                    to: `/instancelist/${item.isntid}`,
                 }
                 return item;
             });

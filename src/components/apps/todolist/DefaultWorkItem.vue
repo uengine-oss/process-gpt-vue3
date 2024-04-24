@@ -1,7 +1,7 @@
 <template>
     <v-row class="ma-0 pa-0 task-btn">
         <v-spacer></v-spacer>
-        <div v-if="workItemStatus == 'NEW' || workItemStatus == 'DRAFT'">
+        <div>
             <v-btn @click="completeTask()" color="#0085DB" style="color: white;" rounded>완료</v-btn>
         </div>
     </v-row>
@@ -53,7 +53,7 @@ export default {
                 context: me,
                 action: async () => {
                     let parameterValues = this.inputItems.reduce((acc, item) => ({...acc, [item.name]: item.value}), {});
-                    await backend.putWorkItemComplate(me.$route.params.taskId, {"parameterValues": parameterValues})
+                    await backend.putWorkItemComplete(me.$route.params.taskId, {"parameterValues": parameterValues})
                 },
                 successMsg: '해당 업무 완료'
             })
