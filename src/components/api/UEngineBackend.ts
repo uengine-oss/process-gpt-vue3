@@ -147,8 +147,8 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
-    async putWorkItemComplate(taskId: string, workItem: any) {
-        const response = await axiosInstance.post(`/work-item/${taskId}/complate`, workItem);
+    async putWorkItemComplete(taskId: string, workItem: any) {
+        const response = await axiosInstance.post(`/work-item/${taskId}/complete`, workItem);
         return response.data;
     }
 
@@ -274,6 +274,26 @@ class UEngineBackend implements Backend {
         return mappedResult;
     }
 
+    async getCompletedList() {
+        const response = await axiosInstance.get(`/worklist/search/findCompleted`);
+        if (!response.data) return null;
+        if (!response.data._embedded) return null;
+        return response.data._embedded.worklist.map((task: any) => ({
+            defId: task.defId,
+            endpoint: task.endpoint,
+            instId: task.instId,
+            rootInstId: task.rootInstId,
+            taskId: parseInt(task._links.self.href.split('/').pop()),
+            startDate: task.startDate,
+            dueDate: task.dueDate,
+            status: task.status,
+            title: task.title,
+            tool: task.tool,
+            description: task.description || '', // description이 null일 경우 빈 문자열로 처리
+            task: task
+        }));
+    }
+
     async getPendingList() {
         const response = await axiosInstance.get(`/worklist/search/findPending`);
 
@@ -341,23 +361,32 @@ class UEngineBackend implements Backend {
 
     // Running Instance API
     async getInstanceList() {
-        return [];
-        // const response = await axiosInstance.get(`/instances/search/findFilterICanSee`);
-        // return response.data;
+        // return [];
+        const response = await axiosInstance.get(`/instances/search/findFilterICanSee?status=Running`);
+        if (!response.data) return null;
+        if (!response.data._embedded) return null;
+        return response.data._embedded.instances.map((inst: any) => ({
+            instId: inst.rootInstId,
+            taskId:'',
+            instName: inst.name,
+            status: inst.status,
+            startedDate: inst.startedDate,
+            defId: inst.defId
+        }));
     }
 
     // Complate Instance API
     async getCompleteInstanceList() {
-        return []
-        // const response = await axiosInstance.get(`/instances/search/findFilterICanSee`, { params: { status: 'Completed' }});
-        // {
-        //     instId: item.id,
-        //     instName: item.name,
-        //     status: "COMPLETE",
-        //     startedDate: instance.start_date,
-        //     defId: defId
-        // };
-        // return response.data;
+        const response = await axiosInstance.get(`/instances/search/findFilterICanSee?status=Completed`);
+        if (!response.data) return null;
+        if (!response.data._embedded) return null;
+        return response.data._embedded.instances.map((inst: any) => ({
+            instId: inst.rootInstId,
+            instName: inst.name,
+            status: inst.status,
+            startedDate: inst.startedDate,
+            defId: inst.defId
+        }));
     }
 }
 

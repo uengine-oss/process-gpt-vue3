@@ -376,7 +376,7 @@ class ProcessGPTBackend implements Backend {
         throw new Error("Method not implemented.");
     }
 
-    async putWorkItemComplate(taskId: string, workItem: any) {
+    async putWorkItemComplete(taskId: string, workItem: any) {
         try {
             let url = '/complete/invoke';
             const userInfo = await storage.getUserInfo();
@@ -402,7 +402,7 @@ class ProcessGPTBackend implements Backend {
             });
 
         } catch (error) {
-            throw new Error('error in putWorkItemComplate');
+            throw new Error('error in putWorkItemComplete');
         }
     }
 
