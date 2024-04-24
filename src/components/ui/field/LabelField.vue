@@ -1,6 +1,6 @@
 <template>
-    <div>
-        <label>{{localLabel}}</label>
+    <div class="form-label-box">
+        <label class="form-label">{{localLabel}}</label>
     </div>
 </template>
 
