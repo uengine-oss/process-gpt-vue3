@@ -227,7 +227,7 @@ export default {
       niceScrollEnabled: false,
       tabTooltipEnabled: false,
       snippetsTooltipEnabled: false,
-      containerSettingEnabled: false,
+      containerSettingEnabled: true,
       onInitSidebar: function (self) {
         const headers = {
           'Content-type': 'html; charset=UTF-8',
@@ -293,7 +293,7 @@ export default {
        * @param {*} container 선택된 영역에 해당하는 keditor-component section 선택자
        */
       componentSettingShowFunction: function (form, container, keditor) {
-        console.log("containerSettingShowFunction : ", form, container, keditor)
+        console.log("componentSettingShowFunction : ", form, container, keditor)
 
         try
         {
@@ -341,6 +341,7 @@ export default {
       },
       containerSettingShowFunction: function (form, container, keditor) {
         console.log("containerSettingShowFunction : ", form, container, keditor);
+        alert("미구현입니다.")
       },
       containerSettingHideFunction: function (form, keditor) {
         console.log("containerSettingHideFunction : ", form, keditor);

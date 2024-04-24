@@ -400,16 +400,6 @@ export default {
                         this.bpmn = this.createBpmnXml(this.processDefinition);
                         this.definitionChangeCount++;
                     }
-
-                    //// TODO: 저장 버튼 누를때만 해야지
-                    // const res = await axios.post('http://localhost:8001/process-db-schema/invoke', {
-                    //     "input": {
-                    //         "process_definition_id": this.processDefinition.processDefinitionName
-                    //     }
-                    // })
-                    // if (res) {
-                    //     console.log(res)
-                    // }
                 }
             } catch (error) {
                 console.log(jsonProcess);

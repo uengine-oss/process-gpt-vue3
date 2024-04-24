@@ -542,16 +542,35 @@ export default {
     },
     createArgumentSourceMap(connections) {
       var argumentSourceMap = {};
-      const rootNodeName = "Variables";
       connections.forEach(conn => {
         var argument = conn.to[1].replace("in ", "");
         if (this.checkGlobalType(conn.from[0])) {
-          argumentSourceMap[argument] = "" + conn.from[1].replace(rootNodeName + ".", "");
+          argumentSourceMap[argument] = "" + this.replaceFromRootName(conn.from[1]);
         } else {
           argumentSourceMap[argument] = this.createFormMappingData(conn);
         }
       });
       return argumentSourceMap;
+    },
+    replaceFromRootName(text) {
+      const rootNodeName = "Variables";
+      var reuslt = text;
+      if (text.indexOf("roles.") != -1) {
+        reuslt = text.replace("roles.", "[roles].");
+      } else {
+        reuslt = text.replace(rootNodeName + ".", "");
+      }
+      return reuslt;
+    },
+    replaceToRootName(text) {
+      const rootNodeName = "Variables";
+      var reuslt = text;
+      if (text.indexOf("[roles].") != -1) {
+        reuslt = text.replace("[roles].", "roles.");
+      } else {
+        reuslt = rootNodeName + "." + text;
+      }
+      return reuslt;
     },
     createFormMappingData(conn) {
       var block = this.blocks[conn.from[0]];
@@ -578,15 +597,14 @@ export default {
     createMappingElement(conn, block, blockData, arg) {
       var mappingElement = {};
       const blockName = conn.from[0];
-      const rootNodeName = "Variables";
-      var argument = arg.replace(rootNodeName + ".", "");
+      var argument = this.replaceFromRootName(arg);
       if (blockName == "Source") {
         mappingElement = {
           "argument": {
             "text": argument
           },
           "variable": {
-            "name": conn.from[1].replace(rootNodeName + ".", ""),
+            "name": this.replaceFromRootName(conn.from[1]),
             "askWhenInit": false,
             "isVolatile": false
           },
@@ -672,14 +690,13 @@ export default {
     },
     addAttributeFromJson(block, transformerMapping) {
       var attributeTemplate = this.blockTemplates[block.type].attributes;
-      if(attributeTemplate != undefined) {
+      if (attributeTemplate != undefined) {
         Object.keys(attributeTemplate).forEach(key => {
           block.attributes[key] = transformerMapping.transformer[key];
         });
       }
     },
     addConnectionJson(fromBlockName, toBlockName, argumentSourceMap, targetArgument = null) {
-      const rootNodeName = "Variables";
       Object.entries(argumentSourceMap).forEach(([argument, source]) => {
         let connection;
         if (typeof source === 'object' && source.transformer) {
@@ -691,7 +708,7 @@ export default {
           };
         } else {
           connection = {
-            from: ["Source", rootNodeName + "." + source],
+            from: ["Source", this.replaceToRootName(source)],
             to: [fromBlockName, "in " + argument],
           };
         }
@@ -703,7 +720,7 @@ export default {
       if (toBlockName === "Target" && targetArgument) {
         const connection = {
           from: [fromBlockName, "out"],
-          to: ["Target", rootNodeName + "." + targetArgument],
+          to: ["Target", this.replaceToRootName(targetArgument)],
         };
         if (!this.isConnectionDuplicate(connection)) {
           this.tempConnections.push(connection);
@@ -711,10 +728,9 @@ export default {
       }
     },
     addConnectionDirect(variable, targetArgument) {
-      const rootNodeName = "Variables";
       const connection = {
-        from: ["Source", rootNodeName + "." + variable],
-        to: ["Target", rootNodeName + "." + targetArgument],
+        from: ["Source", this.replaceToRootName(variable)],
+        to: ["Target", this.replaceToRootName(targetArgument)],
       };
       if (!this.isConnectionDuplicate(connection)) {
         this.tempConnections.push(connection);
@@ -771,8 +787,8 @@ export default {
           blockName,
           pos: add(pos, attribute),
         }));
-        if(result.length > 0 && this.blocks) {
-          if(this.blocks[blockName].attributes) {
+        if (result.length > 0 && this.blocks) {
+          if (this.blocks[blockName].attributes) {
             result[0].value = this.blocks[blockName].attributes[result[0].name];
           }
         }

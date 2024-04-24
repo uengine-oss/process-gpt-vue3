@@ -1,5 +1,5 @@
 <template>
-    <div v-if="inputItems" v-for="item in inputItems" class="input-group">
+    <div v-for="item in inputItems" class="input-group" style="width: 100%;">
         <v-row>
             <v-col cols="4">
                 <v-list-subheader>{{item.name}}</v-list-subheader>

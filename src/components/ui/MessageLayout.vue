@@ -20,11 +20,12 @@
                             <div v-html="message.content" @click="clickContent(message)"></div>
                             <v-btn class="mt-2" elevation="0" @click="openDescription(index)">View Detail</v-btn>
                             
+                        
                             <div v-if="message.open" style="margin-top: 20px;">
                                 <div v-if="toolFormat(message).includes('formHandler')">
                                     <DynamicForm class="message-layout-dyna" v-if="message.open" :formHTML="message.html" v-model="message.formData"></DynamicForm>
                                 </div>
-                                <div v-else-if="toolFormat(message) == 'DefaultHandler'">
+                                <div v-else-if="toolFormat(message) == 'defaultHandler'">
                                     <DefaultForm :inputItems="message.formData"></DefaultForm>
                                 </div>
                                 <div v-else>
@@ -41,14 +42,14 @@
 </template>
 
 <script>
-import DynamicForm from '@/components/designer/DynamicForm.vue';
 import BackendFactory from '@/components/api/BackendFactory';
+import DynamicForm from '@/components/designer/DynamicForm.vue';
+import DefaultForm from '@/components/designer/DefaultForm.vue';
 
 const backend = BackendFactory.createBackend()
 export default {
     props: {
         messages: Array,
-        lock: Boolean,
     },
     data() {
         return {
@@ -56,7 +57,8 @@ export default {
         };
     },
     components: {
-        DynamicForm
+        DynamicForm,
+        DefaultForm
     },
     created(){
         this.init()
@@ -85,11 +87,12 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    if(me.filterMessages[index].open) { me.filterMessages[index].open = false; return; } // only close
-                    if(me.filterMessages[index].html && me.filterMessages[index].formData) { me.filterMessages[index].open = true; return; } // only open
-
                     const workHistory = me.filterMessages[index]._item 
+                    if(me.filterMessages[index].open) { me.filterMessages[index].open = false; return; } // only close
+                   
                     if(workHistory.tool.includes('formHandler')){
+                        if(me.filterMessages[index].html && me.filterMessages[index].formData) { me.filterMessages[index].open = true; return; } // only open
+
                         // FormHandler
                         const workItem = await backend.getWorkItem(workHistory.taskId);
                         let varName = workItem.activity.variableForHtmlFormContext.name 
@@ -103,9 +106,18 @@ export default {
                         me.filterMessages[index].formData = variable ? variable.valueMap : {}
                     } else {
                         // DefaultHandler
+                        const workItem = await backend.getWorkItem(workHistory.taskId);
+                        let result = []
+
+                        for (const item of workItem.activity.parameters) {
+                            let variable = await backend.getVariable(workHistory.instId, item.variable.name);
+                            result.push({ name: item.variable.name, value: variable });
+                        }
+                        
+                        me.filterMessages[index].formData = result
                     }
                    
-
+                    // open
                     me.filterMessages[index].open = true
                 }
             })

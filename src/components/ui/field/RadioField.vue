@@ -4,7 +4,7 @@
         <v-radio-group v-model="localModelValue">
             <div v-for="(item, index) in localItems" :key="index">
                 <div v-for="(value, key) in item" :key="key">
-                    <v-radio :label="key" :value="key"></v-radio>
+                    <v-radio :label="key" :value="key" :disabled="localDisabled"></v-radio>
                 </div>
             </div>
         </v-radio-group>
@@ -22,7 +22,8 @@ export default {
 
         name: String,
         alias: String,
-        items: String
+        items: String,
+        disabled: String
     },
 
     data() {
@@ -32,11 +33,13 @@ export default {
             localName: this.name,
             localAlias: this.alias,
             localItems: this.items,
+            localDisabled: this.disabled === "true",
 
             settingInfos: [
                 commonSettingInfos["localName"],
                 commonSettingInfos["localAlias"],
-                commonSettingInfos["localItems"]
+                commonSettingInfos["localItems"],
+                commonSettingInfos["localDisabled"]
             ]
         };
     },

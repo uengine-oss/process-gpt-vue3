@@ -74,23 +74,31 @@
 <!-- Components -->
 <!-------------------------------------------------------------------------------------------------->
 <div data-type="component-object-form" data-preview="/snippets/default/preview/input-text.png" data-preview-style="width:50px;" data-keditor-title="이름: text-field\n용도: 텍스트 값을 입력받기 위해서 사용됩니다." data-categories="Vue">
-    <text-field name="name" alias="alias"></text-field>
+    <text-field name="name" alias="alias" type="text" disabled="false"></text-field>
+</div>
+
+<div data-type="component-object-form" data-preview="/snippets/default/preview/input-textarea.png" data-preview-style="width:50px;" data-keditor-title="이름: textarea-field\n용도: 여러 행의 텍스트 값을 입력받기 위해서 사용됩니다." data-categories="Vue">
+    <textarea-field name="name" alias="alias" rows="5" disabled="false"></textarea-field>
+</div>
+
+<div data-type="component-object-form" data-preview="/snippets/default/preview/input-boolean.png" data-preview-style="width:50px;" data-keditor-title="이름: boolean-field\n용도: 참/거짓 중 하나를 선택하기 위해서 사용됩니다." data-categories="Vue">
+    <boolean-field name="name" alias="alias" disabled="false"></boolean-field>
 </div>
 
 <div data-type="component-object-form" data-preview="/snippets/default/preview/input-select.png" data-preview-style="width:50px;" data-keditor-title="이름: select-field\n용도: 다수의 항목 중 하나를 선택하기 위해서 사용됩니다." data-categories="Vue">
-    <select-field name="name" alias="alias" items="[]"></select-field>
+    <select-field name="name" alias="alias" items="[]" disabled="false"></select-field>
 </div>
 
 <div data-type="component-object-form" data-preview="/snippets/default/preview/input-checkbox.png" data-preview-style="width:50px;" data-keditor-title="이름: checkbox-field\n용도: 다수의 항목 중에서 여러개를 선택하기 위해서 사용됩니다." data-categories="Vue">
-    <checkbox-field name="name" alias="alias" items="[]"></checkbox-field>
+    <checkbox-field name="name" alias="alias" items="[]" disabled="false"></checkbox-field>
 </div>
 
 <div data-type="component-object-form" data-preview="/snippets/default/preview/input-radio.png" data-preview-style="width:50px;" data-keditor-title="이름: radio-field\n용도: 다수의 항목 중 하나를 선택하기 위해서 사용됩니다." data-categories="Vue">
-    <radio-field name="name" alias="alias" items="[]"></radio-field>
+    <radio-field name="name" alias="alias" items="[]" disabled="false"></radio-field>
 </div>
 
 <div data-type="component-object-form" data-preview="/snippets/default/preview/input-file.png" data-preview-style="width:50px;" data-keditor-title="이름: file-field\n용도: 파일 업로드 기능을 제공합니다." data-categories="Vue">
-    <file-field name="name" alias="alias"></file-field>
+    <file-field name="name" alias="alias" disabled="false"></file-field>
 </div>
 
 <div data-type="component-object-form" data-preview="/snippets/default/preview/label.png" data-preview-style="width:50px;" data-keditor-title="이름: label-field\n용도: 텍스트 레이블 정보를 표시합니다." data-categories="Vue">
