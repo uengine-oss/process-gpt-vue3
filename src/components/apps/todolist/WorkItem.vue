@@ -20,7 +20,7 @@
             <v-col class="pa-0" cols="8">
                 <v-tabs v-model="selectedTab">
                     <v-tab value="progress">진행 상황/체크포인트</v-tab>
-                    <v-tab value="history">워크 히스토리</v-tab>
+                    <v-tab v-if="messages && messages.length > 0" value="history">워크 히스토리</v-tab>
                 </v-tabs>
                 <v-window v-model="selectedTab">
                     <v-window-item value="progress" class="pa-2">
@@ -34,20 +34,19 @@
                                     No BPMN found
                                 </dif>
                             </div>
-                            <v-card-title>CheckPoint ({{checkedCount}}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>
-                            <div>
-                                <div v-if="checkPoints" v-for="(checkPoint, index) in checkPoints" :key="index">
-                                    <v-checkbox v-model="checkPoint.checked" :label="checkPoint.name" color="primary" hide-details></v-checkbox>
-                                </div>
-                                <div v-else>
-                                    <v-checkbox disabled value-model="true" label="Check Point Description" color="primary" hide-details></v-checkbox>
+                            <div v-if="checkPoints">
+                                <v-card-title>CheckPoint ({{checkedCount}}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>
+                                <div>
+                                    <div v-for="(checkPoint, index) in checkPoints" :key="index">
+                                        <v-checkbox v-model="checkPoint.checked" :label="checkPoint.name" color="primary" hide-details></v-checkbox>
+                                    </div>
                                 </div>
                             </div>
                         </v-card>
                     </v-window-item>
                     <v-window-item value="history">
                         <v-card elevation="10">
-                            <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll" >
+                            <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll" >
                                 <div class="d-flex w-100" style="height: calc(100vh - 320px); overflow: auto;">
                                     <!-- <MessageLayout :messages="messages" @clickMessage="navigateToWorkItemByTaskId">
                                         <template v-slot:messageProfile="{ message }"></template>
@@ -56,9 +55,6 @@
                                         @clickMessage="navigateToWorkItemByTaskId" />
                                 </div>
                             </perfect-scrollbar>
-                            <div v-else>
-                                Work History not found.
-                            </div>
                         </v-card>
                     </v-window-item>
                     <v-window-item value="history">
