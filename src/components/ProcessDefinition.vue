@@ -578,7 +578,7 @@ export default {
             }
         },
         updateVariable(val) {
-            this.copyProcessDefinition.data[this.editedIndex] = val;
+            this.processVariables[this.editedIndex] = val;
             this.editDialog = false;
         },
         openProcessVariables() {
