@@ -6,6 +6,8 @@ import CheckboxField from '@/components/ui/field/CheckboxField.vue';
 import RadioField from '@/components/ui/field/RadioField.vue';
 import FileField from '@/components/ui/field/FileField.vue';
 import LabelField from '@/components/ui/field/LabelField.vue';
+import BooleanField from '@/components/ui/field/BooleanField.vue';
+import TextareaField from '@/components/ui/field/TextareaField.vue';
 
 export default {
   props: {
@@ -65,6 +67,10 @@ export default {
       return this.createComponentWithRef(FileField, {vueRenderUUID:this.vueRenderUUID, tagName: "file-field", ...this.parseContentToProps(this.content)});
     else if(this.content.includes("label-field"))
       return this.createComponentWithRef(LabelField, {vueRenderUUID:this.vueRenderUUID, tagName: "label-field", ...this.parseContentToProps(this.content)});
+    else if(this.content.includes("boolean-field"))
+      return this.createComponentWithRef(BooleanField, {vueRenderUUID:this.vueRenderUUID, tagName: "boolean-field", ...this.parseContentToProps(this.content)});
+    else if(this.content.includes("textarea-field"))
+      return this.createComponentWithRef(TextareaField, {vueRenderUUID:this.vueRenderUUID, tagName: "textarea-field", ...this.parseContentToProps(this.content)});
     else {
       console.error("유효하지 않은 렌더링 content:", this.content)
       return "" 

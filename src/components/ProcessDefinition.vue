@@ -1,8 +1,8 @@
 <template>
-    <div>
+    <div style="height: 100%">
         <v-row style="height: 100%" class="ma-0">
-            <v-col class="d-flex ma-0 pa-0">
-                <v-card style="border-radius: 0px !important; border: none" flat>
+            <v-col class="d-flex ma-0 pa-0" style="height: 100%">
+                <v-card style="border-radius: 0px !important; border: none; height: 100%" flat>
                     <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
                         <template v-slot:activator="{ props }">
                             <v-btn @click="openProcessVariables" icon v-bind="props" class="processVariables-btn">
@@ -25,10 +25,10 @@
                             </v-btn>
                         </template>
                     </v-tooltip>
-                    <v-tooltip :text="$t('processDefinition.execution')">
+                    <!-- 실행 버튼  -->
+                    <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.execution')">
                         <template v-slot:activator="{ props }">
                             <v-btn icon v-bind="props" class="processExecute" @click="executeProcess">
-                                <!-- 캔버스 확대 -->
                                 <Icon icon="gridicons:play" width="32" height="32" />
                             </v-btn>
                         </template>
@@ -52,6 +52,7 @@
                         v-on:change-sequence="onChangeSequence"
                         v-on:remove-shape="onRemoveShape"
                         v-on:change-shape="onChangeShape"
+                        style="height: 100%"
                     ></component>
                     <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
                         :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
@@ -62,7 +63,7 @@
                         v-on:change-shape="onChangeShape"></vue-bpmn> -->
                 </v-card>
             </v-col>
-            <div v-if="panel" style="position: fixed; z-index: 999; right: 0; height: 100%">
+            <div v-if="panel && !isViewMode" style="position: fixed; z-index: 999; right: 0; height: 100%">
                 <v-card elevation="1" style="height: calc(100vh - 155px)">
                     <bpmn-property-panel
                         :element="element"

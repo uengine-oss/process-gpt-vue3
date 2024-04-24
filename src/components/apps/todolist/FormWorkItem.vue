@@ -7,7 +7,7 @@
         </div>
         
     </v-row>
-   <div class="pa-4" style="height:calc(100vh - 255px);">
+   <div class="pa-4">
         <!-- <FormMapper></FormMapper> -->
         <DynamicForm :formHTML="html" v-model="formData"></DynamicForm>
     </div>
@@ -57,6 +57,7 @@ export default {
                     // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드 
                     let varName = me.workItem.activity.variableForHtmlFormContext.name
                     let variable = await backend.getVariable(me.workItem.worklist.instId, varName)
+                    if(!variable) variable = {}
                     variable._type = "org.uengine.contexts.HtmlFormContext"
                     variable.valueMap = this.formData
                     variable.valueMap._type = "java.util.HashMap"
@@ -75,6 +76,7 @@ export default {
                     // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드 
                     let varName = me.workItem.activity.variableForHtmlFormContext.name
                     let variable = await backend.getVariable(me.workItem.worklist.instId, varName)
+                    if(!variable) variable = {}
                     variable._type = "org.uengine.contexts.HtmlFormContext"
                     variable.valueMap = this.formData
                     variable.valueMap._type = "java.util.HashMap"

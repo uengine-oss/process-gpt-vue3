@@ -1,12 +1,12 @@
 <template>
     <div>
-        <v-text-field v-model="localModelValue" :type="localType" :disabled="localDisabled">
+        <v-textarea v-model="localModelValue" :disabled="localDisabled" :rows="rows">
             <template v-slot:label>
                 <span style="color:black;">
                     {{localAlias ?? localName}}
                 </span>
             </template>
-        </v-text-field>
+        </v-textarea>
     </div>
 </template>
 
@@ -14,7 +14,7 @@
 import { commonSettingInfos } from "./CommonSettingInfos.vue"
 
 export default {
-    name: "TextField",
+    name: "TextareaField",
     
     props: {
         modelValue: String,
@@ -23,7 +23,7 @@ export default {
 
         name: String,
         alias: String,
-        type: String,
+        rows: String,
         disabled: String
     },
 
@@ -33,7 +33,7 @@ export default {
 
             localName: this.name,
             localAlias: this.alias,
-            localType: this.type ?? "text",
+            localRows: this.rows,
             localDisabled: this.disabled === "true",
 
             settingInfos: [
@@ -42,12 +42,15 @@ export default {
                 commonSettingInfos["localDisabled"],
 
                 {
-                    dataToUse: "localType",
-                    htmlAttribute: "type",
-                    settingLabel: "Type",
-                    settingType: "select",
-                    settingValue: ["text", "number", "email", "url", "date", "datetime-local", "month", "week", "time", "password", "tel", "color"]
-                }
+                    dataToUse: "localRows",
+                    htmlAttribute: "rows",
+                    settingLabel: "Rows",
+                    settingType: "number",
+                    validCheck: (value) => {
+                        if(!value || Number(value) <= 0) return "Rows 속성에 0 이상의 값을 입력해 주세요."
+                        return null
+                    }
+                },
             ]
         };
     },

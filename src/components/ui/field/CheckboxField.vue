@@ -1,12 +1,13 @@
 <template>
     <div>
-        <label>{{ localAlias ?? localName }}</label>
+        <label class="form">{{ localAlias ?? localName }}</label>
         <div v-for="(item, index) in localItems" :key="index">
             <div v-for="(value, key) in item" :key="key">
                 <v-checkbox
                     v-model="localModelValue"
                     :label="key"
                     :value="key"
+                    :disabled="localDisabled"
                 ></v-checkbox>
             </div>
         </div>
@@ -24,7 +25,8 @@ export default {
 
         name: String,
         alias: String,
-        items: String
+        items: String,
+        disabled: String
     },
 
     data() {
@@ -34,11 +36,13 @@ export default {
             localName: this.name,
             localAlias: this.alias,
             localItems: this.items,
+            localDisabled: this.disabled === "true",
 
             settingInfos: [
                 commonSettingInfos["localName"],
                 commonSettingInfos["localAlias"],
-                commonSettingInfos["localItems"]
+                commonSettingInfos["localItems"],
+                commonSettingInfos["localDisabled"]
             ]
         };
     },
