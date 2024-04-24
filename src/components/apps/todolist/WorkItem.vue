@@ -44,22 +44,11 @@
                             </div>
                         </v-card>
                     </v-window-item>
-                    <v-window-item value="history">
-                        <v-card elevation="10">
+                    <v-window-item value="history" class="pa-2">
+                        <v-card elevation="10" class="pa-4">
                             <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                                <div class="d-flex w-100" style="height: calc(100vh - 320px); overflow: auto;">
+                                <div class="d-flex w-100" style="height: calc(100vh - 300px); overflow: auto;">
                                     <component :is="'work-history-'+mode" :messages="messages" @clickMessage="navigateToWorkItemByTaskId" />
-                                </div>
-                            </perfect-scrollbar>
-                        </v-card>
-                    </v-window-item>
-                    <v-window-item value="history">
-                        <v-card elevation="10">
-                            <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                                <div class="d-flex w-100" style="height: calc(100vh - 260px); overflow: auto;">
-                                    <MessageLayout :messages="messages" @clickMessage="navigateToWorkItemByTaskId">
-                                        <template v-slot:messageProfile="{ message }"></template>
-                                    </MessageLayout>
                                 </div>
                             </perfect-scrollbar>
                         </v-card>
@@ -164,10 +153,32 @@ export default {
 }
 </script>
 <style>
-.work-itme-current-component .v-checkbox {
-    height:35px !important;
+.work-itme-current-component .v-checkbox .v-input__details {
+    display: none;
 }
-.work-itme-current-component .form-radio-label {
-    margin-top:15px;
+.work-itme-current-component .v-checkbox {
+    height:40px;
+}
+.work-itme-current-component .v-checkbox label {
+    opacity: 0.6 !important;
+}
+.work-itme-current-component .form-checkbox-label {
+    font-size:20px;
+    font-weight:500;
+}
+.work-itme-current-component .form-radio-box {
+    margin-top:25px;
+}
+.work-itme-current-component .form-radio-box .v-radio-group {
+    margin-top:8px;
+}
+.work-itme-current-component .form-radio-box .form-radio-label {
+    font-size:20px;
+    font-weight:500;
+}
+
+.work-itme-current-component .form-label {
+    font-size:20px;
+    font-weight:500;
 }
 </style>

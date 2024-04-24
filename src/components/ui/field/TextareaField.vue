@@ -39,8 +39,6 @@ export default {
             settingInfos: [
                 commonSettingInfos["localName"],
                 commonSettingInfos["localAlias"],
-                commonSettingInfos["localDisabled"],
-
                 {
                     dataToUse: "localRows",
                     htmlAttribute: "rows",
@@ -51,6 +49,7 @@ export default {
                         return null
                     }
                 },
+                commonSettingInfos["localDisabled"]
             ]
         };
     },

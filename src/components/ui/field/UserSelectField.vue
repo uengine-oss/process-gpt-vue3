@@ -1,23 +1,25 @@
 <template>
-    <div class="form-checkbox-box">
-        <label class="form-checkbox-label">{{ localAlias ?? localName }}</label>
-        <div v-for="(item, index) in localItems" :key="index">
-            <div v-for="(value, key) in item" :key="key">
-                <v-checkbox
-                    v-model="localModelValue"
-                    :label="key"
-                    :value="key"
-                    :disabled="localDisabled"
-                ></v-checkbox>
-            </div>
-        </div>
+    <div>
+        <v-autocomplete v-model="localModelValue" :items="usersToSelect" :label="localAlias ?? localName" :disabled="localDisabled"
+                        item-title="username" :item-value="id" chips closable-chips multiple small-chips>
+                        <template v-slot:chip="{ props, item }">
+                            <v-chip v-bind="props" :text="item.raw.username ?? item.raw.email"></v-chip>
+                        </template>
+
+                        <template v-slot:item="{ props, item }">
+                            <v-list-item v-bind="props" :title="item.raw.username ?? item.raw.email" :subtitle="item.raw.email"></v-list-item>
+                        </template>
+        </v-autocomplete>
     </div>
 </template>
 
 <script>
 import { commonSettingInfos } from "./CommonSettingInfos.vue"
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
 
 export default {
+    name: "UserSelectField",
+
     props: {
         modelValue: Array,
         vueRenderUUID: String,
@@ -25,7 +27,6 @@ export default {
 
         name: String,
         alias: String,
-        items: String,
         disabled: String
     },
 
@@ -35,23 +36,21 @@ export default {
 
             localName: this.name,
             localAlias: this.alias,
-            localItems: this.items,
             localDisabled: this.disabled === "true",
 
             settingInfos: [
                 commonSettingInfos["localName"],
                 commonSettingInfos["localAlias"],
-                commonSettingInfos["localItems"],
                 commonSettingInfos["localDisabled"]
-            ]
+            ],
+
+            usersToSelect: []
         };
     },
 
     watch: {
         modelValue: {
             handler() {
-                this.loadLocalItems()
-                
                 if(JSON.stringify(this.localModelValue) === JSON.stringify(this.modelValue)) return
                 this.localModelValue = (this.modelValue && this.modelValue.length > 0) ? this.modelValue : []
             },
@@ -69,20 +68,8 @@ export default {
         }
     },
 
-    methods: {
-        // 문자열로 형태로 items의 값이 전달되었을 경우, 리스트 형태로 변환해서 반영시키기 위해서
-        loadLocalItems() {
-            try {
-                if(typeof(this.items) === "string")
-                    this.localItems = JSON.parse(this.items.replace(/'/g, '"'))
-                else
-                    this.localItems = this.items
-            } catch (e) {
-                console.log("### items 파싱 에러 ###")
-                console.log(this.items.replace(/'/g, '"'))
-                console.error(e);
-            }
-        }
+    async created() {
+        this.usersToSelect = (await StorageBaseFactory.getStorage().list(`users`))
     }
 };
 </script>

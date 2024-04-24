@@ -33,8 +33,7 @@
                             </v-btn>
                         </template>
                     </v-tooltip>
-                    <component
-                        :is="`bpmn` + mode"
+                    <bpmnu-engine
                         ref="bpmnVue"
                         :bpmn="bpmn"
                         :options="options"
@@ -53,7 +52,7 @@
                         v-on:remove-shape="onRemoveShape"
                         v-on:change-shape="onChangeShape"
                         style="height: 100%"
-                    ></component>
+                    ></bpmnu-engine>
                     <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
                         :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
                         v-on:openDefinition="ele => openSubProcess(ele)" v-on:loading="handleLoading"
@@ -232,7 +231,7 @@ export default {
         editComponentKey: 0,
         bpmnModeler: null,
         processVariables: [],
-        executeDialog: false,
+        executeDialog: false
         // definitionPath: null
     }),
     computed: {
@@ -532,7 +531,7 @@ export default {
             return activity;
         },
         editItem(item) {
-            this.editedIndex = this.copyProcessDefinition.data.indexOf(item);
+            this.editedIndex = this.processVariables.indexOf(item);
             this.editedItem = Object.assign({}, item);
 
             if (this.processVariablesWindow == true) {
@@ -548,8 +547,8 @@ export default {
             this.lastEditedIndex = this.editedIndex;
         },
         deleteItem(item) {
-            const index = this.copyProcessDefinition.data.indexOf(item);
-            confirm('Are you sure you want to delete this item?') && this.copyProcessDefinition.data.splice(index, 1);
+            const index = this.processVariables.indexOf(item);
+            confirm('Are you sure you want to delete this item?') && this.processVariables.splice(index, 1);
         },
         findElement(obj, key, id) {
             if (obj.hasOwnProperty(key) && obj[key] === id) {

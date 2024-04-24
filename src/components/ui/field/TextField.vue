@@ -39,15 +39,14 @@ export default {
             settingInfos: [
                 commonSettingInfos["localName"],
                 commonSettingInfos["localAlias"],
-                commonSettingInfos["localDisabled"],
-
                 {
                     dataToUse: "localType",
                     htmlAttribute: "type",
                     settingLabel: "Type",
                     settingType: "select",
                     settingValue: ["text", "number", "email", "url", "date", "datetime-local", "month", "week", "time", "password", "tel", "color"]
-                }
+                },
+                commonSettingInfos["localDisabled"]
             ]
         };
     },
