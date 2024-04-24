@@ -9,29 +9,35 @@
         <v-row class="ma-0 pa-0">
              <!-- Left -->
             <v-col class="pa-0" cols="4">
-                <div v-if="currentComponent">
+                <div v-if="currentComponent"
+                    class="work-itme-current-component"
+                    style="overflow:auto; height: calc(100vh - 215px);"
+                >
                     <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus"></component>
                 </div>
             </v-col>
-             <!-- Right -->
+            <!-- Right -->
             <v-col class="pa-0" cols="8">
                 <v-tabs v-model="selectedTab">
                     <v-tab value="progress">진행 상황/체크포인트</v-tab>
                     <v-tab value="history">워크 히스토리</v-tab>
                 </v-tabs>
                 <v-window v-model="selectedTab">
-                        <v-window-item value="progress">
-                            <v-card-title>프로세스 진행상태</v-card-title>
+                    <v-window-item value="progress">
+                        <v-card-title>프로세스 진행상태</v-card-title>
+                        <div class="pa-4">
                             <div class="pa-0" style="overflow:auto; height: calc(100vh - 620px);">
                                 <div v-if="bpmn" style="height: 100%;">
-                                    <process-definition class="work-item-definition" :currentActivities="currentActivities" :bpmn="bpmn" :key="updatedDefKey" :isViewMode="true"></process-definition>
+                                    <process-definition style="height: 100%;" class="work-item-definition" :currentActivities="currentActivities" :bpmn="bpmn" :key="updatedDefKey" :isViewMode="true"></process-definition>
                                 </div>
                                 <dif v-else>
                                     No BPMN found
                                 </dif>
                             </div>
+                        </div>
+                        <div>
                             <v-card-title>CheckPoint ({{checkedCount}}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>
-                            <div style="width: 99%; height:70%; max-height:70%; overflow-y: scroll;">
+                            <div style="overflow:auto;">
                                 <div v-if="checkPoints" v-for="(checkPoint, index) in checkPoints" :key="index">
                                     <v-checkbox v-model="checkPoint.checked" :label="checkPoint.name" color="primary" hide-details></v-checkbox>
                                 </div>
@@ -39,17 +45,18 @@
                                     <v-checkbox disabled value-model="true" label="Check Point Description" color="primary" hide-details></v-checkbox>
                                 </div>
                             </div>
-                        </v-window-item>
-                        <v-window-item value="history">
-                            <v-card elevation="10">
-                                <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                                    <div class="d-flex w-100" style="height: calc(100vh - 320px); overflow: auto;">
-                                        <MessageLayout :messages="messages" @clickMessage="navigateToWorkItemByTaskId">
-                                            <template v-slot:messageProfile="{ message }"></template>
-                                        </MessageLayout>
-                                    </div>
-                                </perfect-scrollbar>
-                            </v-card>
+                        </div>
+                    </v-window-item>
+                    <v-window-item value="history">
+                        <v-card elevation="10">
+                            <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
+                                <div class="d-flex w-100" style="height: calc(100vh - 260px); overflow: auto;">
+                                    <MessageLayout :messages="messages" @clickMessage="navigateToWorkItemByTaskId">
+                                        <template v-slot:messageProfile="{ message }"></template>
+                                    </MessageLayout>
+                                </div>
+                            </perfect-scrollbar>
+                        </v-card>
                     </v-window-item>
                 </v-window>
             </v-col>
@@ -145,14 +152,10 @@ export default {
 }
 </script>
 <style>
-    /* .work-item-definition svg {
-        transform: scale(1);
-        transform-origin: top left;
-    } */
-    .process-card-resized {
-        width: auto; /* 너비를 자동으로 조정 */
-        height: auto; /* 높이를 자동으로 조정 */
-        min-height: 100%; /* 최소 높이를 100%로 설정하여 내용물을 모두 포함하도록 함 */
-        overflow: visible; /* 확대된 내용이 보이도록 overflow 설정 변경 */
-    }
+.work-itme-current-component .v-checkbox {
+    height:35px !important;
+}
+.work-itme-current-component .form-radio-label {
+    margin-top:15px;
+}
 </style>
