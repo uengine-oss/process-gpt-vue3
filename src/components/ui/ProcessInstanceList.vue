@@ -70,7 +70,7 @@ export default {
             this.runningInstances.children = result.map((item) => {
                 item = {
                     title: item.instName,
-                    to: `/todolist/${item.instId}`,
+                    to: `/instancelist/${item.instId}`,
                 }
                 return item;
             });
@@ -79,7 +79,7 @@ export default {
             this.completeInstances.children = complatedResult.map((item) => {
                 item = {
                     title: item.instName,
-                    to: `/todolist/${item.instId}`,
+                    to: `/instancelist/${item.isntid}`,
                 }
                 return item;
             });

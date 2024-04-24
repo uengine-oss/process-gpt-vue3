@@ -22,6 +22,7 @@
                     :currentChatRoom="currentChatRoom"
                     :type="path"
                     @requestDraftAgent="requestDraftAgent"
+                    @requestFile="requestFile"
                     @beforeReply="beforeReply"
                     @sendMessage="beforeSendMessage"
                     @startProcess="startProcess"
