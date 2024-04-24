@@ -34,7 +34,7 @@ export default {
         },
         definitionMap: {
             title: "processDefinitionMap.title",
-            icon: 'carbon:flow-connection',
+            icon: 'ri:layout-grid-2-line',
             BgColor: 'primary',
             to: "/definition-map",
         },
@@ -62,7 +62,7 @@ export default {
             this.runningInstances.children = result.map((item) => {
                 item = {
                     title: item.instName,
-                    to: `/todolist/${item.instId}`,
+                    to: `/instancelist/${item.instId}`,
                 }
                 return item;
             });
@@ -71,7 +71,7 @@ export default {
             this.completeInstances.children = complatedResult.map((item) => {
                 item = {
                     title: item.instName,
-                    to: `/todolist/${item.instId}`,
+                    to: `/instancelist/${item.isntid}`,
                 }
                 return item;
             });
