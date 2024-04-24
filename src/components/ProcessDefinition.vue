@@ -33,8 +33,7 @@
                             </v-btn>
                         </template>
                     </v-tooltip>
-                    <component
-                        :is="`bpmn` + mode"
+                    <bpmnu-engine
                         ref="bpmnVue"
                         :bpmn="bpmn"
                         :options="options"
@@ -53,7 +52,7 @@
                         v-on:remove-shape="onRemoveShape"
                         v-on:change-shape="onChangeShape"
                         style="height: 100%"
-                    ></component>
+                    ></bpmnu-engine>
                     <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
                         :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
                         v-on:openDefinition="ele => openSubProcess(ele)" v-on:loading="handleLoading"
@@ -232,7 +231,7 @@ export default {
         editComponentKey: 0,
         bpmnModeler: null,
         processVariables: [],
-        executeDialog: false,
+        executeDialog: false
         // definitionPath: null
     }),
     computed: {
