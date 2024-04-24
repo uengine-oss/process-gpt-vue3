@@ -49,15 +49,15 @@ export default {
         //     this.$emit('close');
         //     return;
         // }
-        
+
         // Extension이 없는 경우 무조건 빈 Property 생성
-        if(this.element.extensionElements) {
-            this.element.extensionElements.values = []
+        if (!this.element.extensionElements) {
+            this.element.extensionElements.values = [];
             this.element.extensionElements.values[0] = {
                 json: {}
-            }
+            };
         }
-            
+
         this.uengineProperties = JSON.parse(this.element.extensionElements.values[0].json);
         if (this.element.lanes?.length > 0) {
             this.role = this.element.lanes[0];

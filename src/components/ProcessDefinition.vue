@@ -389,11 +389,16 @@ export default {
                 extensionElements.get('values').push(uengineProperties);
             }
 
+            
             uengineProperties?.variables?.forEach(function (variable) {
-                self.processVariables.push({
+                let obj ={
                     name: variable.$attrs.name,
                     type: variable.$attrs.type
-                });
+                };
+                if(variable.json) {
+                    obj.defaultValue = JSON.parse(variable.json).defaultValue;
+                }
+                self.processVariables.push(obj);
             });
         },
         executeProcess() {
@@ -573,7 +578,7 @@ export default {
             }
         },
         updateVariable(val) {
-            this.copyProcessDefinition.data[this.editedIndex] = val;
+            this.processVariables[this.editedIndex] = val;
             this.editDialog = false;
         },
         openProcessVariables() {

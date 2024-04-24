@@ -1,8 +1,8 @@
 <template>
     <v-list class="py-4 px-4 bg-containerBg">
         <NavGroup :item="instMenu" :key="instMenu.header" />
-        <NavItem class="leftPadding" :item="instExecution" />
         <NavItem class="leftPadding" :item="definitionMap" />
+        <NavItem class="leftPadding" :item="instExecution" />
         <NavCollapse v-if="runningInstances.children.length" class="leftPadding" :item="runningInstances" :level="0" />
         <NavCollapse v-if="completeInstances.children.length" class="leftPadding" :item="completeInstances" :level="0" />
     </v-list>

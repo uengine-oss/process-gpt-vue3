@@ -29,6 +29,7 @@ import { Icon } from '@iconify/vue';
 
 // css
 import '@/assets/css/globalStyle.css';
+import '@/assets/css/mashUpStyle.css';
 
 // 전역 관리 ts
 import globalState from '@/stores/globalState';
