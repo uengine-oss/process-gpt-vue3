@@ -584,7 +584,7 @@ export default {
     align-items: flex-start;
 }
 
-.form-mapper .right-treeview .node-wrapper {
+.form-mapper .tree .right-treeview {
     transform: scaleX(-1);
 }
 
@@ -615,9 +615,9 @@ export default {
 .form-mapper .right-treeview button {
     margin-left: auto;
 }
-.form-mapper .tree-level {
+/* .form-mapper .tree-level {
     padding-left: 0 !important;
-}
+} */
 .form-mapper .left-treeview {
     width: 200px;
 }
