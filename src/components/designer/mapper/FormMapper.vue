@@ -591,6 +591,9 @@ export default {
 .form-mapper .right-treeview .input-wrapper {
     transform: scaleX(-1);
 }
+.form-mapper .tree-node .tree-level{
+    padding-left: 8px !important;
+}
 
 .form-mapper .form-menu {
     max-height: 300px;
