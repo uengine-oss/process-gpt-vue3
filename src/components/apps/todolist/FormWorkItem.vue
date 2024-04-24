@@ -4,6 +4,21 @@
         <div v-if="workItemStatus == 'NEW' || workItemStatus == 'DRAFT'">
             <v-btn @click="saveTask()" color="#0085DB" style="color: white;" rounded >중간 저장</v-btn>
             <v-btn @click="completeTask()" variant="tex" rounded>제출 완료</v-btn>
+            <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
+                <template v-slot:activator="{ props }">
+                    <v-btn icon v-bind="props" class="processVariables-zoom" @click="$globalState.methods.toggleZoom()">
+                        <!-- 캔버스 확대 -->
+                        <Icon
+                            v-if="!$globalState.state.isZoomed"
+                            icon="material-symbols:zoom-out-map-rounded"
+                            width="32"
+                            height="32"
+                        />
+                        <!-- 캔버스 축소 -->
+                        <Icon v-else icon="material-symbols:zoom-in-map-rounded" width="32" height="32" />
+                    </v-btn>
+                </template>
+            </v-tooltip>
         </div>
         
     </v-row>
