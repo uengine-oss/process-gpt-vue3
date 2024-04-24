@@ -14,38 +14,27 @@
       </v-btn>
     </v-card-item>
 
-    <!-- 'text' 유형의 값들을 입력받기 위해서 -->
     <v-card-text>
-      <v-text-field v-for="(settingInfo, index) in componentRef.settingInfos.filter(info => info.settingType === 'text')" :key="index"
-                    :ref="settingInfo.dataToUse" :label="settingInfo.settingLabel" v-model.trim="componentProps[settingInfo.dataToUse]"
-                    @keyup.enter="save" persistent-placeholder></v-text-field>
-    </v-card-text>
+      <template v-for="(settingInfo, index) in componentRef.settingInfos" :key="index">  
+        <v-text-field v-if="settingInfo.settingType === 'text'" :ref="settingInfo.dataToUse" 
+                      :label="settingInfo.settingLabel" v-model.trim="componentProps[settingInfo.dataToUse]"
+                      @keyup.enter="save" persistent-placeholder></v-text-field>
+        
+        <v-text-field v-else-if="settingInfo.settingType === 'number'" type="number" :ref="settingInfo.dataToUse" 
+                      :label="settingInfo.settingLabel" v-model.trim="componentProps[settingInfo.dataToUse]"
+                      @keyup.enter="save" persistent-placeholder></v-text-field>
 
-    <!-- 'number' 유형의 값들을 입력받기 위해서 -->
-    <v-card-text>
-      <v-text-field v-for="(settingInfo, index) in componentRef.settingInfos.filter(info => info.settingType === 'number')" type="number" :key="index"
-                    :ref="settingInfo.dataToUse" :label="settingInfo.settingLabel" v-model.trim="componentProps[settingInfo.dataToUse]"
-                    @keyup.enter="save" persistent-placeholder></v-text-field>
-    </v-card-text>
+        <v-select v-else-if="settingInfo.settingType === 'select'" :ref="settingInfo.dataToUse" 
+                  :label="settingInfo.settingLabel" v-model="componentProps[settingInfo.dataToUse]"
+                  :items="settingInfo.settingValue" @keyup.enter="save" persistent-placeholder></v-select>
 
-    <!-- 'select' 유형의 값들을 입력받기 위해서 -->
-    <v-card-text>
-      <v-select v-for="(settingInfo, index) in componentRef.settingInfos.filter(info => info.settingType === 'select')" :key="index"
-                :ref="settingInfo.dataToUse" :label="settingInfo.settingLabel" v-model="componentProps[settingInfo.dataToUse]"
-                :items="settingInfo.settingValue" @keyup.enter="save" persistent-placeholder></v-select>
-    </v-card-text>
-
-    <!-- 'items' 유형의 값들을 입력받기 위해서 -->
-    <v-card-text>
-      <FormDefinitionPanelItemTable v-for="(settingInfo, index) in componentRef.settingInfos.filter(info => info.settingType === 'items')" :key="index"
-                                    v-model="componentProps[settingInfo.dataToUse]"></FormDefinitionPanelItemTable>
-    </v-card-text>
-
-    <!-- 'checkbox' 유형의 값들을 입력받기 위해서 -->
-    <v-card-text>
-      <v-checkbox v-for="(settingInfo, index) in componentRef.settingInfos.filter(info => info.settingType === 'checkbox')" :key="index"
-                  :ref="settingInfo.dataToUse" :label="settingInfo.settingLabel" v-model="componentProps[settingInfo.dataToUse]"
-                  @keyup.enter="save"></v-checkbox>
+        <FormDefinitionPanelItemTable v-else-if="settingInfo.settingType === 'items'"
+                                      v-model="componentProps[settingInfo.dataToUse]"></FormDefinitionPanelItemTable>
+        
+        <v-checkbox v-else-if="settingInfo.settingType === 'checkbox'" :ref="settingInfo.dataToUse" 
+                    :label="settingInfo.settingLabel" v-model="componentProps[settingInfo.dataToUse]"
+                    @keyup.enter="save"></v-checkbox>
+      </template>
     </v-card-text>
 
     <v-btn @click="save">

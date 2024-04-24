@@ -54,6 +54,12 @@ const formDesignGeneratorPromptSnipptsData = {
         },
 
         {
+            tag: `<user-select-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' disabled='<true|false>'></user-select-field>`,
+            purpose: "유저들을 선택하기 위해서",
+            limit: ""
+        },
+
+        {
             tag: `<file-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' disabled='<true|false>'></file-field>`,
             purpose: `파일을 입력받기 위해서`,
             limit: ""
