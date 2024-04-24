@@ -532,7 +532,7 @@ export default {
             return activity;
         },
         editItem(item) {
-            this.editedIndex = this.copyProcessDefinition.data.indexOf(item);
+            this.editedIndex = this.processVariables.indexOf(item);
             this.editedItem = Object.assign({}, item);
 
             if (this.processVariablesWindow == true) {
