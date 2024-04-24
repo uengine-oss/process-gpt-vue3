@@ -53,7 +53,7 @@ export default {
                 context: me,
                 action: async () => {
                     let parameterValues = this.inputItems.reduce((acc, item) => ({...acc, [item.name]: item.value}), {});
-                    await backend.putWorkItemComplate(me.$route.params.taskId, {"parameterValues": parameterValues})
+                    await backend.putWorkItemComplete(me.$route.params.taskId, {"parameterValues": parameterValues})
                 },
                 successMsg: '해당 업무 완료'
             })

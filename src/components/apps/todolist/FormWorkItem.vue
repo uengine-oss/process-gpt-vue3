@@ -97,7 +97,7 @@ export default {
                     variable.valueMap._type = "java.util.HashMap"
                     await backend.setVariable(me.workItem.worklist.instId, varName, variable)
                     ///////////////////////////////////
-                    await backend.putWorkItemComplate(me.$route.params.taskId, {"parameterValues": {}})
+                    await backend.putWorkItemComplete(me.$route.params.taskId, {"parameterValues": {}})
                     me.$router.push('/todolist')
                 },
                 successMsg: '해당 업무 완료'
