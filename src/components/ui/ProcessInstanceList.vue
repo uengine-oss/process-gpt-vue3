@@ -36,7 +36,7 @@ export default {
         },
         definitionMap: {
             title: "processDefinitionMap.title",
-            icon: 'carbon:flow-connection',
+            icon: 'ri:layout-grid-2-line',
             BgColor: 'primary',
             to: "/definition-map",
             disable: false,
