@@ -785,10 +785,16 @@ export default {
 <style lang="scss">
 .chat-file-up-load .v-input__control {
     display: none;
+    margin-top:-20px;
 }
+
 
 .chat-file-up-load-display .v-input__control {
     display: block;
+}
+
+.chat-file-up-load-display .v-input__prepend {
+    display: none;
 }
 
 .message-input-box .v-field__input {
