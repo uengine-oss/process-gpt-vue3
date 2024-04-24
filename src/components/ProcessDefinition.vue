@@ -548,8 +548,8 @@ export default {
             this.lastEditedIndex = this.editedIndex;
         },
         deleteItem(item) {
-            const index = this.copyProcessDefinition.data.indexOf(item);
-            confirm('Are you sure you want to delete this item?') && this.copyProcessDefinition.data.splice(index, 1);
+            const index = this.processVariables.indexOf(item);
+            confirm('Are you sure you want to delete this item?') && this.processVariables.splice(index, 1);
         },
         findElement(obj, key, id) {
             if (obj.hasOwnProperty(key) && obj[key] === id) {
