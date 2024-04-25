@@ -28,7 +28,7 @@ export default {
         },
         closeProcessDialog() {
             this.processDialogStatus = false;
-        }
+        },
     },
 }
 </script>

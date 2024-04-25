@@ -1,6 +1,7 @@
 <template>
     <div class="mb-3" @mouseover="hover = true" @mouseleave="hover = false">
-        <v-card class="align-center bg-lightsecondary pa-2 pr-3 pl-3"
+        <v-card @click="viewProcessDetail(parent)"
+            class="align-center bg-lightsecondary pa-2 pr-3 pl-3"
             elevation="10"
             style="border-radius: 10px !important; margin-bottom:5px;"
         >
@@ -141,7 +142,10 @@ export default {
             this.parent.major_proc_list = this.parent.major_proc_list.filter(item => item.id != this.value.id);
         },
         viewProcess(process) {
-            this.$router.push(`/definition-map/sub/${process.id}`)
+            this.$emit('view', process);
+        },
+        viewProcessDetail(process) {
+            this.$router.push(`/definition-map/mega/${process.label}`)
         },
     },
 }
