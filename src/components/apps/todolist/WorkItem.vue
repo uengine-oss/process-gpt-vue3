@@ -3,10 +3,12 @@
         :style="$globalState.state.isZoomed ? 'height:100vh;' : 'height:calc(100vh - 150px);'"
      >
         <v-card-title>
-            <v-row class="ma-0 pa-0">
-                <h3>{{workItem.activity.name}}</h3>
-                <v-chip size="x-small" variant="outlined" style="margin:2px 0px 0px 5px !important; display: flex; align-items: center;">{{workItemStatus}}</v-chip>
-                <v-spacer></v-spacer>
+            <v-row class="ma-0 pa-0 mt-1 ml-3" style="line-height:100%;">
+                <div style="font-size:20px; font-weight:500;">{{workItem.activity.name}}</div>
+                <v-chip size="small" variant="outlined"
+                    density="comfortable"
+                    style="margin-left:5px;"
+                >{{workItemStatus}}</v-chip>
             </v-row>
         </v-card-title>
         <v-row class="ma-0 pa-2 mt-2">
