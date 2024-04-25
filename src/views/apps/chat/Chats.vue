@@ -252,7 +252,7 @@ export default {
                     let contexts = await this.queryFromVectorDB(newMessage.text);
                     this.generator.setContexts(contexts);
                 }
-                
+                newMessage.callType = 'chats'
                 this.sendMessage(newMessage);
             }
         },

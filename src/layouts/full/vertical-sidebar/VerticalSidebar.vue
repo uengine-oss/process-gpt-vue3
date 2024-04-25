@@ -177,21 +177,36 @@ export default {
                     children: []
                 };
                 list.forEach((item) => {
-                    console.log(item.name != 'instances');
                     if (item.directory) {
-                        var obj = {
-                            title: item.name,
-                            // to: `/definitions/${item.definition.processDefinitionId}`,
-                            directory: true
-                        };
-                        menu.children.push(obj);
-                    }
-                    if (item && item.definition) {
-                        var obj = {
-                            title: item.definition.processDefinitionName,
-                            to: `/definitions/${item.definition.processDefinitionId}`
-                        };
-                        menu.children.push(obj);
+                        if (item.name != 'instances') {
+                            var obj = {
+                                title: item.name,
+                                // to: `/definitions/${item.definition.processDefinitionId}`,
+                                directory: true
+                            };
+                            menu.children.push(obj);
+                        }
+                    } else if (item) {
+                        var obj = {};
+                        if (item.path.includes('.bpmn')) {
+                            obj = {
+                                title: item.name,
+                                to: `/definitions/${item.path.split('.')[0]}`
+                            };
+                            menu.children.push(obj);
+                        } else if (item.path.includes('.form')) {
+                            obj = {
+                                title: item.name,
+                                to: `/ui-definitions/${item.path.split('.')[0]}`
+                            };
+                            menu.children.push(obj);
+                        } else if (item.definition) {
+                            obj = {
+                                title: item.definition.processDefinitionName,
+                                to: `/definitions/${item.definition.processDefinitionId}`
+                            };
+                            menu.children.push(obj);
+                        }
                     }
                 });
                 this.definitionList = menu;
