@@ -21,9 +21,15 @@
                     <v-tab value="preview">미리보기</v-tab>
                 </v-tabs>
                 <v-window v-model="currentTabName" class="fill-height">
-                    <v-window-item value="edit" class="fill-height mt-15" style="overflow-y: auto;">
-                        <mashup v-if="isShowMashup" ref="mashup" v-model="kEditorInput" :key="mashupKey" 
-                            @onSaveFormDefinition="saveFormDefinition" :storedFormDefData="storedFormDefData"/>
+                    <v-window-item value="edit" class="fill-height mt-15" style="overflow-y: auto">
+                        <mashup
+                            v-if="isShowMashup"
+                            ref="mashup"
+                            v-model="kEditorInput"
+                            :key="mashupKey"
+                            @onSaveFormDefinition="saveFormDefinition"
+                            :storedFormDefData="storedFormDefData"
+                        />
                         <card v-else class="d-flex align-center justify-center fill-height">
                             <v-progress-circular color="primary" indeterminate></v-progress-circular>
                         </card>
@@ -127,7 +133,7 @@ export default {
             isDevMode: window.localStorage.getItem('isDevMode') === 'true',
             previewFormValues: ''
         },
-        loadFormId: ""
+        loadFormId: ''
     }),
     async created() {
         this.generator = new ChatGenerator(this, {
@@ -144,10 +150,10 @@ export default {
             deep: true,
             handler(newVal, oldVal) {
                 if (newVal.path !== oldVal.path) {
-                    const pathMatchParams = this.$route.params.pathMatch
-                    if(!pathMatchParams) return
+                    const pathMatchParams = this.$route.params.pathMatch;
+                    if (!pathMatchParams) return;
 
-                    this.loadFormId = pathMatchParams[pathMatchParams.length - 1]
+                    this.loadFormId = pathMatchParams[pathMatchParams.length - 1];
                     if (this.loadFormId && this.loadFormId != 'chat') this.loadData();
                     else this.isShowMashup = true;
                 } else this.isShowMashup = true;
@@ -160,7 +166,7 @@ export default {
                 // 미리보기에 KEditor에서 편집한 HTML을 로드시키기 위해서
                 else {
                     $("div[id^='keditor-content-area-']").css('display', 'none');
-                    this.applyToPreviewTab()
+                    this.applyToPreviewTab();
                 }
             }
         }
@@ -232,10 +238,15 @@ export default {
          */
         async saveFormDefinition({ id, html }) {
             const isNewSave = this.loadFormId !== id;
+
             if (isNewSave) {
-                const isFormAlreadyExist = await this.backend.getRawDefinition(id, { type: 'form' });
-                if (isFormAlreadyExist) {
-                    if (!confirm(`'${id}'는 이미 존재하는 폼 디자인 ID 입니다! 그래도 저장하시겠습니까?`)) return;
+                try {
+                    const isFormAlreadyExist = await this.backend.getRawDefinition(id, { type: 'form' });
+                    if (isFormAlreadyExist) {
+                        if (!confirm(`'${id}'는 이미 존재하는 폼 디자인 ID 입니다! 그래도 저장하시겠습니까?`)) return;
+                    }
+                } catch (error) {
+
                 }
             }
 
@@ -261,19 +272,23 @@ export default {
          * @param {*} path
          */
         async loadData(path) {
-            const pathMatchParams = this.$route.params.pathMatch
-            this.loadFormId = pathMatchParams[pathMatchParams.length - 1]
+            const pathMatchParams = this.$route.params.pathMatch;
+            this.loadFormId = pathMatchParams.join('/');
+            if (this.loadFormId.startsWith('/')) {
+                this.loadFormId = this.loadFormId.substring(1);
+            } 
+
 
             if (this.loadFormId && this.loadFormId != 'chat') {
                 this.storedFormDefData = (await this.backend.getRawDefinition(this.loadFormId, { type: 'form' })) ?? {};
-                if (!this.storedFormDefData.id) {
+                if (!this.storedFormDefData) {
                     alert(`'${this.loadFormId}' ID 를 가지는 폼 디자인 정보가 없습니다! 새 폼 만들기 화면으로 이동됩니다.`);
                     this.$router.push(`/ui-definitions/chat`);
                     this.isShowMashup = true;
                     return;
                 }
 
-                const kEditorContentHTML = this.dynamicFormHTMLToKeditorContentHTML(this.storedFormDefData.html);
+                const kEditorContentHTML = this.dynamicFormHTMLToKeditorContentHTML(this.storedFormDefData);
                 const kEditorContent = this.loadHTMLToKEditorContent(kEditorContentHTML);
                 this.applyNewSrcToMashup(kEditorContent);
 
@@ -287,7 +302,7 @@ export default {
          */
         beforeSendMessage(newMessage) {
             this.prevFormOutput = this.$refs.mashup.getKEditorContentHtml();
-            newMessage.mentionedUsers = null
+            newMessage.mentionedUsers = null;
             this.generator.sendMessageWithPrevFormOutput(newMessage);
         },
 
@@ -336,9 +351,8 @@ export default {
          */
         afterModelStopped(response) {
             // AI 생성을 멈춘 경우, 아무것도 반영시키기 않기 위해서
-            console.log(response)
+            console.log(response);
         },
-
 
         /**
          * 마지막 최종 결과 Html이 표시된 JSON을 추출하기 위해서
@@ -531,10 +545,10 @@ export default {
             this.kEditorInput = kEditorInput;
             this.mashupKey += 1;
 
-            if(this.currentTabName === 'preview')
+            if (this.currentTabName === 'preview')
                 this.$nextTick(() => {
                     this.applyToPreviewTab();
-                })
+                });
         },
 
         /**
@@ -567,7 +581,6 @@ export default {
             console.log(modifiedPrevFormOutput);
             return modifiedPrevFormOutput;
         },
-
 
         /**
          * 편집에서 변경된 사항들을 Preview쪽으로 전달시키기 위해서
@@ -602,7 +615,7 @@ export default {
 </script>
 
 <style scoped>
-    .full-width {
-        width: 100%;
-    }
+.full-width {
+    width: 100%;
+}
 </style>

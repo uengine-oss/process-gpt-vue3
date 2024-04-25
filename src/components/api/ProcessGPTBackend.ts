@@ -87,15 +87,25 @@ class ProcessGPTBackend implements Backend {
                 // 폼 정보를 불러오기 위해서
                 if(options.type === "form") {
                     const data = await storage.getString(`form_def/${defId}`, { key: 'id' });
+                    if(!data) {
+                        throw new Error('no such form definition');
+                    }
                     return data;
                 } else if(options.type === "bpmn") {
                     const data = await storage.getString(`proc_def/${defId}`, { key: 'id', column: 'bpmn' });
+                    if(!data) {
+                        throw new Error('no such bpmn definition');
+                    }
                     return data;
                 }
             } else {
                 const data = await storage.getObject(`proc_def/${defId}`, { key: 'id' });
+                if(!data) {
+                    throw new Error('no such bpmn definition');
+                }
                 return data;
             }
+
         } catch (error) {
             throw new Error('error in getRawDefinition');
         }
