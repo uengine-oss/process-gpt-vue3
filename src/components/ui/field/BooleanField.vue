@@ -1,7 +1,7 @@
 <template>
     <div>
         <v-checkbox 
-            :label="localAlias ?? localName" 
+            :label="(localAlias && localAlias.length > 0) ? localAlias : localName" 
             v-model="localModelValue"
             :disabled="localDisabled"
         ></v-checkbox>

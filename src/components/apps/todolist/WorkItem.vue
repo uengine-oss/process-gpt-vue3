@@ -1,32 +1,38 @@
 <template>
-     <v-card elevation="10" v-if="workItem" style="height:calc(100vh - 155px)" :key="updatedKey">
+     <v-card elevation="10" v-if="workItem" :key="updatedKey"
+        :style="$globalState.state.isZoomed ? 'height:100vh;' : 'height:calc(100vh - 150px);'"
+     >
         <v-card-title>
             <v-row class="ma-0 pa-0">
                 <h3>{{workItem.activity.name}}</h3>
                 <v-chip size="x-small" variant="outlined" style="margin:2px 0px 0px 5px !important; display: flex; align-items: center;">{{workItemStatus}}</v-chip>
+                <v-spacer></v-spacer>
             </v-row>
         </v-card-title>
-        <v-row class="ma-0 pa-0">
+        <v-row class="ma-0 pa-2 mt-2">
              <!-- Left -->
             <v-col class="pa-0" cols="4">
                 <div v-if="currentComponent"
                     class="work-itme-current-component"
-                    style="overflow:auto; height: calc(100vh - 215px);"
+                    style="overflow:auto;"
+                    :style="$globalState.state.isZoomed ? 'height: calc(100vh - 50px);' : 'height: calc(100vh - 215px);'"
                 >
                     <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus"></component>
                 </div>
             </v-col>
             <!-- Right -->
             <v-col class="pa-0" cols="8">
-                <v-tabs v-model="selectedTab">
-                    <v-tab value="progress">진행 상황/체크포인트</v-tab>
-                    <v-tab v-if="messages && messages.length > 0" value="history">워크 히스토리</v-tab>
-                </v-tabs>
-                <v-window v-model="selectedTab">
-                    <v-window-item value="progress" class="pa-2">
-                        <v-card elevation="10" class="pa-4">
-                            <v-card-title>프로세스 진행상태</v-card-title>
-                            <div class="pa-0" style="overflow:auto; height: calc(100vh - 620px);">
+                <v-alert class="pa-0" color="#2196F3" variant="outlined">
+                    <v-tabs v-model="selectedTab">
+                        <v-tab value="progress">진행 상황/체크포인트</v-tab>
+                        <v-tab v-if="messages && messages.length > 0" value="history">워크 히스토리</v-tab>
+                    </v-tabs>
+                    <v-window v-model="selectedTab">
+                        <v-window-item value="progress" class="pa-2">
+                            <v-card-title style="color:black;">프로세스 진행상태</v-card-title>
+                            <div class="pa-0 pl-3" style="overflow:auto;"
+                                :style="dynamicHeight"
+                            >
                                 <div v-if="bpmn" style="height: 100%;">
                                     <process-definition class="work-item-definition" :currentActivities="currentActivities" :bpmn="bpmn" :key="updatedDefKey" :isViewMode="true"></process-definition>
                                 </div>
@@ -42,18 +48,18 @@
                                     </div>
                                 </div>
                             </div>
-                        </v-card>
-                    </v-window-item>
-                    <v-window-item value="history" class="pa-2">
-                        <v-card elevation="10" class="pa-4">
-                            <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                                <div class="d-flex w-100" style="height: calc(100vh - 300px); overflow: auto;">
-                                    <component :is="'work-history-'+mode" :messages="messages" @clickMessage="navigateToWorkItemByTaskId" />
-                                </div>
-                            </perfect-scrollbar>
-                        </v-card>
-                    </v-window-item>
-                </v-window>
+                        </v-window-item>
+                        <v-window-item value="history" class="pa-2">
+                            <v-card elevation="10" class="pa-4">
+                                <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
+                                    <div class="d-flex w-100" style="height: calc(100vh - 315px); overflow: auto;">
+                                        <component :is="'work-history-'+mode" :messages="messages" @clickMessage="navigateToWorkItemByTaskId" />
+                                    </div>
+                                </perfect-scrollbar>
+                            </v-card>
+                        </v-window-item>
+                    </v-window>
+                </v-alert>
             </v-col>
         </v-row>
     </v-card>
@@ -90,9 +96,27 @@ export default {
         updatedDefKey: 0,
         loading: false,
         selectedTab: 'progress',
+        dynamicHeight: '',
     }),
     created() {
         this.init();
+    },
+    watch : {
+        '$globalState.state.isZoomed': {
+            handler(newVal) {
+                // isZoomed 값이 변경될 때 실행될 로직
+                if (newVal) {
+                    if(this.checkPoints) {
+                        this.dynamicHeight = 'height: calc(100vh - 620px);';
+                    } else {
+                        this.dynamicHeight = 'height: calc(100vh - 185px)';
+                    }
+                } else {
+                    this.dynamicHeight = !this.checkPoints ? 'height: calc(100vh - 325px);' : 'height: calc(100vh - 650px);';
+                }
+            },
+            immediate: true // 컴포넌트 생성 시에도 핸들러를 실행
+        }
     },
     computed:{
         mode(){
@@ -105,6 +129,7 @@ export default {
         messages(){
             if(!this.workListByInstId) return []
             return this.workListByInstId.map(workItem => ({
+                profile: 'https://avatars0.githubusercontent.com/u/9064066?v=4&s=460',
                 roleName: workItem.task.roleName,
                 _item: workItem,
                 content: workItem.title,

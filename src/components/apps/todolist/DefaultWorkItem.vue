@@ -43,6 +43,7 @@ export default {
     methods: {
        async init(){
             var me = this
+            if(!me.workItem.activity.parameters) me.workItem.activity.parameters = []
             me.inputItems = me.workItem.activity.parameters
                     .filter(item => item.direction === "OUT")
                     .map(item => ({ name: item.variable.name, value: null }));

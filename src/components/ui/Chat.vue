@@ -89,7 +89,7 @@
                 <!-- <v-btn v-if="type == 'chats' && filteredMessages.length > 0" style="position: absolute; left: 45%"
                     @click="getMoreChat()">get more chat</v-btn> -->
 
-                <div class="d-flex w-100" style="height: calc(100vh - 340px);">
+                <div class="d-flex w-100" style="height: calc(100vh - 307px);">
                     <v-col>
                         <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
                             <template v-slot:title>
@@ -435,6 +435,15 @@ export default {
             mentionedUsers: [], // Mention된 유저들의 정보를 저장할 배열
             file: null,
         };
+    },
+    mounted() {
+        var me = this
+        document.addEventListener('click', (event) => {
+            if (event.target.matches('.request-file-link')) {
+                event.preventDefault();
+                me.$emit("requestFile", event.target.getAttribute('data-filename'));
+            }
+        });
     },
     computed: {
         filteredUserList() {

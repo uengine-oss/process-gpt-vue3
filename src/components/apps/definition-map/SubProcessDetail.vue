@@ -2,19 +2,19 @@
     <v-card elevation="10" style="height:calc(100vh - 155px);">
         <div class="pt-5 pl-6 pr-6 d-flex align-center">
             <div v-if="selectedProc.mega" class="d-flex align-center cursor-pointer"
-                @click="$try($router.push('/definition-map'))">
+                @click="goProcess()">
                 <h6 class="text-h6 font-weight-semibold">{{ selectedProc.mega.label }}</h6>
                 <v-icon>mdi-chevron-right</v-icon>
             </div>
             <div v-if="selectedProc.major" class="d-flex align-center cursor-pointer"
-                @click="$try($router.push(`/definition-map/mega/${selectedProc.mega.id}`))">
+                @click="goProcess(selectedProc.mega.label, 'mega')">
                 <h6 class="text-h6 font-weight-semibold">{{ selectedProc.major.label }}</h6>
                 <div>
                     <v-icon class="cursor-pointer">mdi-chevron-right</v-icon>
                     <v-menu activator="parent">
                         <v-list v-if="selectedProc.major.sub_proc_list" density="compact" class="cursor-pointer">
                             <v-list-item v-for="sub in selectedProc.major.sub_proc_list" :key="sub.id"
-                                @click="goProcess(sub)">
+                                @click="goProcess(sub.id, 'sub')">
                                 <v-list-item-title>
                                     {{ sub.label }}
                                 </v-list-item-title>
@@ -49,15 +49,17 @@
         </div>
 
         <v-card-text style="width:100%; height:95%; padding:10px;">
-            <ProcessDefinition v-if="bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
+            <ProcessDefinition v-if="onLoad && bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
                 :processDefinition="processDefinition.definition" :isViewMode="isViewMode"
-                v-on:openSubProcess="ele => openSubProcess(ele)"></ProcessDefinition>
-            <div v-else-if="!bpmn" style="height: 90%; text-align: center">
+                v-on:openSubProcess="ele => openSubProcess(ele)">
+            </ProcessDefinition>
+            <div v-else-if="onLoad && !bpmn" style="height: 90%; text-align: center">
                 <h6 class="text-h6">정의된 프로세스 모델이 없습니다.</h6>
-                <v-btn color="primary" variant="flat" class="mt-4" @click="editProcessModel">
+                <v-btn v-if="enableEdit" color="primary" variant="flat" class="mt-4" @click="editProcessModel">
                     프로세스 편집
                 </v-btn>
             </div>
+            <div v-else></div>
         </v-card-text>
         <v-dialog v-model="executeDialog">
             <ProcessExecuteDialog :definitionId="processDefinition.id" @close="executeDialog = false"></ProcessExecuteDialog>
@@ -68,15 +70,19 @@
 <script>
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import ProcessExecuteDialog from '@/components/apps/definition-map/ProcessExecuteDialog.vue';
+import BaseProcess from './BaseProcess.vue'
+
+import BackendFactory from '@/components/api/BackendFactory';
 
 export default {
     components: {
         ProcessDefinition,
         ProcessExecuteDialog
     },
+    mixins: [BaseProcess],
     props: {
         value: Object,
-        storage: Object,
+        enableEdit: Boolean
     },
     data: () => ({
         onLoad: false,
@@ -92,10 +98,17 @@ export default {
         isViewMode: true,
         executeDialog: false
     }),
+    watch: {
+        '$route.params': {
+            handler(newVal, oldVal) {
+                if(newVal.id !== oldVal.id) {
+                    this.init(newVal);
+                }
+            },
+        },
+    },
     created() {
-        let me = this;
-
-        this.viewProcess(this.$route.params);
+        this.init(this.$route.params);
     },
     methods: {
         goHistory(idx) {
@@ -116,7 +129,9 @@ export default {
         async openSubProcess(e) {
             let me = this;
             if (e.extensionElements?.values[0]?.definition) {
-                const defInfo = await this.storage.getObject(`proc_def/${e.extensionElements.values[0].definition}`, { key: "name" });
+                const backend = BackendFactory.createBackend();
+                const defId = e.extensionElements.values[0].definition;
+                const defInfo = await backend.getRawDefinition(defId, null);
                 if (defInfo) {
                     let obj = { processName: e.extensionElements.values[0].definition, xml: defInfo.bpmn }
                     me.subProcessBreadCrumb.push(obj)
@@ -125,33 +140,41 @@ export default {
                 }
             }
         },
-        goProcess(obj) {
-            this.$router.push(`/definition-map/sub/${obj.id}`);
-            this.viewProcess(obj);
-        },
-        async viewProcess(obj) {
-            const def_id = obj.id;
-
-            this.value.mega_proc_list.forEach(mega => {
-                mega.major_proc_list.forEach(major => {
-                    major.sub_proc_list.forEach(sub => {
-                        if (sub.id == def_id) {
-                            obj = sub;
-                            this.selectedProc.mega = mega;
-                            this.selectedProc.major = major;
-                        }
+        async init(obj) {
+            var me = this;
+            me.$try({
+               action: async () => {
+                    me.onLoad = false;
+                    const defId = obj.id;
+                    const backend = BackendFactory.createBackend();
+                    let processMap;
+                    if (me.value && me.value.mega_proc_list && me.value.mega_proc_list.length > 0) {
+                        processMap = me.value;
+                    } else {
+                        processMap = await backend.getProcessDefinitionMap();
+                    }
+                    processMap.mega_proc_list.forEach(mega => {
+                        mega.major_proc_list.forEach(major => {
+                            major.sub_proc_list.forEach(sub => {
+                                if (sub.id == defId) {
+                                    obj = sub;
+                                    this.selectedProc.mega = mega;
+                                    this.selectedProc.major = major;
+                                }
+                            })
+                        })
                     })
-                })
-            })
-
-            const defInfo = await this.storage.getObject(`proc_def/${def_id}`, { key: "id" });
-            if (defInfo && !defInfo.code) {
-                this.processDefinition = defInfo;
-                this.bpmn = defInfo.bpmn
-            } else {
-                this.processDefinition = obj;
-                this.bpmn = null;
-            }
+                    const defInfo = await backend.getRawDefinition(defId, null);
+                    if (defInfo && !defInfo.code) {
+                        this.processDefinition = defInfo;
+                        this.bpmn = defInfo.bpmn
+                    } else {
+                        this.processDefinition = obj;
+                        this.bpmn = null;
+                    }
+                    me.onLoad = true;
+                }
+            });
         },
         editProcessModel() {
             if (this.processDefinition && this.processDefinition.id) {
@@ -163,7 +186,7 @@ export default {
         },
         executeProcess() {
             this.executeDialog = true
-        }
+        },
     },
 }
 </script>
