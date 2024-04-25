@@ -1,11 +1,11 @@
 <template>
-    <div>
+    <div class="w-100">
         <slot name="contents">
-            <div v-for="(message, index) in filterMessages" :key="index">
+            <div v-for="(message, index) in filterMessages" :key="index" class="w-100">
                 <slot name="messageProfile">
                     <v-row class="ma-0 pa-0" style="margin-bottom:10px !important;">
                         <v-avatar class="pr-2" size="40">
-                            <img v-if="!message.profile" src="@/assets/images/chat/chat-icon.png" alt="pro" width="50">
+                            <img v-if="!message.profile" :src="defaultProfile" alt="pro" width="50">
                             <img v-else :src="message.profile" alt="pro" width="50">
                         </v-avatar>
                         <div v-if="message.timeStamp" style="font-size:12px; padding-top:20px;">
@@ -16,7 +16,7 @@
                 </slot>
                 <slot name="messageContent">
                     <div class="w-100 pb-5">
-                        <v-sheet class="bg-lightsecondary rounded-md px-3 py-2" style="width: 50vw;">
+                        <v-sheet class="bg-lightsecondary rounded-md px-3 py-2 w-100">
                             <v-row class="pa-0 ma-0">
                                 <div v-html="message.content" @click="clickContent(message)"></div>
                                 <v-spacer></v-spacer>
@@ -64,6 +64,7 @@ export default {
     data() {
         return {
             filterMessages: [],
+            defaultProfile: '@/assets/images/profile/1.jpg'
         };
     },
     components: {

@@ -93,7 +93,7 @@
             <v-spacer></v-spacer>
             <v-tooltip text="닫기">
                 <template v-slot:activator="{ props }">
-                    <v-btn @click="closeDialog()"
+                    <v-btn @click.stop="closeDialog()"
                         icon v-bind="props"
                         density="compact"
                         size="small"
@@ -193,7 +193,6 @@ export default {
     },
     created() {
         this.init();
-        
     },
     methods: {
         async init() {

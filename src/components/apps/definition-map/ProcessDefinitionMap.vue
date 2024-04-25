@@ -21,7 +21,7 @@
                         <span>{{ $t('processDefinitionMap.unlock') }}</span>
                     </v-tooltip>
 
-                    <v-tooltip location="bottom" v-if="lock && isAdmin && userInfo.email && userInfo.email == editUser">
+                    <v-tooltip location="bottom" v-if="lock && isAdmin && userName == editUser">
                         <template v-slot:activator="{ props }">
                             <v-btn 
                                 v-bind="props"
@@ -35,7 +35,7 @@
                         <span>{{ $t('processDefinitionMap.lock') }}</span>
                     </v-tooltip>
 
-                    <v-tooltip location="bottom" v-if="lock && isAdmin && userInfo.email && userInfo.email != editUser">
+                    <v-tooltip location="bottom" v-if="lock && isAdmin && userName != editUser">
                         <template v-slot:activator="{ props }">
                             <v-btn 
                                 v-bind="props"
@@ -49,7 +49,7 @@
                         <span>{{ $t('processDefinitionMap.lock') }}</span>
                     </v-tooltip>
 
-                    <span v-if="lock && userInfo.email && userInfo.email != editUser" class="text-body-1 pt-1 mr-1">
+                    <span v-if="lock && userName && userName != editUser" class="text-body-1 pt-1 mr-1">
                         {{ editUser }} 님이 수정 중 입니다.
                     </span>
 
@@ -58,7 +58,7 @@
                     </v-btn>
 
                     <!-- 프로세스 정의 체계도 캔버스 확대 축소 버튼 및 아이콘 -->
-                    <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
+                    <v-tooltip v-if="componentName != 'SubProcessDetail'" :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" class="ml-3 processVariables-zoom"
                                 @click="$globalState.methods.toggleZoom()" icon variant="text" :size="24">
@@ -70,28 +70,19 @@
                             </v-btn>
                         </template>
                     </v-tooltip>
-
-                    <!-- <v-btn v-if="componentName != 'DefinitionMapList'"
-                        icon variant="text" 
-                        class="ml-3"
-                        size="24"
-                        @click="goProcessMap">
-                        <v-icon size="24">mdi-arrow-left</v-icon>
-                    </v-btn> -->
                 </div>
             </div>
 
             <!-- route path 별 컴포넌트 호출 -->
             <div id="processMap">
                 <div v-if="componentName == 'ViewProcessDetails'">
-                    <ViewProcessDetails class="pa-5" :parent="value" :storage="storage" :enableEdit="enableEdit" />
+                    <ViewProcessDetails class="pa-5" :value="value" :enableEdit="enableEdit" />
                 </div>
                 <div v-else-if="componentName == 'SubProcessDetail'">
-                    <SubProcessDetail :value="value" :storage="storage" @capture="capturePng" />
+                    <SubProcessDetail :value="value" @capture="capturePng" :enableEdit="enableEdit" />
                 </div>
                 <div v-else>
-                    <DefinitionMapList :value="value" :storage="storage" :enableEdit="enableEdit"
-                        :enableExecution="enableExecution" :userInfo="userInfo" />
+                    <DefinitionMapList :value="value" :enableEdit="enableEdit" />
                 </div>
             </div>
         </v-card>
@@ -101,37 +92,15 @@
                     {{ alertMessage }}
                 </v-card-text>
                 <v-card-actions class="justify-center">
-                    <v-btn v-if="alertType =='checkout'" 
-                        color="primary" 
-                        class="cp-check-out"
-                        variant="flat" 
-                        @click="checkOut"
-                    >확인</v-btn>
-                    <v-btn v-else-if="alertType =='checkin' && userInfo.email && userInfo.email == editUser " 
-                        color="primary"
-                        class="cp-check-in" 
-                        variant="flat" 
-                        @click="checkIn"
-                    >확인</v-btn>
-                    <v-btn v-else-if="alertType =='checkin' && userInfo.email && userInfo.email != editUser " 
-                        color="primary"
-                        class="cp-check-in" 
-                        variant="flat" 
-                        @click="checkOut"
-                    >체크인</v-btn>
-                   
-                    <v-btn 
-                    v-if="userInfo.email && userInfo.email == editUser"
-                    color="error" 
-                    variant="flat" 
-                    @click="alertDialog=false"
-                    >닫기</v-btn>
-
-                    <v-btn v-else 
-                    color="error" 
-                    variant="flat" 
-                    @click="alertDialog=false"
-                    >취소</v-btn>
+                    <v-btn v-if="alertType =='checkout'" color="primary" class="cp-check-out" variant="flat"
+                        @click="checkOut">확인</v-btn>
+                    <v-btn v-else-if="alertType =='checkin' && userName && userName == editUser " color="primary"
+                        class="cp-check-in" variant="flat" @click="checkIn">확인</v-btn>
+                    <v-btn v-else-if="alertType =='checkin' && userName && userName != editUser " color="primary"
+                        class="cp-check-in" variant="flat" @click="checkOut">체크인</v-btn>
+                    <v-btn v-if="userName && userName == editUser" color="error" variant="flat"
+                        @click="alertDialog=false">닫기</v-btn>
+                    <v-btn v-else color="error" variant="flat" @click="alertDialog=false">취소</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -169,8 +138,7 @@ export default {
         },
         type: 'map',
         enableEdit: false,
-        enableExecution: true,
-        userInfo: {},
+        userName: null,
         lock: null,
         editUser: null,
         alertType: '',
@@ -191,9 +159,13 @@ export default {
         var me = this;
         me.$try({
             action: async () => {
+                me.userName = localStorage.getItem("userName");
+                const isAdmin = localStorage.getItem("isAdmin");
+                if (isAdmin == "true") {
+                    me.isAdmin = true;
+                }
                 await me.getProcessMap();
                 if (me.useLock) {
-                    this.storage = StorageBaseFactory.getStorage();
                     await me.checkedLock();
                 }
             },
@@ -201,18 +173,14 @@ export default {
     },
     methods: {
         async checkedLock() {
-            this.userInfo = await this.storage.getUserInfo();
-            const isAdmin = localStorage.getItem("isAdmin");
-            this.enableExecution = true;
-            if (isAdmin == "true") {
-                this.isAdmin = true;
+            if (this.isAdmin) {
                 this.enableEdit = false;
-
+                this.storage = StorageBaseFactory.getStorage();
                 const lockObj = await this.storage.getObject('lock/process-map', { key: 'id' });
                 if (lockObj && lockObj.id && lockObj.user_id) {
                     this.lock = true;
                     this.editUser = lockObj.user_id;
-                    if (this.userInfo.email == this.editUser) {
+                    if (this.userName == this.editUser) {
                         this.enableEdit = true;
                     }
                 } else {
@@ -274,7 +242,7 @@ export default {
             this.enableEdit = true;
             this.closeAlertDialog();
             if (this.useLock) {
-                this.editUser = this.userInfo.email;
+                this.editUser = this.userName;
                 let lockObj = {
                     id: 'process-map',
                     user_id: this.editUser,
@@ -284,10 +252,9 @@ export default {
         },
         openAlertDialog(type) {
             this.alertType = type;
-            const isAdmin = localStorage.getItem("isAdmin");
-            if (isAdmin == "true") {
+            if (this.isAdmin) {
                 if (type == 'checkin') {
-                    if (this.editUser == this.userInfo.email) {
+                    if (this.editUser == this.userName) {
                         this.alertDialog = true;
                         this.alertMessage = '수정된 내용을 저장 및 체크인 하시겠습니까?';
                     } else {
