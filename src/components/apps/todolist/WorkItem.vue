@@ -52,7 +52,7 @@
                         <v-window-item value="history" class="pa-2">
                             <v-card elevation="10" class="pa-4">
                                 <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                                    <div class="d-flex w-100" style="height: calc(100vh - 300px); overflow: auto;">
+                                    <div class="d-flex w-100" style="height: calc(100vh - 315px); overflow: auto;">
                                         <component :is="'work-history-'+mode" :messages="messages" @clickMessage="navigateToWorkItemByTaskId" />
                                     </div>
                                 </perfect-scrollbar>
