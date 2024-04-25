@@ -2,11 +2,11 @@
     <div>
         <div class="included" style="margin-bottom: 22px">
             <div style="margin-bottom: 8px">Select Role Type</div>
-            <v-radio-group v-model="copyUengineProperties.roleResolutionContext._type" row style="margin-top: 0px !important">
+            <v-radio-group v-model="type" row style="margin-top: 0px !important">
                 <v-radio
                     id="roleResolution"
                     name="roleResolution"
-                    value="null"
+                    value="None"
                     label="None"
                     style="margin-right: 8px !important; font-size: 15px"
                 ></v-radio>
@@ -25,15 +25,14 @@
                     style="margin-right: 8px !important; font-size: 15px"
                 ></v-radio>
             </v-radio-group>
-
             <v-text-field
-                v-if="copyUengineProperties.roleResolutionContext._type == 'org.uengine.five.overriding.IAMRoleResolutionContext'"
+                v-if="type == 'org.uengine.five.overriding.IAMRoleResolutionContext'"
                 v-model="copyUengineProperties.roleResolutionContext.scope"
                 label="Scope Name"
             ></v-text-field>
 
             <v-text-field
-                v-if="copyUengineProperties.roleResolutionContext._type == 'org.uengine.kernel.DirectRoleResolutionContext'"
+                v-if="type == 'org.uengine.kernel.DirectRoleResolutionContext'"
                 v-model="copyUengineProperties.roleResolutionContext.endpoint"
                 label="User ID"
             ></v-text-field>
@@ -84,7 +83,8 @@ export default {
             editParam: false,
             paramKey: '',
             paramValue: '',
-            definitionCnt: 0
+            definitionCnt: 0,
+            type: 'None'
         };
     },
     async mounted() {
@@ -93,7 +93,6 @@ export default {
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
         let def = this.bpmnModeler.getDefinitions();
-        if (!this.copyUengineProperties.variableBindings) this.copyUengineProperties.variableBindings = [];
         const processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
         if (!processElement) {
             console.error('bpmn:Process element not found');
@@ -116,14 +115,21 @@ export default {
     },
     computed: {},
     watch: {
-        'copyUengineProperties.roleResolutionContext._type'(after, before) {
+        type(after, before) {
             if (after == 'org.uengine.five.overriding.IAMRoleResolutionContext') {
-                delete this.copyUengineProperties.roleResolutionContext.endpoint;
+                this.copyUengineProperties.roleResolutionContext = {
+                    _type: 'org.uengine.five.overriding.IAMRoleResolutionContext',
+                    scope: ''
+                };
             } else if (after == 'org.uengine.kernel.DirectRoleResolutionContext') {
-                delete this.copyUengineProperties.roleResolutionContext.scope;
-            } else if (after == 'null') {
-                delete this.copyUengineProperties.roleResolutionContext.scope;
-                delete this.copyUengineProperties.roleResolutionContext.endpoint;
+                this.copyUengineProperties.roleResolutionContext = {
+                    _type: 'org.uengine.kernel.DirectRoleResolutionContext',
+                    endpoint: ''
+                };
+            } else if (after == 'None') {
+                if (this.copyUengineProperties.roleResolutionContext) {
+                    delete this.copyUengineProperties.roleResolutionContext;
+                }
             }
         }
     },
@@ -174,24 +180,6 @@ export default {
             if (!obj.hasOwnProperty(key)) {
                 obj[key] = defaultValue;
             }
-        },
-        deleteParameter(item) {
-            const index = this.copyUengineProperties.variableBindings.findIndex((element) => element.key === item.key);
-            if (index > -1) {
-                this.copyUengineProperties.variableBindings.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties);
-            }
-        },
-        deleteCheckPoint(item) {
-            const index = this.copyUengineProperties.checkpoints.findIndex((element) => element.checkpoint === item.checkpoint);
-            if (index > -1) {
-                this.copyUengineProperties.checkpoints.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties);
-            }
-        },
-        addParameter() {
-            this.copyUengineProperties.variableBindings.push({ key: this.paramKey, value: this.paramValue });
-            this.$emit('update:uEngineProperties', this.copyUengineProperties);
         },
         async getData(path, options) {
             // let value;

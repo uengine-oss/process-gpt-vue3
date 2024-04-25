@@ -1,7 +1,7 @@
 <template>
-    <div>
+    <div class="w-100">
         <slot name="contents">
-            <div v-for="(message, index) in filterMessages" :key="index">
+            <div v-for="(message, index) in filterMessages" :key="index" class="w-100">
                 <slot name="messageProfile">
                     <v-row class="ma-0 pa-0" style="margin-bottom:10px !important;">
                         <v-avatar class="pr-2" size="40">
@@ -16,7 +16,7 @@
                 </slot>
                 <slot name="messageContent">
                     <div class="w-100 pb-5">
-                        <v-sheet class="bg-lightsecondary rounded-md px-3 py-2" style="width: 50vw;">
+                        <v-sheet class="bg-lightsecondary rounded-md px-3 py-2 w-100">
                             <v-row class="pa-0 ma-0">
                                 <div v-html="message.content" @click="clickContent(message)"></div>
                                 <v-spacer></v-spacer>

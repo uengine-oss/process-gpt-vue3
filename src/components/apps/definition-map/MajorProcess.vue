@@ -102,9 +102,15 @@ export default {
         subProcessDialogStauts: false
     }),
     methods: {
-        addProcess(newProcess) {
+        async addProcess(newProcess) {
+            let newProcessId = ''
+            if(!newProcess.id) {
+                newProcessId = newProcess.label
+            } else {
+                newProcessId = newProcess.id
+            }
             var newSubProc = {
-                id: newProcess.id,
+                id: newProcessId,
                 label: newProcess.name ? newProcess.name : newProcess.label,
             };
             this.value.sub_proc_list.push(newSubProc);

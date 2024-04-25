@@ -23,6 +23,7 @@
                 :uengine-properties="uengineProperties"
                 :name="name"
                 :roles="roles"
+                :element="element"
                 ref="panelComponent"
                 @update:name="(val) => (name = val)"
                 :definition="definition"

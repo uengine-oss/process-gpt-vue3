@@ -51,10 +51,11 @@
         <v-card-text style="width:100%; height:95%; padding:10px;">
             <ProcessDefinition v-if="onLoad && bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
                 :processDefinition="processDefinition.definition" :isViewMode="isViewMode"
-                v-on:openSubProcess="ele => openSubProcess(ele)"></ProcessDefinition>
-            <div v-else-if="onLoad &&!bpmn" style="height: 90%; text-align: center">
+                v-on:openSubProcess="ele => openSubProcess(ele)">
+            </ProcessDefinition>
+            <div v-else-if="onLoad && !bpmn" style="height: 90%; text-align: center">
                 <h6 class="text-h6">정의된 프로세스 모델이 없습니다.</h6>
-                <v-btn color="primary" variant="flat" class="mt-4" @click="editProcessModel">
+                <v-btn v-if="enableEdit" color="primary" variant="flat" class="mt-4" @click="editProcessModel">
                     프로세스 편집
                 </v-btn>
             </div>
@@ -81,6 +82,7 @@ export default {
     mixins: [BaseProcess],
     props: {
         value: Object,
+        enableEdit: Boolean
     },
     data: () => ({
         onLoad: false,

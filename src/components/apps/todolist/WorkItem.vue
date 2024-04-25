@@ -3,10 +3,12 @@
         :style="$globalState.state.isZoomed ? 'height:100vh;' : 'height:calc(100vh - 150px);'"
      >
         <v-card-title>
-            <v-row class="ma-0 pa-0">
-                <h3>{{workItem.activity.name}}</h3>
-                <v-chip size="x-small" variant="outlined" style="margin:2px 0px 0px 5px !important; display: flex; align-items: center;">{{workItemStatus}}</v-chip>
-                <v-spacer></v-spacer>
+            <v-row class="ma-0 pa-0 mt-1 ml-3" style="line-height:100%;">
+                <div style="font-size:20px; font-weight:500;">{{workItem.activity.name}}</div>
+                <v-chip size="small" variant="outlined"
+                    density="comfortable"
+                    style="margin-left:5px;"
+                >{{workItemStatus}}</v-chip>
             </v-row>
         </v-card-title>
         <v-row class="ma-0 pa-2 mt-2">
@@ -52,7 +54,7 @@
                         <v-window-item value="history" class="pa-2">
                             <v-card elevation="10" class="pa-4">
                                 <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                                    <div class="d-flex w-100" style="height: calc(100vh - 300px); overflow: auto;">
+                                    <div class="d-flex w-100" style="height: calc(100vh - 315px); overflow: auto;">
                                         <component :is="'work-history-'+mode" :messages="messages" @clickMessage="navigateToWorkItemByTaskId" />
                                     </div>
                                 </perfect-scrollbar>
