@@ -1,90 +1,95 @@
 <template>
     <div>
-        <div v-if="inputData.length > 0" style="margin-bottom: 20px">
-            <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.inputData') }}</div>
-            <v-row class="ma-0 pa-0">
-                <div v-for="(inputData, idx) in inputData" :key="idx" class="mr-2 mt-2">
-                    <v-chip
-                        v-if="inputData.mandatory"
-                        color="primary"
-                        variant="outlined"
-                        class="text-body-2"
-                        @click="deleteInputData(inputData)"
-                    >
-                        {{ inputData.key }}
-                        <CircleXIcon class="ml-2" start size="20" />
-                    </v-chip>
-                    <v-chip v-else class="text-body-2" variant="outlined" @click="deleteInputData(inputData)">
-                        {{ inputData.key }}
-                        <CircleXIcon class="ml-2" start size="20" />
-                    </v-chip>
-                </div>
-            </v-row>
-        </div>
-        <div v-if="outputData.length > 0" style="margin-bottom: 20px">
-            <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.outputData') }}</div>
-            <v-row class="ma-0 pa-0">
-                <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
-                    <v-chip
-                        v-if="output.mandatory"
-                        color="primary"
-                        class="text-body-2"
-                        variant="outlined"
-                        @click="deleteOutputData(output)"
-                    >
-                        {{ output.variable.name }}
-                        <CircleXIcon class="ml-2" start size="20" />
-                    </v-chip>
-                    <v-chip v-else class="text-body-2" variant="outlined" @click="deleteOutputData(output)">
-                        {{ output.variable.name }}
-                        <CircleXIcon class="ml-2" start size="20" />
-                    </v-chip>
-                </div>
-            </v-row>
-        </div>
-        <div>
-            <v-row class="ma-0 pa-0">
-                <v-text-field v-model="copyUengineProperties.uriTemplate" label="호출 URI 패턴"></v-text-field>
-            </v-row>
-            <v-row class="ma-0 pa-0">
-                <v-checkbox
-                    v-if="copyUengineProperties.uriTemplate && copyUengineProperties.uriTemplate.indexOf('https://') == 0"
-                    v-model="copyUengineProperties.noValidationForSSL"
-                    label="Don't validate the certificate"
-                ></v-checkbox>
-            </v-row>
-            <v-row class="ma-0 pa-0">
-                <v-select
-                    v-if="links"
-                    v-model="copyUengineProperties.uriTemplate"
-                    :items="links"
-                    item-text="link.link"
-                    item-value="link.href"
-                    label="호출 서비스 선택"
-                ></v-select>
-            </v-row>
-            <v-row class="ma-0 pa-0">
-                <v-select v-model="copyUengineProperties.method" :items="methodList" label="호출 메서드"></v-select>
-            </v-row>
-            <v-row class="ma-0 pa-0">
-                <v-textarea
-                    v-if="'GET,DELETE'.indexOf(copyUengineProperties.method) == -1"
-                    v-model="copyUengineProperties.inputPayloadTemplate"
-                    label="입력 데이터 (JSON template)"
-                    dense
-                ></v-textarea>
-            </v-row>
+        <v-checkbox v-model="isEmailActivity" label="EmailActivity"></v-checkbox>
+        <div v-if="!isEmailActivity">
+            <div v-if="inputData.length > 0" style="margin-bottom: 20px">
+                <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.inputData') }}</div>
+                <v-row class="ma-0 pa-0">
+                    <div v-for="(inputData, idx) in inputData" :key="idx" class="mr-2 mt-2">
+                        <v-chip
+                            v-if="inputData.mandatory"
+                            color="primary"
+                            variant="outlined"
+                            class="text-body-2"
+                            @click="deleteInputData(inputData)"
+                        >
+                            {{ inputData.key }}
+                            <CircleXIcon class="ml-2" start size="20" />
+                        </v-chip>
+                        <v-chip v-else class="text-body-2" variant="outlined" @click="deleteInputData(inputData)">
+                            {{ inputData.key }}
+                            <CircleXIcon class="ml-2" start size="20" />
+                        </v-chip>
+                    </div>
+                </v-row>
+            </div>
+            <div v-if="outputData.length > 0" style="margin-bottom: 20px">
+                <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.outputData') }}</div>
+                <v-row class="ma-0 pa-0">
+                    <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
+                        <v-chip
+                            v-if="output.mandatory"
+                            color="primary"
+                            class="text-body-2"
+                            variant="outlined"
+                            @click="deleteOutputData(output)"
+                        >
+                            {{ output.variable.name }}
+                            <CircleXIcon class="ml-2" start size="20" />
+                        </v-chip>
+                        <v-chip v-else class="text-body-2" variant="outlined" @click="deleteOutputData(output)">
+                            {{ output.variable.name }}
+                            <CircleXIcon class="ml-2" start size="20" />
+                        </v-chip>
+                    </div>
+                </v-row>
+            </div>
+            <div>
+                <v-row class="ma-0 pa-0">
+                    <v-text-field v-model="copyUengineProperties.uriTemplate" label="호출 URI 패턴"></v-text-field>
+                </v-row>
+                <v-row class="ma-0 pa-0">
+                    <v-checkbox
+                        v-if="copyUengineProperties.uriTemplate && copyUengineProperties.uriTemplate.indexOf('https://') == 0"
+                        v-model="copyUengineProperties.noValidationForSSL"
+                        label="Don't validate the certificate"
+                    ></v-checkbox>
+                </v-row>
+                <v-row class="ma-0 pa-0">
+                    <v-select
+                        v-if="links"
+                        v-model="copyUengineProperties.uriTemplate"
+                        :items="links"
+                        item-text="link.link"
+                        item-value="link.href"
+                        label="호출 서비스 선택"
+                    ></v-select>
+                </v-row>
+                <v-row class="ma-0 pa-0">
+                    <v-select v-model="copyUengineProperties.method" :items="methodList" label="호출 메서드"></v-select>
+                </v-row>
+                <v-row class="ma-0 pa-0">
+                    <v-textarea
+                        v-if="'GET,DELETE'.indexOf(copyUengineProperties.method) == -1"
+                        v-model="copyUengineProperties.inputPayloadTemplate"
+                        label="입력 데이터 (JSON template)"
+                        dense
+                    ></v-textarea>
+                </v-row>
 
-            <v-row class="ma-0 pa-0">
-                <div>{{ $t('BpnmPropertyPanel.checkPoints') }}</div>
-                <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
-            </v-row>
-            <v-row class="ma-0 pa-0">
-                <v-checkbox v-model="copyUengineProperties.skipIfNotFound" label="리소스 없을 경우 (404) 오류 처리 하지 않음"></v-checkbox>
-            </v-row>
-        </div>
+                <v-row class="ma-0 pa-0">
+                    <div>{{ $t('BpnmPropertyPanel.checkPoints') }}</div>
+                    <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
+                </v-row>
+                <v-row class="ma-0 pa-0">
+                    <v-checkbox
+                        v-model="copyUengineProperties.skipIfNotFound"
+                        label="리소스 없을 경우 (404) 오류 처리 하지 않음"
+                    ></v-checkbox>
+                </v-row>
+            </div>
 
-        <!-- <div>
+            <!-- <div>
             <v-row class="ma-0 pa-0">
                 <div>{{ $t('BpnmPropertyPanel.checkPoints') }}</div>
                 <v-spacer></v-spacer>
@@ -167,6 +172,25 @@
                 </v-card>
             </v-row>
         </div> -->
+        </div>
+        <div v-else>
+            <div>title</div>
+            <v-row class="ma-0 pa-0">
+                <v-text-field v-model="copyUengineProperties.title" label="Key"></v-text-field>
+            </v-row>
+            <div>contents</div>
+            <v-row class="ma-0 pa-0">
+                <v-textarea v-model="copyUengineProperties.contents" label="Key"></v-textarea>
+            </v-row>
+            <div>to</div>
+            <v-row class="ma-0 pa-0">
+                <v-text-field v-model="copyUengineProperties.to" label="Key"></v-text-field>
+            </v-row>
+            <div>from</div>
+            <v-row class="ma-0 pa-0">
+                <v-text-field v-model="copyUengineProperties.from" label="Key"></v-text-field>
+            </v-row>
+        </div>
     </div>
 </template>
 <script>
@@ -197,6 +221,7 @@ export default {
                 $type: 'uengine:Checkpoint',
                 checkpoint: ''
             },
+            isEmailActivity: false,
             code: '',
             description: '',
             selectedDefinition: '',
@@ -234,7 +259,13 @@ export default {
             return result;
         }
     },
-    watch: {},
+    watch: {
+        isEmailActivity(newVal) {
+            if (newVal) {
+                this.copyUengineProperties._type = 'org.uengine.kernel.LocalEMailActivity';
+            }
+        }
+    },
     methods: {
         deleteInputData(inputData) {
             const index = this.copyUengineProperties.parameters.findIndex((element) => element.key === inputData.key);
