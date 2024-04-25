@@ -25,21 +25,18 @@ export default {
     data: () => ({
         instMenu: {
             header: 'instance.title',
-            disable: false,
         },
         instExecution: {
             title: "processExecution.title",
             icon: 'solar:chat-dots-linear',
             BgColor: 'primary',
             to: '/instances/chat',
-            disable: false,
         },
         definitionMap: {
             title: "processDefinitionMap.title",
-            icon: 'carbon:flow-connection',
+            icon: 'ri:layout-grid-2-line',
             BgColor: 'primary',
             to: "/definition-map",
-            disable: false,
         },
         runningInstances: {
             title: 'runningInstance.title',
@@ -53,15 +50,10 @@ export default {
             icon: 'solar:list-bold',
             BgColor: 'primary',
             children: [],
-            disable: false,
         },
     }),
     async created() {
-        const execution = localStorage.getItem("execution");
-        if (execution == 'true') {
-            this.instMenu.disable = false;
-            await this.loadInstances();
-        }
+        await this.loadInstances();
     },
     methods: {
         async loadInstances() {
