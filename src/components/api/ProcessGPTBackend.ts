@@ -26,7 +26,21 @@ class ProcessGPTBackend implements Backend {
 
     async deleteDefinition(defId: string) {
         try {
-            return await storage.delete(`proc_def/${defId}`, { key: 'id' });
+            let result: any;
+            await storage.delete(`proc_def/${defId}`, { key: 'id' });
+            const list = await storage.list(defId);
+            if (list && list.length > 0) {
+                await axios.post('/drop-process-table/invoke', {
+                    "input": {
+                        "process_definition_id": defId
+                    }
+                }).then(res => {
+                    result = res;
+                }).catch(error => {
+                    result = error
+                });
+            }
+            return result;
         } catch (error) {
             throw new Error('error in deleteDefinition');
         }
@@ -53,16 +67,12 @@ class ProcessGPTBackend implements Backend {
 
             const procDefArcv: any = {
                 arcv_id: options.arcv_id,
-                version: options.version,
-                name: options.name,
                 proc_def_id: defId,
+                version: options.version,
                 snapshot: xml,
                 diff: options.diffs,
-                timeStamp: options.timeStamp
             }
             await storage.putObject('proc_def_arcv', procDefArcv);
-
-            await storage.delete(`lock/${defId}`, { key: 'id' });
 
             const list = await storage.list(defId);
             if (list.code == "42P01") {
@@ -75,6 +85,11 @@ class ProcessGPTBackend implements Backend {
                 }).catch(error => {
                     return error
                 });
+            }
+
+            const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
+            if (isLocked) {
+                await storage.delete(`lock/${defId}`, { key: 'id' });
             }
         } catch (e) {
             throw new Error('error in putRawDefinition');
@@ -238,6 +253,7 @@ class ProcessGPTBackend implements Backend {
                         dueDate: item.end_date,
                         status: item.status,
                         title: item.activity_id,
+                        tracingTag: item.activity_id,
                         description: item.description || "",
                         tool: ""
                     };
@@ -555,20 +571,21 @@ class ProcessGPTBackend implements Backend {
     async getWorkListByInstId(instId: number) {
         try {
             const list = await storage.list(`todolist`, { match: { 'proc_inst_id': instId } });
-            const worklist: any[] = list.map((task: any) => {
+            const worklist: any[] = list.map((item: any) => {
                 return {
-                    defId: task.proc_def_id,
-                    endpoint: task.user_id,
-                    instId: task.proc_inst_id,
-                    rootInstId: task.proc_inst_id,
-                    taskId: task.id,
-                    startDate: task.start_date,
-                    dueDate: task.end_date,
-                    status: task.status,
-                    title: task.activity_id,
-                    tool: task.tool || '',
-                    description: task.description || '',
-                    task: task
+                    defId: item.proc_def_id,
+                    endpoint: item.user_id,
+                    instId: item.proc_inst_id,
+                    rootInstId: item.proc_inst_id,
+                    taskId: item.id,
+                    startDate: item.start_date,
+                    dueDate: item.end_date,
+                    status: item.status,
+                    title: item.activity_id,
+                    tool: item.tool || '',
+                    tracingTag: item.activity_id,
+                    description: item.description || '',
+                    task: item
                 }
             })
             return worklist;
