@@ -18,6 +18,11 @@ const MainRoutes = {
             component: () => import('@/components/apps/todolist/WorkItem.vue'),
         },
         {
+            name: 'InstanceCard',
+            path: '/instancelist/:instId',
+            component: () => import('@/components/apps/todolist/InstanceCard.vue'),
+        },
+        {
             name: 'Chats',
             path: '/chats',
             component: () => import('@/views/apps/chat/Chats.vue')

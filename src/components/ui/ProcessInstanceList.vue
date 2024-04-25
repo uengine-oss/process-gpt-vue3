@@ -79,7 +79,7 @@ export default {
             this.completeInstances.children = complatedResult.map((item) => {
                 item = {
                     title: item.instName,
-                    to: `/instancelist/${item.isntid}`,
+                    to: `/instancelist/${item.instId}`,
                 }
                 return item;
             });
