@@ -1,5 +1,5 @@
 <template>
-    <template v-if="localIsMultidataMode">
+    <template v-if="localIsMultiDataMode">
         <v-card class="pa-3" variant="outlined" style="border-radius: 0px !important;">           
             <v-card-title class="mb-3 d-flex justify-space-between">
                 <div class="mt-2">{{ alias ?? name }}</div>
@@ -36,7 +36,7 @@ export default {
 
         name: String,
         alias: String,
-        isMultidataMode: String
+        isMultiDataMode: String
     },
 
     data() {
@@ -45,7 +45,7 @@ export default {
 
             localName: this.name,
             localAlias: this.alias,
-            localIsMultidataMode: this.isMultidataMode === "true"
+            localIsMultiDataMode: this.isMultiDataMode === "true"
         };
     },
 
