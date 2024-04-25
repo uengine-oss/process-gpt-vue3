@@ -1,7 +1,7 @@
 <template>
     <div>
         <v-file-input
-            :label="localAlias ?? localName"
+            :label="(localAlias && localAlias.length > 0) ? localAlias : localName"
             v-model="selectedFiles"
             :disabled="localDisabled"
         ></v-file-input>

@@ -436,8 +436,8 @@ export default {
             // 해당 div마다 추후에 createApp으로 렌더링의 대상이되고, ref를 통해서 접근할 수 있도록 함
             const components = Array.from(dom.querySelectorAll('*')).filter((el) => el.tagName.toLowerCase().endsWith('-field'));
             components.forEach((component) => {
-                // 속성중에서 name, alias인 경우, [가-힣a-zA-Z0-9_\-. ]에 해당하는 문자가 아닌 경우, 전부 제거함
-                ['name', 'alias'].forEach((attr) => {
+                // 속성중에서 name인 경우, [가-힣a-zA-Z0-9_\-. ]에 해당하는 문자가 아닌 경우, 전부 제거함
+                ['name'].forEach((attr) => {
                     if (component.hasAttribute(attr)) {
                         const validChars = component.getAttribute(attr).match(/[가-힣a-zA-Z0-9_\-. ]/g);
                         const cleanedAttr = validChars ? validChars.join('') : attr;

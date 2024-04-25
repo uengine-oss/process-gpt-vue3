@@ -1,6 +1,6 @@
 <template>
     <div class="form-checkbox-box">
-        <label class="form-checkbox-label">{{ localAlias ?? localName }}</label>
+        <label class="form-checkbox-label">{{(localAlias && localAlias.length > 0) ? localAlias : localName}}</label>
         <div v-for="(item, index) in localItems" :key="index">
             <div v-for="(value, key) in item" :key="key">
                 <v-checkbox

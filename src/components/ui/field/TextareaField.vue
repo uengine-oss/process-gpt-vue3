@@ -3,7 +3,7 @@
         <v-textarea v-model="localModelValue" :disabled="localDisabled" :rows="rows">
             <template v-slot:label>
                 <span style="color:black;">
-                    {{localAlias ?? localName}}
+                    {{(localAlias && localAlias.length > 0) ? localAlias : localName}}
                 </span>
             </template>
         </v-textarea>
