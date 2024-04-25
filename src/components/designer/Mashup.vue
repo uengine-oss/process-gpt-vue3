@@ -38,8 +38,7 @@ export default {
     FormDefinitionPanel
   },
   props: {
-    modelValue: String,
-    storedFormDefData: Object
+    modelValue: String
   },
   emits: [
     "onChangeKEditorContent",

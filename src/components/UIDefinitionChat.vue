@@ -28,7 +28,6 @@
                             v-model="kEditorInput"
                             :key="mashupKey"
                             @onSaveFormDefinition="saveFormDefinition"
-                            :storedFormDefData="storedFormDefData"
                         />
                         <card v-else class="d-flex align-center justify-center fill-height">
                             <v-progress-circular color="primary" indeterminate></v-progress-circular>
@@ -69,7 +68,7 @@
     </v-card>
 
     <v-dialog v-model="isOpenSaveDialog">
-        <form-design-save-panel @onClose="isOpenSaveDialog = false" @onSave="tryToSaveFormDefinition" :savedId="storedFormDefData.id">
+        <form-design-save-panel @onClose="isOpenSaveDialog = false" @onSave="tryToSaveFormDefinition" :savedId="(loadFormId === 'chat') ? null : loadFormId">
         </form-design-save-panel>
     </v-dialog>
 </template>
@@ -120,7 +119,7 @@ export default {
         prevFormOutput: '', // 폼 디자이너에게 이미 이전에 생성된 HTML 결과물을 전달하기 위해서
         prevMessageFormat: '', // 사용자가 KEditor를 변경할때마다 해당 포맷을 기반으로 System 메세지를 재구축해서 보내기 위해서
 
-        storedFormDefData: {},
+        storedFormDefHTML: "",
         isOpenSaveDialog: false,
         currentTabName: '',
         isShowMashup: false,
@@ -273,7 +272,7 @@ export default {
 
             if (this.loadFormId && this.loadFormId != 'chat') {
                 try {
-                    this.storedFormDefData = (await this.backend.getRawDefinition(this.loadFormId, { type: 'form' })) ?? {};
+                    this.storedFormDefHTML = (await this.backend.getRawDefinition(this.loadFormId, { type: 'form' }));
                 } catch(error) {
                     alert(`'${this.loadFormId}' ID 를 가지는 폼 디자인 정보가 없습니다! 새 폼 만들기 화면으로 이동됩니다.`);
                     this.$router.push(`/ui-definitions/chat`);
@@ -281,7 +280,7 @@ export default {
                     return;
                 }
 
-                const kEditorContentHTML = this.dynamicFormHTMLToKeditorContentHTML(this.storedFormDefData);
+                const kEditorContentHTML = this.dynamicFormHTMLToKeditorContentHTML(this.storedFormDefHTML);
                 const kEditorContent = this.loadHTMLToKEditorContent(kEditorContentHTML);
                 this.applyNewSrcToMashup(kEditorContent);
 
