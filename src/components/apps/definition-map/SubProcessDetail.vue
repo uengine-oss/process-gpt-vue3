@@ -82,6 +82,7 @@ export default {
     mixins: [BaseProcess],
     props: {
         value: Object,
+        enableEdit: Boolean
     },
     data: () => ({
         onLoad: false,
