@@ -30,8 +30,8 @@ export default {
                 persistSession: false
             }
         });
-        window.$mode = 'uEngine'
-        // window.$mode = 'ProcessGPT'
+        // window.$mode = 'uEngine'
+        window.$mode = 'ProcessGPT'
         window.$app_ = this
     },
     methods: {
