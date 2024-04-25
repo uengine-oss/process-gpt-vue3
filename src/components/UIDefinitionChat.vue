@@ -29,9 +29,9 @@
                             :key="mashupKey"
                             @onSaveFormDefinition="saveFormDefinition"
                         />
-                        <card v-else class="d-flex align-center justify-center fill-height">
+                        <div v-else class="d-flex align-center justify-center fill-height">
                             <v-progress-circular color="primary" indeterminate></v-progress-circular>
-                        </card>
+                        </div>
                     </v-window-item>
 
                     <v-window-item value="preview" class="fill-height mt-15 pa-5" style="overflow-y: auto">
@@ -45,9 +45,9 @@
 
                             <v-btn color="primary" class="full-width" @click="onClickPreviewSubmitButton">제출</v-btn>
                         </template>
-                        <card v-else class="d-flex align-center justify-center fill-height">
+                        <div v-else class="d-flex align-center justify-center fill-height">
                             <v-progress-circular color="primary" indeterminate></v-progress-circular>
-                        </card>
+                        </div>
                     </v-window-item>
                 </v-window>
             </template>

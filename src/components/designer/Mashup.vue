@@ -10,13 +10,23 @@
     </div>
     
     
-    <v-dialog v-model="isOpenSettingDialog">
+    <v-dialog v-model="isOpenComponentSettingDialog">
         <form-definition-panel
           :componentRef="componentRefForSetting"
           @onSave="editFormDefinition"
-          @onClose="isOpenSettingDialog = false"
+          @onClose="isOpenComponentSettingDialog = false"
         >
         </form-definition-panel>
+    </v-dialog>
+
+    <v-dialog v-model="isOpenContainerSettingDialog">
+      <container-setting-panel
+        :sectionId="containerSectionId"
+        :containerProps="containerProps"
+        @onSave="editContainerDefinition"
+        @onClose="isOpenContainerSettingDialog = false"
+      >
+      </container-setting-panel>
     </v-dialog>
   </div>
 </template>
@@ -27,6 +37,7 @@ import axios from 'axios';
 import vuetify from "@/plugins/vuetify";
 import ChatModule from "@/components/ChatModule.vue";
 import FormDefinitionPanel from '@/components/designer/modeling/FormDefinitionPanel.vue';
+import ContainerSettingPanel from '@/components/designer/modeling/ContainerSettingPanel.vue';
 import DynamicComponent from './DynamicComponent.vue';
 
 export default {
@@ -35,7 +46,8 @@ export default {
   mixins: [ChatModule],
   components: {
     DynamicComponent,
-    FormDefinitionPanel
+    FormDefinitionPanel,
+    ContainerSettingPanel
   },
   props: {
     modelValue: String
@@ -53,7 +65,11 @@ export default {
     kEditorContent: `<div id="kEditor1"></div>`,
 
     componentRefForSetting: null,
-    isOpenSettingDialog: false
+    isOpenComponentSettingDialog: false,
+    isOpenContainerSettingDialog: false,
+
+    containerSectionId: "",
+    containerProps: {name: "", alias: "", isMultiDataMode: false}
   }),
 
   methods: {
@@ -172,7 +188,18 @@ export default {
         componentRef[settingInfo.dataToUse] = componentProps[settingInfo.dataToUse]
       })
 
-      window.mashup.isOpenSettingDialog = false
+      window.mashup.isOpenComponentSettingDialog = false
+    },
+
+    /**
+     * 유저가 설정창을 통해서 변경한 값은 해당 컨테이너에 반영시키기 위해서
+     * @param {*} sectionId 해당 컨테이너를 감싸는 section 태그에 할당딘 ID
+     * @param {*} localContainerProps 변경시킬 컨테이너의 속성들
+     */
+    editContainerDefinition(sectionId, localContainerProps) {
+      console.log("[*] editContainerDefinition  : ", sectionId, localContainerProps)
+
+      window.mashup.isOpenContainerSettingDialog = false
     },
 
     /**
@@ -315,7 +342,7 @@ export default {
 
 
           window.mashup.componentRefForSetting = componentRef
-          window.mashup.isOpenSettingDialog = true
+          window.mashup.isOpenComponentSettingDialog = true
 
         }
         catch(e)
@@ -340,7 +367,20 @@ export default {
       },
       containerSettingShowFunction: function (form, container, keditor) {
         console.log("containerSettingShowFunction : ", form, container, keditor);
-        alert("미구현입니다.")
+
+
+        const dom = (new DOMParser()).parseFromString(container[0].outerHTML, 'text/html')
+        window.mashup.containerSectionId = dom.querySelector('section').id
+
+        const row = dom.querySelector('.row')
+        window.mashup.containerProps = {
+          name: row ? row.getAttribute('name') || "" : "",
+          alias: row ? row.getAttribute('alias') || "" : "",
+          isMultiDataMode: row ? (row.getAttribute('isMultiDataMode') === 'true') : false
+        }
+
+
+        window.mashup.isOpenContainerSettingDialog = true
       },
       containerSettingHideFunction: function (form, keditor) {
         console.log("containerSettingHideFunction : ", form, keditor);

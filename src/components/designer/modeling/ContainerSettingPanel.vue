@@ -11,14 +11,13 @@
     </v-card-item>
 
     <v-card-text>
-      <v-text-field :ref="name" :label="Name" v-model.trim="localContainerProps.name"
+      <v-text-field ref="name" label="Name" v-model.trim="localContainerProps.name"
                       @keyup.enter="save" persistent-placeholder></v-text-field>
       
-      <v-text-field :ref="alias" :label="Alias" v-model.trim="localContainerProps.alias"
+      <v-text-field label="Alias" v-model.trim="localContainerProps.alias"
                       @keyup.enter="save" persistent-placeholder></v-text-field>
         
-      <v-checkbox :ref="settingInfo.dataToUse" 
-                  :label="settingInfo.settingLabel" v-model="componentProps[settingInfo.dataToUse]"
+      <v-checkbox label="MultiDataMode" v-model="localContainerProps.isMultiDataMode"
                   @keyup.enter="save"></v-checkbox>
     </v-card-text>
 
@@ -42,13 +41,32 @@
     },
 
     data: () => ({
-      localContainerProps: {...this.containerProps}
+      localContainerProps: null
     }),
+
+    watch: {
+      containerProps: {
+        deep: true,
+        handler(newVal) {
+          this.localContainerProps = {...newVal};
+        }
+      }
+    },
+
+    created() {
+      this.localContainerProps = {...this.containerProps};
+    },
 
     methods: {
       save() {
         this.$emit('onSave', this.sectionId, this.localContainerProps)
       }
+    },
+
+    mounted() {
+      this.$nextTick(() => {
+        this.$refs.name.focus()
+      });
     }
   }
 </script>
