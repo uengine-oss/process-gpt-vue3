@@ -23,6 +23,7 @@ import LabelField from '@/components/ui/field/LabelField.vue';
 import BooleanField from '@/components/ui/field/BooleanField.vue';
 import TextareaField from '@/components/ui/field/TextareaField.vue';
 import UserSelectField from '@/components/ui/field/UserSelectField.vue';
+import RowLayout from '@/components/ui/field/RowLayout.vue';
 
 export default {
   props: {
@@ -80,7 +81,8 @@ export default {
         LabelField,
         BooleanField,
         TextareaField,
-        UserSelectField
+        UserSelectField,
+        RowLayout
       },
       data() {
         return {

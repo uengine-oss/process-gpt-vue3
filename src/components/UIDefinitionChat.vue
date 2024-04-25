@@ -194,20 +194,50 @@ export default {
          */
         keditorContentHTMLToDynamicFormHTML(html) {
             const dom = new DOMParser().parseFromString(html, 'text/html');
-            const formValues = dom.querySelectorAll('[name]');
 
+
+            // 이름 중복 여부를 검사하기 위해서
             const nameSet = new Set();
-            formValues.forEach((el) => {
+            (dom.querySelectorAll('[name]')).forEach((el) => {
                 const name = el.getAttribute('name');
+                if(!name || name.length <= 0) return;
+
                 if (nameSet.has(name)) {
                     throw new Error(`'${name}' 이름이 중복되어 있습니다.`);
                 }
                 nameSet.add(name);
             });
 
-            formValues.forEach((el) => {
-                el.setAttribute('v-model', `formValues['${el.getAttribute('name')}']`);
+
+            const rows = dom.querySelectorAll('div.row');
+            rows.forEach(row => {
+                const isMultiDataMode = row.getAttribute('is_multidata_mode');
+                if (!isMultiDataMode || (isMultiDataMode === 'false')) {
+                    const newRow = document.createElement('row-layout');
+                    
+
+                    newRow.setAttribute('name', row.getAttribute('name') ?? "");
+                    newRow.setAttribute('alias', row.getAttribute('alias') ?? "");
+                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode') ?? "false");
+
+                    newRow.setAttribute('v-model', 'formValues');
+                    newRow.setAttribute('v-slot', 'slotProps');
+
+
+                    Array.from(row.childNodes).forEach(child => {
+                        newRow.appendChild(child);
+                    });
+
+                    newRow.querySelectorAll('[name]').forEach(field => {
+                        const name = field.getAttribute('name');
+                        field.setAttribute('v-model', `slotProps.modelValue['${name}']`);
+                    });
+
+
+                    row.parentNode.replaceChild(newRow, row);
+                }
             });
+
 
             return dom.body.innerHTML;
         },
@@ -218,10 +248,35 @@ export default {
         dynamicFormHTMLToKeditorContentHTML(html) {
             const dom = new DOMParser().parseFromString(html, 'text/html');
 
-            const formValues = dom.querySelectorAll('[v-model]');
-            formValues.forEach((el) => {
-                el.removeAttribute('v-model');
+
+            const rows = dom.querySelectorAll('row-layout');
+            rows.forEach(row => {
+                const isMultiDataMode = row.getAttribute('is_multidata_mode');
+                if (!isMultiDataMode || (isMultiDataMode === 'false')) {
+                    const newRow = document.createElement('div');
+                    
+
+                    newRow.setAttribute('name', row.getAttribute('name') ?? "");
+                    newRow.setAttribute('alias', row.getAttribute('alias') ?? "");
+                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode') ?? "false");
+
+                    newRow.setAttribute('class', 'row');
+
+
+                    Array.from(row.childNodes).forEach(child => {
+                        newRow.appendChild(child);
+                    });
+
+                    newRow.querySelectorAll('[name]').forEach(field => {
+                        const name = field.getAttribute('name');
+                        field.removeAttribute('v-model');
+                    });
+
+
+                    row.parentNode.replaceChild(newRow, row);
+                }
             });
+
 
             return dom.body.innerHTML;
         },
