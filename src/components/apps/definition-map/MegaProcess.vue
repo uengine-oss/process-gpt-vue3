@@ -1,9 +1,10 @@
 <template>
     <div class="w-100" @mouseover="hover = true" @mouseleave="hover = false">
-        <v-card @click="viewProcessDetail(value)"
+        <v-card
             class="align-center pa-3 mb-3 bg-lightwarning"
             elevation="10"
             style="border-radius: 10px !important;"
+            @click="viewProcessDetail(value)"
         >
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-h6 font-weight-semibold">
                 <v-row class="ma-0 pa-0">
@@ -144,6 +145,9 @@ export default {
         },
         viewProcessDetail(process) {
             this.$router.push(`/definition-map/mega/${process.label}`)
+        },
+        viewProcess() {
+            this.$emit('view', this.value);
         },
     },
 }

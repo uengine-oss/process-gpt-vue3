@@ -83,7 +83,10 @@ export default {
                 major_proc_list: [],
             };
             this.value.mega_proc_list.push(newMegaProc);
-        }
+        },
+        viewProcess(process) {
+            this.$router.push(`/definition-map/sub/${process.id}`)
+        },
     },
 }
 </script>

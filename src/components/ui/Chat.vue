@@ -436,6 +436,15 @@ export default {
             file: null,
         };
     },
+    mounted() {
+        var me = this
+        document.addEventListener('click', (event) => {
+            if (event.target.matches('.request-file-link')) {
+                event.preventDefault();
+                me.$emit("requestFile", event.target.getAttribute('data-filename'));
+            }
+        });
+    },
     computed: {
         filteredUserList() {
             if (!this.showUserList || this.mentionStartIndex === null || !this.userList) {

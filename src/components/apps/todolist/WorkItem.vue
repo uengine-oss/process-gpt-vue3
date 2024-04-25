@@ -129,6 +129,7 @@ export default {
         messages(){
             if(!this.workListByInstId) return []
             return this.workListByInstId.map(workItem => ({
+                profile: 'https://avatars0.githubusercontent.com/u/9064066?v=4&s=460',
                 roleName: workItem.task.roleName,
                 _item: workItem,
                 content: workItem.title,

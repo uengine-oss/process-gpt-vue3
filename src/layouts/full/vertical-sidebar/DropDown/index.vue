@@ -20,7 +20,7 @@ const props = defineProps({ item: Object, level: Number });
         <!---If icon-->
         <template v-slot:prepend >
             <!-- <CircleIcon size="15" stroke-width="1.5"  class="ml-1" width="30" /> -->
-            <Icon icon="bx:cog" width="24" height="24" style="margin-right:-10px;" />
+            <Icon icon="carbon:ibm-process-mining" width="24" height="24" style="margin-right:-10px;"/>
         </template>
         <v-list-item-title class="ml-4 text-body-1">{{ $t(item.title) }}</v-list-item-title>
         <!---If Caption-->

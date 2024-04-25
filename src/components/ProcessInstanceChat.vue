@@ -271,10 +271,6 @@ export default {
                 if (jsonData.description) {
                     messageWriting.content = jsonData.description;
                 }
-                if (!this.$route.params.taskId) {
-                    this.$router.replace(`/todolist/${jsonData.instanceId}`);
-                }
-
                 this.saveInstance(jsonData);
                 this.saveTodolist(jsonData);
             }
@@ -342,6 +338,9 @@ export default {
                             status: 'IN_PROGRESS',
                         }
                         await this.putObject('todolist', putObj);
+                        if (!this.$route.params.taskId) {
+                            this.$router.replace(`/todolist/${putObj.id}`);
+                        }
                     }
                 }
 

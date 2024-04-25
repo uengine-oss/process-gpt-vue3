@@ -5,7 +5,7 @@
                 <slot name="messageProfile">
                     <v-row class="ma-0 pa-0" style="margin-bottom:10px !important;">
                         <v-avatar class="pr-2" size="40">
-                            <img v-if="!message.profile" src="@/assets/images/chat/chat-icon.png" alt="pro" width="50">
+                            <img v-if="!message.profile" :src="defaultProfile" alt="pro" width="50">
                             <img v-else :src="message.profile" alt="pro" width="50">
                         </v-avatar>
                         <div v-if="message.timeStamp" style="font-size:12px; padding-top:20px;">
@@ -64,6 +64,7 @@ export default {
     data() {
         return {
             filterMessages: [],
+            defaultProfile: '@/assets/images/profile/1.jpg'
         };
     },
     components: {

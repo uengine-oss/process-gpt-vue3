@@ -88,6 +88,15 @@ class UEngineBackend implements Backend {
 
     async getInstance(instanceId: string) {
         const response = await axiosInstance.get(`/instance/${instanceId}`);
+        if(!response) return null;
+
+        let _links = response.data._links;
+        let def_href = _links.definition.href;
+        let def_id = def_href.split('/definition/')[1];
+
+        // parse defId
+        response.data.defId = def_id;
+        
         return response.data;
     }
 
@@ -267,6 +276,7 @@ class UEngineBackend implements Backend {
             status: task.status,
             title: task.title,
             tool: task.tool,
+            tracingTag: task.trcTag,
             description: task.description || '', // description이 null일 경우 빈 문자열로 처리
             task: task
         }));
@@ -274,6 +284,7 @@ class UEngineBackend implements Backend {
         return mappedResult;
     }
 
+    // get Completed WorkList API
     async getCompletedList() {
         const response = await axiosInstance.get(`/worklist/search/findCompleted`);
         if (!response.data) return null;
@@ -289,6 +300,7 @@ class UEngineBackend implements Backend {
             status: task.status,
             title: task.title,
             tool: task.tool,
+            tracingTag: task.trcTag,
             description: task.description || '', // description이 null일 경우 빈 문자열로 처리
             task: task
         }));
@@ -310,6 +322,7 @@ class UEngineBackend implements Backend {
             status: task.status,
             title: task.title,
             tool: task.tool,
+            tracingTag: task.trcTag,
             description: task.description || '', // description이 null일 경우 빈 문자열로 처리
             task: task
         }));
@@ -332,6 +345,7 @@ class UEngineBackend implements Backend {
             status: task.status,
             title: task.title,
             tool: task.tool,
+            tracingTag: task.trcTag,
             description: task.description || '', // description이 null일 경우 빈 문자열로 처리
             task: task
         }));
@@ -367,7 +381,6 @@ class UEngineBackend implements Backend {
         if (!response.data._embedded) return null;
         return response.data._embedded.instances.map((inst: any) => ({
             instId: inst.rootInstId,
-            taskId:'',
             instName: inst.name,
             status: inst.status,
             startedDate: inst.startedDate,

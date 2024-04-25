@@ -11,6 +11,9 @@ export default {
         };
     },
     methods: {
+        requestFile(fileName) {
+            this.ws.send(`request_file:${fileName}`);
+        },
         requestAgent(str){
             this.ws.send(str);
         },
@@ -29,58 +32,81 @@ export default {
                 let result = null
                 let isFinished = false;
 
-                if (event.data.startsWith("Chain started with inputs: ")) {
-                    // running.
-                } else if(event.data.includes("{'text': ") || event.data.includes("You are a tool for") || event.data.includes("{'topic'")){
-                    if(event.data.includes("{'topic'")){
-                         // setting 
-                        me.agentInfo.topic = this.parseJsonString(event.data)
-                    }
-                } else if(event.data.includes("Prompt after formatting:")){
-                    var summaryIndex = event.data.indexOf("Current summary:");
-                    if (summaryIndex !== -1) {
-                        var summaryText = event.data.substring(summaryIndex).replace(/\n/g, "<br>");
-                        // me.log += summaryText + "<br>";
-                    }
-                } else if (event.data.includes('"agents":') 
-                || event.data.includes("{'tools':") 
-                || event.data.includes("{'tool_names':") 
-                || event.data.includes("{'input':") 
-                || (event.data.includes("{'output':") && !event.data.includes("return_values="))) {
-                    try {
-                        let data;
-                        let modifiedStr
-
-                        modifiedStr = event.data.replaceAll(/'/g, '"');
-                        modifiedStr = modifiedStr.replaceAll(/\n/g, "")
-                                                .replaceAll(/\\'/g, "\\'")
-                                                .replaceAll(/\\"/g, '\\"')
-                                                .replaceAll(/\\&/g, "\\&")
-                                                .replaceAll(/\\r/g, "\\r")
-                                                .replaceAll(/\\t/g, "\\t")
-                                                .replaceAll(/\\b/g, "\\b")
-                                                .replaceAll(/\\f/g, "\\f");
-
-                        data = JSON.parse(modifiedStr);
-                        // setting 
-                        me.agentInfo.agents = data.agents.map((agent, index) => ({ ...agent, profile: `/src/assets/images/profile/user-${index + 1}.jpg`}));
-                        me.agentInfo.tools = {
-                            "Search the internet": '인터넷 검색',
-                            "Search Internal Documents": '외부 문서 검색',
-                            "Search news on the internet": '인터넷 뉴스 검색'
-                        }
-
-                        result = me.convertAgentsContent(modifiedStr, me.agentInfo.agents)
-                    } catch (e) {
-                        console.error("Error parsing JSON:", e);
-                    }
-                } else if(event.data.match(me.inputRegex)){
-                    result = me.convertInputContent(event.data, me.agentInfo.agents, me.agentInfo.tools)
-                } else if (event.data.match(me.outputRegex)) {
-                    result = me.convertSearchOutputContent(event.data, me.agentInfo.agents)
-                } else {
-                    result = me.convertSystemContent(event.data)
+                if(event.data instanceof Blob && event.data.size > 0){
+                    const blob = event.data;
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = "downloaded_file.pptx";
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(downloadUrl);
                     isFinished = true
+                } else {
+                    let dataText = event.data;
+                    const pptxRegex = /(?:output\/)?([0-9a-fA-F-]+\.pptx)/;
+                    const pptxMatch = dataText.match(pptxRegex);
+                    if(pptxMatch) {
+                        const fileName = pptxMatch[1];
+                        const clickableLink = `<a href="#" class="request-file-link" data-filename="${fileName}">${pptxMatch[0]}</a>`;
+                        console.log("Clickable link:", clickableLink);
+                        dataText = dataText.replace(pptxRegex, clickableLink);
+                    }
+
+                    if (dataText.startsWith("Chain started with inputs: ")) {
+                        // running.
+                    } else if(dataText.includes("{'text': ") || dataText.includes("You are a tool for") || dataText.includes("{'topic'")){
+                        if(dataText.includes("{'topic'")){
+                             // setting 
+                            me.agentInfo.topic = this.parseJsonString(dataText)
+                        }
+                    } else if(dataText.includes("Prompt after formatting:")){
+                        var summaryIndex = dataText.indexOf("Current summary:");
+                        if (summaryIndex !== -1) {
+                            var summaryText = dataText.substring(summaryIndex).replace(/\n/g, "<br>");
+                            // me.log += summaryText + "<br>";
+                        }
+                    } else if (dataText.includes('"agents":') 
+                    || dataText.includes("{'tools':") 
+                    || dataText.includes("{'tool_names':") 
+                    || dataText.includes("{'input':") 
+                    || (dataText.includes("{'output':") && !dataText.includes("return_values="))) {
+                        try {
+                            let data;
+                            let modifiedStr
+    
+                            modifiedStr = dataText.replaceAll(/'/g, '"');
+                            modifiedStr = modifiedStr.replaceAll(/\n/g, "")
+                                                    .replaceAll(/\\'/g, "\\'")
+                                                    .replaceAll(/\\"/g, '\\"')
+                                                    .replaceAll(/\\&/g, "\\&")
+                                                    .replaceAll(/\\r/g, "\\r")
+                                                    .replaceAll(/\\t/g, "\\t")
+                                                    .replaceAll(/\\b/g, "\\b")
+                                                    .replaceAll(/\\f/g, "\\f");
+    
+                            data = JSON.parse(modifiedStr);
+                            // setting 
+                            me.agentInfo.agents = data.agents.map((agent, index) => ({ ...agent, profile: `/src/assets/images/profile/user-${index + 1}.jpg`}));
+                            me.agentInfo.tools = {
+                                "Search the internet": '인터넷 검색',
+                                "Search Internal Documents": '외부 문서 검색',
+                                "Search news on the internet": '인터넷 뉴스 검색'
+                            }
+    
+                            result = me.convertAgentsContent(modifiedStr, me.agentInfo.agents)
+                        } catch (e) {
+                            console.error("Error parsing JSON:", e);
+                        }
+                    } else if(dataText.match(me.inputRegex)){
+                        result = me.convertInputContent(dataText, me.agentInfo.agents, me.agentInfo.tools)
+                    } else if (dataText.match(me.outputRegex)) {
+                        result = me.convertSearchOutputContent(dataText, me.agentInfo.agents)
+                    } else {
+                        result = me.convertSystemContent(dataText)
+                        isFinished = true
+                    }
                 }
 
                 callback({connection: true, isFinished: isFinished, data: result}) 
