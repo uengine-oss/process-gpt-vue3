@@ -199,9 +199,6 @@ export default {
     },
     async created() {
         await this.initializeStorage();
-        this.initializeNodesAndConfig();
-        await this.processVariables(this.leftNodes, 'Source');
-        await this.processVariables(this.rightNodes, 'Target');
         this.renderKey++;
     },
     mounted() {
@@ -220,17 +217,17 @@ export default {
             }, 300);
         });
         // processVariables가 준비되었는지 확인
-        if (this.processVariables && this.processVariables.length > 0) {
-            // processVariables 사용
-            console.log(this.processVariables);
-        } else {
-            // 데이터가 준비되지 않았다면, watch를 사용하거나 다른 방법으로 처리
-            this.$watch('processVariables', (newVal) => {
-                if (newVal && newVal.length > 0) {
-                    console.log(newVal);
-                }
-            });
-        }
+        // if (this.processVariables && this.processVariables.length > 0) {
+        //     // processVariables 사용
+        //     console.log(this.processVariables);
+        // } else {
+        //     // 데이터가 준비되지 않았다면, watch를 사용하거나 다른 방법으로 처리
+        //     this.$watch('processVariables', (newVal) => {
+        //         if (newVal && newVal.length > 0) {
+        //             console.log(newVal);
+        //         }
+        //     });
+        // }
 
         this.renderFormMapperFromMappingElementJson(this.formMapperJson);
     },
@@ -238,8 +235,7 @@ export default {
         async initializeStorage() {
             this.storage = StorageBaseFactory.getStorage('supabase');
         },
-
-        initializeNodesAndConfig() {
+        async initializeNodesAndConfig() {
             this.leftNodes = {};
             this.rightNodes = {};
             this.config = {
@@ -325,8 +321,6 @@ export default {
             this.resetTreeviewPorts(blockName);
 
             const updatePorts = (treeNode, path = '', yOffset = 0, isRootClosed = false) => {
-                if (!treeNode) return yOffset;
-
                 const treeNodeText = Object.keys(treeNode)[0];
                 const currentPath = path ? `${path}.${treeNodeText}` : treeNodeText;
                 let effectiveYOffset = yOffset + (isRootClosed ? 0 : nodeHeight);
@@ -486,6 +480,16 @@ export default {
             };
         }
     },
+    watch: {
+        definition: {
+            async handler() {
+                await this.initializeNodesAndConfig();
+                await this.processVariables(this.leftNodes, 'Source');
+                await this.processVariables(this.rightNodes, 'Target');
+            },
+            deep: true
+        }
+    },
     onBeforeUnmount() {
         this.saveFormMapperJson();
     }
@@ -580,12 +584,15 @@ export default {
     align-items: flex-start;
 }
 
-.form-mapper .right-treeview .node-wrapper {
+.form-mapper .tree .right-treeview {
     transform: scaleX(-1);
 }
 
 .form-mapper .right-treeview .input-wrapper {
     transform: scaleX(-1);
+}
+.form-mapper .tree-node .tree-level{
+    padding-left: 8px !important;
 }
 
 .form-mapper .form-menu {
@@ -611,9 +618,9 @@ export default {
 .form-mapper .right-treeview button {
     margin-left: auto;
 }
-.form-mapper .tree-level {
+/* .form-mapper .tree-level {
     padding-left: 0 !important;
-}
+} */
 .form-mapper .left-treeview {
     width: 200px;
 }

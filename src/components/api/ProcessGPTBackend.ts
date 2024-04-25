@@ -26,7 +26,21 @@ class ProcessGPTBackend implements Backend {
 
     async deleteDefinition(defId: string) {
         try {
-            return await storage.delete(`proc_def/${defId}`, { key: 'id' });
+            let result: any;
+            await storage.delete(`proc_def/${defId}`, { key: 'id' });
+            const list = await storage.list(defId);
+            if (list && list.length > 0) {
+                await axios.post('/drop-process-table/invoke', {
+                    "input": {
+                        "process_definition_id": defId
+                    }
+                }).then(res => {
+                    result = res;
+                }).catch(error => {
+                    result = error
+                });
+            }
+            return result;
         } catch (error) {
             throw new Error('error in deleteDefinition');
         }
@@ -37,7 +51,7 @@ class ProcessGPTBackend implements Backend {
             // 폼 정보를 저장하기 위해서
             if(options && options.type === "form") {
                 await storage.putObject('form_def', {
-                    id: defId,
+                    id: defId.replace(/\//g, "#"),
                     html: xml
                 });
                 return
@@ -53,16 +67,12 @@ class ProcessGPTBackend implements Backend {
 
             const procDefArcv: any = {
                 arcv_id: options.arcv_id,
-                version: options.version,
-                name: options.name,
                 proc_def_id: defId,
+                version: options.version,
                 snapshot: xml,
                 diff: options.diffs,
-                timeStamp: options.timeStamp
             }
             await storage.putObject('proc_def_arcv', procDefArcv);
-
-            await storage.delete(`lock/${defId}`, { key: 'id' });
 
             const list = await storage.list(defId);
             if (list.code == "42P01") {
@@ -76,6 +86,11 @@ class ProcessGPTBackend implements Backend {
                     return error
                 });
             }
+
+            const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
+            if (isLocked) {
+                await storage.delete(`lock/${defId}`, { key: 'id' });
+            }
         } catch (e) {
             throw new Error('error in putRawDefinition');
         }
@@ -86,16 +101,26 @@ class ProcessGPTBackend implements Backend {
             if (options) {
                 // 폼 정보를 불러오기 위해서
                 if(options.type === "form") {
-                    const data = await storage.getString(`form_def/${defId}`, { key: 'id' });
-                    return data;
+                    const data = await storage.getString(`form_def/${defId.replace(/\//g, "#")}`, { key: 'id' });
+                    if(!data) {
+                        throw new Error('no such form definition');
+                    }
+                    return data.html;
                 } else if(options.type === "bpmn") {
                     const data = await storage.getString(`proc_def/${defId}`, { key: 'id', column: 'bpmn' });
+                    if(!data) {
+                        throw new Error('no such bpmn definition');
+                    }
                     return data;
                 }
             } else {
                 const data = await storage.getObject(`proc_def/${defId}`, { key: 'id' });
+                if(!data) {
+                    throw new Error('no such bpmn definition');
+                }
                 return data;
             }
+
         } catch (error) {
             throw new Error('error in getRawDefinition');
         }
@@ -103,12 +128,13 @@ class ProcessGPTBackend implements Backend {
 
     async start(input: any) {
         try {
-            if (input.process_definition_id) {
-                const list = await storage.list(input.process_definition_id);
+            let defId = input.process_definition_id || input.processDefinitionId;
+            if (defId) {
+                const list = await storage.list(defId);
                 if (list.code == "42P01") {
                     await axios.post('/process-db-schema/invoke', {
                         "input": {
-                            "process_definition_id": input.process_definition_id
+                            "process_definition_id": defId
                         }
                     }).then(res => {
                         return res
@@ -117,6 +143,18 @@ class ProcessGPTBackend implements Backend {
                     });
                 }
             }
+
+            input['process_definition_id'] = defId;
+            if (!input.answer) {
+                input.answer = "";
+            }
+            if (!input.process_instance_id) {
+                input.process_instance_id = "new";
+            }
+            if (!input.userInfo) {
+                input.userInfo = await storage.getUserInfo();
+            }
+            
             
             var result: any = null;
             var url = '/complete/invoke';
@@ -225,6 +263,7 @@ class ProcessGPTBackend implements Backend {
                         dueDate: item.end_date,
                         status: item.status,
                         title: item.activity_id,
+                        tracingTag: item.activity_id,
                         description: item.description || "",
                         tool: ""
                     };
@@ -372,28 +411,69 @@ class ProcessGPTBackend implements Backend {
         throw new Error("Method not implemented.");
     }
 
+    async getCompletedList() {
+        throw new Error("Method not implemented.");
+    }
+
     async getPendingList() {
         throw new Error("Method not implemented.");
     }
 
-    async putWorkItemComplate(taskId: string, workItem: any) {
+    async putWorkItemComplete(taskId: string, inputData: any) {
         try {
-            let url = '/complete/invoke';
+            const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
             const userInfo = await storage.getUserInfo();
+            
+            const newMessage = {
+                role: 'system',
+                timestamp: Date.now(),
+                content: `'${workItem.activity_id}' 를 실행합니다.`
+            }
+            await this.updateInstanceChat(workItem.proc_inst_id, newMessage);
+
             const input = {
-                answer: JSON.stringify(workItem),
-                process_instance_id: "",
-                process_definition_id: "",
+                answer: JSON.stringify(inputData),
+                process_instance_id: workItem.proc_inst_id,
+                process_definition_id: workItem.proc_def_id,
                 userInfo: userInfo,
+                activity_id: workItem.activity_id,
             };
             const req = {
                 input: input
             };
-
+            let url = '/complete/invoke';
             await axios.post(url, req).then(async res => {
                 if (res.data) {
                     const data = res.data;
                     if (data.output) {
+                        const output = JSON.parse(data.output);
+
+                        // update todolist
+                        const todo = {
+                            id: taskId,
+                            proc_def_id: output.processDefinitionId,
+                            proc_inst_id: output.instanceId,
+                            end_date: Date.now(),
+                            status: 'DONE',
+                            activity_id: output.completedActivities[0].completedActivityId,
+                        }
+                        await this.putWorklist(taskId, todo);
+
+                        // update instance activity
+                        const inst = {
+                            proc_inst_id: output.instanceId,
+                            current_activity_ids: output.nextActivities,
+                        }
+                        await storage.putObject(output.processDefinitionId, inst);
+                        
+                        // update instance message
+                        const newMessage = {
+                            role: 'system',
+                            timestamp: Date.now(),
+                            content: output.description,
+                            jsonContent: data.output
+                        }
+                        await this.updateInstanceChat(output.instanceId, newMessage);
                     }
                 }
             })
@@ -402,7 +482,22 @@ class ProcessGPTBackend implements Backend {
             });
 
         } catch (error) {
-            throw new Error('error in putWorkItemComplate');
+            return new Error('error in putWorkItemComplete');
+        }
+    }
+
+    async updateInstanceChat(instanceId: string, newMessage: any) {
+        try {
+            const data = await storage.getObject(`proc_inst/${instanceId}`, { key: 'id' });
+            const messages = data.messages;
+            messages.push(newMessage);
+            const putObj = {
+                id: instanceId,
+                messages: messages
+            }
+            await storage.putObject('proc_inst', putObj);
+        } catch (e) {
+            return new Error('error in updateInstanceChat');
         }
     }
 
@@ -446,17 +541,28 @@ class ProcessGPTBackend implements Backend {
     async getCompleteInstanceList() {
         try {
             const instList: any[] = [];
-            const data = await storage.list('proc_inst');
+            let list = await storage.list('proc_inst');
             const email = localStorage.getItem("email");
-            let list = data.filter((item: any) => item.user_ids.includes(email));
+            list = list.filter((item: any) => item.user_ids.includes(email));
             
             if (list && list.length > 0) {
                 for (const item of list) {
                     const defId = item.id.split(".")[0];
+                    const data = await this.getRawDefinition(defId, null);
+                    if (!data || !data.definition || !data.definition.activities) continue;
+                    const lastActId = data.definition.activities[data.definition.activities.length-1].id || '';
                     const instance = await this.getInstance(item.id);
-                    if (!instance.current_activity_ids.length) {
+                    if (instance.current_activity_ids.length == 0) {
+                        const taskId = await storage.getString('todolist', {
+                            match: { 
+                                proc_inst_id: item.id,
+                                status: 'DONE',
+                                activity_id: lastActId
+                            },
+                            column: 'id'
+                        });
                         const instItem = {
-                            instId: item.id,
+                            instId: taskId,
                             instName: item.name,
                             status: "COMPLETE",
                             startedDate: instance.start_date,
@@ -475,20 +581,21 @@ class ProcessGPTBackend implements Backend {
     async getWorkListByInstId(instId: number) {
         try {
             const list = await storage.list(`todolist`, { match: { 'proc_inst_id': instId } });
-            const worklist: any[] = list.map((task: any) => {
+            const worklist: any[] = list.map((item: any) => {
                 return {
-                    defId: task.proc_def_id,
-                    endpoint: task.user_id,
-                    instId: task.proc_inst_id,
-                    rootInstId: task.proc_inst_id,
-                    taskId: task.id,
-                    startDate: task.start_date,
-                    dueDate: task.end_date,
-                    status: task.status,
-                    title: task.activity_id,
-                    tool: task.tool || '',
-                    description: task.description || '',
-                    task: task
+                    defId: item.proc_def_id,
+                    endpoint: item.user_id,
+                    instId: item.proc_inst_id,
+                    rootInstId: item.proc_inst_id,
+                    taskId: item.id,
+                    startDate: item.start_date,
+                    dueDate: item.end_date,
+                    status: item.status,
+                    title: item.activity_id,
+                    tool: item.tool || '',
+                    tracingTag: item.activity_id,
+                    description: item.description || '',
+                    task: item
                 }
             })
             return worklist;

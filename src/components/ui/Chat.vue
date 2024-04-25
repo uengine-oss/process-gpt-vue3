@@ -89,7 +89,7 @@
                 <!-- <v-btn v-if="type == 'chats' && filteredMessages.length > 0" style="position: absolute; left: 45%"
                     @click="getMoreChat()">get more chat</v-btn> -->
 
-                <div class="d-flex w-100" style="height: calc(100vh - 340px);">
+                <div class="d-flex w-100" style="height: calc(100vh - 307px);">
                     <v-col>
                         <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
                             <template v-slot:title>
@@ -271,7 +271,7 @@
                             <v-btn v-if="(type == 'instances' || type == 'chats') && !agentInfo.isRunning"
                                 :disabled="!(newMessage || agentInfo.draftPrompt)" icon variant="text"
                                 class="text-medium-emphasis" @click="requestDraftAgent" v-bind="props"
-                                style="width:30px; height:30px; margin:1px 0px 0px 3px;">
+                                style="width:30px; height:30px; margin:1px 0px 0px 5px;">
                                 <Icon icon="fluent:document-one-page-sparkle-16-regular" width="20" height="20" />
                             </v-btn>
                             <v-btn v-if="(type == 'instances' || type == 'chats') && agentInfo.isRunning" icon variant="text"
@@ -288,14 +288,6 @@
                         <v-row class="ma-0 pa-0"
                             :style="file && file.length > 0 ? 'margin:-13px 0px 0px 7px !important;' : ''"
                         >
-                            <v-file-input class="chat-file-up-load"
-                                :class="{'chat-file-up-load-display': file && file.length > 0}"
-                                :style="file && file.length > 0 ? '' : 'padding:5px 0px 0px 8px !important;'"
-                                v-model="file"
-                                label="Choose a file"
-                                prepend-icon="mdi-paperclip"
-                                outlined
-                            ></v-file-input>
                             <v-tooltip :text="$t('chat.fileUpLoad')">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-if="file && file.length > 0" type="submit" 
@@ -304,12 +296,20 @@
                                         class="text-medium-emphasis"
                                         style="width:30px;
                                             height:30px;
-                                            margin:8px 0px 0px 5px;"
+                                            margin:12.5px 0px 0px 0px;"
                                     >
                                         <Icon icon="material-symbols:upload" width="24" height="24" />
                                     </v-btn>
                                 </template>
                             </v-tooltip>
+                            <v-file-input class="chat-file-up-load"
+                                :class="{'chat-file-up-load-display': file && file.length > 0}"
+                                :style="file && file.length > 0 ? '' : 'padding:5px 0px 0px 8px !important;'"
+                                v-model="file"
+                                label="Choose a file"
+                                prepend-icon="mdi-paperclip"
+                                outlined
+                            ></v-file-input>
                         </v-row>
                     </v-form>
                 </v-row>
@@ -435,6 +435,15 @@ export default {
             mentionedUsers: [], // Mention된 유저들의 정보를 저장할 배열
             file: null,
         };
+    },
+    mounted() {
+        var me = this
+        document.addEventListener('click', (event) => {
+            if (event.target.matches('.request-file-link')) {
+                event.preventDefault();
+                me.$emit("requestFile", event.target.getAttribute('data-filename'));
+            }
+        });
     },
     computed: {
         filteredUserList() {

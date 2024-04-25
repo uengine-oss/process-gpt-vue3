@@ -26,12 +26,7 @@ export const commonSettingInfos = {
         dataToUse: "localAlias",
         htmlAttribute: "alias",
         settingLabel: "Label",
-        settingType: "text",
-        validCheck: (value) => {
-            if (!value || value.length <= 0) return "Label 속성에 값을 입력해 주세요."
-            if (!/^[가-힣a-zA-Z0-9_\-. ]+$/.test(value)) return "Label 속성은 한글, 영문, 숫자, 공백, 밑줄(_), 대시(-), 점(.) 만 입력 가능합니다!"
-            return null
-        }
+        settingType: "text"
     },
 
     "localDisabled": {

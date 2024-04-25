@@ -36,16 +36,22 @@ const customizer = useCustomizerStore();
                     <!---Item Sub Header -->
                     <NavGroup v-if="item.header && !item.disable" :item="item" :key="item.title" />
                     <!---If Has Child -->
-                    <NavCollapse v-else-if="item.children && !disable" class="leftPadding" :item="item" :level="0" />
+                    <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
                     <!---Single Item-->
                     <NavItem v-else-if="!item.disable" class="leftPadding" :item="item" />
                     <!---End Single Item-->
                 </template>
 
-                <template v-if="definition">
-                    <NavItem :item="definition" class="leftPadding" />
+                <!-- definition menu item -->
+                <template v-if="definitionItem.length" v-for="item in definitionItem" :key="item.title">
+                    <!---Item Sub Header -->
+                    <NavGroup v-if="item.header && !item.disable" :item="item" :key="item.title" />
+                    <!---If Has Child -->
+                    <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
+                    <!---Single Item-->
+                    <NavItem v-else-if="!item.disable" class="leftPadding" :item="item" />
+                    <!---End Single Item-->
                 </template>
-                <!-- Process Definition List -->
                 <template v-if="definitionList">
                     <NavCollapse class="leftPadding" :item="definitionList" @update:item="(def) => (definitionList = def)" :level="0" />
                 </template>
@@ -77,21 +83,21 @@ export default {
                 icon: 'lucide:layout-panel-top',
                 BgColor: 'primary',
                 to: '/dashboard2',
-                disable: true
+                disable: false
             },
             {
                 title: 'todoList.title',
                 icon: 'pajamas:overview',
                 BgColor: 'primary',
                 to: '/todolist',
-                disable: true
+                disable: false
             },
             {
                 title: 'calendar.title',
                 icon: 'solar:calendar-line-duotone',
                 BgColor: 'primary',
                 to: '/calendar',
-                disable: true
+                disable: false
             },
             {
                 title: 'chats.title',
@@ -100,42 +106,58 @@ export default {
                 to: '/chats',
                 disable: true
             },
-            {
-                header: 'definitionManagement.title',
-                disable: false
-            },
-            {
-                title: 'organizationChartDefinition.title',
-                icon: 'solar:users-group-rounded-line-duotone',
-                BgColor: 'primary',
-                to: '/organization',
-                disable: true
-            },
-            {
-                title: 'uiDefinition.title',
-                icon: 'icon-park-outline:layout-five',
-                BgColor: 'primary',
-                to: '/ui-definitions/chat'
-            }
         ],
-        definition: null,
+        definitionItem: [],
         definitionList: null
     }),
+    computed: {
+        useChat() {
+            if (window.$mode == "ProcessGPT") {
+                return true;
+            }
+            return false;
+        }
+    },
     async created() {
         const isAdmin = localStorage.getItem('isAdmin');
         if (isAdmin == 'true') {
-            this.definition = {
-                title: 'processDefinition.title',
-                icon: 'tabler:device-imac-cog',
-                BgColor: 'primary',
-                to: '/definitions/chat'
-            };
+            this.definitionItem = [
+                {
+                    header: 'definitionManagement.title',
+                    disable: false
+                },
+                {
+                    title: 'organizationChartDefinition.title',
+                    icon: 'solar:users-group-rounded-line-duotone',
+                    BgColor: 'primary',
+                    to: '/organization',
+                    disable: true
+                },
+                {
+                    title: 'uiDefinition.title',
+                    icon: 'icon-park-outline:layout-five',
+                    BgColor: 'primary',
+                    to: '/ui-definitions/chat',
+                    disable: false
+                },
+                {
+                    title: 'processDefinition.title',
+                    icon: 'tabler:device-imac-cog',
+                    BgColor: 'primary',
+                    to: '/definitions/chat',
+                    disable: false
+                }
+            ]
             this.getDefinitionList();
         }
 
-        const execution = localStorage.getItem('execution');
-        if (execution == 'true') {
+        if (this.useChat) {
             this.sidebarItem.forEach((item) => {
+                if (item.disable) {
+                    item.disable = false;
+                }
+            });
+            this.definitionItem.forEach((item) => {
                 if (item.disable) {
                     item.disable = false;
                 }

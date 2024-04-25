@@ -141,7 +141,7 @@ import { useBpmnStore } from '@/stores/bpmn';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { Icon } from '@iconify/vue';
 const storage = StorageBaseFactory.getStorage();
-import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
+// import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
 
 export default {
     name: 'send-task-panel',
