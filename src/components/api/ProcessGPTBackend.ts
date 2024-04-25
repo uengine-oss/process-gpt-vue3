@@ -51,7 +51,7 @@ class ProcessGPTBackend implements Backend {
             // 폼 정보를 저장하기 위해서
             if(options && options.type === "form") {
                 await storage.putObject('form_def', {
-                    id: defId,
+                    id: defId.replace(/\//g, "#"),
                     html: xml
                 });
                 return
@@ -101,16 +101,23 @@ class ProcessGPTBackend implements Backend {
             if (options) {
                 // 폼 정보를 불러오기 위해서
                 if(options.type === "form") {
-                    const data = await storage.getString(`form_def/${defId}`, { key: 'id' });
-                    return data;
+                    const data = await storage.getString(`form_def/${defId.replace(/\//g, "#")}`, { key: 'id' });
+                    if(!data) {
+                        throw new Error('no such form definition');
+                    }
+                    return data.html;
                 } else if(options.type === "bpmn") {
                     const data = await storage.getString(`proc_def/${defId}`, { key: 'id', column: 'bpmn' });
+                    if(!data) {
+                        throw new Error('no such bpmn definition');
+                    }
                     return data;
                 }
             } else {
                 const data = await storage.getObject(`proc_def/${defId}`, { key: 'id' });
                 return data;
             }
+
         } catch (error) {
             throw new Error('error in getRawDefinition');
         }
@@ -402,7 +409,7 @@ class ProcessGPTBackend implements Backend {
     }
 
     async getCompletedList() {
-        throw new Error("Method not implemented.");
+        return [];
     }
 
     async getPendingList() {
@@ -504,15 +511,8 @@ class ProcessGPTBackend implements Backend {
                     const defId = item.id.split(".")[0];
                     const instance = await this.getInstance(item.id);
                     if (instance.current_activity_ids.length > 0) {
-                        const taskId = await storage.getString('todolist', {
-                            match: { 
-                                proc_inst_id: item.id,
-                                activity_id: instance.current_activity_ids[0]
-                            },
-                            column: 'id'
-                        });
                         const instItem = {
-                            instId: taskId,
+                            instId: item.id,
                             instName: item.name,
                             status: "IN_PROGRESS",
                             startedDate: instance.start_date,
@@ -538,21 +538,10 @@ class ProcessGPTBackend implements Backend {
             if (list && list.length > 0) {
                 for (const item of list) {
                     const defId = item.id.split(".")[0];
-                    const data = await this.getRawDefinition(defId, null);
-                    if (!data || !data.definition || !data.definition.activities) continue;
-                    const lastActId = data.definition.activities[data.definition.activities.length-1].id || '';
                     const instance = await this.getInstance(item.id);
                     if (instance.current_activity_ids.length == 0) {
-                        const taskId = await storage.getString('todolist', {
-                            match: { 
-                                proc_inst_id: item.id,
-                                status: 'DONE',
-                                activity_id: lastActId
-                            },
-                            column: 'id'
-                        });
                         const instItem = {
-                            instId: taskId,
+                            instId: item.id,
                             instName: item.name,
                             status: "COMPLETE",
                             startedDate: instance.start_date,
