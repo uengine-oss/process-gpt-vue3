@@ -21,7 +21,7 @@
                         <span>{{ $t('processDefinitionMap.unlock') }}</span>
                     </v-tooltip>
 
-                    <v-tooltip location="bottom" v-if="lock && isAdmin && userName && userName == editUser">
+                    <v-tooltip location="bottom" v-if="lock && isAdmin && userName == editUser">
                         <template v-slot:activator="{ props }">
                             <v-btn 
                                 v-bind="props"
@@ -35,7 +35,7 @@
                         <span>{{ $t('processDefinitionMap.lock') }}</span>
                     </v-tooltip>
 
-                    <v-tooltip location="bottom" v-if="lock && isAdmin && userName && userName != editUser">
+                    <v-tooltip location="bottom" v-if="lock && isAdmin && userName != editUser">
                         <template v-slot:activator="{ props }">
                             <v-btn 
                                 v-bind="props"
@@ -252,8 +252,7 @@ export default {
         },
         openAlertDialog(type) {
             this.alertType = type;
-            const isAdmin = localStorage.getItem("isAdmin");
-            if (isAdmin == "true") {
+            if (this.isAdmin) {
                 if (type == 'checkin') {
                     if (this.editUser == this.userName) {
                         this.alertDialog = true;

@@ -7,7 +7,7 @@
         >
         <template v-slot:label>
             <span style="color:black;">
-                {{localAlias ?? localName}}
+                {{(localAlias && localAlias.length > 0) ? localAlias : localName}}
             </span>
         </template>
         </v-select>

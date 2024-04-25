@@ -145,10 +145,13 @@ export default {
                     me.onLoad = false;
                     const defId = obj.id;
                     const backend = BackendFactory.createBackend();
-                    if (!me.value) {
-                        me.value = await backend.getProcessDefinitionMap();
+                    let processMap;
+                    if (me.value && me.value.mega_proc_list && me.value.mega_proc_list.length > 0) {
+                        processMap = me.value;
+                    } else {
+                        processMap = await backend.getProcessDefinitionMap();
                     }
-                    me.value.mega_proc_list.forEach(mega => {
+                    processMap.mega_proc_list.forEach(mega => {
                         mega.major_proc_list.forEach(major => {
                             major.sub_proc_list.forEach(sub => {
                                 if (sub.id == defId) {
@@ -181,7 +184,7 @@ export default {
         },
         executeProcess() {
             this.executeDialog = true
-        }
+        },
     },
 }
 </script>

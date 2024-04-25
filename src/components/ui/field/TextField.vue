@@ -3,7 +3,7 @@
         <v-text-field v-model="localModelValue" :type="localType" :disabled="localDisabled">
             <template v-slot:label>
                 <span style="color:black;">
-                    {{localAlias ?? localName}}
+                    {{(localAlias && localAlias.length > 0) ? localAlias : localName}}
                 </span>
             </template>
         </v-text-field>
