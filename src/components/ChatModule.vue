@@ -296,28 +296,12 @@ export default {
 
                 this.messages.push(chatObj);
 
-                if (message.mentionedUsers) {
-                    // if (message.mentionedUsers.length == 0) {
-                    //     this.debouncedGenerate();
-                    // } else if(message.mentionedUsers.some(user => user.id === 'system_id')){
-                    //     this.startGenerate();
-                    // }
-                    if(message.mentionedUsers.some(user => user.id === 'system_id')){
-                        this.startGenerate();
-                    }
+                if (message.mentionedUsers && message.mentionedUsers.some(user => user.id === 'system_id')){
+                    this.startGenerate();
                 } else {
                     this.debouncedGenerate();
                 }
                 
-                // this.messages.push({
-                //     role: 'system',
-                //     content: '...',
-                //     isLoading: true
-                // });
-
-                // await this.generator.generate();
-                // this.debouncedGenerate()
-
                 this.replyUser = null;
             }
         },

@@ -40,6 +40,14 @@ class ProcessGPTBackend implements Backend {
                     result = error
                 });
             }
+            const arcv = await storage.list(`proc_def_arcv/${defId}`, { key: 'proc_def_id' });
+            if (arcv && arcv.length > 0) {
+                await storage.delete(`proc_def_arcv/${defId}`, { key: 'proc_def_id' });
+            }
+            const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
+            if (isLocked) {
+                await storage.delete(`lock/${defId}`, { key: 'id' });
+            }
             return result;
         } catch (error) {
             throw new Error('error in deleteDefinition');
@@ -497,7 +505,6 @@ class ProcessGPTBackend implements Backend {
             return new Error('error in updateInstanceChat');
         }
     }
-
 
     async getInstanceList() {
         try {

@@ -1,5 +1,5 @@
 <template>
-    <v-card elevation="10" style="background-color: rgba(255, 255, 255, 0)">
+    <v-card elevation="10" style="background-color: rgba(255, 255, 255, 0)" :class="{ 'is-deleted': isDeleted }">
         <AppBaseCard>
             <template v-slot:leftpart>
                 <process-definition
@@ -29,44 +29,129 @@
             </template>
             <template v-slot:rightpart>
                 <div class="no-scrollbar">
-                    <Chat
-                        :name="projectName"
-                        :messages="messages"
-                        :chatInfo="chatInfo"
-                        :isChanged="true"
-                        :userInfo="userInfo"
-                        :type="'definitions'"
-                        :lock="lock"
-                        :disableChat="disableChat"
-                        @sendMessage="beforeSendMessage"
-                        @sendEditedMessage="sendEditedMessage"
-                        @stopMessage="stopMessage"
-                        @getMoreChat="getMoreChat"
-                        @loadBPMN="(bpmn) => loadBPMN(bpmn)"
-                        @openVerMangerDialog="toggleVerMangerDialog"
-                        @toggleLock="toggleLock"
-                    ></Chat>
+                    <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" :lock="lock" 
+                        :disableChat="disableChat" @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" 
+                        @stopMessage="stopMessage">
+                        <template v-slot:custom-tools>
+                            <div class="d-flex">
+                                <v-tooltip location="bottom">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-bind="props"
+                                            icon variant="text" 
+                                            type="file"
+                                            class="text-medium-emphasis"
+                                            @click="triggerFileInput"
+                                        >
+                                            <Icon icon="material-symbols:upload" width="24" height="24" />
+                                        </v-btn>
+                                    </template>
+                                    <span>{{ $t('chat.import') }}</span>
+                                </v-tooltip>
+                                <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn" style="display: none;" />
+
+                                <v-tooltip location="bottom">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-if="bpmn" v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                            @click="toggleLock">
+                                            <Icon v-if="lock" icon="f7:lock" width="24" height="24"></Icon>
+                                            <Icon v-else icon="f7:lock-open" width="24" height="24"></Icon>
+                                        </v-btn>
+                                    </template>
+                                    <span v-if="lock">{{ $t('chat.unlock') }}</span>
+                                    <span v-else>{{ $t('chat.lock') }}</span>
+                                </v-tooltip>
+                                
+                                <v-tooltip location="bottom">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-if="bpmn" v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                            @click="toggleVerMangerDialog">
+                                            <HistoryIcon size="24" />
+                                        </v-btn>
+                                    </template>
+                                    <span>{{ $t('chat.history') }}</span>
+                                </v-tooltip>
+                                
+                                <v-tooltip location="bottom">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-if="bpmn" v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                            @click="beforeDelete">
+                                            <TrashIcon size="24" />
+                                        </v-btn>
+                                    </template>
+                                    <span>{{ $t('processDefinition.deleteProcess') }}</span>
+                                </v-tooltip>
+                            </div>
+                        </template>
+                    </Chat>
                 </div>
+                <v-dialog v-model="deleteDialog" max-width="500">
+                    <v-card>
+                        <v-card-text>
+                            {{ $t('processDefinition.deleteProcessMessage') }}
+                        </v-card-text>
+                        <v-card-actions class="justify-center pt-0">
+                            <v-btn color="primary" variant="flat" @click="deleteProcess">{{ $t('processDefinition.delete') }}</v-btn>
+                            <v-btn color="error" variant="flat" @click="deleteDialog = false">{{ $t('processDefinition.cancel') }}</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
             </template>
 
             <template v-slot:mobileLeftContent>
-                <Chat
-                    :name="projectName"
-                    :messages="messages"
-                    :chatInfo="chatInfo"
-                    :isChanged="isChanged"
-                    :userInfo="userInfo"
-                    :type="'definitions'"
-                    :lock="lock"
-                    :disableChat="disableChat"
-                    @sendMessage="beforeSendMessage"
-                    @sendEditedMessage="sendEditedMessage"
-                    @stopMessage="stopMessage"
-                    @getMoreChat="getMoreChat"
-                    @loadBPMN="(bpmn) => loadBPMN(bpmn)"
-                    @openVerMangerDialog="toggleVerMangerDialog"
-                    @toggleLock="toggleLock"
-                ></Chat>
+                <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" :lock="lock"
+                    :disableChat="disableChat" @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage"
+                    @stopMessage="stopMessage">
+                    <template v-slot:custom-tools>
+                        <div class="d-flex">
+                            <v-tooltip location="bottom">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props"
+                                        icon variant="text" 
+                                        type="file"
+                                        class="text-medium-emphasis"
+                                        @click="triggerFileInput"
+                                    >
+                                        <Icon icon="material-symbols:upload" width="24" height="24" />
+                                    </v-btn>
+                                </template>
+                                <span>{{ $t('chat.import') }}</span>
+                            </v-tooltip>
+                            <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn" style="display: none;" />
+
+                            <v-tooltip location="bottom">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-if="bpmn" v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                        @click="toggleLock">
+                                        <Icon v-if="lock" icon="f7:lock" width="24" height="24"></Icon>
+                                        <Icon v-else icon="f7:lock-open" width="24" height="24"></Icon>
+                                    </v-btn>
+                                </template>
+                                <span v-if="lock">{{ $t('chat.unlock') }}</span>
+                                <span v-else>{{ $t('chat.lock') }}</span>
+                            </v-tooltip>
+                            
+                            <v-tooltip location="bottom">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-if="bpmn" v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                        @click="toggleVerMangerDialog">
+                                        <HistoryIcon size="24" />
+                                    </v-btn>
+                                </template>
+                                <span>{{ $t('chat.history') }}</span>
+                            </v-tooltip>
+                            
+                            <v-tooltip location="bottom">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-if="bpmn" v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                        @click="beforeDelete">
+                                        <TrashIcon size="24" />
+                                    </v-btn>
+                                </template>
+                                <span>{{ $t('processDefinition.deleteProcess') }}</span>
+                            </v-tooltip>
+                        </div>
+                    </template>
+                </Chat>
             </template>
         </AppBaseCard>
     </v-card>
@@ -84,7 +169,7 @@ import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import { useBpmnStore } from '@/stores/bpmn';
-import axios from 'axios';
+
 import * as jsondiff from 'jsondiffpatch';
 import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/ProcessDefinitionGenerator';
@@ -134,7 +219,10 @@ export default {
         // version
         versionDialog: false,
         verMangerDialog: false,
-        loading: false
+        loading: false,
+        // delete
+        deleteDialog: false,
+        isDeleted: false,
     }),
     async created() {
         await this.init();
@@ -165,6 +253,38 @@ export default {
         }
     },
     methods: {
+        beforeDelete() {
+            this.deleteDialog = true;
+        },
+        async deleteProcess() {
+            var me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    await backend.deleteDefinition(this.fullPath);
+                    this.deleteDialog = false;
+                    this.isDeleted = true;
+                }
+            });
+        },
+        triggerFileInput() {
+            this.$refs.fileInput.click();
+        },
+        handleFileChange(event) {
+            let me = this;
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+                // 파일 내용 처리
+                me.loadBPMN(content);
+            };
+            reader.readAsText(file);
+        },
         checkedLock(defId) {
             var me = this;
             me.$try({
@@ -309,6 +429,7 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
+                    me.isDeleted = false;
                     const fullPath = me.$route.params.pathMatch.join('/');
                     if (fullPath.startsWith('/')) {
                         fullPath = fullPath.substring(1);
@@ -342,6 +463,11 @@ export default {
                                 me.processDefinition.processDefinitionName = me.projectName;
                             }
                         }
+                        
+                        me.lock = false;
+                        me.disableChat = false;
+                        me.isViewMode = false;
+                        me.definitionChangeCount++;
                     }
                     me.processDefinitionMap = await backend.getProcessDefinitionMap();
                 }
@@ -586,6 +712,10 @@ export default {
                     }
                     await backend.putRawDefinition(xml, info.proc_def_id, info);
                     await this.saveToVectorStore(me.processDefinition);
+
+                    if (me.$route.fullPath == '/definitions/chat') {
+                        me.$router.push('/definitions/' + me.processDefinition.processDefinitionId);
+                    }
                 }
             });
         },
@@ -1414,5 +1544,19 @@ export default {
 :deep(.left-part) {
     width: 80%;
     /* Apply specific width */
+}
+
+.is-deleted {
+    position: relative;
+}
+.is-deleted::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5); /* 회색 오버레이 */
+    z-index: 10;
 }
 </style>
