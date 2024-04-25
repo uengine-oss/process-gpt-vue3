@@ -1,10 +1,7 @@
 <template>
     <div class="mb-3" @mouseover="hover = true" @mouseleave="hover = false">
-        <v-card @click="viewProcessDetail(parent)"
-            class="align-center bg-lightsecondary pa-2 pr-3 pl-3"
-            elevation="10"
-            style="border-radius: 10px !important; margin-bottom:5px;"
-        >
+        <v-card class="align-center bg-lightsecondary pa-2 pr-3 pl-3" elevation="10"
+            style="border-radius: 10px !important; margin-bottom:5px;" @click="goProcess(parent.label, 'mega')">
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-1 font-weight-semibold">
                 <v-row class="ma-0 pa-0">
                     <v-col cols="8" class="ma-0 pa-0 text-left">
@@ -16,7 +13,6 @@
                                 :size="16"
                                 :type="type"
                                 :process="value"
-                                :userInfo="userInfo"
                                 :enableEdit="enableEdit"
                                 @delete="deleteProcess"
                                 @editProcessdialog="editProcessdialog"
@@ -44,32 +40,14 @@
             group="subProcess"
         >
             <transition-group>
-                <div v-for="item in value.sub_proc_list"
-                    :key="item.id"
-                    class="cursor-pointer"
-                >
-                    <SubProcess 
-                        :value="item" 
-                        :parent="value" 
-                        :userInfo="userInfo"
-                        :enableEdit="enableEdit"
-                        :enableExecution="enableExecution"
-                        @view="viewProcess"
-                    />
+                <div v-for="item in value.sub_proc_list" :key="item.id" class="cursor-pointer">
+                    <SubProcess :value="item" :parent="value" :enableEdit="enableEdit" />
                 </div>
             </transition-group>
         </draggable>
         <div v-else>
-            <div v-for="item in value.sub_proc_list"
-                :key="item.id"
-            >
-                <SubProcess 
-                    :value="item" 
-                    :parent="value" 
-                    :enableEdit="enableEdit"
-                    :enableExecution="enableExecution"
-                    @click="viewProcess"
-                />
+            <div v-for="item in value.sub_proc_list" :key="item.id">
+                <SubProcess :value="item" :parent="value" :enableEdit="enableEdit" />
             </div>
         </div>
         <v-card v-if="!processDialogStatus && enableEdit && hover" @click="openSubProcessDialog('add')"
@@ -117,9 +95,7 @@ export default {
     props: {
         value: Object,
         parent: Object,
-        userInfo: Object,
         enableEdit: Boolean,
-        enableExecution: Boolean
     },
     data: () => ({
         type: 'major',
@@ -140,12 +116,6 @@ export default {
         },
         deleteProcess() {
             this.parent.major_proc_list = this.parent.major_proc_list.filter(item => item.id != this.value.id);
-        },
-        viewProcess(process) {
-            this.$emit('view', process);
-        },
-        viewProcessDetail(process) {
-            this.$router.push(`/definition-map/mega/${process.label}`)
         },
     },
 }

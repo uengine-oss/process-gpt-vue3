@@ -37,20 +37,12 @@
                     </template>
                 </v-tooltip>
             </div>
-            <!-- <div v-else-if="enableExecution" icon variant="text" :width="size" :height="size">
-                <v-list density="compact" class="cursor-pointer">
-                    <v-btn @click="executeProcessDialog">
-                            프로세스 실행
-                    </v-btn>
-                </v-list>
-            </div> -->
         </v-row>
     </div>
 </template>
 
 <script>
 import ProcessDialog from './ProcessDialog.vue'
-
 
 export default {
     components: {
@@ -61,7 +53,6 @@ export default {
         type: String,
         process: Object,
         enableEdit: Boolean,
-        enableExecution: Boolean,
     },
     data: () => ({
         newProcess: {
@@ -70,7 +61,6 @@ export default {
         },
         processDialogStatus: false,
         processType: "",
-        // executeProcessDialog: false
     }),
     computed: {
         addType() {
@@ -88,9 +78,6 @@ export default {
     created() {
     },
     methods: {
-        // executeProcessDialog() {
-        //     this.executeProcessDialog = true;
-        // },
         openEditDialog(processType) {
             this.$emit('editProcessdialog', processType);
         },

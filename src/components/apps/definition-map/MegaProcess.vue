@@ -1,11 +1,7 @@
 <template>
     <div class="w-100" @mouseover="hover = true" @mouseleave="hover = false">
-        <v-card
-            class="align-center pa-3 mb-3 bg-lightwarning"
-            elevation="10"
-            style="border-radius: 10px !important;"
-            @click="viewProcessDetail(value)"
-        >
+        <v-card class="align-center pa-3 mb-3 bg-lightwarning" elevation="10" style="border-radius: 10px !important;"
+            @click="goProcess(value.label, 'mega')">
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-h6 font-weight-semibold">
                 <v-row class="ma-0 pa-0">
                     <v-col cols="8" class="ma-0 pa-0 text-left">
@@ -44,33 +40,14 @@
             group="majorProcess"
         >
             <transition-group>
-                <div v-for="item in value.major_proc_list"
-                    :key="item.id" 
-                    class="cursor-pointer"
-                >
-                    <MajorProcess 
-                        :value="item" 
-                        :parent="value" 
-                        :userInfo="userInfo"
-                        :enableEdit="enableEdit"
-                        :enableExecution="enableExecution"
-                        @view="viewProcess"
-                    />
+                <div v-for="item in value.major_proc_list" :key="item.id" class="cursor-pointer">
+                    <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" />
                 </div>
             </transition-group>
         </draggable>
         <div v-else>
-            <div v-for="item in value.major_proc_list"
-                :key="item.id" 
-            >
-                <MajorProcess 
-                    :value="item" 
-                    :parent="value" 
-                    :userInfo="userInfo"
-                    :enableEdit="enableEdit"
-                    :enableExecution="enableExecution"
-                    @view="viewProcess"
-                />
+            <div v-for="item in value.major_proc_list" :key="item.id">
+                <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" />
             </div>
         </div>
         <v-card v-if="!processDialogStatus && enableEdit && hover" 
@@ -117,9 +94,7 @@ export default {
     props: {
         value: Object,
         parent: Object,
-        userInfo: Object,
         enableEdit: Boolean,
-        enableExecution: Boolean,
     },
     data: () => ({
         type: 'mega',
@@ -142,12 +117,6 @@ export default {
         },
         deleteProcess() {
             this.parent.mega_proc_list = this.parent.mega_proc_list.filter(item => item.id != this.value.id);
-        },
-        viewProcessDetail(process) {
-            this.$router.push(`/definition-map/mega/${process.label}`)
-        },
-        viewProcess() {
-            this.$emit('view', this.value);
         },
     },
 }
