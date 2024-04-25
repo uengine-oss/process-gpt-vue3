@@ -52,12 +52,12 @@
             <ProcessDefinition v-if="bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
                 :processDefinition="processDefinition.definition" :isViewMode="isViewMode"
                 v-on:openSubProcess="ele => openSubProcess(ele)"></ProcessDefinition>
-            <div v-else-if="!bpmn" style="height: 90%; text-align: center">
-                <h6 class="text-h6">정의된 프로세스 모델이 없습니다.</h6>
-                <v-btn color="primary" variant="flat" class="mt-4" @click="editProcessModel">
-                    프로세스 편집
-                </v-btn>
-            </div>
+                <!-- <div v-else-if="!bpmn" style="height: 90%; text-align: center">
+                    <h6 class="text-h6">정의된 프로세스 모델이 없습니다.</h6>
+                    <v-btn color="primary" variant="flat" class="mt-4" @click="editProcessModel">
+                        프로세스 편집
+                    </v-btn>
+                </div> -->
         </v-card-text>
         <v-dialog v-model="executeDialog">
             <ProcessExecuteDialog :definitionId="processDefinition.id" @close="executeDialog = false"></ProcessExecuteDialog>
@@ -163,7 +163,7 @@ export default {
         },
         executeProcess() {
             this.executeDialog = true
-        }
+        },
     },
 }
 </script>

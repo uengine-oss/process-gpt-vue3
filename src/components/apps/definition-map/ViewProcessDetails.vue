@@ -21,7 +21,7 @@
                 style="border-radius: 10px !important;"
             >
                 <h6 class="text-h6 font-weight-semibold text-center">{{ filteredProcess.label }}</h6>
-                <div class="ml-auto">
+                <!-- <div class="ml-auto">
                     <ProcessMenu
                         :size="20"
                         :type="'mega'"
@@ -32,12 +32,12 @@
                         @edit="editProcess"
                         @delete="deleteProcess"
                     />
-                </div>
+                </div> -->
             </v-card>
         </div>
         <!-- major Process -->
         <div class="d-flex align-items-center" v-if="filteredProcess && filteredProcess.major_proc_list && filteredProcess.major_proc_list.length > 0">
-            <v-card class="d-flex justify-center align-center pa-3 mb-3 bg-lightsecondary details-title-card"
+            <v-card class="d-flex justify-center align-center pa-3 mb-3 details-title-card bg-lightsecondary"
                 elevation="10"
             >
                 <div class="d-flex flex-column justify-content-center align-items-center">
@@ -53,14 +53,14 @@
             </div>
             <template v-for="(majorProc, index) in filteredProcess.major_proc_list" :key="index">
                 <v-card 
-                    class="d-flex justify-center align-center pa-3 mb-3 bg-lightsecondary last-no-margin"
+                    class="d-flex align-center pa-3 mb-3 bg-lightsecondary last-no-margin"
                     elevation="10"
                     style="border-radius: 10px !important;"
                 >
                     <div class="d-flex flex-column justify-content-center align-items-center">
                         <h6 class="text-h6 font-weight-semibold text-center">{{ majorProc.label }}</h6>
                     </div>
-                    <div class="ml-auto">
+                    <!-- <div class="ml-auto">
                         <ProcessMenu
                             :size="20"
                             :type="'major'"
@@ -71,7 +71,7 @@
                             @edit="editProcess"
                             @delete="deleteProcess"
                         />
-                    </div>
+                    </div> -->
                 </v-card>
             </template>
         </div>
@@ -98,12 +98,13 @@
                         <v-card 
                             class="d-flex align-center pa-3 mb-3 bg-white"
                             elevation="10"
-                            style="border-radius: 10px !important;"
+                            style="border-radius: 10px !important; cursor: pointer;"
+                            @click="viewProcess(subProc)"
                         >
                             <div class="d-flex flex-column justify-content-center align-items-center">
                                 <h6 class="text-h6 font-weight-semibold text-center">{{ subProc.label }}</h6>
                             </div>
-                            <div class="ml-auto">
+                            <!-- <div class="ml-auto">
                                 <ProcessMenu
                                     :size="20"
                                     :type="'sub'"
@@ -114,7 +115,7 @@
                                     @edit="editProcess"
                                     @delete="deleteProcess"
                                 />
-                            </div>
+                            </div> -->
                         </v-card>
                     </template>
                 </v-col>
@@ -166,19 +167,17 @@ export default {
             immediate: true,
             handler(newValue, oldValue) {
                 if(newValue !== oldValue && newValue !== undefined) {
-                    this.processPath = newValue;
-                    // 현재 URL이 이미 목표 URL과 동일한지 확인
-                    const targetPath = `/definition-map/mega/${newValue}`;
-                    if (this.$route.path !== targetPath) {
-                        this.$router.push(targetPath);
-                    }
+                    this.processPath = newValue; // processPath 업데이트
                 }
             },
         },
-        'processPath'(newId) {
-            if (newId !== undefined) {
-                // 현재 URL이 이미 목표 URL과 동일한지 확인
+        'processPath'(newId, oldId) {
+            if (newId !== undefined && newId !== oldId) {
                 const targetPath = `/definition-map/mega/${newId}`;
+                // 현재 라우트가 /definition-map/sub/로 시작하지 않는 경우에만 라우트 변경 수행
+                if (this.$route.path.startsWith('/definition-map/sub/')) {
+                    return; // sub 경로에서는 라우트 변경을 중단
+                }
                 if (this.$route.path !== targetPath) {
                     this.$router.replace(targetPath); // push 대신 replace 사용
                 }
@@ -268,6 +267,9 @@ export default {
                     });
                 });
             }
+        },
+        viewProcess(process) {
+            this.$router.push(`/definition-map/sub/${process.id}`)
         },
     },
 }

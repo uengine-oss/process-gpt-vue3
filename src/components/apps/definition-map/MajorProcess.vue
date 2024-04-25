@@ -54,7 +54,6 @@
                         :userInfo="userInfo"
                         :enableEdit="enableEdit"
                         :enableExecution="enableExecution"
-                        @view="viewProcess"
                     />
                 </div>
             </transition-group>
@@ -68,7 +67,7 @@
                     :parent="value" 
                     :enableEdit="enableEdit"
                     :enableExecution="enableExecution"
-                    @click="viewProcess"
+                    @view="viewProcess"
                 />
             </div>
         </div>
@@ -141,8 +140,8 @@ export default {
         deleteProcess() {
             this.parent.major_proc_list = this.parent.major_proc_list.filter(item => item.id != this.value.id);
         },
-        viewProcess(process) {
-            this.$emit('view', process);
+        viewProcess(value) {
+            this.$emit('view', value);
         },
         viewProcessDetail(process) {
             this.$router.push(`/definition-map/mega/${process.label}`)

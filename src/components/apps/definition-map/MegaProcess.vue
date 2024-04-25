@@ -54,7 +54,6 @@
                         :userInfo="userInfo"
                         :enableEdit="enableEdit"
                         :enableExecution="enableExecution"
-                        @view="viewProcess"
                     />
                 </div>
             </transition-group>
@@ -146,8 +145,8 @@ export default {
         viewProcessDetail(process) {
             this.$router.push(`/definition-map/mega/${process.label}`)
         },
-        viewProcess() {
-            this.$emit('view', this.value);
+        viewProcess(value) {
+            this.$emit('view', value);
         },
     },
 }

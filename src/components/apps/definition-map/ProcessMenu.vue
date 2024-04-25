@@ -5,7 +5,7 @@
             <div v-if="enableEdit" class="proc-menu-btn-box">
                 <v-tooltip v-if="type == 'sub'" text="프로세스 편집">
                     <template v-slot:activator="{ props }">
-                        <v-btn @click="editProcess"
+                        <v-btn @click.stop="editProcess"
                             icon v-bind="props"
                             density="compact"
                             size="small"
@@ -16,7 +16,7 @@
                 </v-tooltip>
                 <v-tooltip v-if="type != 'map'" text="수정">
                     <template v-slot:activator="{ props }">
-                        <v-btn @click="openEditDialog('update')"
+                        <v-btn @click.stop="openEditDialog('update')"
                             icon v-bind="props"
                             density="compact"
                             size="small"
@@ -27,7 +27,7 @@
                 </v-tooltip>
                 <v-tooltip v-if="type != 'map'" text="삭제">
                     <template v-slot:activator="{ props }">
-                        <v-btn @click="deleteProcess"
+                        <v-btn @click.stop="deleteProcess"
                             icon v-bind="props"
                             density="compact"
                             size="small"
@@ -39,7 +39,7 @@
             </div>
             <!-- <div v-else-if="enableExecution" icon variant="text" :width="size" :height="size">
                 <v-list density="compact" class="cursor-pointer">
-                    <v-btn @click="executeProcessDialog">
+                    <v-btn @click.stop="executeProcessDialog">
                             프로세스 실행
                     </v-btn>
                 </v-list>

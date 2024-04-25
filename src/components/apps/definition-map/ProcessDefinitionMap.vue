@@ -11,7 +11,7 @@
                 
                 <!-- buttons -->
                 <div class="ml-auto d-flex">
-                    <v-tooltip location="bottom" v-if="!lock && isAdmin" >
+                    <v-tooltip location="bottom" v-if="!lock" >
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" icon variant="text" size="24" class="ml-3 cp-unlock"
                                 @click="openAlertDialog('checkout')">
@@ -21,7 +21,7 @@
                         <span>{{ $t('processDefinitionMap.unlock') }}</span>
                     </v-tooltip>
 
-                    <v-tooltip location="bottom" v-if="lock && isAdmin && userInfo.email && userInfo.email == editUser">
+                    <v-tooltip location="bottom" v-if="lock">
                         <template v-slot:activator="{ props }">
                             <v-btn 
                                 v-bind="props"
@@ -107,18 +107,18 @@
                         variant="flat" 
                         @click="checkOut"
                     >확인</v-btn>
-                    <v-btn v-else-if="alertType =='checkin' && userInfo.email && userInfo.email == editUser " 
+                    <v-btn v-else-if="alertType =='checkin'" 
                         color="primary"
                         class="cp-check-in" 
                         variant="flat" 
                         @click="checkIn"
                     >확인</v-btn>
-                    <v-btn v-else-if="alertType =='checkin' && userInfo.email && userInfo.email != editUser " 
+                    <!-- <v-btn v-else-if="alertType =='checkin' && userInfo.email && userInfo.email != editUser " 
                         color="primary"
                         class="cp-check-in" 
                         variant="flat" 
                         @click="checkOut"
-                    >체크인</v-btn>
+                    >체크인</v-btn> -->
                    
                     <v-btn 
                     v-if="userInfo.email && userInfo.email == editUser"
