@@ -1,8 +1,8 @@
 <template>
-    <template v-if="localIsMultiDataMode">
+    <template v-if="is_multidata_mode === 'true'">
         <v-card class="pa-3" variant="outlined" style="border-radius: 0px !important;">           
             <v-card-title class="mb-3 d-flex justify-space-between">
-                <div class="mt-2">{{ alias ?? name }}</div>
+                <div class="mt-2">{{(alias && alias.length > 0) ? alias : name}}</div>
 
                 <v-btn @click="addItem" style="background-color: transparent; width: 50px; height: 50px;">
                     <v-icon style="color: green;" size="50">mdi-plus</v-icon>
@@ -10,14 +10,14 @@
             </v-card-title>
             
             <div class="row">
-                <slot :modelValue="localModelValue[localName]" :deleteItem="deleteItem"></slot>
+                <slot :modelValue="localModelValue[name]" :deleteItem="deleteItem"></slot>
             </div>
         </v-card>
     </template>
     <template v-else>
         <v-card class="pa-3" variant="outlined" style="border-radius: 0px !important;">           
             <v-card-title class="mb-3 d-flex justify-space-between">
-                <div class="mt-2">{{ alias ?? name }}</div>
+                <div class="mt-2">{{(alias && alias.length > 0) ? alias : name}}</div>
             </v-card-title>
             
             <div class="row">
@@ -36,16 +36,12 @@ export default {
 
         name: String,
         alias: String,
-        isMultiDataMode: String
+        is_multidata_mode: String
     },
 
     data() {
         return {
-            localModelValue: this.modelValue,
-
-            localName: this.name,
-            localAlias: this.alias,
-            localIsMultiDataMode: this.isMultiDataMode === "true"
+            localModelValue: {}
         };
     },
 
@@ -69,16 +65,20 @@ export default {
 
     methods: {
         addItem() {
-            this.localModelValue[this.localName].push({})
+            this.localModelValue[this.name].push({})
         },
 
         deleteItem(index) {
-            this.localModelValue[this.localName].splice(index, 1)
+            this.localModelValue[this.name].splice(index, 1)
         }
     },
 
     created() {
-        this.localModelValue[this.localName] = [{}]
+        if(this.is_multidata_mode === 'true') {
+            this.localModelValue[this.name] = [{}]
+        } else {
+            this.localModelValue = this.modelValue
+        }
     }
 }
 </script>

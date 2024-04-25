@@ -199,6 +199,17 @@ export default {
     editContainerDefinition(sectionId, localContainerProps) {
       console.log("[*] editContainerDefinition  : ", sectionId, localContainerProps)
 
+
+      const dom = (new DOMParser()).parseFromString(window.mashup.kEditor[0].children[0].innerHTML, 'text/html')
+      const row = dom.querySelector(`section#${sectionId} .row`)
+
+      row.setAttribute('name', localContainerProps.name)
+      row.setAttribute('alias', localContainerProps.alias)
+      row.setAttribute('is_multidata_mode', String(localContainerProps.isMultiDataMode))
+
+      window.mashup.kEditor[0].children[0].innerHTML = dom.body.innerHTML
+
+
       window.mashup.isOpenContainerSettingDialog = false
     },
 
@@ -376,7 +387,7 @@ export default {
         window.mashup.containerProps = {
           name: row ? row.getAttribute('name') || "" : "",
           alias: row ? row.getAttribute('alias') || "" : "",
-          isMultiDataMode: row ? (row.getAttribute('isMultiDataMode') === 'true') : false
+          isMultiDataMode: row ? (row.getAttribute('is_multidata_mode') === 'true') : false
         }
 
 
