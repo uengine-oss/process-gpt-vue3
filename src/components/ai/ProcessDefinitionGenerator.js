@@ -56,8 +56,24 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                    ],
                    "checkpoints":["checkpoint 1", "checkpoint 2"]
               }],
-              "gateways":[],
-              "events":[],
+              "gateways": [
+                {
+                  "id": "gateway_id",
+                  "name": "gateway name",
+                  "type": "ExclusiveGateway | ParallelGateway | InclusiveGateway | EventBasedGateway",
+                  "description": "선택적 또는 병렬 프로세스 흐름을 제어하는 게이트웨이 설명",
+                  "condition": "분기 조건 설명 (if applicable)"
+                }
+              ],
+              "events": [
+                {
+                  "id": "event_id",
+                  "name": "event name",
+                  "type": "StartEvent | EndEvent | IntermediateCatchEvent | MessageEvent | TimerEvent | ErrorEvent | ConditionalEvent | SignalEvent | TerminationEvent | LinkEvent | CompensationEvent | MultipleEvent | ParallelEvent | EscalationEvent | CancelEvent",
+                  "description": "프로세스의 시작, 종료 또는 중간 이벤트 설명",
+                  "trigger": "이벤트 트리거 조건 (if applicable)"
+                }
+              ],
               "sequences": [
                 {
                     "source": "activity id of source activity",

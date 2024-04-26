@@ -17,6 +17,10 @@
                             <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
                         </div>
                     </div>
+
+                    <!-- slot 추가 -->
+                    <slot name="custom-tools"></slot>
+
                     <!-- 폼 저장을 위해서 -->
                     <span v-if="type == 'form'" class="d-flex gap-2 flex-row-reverse" style="height: 0px">
                         <v-tooltip>
@@ -33,62 +37,11 @@
                             <span>{{ $t('uiDefinition.save') }}</span>
                         </v-tooltip>
                     </span>
-
-                    <!-- 프로세스 정의 & 실행 -->
-                    <div class="d-flex">
-                        <v-tooltip v-if="type == 'definitions'"
-                            :disabled="!isChanged"
-                            location="bottom"
-                        >
-                            <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props"
-                                    icon variant="text" 
-                                    type="file"
-                                    class="text-medium-emphasis"
-                                    @click="triggerFileInput"
-                                >
-                                    <Icon icon="material-symbols:upload" width="24" height="24" />
-                                </v-btn>
-                            </template>
-                            <span>{{ $t('chat.import') }}</span>
-                        </v-tooltip>
-                        <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn"
-                            style="display: none;" />
-                        <v-tooltip v-if="type == 'definitions'" location="bottom">
-                            <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props"
-                                    icon variant="text" 
-                                    class="text-medium-emphasis"
-                                    @click="openAlertDialog"
-                                >
-                                    <Icon v-if="lock" icon="f7:lock" width="24" height="24"></Icon>
-                                    <Icon v-else icon="f7:lock-open" width="24" height="24"></Icon>
-                                </v-btn>
-                            </template>
-                            <span v-if="lock">{{ $t('chat.unlock') }}</span>
-                            <span v-else>{{ $t('chat.lock') }}</span>
-                        </v-tooltip>
-                        <v-tooltip v-if="type == 'definitions'" location="bottom">
-                            <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props"
-                                    icon variant="text"
-                                    class="text-medium-emphasis"
-                                    @click="openVerMangerDialog"
-                                >
-                                    <HistoryIcon size="24" />
-                                </v-btn>
-                            </template>
-                            <span>{{ $t('chat.history') }}</span>
-                        </v-tooltip>
-                    </div>
                 </div>
                 <v-divider style="margin:0px;" />
             </div>
 
             <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                <!-- <v-btn v-if="type == 'chats' && filteredMessages.length > 0" style="position: absolute; left: 45%"
-                    @click="getMoreChat()">get more chat</v-btn> -->
-
                 <div class="d-flex w-100" style="height: calc(100vh - 307px);">
                     <v-col>
                         <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
@@ -623,25 +576,6 @@ export default {
             const user = this.userList.find(user => user.email === email);
             return user ? user.profile : '';
         },
-        triggerFileInput() {
-            this.$refs.fileInput.click();
-        },
-        handleFileChange(event) {
-            let me = this;
-            const file = event.target.files[0];
-            if (!file) {
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const content = e.target.result;
-                // 파일 내용 처리
-                me.$emit('loadBPMN', content)
-
-            };
-            reader.readAsText(file);
-        },
         shouldDisplayButtons(message, index) {
             if (message.role !== 'system' || !message.systemRequest || message.requestUserEmail !== this.userInfo.email) {
                 return false;
@@ -778,14 +712,6 @@ export default {
             if (imageFile) {
                 reader.readAsDataURL(imageFile);
             }
-        },
-        openAlertDialog() {
-            if (this.type == 'definitions') {
-                this.$emit('toggleLock')
-            }
-        },
-        complete() {
-            this.$emit('complete');
         },
     }
 };

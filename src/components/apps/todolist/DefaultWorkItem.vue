@@ -43,6 +43,7 @@ export default {
     methods: {
        async init(){
             var me = this
+            if(!me.workItem.activity.parameters) me.workItem.activity.parameters = []
             me.inputItems = me.workItem.activity.parameters
                     .filter(item => item.direction === "OUT")
                     .map(item => ({ name: item.variable.name, value: null }));
@@ -54,6 +55,7 @@ export default {
                 action: async () => {
                     let parameterValues = this.inputItems.reduce((acc, item) => ({...acc, [item.name]: item.value}), {});
                     await backend.putWorkItemComplete(me.$route.params.taskId, {"parameterValues": parameterValues})
+                    me.$router.push('/todolist')
                 },
                 successMsg: '해당 업무 완료'
             })

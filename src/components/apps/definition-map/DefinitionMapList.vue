@@ -5,13 +5,10 @@
             <transition-group>
                 <v-col v-for="item in value.mega_proc_list" :key="item.id" class="cursor-pointer draggable-item"
                     cols="12" md="2" sm="6">
-                    <MegaProcess :value="item" :parent="value" :storage="storage" :userInfo="userInfo"
-                        :enableEdit="enableEdit" :enableExecution="enableExecution" />
+                    <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit" />
                 </v-col>
                 <!-- 실제 카드가 들어가야 할 위치 -->
-                <v-col class="cursor-pointer"
-                    cols="12" md="2" sm="3"
-                >
+                <v-col class="cursor-pointer" cols="12" md="2" sm="3">
                     <v-card v-if="!processDialogStatus"
                         @click="openProcessDialog('add')"
                         class="add-process-card-hover bg-lightwarning cp-add-mega"
@@ -41,8 +38,7 @@
         </draggable>
         <v-row v-else>
             <v-col v-for="item in value.mega_proc_list" :key="item.id" class="cursor-pointer" cols="12" md="2" sm="6">
-                <MegaProcess :value="item" :parent="value" :storage="storage" :userInfo="userInfo"
-                    :enableEdit="enableEdit" :enableExecution="enableExecution" @view="viewProcess" />
+                <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit"/>
             </v-col>
         </v-row>
     </div>
@@ -53,7 +49,6 @@ import MegaProcess from './MegaProcess.vue';
 import ProcessDialog from './ProcessDialog.vue';
 import BaseProcess from './BaseProcess.vue'
 
-
 export default {
     components: {
         MegaProcess,
@@ -62,10 +57,7 @@ export default {
     mixins:[BaseProcess],
     props: {
         value: Object,
-        storage: Object,
-        userInfo: Object,
         enableEdit: Boolean,
-        enableExecution: Boolean
     },
     data: () => ({
         processType: '',
@@ -83,9 +75,6 @@ export default {
                 major_proc_list: [],
             };
             this.value.mega_proc_list.push(newMegaProc);
-        },
-        viewProcess(process) {
-            this.$router.push(`/definition-map/sub/${process.id}`)
         },
     },
 }
