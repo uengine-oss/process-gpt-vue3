@@ -254,12 +254,7 @@ export default {
                     newRow.setAttribute('v-slot', 'slotProps');
 
                     newRow.innerHTML = `<div v-for="(item, index) in slotProps.modelValue" :key="index">
-    <v-sheet class="d-flex justify-space-between" style="background-color: transparent;">
-        <span>{{ "#" + (index+1) }}</span>
-
-        <v-btn @click="slotProps.deleteItem(index)" density="compact" icon="mdi-delete" style="background-color: transparent;"></v-btn>
-    </v-sheet>
-
+    <row-layout-item-head :index="index" @on_delete_item="slotProps.deleteItem(index)"></row-layout-item-head>
     ${row.innerHTML}
 </div>`
 

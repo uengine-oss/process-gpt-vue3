@@ -24,6 +24,7 @@ import BooleanField from '@/components/ui/field/BooleanField.vue';
 import TextareaField from '@/components/ui/field/TextareaField.vue';
 import UserSelectField from '@/components/ui/field/UserSelectField.vue';
 import RowLayout from '@/components/ui/field/RowLayout.vue';
+import RowLayoutItemHead from '@/components/ui/field/RowLayoutItemHead.vue';
 
 export default {
   props: {
@@ -82,7 +83,8 @@ export default {
         BooleanField,
         TextareaField,
         UserSelectField,
-        RowLayout
+        RowLayout,
+        RowLayoutItemHead
       },
       data() {
         return {
