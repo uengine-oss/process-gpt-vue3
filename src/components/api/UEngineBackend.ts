@@ -60,6 +60,7 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.put('/definition/raw/' + requestPath + '.' + options.type, definition, config);
         return response.data;
     }
+    // @ts-ignore
     async getRawDefinition(defPath: string, options) {
         const response = await axiosInstance.get(`/definition/raw/${defPath}.${options.type}`);
         return response.data;
