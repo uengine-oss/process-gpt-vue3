@@ -62,7 +62,7 @@ export default {
             this.runningInstances.children = result.map((item) => {
                 item = {
                     title: item.instName,
-                    to: `/instancelist/${item.instId}`,
+                    to: `/instancelist/${btoa(item.instId)}`,
                 }
                 return item;
             });
@@ -71,7 +71,7 @@ export default {
             this.completeInstances.children = complatedResult.map((item) => {
                 item = {
                     title: item.instName,
-                    to: `/instancelist/${item.instId}`,
+                    to: `/instancelist/${btoa(item.instId)}`,
                 }
                 return item;
             });
