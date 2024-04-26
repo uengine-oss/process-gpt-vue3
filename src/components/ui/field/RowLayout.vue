@@ -74,11 +74,10 @@ export default {
     },
 
     created() {
-        if(this.is_multidata_mode === 'true') {
-            this.localModelValue[this.name] = [{}]
-        } else {
-            this.localModelValue = this.modelValue
-        }
+        if((this.is_multidata_mode === 'true') && (this.modelValue[this.name] === undefined))
+            this.modelValue[this.name] = [{}]
+
+        this.localModelValue = this.modelValue
     }
 }
 </script>
