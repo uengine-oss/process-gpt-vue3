@@ -69,7 +69,7 @@
         for(const info of this.componentRef.settingInfos) {
           if(!info.validCheck) continue
 
-          const errorMessage = info.validCheck(this.componentProps[info.dataToUse])
+          const errorMessage = info.validCheck(this.componentProps[info.dataToUse], this.componentProps)
           if(errorMessage) {
             alert(errorMessage)
             if(this.$refs[info.dataToUse])
