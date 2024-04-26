@@ -188,13 +188,13 @@ export default {
                         }
                     } else if (item) {
                         var obj = {};
-                        if (item.path.includes('.bpmn')) {
+                        if (item.path && item.path.includes('.bpmn')) {
                             obj = {
                                 title: item.name,
                                 to: `/definitions/${item.path.split('.')[0]}`
                             };
                             menu.children.push(obj);
-                        } else if (item.path.includes('.form')) {
+                        } else if (item.path && item.path.includes('.form')) {
                             obj = {
                                 title: item.name,
                                 to: `/ui-definitions/${item.path.split('.')[0]}`
