@@ -17,7 +17,7 @@
     <template v-else>
         <v-card class="pa-3" variant="outlined" style="border-radius: 0px !important;">           
             <v-card-title class="mb-3 d-flex justify-space-between">
-                <div class="mt-2">{{(alias && alias.length > 0) ? alias : name}}</div>
+                <div>{{(alias && alias.length > 0) ? alias : name}}</div>
             </v-card-title>
             
             <div class="row">
