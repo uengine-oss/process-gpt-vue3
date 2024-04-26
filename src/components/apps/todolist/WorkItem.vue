@@ -107,58 +107,7 @@ export default {
     data: () => ({
         bpmn: null,
         workItem: null,
-        checkPoints: [
-            {
-                name: 'test',
-                checked: false
-
-            },
-            {
-                name: 'test',
-                checked: false
-
-            },
-            {
-                name: 'test',
-                checked: false
-
-            },
-            {
-                name: 'test',
-                checked: false
-
-            },
-            {
-                name: 'test',
-                checked: false
-
-            },
-            {
-                name: 'test',
-                checked: false
-
-            },
-            {
-                name: 'test',
-                checked: false
-
-            },
-            {
-                name: 'test',
-                checked: false
-
-            },
-            {
-                name: 'test',
-                checked: false
-
-            },
-            {
-                name: 'test',
-                checked: false
-
-            },
-        ],
+        checkPoints: [],
         workListByInstId: null,
         currentComponent: null,
         currentActivities: [],
