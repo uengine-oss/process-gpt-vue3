@@ -19,7 +19,7 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
-        <Chat :messages="messages" :agentInfo="agentInfo" :draftAgentPrompt="draftAgentPrompt" :chatInfo="chatInfo"
+        <Chat :messages="messages" :agentInfo="agentInfo" :chatInfo="chatInfo"
             :userInfo="userInfo" :disableChat="disableChat" :type="'instances'" :name="chatName"
             @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
             @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
@@ -82,7 +82,6 @@ export default {
         // bpmn
         onLoad: false,
         bpmn: null,
-        processDefinition: null,
         currentActivities: null,
         
         // temp
@@ -161,12 +160,11 @@ export default {
                     this.currentActivities = this.processInstance.current_activity_ids;
                 }
             }
-            var defInfo = await backend.getRawDefinition(defId);
-            if (defInfo && defInfo.bpmn) {
-                this.bpmn = defInfo.bpmn;
-                this.processDefinition = defInfo.definition;
-                this.onLoad = true;
+            var bpmn = await backend.getRawDefinition(defId, { type: "bpmn"});
+            if (bpmn) {
+                this.bpmn = bpmn;
             }
+            this.onLoad = true;
         },
         async loadData(path) {
             const me = this;
@@ -175,22 +173,29 @@ export default {
                 action: async () => {
                     me.processInstance = null;
                     me.bpmn = null;
-                    me.processDefinition = null;
+                    let id;
                     if (me.$route.params.taskId) {
-                        const id = me.$route.params.taskId;
-                        const workitem = await backend.getWorkItem(id);
-                        const value = await backend.getInstance(workitem.worklist.instId);
+                        const taskId = me.$route.params.taskId;
+                        const workitem = await backend.getWorkItem(taskId);     
+                        if (workitem) {
+                            id = workitem.worklist.instId;
+                        }
+                    } else if (me.$route.params.instId) {
+                        id = atob(me.$route.params.instId);
+                    }
+                    if (id) {
+                        const value = await backend.getInstance(id);
                         if (value) {
                             me.processInstance = value;
-                            me.checkDisableChat(workitem);
+                            me.checkDisableChat();
                         }
                         await me.loadProcess();
                         await me.loadMessages(`proc_inst/${value.proc_inst_id}`, { key: 'id' });
-                    }
+                    }                    
                 }
             })
         },
-        checkDisableChat(workitem) {
+        checkDisableChat() {
             if (this.processInstance) {
                 if (this.processInstance.current_user_ids &&
                     this.processInstance.current_user_ids.length > 0 &&

@@ -191,13 +191,16 @@ class ProcessGPTBackend implements Backend {
 
     async getInstance(instanceId: string) {
         try {
-            const definitionId = instanceId.split('.')[0];
+            const defId = instanceId.split('.')[0];
             const options = {
                 match: {
                     proc_inst_id: instanceId
                 }
             };
-            const data = await storage.getObject(definitionId, options);
+            const data = await storage.getObject(defId, options);
+            data.defId = defId;
+            data.instanceId = instanceId;
+            data.name = data.proc_inst_name;
             return data;
         } catch (error) {
             throw new Error('error in getInstance');

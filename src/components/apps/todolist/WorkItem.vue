@@ -20,6 +20,21 @@
                     :style="$globalState.state.isZoomed ? 'height: calc(100vh - 50px);' : 'height: calc(100vh - 215px);'"
                 >
                     <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus"></component>
+                    <v-tooltip :text="$t('processDefinition.zoom')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn size="small" icon v-bind="props" class="processVariables-zoom task-btn" @click="$globalState.methods.toggleZoom()">
+                                <!-- 캔버스 확대 -->
+                                <Icon
+                                    v-if="!$globalState.state.isZoomed"
+                                    icon="material-symbols:zoom-out-map-rounded"
+                                    width="32"
+                                    height="32"
+                                />
+                                <!-- 캔버스 축소 -->
+                                <Icon v-else icon="material-symbols:zoom-in-map-rounded" width="32" height="32" />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
                 </div>
             </v-col>
             <!-- Right -->
@@ -30,10 +45,10 @@
                         <v-tab v-if="messages && messages.length > 0" value="history">워크 히스토리</v-tab>
                     </v-tabs>
                     <v-window v-model="selectedTab">
-                        <v-window-item value="progress" class="pa-2">
-                            <v-card-title style="color:black;">프로세스 진행상태</v-card-title>
+                        <v-window-item value="progress" class="pa-2" style="color:black;">
+                            <v-card-title >프로세스 진행상태</v-card-title>
                             <div class="pa-0 pl-3" style="overflow:auto;"
-                                :style="dynamicHeight"
+                                :style="bpmnHeight"
                             >
                                 <div v-if="bpmn" style="height: 100%;">
                                     <process-definition class="work-item-definition" :currentActivities="currentActivities" :bpmn="bpmn" :key="updatedDefKey" :isViewMode="true"></process-definition>
@@ -42,11 +57,15 @@
                                     No BPMN found
                                 </dif>
                             </div>
-                            <div v-if="checkPoints">
+                            <div v-if="checkPoints" style="overflow:auto;"
+                                :style="checkPointHeight"
+                            >
                                 <v-card-title>CheckPoint ({{checkedCount}}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>
-                                <div>
-                                    <div v-for="(checkPoint, index) in checkPoints" :key="index">
-                                        <v-checkbox v-model="checkPoint.checked" :label="checkPoint.name" color="primary" hide-details></v-checkbox>
+                                <div style="margin:-15px 0px 0px 5px;">
+                                    <div v-for="(checkPoint, index) in checkPoints" :key="index"
+                                        style="height:40px;"
+                                    >
+                                        <v-checkbox style="height:40px !important;" v-model="checkPoint.checked" :label="checkPoint.name" color="primary" hide-details></v-checkbox>
                                     </div>
                                 </div>
                             </div>
@@ -54,7 +73,7 @@
                         <v-window-item value="history" class="pa-2">
                             <v-card elevation="10" class="pa-4">
                                 <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                                    <div class="d-flex w-100" style="height: calc(100vh - 315px); overflow: auto;">
+                                    <div class="d-flex w-100" style="overflow: auto;" :style="workHistoryHeight">
                                         <component :is="'work-history-'+mode" :messages="messages" @clickMessage="navigateToWorkItemByTaskId" />
                                     </div>
                                 </perfect-scrollbar>
@@ -88,7 +107,7 @@ export default {
     data: () => ({
         bpmn: null,
         workItem: null,
-        checkPoints: null,
+        checkPoints: [],
         workListByInstId: null,
         currentComponent: null,
         currentActivities: [],
@@ -98,7 +117,9 @@ export default {
         updatedDefKey: 0,
         loading: false,
         selectedTab: 'progress',
-        dynamicHeight: '',
+        bpmnHeight: '',
+        checkPointHeight: '',
+        workHistoryHeight: ''
     }),
     created() {
         this.init();
@@ -109,12 +130,16 @@ export default {
                 // isZoomed 값이 변경될 때 실행될 로직
                 if (newVal) {
                     if(this.checkPoints) {
-                        this.dynamicHeight = 'height: calc(100vh - 620px);';
+                        this.bpmnHeight = 'height: calc(100vh - 550px);';
+                        this.checkPointHeight = 'height: calc(100vh - 555px);'
                     } else {
-                        this.dynamicHeight = 'height: calc(100vh - 185px)';
+                        this.bpmnHeight = 'height: calc(100vh - 145px)';
                     }
+                    this.workHistoryHeight = 'height: calc(100vh - 160px)'
                 } else {
-                    this.dynamicHeight = !this.checkPoints ? 'height: calc(100vh - 325px);' : 'height: calc(100vh - 650px);';
+                    this.bpmnHeight = !this.checkPoints ? 'height: calc(100vh - 325px);' : 'height: calc(100vh - 650px);';
+                    this.checkPointHeight = 'height: calc(100vh - 605px);'
+                    this.workHistoryHeight = 'height: calc(100vh - 310px)'
                 }
             },
             immediate: true // 컴포넌트 생성 시에도 핸들러를 실행
