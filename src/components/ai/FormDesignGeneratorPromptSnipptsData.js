@@ -80,7 +80,7 @@ const formDesignGeneratorPromptSnipptsData = {
             \`\`\`
             {
                 "htmlOutput": 
-                "<div class='row'>
+                "<div class='row' name='book_info' alias='도서 정보' is_multidata_mode='false'>
                     <div class='col-sm-12'>
                         <text-field name='book_title' alias='책 제목'></text-field>
                         <text-field name='book_author' alias='저자'></text-field>
