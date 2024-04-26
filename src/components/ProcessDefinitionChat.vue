@@ -51,7 +51,7 @@
 
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn v-if="bpmn" v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                        <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
                                             @click="toggleLock">
                                             <Icon v-if="lock" icon="f7:lock" width="24" height="24"></Icon>
                                             <Icon v-else icon="f7:lock-open" width="24" height="24"></Icon>
@@ -63,7 +63,7 @@
                                 
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn v-if="bpmn" v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                        <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
                                             @click="toggleVerMangerDialog">
                                             <HistoryIcon size="24" />
                                         </v-btn>
@@ -73,7 +73,7 @@
                                 
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn v-if="bpmn" v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                        <v-btn v-if="bpmn && fullPath != ''" v-bind="props" icon variant="text" class="text-medium-emphasis"
                                             @click="beforeDelete">
                                             <TrashIcon size="24" />
                                         </v-btn>
@@ -120,8 +120,7 @@
 
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-if="bpmn" v-bind="props" icon variant="text" class="text-medium-emphasis"
-                                        @click="toggleLock">
+                                    <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis" @click="toggleLock">
                                         <Icon v-if="lock" icon="f7:lock" width="24" height="24"></Icon>
                                         <Icon v-else icon="f7:lock-open" width="24" height="24"></Icon>
                                     </v-btn>
@@ -132,8 +131,7 @@
                             
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-if="bpmn" v-bind="props" icon variant="text" class="text-medium-emphasis"
-                                        @click="toggleVerMangerDialog">
+                                    <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis" @click="toggleVerMangerDialog">
                                         <HistoryIcon size="24" />
                                     </v-btn>
                                 </template>
@@ -142,8 +140,7 @@
                             
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-if="bpmn" v-bind="props" icon variant="text" class="text-medium-emphasis"
-                                        @click="beforeDelete">
+                                    <v-btn v-if="bpmn && fullPath != ''" v-bind="props" icon variant="text" class="text-medium-emphasis" @click="beforeDelete">
                                         <TrashIcon size="24" />
                                     </v-btn>
                                 </template>
@@ -254,7 +251,9 @@ export default {
     },
     methods: {
         beforeDelete() {
-            this.deleteDialog = true;
+            if (this.bpmn) {
+                this.deleteDialog = true;
+            }
         },
         async deleteProcess() {
             var me = this;
