@@ -15,7 +15,7 @@ const props = defineProps({ item: Object, level: Number });
         :disabled="item.disabled"
         :target="item.type === 'external' ? '_blank' : ''"
         v-scroll-to="{ el: '#top' }"
-        style="margin-left:30px;"
+        :style="{ marginLeft: 8 + (level - 1) * 20 + 'px' }"
     >
         <!---If icon-->
         <template v-slot:prepend >
@@ -23,7 +23,6 @@ const props = defineProps({ item: Object, level: Number });
             <Icon :icon="item.title.includes('.form') ? 'carbon:document' : 'carbon:ibm-process-mining'"
                 width="24"
                 height="24"
-                style="margin-right:-10px;"
             />
         </template>
         <v-list-item-title class="ml-4 text-body-1">{{ $t(item.title) }}</v-list-item-title>
