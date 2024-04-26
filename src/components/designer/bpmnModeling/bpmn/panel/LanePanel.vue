@@ -56,7 +56,7 @@ export default {
         // this.uengineProperties = JSON.parse(this.element.extensionElements.values[0].json)
         // 필수 uEngine Properties의 key가 없다면 작업.
         Object.keys(this.requiredKeyLists).forEach((key) => {
-            this.ensureKeyExists(this.uengineProperties, key, this.requiredKeyLists[key]);
+            this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
         });
     },
     data() {
@@ -89,7 +89,7 @@ export default {
     },
     async mounted() {
         let me = this;
-
+        this.checkType();
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
         let def = this.bpmnModeler.getDefinitions();
@@ -117,15 +117,11 @@ export default {
     watch: {
         type(after, before) {
             if (after == 'org.uengine.five.overriding.IAMRoleResolutionContext') {
-                this.copyUengineProperties.roleResolutionContext = {
-                    _type: 'org.uengine.five.overriding.IAMRoleResolutionContext',
-                    scope: ''
-                };
+                this.copyUengineProperties.roleResolutionContext._type = 'org.uengine.five.overriding.IAMRoleResolutionContext';
+                if(!this.copyUengineProperties.roleResolutionContext.scope) this.copyUengineProperties.roleResolutionContext.scope = ''
             } else if (after == 'org.uengine.kernel.DirectRoleResolutionContext') {
-                this.copyUengineProperties.roleResolutionContext = {
-                    _type: 'org.uengine.kernel.DirectRoleResolutionContext',
-                    endpoint: ''
-                };
+                this.copyUengineProperties.roleResolutionContext._type = 'org.uengine.kernel.DirectRoleResolutionContext';
+                if(!this.copyUengineProperties.roleResolutionContext.endpoint) this.copyUengineProperties.roleResolutionContext.endpoint = ''
             } else if (after == 'None') {
                 if (this.copyUengineProperties.roleResolutionContext) {
                     delete this.copyUengineProperties.roleResolutionContext;
@@ -134,6 +130,15 @@ export default {
         }
     },
     methods: {
+        checkType() {
+            if (!this.copyUengineProperties.roleResolutionContext) {
+                this.type = 'None';
+            } else if (this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.kernel.DirectRoleResolutionContext') {
+                this.type = 'org.uengine.kernel.DirectRoleResolutionContext';
+            } else if (this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.five.overriding.IAMRoleResolutionContext') {
+                this.type = 'org.uengine.five.overriding.IAMRoleResolutionContext';
+            }
+        },
         async setDefinitionInfo(definitionId) {
             // definition 정보 호출
             const def = await storage.getObject(`proc_def/${definitionId}`, { key: 'id' });
@@ -177,9 +182,14 @@ export default {
             return laneInfo;
         },
         ensureKeyExists(obj, key, defaultValue) {
+            console.log(key);
+            console.log(obj.hasOwnProperty(key));
+
             if (!obj.hasOwnProperty(key)) {
                 obj[key] = defaultValue;
             }
+
+            return obj;
         },
         async getData(path, options) {
             // let value;
