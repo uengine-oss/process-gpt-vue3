@@ -286,8 +286,14 @@ class UEngineBackend implements Backend {
     }
 
     // get Completed WorkList API
-    async getCompletedList() {
-        const response = await axiosInstance.get(`/worklist/search/findCompleted`);
+    async getCompletedList(options) {
+        let basePath = '/worklist/search/findCompleted'
+        if(!options) options = {}
+        if(!options.page) options.page = 0
+        if(!options.size) options.size = 20
+        // if(!options.sort) options.sort = 'startDate,DESC'
+
+        const response = await axiosInstance.get(`${basePath}?page=${options.page}&size=${options.size}`);
         if (!response.data) return null;
         if (!response.data._embedded) return null;
         return response.data._embedded.worklist.map((task: any) => ({

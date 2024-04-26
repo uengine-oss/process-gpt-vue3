@@ -29,9 +29,9 @@
                             :key="mashupKey"
                             @onSaveFormDefinition="saveFormDefinition"
                         />
-                        <card v-else class="d-flex align-center justify-center fill-height">
+                        <div v-else class="d-flex align-center justify-center fill-height">
                             <v-progress-circular color="primary" indeterminate></v-progress-circular>
-                        </card>
+                        </div>
                     </v-window-item>
 
                     <v-window-item value="preview" class="fill-height mt-15 pa-5" style="overflow-y: auto">
@@ -45,9 +45,9 @@
 
                             <v-btn color="primary" class="full-width" @click="onClickPreviewSubmitButton">제출</v-btn>
                         </template>
-                        <card v-else class="d-flex align-center justify-center fill-height">
+                        <div v-else class="d-flex align-center justify-center fill-height">
                             <v-progress-circular color="primary" indeterminate></v-progress-circular>
-                        </card>
+                        </div>
                     </v-window-item>
                 </v-window>
             </template>
@@ -194,20 +194,80 @@ export default {
          */
         keditorContentHTMLToDynamicFormHTML(html) {
             const dom = new DOMParser().parseFromString(html, 'text/html');
-            const formValues = dom.querySelectorAll('[name]');
 
+
+            // 이름 중복 여부를 검사하기 위해서
             const nameSet = new Set();
-            formValues.forEach((el) => {
+            (dom.querySelectorAll('[name]')).forEach((el) => {
                 const name = el.getAttribute('name');
+                if(!name || name.length <= 0) return;
+
                 if (nameSet.has(name)) {
                     throw new Error(`'${name}' 이름이 중복되어 있습니다.`);
                 }
                 nameSet.add(name);
             });
 
-            formValues.forEach((el) => {
-                el.setAttribute('v-model', `formValues['${el.getAttribute('name')}']`);
+
+            const rows = dom.querySelectorAll('div.row');
+            rows.forEach(row => {
+                const isMultiDataMode = row.getAttribute('is_multidata_mode');
+                if (!isMultiDataMode || (isMultiDataMode === 'false')) {
+                    const newRow = document.createElement('row-layout');
+                    
+
+                    newRow.setAttribute('name', row.getAttribute('name') ?? "");
+                    newRow.setAttribute('alias', row.getAttribute('alias') ?? "");
+                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode') ?? "false");
+
+                    newRow.setAttribute('v-model', 'formValues');
+                    newRow.setAttribute('v-slot', 'slotProps');
+
+
+                    Array.from(row.childNodes).forEach(child => {
+                        newRow.appendChild(child);
+                    });
+
+                    newRow.querySelectorAll('[name]').forEach(field => {
+                        const name = field.getAttribute('name');
+                        field.setAttribute('v-model', `slotProps.modelValue['${name}']`);
+                    });
+
+
+                    row.parentNode.replaceChild(newRow, row);
+                } else {
+                    if((!row.getAttribute('name')) || (row.getAttribute('name').length <= 0)) {
+                        throw new Error(`multidataMode가 설정된 레이아웃에 'name' 속성이 없습니다.`);
+                    }
+                    if((!row.getAttribute('alias')) || (row.getAttribute('alias').length <= 0)) {
+                        throw new Error(`multidataMode가 설정된 레이아웃에 'alias' 속성이 없습니다.`);
+                    }
+
+
+                    const newRow = document.createElement('row-layout');
+
+                    newRow.setAttribute('name', row.getAttribute('name'));
+                    newRow.setAttribute('alias', row.getAttribute('alias'));
+                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode'));
+
+                    newRow.setAttribute('v-model', 'formValues');
+                    newRow.setAttribute('v-slot', 'slotProps');
+
+                    newRow.innerHTML = `<div v-for="(item, index) in slotProps.modelValue" :key="index">
+    <row-layout-item-head :index="index" @on_delete_item="slotProps.deleteItem(index)"></row-layout-item-head>
+    ${row.innerHTML}
+</div>`
+
+
+                    newRow.querySelectorAll('[name]').forEach(field => {
+                        const name = field.getAttribute('name');
+                        field.setAttribute('v-model', `item['${name}']`);
+                    });
+
+                    row.parentNode.replaceChild(newRow, row);
+                }
             });
+
 
             return dom.body.innerHTML;
         },
@@ -218,10 +278,55 @@ export default {
         dynamicFormHTMLToKeditorContentHTML(html) {
             const dom = new DOMParser().parseFromString(html, 'text/html');
 
-            const formValues = dom.querySelectorAll('[v-model]');
-            formValues.forEach((el) => {
-                el.removeAttribute('v-model');
+
+            const rows = dom.querySelectorAll('row-layout');
+            rows.forEach(row => {
+                const isMultiDataMode = row.getAttribute('is_multidata_mode');
+                if (!isMultiDataMode || (isMultiDataMode === 'false')) {
+                    const newRow = document.createElement('div');
+                    
+
+                    newRow.setAttribute('name', row.getAttribute('name') ?? "");
+                    newRow.setAttribute('alias', row.getAttribute('alias') ?? "");
+                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode') ?? "false");
+
+                    newRow.setAttribute('class', 'row');
+
+
+                    Array.from(row.childNodes).forEach(child => {
+                        newRow.appendChild(child);
+                    });
+
+                    newRow.querySelectorAll('[v-model]').forEach(field => {
+                        field.removeAttribute('v-model');
+                    });
+
+
+                    row.parentNode.replaceChild(newRow, row);
+                } else {
+                    const newRow = document.createElement('div');
+                    
+
+                    newRow.setAttribute('name', row.getAttribute('name') ?? "");
+                    newRow.setAttribute('alias', row.getAttribute('alias') ?? "");
+                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode') ?? "false");
+
+                    newRow.setAttribute('class', 'row');
+
+
+                    row.querySelectorAll('[class^="col-sm-"]').forEach(child => {
+                        newRow.appendChild(child);
+                    });
+
+                    newRow.querySelectorAll('[v-model]').forEach(field => {
+                        field.removeAttribute('v-model');
+                    });
+
+
+                    row.parentNode.replaceChild(newRow, row);
+                }
             });
+
 
             return dom.body.innerHTML;
         },
