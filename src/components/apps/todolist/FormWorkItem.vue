@@ -62,7 +62,13 @@ export default {
        async init(){
             var me = this
             let formName = me.workItem.worklist.tool.split(':')[1];
-            me.html = await backend.getRawDefinition(formName, {'type': 'form'});            
+            me.html = await backend.getRawDefinition(formName, {'type': 'form'});       
+            
+            if(me.workItemStatus == 'COMPLETED' || me.workItemStatus == 'DONE'){
+                let varName = me.workItem.activity.variableForHtmlFormContext.name
+                let variable = await backend.getVariable(me.workItem.worklist.instId, varName)
+                me.formData = variable ? variable.valueMap : {}
+            }
         },
         async saveTask(){
             var me = this
