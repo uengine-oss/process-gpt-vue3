@@ -55,15 +55,12 @@ export default {
         // console.log(this.element)
         // this.uengineProperties = JSON.parse(this.element.extensionElements.values[0].json)
         // 필수 uEngine Properties의 key가 없다면 작업.
-        Object.keys(this.requiredKeyLists).forEach((key) => {
-            this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
-        });
+        // Object.keys(this.requiredKeyLists).forEach((key) => {
+        //     this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
+        // });
     },
     data() {
         return {
-            requiredKeyLists: {
-                roleResolutionContext: {}
-            },
             definitions: [],
             definitionRoles: [],
             calleeDefinitionRoles: [],
