@@ -85,7 +85,11 @@
 
     mounted() {
       this.componentProps = this.componentRef.settingInfos.reduce((acc, cur) => {
-          acc[cur.dataToUse] = this.componentRef[cur.dataToUse]
+          if(cur.settingType === 'items') {
+            acc[cur.dataToUse] = JSON.parse(JSON.stringify(this.componentRef[cur.dataToUse]))
+          } else {
+            acc[cur.dataToUse] = this.componentRef[cur.dataToUse]
+          }
           return acc
       }, {})
 
