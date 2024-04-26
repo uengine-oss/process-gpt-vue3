@@ -24,9 +24,9 @@ export default {
 
     data() {
         return {
-            localName: this.name,
-            localAlias: this.alias,
-            localDisabled: this.disabled === "true",
+            localName: "",
+            localAlias: "",
+            localDisabled: false,
             
             selectedFiles: null,
 
@@ -54,6 +54,10 @@ export default {
     },
 
     created() {
+        this.localName = this.name
+        this.localAlias = this.alias
+        this.localDisabled = this.disabled === "true"
+
         this.$emit('update:modelValue', "")
     }
 };

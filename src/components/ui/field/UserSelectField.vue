@@ -1,7 +1,7 @@
 <template>
     <div>
         <v-autocomplete v-model="localModelValue" :items="usersToSelect" :label="(localAlias && localAlias.length > 0) ? localAlias : localName" :disabled="localDisabled"
-                        item-title="username" :item-value="id" chips closable-chips multiple small-chips>
+                        item-title="id" :item-value="id" chips closable-chips multiple small-chips>
                         <template v-slot:chip="{ props, item }">
                             <v-chip v-bind="props" :text="item.raw.username ?? item.raw.email"></v-chip>
                         </template>
@@ -32,11 +32,11 @@ export default {
 
     data() {
         return {
-            localModelValue: this.modelValue ?? [],
+            localModelValue: [],
 
-            localName: this.name,
-            localAlias: this.alias,
-            localDisabled: this.disabled === "true",
+            localName: "",
+            localAlias: "",
+            localDisabled: false,
 
             settingInfos: [
                 commonSettingInfos["localName"],
@@ -69,6 +69,12 @@ export default {
     },
 
     async created() {
+        this.localModelValue = this.modelValue ?? []
+        
+        this.localName = this.name
+        this.localAlias = this.alias
+        this.localDisabled = this.disabled === "true"
+
         this.usersToSelect = (await StorageBaseFactory.getStorage().list(`users`))
     }
 };

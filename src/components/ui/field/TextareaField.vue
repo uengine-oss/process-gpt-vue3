@@ -29,12 +29,12 @@ export default {
 
     data() {
         return {
-            localModelValue: this.modelValue,
+            localModelValue: "",
 
-            localName: this.name,
-            localAlias: this.alias,
-            localRows: this.rows,
-            localDisabled: this.disabled === "true",
+            localName: "",
+            localAlias: "",
+            localRows: "",
+            localDisabled: false,
 
             settingInfos: [
                 commonSettingInfos["localName"],
@@ -71,6 +71,15 @@ export default {
             immediate: true
         }
     },
+
+    created() {
+        this.localModelValue = this.modelValue
+        
+        this.localName = this.name
+        this.localAlias = this.alias
+        this.localRows = this.rows
+        this.localDisabled = this.disabled === "true"
+    }
 }
 </script>
 
