@@ -13,7 +13,7 @@
 
             <v-row>
                 <v-col v-for="column in todolist" :key="column.id" cols="12" md="3" sm="6" class="d-flex">
-                    <TodoTaskColumn :column="column" @executeTask="executeTask" />
+                    <TodoTaskColumn :column="column" :loading="loading" @executeTask="executeTask" @scrollBottom="handleScrollBottom" />
                 </v-col>
             </v-row>
         </div>
@@ -29,7 +29,7 @@ import TodoDialog from './TodoDialog.vue';
 import TodoTaskColumn from './TodoTaskColumn.vue';
 
 import BackendFactory from "@/components/api/BackendFactory";
-
+const backend = BackendFactory.createBackend();
 export default {
     components: {
         TodoTaskColumn,
@@ -63,9 +63,14 @@ export default {
             }
         ],
         dialog: false,
+
+        loading: false,
+        offset: 5,
+        currentPage: 0,
     }),
     created() {
         this.loadToDo();
+        this.loadCompletedWorkList();
         // this.loadInProgress();
         // this.loadPending();
     },
@@ -79,11 +84,8 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    let back = BackendFactory.createBackend();
-                    let worklist = await back.getWorkList()
-                    let completedWorkList = await back.getCompletedList();
+                    let worklist = await backend.getWorkList()
                     if(!worklist) worklist = []
-                    worklist = worklist.concat(completedWorkList);
                     worklist.forEach(function(item) {
                         if (item.status == 'TODO' || item.status == 'NEW' || item.status == 'DRAFT') {
                             me.todolist.find(x => x.id == 'TODO').tasks.push(item);
@@ -91,13 +93,40 @@ export default {
                             me.todolist.find(x => x.id == 'IN_PROGRESS').tasks.push(item);
                         } else if (item.status == 'PENDING') {
                             me.todolist.find(x => x.id == 'PENDING').tasks.push(item);
-                        } else if (item.status == 'DONE' || item.status == 'COMPLETED') {
-                            me.todolist.find(x => x.id == 'DONE').tasks.push(item);
-                        }
+                        } 
                     })
                     // me.todolist.find(x => x.id == 'TODO').tasks.push(...worklist);
                     // me.todolist.find(x => x.id == 'IN_PROGRESS').tasks.push(...worklist);
                     // me.todolist.find(x => x.id == 'PENDING').tasks.push(...worklist);
+                }
+            })
+        },
+        loadCompletedWorkList() {
+            var me = this
+            me.$try({
+                context: me,
+                action: async () => {
+                    let worklist = await backend.getCompletedList({page: me.currentPage, size: me.offset});
+                    if(!worklist) worklist = []
+                    worklist.forEach(function(item) {
+                        if (item.status == 'DONE' || item.status == 'COMPLETED') {
+                            me.todolist.find(x => x.id == 'DONE').tasks.push(item);
+                        }
+                    })
+                }
+            })
+        },
+        handleScrollBottom() {
+            var me = this
+            me.$try({
+                context: me,
+                action: async () => {
+                    // console.log("!! EXECUTE")
+                    me.loading = true
+                    me.currentPage++
+                    await me.loadCompletedWorkList()
+                    // await new Promise(resolve => setTimeout(resolve, 5000)); // 5초 지연
+                    me.loading = false
                 }
             })
         },

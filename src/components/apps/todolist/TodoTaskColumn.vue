@@ -1,10 +1,9 @@
 <template>
     <v-card elevation="10" :class="'bg-' + column.cardbg">
-        <div class="pa-5">
+        <div ref="section" class="pa-5" style=" height: 500px; overflow: scroll;">
             <div class="d-flex align-center justify-space-between">
                 <h6 class="text-h6 font-weight-semibold">{{ column.title }}</h6>
             </div>
-
             <draggable class="dragArea list-group cursor-move" :list="column.tasks"
                 :animation="200" ghost-class="ghost-card" group="tasks" @add="updateTask"
                 :component-data="getComponentData()" :move="checkDraggable">
@@ -30,10 +29,22 @@ export default {
     },
     props: {
         column: Object,
+        loading: Boolean
     },
     data: () => ({
     }),
+    mounted(){
+        if(this.$refs.section) this.$refs.section.addEventListener('scroll', this.checkScrollBottom);
+    },
     methods: {
+        checkScrollBottom(){
+            const section = this.$refs.section;
+            const isAtBottom = section.scrollTop + section.clientHeight >= section.scrollHeight - 1;
+            if (isAtBottom && this.column.id == 'DONE') {
+                // console.log("!! RUN")
+                if(!this.loading) this.$emit('scrollBottom')
+            }
+        },
         checkDraggable(event) {
             const task = event.draggedContext.element;
             if (!task.instId) {
