@@ -1,8 +1,14 @@
 <template>
     <div style="width: 100%">
-        <div style="margin-right: 20px;">
-            <v-select v-model="selectVal" :items="processVariableDescriptors" item-title="name" label="Process Data"
-                @update:modelValue="val => onChanged(val)" variant="outlined"></v-select>
+        <div style="margin-right: 20px">
+            <v-select
+                v-model="selectVal"
+                :items="processVariableDescriptors"
+                item-title="name"
+                label="Process Data"
+                @update:modelValue="(val) => onChanged(val)"
+                variant="outlined"
+            ></v-select>
         </div>
 
         <div v-if="keys.length > 0">
@@ -14,17 +20,17 @@
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 export default {
-    name: "bpmn-variable-selector",
+    name: 'bpmn-variable-selector',
     props: {
         modelValue: Object,
-        definition: Object,
+        definition: Object
     },
     created: function () {
-        let self = this
+        let self = this;
         this.modeler = useBpmnStore();
         const modeler = this.modeler.getModeler;
         let def = modeler.getDefinitions();
-        const processElement = def.rootElements.find(element => element.$type === 'bpmn:Process');
+        const processElement = def.rootElements.find((element) => element.$type === 'bpmn:Process');
         if (!processElement) {
             console.error('bpmn:Process element not found');
             return;
@@ -38,9 +44,9 @@ export default {
         }
 
         // // uengine:properties 요소를 찾거나 새로 생성합니다.
-        let uengineProperties
+        let uengineProperties;
         if (extensionElements.values) {
-            uengineProperties = extensionElements.values.find(val => val.$type === 'uengine:Properties');
+            uengineProperties = extensionElements.values.find((val) => val.$type === 'uengine:Properties');
         }
 
         if (!uengineProperties) {
@@ -52,8 +58,9 @@ export default {
             self.processVariableDescriptors.push({
                 name: variable.$attrs.name,
                 type: variable.$attrs.type
-            })
-        })
+            });
+        });
+        if (this.modelValue) this.selectVal = this.modelValue;
     },
     data: function () {
         return {
@@ -61,24 +68,23 @@ export default {
             keys: [],
             selectVal: null,
             processVariableDescriptors: []
-        }
+        };
     },
-    watch: {
-    },
+    watch: {},
     methods: {
         onChanged(val) {
             this.$emit('input', val);
         },
         getComponent(componentName) {
-            let component = null
-            let parent = this.$parent
+            let component = null;
+            let parent = this.$parent;
             while (parent && !component) {
                 if (parent.$options.name === componentName) {
-                    component = parent
+                    component = parent;
                 }
-                parent = parent.$parent
+                parent = parent.$parent;
             }
-            return component
+            return component;
         },
         metaDataResolver() {
             // // console.log("meta!")
@@ -89,8 +95,6 @@ export default {
             //     pv["_type"] = "[Lorg.uengine.kernel.ProcessVariable"
             //     me.processVariableDescriptors.push(pv)
             // })
-
-
             // 하위 로직은 받아오는 데이터인데 정확히 모르겠음.
             // if(me.definition.processVariableDescriptors) {
             //     for(var i = 0; i < me.definition.processVariableDescriptors.length; i++) {
@@ -99,14 +103,10 @@ export default {
             //             var definitionAndClassName = processVariable.typeClassName.split("#");
             //             var definitionName = definitionAndClassName[0];
             //             var classNameOnly = definitionAndClassName[1];
-
             //             var result;
             //             var uri = (encodeURI(window.backend.$bind.ref + "/definition/raw/" + definitionName + ".ClassDiagram.json"))
-
             //             console.log("try to get class diagram: " + uri);
-
             //             var xhr = new XMLHttpRequest();
-
             //             xhr.open('GET', uri, false);
             //             xhr.setRequestHeader("access_token", localStorage['access_token']);
             //             xhr.onload = function () {
@@ -125,6 +125,5 @@ export default {
             // }
         }
     }
-}
-
+};
 </script>

@@ -30,6 +30,7 @@
                         :is-view-mode="isViewMode"
                         :callee-definition-roles="calleeDefinitionRoles"
                         :definition-roles="definitionRoles"
+                        :is-sub="true"
                     ></bpmn-role-parameter-contexts>
                 </v-row>
             </div>

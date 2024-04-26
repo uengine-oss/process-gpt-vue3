@@ -245,7 +245,9 @@ export default {
 
         let mapperData = {};
         if (!this.copyUengineProperties.mappingContext) {
-            this.copyUengineProperties.mappingContext = mapperData;
+            if(!this.copyUengineProperties._type == "org.uengine.kernel.FormActivity") {
+                this.copyUengineProperties.mappingContext = mapperData;
+            }
         } else {
             this.formMapperJson = JSON.stringify(this.copyUengineProperties.mappingContext, null, 2);
         }

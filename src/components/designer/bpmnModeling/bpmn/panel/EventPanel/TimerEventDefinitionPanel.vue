@@ -1,5 +1,9 @@
 <template>
-    <div>timer-event-definition-panel</div>
+    <div>
+        <!-- <cron-vuetify v-model="cron" :chip-props="{ color: 'success', textColor: 'white' }" @error="error = $event" /> -->
+        <v-text-field v-model="copyUengineProperties.expression"></v-text-field>
+        <!-- editable cron expression -->
+    </div>
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
@@ -7,7 +11,6 @@ import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { Icon } from '@iconify/vue';
 const storage = StorageBaseFactory.getStorage();
 // import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
-
 export default {
     name: 'timer-event-definition-panel',
     props: {
@@ -16,23 +19,19 @@ export default {
         processDefinitionId: String,
         isViewMode: Boolean
     },
+    components: {},
     created() {
         // console.log(this.element.eventDefinitions);
-        if (this.element.eventDefinitions.length > 0) {
-            this.eventType = this.element.eventDefinitions[0].$type;
-        }
+        // if (this.element.eventDefinitions.length > 0) {
+        //     this.eventType = this.element.eventDefinitions[0].$type;
+        // }
         this.copyUengineProperties = this.uengineProperties;
-        Object.keys(this.requiredKeyLists).forEach((key) => {
-            this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
-        });
+        // Object.keys(this.requiredKeyLists).forEach((key) => {
+        //     this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
+        // });
     },
     data() {
         return {
-            requiredKeyLists: {
-                parameters: [],
-                checkpoints: [],
-                dataInput: { name: '' }
-            },
             methodList: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
             copyUengineProperties: null,
             name: '',
@@ -50,7 +49,10 @@ export default {
             editParam: false,
             paramKey: '',
             paramValue: '',
-            eventType: null
+            eventType: null,
+            cron: '* * * * *',
+            nextCron: '* * * * *',
+            error: ''
         };
     },
     async mounted() {

@@ -1,12 +1,21 @@
 <template>
-    <component
-        v-if="eventType"
-        :is="panelName"
-        :uengineProperties="uengineProperties"
-        :element="element"
-        :processDefinitionId="processDefinitionId"
-        :isViewMode="isViewMode"
-    ></component>
+    <div>
+        <v-col>
+            <v-row v-for="roleMapping in roleMappings">
+                <v-text-field label="Role Name" readonly v-model="roleMapping.roleName"></v-text-field>
+                <v-text-field label="Role Endpoint" v-model="roleMapping.roleEndpoint"></v-text-field>
+                <v-text-field label="Resource Names" v-model="roleMapping.resourceNames"></v-text-field>
+            </v-row>
+        </v-col>
+        <component
+            v-if="eventType"
+            :is="panelName"
+            :uengineProperties="uengineProperties"
+            :element="element"
+            :processDefinitionId="processDefinitionId"
+            :isViewMode="isViewMode"
+        ></component>
+    </div>
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
@@ -29,17 +38,10 @@ export default {
             this.eventType = this.element.eventDefinitions[0].$type;
         }
         this.copyUengineProperties = this.uengineProperties;
-        Object.keys(this.requiredKeyLists).forEach((key) => {
-            this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
-        });
     },
     data() {
         return {
-            requiredKeyLists: {
-                parameters: [],
-                checkpoints: [],
-                dataInput: { name: '' }
-            },
+            roleMappings: [{ roleName: '', roleEndpoint: '', resourceNames: '' }],
             methodList: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
             copyUengineProperties: null,
             name: '',
