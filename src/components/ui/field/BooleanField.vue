@@ -15,7 +15,7 @@ export default {
     name: "BooleanField",
     
     props: {
-        modelValue: String,
+        modelValue: Boolean,
         vueRenderUUID: String,
         tagName: String,
 
