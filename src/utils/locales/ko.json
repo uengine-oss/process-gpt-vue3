@@ -99,7 +99,10 @@
         "edit": "수정",
         "delete": "삭제",
         "zoom": "캔버스 확대/축소",
-        "execution": "실행"
+        "execution": "실행",
+        "deleteProcess": "프로세스 삭제",
+        "deleteProcessMessage": "프로세스를 삭제하시겠습니까?",
+        "cancel": "취소"
     },
     "ProcessVariable": {
         "name": "이름",
@@ -138,7 +141,8 @@
         "email": "이메일",
         "phone": "전화번호",
         "address": "주소",
-        "save": "저장"
+        "save": "저장",
+        "manageAccess": "권한 관리"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",

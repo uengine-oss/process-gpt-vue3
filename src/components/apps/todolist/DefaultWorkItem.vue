@@ -55,6 +55,7 @@ export default {
                 action: async () => {
                     let parameterValues = this.inputItems.reduce((acc, item) => ({...acc, [item.name]: item.value}), {});
                     await backend.putWorkItemComplete(me.$route.params.taskId, {"parameterValues": parameterValues})
+                    me.$router.push('/todolist')
                 },
                 successMsg: '해당 업무 완료'
             })

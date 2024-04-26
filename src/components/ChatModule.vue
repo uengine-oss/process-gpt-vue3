@@ -311,15 +311,6 @@ export default {
                     this.debouncedGenerate();
                 }
                 
-                // this.messages.push({
-                //     role: 'system',
-                //     content: '...',
-                //     isLoading: true
-                // });
-
-                // await this.generator.generate();
-                // this.debouncedGenerate()
-
                 this.replyUser = null;
             }
         },
