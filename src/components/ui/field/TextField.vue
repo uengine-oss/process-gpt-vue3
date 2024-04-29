@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-text-field v-model="localModelValue" :type="localType" :disabled="localDisabled">
+        <v-text-field v-model="localModelValue" :type="localType" :disabled="localDisabled" :id="id">
             <template v-slot:label>
                 <span style="color:black;">
                     {{(localAlias && localAlias.length > 0) ? localAlias : localName}}
@@ -47,7 +47,8 @@ export default {
                     settingValue: ["text", "number", "email", "url", "date", "datetime-local", "month", "week", "time", "password", "tel", "color"]
                 },
                 commonSettingInfos["localDisabled"]
-            ]
+            ],
+            id: crypto.randomUUID()
         };
     },
 
