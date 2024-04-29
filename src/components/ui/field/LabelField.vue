@@ -10,12 +10,13 @@ export default {
     props: {
         vueRenderUUID: String,
         tagName: String,
+
         label: String
     },
 
     data() {
         return {
-            localLabel: this.label,
+            localLabel: "",
 
             settingInfos: [
                 {
@@ -26,6 +27,10 @@ export default {
                 }
             ]
         };
+    },
+
+    created() {
+        this.localLabel = this.label ?? "label"
     }
 };
 </script>

@@ -54,8 +54,8 @@ export default {
     },
 
     created() {
-        this.localName = this.name
-        this.localAlias = this.alias
+        this.localName = this.name ?? "name"
+        this.localAlias = this.alias ?? ""
         this.localDisabled = this.disabled === "true"
 
         this.$emit('update:modelValue', "")

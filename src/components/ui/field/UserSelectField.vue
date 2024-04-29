@@ -71,8 +71,8 @@ export default {
     async created() {
         this.localModelValue = this.modelValue ?? []
         
-        this.localName = this.name
-        this.localAlias = this.alias
+        this.localName = this.name ?? "name"
+        this.localAlias = this.alias ?? ""
         this.localDisabled = this.disabled === "true"
 
         this.usersToSelect = (await StorageBaseFactory.getStorage().list(`users`))

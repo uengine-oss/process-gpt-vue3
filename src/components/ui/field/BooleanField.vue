@@ -61,8 +61,8 @@ export default {
     created() {
         this.localModelValue = this.modelValue ?? false
         
-        this.localName = this.name
-        this.localAlias = this.alias
+        this.localName = this.name ?? "name"
+        this.localAlias = this.alias ?? ""
         this.localDisabled = this.disabled === "true"
     }
 }
