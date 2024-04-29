@@ -36,21 +36,42 @@ const formDesignGeneratorPromptSnipptsData = {
         },
 
         {
-            tag: `<select-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' items='<선택 항목 리스트>' disabled='<true|false>'></select-field>`,
+            tag: `<select-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' is_dynamic_load='<true|false>' ` + 
+                 `items='<is_dynamic_load가 false시에 선택 항목 리스트>' ` + 
+                 `dynamic_load_url='<is_dynamic_load가 true시에 JSON 데이터 로드 URL>' ` +
+                 `dynamic_load_key_json_path='<is_dynamic_load가 true시에 키 배열을 담을 JSON PATH>' ` + 
+                 `dynamic_load_value_json_path='<is_dynamic_load가 true시에 값 배열을 담을 JSON PATH>' ` +
+                 `disabled='<true|false>'></select-field>`,
             purpose: "여러개의 옵션 중 하나를 선택하기 위해서",
-            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함.`
+            limit: `is_dynamic_load가 false인 경우, 선택 항목 리스트를 만들기 위해서 items 필수 작성.` +
+                   `items는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함.` +
+                   `is_dynamic_load가 true인 경우, dynamic_load_url, dynamic_load_key_json_path, dynamic_load_value_json_path 필수 작성.`
         },
 
         {
-            tag: `<checkbox-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' items='<선택 항목 리스트>' disabled='<true|false>'></checkbox-field>`,
+            tag: `<checkbox-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' is_dynamic_load='<true|false>' ` + 
+                 `items='<is_dynamic_load가 false시에 선택 항목 리스트>' ` + 
+                 `dynamic_load_url='<is_dynamic_load가 true시에 JSON 데이터 로드 URL>' ` +
+                 `dynamic_load_key_json_path='<is_dynamic_load가 true시에 키 배열을 담을 JSON PATH>' ` + 
+                 `dynamic_load_value_json_path='<is_dynamic_load가 true시에 값 배열을 담을 JSON PATH>' ` +
+                 `disabled='<true|false>'></checkbox-field>`,
             purpose: "여러개의 선택 사항들 중, 여러개를 선택하기 위해서",
-            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함.`
+            limit: `is_dynamic_load가 false인 경우, 선택 항목 리스트를 만들기 위해서 items 필수 작성.` +
+                   `items는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함.` +
+                   `is_dynamic_load가 true인 경우, dynamic_load_url, dynamic_load_key_json_path, dynamic_load_value_json_path 필수 작성.`
         },
 
         {
-            tag: `<radio-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' items='<선택 항목 리스트>' disabled='<true|false>'></radio-field>`,
+            tag: `<radio-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' is_dynamic_load='<true|false>' ` + 
+                 `items='<is_dynamic_load가 false시에 선택 항목 리스트>' ` + 
+                 `dynamic_load_url='<is_dynamic_load가 true시에 JSON 데이터 로드 URL>' ` +
+                 `dynamic_load_key_json_path='<is_dynamic_load가 true시에 키 배열을 담을 JSON PATH>' ` + 
+                 `dynamic_load_value_json_path='<is_dynamic_load가 true시에 값 배열을 담을 JSON PATH>' ` +
+                 `disabled='<true|false>'></radio-field>`,
             purpose: "나열된 여러개의 옵션 중 하나를 선택하기 위해서",
-            limit: `선택 항목 리스트는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함.`
+            limit: `is_dynamic_load가 false인 경우, 선택 항목 리스트를 만들기 위해서 items 필수 작성.` +
+                   `items는 '[{"label1": "value1"}, {"label2": "value2"}]'와 같이 작성되어야 함.` +
+                   `is_dynamic_load가 true인 경우, dynamic_load_url, dynamic_load_key_json_path, dynamic_load_value_json_path 필수 작성.`
         },
 
         {
@@ -84,7 +105,7 @@ const formDesignGeneratorPromptSnipptsData = {
                     <div class='col-sm-12'>
                         <text-field name='book_title' alias='책 제목'></text-field>
                         <text-field name='book_author' alias='저자'></text-field>
-                        <select-field name='book_genre' alias='책 장르' items='[{"소설": "novel"}, {"시": "poem"}, {"에세이": "essay"}]'></select-field>
+                        <select-field name='book_genre' alias='책 장르' is_dynamic_load='false' items='[{"소설": "novel"}, {"시": "poem"}, {"에세이": "essay"}]'></select-field>
                         <file-field name='book_cover' alias='책 표지 이미지'></file-field>
                     </div>
                 </div>"
@@ -100,7 +121,7 @@ const formDesignGeneratorPromptSnipptsData = {
                 {
                     "action": "replace",
                     "targetCSSSelector": "select-field[name='book_genre']",
-                    "tagValue": "<select-field name='book_genre' alias='책 장르' items='[{"소설": "novel"}, {"시": "poem"}, {"에세이": "essay"}, {"공상 과학": "SF"}]'></select-field>"
+                    "tagValue": "<select-field name='book_genre' alias='책 장르' is_dynamic_load='false' items='[{"소설": "novel"}, {"시": "poem"}, {"에세이": "essay"}, {"공상 과학": "SF"}]'></select-field>"
                 }
                 ]
             }

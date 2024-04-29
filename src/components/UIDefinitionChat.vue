@@ -477,7 +477,7 @@ export default {
                         if (matchedHtmlOutput.includes(`\\"`)) fragmentToParse = processedFragment;
                         else fragmentToParse = processedFragment.replace(matchedHtmlOutput, matchedHtmlOutput.replaceAll(`"`, `\\"`));
                     } else {
-                        const matchedItems = [...processedFragment.matchAll(/items='(.*?)'>/g)].map((g) => g[1]);
+                        const matchedItems = [...processedFragment.matchAll(/items='\[(.*?)\]'>/g)].map((g) => g[1]);
 
                         fragmentToParse = processedFragment;
                         if (matchedItems) {
@@ -490,7 +490,7 @@ export default {
                     }
 
                     // AI 응답이 items에서 items='[{'남자':'male'},{'여자':'female'}' 와 같이 '안에서 "로 감싸지 않은 경우, 이를 대응하기 위해서
-                    const matchedItems = [...fragmentToParse.matchAll(/items='(.*?)'>/g)].map((g) => g[1]);
+                    const matchedItems = [...fragmentToParse.matchAll(/items='\[(.*?)\]'>/g)].map((g) => g[1]);
                     if (matchedItems) {
                         for (let j = 0; j < matchedItems.length; j++) {
                             const matchedItem = matchedItems[j];
