@@ -17,6 +17,8 @@ const tab = ref(null);
 // theme breadcrumb
 const page = ref({ title: 'Account Setting' });
 
+const superAdmin = ref(localStorage.getItem('role') === 'superAdmin');
+
 </script>
 
 <template>
@@ -29,7 +31,7 @@ const page = ref({ title: 'Account Setting' });
                     <v-tab value="Account">
                         <UserCircleIcon class="mr-2" size="20"/>{{ $t('accountTab.accountSetting') }}
                     </v-tab>
-                    <v-tab value="ManageAccess">
+                    <v-tab v-if="superAdmin" value="ManageAccess">
                         <UsersIcon class="mr-2" size="20"/>{{ $t('accountTab.manageAccess') }}
                     </v-tab>
                     <!-- <v-tab value="Notification"  class=""><BellIcon class="mr-2" size="20"/>Notification</v-tab>

@@ -2,9 +2,11 @@
     <v-list class="py-4 px-4 bg-containerBg">
         <NavGroup :item="instMenu" :key="instMenu.header" />
         <NavItem class="leftPadding" :item="definitionMap" />
-        <NavItem class="leftPadding" :item="instExecution" />
-        <NavCollapse v-if="runningInstances.children.length" class="leftPadding" :item="runningInstances" :level="0" />
-        <NavCollapse v-if="completeInstances.children.length" class="leftPadding" :item="completeInstances" :level="0" />
+        <NavItem v-if="!instExecution.disable" class="leftPadding" :item="instExecution" />
+        <NavCollapse v-if="!runningInstances.disable && runningInstances.children.length" class="leftPadding" 
+            :item="runningInstances" :level="0" />
+        <NavCollapse v-if="!completeInstances.disable && completeInstances.children.length" class="leftPadding" 
+            :item="completeInstances" :level="0" />
     </v-list>
 </template>
 
@@ -26,34 +28,52 @@ export default {
         instMenu: {
             header: 'instance.title',
         },
-        instExecution: {
-            title: "processExecution.title",
-            icon: 'solar:chat-dots-linear',
-            BgColor: 'primary',
-            to: '/instances/chat',
-        },
         definitionMap: {
             title: "processDefinitionMap.title",
             icon: 'ri:layout-grid-2-line',
             BgColor: 'primary',
             to: "/definition-map",
         },
+        instExecution: {
+            title: "processExecution.title",
+            icon: 'solar:chat-dots-linear',
+            BgColor: 'primary',
+            to: '/instances/chat',
+            disable: true,
+        },
         runningInstances: {
             title: 'runningInstance.title',
             icon: 'solar:list-bold',
             BgColor: 'primary',
             children: [],
-            disable: false,
+            disable: true,
         },
         completeInstances: {
             title: 'completeInstance.title',
             icon: 'solar:list-bold',
             BgColor: 'primary',
             children: [],
+            disable: true,
         },
     }),
+    computed: {
+        useChat() {
+            const execution = localStorage.getItem('execution');
+            if (window.$mode == "ProcessGPT" && execution == "true") {
+                return true;
+            } else if (execution == "true") {
+                return false;
+            }
+            return false;
+        }
+    },
     async created() {
-        await this.loadInstances();
+        if (this.useChat) {
+            this.instExecution.disable = false;
+            this.runningInstances.disable = false;
+            this.completeInstances.disable = false;
+            await this.loadInstances();
+        }
     },
     methods: {
         async loadInstances() {
