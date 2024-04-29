@@ -122,7 +122,9 @@ export default {
 
 
         try {
-            if(typeof(this.items) === "string")
+            if(!(this.items) || this.items.length === 0)
+                this.localItems = []
+            else if(typeof(this.items) === "string")
                 this.localItems = JSON.parse(this.items.replace(/'/g, '"'))
             else
                 this.localItems = this.items
