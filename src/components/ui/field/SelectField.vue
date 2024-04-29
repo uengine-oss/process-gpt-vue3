@@ -64,7 +64,7 @@ export default {
                 commonSettingInfos["localName"],
                 commonSettingInfos["localAlias"],
                 commonSettingInfos["localDisabled"],
-                ...commonSettingInfos["localItemWithDynamicList"]
+                ...commonSettingInfos["localItemsWithDynamicList"]
             ]
         };
     },
@@ -132,7 +132,7 @@ export default {
         }
     },
 
-    created() {
+    async created() {
         this.localModelValue = this.modelValue
         
         this.localName = this.name
@@ -157,7 +157,9 @@ export default {
         this.localDynamicLoadValueJsonPath = this.dynamic_load_value_json_path ?? ""
 
 
-        this.loadControlItems()
+        await this.loadControlItems()
+        if(this.controlItems.length > 0)
+            this.localModelValue = Object.keys(this.controlItems[0])[0]
     }
 };
 </script>

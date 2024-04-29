@@ -90,7 +90,7 @@ let commonSettingInfos = {
     }
 };
 
-commonSettingInfos["localItemWithDynamicList"] = [
+commonSettingInfos["localItemsWithDynamicList"] = [
     commonSettingInfos["localItems"],
     commonSettingInfos["localIsDynamicLoad"],
     commonSettingInfos["localDynamicLoadURL"],
