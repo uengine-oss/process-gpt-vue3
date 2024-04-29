@@ -26,7 +26,11 @@
         "title": "대시보드"
     },
     "todoList": {
-        "title": "할 일 목록"
+        "title": "할 일 목록",
+        "todo": "할 일",
+        "inProgress": "진행 중",
+        "pending": "보류 중",
+        "done": "완료됨"
     },
     "calendar": {
         "title": "달력"

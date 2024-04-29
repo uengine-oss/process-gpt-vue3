@@ -83,14 +83,14 @@ export default {
                 icon: 'lucide:layout-panel-top',
                 BgColor: 'primary',
                 to: '/dashboard2',
-                disable: false
+                disable: true
             },
             {
                 title: 'todoList.title',
                 icon: 'pajamas:overview',
                 BgColor: 'primary',
                 to: '/todolist',
-                disable: false
+                disable: true
             },
             {
                 title: 'calendar.title',
@@ -112,8 +112,11 @@ export default {
     }),
     computed: {
         useChat() {
-            if (window.$mode == "ProcessGPT") {
+            const execution = localStorage.getItem('execution');
+            if (window.$mode == "ProcessGPT" && execution == "true") {
                 return true;
+            } else if (execution == "true") {
+                return false;
             }
             return false;
         }

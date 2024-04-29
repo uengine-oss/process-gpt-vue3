@@ -26,7 +26,11 @@
         "title": "Dashboard"
     },
     "todoList": {
-        "title": "ToDoList"
+        "title": "ToDoList",
+        "todo": "ToDo",
+        "inProgress": "In Progress",
+        "pending": "Pending",
+        "done": "Done"
     },
     "calendar": {
         "title": "Calendar"
