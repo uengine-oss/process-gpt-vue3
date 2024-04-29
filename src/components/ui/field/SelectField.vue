@@ -74,17 +74,38 @@ export default {
                 {
                     dataToUse: "localDynamicLoadURL",
                     htmlAttribute: "dynamic_load_url",
-                    settingType: "items_dynamic"
+                    settingType: "items_dynamic",
+                    validCheck: (value, props) => {
+                        if(props.localIsDynamicLoad)
+                        {
+                            if(!value || value.length <= 0) return "URL 속성에 값을 입력해 주세요."
+                        }
+                        return null
+                    }
                 },
                 {
                     dataToUse: "localDynamicLoadKeyJsonPath",
                     htmlAttribute: "dynamic_load_key_json_path",
-                    settingType: "items_dynamic"
+                    settingType: "items_dynamic",
+                    validCheck: (value, props) => {
+                        if(props.localIsDynamicLoad)
+                        {
+                            if(!value || value.length <= 0) return "Key JSON Path 속성에 값을 입력해 주세요."
+                        }
+                        return null
+                    }
                 },
                 {
                     dataToUse: "localDynamicLoadValueJsonPath",
                     htmlAttribute: "dynamic_load_value_json_path",
-                    settingType: "items_dynamic"
+                    settingType: "items_dynamic",
+                    validCheck: (value, props) => {
+                        if(props.localIsDynamicLoad)
+                        {
+                            if(!value || value.length <= 0) return "Value JSON Path 속성에 값을 입력해 주세요."
+                        }
+                        return null
+                    }
                 }
             ]
         };
