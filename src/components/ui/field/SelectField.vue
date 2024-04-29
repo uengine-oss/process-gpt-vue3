@@ -30,7 +30,10 @@ export default {
         disabled: String,
 
         items: String,
-        is_dynamic_load: String
+        is_dynamic_load: String,
+        dynamic_load_url: String,
+        dynamic_load_key_json_path: String,
+        dynamic_load_value_json_path: String
     },
 
     computed: {
@@ -51,9 +54,9 @@ export default {
             localDisabled: this.disabled === "true",
 
             localIsDynamicLoad: false,
-            localDynamicLoadURL: "http://localhost:8088/api/data/1",
-            localDynamicLoadKeyJsonPath: "$.values[*].key",
-            localDynamicLoadValueJsonPath: "$.values[*].value",
+            localDynamicLoadURL: "",
+            localDynamicLoadKeyJsonPath: "",
+            localDynamicLoadValueJsonPath: "",
 
             controlItems: [],
 
@@ -66,6 +69,21 @@ export default {
                 {
                     dataToUse: "localIsDynamicLoad",
                     htmlAttribute: "is_dynamic_load",
+                    settingType: "items_dynamic"
+                },
+                {
+                    dataToUse: "localDynamicLoadURL",
+                    htmlAttribute: "dynamic_load_url",
+                    settingType: "items_dynamic"
+                },
+                {
+                    dataToUse: "localDynamicLoadKeyJsonPath",
+                    htmlAttribute: "dynamic_load_key_json_path",
+                    settingType: "items_dynamic"
+                },
+                {
+                    dataToUse: "localDynamicLoadValueJsonPath",
+                    htmlAttribute: "dynamic_load_value_json_path",
                     settingType: "items_dynamic"
                 }
             ]
@@ -113,6 +131,9 @@ export default {
         // 문자열로 형태로 items의 값이 전달되었을 경우, 리스트 형태로 변환해서 반영시키기 위해서
         async loadControlItems() {
             if(this.localIsDynamicLoad) {
+                if(!this.localDynamicLoadURL || this.localDynamicLoadURL.length === 0) return
+                if(!this.localDynamicLoadKeyJsonPath || this.localDynamicLoadKeyJsonPath.length === 0) return
+                if(!this.localDynamicLoadValueJsonPath || this.localDynamicLoadValueJsonPath.length === 0) return
 
                 try {
                     const response = await axios.get(this.localDynamicLoadURL)
@@ -152,6 +173,10 @@ export default {
             this.localItems = []
         }
         this.localIsDynamicLoad = this.is_dynamic_load === "true"
+        this.localDynamicLoadURL = this.dynamic_load_url ?? ""
+        this.localDynamicLoadKeyJsonPath = this.dynamic_load_key_json_path ?? ""
+        this.localDynamicLoadValueJsonPath = this.dynamic_load_value_json_path ?? ""
+
 
         this.loadControlItems()
     }

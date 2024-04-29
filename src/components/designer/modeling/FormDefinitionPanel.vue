@@ -39,6 +39,9 @@
               </v-window-item>
 
               <v-window-item :value="true" class="fill-height pa-5" style="overflow-y: auto">
+                <v-text-field label="URL" v-model.trim="componentProps['localDynamicLoadURL']" @keyup.enter="save"></v-text-field>
+                <v-text-field label="Key JSON Path" v-model.trim="componentProps['localDynamicLoadKeyJsonPath']" @keyup.enter="save"></v-text-field>
+                <v-text-field label="Value JSON Path" v-model.trim="componentProps['localDynamicLoadValueJsonPath']" @keyup.enter="save"></v-text-field>
               </v-window-item>
           </v-window>
         </template>
