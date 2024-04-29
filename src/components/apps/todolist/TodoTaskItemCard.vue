@@ -16,6 +16,17 @@
                             density="comfortable"
                             style="margin-left:5px;"
                         >{{ category.name }}</v-chip>
+        
+                        <RouterLink v-if="managed" to="" class="px-0" color="black">
+                            <DotsVerticalIcon size="15" />
+                            <v-menu activator="parent">
+                                <v-list density="compact">
+                                    <v-list-item @click="deleteTask">
+                                        <v-list-item-title>삭제</v-list-item-title>
+                                    </v-list-item>
+                                </v-list>
+                            </v-menu>
+                        </RouterLink>
                     </div>
                 </v-col>
                 <!-- 세로배치 -->
@@ -40,17 +51,6 @@
                 </v-col>
             </v-row>
         </v-card-title>
-        
-        <RouterLink v-if="managed" to="" class="px-0">
-            <DotsVerticalIcon size="15" />
-            <v-menu activator="parent">
-                <v-list density="compact">
-                    <v-list-item @click="deleteTask">
-                        <v-list-item-title>삭제</v-list-item-title>
-                    </v-list-item>
-                </v-list>
-            </v-menu>
-        </RouterLink>
 
         <v-dialog v-model="dialog" max-width="500">
             <TodoDialog 
