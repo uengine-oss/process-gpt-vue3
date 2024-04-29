@@ -51,7 +51,7 @@ export default {
             localName: "",
             localAlias: "",
             localItems: [],
-            localDisabled: this.disabled === "true",
+            localDisabled: false,
 
             localIsDynamicLoad: false,
             localDynamicLoadURL: "",
