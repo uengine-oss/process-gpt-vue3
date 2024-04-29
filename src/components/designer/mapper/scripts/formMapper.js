@@ -131,7 +131,7 @@ export default {
           appendable: false,
         },
         Replace: {
-          size: { width: 120, height: 50, appendWidth: 150, appendHeight: 100 },
+          size: { width: 120, height: 50, appendWidth: 150, appendHeight: 130 },
           ports: {
             "in input": { x: -60, y: 10, appendX: -75, appendY: 10 },
             out: { x: 60, y: 10, direction: "out", appendX: 75, appendY: 10 },
@@ -139,6 +139,7 @@ export default {
           attributes: {
             "oldString": { x: -55, y: -15, func: "input", value: "" },
             "newString": { x: -55, y: 30, func: "input", value: "" },
+            "isRegularExp": { x: -55, y: 45, func: "checkbox", value: "false" },
           },
           parent: "String",
           class: "org.uengine.processdesigner.mapper.transformers.ReplaceTransformer",
@@ -632,7 +633,9 @@ export default {
     },
     updateMappingElementVariables(block, transformerMapping) {
       Object.keys(block.attributes).forEach(key => {
-        transformerMapping.transformer[key] = block.attributes[key];
+        var value = block.attributes[key];
+        if(value == undefined) value = "";
+        transformerMapping.transformer[key] = value;
       });
     },
     renderFormMapperFromMappingElementJson(json) {
@@ -789,7 +792,9 @@ export default {
         }));
         if (result.length > 0 && this.blocks) {
           if (this.blocks[blockName].attributes) {
-            result[0].value = this.blocks[blockName].attributes[result[0].name];
+            result.forEach(attr => {
+              attr.value = this.blocks[blockName].attributes[attr.name];
+            });
           }
         }
         return result;
