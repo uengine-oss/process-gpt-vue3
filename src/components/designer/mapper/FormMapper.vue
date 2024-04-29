@@ -214,7 +214,7 @@ export default {
             //다이얼로그가 생성될 시 이상한 위치로 되기에 일정 시간을 줌
             setTimeout(() => {
                 this.addTreeViewPort();
-            }, 300);
+            }, 500);
         });
         // processVariables가 준비되었는지 확인
         // if (this.processVariables && this.processVariables.length > 0) {

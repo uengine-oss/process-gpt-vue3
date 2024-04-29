@@ -40,6 +40,22 @@
                 </body>
             </foreignObject>
         </g>
+        <g v-if="appendComponent[blockName] == true && func == 'checkbox'">
+            <text x="10" y="10" style="fill: #fff; font-size: 11px; user-select: none; text-anchor: start">{{
+                name.replace('in ', '')
+            }}</text>
+            <foreignObject x="-20" y="0" width="30" height="25">
+                <body xmlns="http://www.w3.org/1999/xhtml">
+                    <input
+                        type="checkbox"
+                        id="checkboxInput"
+                        class="attribute"
+                        v-model="value"
+                        @change="handleInput($event.target.checked)"
+                    />
+                </body>
+            </foreignObject>
+        </g>
     </g>
 </template>
 
@@ -81,6 +97,7 @@ export default {
     background-color: #f0f0f0;
     width: 100%;
     height: 100%;
+    font-size: 12px;
     padding-left: 5px;
 }
 </style>
