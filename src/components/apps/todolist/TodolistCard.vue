@@ -1,18 +1,19 @@
 <template>
     <v-card elevation="10">
         <div class="pa-5">
-            <div class="d-flex align-center justify-space-between mb-7">
+            <div class="d-flex align-center justify-space-between ml-3">
                 <h5 class="text-h5 font-weight-semibold">{{ ($t('todoList.title')) }}</h5>
 
-                <v-avatar size="24" elevation="10" class="bg-surface d-flex align-center cursor-pointer"
+                <v-avatar v-if="mode === 'ProcessGPT'"
+                    size="24" elevation="10" class="bg-surface d-flex align-center cursor-pointer"
                     @click="openDialog">
                     <v-tooltip activator="parent" location="left">할 일 등록</v-tooltip>
                     <PlusIcon size="24" stroke-width="2" />
                 </v-avatar>
             </div>
 
-            <v-row>
-                <v-col v-for="column in todolist" :key="column.id" cols="12" md="3" sm="6" class="d-flex">
+            <v-row class="ma-0 pa-0">
+                <v-col v-for="column in todolist" :key="column.id" cols="12" md="3" sm="6">
                     <TodoTaskColumn :column="column" :loading="loading" @executeTask="executeTask" @scrollBottom="handleScrollBottom" />
                 </v-col>
             </v-row>
@@ -36,28 +37,29 @@ export default {
         TodoDialog,
     },
     data: () => ({
+        mode: window.$mode,
         todolist: [
             {
                 id: 'TODO',
-                title: 'Todo',
+                title: 'todoList.todo',
                 cardbg: 'background',
                 tasks: []
             },
             {
                 id: 'IN_PROGRESS',
-                title: 'In Progress',
+                title: 'todoList.inProgress',
                 cardbg: 'lightsecondary',
                 tasks: []
             },
             {
                 id: 'PENDING',
-                title: 'Pending',
+                title: 'todoList.pending',
                 cardbg: 'lightinfo',
                 tasks: []
             },
             {
                 id: 'DONE',
-                title: 'Done',
+                title: 'todoList.done',
                 cardbg: 'lightsuccess',
                 tasks: []
             }
@@ -65,9 +67,12 @@ export default {
         dialog: false,
 
         loading: false,
-        offset: 5,
+        offset: 10,
         currentPage: 0,
     }),
+    mounted() {
+        this.mode = window.$mode;
+    },
     created() {
         this.loadToDo();
         this.loadCompletedWorkList();
