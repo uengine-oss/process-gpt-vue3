@@ -158,7 +158,7 @@ export default {
 
 
         await this.loadControlItems()
-        if(this.controlItems.length > 0)
+        if((this.controlItems.length > 0) && !this.localModelValue)
             this.localModelValue = Object.keys(this.controlItems[0])[0]
     }
 };

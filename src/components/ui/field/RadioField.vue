@@ -2,7 +2,7 @@
     <div class="form-radio-box">
         <label class="form-radio-label">{{(localAlias && localAlias.length > 0) ? localAlias : localName}}</label>
         <v-radio-group v-model="localModelValue">
-            <div v-for="(item, index) in localItems" :key="index">
+            <div v-for="(item, index) in controlItems" :key="index">
                 <div v-for="(value, key) in item" :key="key">
                     <v-radio :label="key" :value="key" :disabled="localDisabled"></v-radio>
                 </div>
@@ -28,12 +28,14 @@ export default {
 
     data() {
         return {
-            localModelValue: this.modelValue,
+            localModelValue: "",
 
-            localName: this.name,
-            localAlias: this.alias,
-            localItems: this.items,
-            localDisabled: this.disabled === "true",
+            localName: "",
+            localAlias: "",
+            localItems: [],
+            localDisabled: false,
+
+            controlItems: [],
 
             settingInfos: [
                 commonSettingInfos["localName"],
@@ -47,12 +49,12 @@ export default {
     watch: {
         modelValue: {
             handler() {
-                this.loadLocalItems()
+                this.loadControlItems()
                 
                 if(this.modelValue && this.modelValue.length > 0)
                     this.localModelValue = this.modelValue
-                else if(this.localItems.length > 0)
-                    this.localModelValue = Object.keys(this.localItems[0])[0]
+                else if(this.controlItems.length > 0)
+                    this.localModelValue = Object.keys(this.controlItems[0])[0]
             },
             deep: true,
             immediate: true
@@ -64,23 +66,42 @@ export default {
             },
             deep: true,
             immediate: true
-        }
+        },
+
+        localItems: {handler() {this.loadControlItems()}, deep: true, immediate: true}
     },
     
     methods: {
         // 문자열로 형태로 items의 값이 전달되었을 경우, 리스트 형태로 변환해서 반영시키기 위해서
-        loadLocalItems() {
-            try {
-                if(typeof(this.items) === "string")
-                    this.localItems = JSON.parse(this.items.replace(/'/g, '"'))
-                else
-                    this.localItems = this.items
-            } catch (e) {
-                console.log("### items 파싱 에러 ###")
-                console.log(this.items.replace(/'/g, '"'))
-                console.error(e);
-            }
+        async loadControlItems() {
+            this.controlItems = this.localItems
         }
+    },
+
+    async created() {
+        this.localModelValue = this.modelValue
+        
+        this.localName = this.name
+        this.localAlias = this.alias
+        this.localDisabled = this.disabled === "true"
+
+
+        try {
+            if(typeof(this.items) === "string")
+                this.localItems = JSON.parse(this.items.replace(/'/g, '"'))
+            else
+                this.localItems = this.items
+        } catch (e) {
+            console.log("### items 파싱 에러 ###")
+            console.log(this.items.replace(/'/g, '"'))
+            console.error(e);
+            this.localItems = []
+        }
+
+        
+        await this.loadControlItems()
+        if(this.controlItems.length > 0 && !this.localModelValue)
+            this.localModelValue = Object.keys(this.controlItems[0])[0]
     }
 };
 </script>
