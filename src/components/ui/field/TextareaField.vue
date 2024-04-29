@@ -73,7 +73,7 @@ export default {
     },
 
     created() {
-        this.localModelValue = this.modelValue
+        this.localModelValue = this.modelValue ?? ""
         
         this.localName = this.name
         this.localAlias = this.alias
