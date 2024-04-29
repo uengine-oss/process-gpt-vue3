@@ -299,17 +299,17 @@ export default {
           appendable: false,
         },
         XMLParsing: {//직접 값을 입력하는듯 함
-          size: { width: 150, height: 100 },
+          size: { width: 120, height: 50, appendWidth: 150, appendHeight: 80 },
           ports: {
-            out: { x: 75, y: 0, direction: "out" },
+            out: { x: 60, y: 10, direction: "out", appendX: 75, appendY: -10 },
           },
           attributes: {
-            "xml": { x: -55, y: -30, func: "xml", value: "" },
+            "xml": { x: -55, y: 15, func: "input", value: "" },
           },
           parent: "ETC",
           class: "org.uengine.processdesigner.mapper.transformers.XMLParsingTransformer",
           isTransform: true,
-          appendable: false,
+          appendable: true,
         },
         Source: {//소스
           size: { width: 0, height: 0 },
