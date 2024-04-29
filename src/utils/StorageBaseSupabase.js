@@ -40,22 +40,26 @@ export default class StorageBaseSupabase {
         });
     }
     async signUp(userInfo) {
-        const result = await window.$supabase.auth.signUp({
-            email: userInfo.email,
-            password: userInfo.password,
-            options: {
-                data: {
-                    name: userInfo.username
+        try {
+            const result = await window.$supabase.auth.signUp({
+                email: userInfo.email,
+                password: userInfo.password,
+                options: {
+                    data: {
+                        name: userInfo.username
+                    }
                 }
+            });
+    
+            if (!result.error) {
+                return result.data;
+            } else {
+                result.errorMsg = result.error.message;
+                return result;
             }
-        });
 
-        if (!result.error) {
-            // await this.writeUserData(result.data);
-            return result.data;
-        } else {
-            result.errorMsg = result.error.message;
-            return result;
+        } catch (e) {
+            throw new StorageBaseError('error in signUp', e, arguments);
         }
     }
 
@@ -117,6 +121,23 @@ export default class StorageBaseSupabase {
         } else {
             return error;
         }
+    }
+
+    async resetPassword(email) {
+        const { data, error } = await window.$supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: 'http://process-gpt.io/auth/reset-password',
+        });
+        if (error) {
+            return error;
+        } else {
+            return data;
+        }
+    }
+
+    async updateUser(new_password) {
+        const { data, error } = await window.$supabase.auth.updateUser({
+            password: new_password
+        });
     }
 
     async getString(path, options) {
@@ -498,42 +519,58 @@ export default class StorageBaseSupabase {
     }
 
     async writeUserData(value) {
-        if (value.session) {
-            window.localStorage.setItem('accessToken', value.session.access_token);
-        }
-        if (value.user) {
-            window.localStorage.setItem('author', value.user.email);
-            window.localStorage.setItem('userName', value.user.user_metadata.name);
-            window.localStorage.setItem('email', value.user.email);
-            window.localStorage.setItem('uid', value.user.id);
-
-            // const { data, error } = await window.$supabase.from('users').select('*').eq('id', value.user.id).single();
-
-            const { data, error } = await window.$supabase
-                .from('users')
-                .select('*')
-                .eq('id', value.user.id)
-                .maybeSingle()
-            
-            if (error) {
-                throw new StorageBaseError('error in writeUserData', error, arguments);
+        try {
+            if (value.session) {
+                window.localStorage.setItem('accessToken', value.session.access_token);
             }
+            if (value.user) {
+                window.localStorage.setItem('author', value.user.email);
+                window.localStorage.setItem('userName', value.user.user_metadata.name);
+                window.localStorage.setItem('email', value.user.email);
+                window.localStorage.setItem('uid', value.user.id);
+    
+                const count = await this.getCount('users');
+                if (count && count === 1) {
+                    await this.putObject('users', {
+                        id: value.user.id,
+                        username: value.user.user_metadata.name,
+                        role: 'superAdmin',
+                        is_admin: true
+                    });
+                    window.localStorage.setItem('role', 'superAdmin');
+                } else {
+                    await this.putObject('users', {
+                        id: value.user.id,
+                        username: value.user.user_metadata.name
+                    });
+                }
 
-            window.localStorage.setItem('isAdmin', data.is_admin);
-            window.localStorage.setItem('picture', data.profile);
-        }
+                const { data, error } = await window.$supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', value.user.id)
+                    .maybeSingle();
 
-        const options = {
-            headers: {
-                Authorization: 'bearer ' + localStorage.getItem('accessToken')
+                if (!error) {
+                    window.localStorage.setItem('isAdmin', data.is_admin);
+                    window.localStorage.setItem('picture', data.profile);
+                }
             }
+    
+            const options = {
+                headers: {
+                    Authorization: 'bearer ' + localStorage.getItem('accessToken')
+                }
+            }
+            await axios.get('/test/execution', options).then(res => {
+                window.localStorage.setItem("execution", "true");
+            })
+            .catch(error => {
+                // console.log(error);
+            });
+        } catch(e) {
+            throw new StorageBaseError('error in writeUserData', e, arguments);
         }
-        await axios.get('/test/execution', options).then(res => {
-            window.localStorage.setItem("execution", "true");
-        })
-        .catch(error => {
-            // console.log(error);
-        });
     }
 
     formatDataPath(path, options) {
@@ -562,7 +599,7 @@ export default class StorageBaseSupabase {
                 const { count, error } = await window.$supabase.from(obj.table).select('*', { count: 'exact' }).match(options.match);
 
                 if (error) {
-                    throw new StorageBaseError('error in getCount', error, arguments);
+                    return error;
                 } else {
                     return count;
                 }
@@ -573,7 +610,7 @@ export default class StorageBaseSupabase {
                     .eq(obj.searchKey, obj.searchVal);
 
                 if (error) {
-                    throw new StorageBaseError('error in getCount', error, arguments);
+                    return error;
                 } else {
                     return count;
                 }
@@ -581,7 +618,7 @@ export default class StorageBaseSupabase {
                 const { count, error } = await window.$supabase.from(obj.table).select('*', { count: 'exact' });
 
                 if (error) {
-                    throw new StorageBaseError('error in getCount', error, arguments);
+                    return error;
                 } else {
                     return count;
                 }

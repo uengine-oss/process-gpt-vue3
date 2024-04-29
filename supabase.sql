@@ -4,8 +4,14 @@ create table configuration (
   key text primary key,
   value jsonb
 );
-insert into configuration (key, value) values ('proc_map', '{}');
 insert into configuration (key, value) values ('organization', '{}');
+
+-- table proc_map_history
+create table proc_map_history (
+    version_id serial primary key,
+    proc_map jsonb not null,
+    created_at timestamp default current_timestamp
+);
 
 -- table todolist
 drop table todolist;
@@ -29,7 +35,8 @@ create table public.users (
     profile text null,
     email text null,
     is_admin boolean not null default false,
-    notifications jsonb null
+    notifications jsonb null,
+    role text null
 );
 -- trigger the function every time a auts.users is created
 create or replace function public.handle_new_user() 

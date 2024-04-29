@@ -1,19 +1,20 @@
 <template>
     <v-card elevation="10" :class="'bg-' + column.cardbg">
-        <div class="pa-5">
-            <div class="d-flex align-center justify-space-between">
-                <h6 class="text-h6 font-weight-semibold">{{ column.title }}</h6>
-            </div>
-
+        <div class="d-flex align-center justify-space-between pa-3 pb-2 pt-2">
+            <h6 class="text-h6 font-weight-semibold">{{ $t(column.title) }}</h6>
+        </div>
+        <div ref="section" class="pa-3"  style="height:calc(100vh - 300px) !important; overflow:auto;">
             <draggable class="dragArea list-group cursor-move" :list="column.tasks"
                 :animation="200" ghost-class="ghost-card" group="tasks" @add="updateTask"
                 :component-data="getComponentData()" :move="checkDraggable">
-                <transition-group>
-                    <div v-for="task in column.tasks" :key="task.taskId" class="mt-6 cursor-move">
-                        <TodoTaskItemCard :task="task" @deleteTask="deleteTask" @executeTask="executeTask"
-                            @add="addTask" />
-                    </div>
-                </transition-group>
+                <div>
+                    <transition-group>
+                        <div v-for="task in column.tasks" :key="task.taskId" class="cursor-move todo-task-item-card-style">
+                            <TodoTaskItemCard :task="task" @deleteTask="deleteTask" @executeTask="executeTask"
+                                @add="addTask" />
+                        </div>
+                    </transition-group>
+                </div>
             </draggable>
         </div>
     </v-card>
@@ -30,10 +31,22 @@ export default {
     },
     props: {
         column: Object,
+        loading: Boolean
     },
     data: () => ({
     }),
+    mounted(){
+        if(this.$refs.section) this.$refs.section.addEventListener('scroll', this.checkScrollBottom);
+    },
     methods: {
+        checkScrollBottom(){
+            const section = this.$refs.section;
+            const isAtBottom = section.scrollTop + section.clientHeight >= section.scrollHeight - 1;
+            if (isAtBottom && this.column.id == 'DONE') {
+                // console.log("!! RUN")
+                if(!this.loading) this.$emit('scrollBottom')
+            }
+        },
         checkDraggable(event) {
             const task = event.draggedContext.element;
             if (!task.instId) {
@@ -84,3 +97,8 @@ export default {
     }
 }
 </script>
+<style>
+    .todo-task-item-card-style:not(:first-of-type) {
+        margin-top:16px;
+    }
+</style>

@@ -33,7 +33,8 @@
                 </v-col>
                 <v-col cols="3">
                     <div>
-                        <v-select label="Caller Roles" v-model="roleBinding.role.name" :items="definitionRoles"
+                        <v-text-field v-if="isSub" v-model="roleBinding.role.name"></v-text-field>
+                        <v-select v-else label="Caller Roles" v-model="roleBinding.role.name" :items="definitionRoles"
                             item-title="name" item-value="name">
                             <!-- <md-option v-for="role in definition.roles" :key="role.name" :value="role.name">
                                 {{ role.name }}
@@ -63,6 +64,10 @@
 export default {
     name: "bpmn-role-parameter-contexts",
     props: {
+        isSub: {
+            type: Boolean,
+            default: false
+        },
         roleBindings: Array,
         definitionRoles: Array,
         calleeDefinitionRoles: Array,

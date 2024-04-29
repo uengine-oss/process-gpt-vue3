@@ -45,8 +45,8 @@ export const useAuthStore = defineStore({
                     if (result.error) {
                         alert(result.errorMsg);
                     } else {
-                        router.push('/dashboard2');
                         await storage?.writeUserData(result);
+                        router.push('/dashboard2');
                     }
                 }
             } catch (e) {
@@ -66,10 +66,17 @@ export const useAuthStore = defineStore({
                     if (result.error) {
                         alert(result.errorMsg);
                     } else {
-                        router.push('/auth/login');
                         await storage?.writeUserData(result);
+                        router.push('/auth/login');
                     }
                 }
+            } catch (e) {
+                console.log(e);
+            }
+        },
+        async resetPassword(email: string) {
+            try {
+                await storage?.resetPassword(email);
             } catch (e) {
                 console.log(e);
             }

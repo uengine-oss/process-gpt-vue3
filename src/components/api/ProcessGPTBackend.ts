@@ -191,13 +191,16 @@ class ProcessGPTBackend implements Backend {
 
     async getInstance(instanceId: string) {
         try {
-            const definitionId = instanceId.split('.')[0];
+            const defId = instanceId.split('.')[0];
             const options = {
                 match: {
                     proc_inst_id: instanceId
                 }
             };
-            const data = await storage.getObject(definitionId, options);
+            const data = await storage.getObject(defId, options);
+            data.defId = defId;
+            data.instanceId = instanceId;
+            data.name = data.proc_inst_name;
             return data;
         } catch (error) {
             throw new Error('error in getInstance');
@@ -312,13 +315,6 @@ class ProcessGPTBackend implements Backend {
         await storage.delete(`todolist/${taskId}`, { key: 'id' });
     }
 
-    async getProcessDefinitionMap() {
-        const procMap = await storage.getObject('configuration/proc_map', { key: 'key' });
-        if (procMap && procMap.value) {
-            return procMap.value;
-        }
-    }
-
     async getFormDefinition(formName: string) {
         const form = await storage.getString(`form_def/${formName}`, { key: 'key' });
         if (form && form.html) {
@@ -327,12 +323,42 @@ class ProcessGPTBackend implements Backend {
         return null;
     }
 
+    // proc_map
+    async getProcessDefinitionMapHistory() {
+        try {
+            const result = await storage.list('proc_map_history', {
+                sort: "desc",
+                orderBy: 'version_id',
+            });
+            if (result) {
+                return result;
+            }
+            return null;
+        } catch (error) {
+            throw new Error('error in getProcessDefinitionMap');
+        } 
+    }
+
+    async getProcessDefinitionMap() {
+        try {
+            const result = await storage.list('proc_map_history', {
+                sort: "desc",
+                orderBy: 'version_id',
+            });
+            if (result) {
+                return result[0].proc_map;
+            }
+            return {};
+        } catch (error) {
+            throw new Error('error in getProcessDefinitionMap');
+        } 
+    }
+
     async putProcessDefinitionMap(definitionMap: any) {
         const putObj = {
-            key: 'proc_map',
-            value: definitionMap
+            proc_map: definitionMap
         }
-        await storage.putObject('configuration', putObj);
+        await storage.putObject('proc_map_history', putObj);
     }
 
     // Add stub implementations for the missing methods and properties

@@ -120,11 +120,12 @@ export default {
                         const workItem = await backend.getWorkItem(workHistory.taskId);
                         let result = []
 
-                        for (const item of workItem.activity.parameters) {
-                            let variable = await backend.getVariable(workHistory.instId, item.variable.name);
-                            result.push({ name: item.variable.name, value: variable });
+                        if(workItem.activity.parameters) {
+                            for (const item of workItem.activity.parameters) {
+                                let variable = await backend.getVariable(workHistory.instId, item.variable.name);
+                                result.push({ name: item.variable.name, value: variable });
+                            }
                         }
-                        
                         me.filterMessages[index].formData = result
                     }
                    
