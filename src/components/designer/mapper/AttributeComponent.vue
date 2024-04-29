@@ -25,6 +25,21 @@
                 </body>
             </foreignObject>
         </g>
+        <g v-if="appendComponent[blockName] == true && func == 'SQLFormatInput'">
+            <text x="-10" y="3" style="fill: #fff; font-size: 11px; user-select: none; text-anchor: start">{{
+                name.replace('in ', '')
+            }}</text>
+            <foreignObject x="30" y="-10" width="90" height="25">
+                <body xmlns="http://www.w3.org/1999/xhtml">
+                    <select v-model="value" id="sqlFormatInput" class="attribute" @change="handleInput($event.target.value)">
+                        <option value="S">String</option>
+                        <option value="I">Integer</option>
+                        <option value="L">Long</option>
+                        <option value="D">Double</option>
+                    </select>
+                </body>
+            </foreignObject>
+        </g>
         <g v-if="appendComponent[blockName] == true && func == 'NumberFormatTo'">
             <text x="-15" y="10" style="fill: #fff; font-size: 11px; user-select: none; text-anchor: start">{{
                 name.replace('in ', '')

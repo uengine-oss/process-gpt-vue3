@@ -246,18 +246,20 @@ export default {
           isTransform: true,
           appendable: true,
         },
-        DirectSql: {
-          size: { width: 150, height: 80 },
+        DirectSQL: {
+          size: { width: 120, height: 50, appendWidth: 150, appendHeight: 100 },
           ports: {
-            out: { x: 75, y: 0, direction: "out" },
+            out: { x: 60, y: 10, direction: "out", appendX: 75, appendY: -20 },
           },
           attributes: {
-            "input": { x: -55, y: 15, func: "input", value: "" },
+            "value": { x: -55, y: 10, func: "input", value: "" },
+            "type": { x: -55, y: 30, width: 100, height: 50, func: "SQLFormatInput", value: "" },
+          
           },
           parent: "ETC",
-          class: "org.uengine.processdesigner.mapper.transformers.DirectSqlTransformer",
+          class: "org.uengine.processdesigner.mapper.transformers.DirectSqlExpressionTransformer",
           isTransform: true,
-          appendable: false,
+          appendable: true,
         },
         DirectValue: {
           size: { width: 120, height: 50, appendWidth: 150, appendHeight: 80 },
