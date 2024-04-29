@@ -27,8 +27,10 @@ export default {
 
         name: String,
         alias: String,
+        disabled: String,
+
         items: String,
-        disabled: String
+        is_dynamic_load: String
     },
 
     computed: {
@@ -58,8 +60,14 @@ export default {
             settingInfos: [
                 commonSettingInfos["localName"],
                 commonSettingInfos["localAlias"],
+                commonSettingInfos["localDisabled"],
+
                 commonSettingInfos["localItems"],
-                commonSettingInfos["localDisabled"]
+                {
+                    dataToUse: "localIsDynamicLoad",
+                    htmlAttribute: "is_dynamic_load",
+                    settingType: "items_dynamic"
+                }
             ]
         };
     },
@@ -95,6 +103,7 @@ export default {
         },
 
         localItems: {handler() {this.loadControlItems()}, deep: true, immediate: true},
+        localIsDynamicLoad: {handler() {this.loadControlItems()}, deep: true, immediate: true},
         localDynamicLoadURL: {handler() {this.loadControlItems()}, deep: true, immediate: true},
         localDynamicLoadKeyJsonPath: {handler() {this.loadControlItems()}, deep: true, immediate: true},
         localDynamicLoadValueJsonPath: {handler() {this.loadControlItems()}, deep: true, immediate: true}
@@ -142,6 +151,7 @@ export default {
             console.error(e);
             this.localItems = []
         }
+        this.localIsDynamicLoad = this.is_dynamic_load === "true"
 
         this.loadControlItems()
     }
