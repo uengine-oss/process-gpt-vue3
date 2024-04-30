@@ -33,7 +33,15 @@
         "done": "Done"
     },
     "calendar": {
-        "title": "Calendar"
+        "title": "Calendar",
+        "evnet": "Event Details",
+        "scheduleTitle": "Title",
+        "start": "Start",
+        "end": "End",
+        "description": "Description",
+        "color": "Color",
+        "save": "Save",
+        "delete": "Delete"
     },
     "chats": {
         "title": "Chats"

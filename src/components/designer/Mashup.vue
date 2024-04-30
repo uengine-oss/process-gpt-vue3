@@ -173,9 +173,17 @@ export default {
         node.removeAttribute('data-type')
       });
 
-      // Row들을 찾아서 조합시키고 section으로 감싸서 최종적인 저장 형태를 생성하기 위해서
-      const formContentHTML = Array.from(doc.querySelectorAll('.row')).map(row => row.outerHTML).join('').replace(/&quot;/g, `'`);
-      return (isWithSection) ? `<section>${formContentHTML}</section>` : formContentHTML
+      // Row들을 찾아서 해당 Row마다 section 태그로 감싸고, 전부 합쳐서 최종적인 저장 형태를 생성하기 위해서
+      if(isWithSection)
+      {
+        const rows = Array.from(doc.querySelectorAll('.row'));
+        return rows.map(row => {
+          const section = document.createElement('section');
+          section.innerHTML = row.outerHTML;
+          return section.outerHTML;
+        }).join('').replace(/&quot;/g, `'`);
+      } else
+        return doc.body.innerHTML.replace(/&quot;/g, `'`)
     },
 
 
@@ -310,7 +318,7 @@ export default {
       onContentChanged: function (event, snippetContent, vueRenderUUID) {
         $("#initGuide").css("opacity", "0")
 
-        if(vueRenderUUID && vueRenderUUID.includes("vuemount_"))
+        if(snippetContent && vueRenderUUID && vueRenderUUID.includes("vuemount_"))
         {
           const nameSeq = Object.values(window.mashup.componentRefs).filter(componentRef => componentRef.localName).length + 1
           const snipptDom = new DOMParser().parseFromString(snippetContent, 'text/html')
@@ -416,6 +424,8 @@ export default {
         window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
       })
     }
+
+    window.mashup.kEditorContent  = window.mashup.kEditor[0].children[0].innerHTML
   },
 
   beforeUnmount() {
