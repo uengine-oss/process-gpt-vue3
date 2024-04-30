@@ -1,6 +1,6 @@
 <template id="attribute-template">
     <g :transform="'translate(' + pos.x + ',' + pos.y + ')'" class="attribute" :data-util-name="name" :data-block-name="blockName">
-        <foreignObject v-if="appendComponent[blockName] == true && func == 'input'" x="-10" y="-10" width="130" height="25">
+        <foreignObject v-if="isAppend() == true && func == 'input'" x="-10" y="-10" width="130" height="25">
             <body xmlns="http://www.w3.org/1999/xhtml">
                 <input
                     type="text"
@@ -12,7 +12,7 @@
                 />
             </body>
         </foreignObject>
-        <g v-if="appendComponent[blockName] == true && func == 'NumberFormatInput'">
+        <g v-if="isAppend() == true && func == 'NumberFormatInput'">
             <text x="-15" y="10" style="fill: #fff; font-size: 11px; user-select: none; text-anchor: start">{{
                 name.replace('in ', '')
             }}</text>
@@ -25,7 +25,7 @@
                 </body>
             </foreignObject>
         </g>
-        <g v-if="appendComponent[blockName] == true && func == 'SQLFormatInput'">
+        <g v-if="isAppend() == true && func == 'SQLFormatInput'">
             <text x="-10" y="3" style="fill: #fff; font-size: 11px; user-select: none; text-anchor: start">{{
                 name.replace('in ', '')
             }}</text>
@@ -40,7 +40,7 @@
                 </body>
             </foreignObject>
         </g>
-        <g v-if="appendComponent[blockName] == true && func == 'NumberFormatTo'">
+        <g v-if="isAppend() == true && func == 'NumberFormatTo'">
             <text x="-15" y="10" style="fill: #fff; font-size: 11px; user-select: none; text-anchor: start">{{
                 name.replace('in ', '')
             }}</text>
@@ -55,7 +55,7 @@
                 </body>
             </foreignObject>
         </g>
-        <g v-if="appendComponent[blockName] == true && func == 'checkbox'">
+        <g v-if="isAppend() == true && func == 'checkbox'">
             <text x="10" y="10" style="fill: #fff; font-size: 11px; user-select: none; text-anchor: start">{{
                 name.replace('in ', '')
             }}</text>
@@ -82,7 +82,10 @@ export default {
         blockName: String,
         value: String,
         func: String,
-        appendComponent: Boolean
+        appendComponent: {
+            type: Object,
+            default: () => ({})
+        }
     },
     mounted() {
         var selectElement = null;
@@ -103,6 +106,9 @@ export default {
     methods: {
         handleInput(value) {
             this.$emit('onChangeAttribute', value, this.blockName, this.name);
+        },
+        isAppend() {
+            return this.appendComponent[this.blockName] == true;
         }
     }
 };

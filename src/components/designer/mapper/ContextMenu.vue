@@ -1,5 +1,5 @@
 <template>
-    <v-menu v-model="showMenu" :position-x="positionX" :position-y="positionY" absolute close-on-content-click="false">
+    <v-menu v-model="showMenu" :position-x="positionX" :position-y="positionY" absolute close-on-content-click=false>
         <v-list v-model:opened="open" class="unselectable">
             <v-list-item v-for="(item, index) in filteredMenuItems" :key="`item-${index}`" @click.stop="selectItem(item)">
                 <v-list-item-content>

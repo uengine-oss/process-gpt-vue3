@@ -254,7 +254,7 @@ export default {
           attributes: {
             "value": { x: -55, y: 10, func: "input", value: "" },
             "type": { x: -55, y: 30, width: 100, height: 50, func: "SQLFormatInput", value: "" },
-          
+
           },
           parent: "ETC",
           class: "org.uengine.processdesigner.mapper.transformers.DirectSqlExpressionTransformer",
@@ -363,7 +363,7 @@ export default {
       if (block != null) {
         var ports = block.ports[spec[1]];
         if (block.appendable == true) {
-          if (this.appendComponent != undefined && this.appendComponent[spec[0]] == true) {
+          if (this.appendComponent != undefined && this.appendComponent[spec[0]] != undefined && this.appendComponent[spec[0]] == true) {
             ports = { x: block.ports[spec[1]].appendX, y: block.ports[spec[1]].appendY };
           }
         }
@@ -479,7 +479,6 @@ export default {
               this.pendingConnection
             );
             if (duplicateIndex != this.connections.length - 1) {
-              console.log("removing duplicate connection", duplicateIndex);
               this.removeConnection(duplicateIndex);
               this.connections.pop();
             }
@@ -636,7 +635,7 @@ export default {
     updateMappingElementVariables(block, transformerMapping) {
       Object.keys(block.attributes).forEach(key => {
         var value = block.attributes[key];
-        if(value == undefined) value = "";
+        if (value == undefined) value = "";
         transformerMapping.transformer[key] = value;
       });
     },
