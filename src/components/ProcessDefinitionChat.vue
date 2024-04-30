@@ -249,6 +249,22 @@ export default {
             return path;
         }
     },
+    async beforeRouteLeave(to, from, next) {
+        const store = useBpmnStore();
+        const modeler = store.getModeler;
+        const xmlObj = await modeler.saveXML({ format: true, preamble: true });
+
+        if (from.path === '/definitions/chat' && xmlObj && xmlObj.xml && !this.isViewMode) {
+            const answer = window.confirm('You have unsaved changes. Are you sure you want to leave?');
+            if (answer) {
+                next();
+            } else {
+                next(false);
+            }
+        } else {
+            next();
+        }
+    },
     methods: {
         beforeDelete() {
             if (this.bpmn) {
