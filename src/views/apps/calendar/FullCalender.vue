@@ -214,7 +214,7 @@ export default defineComponent({
         <v-card>
           <v-card-text>
             <div class="event-details-header">
-              <h4 class="text-h4">Event Details</h4>
+              <h4 class="text-h4">{{ $t('calendar.evnet') }}</h4>
               <v-btn v-if="!editMode" icon @click="toggleEditMode" class="edit-button">
                 <v-icon>mdi-pencil</v-icon>
               </v-btn>
@@ -224,48 +224,48 @@ export default defineComponent({
             </div>
             <div v-if="!editMode" class="event-details">
               <div class="event-detail-item">
-                <span class="event-label">Title:</span>
+                <span class="event-label">{{ $t('calendar.scheduleTitle') }}:</span>
                 <span class="event-value">{{ selectedEvent.title }}</span>
               </div>
               <div class="event-detail-item">
-                <span class="event-label">Start:</span>
+                <span class="event-label">{{ $t('calendar.start') }}:</span>
                 <span class="event-value">{{ selectedEvent.start }}</span>
               </div>
               <div class="event-detail-item">
-                <span class="event-label">End:</span>
+                <span class="event-label">{{ $t('calendar.end') }}:</span>
                 <span class="event-value">{{ selectedEvent.end }}</span>
               </div>
-              <div class="event-detail-item">
-                <span class="event-label">Description:</span>
+              <div class="event-detail-item" v-if="selectedEvent.description">
+                <span class="event-label">{{ $t('calendar.description') }}:</span>
                 <span class="event-value">{{ selectedEvent.description }}</span>
               </div>
             </div>
             <div v-if="editMode">
               <v-text-field
                 v-model="selectedEvent.title"
-                label="Event Title"
+                :label="$t('calendar.scheduleTitle')"
                 outlined
               ></v-text-field>
               <v-text-field
                 v-model="selectedEvent.start"
-                label="Start Date"
+                :label="$t('calendar.start')"
                 outlined
                 type="datetime-local"
               ></v-text-field>
               <v-text-field
                 v-model="selectedEvent.end"
-                label="End Date"
+                :label="$t('calendar.end')"
                 outlined
                 type="datetime-local"
               ></v-text-field>
               <v-textarea
                 v-model="selectedEvent.description"
-                label="Description"
+                :label="$t('calendar.description')"
                 outlined
               ></v-textarea>
               <v-select 
                 v-model="selectedEvent.color" 
-                label="Color" 
+                :label="$t('calendar.color')"
                 :items="colorItems"
                 item-title="text"
                 item-value="value"
@@ -283,10 +283,11 @@ export default defineComponent({
                 hide-inputs
                 outlined
               ></v-color-picker>
-              <div style="margin-top: 10px;">
-                <v-btn style="margin-right: 5px;" color="primary" @click="updateEvent">Update</v-btn>
-                <v-btn color="error" @click="deleteEvent">Delete</v-btn>
-              </div>
+              <v-row class="pa-0 ma-0" style="margin-top: 10px;">
+                <v-spacer></v-spacer>
+                <v-btn style="margin-right: 5px;" color="primary" @click="updateEvent">{{ $t('calendar.save') }}</v-btn>
+                <v-btn color="error" @click="deleteEvent">{{ $t('calendar.delete') }}</v-btn>
+              </v-row>
             </div>
           </v-card-text>
         </v-card>
