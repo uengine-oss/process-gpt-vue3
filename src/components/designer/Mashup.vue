@@ -318,7 +318,7 @@ export default {
       onContentChanged: function (event, snippetContent, vueRenderUUID) {
         $("#initGuide").css("opacity", "0")
 
-        if(vueRenderUUID && vueRenderUUID.includes("vuemount_"))
+        if(snippetContent && vueRenderUUID && vueRenderUUID.includes("vuemount_"))
         {
           const nameSeq = Object.values(window.mashup.componentRefs).filter(componentRef => componentRef.localName).length + 1
           const snipptDom = new DOMParser().parseFromString(snippetContent, 'text/html')
