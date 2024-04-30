@@ -2,28 +2,39 @@
     <div>
         <v-dialog v-model="isOpen" max-width="100%" style="height: -webkit-fill-available;" persistent>
             <v-card style="height: 100%;">
-                <v-card-title>Version Management [{{ currentVersionName }}({{ currentVersion }})]
-                    <v-progress-circular v-if="loading" color="primary" :size="25" indeterminate
-                        style="margin-left: 5px;"></v-progress-circular>
-                </v-card-title>
-                <v-btn icon style="position:absolute; right:5px; top:5px;" @click="close()">
-                    <v-icon>mdi-close</v-icon>
-                </v-btn>
+                <v-row class="ma-0 pa-0">
+                    <v-card-title>Version Management [{{ currentVersionName }}({{ currentVersion }})]
+                        <v-progress-circular v-if="loading" color="primary" :size="25" indeterminate
+                            style="margin-left: 5px;"
+                        >
+                        </v-progress-circular>
+                    </v-card-title>
+                    <v-spacer></v-spacer>
+                    <v-btn icon style="position:absolute; right:5px; top:5px;" @click="close()">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-row>
 
-                <v-card-text style="padding: 0;">
-                    <v-row style=" align-items: center;width: 96%; margin-left: 2%;">
-                        <v-switch v-model="showXML" :label="showXML ? 'XML' : 'BPMN'" hide-details style="max-width: 6%;"
-                            color="primary"></v-switch>
-                        <v-tooltip top>
-                            <template v-slot:activator="{ on, attrs }">
-                                <v-btn v-bind="attrs" v-on="on" @click="downloadXML()" text>
-                                    <Icon icon="ic:baseline-file-download" width="20" height="20" />
-                                </v-btn>
-                            </template>
-                            <span>다운로드</span>
-                        </v-tooltip>
-                    </v-row>
-                </v-card-text>
+                <v-row class="ma-0 pa-0 ml-4" align="center">
+                    <div class="mr-3">
+                        <v-switch v-model="showXML" :label="showXML ? 'XML' : 'BPMN'" hide-details
+                            color="primary"
+                        >
+                        </v-switch>
+                    </div>
+                    <v-btn @click="downloadXML()" 
+                        variant="text"
+                    >
+                        다운로드
+                    </v-btn>
+                    <v-btn @click="changeXML()"
+                        variant="text"
+                        color="primary"
+                        :disabled="loading"
+                    >
+                        해당 버전으로 변경
+                    </v-btn>
+                </v-row>
                 <v-card-text style="height: 550px;">
                     <div v-if="showXML" style="height: 100%; overflow-y: scroll;">
                         <div class="diff-titles">
@@ -55,10 +66,6 @@
                     <v-slider v-model="currentIndex" step="1" min="0" :max="lists.length - 1" show-ticks="always"
                         tick-size="4" @end="handleBeforeChange" :hide-details="true"
                         style="padding: 0; margin-right: 20px; margin-left: 30px;"></v-slider>
-                    <v-btn text color="primary" :disabled="loading"
-                        style="float: inline-end; margin-bottom: 15px; margin-right: 10px;" @click="changeXML()">해당 버전으로
-                        변경
-                    </v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>

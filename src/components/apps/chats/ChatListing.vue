@@ -191,8 +191,7 @@ const openEditDialog = (chat) => {
                     </v-avatar>
                 </template>
                 <!---Name-->
-                <v-list-item-title class="text-subtitle-1 textPrimary w-100 font-weight-semibold">{{ chat.name
-                    }}</v-list-item-title>
+                <v-list-item-title class="text-subtitle-1 textPrimary w-100 font-weight-semibold">{{ chat.name}}</v-list-item-title>
                 <!---Subtitle-->
                 <v-sheet v-if="chat.message.type == 'img'">
                     <small class="textPrimary text-subtitle-2">Sent a Photo</small>
@@ -203,15 +202,15 @@ const openEditDialog = (chat) => {
                 </div>
                 <!---Last seen--->
                 <template v-slot:append>
-                    <div :key="refreshKey" class="d-flex flex-column text-right w-25" style="margin-right: -40px;">
+                    <div :key="refreshKey">
                         <small class="textPrimary text-subtitle-2">
                             {{ formatTimeOrNow(chat.message.createdAt) }}
                             <v-badge
                                 v-if="chat.participants.find(participant => participant.email == userInfo.email).isExistUnReadMessage"
                                 style="position: relative; top: 1.5px;" dot inline color="info">
                             </v-badge>
-                            <v-btn style="margin-left: 5px; margin-right: -5px;" icon @click="openEditDialog(chat)">
-                                <v-icon>mdi-dots-vertical</v-icon>
+                            <v-btn size="x-small" icon>
+                                <v-icon @click="openEditDialog(chat)">mdi-dots-vertical</v-icon>
                             </v-btn>
                         </small>
                     </div>

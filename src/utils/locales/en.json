@@ -97,6 +97,7 @@
         "edit": "Edit",
         "delete": "Delete",
         "zoom": "Canvas Zoom in/Zoom out",
+        "execution": "Start Process",
         "deleteProcess": "Delete Process",
         "deleteProcessMessage": "Are you sure you want to delete this process?",
         "cancel": "Cancel"
