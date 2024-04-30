@@ -69,6 +69,7 @@ const customizer = useCustomizerStore();
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
 
 import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 
@@ -116,7 +117,7 @@ export default {
             if (window.$mode == "ProcessGPT" && execution == "true") {
                 return true;
             } else if (execution == "true") {
-                return false;
+                return true;
             }
             return false;
         }
@@ -169,7 +170,6 @@ export default {
     },
     methods: {
         async getDefinitionList() {
-            const backend = BackendFactory.createBackend();
             const list = await backend.listDefinition();
             if (list && list.length > 0) {
                 var menu = {
