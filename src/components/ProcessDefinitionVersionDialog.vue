@@ -92,14 +92,27 @@ export default {
                 action: async () => {
                     if (me.process) {
                         me.isNew = false
-                        let result = await me.storage.list(`proc_def_arcv`, {
-                            sort: 'desc',
-                            orderBy: 'timeStamp',
-                            size: 1,
-                            match: { 'proc_def_id': me.process.processDefinitionId }
-                        })
-                        if (result.length > 0) {
-                            me.information = result[0]
+                        let definitionInfo = await me.storage.list(`proc_def`, {  match: { 'id': me.process.processDefinitionId } })
+                        if(definitionInfo){
+                            let versionInfo = await me.storage.list(`proc_def_arcv`, {
+                                sort: 'desc',
+                                orderBy: 'timeStamp',
+                                size: 1,
+                                match: { 'proc_def_id': me.process.processDefinitionId }
+                                })
+                            if (versionInfo.length > 0) {
+                                me.information = versionInfo[0]
+                            } else {
+                                me.information = {
+                                    arcv_id: definitionInfo[0].id,
+                                    version: 0.0,
+                                    name: definitionInfo[0].name,
+                                    proc_def_id: definitionInfo[0].id,
+                                    snapshot: definitionInfo[0].bpmn,
+                                    diff: null,
+                                    timeStamp: null
+                                }
+                            }
                         } else {
                             me.isNew = true
                             me.information.proc_def_id = me.process.processDefinitionId;
