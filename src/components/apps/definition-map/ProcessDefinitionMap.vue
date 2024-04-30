@@ -38,11 +38,11 @@
                         <span>{{ $t('processDefinitionMap.lock') }}</span>
                     </v-tooltip>
 
-                    <span v-if="lock && userName && userName != editUser" class="text-body-1 pt-1 mr-1">
+                    <span v-if="lock && userName && userName != editUser" class="ml-1">
                         {{ editUser }} 님이 수정 중 입니다.
                     </span>
 
-                    <v-btn icon variant="text" class="ml-3" :size="24" @click="capturePng">
+                    <v-btn icon variant="text" :size="24" class="ml-3" @click="capturePng">
                         <Icon icon="mage:image-download" width="24" height="24" />
                     </v-btn>
 

@@ -71,7 +71,23 @@ export default {
     },
 
     created() {
-        this.localModelValue = this.modelValue ?? ""
+        if(this.modelValue)
+            this.localModelValue = this.modelValue
+        else {
+            // 각 타입에 맞게 적절한 디폴트값을 세탕하기 위해서
+            let valueToSet = ""
+            switch (this.type) {
+                case "number":
+                    valueToSet = "0"
+                    break;
+                case "color":
+                    valueToSet = "#000000"
+                    break;
+                default:
+                    break;
+            }
+            this.localModelValue = valueToSet
+        }
         
         this.localName = this.name ?? "name"
         this.localAlias = this.alias ?? ""
