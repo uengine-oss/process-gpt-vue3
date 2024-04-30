@@ -122,22 +122,28 @@ export default class StorageBaseSupabase {
             return error;
         }
     }
-
+1
     async resetPassword(email) {
-        const { data, error } = await window.$supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: 'http://process-gpt.io/auth/reset-password',
-        });
-        if (error) {
-            return error;
-        } else {
-            return data;
+        try {
+            const result = await window.$supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: 'http://127.0.0.1:5173/auth/reset-password',
+            });
+            return result;
+        } catch (e) {
+            throw new StorageBaseError('error in resetPassword', e, arguments);
         }
     }
 
     async updateUser(new_password) {
-        const { data, error } = await window.$supabase.auth.updateUser({
-            password: new_password
-        });
+        try {
+            const result = await window.$supabase.auth.updateUser({
+                password: new_password
+            });
+            return result;
+        } catch (e) {
+            throw new StorageBaseError('error in updateUser', e, arguments);
+        } 
+        
     }
 
     async getString(path, options) {
@@ -537,7 +543,6 @@ export default class StorageBaseSupabase {
                         role: 'superAdmin',
                         is_admin: true
                     });
-                    window.localStorage.setItem('role', 'superAdmin');
                 } else {
                     await this.putObject('users', {
                         id: value.user.id,
@@ -554,6 +559,9 @@ export default class StorageBaseSupabase {
                 if (!error) {
                     window.localStorage.setItem('isAdmin', data.is_admin);
                     window.localStorage.setItem('picture', data.profile);
+                    if (data.role && data.role !== '') {
+                        window.localStorage.setItem('role', data.role);
+                    }
                 }
             }
     

@@ -50,7 +50,10 @@ export default {
         deleteBlock: Function,
         parentBlock: Object,
         appendable: Boolean,
-        appendComponent: Boolean
+        appendComponent: {
+            type: Object,
+            default: () => ({})
+        }
     },
     data() {
         return {
