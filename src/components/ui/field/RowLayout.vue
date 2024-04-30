@@ -9,7 +9,7 @@
                 </v-btn>
             </v-card-title>
             
-            <div class="row">
+            <div>
                 <slot :modelValue="localModelValue[name]" :deleteItem="deleteItem"></slot>
             </div>
         </v-card>
@@ -20,7 +20,7 @@
                 <div>{{(alias && alias.length > 0) ? alias : name}}</div>
             </v-card-title>
             
-            <div class="row">
+            <div>
                 <slot :modelValue="localModelValue"></slot>
             </div>
         </v-card>

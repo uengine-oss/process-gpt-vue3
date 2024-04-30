@@ -224,14 +224,19 @@ export default {
                     newRow.setAttribute('v-slot', 'slotProps');
 
 
+                    const innerRow = document.createElement('div');
+                    innerRow.setAttribute('class', 'row');
+
                     Array.from(row.childNodes).forEach(child => {
-                        newRow.appendChild(child);
+                        innerRow.appendChild(child);
                     });
 
-                    newRow.querySelectorAll('[name]').forEach(field => {
+                    innerRow.querySelectorAll('[name]').forEach(field => {
                         const name = field.getAttribute('name');
                         field.setAttribute('v-model', `slotProps.modelValue['${name}']`);
                     });
+
+                    newRow.appendChild(innerRow);
 
 
                     row.parentNode.replaceChild(newRow, row);
@@ -255,7 +260,9 @@ export default {
 
                     newRow.innerHTML = `<div v-for="(item, index) in slotProps.modelValue" :key="index">
     <row-layout-item-head :index="index" @on_delete_item="slotProps.deleteItem(index)"></row-layout-item-head>
+    <div class="row">
     ${row.innerHTML}
+    </div>
 </div>`
 
 
@@ -293,7 +300,7 @@ export default {
                     newRow.setAttribute('class', 'row');
 
 
-                    Array.from(row.childNodes).forEach(child => {
+                    Array.from(row.firstChild.childNodes).forEach(child => {
                         newRow.appendChild(child);
                     });
 
