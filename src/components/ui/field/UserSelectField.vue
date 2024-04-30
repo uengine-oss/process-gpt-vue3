@@ -1,7 +1,7 @@
 <template>
     <div>
         <v-autocomplete v-model="localModelValue" :items="usersToSelect" :label="(localAlias && localAlias.length > 0) ? localAlias : localName" :disabled="localDisabled"
-                        item-title="id" :item-value="id" chips closable-chips multiple small-chips>
+                        item-title="id" item-value="id" chips closable-chips multiple small-chips>
                         <template v-slot:chip="{ props, item }">
                             <v-chip v-bind="props" :text="item.raw.username ?? item.raw.email"></v-chip>
                         </template>
