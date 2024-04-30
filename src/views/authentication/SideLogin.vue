@@ -23,7 +23,13 @@ import LoginForm from '@/components/auth/LoginForm.vue';
                                     <LoginForm />
                                     <h6 class="text-subtitle-1  text-grey100 d-flex align-center mt-6 font-weight-medium">
                                         <v-btn class="pl-0 text-primary text-body-1 opacity-1 pl-2 font-weight-medium"
-                                            height="auto" to="/auth/register" variant="plain">{{ $t('loginPage.create') }}</v-btn>
+                                            height="auto" to="/auth/register" variant="plain">
+                                            {{ $t('loginPage.create') }}
+                                        </v-btn>
+                                        <v-btn class="ml-auto pl-0 text-primary text-body-1 opacity-1 pl-2 font-weight-medium"
+                                            height="auto" to="/auth/forgot-password" variant="plain">
+                                            {{ $t('loginPage.forgotPassword') }}
+                                        </v-btn>
                                     </h6>
                                 </div>
                             </v-col>

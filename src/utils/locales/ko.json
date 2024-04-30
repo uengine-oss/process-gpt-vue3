@@ -156,7 +156,8 @@
         "password": "암호",
         "remeber": "이 장치에 기억",
         "login": "로그인",
-        "create": "계정 생성"
+        "create": "계정 생성",
+        "forgotPassword": "비밀번호 찾기"
     },
     "createAccount": {
         "title": "Welcome to Process-GPT",
@@ -167,6 +168,17 @@
         "email": "이메일",
         "google": "구글 로그인",
         "or": "또는 다음 계정으로 로그인"
+    },
+    "forgotPassword": {
+        "title": "비밀번호 찾기",
+        "email": "이메일 주소",
+        "sendEmail": "메일 전송",
+        "sendEmailExplanation": "이메일 주소를 입력하고 메일 전송 버튼을 누르면 비밀번호를 재설정 할 수 있는 링크가 메일로 전송됩니다.",
+        "login": "로그인",
+        "resetPassword": "비밀번호 재설정",
+        "password": "비밀번호",
+        "passwordExplanation": "재설정할 비밀번호를 입력하세요.",
+        "updatePassword": "비밀번호 변경"
     },
     "ExtraBox": {
         "logOut": "로그아웃"

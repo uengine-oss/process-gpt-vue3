@@ -17,11 +17,11 @@ import ResetPassword from '@/components/auth/ResetForm.vue';
             </v-col>
             <v-col cols="12" lg="4" xl="4" xxl="3" class="d-flex align-center justify-center bg-surface">
                 <div class="pa-sm-7 pa-4">
-                    <h2 class="text--darken-2 text-h4 font-weight-semibold">{{ $t('forgotPassword.title') }}</h2>
+                    <h2 class="text--darken-2 text-h4 font-weight-semibold">{{ $t('forgotPassword.resetPassword') }}</h2>
                     <p class="text-subtitle-1 text-grey100 py-4 text-10">
-                        {{ $t('forgotPassword.sendEmailExplanation') }}
+                        {{ $t('forgotPassword.passwordExplanation') }}
                     </p>
-                    <ResetPassword :type="'email'" />
+                    <ResetPassword :type="'password'" />
                     <v-btn size="large" color="lightprimary" to="/auth/login" block class="mt-5 text-primary" rounded="pill">
                         {{ $t('forgotPassword.login') }}
                     </v-btn>
