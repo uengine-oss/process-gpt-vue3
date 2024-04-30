@@ -207,16 +207,10 @@ export default {
     editContainerDefinition(sectionId, localContainerProps) {
       console.log("[*] editContainerDefinition  : ", sectionId, localContainerProps)
 
-
-      const dom = (new DOMParser()).parseFromString(window.mashup.kEditor[0].children[0].innerHTML, 'text/html')
-      const row = dom.querySelector(`section#${sectionId} .row`)
-
-      row.setAttribute('name', localContainerProps.name)
-      row.setAttribute('alias', localContainerProps.alias)
-      row.setAttribute('is_multidata_mode', String(localContainerProps.isMultiDataMode))
-
-      window.mashup.kEditor[0].children[0].innerHTML = dom.body.innerHTML
-
+      const rowToModify = $(`section#${sectionId} .row`)[0]
+      rowToModify.setAttribute('name', localContainerProps.name)
+      rowToModify.setAttribute('alias', localContainerProps.alias)
+      rowToModify.setAttribute('is_multidata_mode', String(localContainerProps.isMultiDataMode))
 
       window.mashup.isOpenContainerSettingDialog = false
     },
