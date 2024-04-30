@@ -110,52 +110,7 @@ export default {
     data: () => ({
         bpmn: null,
         workItem: null,
-        // checkPoints: [
-        //     {
-        //         name: 'test123',
-        //         checked: false
-        //     },
-        //     {
-        //         name: 'test123',
-        //         checked: false
-        //     },
-        //     {
-        //         name: 'test123',
-        //         checked: false
-        //     },
-        //     {
-        //         name: 'test123',
-        //         checked: false
-        //     },
-        //     {
-        //         name: 'test123',
-        //         checked: false
-        //     },
-        //     {
-        //         name: 'test123',
-        //         checked: false
-        //     },
-        //     {
-        //         name: 'test123',
-        //         checked: false
-        //     },
-        //     {
-        //         name: 'test123',
-        //         checked: false
-        //     },
-        //     {
-        //         name: 'test123',
-        //         checked: false
-        //     },
-        //     {
-        //         name: 'test123',
-        //         checked: false
-        //     },
-        //     {
-        //         name: 'test123',
-        //         checked: false
-        //     },
-        // ],
+        checkPoints: null,
         workListByInstId: null,
         currentComponent: null,
         currentActivities: [],
