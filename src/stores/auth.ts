@@ -67,7 +67,7 @@ export const useAuthStore = defineStore({
                         alert(result.errorMsg);
                     } else {
                         await storage?.writeUserData(result);
-                        router.push('/auth/login');
+                        router.push('/dashboard2');
                     }
                 }
             } catch (e) {
@@ -76,7 +76,22 @@ export const useAuthStore = defineStore({
         },
         async resetPassword(email: string) {
             try {
-                await storage?.resetPassword(email);
+                var result: any = await storage?.resetPassword(email);
+                if (!result.error) {
+                    alert('메일이 발송되었습니다.');
+                    router.push('/auth/login');
+                }
+            } catch (e) {
+                console.log(e);
+            }
+        },
+        async updatePassword(email: string, password: string) {
+            try {
+                var result: any = await storage?.updateUser(password);
+                if (!result.error) {
+                    alert('비밀번호가 변경되었습니다.');
+                    router.push('/auth/login');
+                }
             } catch (e) {
                 console.log(e);
             }

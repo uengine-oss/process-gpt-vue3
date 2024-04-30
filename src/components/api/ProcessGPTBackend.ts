@@ -324,29 +324,11 @@ class ProcessGPTBackend implements Backend {
     }
 
     // proc_map
-    async getProcessDefinitionMapHistory() {
-        try {
-            const result = await storage.list('proc_map_history', {
-                sort: "desc",
-                orderBy: 'version_id',
-            });
-            if (result) {
-                return result;
-            }
-            return null;
-        } catch (error) {
-            throw new Error('error in getProcessDefinitionMap');
-        } 
-    }
-
     async getProcessDefinitionMap() {
         try {
-            const result = await storage.list('proc_map_history', {
-                sort: "desc",
-                orderBy: 'version_id',
-            });
-            if (result) {
-                return result[0].proc_map;
+            const procMap = await storage.getObject('configuration/proc_map', { key: 'key' });
+            if (procMap && procMap.value) {
+                return procMap.value;
             }
             return {};
         } catch (error) {
@@ -356,9 +338,10 @@ class ProcessGPTBackend implements Backend {
 
     async putProcessDefinitionMap(definitionMap: any) {
         const putObj = {
-            proc_map: definitionMap
+            key: 'proc_map',
+            value: definitionMap
         }
-        await storage.putObject('proc_map_history', putObj);
+        await storage.putObject('configuration', putObj);
     }
 
     // Add stub implementations for the missing methods and properties

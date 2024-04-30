@@ -14,11 +14,7 @@ import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 /*tab*/
 const tab = ref(null);
 
-// theme breadcrumb
-const page = ref({ title: 'Account Setting' });
-
 const superAdmin = ref(localStorage.getItem('role') === 'superAdmin');
-
 </script>
 
 <template>

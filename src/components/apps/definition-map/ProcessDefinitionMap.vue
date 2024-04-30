@@ -203,7 +203,13 @@ export default {
         },
         async getProcessMap() {
             let map = await backend.getProcessDefinitionMap();
-            this.value = map;
+            if (map.mega_proc_list) {
+                this.value = map;
+            } else {
+                this.value = {
+                    mega_proc_list: []
+                };
+            }
         },
         addProcess(newProcess) {
             var newMegaProc = {
