@@ -1,25 +1,19 @@
 <template>
-    <v-menu v-model="showMenu" :position-x="positionX" :position-y="positionY" absolute close-on-content-click=false>
+    <v-menu v-model="showMenu" :position-x="positionX" :position-y="positionY" absolute :close-on-content-click="false">
         <v-list v-model:opened="open" class="unselectable">
             <v-list-item v-for="(item, index) in filteredMenuItems" :key="`item-${index}`" @click.stop="selectItem(item)">
-                <v-list-item-content>
-                    <v-list-item-title>{{ item.title }}</v-list-item-title>
-                </v-list-item-content>
+                <v-list-item-title>{{ item.title }}</v-list-item-title>
             </v-list-item>
 
             <v-list-group v-for="(group, index) in menuItemsWithSubmenu" :key="`group-${index}`" :value="group.title" @click.stop="">
                 <template v-slot:activator="{ props }">
                     <v-list-item v-bind="props">
-                        <v-list-item-content>
-                            <v-list-item-title>{{ group.title }}</v-list-item-title>
-                        </v-list-item-content>
+                        <v-list-item-title>{{ group.title }}</v-list-item-title>
                     </v-list-item>
                 </template>
 
                 <v-list-item v-for="(subItem, subIndex) in group.submenu" :key="`subitem-${subIndex}`" @click.stop="selectItem(subItem)">
-                    <v-list-item-content>
-                        <v-list-item-title>{{ subItem.title }}</v-list-item-title>
-                    </v-list-item-content>
+                    <v-list-item-title>{{ subItem.title }}</v-list-item-title>
                 </v-list-item>
             </v-list-group>
         </v-list>
@@ -27,7 +21,6 @@
 </template>
 
 <script>
-
 export default {
     name: 'ContextMenu',
     props: {
