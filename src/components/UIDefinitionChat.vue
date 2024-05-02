@@ -385,6 +385,7 @@ export default {
                 this.loadFormId = this.loadFormId.substring(1);
             } 
 
+            this.messages = [];
             if (this.loadFormId && this.loadFormId != 'chat') {
                 try {
                     this.storedFormDefHTML = (await this.backend.getRawDefinition(this.loadFormId, { type: 'form' }));
@@ -400,7 +401,10 @@ export default {
                 this.applyNewSrcToMashup(kEditorContent);
 
                 this.isShowMashup = true;
-            } else this.isShowMashup = true;
+            } else {
+                if(this.$refs.mashup) this.$refs.mashup.resetStat();
+                this.isShowMashup = true;
+            }
         },
 
         /**
