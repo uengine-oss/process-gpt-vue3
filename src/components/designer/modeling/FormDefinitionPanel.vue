@@ -27,9 +27,24 @@
         <v-select v-else-if="settingInfo.settingType === 'select'" :ref="settingInfo.dataToUse" 
                   :label="settingInfo.settingLabel" v-model="componentProps[settingInfo.dataToUse]"
                   :items="settingInfo.settingValue" @keyup.enter="save" persistent-placeholder></v-select>
+        
+        <template v-else-if="settingInfo.settingType === 'items'">
+          <v-tabs v-model="componentProps['localIsDynamicLoad']" class="text-black" fixed-tabs>
+              <v-tab :value="false">Fixed Options</v-tab>
+              <v-tab :value="true">Data Binding</v-tab>
+          </v-tabs>
+          <v-window v-model="componentProps['localIsDynamicLoad']" class="fill-height">
+              <v-window-item :value="false" class="fill-height" style="overflow-y: auto">
+                <FormDefinitionPanelItemTable v-model="componentProps[settingInfo.dataToUse]"></FormDefinitionPanelItemTable>
+              </v-window-item>
 
-        <FormDefinitionPanelItemTable v-else-if="settingInfo.settingType === 'items'"
-                                      v-model="componentProps[settingInfo.dataToUse]"></FormDefinitionPanelItemTable>
+              <v-window-item :value="true" class="fill-height pa-5" style="overflow-y: auto">
+                <v-text-field label="URL" ref="localDynamicLoadURL" v-model.trim="componentProps['localDynamicLoadURL']" @keyup.enter="save"></v-text-field>
+                <v-text-field label="Key JSON Path" ref="localDynamicLoadKeyJsonPath" v-model.trim="componentProps['localDynamicLoadKeyJsonPath']" @keyup.enter="save"></v-text-field>
+                <v-text-field label="Value JSON Path" ref="localDynamicLoadValueJsonPath" v-model.trim="componentProps['localDynamicLoadValueJsonPath']" @keyup.enter="save"></v-text-field>
+              </v-window-item>
+          </v-window>
+        </template>
         
         <v-checkbox v-else-if="settingInfo.settingType === 'checkbox'" :ref="settingInfo.dataToUse" 
                     :label="settingInfo.settingLabel" v-model="componentProps[settingInfo.dataToUse]"
@@ -69,7 +84,7 @@
         for(const info of this.componentRef.settingInfos) {
           if(!info.validCheck) continue
 
-          const errorMessage = info.validCheck(this.componentProps[info.dataToUse])
+          const errorMessage = info.validCheck(this.componentProps[info.dataToUse], this.componentProps)
           if(errorMessage) {
             alert(errorMessage)
             if(this.$refs[info.dataToUse])
@@ -85,7 +100,11 @@
 
     mounted() {
       this.componentProps = this.componentRef.settingInfos.reduce((acc, cur) => {
-          acc[cur.dataToUse] = this.componentRef[cur.dataToUse]
+          if(cur.settingType === 'items') {
+            acc[cur.dataToUse] = JSON.parse(JSON.stringify(this.componentRef[cur.dataToUse]))
+          } else {
+            acc[cur.dataToUse] = this.componentRef[cur.dataToUse]
+          }
           return acc
       }, {})
 

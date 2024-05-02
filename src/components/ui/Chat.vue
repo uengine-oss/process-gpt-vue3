@@ -38,7 +38,7 @@
                         </v-tooltip>
                     </span>
                 </div>
-                <v-divider style="margin:0px;" />
+                <v-divider style="margin:0px;" v-if="name && name !== '' || chatInfo || type == 'form'" />
             </div>
 
             <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">

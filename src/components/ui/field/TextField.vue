@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-text-field v-model="localModelValue" :type="localType" :disabled="localDisabled">
+        <v-text-field v-model="localModelValue" :type="localType" :disabled="localDisabled" :id="id">
             <template v-slot:label>
                 <span style="color:black;">
                     {{(localAlias && localAlias.length > 0) ? localAlias : localName}}
@@ -29,12 +29,12 @@ export default {
 
     data() {
         return {
-            localModelValue: this.modelValue,
+            localModelValue: "",
 
-            localName: this.name,
-            localAlias: this.alias,
-            localType: this.type ?? "text",
-            localDisabled: this.disabled === "true",
+            localName: "",
+            localAlias: "",
+            localType: "",
+            localDisabled: false,
 
             settingInfos: [
                 commonSettingInfos["localName"],
@@ -47,7 +47,8 @@ export default {
                     settingValue: ["text", "number", "email", "url", "date", "datetime-local", "month", "week", "time", "password", "tel", "color"]
                 },
                 commonSettingInfos["localDisabled"]
-            ]
+            ],
+            id: crypto.randomUUID()
         };
     },
 
@@ -68,6 +69,31 @@ export default {
             immediate: true
         }
     },
+
+    created() {
+        if(this.modelValue)
+            this.localModelValue = this.modelValue
+        else {
+            // 각 타입에 맞게 적절한 디폴트값을 세탕하기 위해서
+            let valueToSet = ""
+            switch (this.type) {
+                case "number":
+                    valueToSet = "0"
+                    break;
+                case "color":
+                    valueToSet = "#000000"
+                    break;
+                default:
+                    break;
+            }
+            this.localModelValue = valueToSet
+        }
+        
+        this.localName = this.name ?? "name"
+        this.localAlias = this.alias ?? ""
+        this.localType = this.type ?? "text"
+        this.localDisabled = this.disabled === "true"
+    }
 }
 </script>
 

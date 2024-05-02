@@ -4,10 +4,10 @@
             style="border-radius: 10px !important; margin-bottom:5px;" @click="goProcess(parent.label, 'mega')">
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-1 font-weight-semibold">
                 <v-row class="ma-0 pa-0">
-                    <v-col cols="8" class="ma-0 pa-0 text-left">
+                    <v-col :cols="enableEdit ? '8' : '12'" class="ma-0 pa-0 text-left">
                         <div>{{ value.label }}</div>
                     </v-col>
-                    <v-col cols="4" class="ma-0 pa-0">
+                    <v-col :cols="enableEdit ? '4' : ''" class="ma-0 pa-0">
                         <div class="ml-auto add-major-process">
                             <ProcessMenu
                                 :size="16"
@@ -103,14 +103,8 @@ export default {
     }),
     methods: {
         async addProcess(newProcess) {
-            let newProcessId = ''
-            if(!newProcess.id) {
-                newProcessId = newProcess.label
-            } else {
-                newProcessId = newProcess.id
-            }
             var newSubProc = {
-                id: newProcessId,
+                id: newProcess.id || `${this.parent.label}_${newProcess.label}`,
                 label: newProcess.name ? newProcess.name : newProcess.label,
             };
             this.value.sub_proc_list.push(newSubProc);

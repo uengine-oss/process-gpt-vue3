@@ -38,7 +38,10 @@ export default {
         direction: String,
         onmousedown: Function,
         onmouseup: Function,
-        appendComponent: Boolean
+        appendComponent: {
+            type: Object,
+            default: () => ({})
+        }
     },
     methods: {
         getPosition() {

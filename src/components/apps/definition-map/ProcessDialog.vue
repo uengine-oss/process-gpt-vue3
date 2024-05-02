@@ -131,7 +131,6 @@ export default {
     },
     data: () => ({
         newProcess: {
-            id: "",
             label: ""
         },
         isNewDef: false,
@@ -198,7 +197,6 @@ export default {
         async init() {
             const backend = BackendFactory.createBackend();
             if (this.addType == 'sub') {
-                // const list = await this.storage.list(`proc_def`);
                 const list = await backend.listDefinition();
                 if (list && list.length > 0) {
                     this.definitions = list;

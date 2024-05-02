@@ -131,7 +131,7 @@ export default {
           appendable: false,
         },
         Replace: {
-          size: { width: 120, height: 50, appendWidth: 150, appendHeight: 100 },
+          size: { width: 120, height: 50, appendWidth: 150, appendHeight: 130 },
           ports: {
             "in input": { x: -60, y: 10, appendX: -75, appendY: 10 },
             out: { x: 60, y: 10, direction: "out", appendX: 75, appendY: 10 },
@@ -139,6 +139,7 @@ export default {
           attributes: {
             "oldString": { x: -55, y: -15, func: "input", value: "" },
             "newString": { x: -55, y: 30, func: "input", value: "" },
+            "isRegularExp": { x: -55, y: 45, func: "checkbox", value: "false" },
           },
           parent: "String",
           class: "org.uengine.processdesigner.mapper.transformers.ReplaceTransformer",
@@ -245,18 +246,20 @@ export default {
           isTransform: true,
           appendable: true,
         },
-        DirectSql: {
-          size: { width: 150, height: 80 },
+        DirectSQL: {
+          size: { width: 120, height: 50, appendWidth: 150, appendHeight: 100 },
           ports: {
-            out: { x: 75, y: 0, direction: "out" },
+            out: { x: 60, y: 10, direction: "out", appendX: 75, appendY: -20 },
           },
           attributes: {
-            "input": { x: -55, y: 15, func: "input", value: "" },
+            "value": { x: -55, y: 10, func: "input", value: "" },
+            "type": { x: -55, y: 30, width: 100, height: 50, func: "SQLFormatInput", value: "" },
+
           },
           parent: "ETC",
-          class: "org.uengine.processdesigner.mapper.transformers.DirectSqlTransformer",
+          class: "org.uengine.processdesigner.mapper.transformers.DirectSqlExpressionTransformer",
           isTransform: true,
-          appendable: false,
+          appendable: true,
         },
         DirectValue: {
           size: { width: 120, height: 50, appendWidth: 150, appendHeight: 80 },
@@ -296,17 +299,17 @@ export default {
           appendable: false,
         },
         XMLParsing: {//직접 값을 입력하는듯 함
-          size: { width: 150, height: 100 },
+          size: { width: 120, height: 50, appendWidth: 150, appendHeight: 80 },
           ports: {
-            out: { x: 75, y: 0, direction: "out" },
+            out: { x: 60, y: 10, direction: "out", appendX: 75, appendY: -10 },
           },
           attributes: {
-            "xml": { x: -55, y: -30, func: "xml", value: "" },
+            "xml": { x: -55, y: 15, func: "input", value: "" },
           },
           parent: "ETC",
           class: "org.uengine.processdesigner.mapper.transformers.XMLParsingTransformer",
           isTransform: true,
-          appendable: false,
+          appendable: true,
         },
         Source: {//소스
           size: { width: 0, height: 0 },
@@ -360,7 +363,7 @@ export default {
       if (block != null) {
         var ports = block.ports[spec[1]];
         if (block.appendable == true) {
-          if (this.appendComponent != undefined && this.appendComponent[spec[0]] == true) {
+          if (this.appendComponent != undefined && this.appendComponent[spec[0]] != undefined && this.appendComponent[spec[0]] == true) {
             ports = { x: block.ports[spec[1]].appendX, y: block.ports[spec[1]].appendY };
           }
         }
@@ -476,7 +479,6 @@ export default {
               this.pendingConnection
             );
             if (duplicateIndex != this.connections.length - 1) {
-              console.log("removing duplicate connection", duplicateIndex);
               this.removeConnection(duplicateIndex);
               this.connections.pop();
             }
@@ -632,7 +634,9 @@ export default {
     },
     updateMappingElementVariables(block, transformerMapping) {
       Object.keys(block.attributes).forEach(key => {
-        transformerMapping.transformer[key] = block.attributes[key];
+        var value = block.attributes[key];
+        if (value == undefined) value = "";
+        transformerMapping.transformer[key] = value;
       });
     },
     renderFormMapperFromMappingElementJson(json) {
@@ -789,7 +793,9 @@ export default {
         }));
         if (result.length > 0 && this.blocks) {
           if (this.blocks[blockName].attributes) {
-            result[0].value = this.blocks[blockName].attributes[result[0].name];
+            result.forEach(attr => {
+              attr.value = this.blocks[blockName].attributes[attr.name];
+            });
           }
         }
         return result;

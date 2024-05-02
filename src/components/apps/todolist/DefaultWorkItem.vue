@@ -47,7 +47,7 @@ export default {
             var me = this
             if(!me.workItem.activity.parameters) me.workItem.activity.parameters = []
             me.inputItems = me.workItem.activity.parameters
-                    .filter(item => item.direction === "OUT")
+                    .filter(item => item.direction.includes("OUT"))
                     .map(item => ({ name: item.variable.name, value: null }));
         },
         async completeTask(){

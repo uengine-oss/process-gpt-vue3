@@ -60,7 +60,7 @@ const customizer = useCustomizerStore();
 
             <ProcessInstanceList />
 
-            <div class="pa-6 px-4 userbottom bg-containerBg mt-10">
+            <div class="pa-6 px-4 userbottom bg-containerBg">
                 <ExtraBox />
             </div>
         </perfect-scrollbar>
@@ -69,6 +69,7 @@ const customizer = useCustomizerStore();
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
 
 import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 
@@ -83,14 +84,14 @@ export default {
                 icon: 'lucide:layout-panel-top',
                 BgColor: 'primary',
                 to: '/dashboard2',
-                disable: false
+                disable: true
             },
             {
                 title: 'todoList.title',
                 icon: 'pajamas:overview',
                 BgColor: 'primary',
                 to: '/todolist',
-                disable: false
+                disable: true
             },
             {
                 title: 'calendar.title',
@@ -112,7 +113,10 @@ export default {
     }),
     computed: {
         useChat() {
-            if (window.$mode == "ProcessGPT") {
+            const execution = localStorage.getItem('execution');
+            if (window.$mode == "ProcessGPT" && execution == "true") {
+                return true;
+            } else if (execution == "true") {
                 return true;
             }
             return false;
@@ -166,7 +170,6 @@ export default {
     },
     methods: {
         async getDefinitionList() {
-            const backend = BackendFactory.createBackend();
             const list = await backend.listDefinition();
             if (list && list.length > 0) {
                 var menu = {

@@ -31,11 +31,16 @@ const AuthRoutes = {
         //     path: '/auth/register2',
         //     component: () => import('@/views/authentication/BoxedRegister.vue')
         // },
-        // {
-        //     name: 'Side Forgot Password',
-        //     path: '/auth/forgot-password',
-        //     component: () => import('@/views/authentication/SideForgotPassword.vue')
-        // },
+        {
+            name: 'Side Forgot Password',
+            path: '/auth/forgot-password',
+            component: () => import('@/views/authentication/SideForgotPassword.vue')
+        },
+        {
+            name: 'Side Reset Password',
+            path: '/auth/reset-password',
+            component: () => import('@/views/authentication/SideResetPassword.vue')
+        },
         // {
         //     name: 'Boxed Forgot Password',
         //     path: '/auth/forgot-password2',

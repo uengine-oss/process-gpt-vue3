@@ -27,8 +27,8 @@
                     ref="contextMenu"
                     :menu-items="filterTransformItems(blockTemplates)"
                     :style="menuPositionStyle"
-                    :position-x="x"
-                    :position-y="y"
+                    :position-x="menu_x"
+                    :position-y="menu_y"
                     :max-height="300"
                     @menu_item_selected="menuItemSelected"
                 />
@@ -57,6 +57,7 @@
                         :start-block-drag="startBlockDrag"
                         :delete-block="deleteBlock"
                         @toggle-append="toggleAppend"
+                        v-memo="[block.pos, block.size]"
                     ></block-component>
                     <connector-component
                         v-for="(conn, index) in connectors"
@@ -65,6 +66,7 @@
                         :end-pos="conn.endPos"
                         :is-new="conn.isNew"
                         :onclick="() => removeConnection(index)"
+                        v-memo="[conn.startPos, conn.endPos]"
                     ></connector-component>
                     <port-component
                         v-for="port in ports"
@@ -76,6 +78,7 @@
                         :appendComponent="appendComponent"
                         :onmousedown="newConnection(port.blockName, port.name, port.direction)"
                         :onmouseup="completeConnection(port.blockName, port.name, port.direction)"
+                        v-memo="[port.pos]"
                     ></port-component>
                     <attribute-component
                         v-for="attribute in attributes_"
@@ -87,6 +90,7 @@
                         :func="attribute.func"
                         :appendComponent="appendComponent"
                         @onChangeAttribute="onChangeAttribute"
+                        v-memo="[attribute.pos, attribute.value]"
                     ></attribute-component>
                 </svg>
 
@@ -215,7 +219,7 @@ export default {
             //다이얼로그가 생성될 시 이상한 위치로 되기에 일정 시간을 줌
             setTimeout(() => {
                 this.addTreeViewPort();
-            }, 300);
+            }, 500);
         });
         // processVariables가 준비되었는지 확인
         // if (this.processVariables && this.processVariables.length > 0) {
@@ -659,7 +663,7 @@ export default {
 .form-mapper .right-treeview .input-wrapper {
     transform: scaleX(-1);
 }
-.form-mapper .tree-node .tree-level{
+.form-mapper .tree-node .tree-level {
     padding-left: 8px !important;
 }
 

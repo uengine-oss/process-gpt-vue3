@@ -40,22 +40,26 @@ export default class StorageBaseSupabase {
         });
     }
     async signUp(userInfo) {
-        const result = await window.$supabase.auth.signUp({
-            email: userInfo.email,
-            password: userInfo.password,
-            options: {
-                data: {
-                    name: userInfo.username
+        try {
+            const result = await window.$supabase.auth.signUp({
+                email: userInfo.email,
+                password: userInfo.password,
+                options: {
+                    data: {
+                        name: userInfo.username
+                    }
                 }
+            });
+    
+            if (!result.error) {
+                return result.data;
+            } else {
+                result.errorMsg = result.error.message;
+                return result;
             }
-        });
 
-        if (!result.error) {
-            // await this.writeUserData(result.data);
-            return result.data;
-        } else {
-            result.errorMsg = result.error.message;
-            return result;
+        } catch (e) {
+            throw new StorageBaseError('error in signUp', e, arguments);
         }
     }
 
@@ -117,6 +121,29 @@ export default class StorageBaseSupabase {
         } else {
             return error;
         }
+    }
+1
+    async resetPassword(email) {
+        try {
+            const result = await window.$supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: 'http://127.0.0.1:5173/auth/reset-password',
+            });
+            return result;
+        } catch (e) {
+            throw new StorageBaseError('error in resetPassword', e, arguments);
+        }
+    }
+
+    async updateUser(new_password) {
+        try {
+            const result = await window.$supabase.auth.updateUser({
+                password: new_password
+            });
+            return result;
+        } catch (e) {
+            throw new StorageBaseError('error in updateUser', e, arguments);
+        } 
+        
     }
 
     async getString(path, options) {
@@ -476,6 +503,11 @@ export default class StorageBaseSupabase {
                 query = query.gt(orderByField, options.startAfter).lte(orderByField, options.endAt);
             }
 
+            // like 처리
+            if (options.like) {
+                query = query.like(orderByField, options.like);
+            }
+
             // 일치 처리
             if (options.match) {
                 query = query.match(options.match);
@@ -498,42 +530,60 @@ export default class StorageBaseSupabase {
     }
 
     async writeUserData(value) {
-        if (value.session) {
-            window.localStorage.setItem('accessToken', value.session.access_token);
-        }
-        if (value.user) {
-            window.localStorage.setItem('author', value.user.email);
-            window.localStorage.setItem('userName', value.user.user_metadata.name);
-            window.localStorage.setItem('email', value.user.email);
-            window.localStorage.setItem('uid', value.user.id);
-
-            // const { data, error } = await window.$supabase.from('users').select('*').eq('id', value.user.id).single();
-
-            const { data, error } = await window.$supabase
-                .from('users')
-                .select('*')
-                .eq('id', value.user.id)
-                .maybeSingle()
-            
-            if (error) {
-                throw new StorageBaseError('error in writeUserData', error, arguments);
+        try {
+            if (value.session) {
+                window.localStorage.setItem('accessToken', value.session.access_token);
             }
+            if (value.user) {
+                window.localStorage.setItem('author', value.user.email);
+                window.localStorage.setItem('userName', value.user.user_metadata.name);
+                window.localStorage.setItem('email', value.user.email);
+                window.localStorage.setItem('uid', value.user.id);
+    
+                const count = await this.getCount('users');
+                if (count && count === 1) {
+                    await this.putObject('users', {
+                        id: value.user.id,
+                        username: value.user.user_metadata.name,
+                        role: 'superAdmin',
+                        is_admin: true
+                    });
+                } else {
+                    await this.putObject('users', {
+                        id: value.user.id,
+                        username: value.user.user_metadata.name
+                    });
+                }
 
-            window.localStorage.setItem('isAdmin', data.is_admin);
-            window.localStorage.setItem('picture', data.profile);
-        }
+                const { data, error } = await window.$supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', value.user.id)
+                    .maybeSingle();
 
-        const options = {
-            headers: {
-                Authorization: 'bearer ' + localStorage.getItem('accessToken')
+                if (!error) {
+                    window.localStorage.setItem('isAdmin', data.is_admin);
+                    window.localStorage.setItem('picture', data.profile);
+                    if (data.role && data.role !== '') {
+                        window.localStorage.setItem('role', data.role);
+                    }
+                }
             }
+    
+            const options = {
+                headers: {
+                    Authorization: 'bearer ' + localStorage.getItem('accessToken')
+                }
+            }
+            await axios.get('/test/execution', options).then(res => {
+                window.localStorage.setItem("execution", "true");
+            })
+            .catch(error => {
+                // console.log(error);
+            });
+        } catch(e) {
+            throw new StorageBaseError('error in writeUserData', e, arguments);
         }
-        await axios.get('/test/execution', options).then(res => {
-            window.localStorage.setItem("execution", "true");
-        })
-        .catch(error => {
-            // console.log(error);
-        });
     }
 
     formatDataPath(path, options) {
@@ -562,7 +612,7 @@ export default class StorageBaseSupabase {
                 const { count, error } = await window.$supabase.from(obj.table).select('*', { count: 'exact' }).match(options.match);
 
                 if (error) {
-                    throw new StorageBaseError('error in getCount', error, arguments);
+                    return error;
                 } else {
                     return count;
                 }
@@ -573,7 +623,7 @@ export default class StorageBaseSupabase {
                     .eq(obj.searchKey, obj.searchVal);
 
                 if (error) {
-                    throw new StorageBaseError('error in getCount', error, arguments);
+                    return error;
                 } else {
                     return count;
                 }
@@ -581,7 +631,7 @@ export default class StorageBaseSupabase {
                 const { count, error } = await window.$supabase.from(obj.table).select('*', { count: 'exact' });
 
                 if (error) {
-                    throw new StorageBaseError('error in getCount', error, arguments);
+                    return error;
                 } else {
                     return count;
                 }

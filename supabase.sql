@@ -7,6 +7,34 @@ create table configuration (
 insert into configuration (key, value) values ('proc_map', '{}');
 insert into configuration (key, value) values ('organization', '{}');
 
+-- table proc_map_history
+drop table public.proc_map_history;
+create table public.proc_map_history (
+    value jsonb not null,
+    created_at timestamp with time zone not null default now(),
+    constraint proc_map_history_pkey primary key (created_at)
+) tablespace pg_default;
+
+-- 트리거 함수 생성
+CREATE OR REPLACE FUNCTION public.save_previous_proc_map()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- 'proc_map' 키의 이전 value 값을 proc_map_history 테이블에 저장
+    IF OLD.key = 'proc_map' THEN
+        INSERT INTO public.proc_map_history(value, created_at)
+        VALUES (OLD.value, now());
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 트리거 생성
+CREATE TRIGGER trigger_save_previous_proc_map
+BEFORE UPDATE ON configuration
+FOR EACH ROW
+WHEN (OLD.key = 'proc_map' AND NEW.value IS DISTINCT FROM OLD.value)
+EXECUTE PROCEDURE public.save_previous_proc_map();
+
 -- table todolist
 drop table todolist;
 create table todolist (
@@ -29,7 +57,8 @@ create table public.users (
     profile text null,
     email text null,
     is_admin boolean not null default false,
-    notifications jsonb null
+    notifications jsonb null,
+    role text null
 );
 -- trigger the function every time a auts.users is created
 create or replace function public.handle_new_user() 

@@ -2,39 +2,55 @@
     <!-- ---------------------------------------------------- -->
     <!-- Table Basic -->
     <!-- ---------------------------------------------------- -->
-    <v-card elevation="10" class="mb-5 cursor-pointer" @click="executeTask">
-        <div class="d-flex align-center justify-space-between px-4 py-2 pr-3">
-            <h5 class="text-subtitle-2 font-weight-semibold pr-4">
-                {{ formattedTitle }}
-            </h5>
-            
-            <RouterLink v-if="managed" to="" class="px-0">
-                <DotsVerticalIcon size="15" />
-                <v-menu activator="parent">
-                    <v-list density="compact">
-                        <v-list-item @click="deleteTask">
-                            <v-list-item-title>삭제</v-list-item-title>
-                        </v-list-item>
-                    </v-list>
-                </v-menu>
-            </RouterLink>
-        </div>
-
-        <p class="text-subtitle-2 px-4">
-            {{ task.description }}
-        </p>
+    <v-card elevation="10" class="mb-3 cursor-pointer pa-3" @click="executeTask">
+        <v-card-title class="ma-0 pa-0">
+            <v-row class="ma-0 pa-0 mt-1" style="line-height:100%;">
+                <!-- 가로배치 -->
+                <v-col cols="12" class="pa-0">
+                    <div class="d-flex align-items-center" style="width: 100%;">
+                        <div style="font-size:16px; font-weight:500;">{{ task.title }}</div>
+                        <v-spacer></v-spacer>
+                        <v-chip v-if="category"
+                            :color="category.color"
+                            size="small" variant="outlined"
+                            density="comfortable"
+                            style="margin-left:5px;"
+                        >{{ category.name }}</v-chip>
         
-        <div class="d-flex align-center justify-space-between px-4 py-3">
-            <div class="d-flex align-center">
-                <CalendarIcon size="16" />
-                <div class="body-text-1 text-dark pl-2">
-                    {{ formattedDate }}
-                </div>
-            </div>
-            <div v-if="category" :class="'rounded-sm body-text-1 px-1 py-0 bg-' + category.color" size="small">
-                {{ category.name }}
-            </div>
-        </div>
+                        <RouterLink v-if="managed" to="" class="px-0" color="black">
+                            <DotsVerticalIcon size="15" />
+                            <v-menu activator="parent">
+                                <v-list density="compact">
+                                    <v-list-item @click="deleteTask">
+                                        <v-list-item-title>삭제</v-list-item-title>
+                                    </v-list-item>
+                                </v-list>
+                            </v-menu>
+                        </RouterLink>
+                    </div>
+                </v-col>
+                <!-- 세로배치 -->
+                <v-col cols="12" v-if="mode == 'uEngine'" 
+                    class="pa-0"
+                    style="font-size:12px; margin-top: 5px;"
+                >
+                    TaskId : {{ task.taskId }} / InstId: {{ task.instId }}
+                </v-col>
+                <v-col cols="12" class="pa-0">
+                    <div class="d-flex align-center">
+                        <CalendarIcon size="16" />
+                        <div class="body-text-1 text-dark pl-2">
+                            {{ formattedDate }}
+                        </div>
+                    </div>
+                </v-col>
+                <v-col cols="12" class="pa-0">
+                    <div class="text-subtitle-2">
+                        {{ task.description }}
+                    </div>
+                </v-col>
+            </v-row>
+        </v-card-title>
 
         <v-dialog v-model="dialog" max-width="500">
             <TodoDialog 
@@ -75,7 +91,11 @@ export default {
         managed: false,
         dialog: false,
         dialogType: '',
+        mode: window.$mode
     }),
+    mounted() {
+        this.mode = window.$mode; // 클라이언트 사이드에서 확실하게 설정
+    },
     computed: {
         formattedDate() {
             var dateString = "";
@@ -87,13 +107,6 @@ export default {
                 dateString += format(new Date(this.task.dueDate), "yyyy.MM.dd");
             }
             return dateString;
-        },
-        formattedTitle() {
-            if (window.$mode == 'ProcessGPT') {
-                return this.task.title;
-            } else if (window.$mode == 'uEngine') {
-                return `${this.task.title}  (TaskId: ${this.task.taskId}/InstId: ${this.task.instId})`;
-            }
         },
         category() {
             if (!this.task.instId) {

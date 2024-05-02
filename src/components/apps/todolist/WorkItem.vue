@@ -1,7 +1,5 @@
 <template>
-     <v-card elevation="10" v-if="workItem" :key="updatedKey"
-        :style="$globalState.state.isZoomed ? 'height:100vh;' : 'height:calc(100vh - 150px);'"
-     >
+    <v-card elevation="10" v-if="workItem" :key="updatedKey">
         <v-card-title>
             <v-row class="ma-0 pa-0 mt-1 ml-3" style="line-height:100%;">
                 <div style="font-size:20px; font-weight:500;">{{workItem.activity.name}}</div>
@@ -13,16 +11,19 @@
         </v-card-title>
         <v-row class="ma-0 pa-2 mt-2">
              <!-- Left -->
-            <v-col class="pa-0" cols="4">
+            <v-col class="pa-0" cols="4"
+                :style="$globalState.state.isZoomed ? 'height: calc(100vh - 70px);' : 'height: calc(100vh - 215px);'"
+            >
                 <div v-if="currentComponent"
                     class="work-itme-current-component"
                     style="overflow:auto;"
-                    :style="$globalState.state.isZoomed ? 'height: calc(100vh - 50px);' : 'height: calc(100vh - 215px);'"
                 >
                     <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus"></component>
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
-                            <v-btn size="small" icon v-bind="props" class="processVariables-zoom task-btn" @click="$globalState.methods.toggleZoom()">
+                            <v-btn @click="$globalState.methods.toggleZoom()" 
+                                size="small" icon v-bind="props" class="processVariables-zoom task-btn"
+                            >
                                 <!-- 캔버스 확대 -->
                                 <Icon
                                     v-if="!$globalState.state.isZoomed"
@@ -39,33 +40,35 @@
             </v-col>
             <!-- Right -->
             <v-col class="pa-0" cols="8">
-                <v-alert class="pa-0" color="#2196F3" variant="outlined">
+                <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
                     <v-tabs v-model="selectedTab">
-                        <v-tab value="progress">진행 상황/체크포인트</v-tab>
+                        <v-tab value="progress" v-if="checkPoints">진행 상황/체크포인트</v-tab>
+                        <v-tab value="progress" v-else>진행 상황</v-tab>
                         <v-tab v-if="messages && messages.length > 0" value="history">워크 히스토리</v-tab>
                     </v-tabs>
                     <v-window v-model="selectedTab">
-                        <v-window-item value="progress" class="pa-2" style="color:black;">
-                            <v-card-title >프로세스 진행상태</v-card-title>
-                            <div class="pa-0 pl-3" style="overflow:auto;"
-                                :style="bpmnHeight"
+                        <v-window-item value="progress" >
+                            <div class="pa-2"
+                                :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 280px);'"
+                                style="color:black; overflow:auto;"
                             >
-                                <div v-if="bpmn" style="height: 100%;">
-                                    <process-definition class="work-item-definition" :currentActivities="currentActivities" :bpmn="bpmn" :key="updatedDefKey" :isViewMode="true"></process-definition>
+                            
+                                <div class="pa-0 pl-2"
+                                    :style="!checkPoints ? 'height:100%;' : 'height:50%;'"
+                                >
+                                    <div v-if="bpmn" style="height: 100%;">
+                                        <process-definition style="height: 100%;" :currentActivities="currentActivities" :bpmn="bpmn" :key="updatedDefKey" :isViewMode="true"></process-definition>
+                                    </div>
+                                    <div v-else>
+                                        No BPMN found
+                                    </div>
                                 </div>
-                                <dif v-else>
-                                    No BPMN found
-                                </dif>
-                            </div>
-                            <div v-if="checkPoints" style="overflow:auto;"
-                                :style="checkPointHeight"
-                            >
-                                <v-card-title>CheckPoint ({{checkedCount}}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>
-                                <div style="margin:-15px 0px 0px 5px;">
-                                    <div v-for="(checkPoint, index) in checkPoints" :key="index"
-                                        style="height:40px;"
-                                    >
-                                        <v-checkbox style="height:40px !important;" v-model="checkPoint.checked" :label="checkPoint.name" color="primary" hide-details></v-checkbox>
+                                <div v-if="checkPoints" style="overflow:auto; height: 50%;">
+                                    <v-card-title>CheckPoint ({{checkedCount}}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>
+                                    <div style="margin:-15px 0px 0px 5px;">
+                                        <div v-for="(checkPoint, index) in checkPoints" :key="index" style="height:40px;">
+                                            <v-checkbox style="height:40px !important;" v-model="checkPoint.checked" :label="checkPoint.name" color="primary" hide-details></v-checkbox>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -107,7 +110,7 @@ export default {
     data: () => ({
         bpmn: null,
         workItem: null,
-        checkPoints: [],
+        checkPoints: null,
         workListByInstId: null,
         currentComponent: null,
         currentActivities: [],
@@ -117,33 +120,9 @@ export default {
         updatedDefKey: 0,
         loading: false,
         selectedTab: 'progress',
-        bpmnHeight: '',
-        checkPointHeight: '',
-        workHistoryHeight: ''
     }),
     created() {
         this.init();
-    },
-    watch : {
-        '$globalState.state.isZoomed': {
-            handler(newVal) {
-                // isZoomed 값이 변경될 때 실행될 로직
-                if (newVal) {
-                    if(this.checkPoints) {
-                        this.bpmnHeight = 'height: calc(100vh - 550px);';
-                        this.checkPointHeight = 'height: calc(100vh - 555px);'
-                    } else {
-                        this.bpmnHeight = 'height: calc(100vh - 145px)';
-                    }
-                    this.workHistoryHeight = 'height: calc(100vh - 160px)'
-                } else {
-                    this.bpmnHeight = !this.checkPoints ? 'height: calc(100vh - 325px);' : 'height: calc(100vh - 650px);';
-                    this.checkPointHeight = 'height: calc(100vh - 605px);'
-                    this.workHistoryHeight = 'height: calc(100vh - 310px)'
-                }
-            },
-            immediate: true // 컴포넌트 생성 시에도 핸들러를 실행
-        }
     },
     computed:{
         mode(){

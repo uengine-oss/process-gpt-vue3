@@ -8,10 +8,25 @@ class ProcessGPTBackend implements Backend {
 
     async listDefinition(path: string) {
         try {
-            path = 'proc_def'
-            const data = await storage.list(path);
-            return data;
+
+            // 프로세스 정보, 폼 정보를 각각 불러와서 파일명을 포함해서 가공하기 위해서
+            let procDefs = await storage.list('proc_def', (path ? { like: `${path}%` } : undefined));
+            procDefs.map((item: any) => {
+                item.path = `${item.id}.bpmn`
+                item.name = item.path 
+            });
+            
+            let formDefs = await storage.list('form_def', (path ? { like: `${path.replace(/\//g, "#")}%` } : undefined));
+            formDefs.map((item: any) => {
+                item.id = item.id.replace(/#/g, "/")
+                item.path = `${item.id}.form`
+                item.name = item.path
+            });
+            
+            return [...procDefs, ...formDefs]
+
         } catch (error) {
+            console.error(error)
             throw new Error('error in listDefinition');
         }
     }
@@ -315,19 +330,25 @@ class ProcessGPTBackend implements Backend {
         await storage.delete(`todolist/${taskId}`, { key: 'id' });
     }
 
-    async getProcessDefinitionMap() {
-        const procMap = await storage.getObject('configuration/proc_map', { key: 'key' });
-        if (procMap && procMap.value) {
-            return procMap.value;
-        }
-    }
-
     async getFormDefinition(formName: string) {
         const form = await storage.getString(`form_def/${formName}`, { key: 'key' });
         if (form && form.html) {
             return form.html;
         }
         return null;
+    }
+
+    // proc_map
+    async getProcessDefinitionMap() {
+        try {
+            const procMap = await storage.getObject('configuration/proc_map', { key: 'key' });
+            if (procMap && procMap.value) {
+                return procMap.value;
+            }
+            return {};
+        } catch (error) {
+            throw new Error('error in getProcessDefinitionMap');
+        } 
     }
 
     async putProcessDefinitionMap(definitionMap: any) {
