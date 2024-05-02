@@ -69,6 +69,7 @@ const customizer = useCustomizerStore();
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
 
 import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 
@@ -83,14 +84,14 @@ export default {
                 icon: 'lucide:layout-panel-top',
                 BgColor: 'primary',
                 to: '/dashboard2',
-                disable: false
+                disable: true
             },
             {
                 title: 'todoList.title',
                 icon: 'pajamas:overview',
                 BgColor: 'primary',
                 to: '/todolist',
-                disable: false
+                disable: true
             },
             {
                 title: 'calendar.title',
@@ -112,7 +113,10 @@ export default {
     }),
     computed: {
         useChat() {
-            if (window.$mode == "ProcessGPT") {
+            const execution = localStorage.getItem('execution');
+            if (window.$mode == "ProcessGPT" && execution == "true") {
+                return true;
+            } else if (execution == "true") {
                 return true;
             }
             return false;
@@ -166,7 +170,6 @@ export default {
     },
     methods: {
         async getDefinitionList() {
-            const backend = BackendFactory.createBackend();
             const list = await backend.listDefinition();
             if (list && list.length > 0) {
                 var menu = {
@@ -177,21 +180,36 @@ export default {
                     children: []
                 };
                 list.forEach((item) => {
-                    console.log(item.name != 'instances');
                     if (item.directory) {
-                        var obj = {
-                            title: item.name,
-                            // to: `/definitions/${item.definition.processDefinitionId}`,
-                            directory: true
-                        };
-                        menu.children.push(obj);
-                    }
-                    if (item && item.definition) {
-                        var obj = {
-                            title: item.definition.processDefinitionName,
-                            to: `/definitions/${item.definition.processDefinitionId}`
-                        };
-                        menu.children.push(obj);
+                        if (item.name != 'instances') {
+                            var obj = {
+                                title: item.name,
+                                // to: `/definitions/${item.definition.processDefinitionId}`,
+                                directory: true
+                            };
+                            menu.children.push(obj);
+                        }
+                    } else if (item) {
+                        var obj = {};
+                        if (item.path && item.path.includes('.bpmn')) {
+                            obj = {
+                                title: item.name,
+                                to: `/definitions/${item.path.split('.')[0]}`
+                            };
+                            menu.children.push(obj);
+                        } else if (item.path && item.path.includes('.form')) {
+                            obj = {
+                                title: item.name,
+                                to: `/ui-definitions/${item.path.split('.')[0]}`
+                            };
+                            menu.children.push(obj);
+                        } else if (item.definition) {
+                            obj = {
+                                title: item.definition.processDefinitionName,
+                                to: `/definitions/${item.definition.processDefinitionId}`
+                            };
+                            menu.children.push(obj);
+                        }
                     }
                 });
                 this.definitionList = menu;

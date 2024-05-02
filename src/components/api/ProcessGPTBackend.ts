@@ -40,6 +40,14 @@ class ProcessGPTBackend implements Backend {
                     result = error
                 });
             }
+            const arcv = await storage.list(`proc_def_arcv/${defId}`, { key: 'proc_def_id' });
+            if (arcv && arcv.length > 0) {
+                await storage.delete(`proc_def_arcv/${defId}`, { key: 'proc_def_id' });
+            }
+            const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
+            if (isLocked) {
+                await storage.delete(`lock/${defId}`, { key: 'id' });
+            }
             return result;
         } catch (error) {
             throw new Error('error in deleteDefinition');
@@ -183,13 +191,16 @@ class ProcessGPTBackend implements Backend {
 
     async getInstance(instanceId: string) {
         try {
-            const definitionId = instanceId.split('.')[0];
+            const defId = instanceId.split('.')[0];
             const options = {
                 match: {
                     proc_inst_id: instanceId
                 }
             };
-            const data = await storage.getObject(definitionId, options);
+            const data = await storage.getObject(defId, options);
+            data.defId = defId;
+            data.instanceId = instanceId;
+            data.name = data.proc_inst_name;
             return data;
         } catch (error) {
             throw new Error('error in getInstance');
@@ -304,19 +315,25 @@ class ProcessGPTBackend implements Backend {
         await storage.delete(`todolist/${taskId}`, { key: 'id' });
     }
 
-    async getProcessDefinitionMap() {
-        const procMap = await storage.getObject('configuration/proc_map', { key: 'key' });
-        if (procMap && procMap.value) {
-            return procMap.value;
-        }
-    }
-
     async getFormDefinition(formName: string) {
         const form = await storage.getString(`form_def/${formName}`, { key: 'key' });
         if (form && form.html) {
             return form.html;
         }
         return null;
+    }
+
+    // proc_map
+    async getProcessDefinitionMap() {
+        try {
+            const procMap = await storage.getObject('configuration/proc_map', { key: 'key' });
+            if (procMap && procMap.value) {
+                return procMap.value;
+            }
+            return {};
+        } catch (error) {
+            throw new Error('error in getProcessDefinitionMap');
+        } 
     }
 
     async putProcessDefinitionMap(definitionMap: any) {
@@ -497,7 +514,6 @@ class ProcessGPTBackend implements Backend {
             return new Error('error in updateInstanceChat');
         }
     }
-
 
     async getInstanceList() {
         try {

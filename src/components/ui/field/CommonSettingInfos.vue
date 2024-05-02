@@ -9,7 +9,7 @@
  *     items: [{"key1":"value1"}, {"key2":"value2"}] 와 같은 형태로 입력받는 속성
  * validCheck: 설정창에서 입력 완료시에 유효성을 확인하는데 사용되는 함수
  */
-export const commonSettingInfos = {
+let commonSettingInfos = {
     "localName": {
         dataToUse: "localName",
         htmlAttribute: "name",
@@ -36,12 +36,68 @@ export const commonSettingInfos = {
         settingType: "checkbox"
     },
 
+
     "localItems": {
         dataToUse: "localItems",
         htmlAttribute: "items",
         settingLabel: "Items",
         settingType: "items"
+    },
+
+    "localIsDynamicLoad": {
+        dataToUse: "localIsDynamicLoad",
+        htmlAttribute: "is_dynamic_load",
+        settingType: "items_dynamic"
+    },
+
+    "localDynamicLoadURL": {
+        dataToUse: "localDynamicLoadURL",
+        htmlAttribute: "dynamic_load_url",
+        settingType: "items_dynamic",
+        validCheck: (value, props) => {
+            if(props.localIsDynamicLoad)
+            {
+                if(!value || value.length <= 0) return "URL 속성에 값을 입력해 주세요."
+            }
+            return null
+        }
+    },
+
+    "localDynamicLoadKeyJsonPath": {
+        dataToUse: "localDynamicLoadKeyJsonPath",
+        htmlAttribute: "dynamic_load_key_json_path",
+        settingType: "items_dynamic",
+        validCheck: (value, props) => {
+            if(props.localIsDynamicLoad)
+            {
+                if(!value || value.length <= 0) return "Key JSON Path 속성에 값을 입력해 주세요."
+            }
+            return null
+        }
+    },
+
+    "localDynamicLoadValueJsonPath": {
+        dataToUse: "localDynamicLoadValueJsonPath",
+        htmlAttribute: "dynamic_load_value_json_path",
+        settingType: "items_dynamic",
+        validCheck: (value, props) => {
+            if(props.localIsDynamicLoad)
+            {
+                if(!value || value.length <= 0) return "Value JSON Path 속성에 값을 입력해 주세요."
+            }
+            return null
+        }
     }
 };
+
+commonSettingInfos["localItemsWithDynamicList"] = [
+    commonSettingInfos["localItems"],
+    commonSettingInfos["localIsDynamicLoad"],
+    commonSettingInfos["localDynamicLoadURL"],
+    commonSettingInfos["localDynamicLoadKeyJsonPath"],
+    commonSettingInfos["localDynamicLoadValueJsonPath"]
+];
+
+export { commonSettingInfos }
 </script>
 

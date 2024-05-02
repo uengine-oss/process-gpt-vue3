@@ -23,6 +23,8 @@ import LabelField from '@/components/ui/field/LabelField.vue';
 import BooleanField from '@/components/ui/field/BooleanField.vue';
 import TextareaField from '@/components/ui/field/TextareaField.vue';
 import UserSelectField from '@/components/ui/field/UserSelectField.vue';
+import RowLayout from '@/components/ui/field/RowLayout.vue';
+import RowLayoutItemHead from '@/components/ui/field/RowLayoutItemHead.vue';
 
 export default {
   props: {
@@ -80,14 +82,18 @@ export default {
         LabelField,
         BooleanField,
         TextareaField,
-        UserSelectField
+        UserSelectField,
+        RowLayout,
+        RowLayoutItemHead
       },
       data() {
         return {
           formValues: me.formValues
         }
       },
-      template: me.formHTML
+      template: `<div id="kEditor1">
+  ${me.formHTML}
+</div>`
     }
     return h(r);
   },

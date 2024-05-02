@@ -29,9 +29,9 @@
                             :key="mashupKey"
                             @onSaveFormDefinition="saveFormDefinition"
                         />
-                        <card v-else class="d-flex align-center justify-center fill-height">
+                        <div v-else class="d-flex align-center justify-center fill-height">
                             <v-progress-circular color="primary" indeterminate></v-progress-circular>
-                        </card>
+                        </div>
                     </v-window-item>
 
                     <v-window-item value="preview" class="fill-height mt-15 pa-5" style="overflow-y: auto">
@@ -45,9 +45,9 @@
 
                             <v-btn color="primary" class="full-width" @click="onClickPreviewSubmitButton">제출</v-btn>
                         </template>
-                        <card v-else class="d-flex align-center justify-center fill-height">
+                        <div v-else class="d-flex align-center justify-center fill-height">
                             <v-progress-circular color="primary" indeterminate></v-progress-circular>
-                        </card>
+                        </div>
                     </v-window-item>
                 </v-window>
             </template>
@@ -94,7 +94,7 @@ var jsondiffpatch = jsondiff.create({
 
 export default {
     mixins: [ChatModule],
-    name: 'ProcessDefinitionChat',
+    name: 'UIDefinitionChat',
     components: {
         Chat,
         AppBaseCard,
@@ -148,6 +148,8 @@ export default {
         $route: {
             deep: true,
             handler(newVal, oldVal) {
+                if (!newVal.path.startsWith('/ui-definitions')) return;
+
                 if (newVal.path !== oldVal.path) this.loadData();
                 else this.isShowMashup = true;
             }
@@ -194,20 +196,87 @@ export default {
          */
         keditorContentHTMLToDynamicFormHTML(html) {
             const dom = new DOMParser().parseFromString(html, 'text/html');
-            const formValues = dom.querySelectorAll('[name]');
 
+
+            // 이름 중복 여부를 검사하기 위해서
             const nameSet = new Set();
-            formValues.forEach((el) => {
+            (dom.querySelectorAll('[name]')).forEach((el) => {
                 const name = el.getAttribute('name');
+                if(!name || name.length <= 0) return;
+
                 if (nameSet.has(name)) {
                     throw new Error(`'${name}' 이름이 중복되어 있습니다.`);
                 }
                 nameSet.add(name);
             });
 
-            formValues.forEach((el) => {
-                el.setAttribute('v-model', `formValues['${el.getAttribute('name')}']`);
+
+            const rows = dom.querySelectorAll('div.row');
+            rows.forEach(row => {
+                const isMultiDataMode = row.getAttribute('is_multidata_mode');
+                if (!isMultiDataMode || (isMultiDataMode === 'false')) {
+                    const newRow = document.createElement('row-layout');
+                    
+
+                    newRow.setAttribute('name', row.getAttribute('name') ?? "");
+                    newRow.setAttribute('alias', row.getAttribute('alias') ?? "");
+                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode') ?? "false");
+
+                    newRow.setAttribute('v-model', 'formValues');
+                    newRow.setAttribute('v-slot', 'slotProps');
+
+
+                    const innerRow = document.createElement('div');
+                    innerRow.setAttribute('class', 'row');
+
+                    Array.from(row.childNodes).forEach(child => {
+                        innerRow.appendChild(child);
+                    });
+
+                    innerRow.querySelectorAll('[name]').forEach(field => {
+                        const name = field.getAttribute('name');
+                        field.setAttribute('v-model', `slotProps.modelValue['${name}']`);
+                    });
+
+                    newRow.appendChild(innerRow);
+
+
+                    row.parentNode.replaceChild(newRow, row);
+                } else {
+                    if((!row.getAttribute('name')) || (row.getAttribute('name').length <= 0)) {
+                        throw new Error(`multidataMode가 설정된 레이아웃에 'name' 속성이 없습니다.`);
+                    }
+                    if((!row.getAttribute('alias')) || (row.getAttribute('alias').length <= 0)) {
+                        throw new Error(`multidataMode가 설정된 레이아웃에 'alias' 속성이 없습니다.`);
+                    }
+
+
+                    const newRow = document.createElement('row-layout');
+
+                    newRow.setAttribute('name', row.getAttribute('name'));
+                    newRow.setAttribute('alias', row.getAttribute('alias'));
+                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode'));
+
+                    newRow.setAttribute('v-model', 'formValues');
+                    newRow.setAttribute('v-slot', 'slotProps');
+
+                    newRow.innerHTML = `<div v-for="(item, index) in slotProps.modelValue" :key="index">
+    <row-layout-item-head :index="index" @on_delete_item="slotProps.deleteItem(index)"></row-layout-item-head>
+    <div class="row">
+    ${row.innerHTML}
+    </div>
+</div>`
+
+
+                    newRow.querySelectorAll('[name]').forEach(field => {
+                        const name = field.getAttribute('name');
+                        field.setAttribute('v-model', `item['${name}']`);
+                    });
+
+                    row.parentNode.replaceChild(newRow, row);
+                }
             });
+
 
             return dom.body.innerHTML;
         },
@@ -218,10 +287,55 @@ export default {
         dynamicFormHTMLToKeditorContentHTML(html) {
             const dom = new DOMParser().parseFromString(html, 'text/html');
 
-            const formValues = dom.querySelectorAll('[v-model]');
-            formValues.forEach((el) => {
-                el.removeAttribute('v-model');
+
+            const rows = dom.querySelectorAll('row-layout');
+            rows.forEach(row => {
+                const isMultiDataMode = row.getAttribute('is_multidata_mode');
+                if (!isMultiDataMode || (isMultiDataMode === 'false')) {
+                    const newRow = document.createElement('div');
+                    
+
+                    newRow.setAttribute('name', row.getAttribute('name') ?? "");
+                    newRow.setAttribute('alias', row.getAttribute('alias') ?? "");
+                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode') ?? "false");
+
+                    newRow.setAttribute('class', 'row');
+
+
+                    Array.from(row.firstChild.childNodes).forEach(child => {
+                        newRow.appendChild(child);
+                    });
+
+                    newRow.querySelectorAll('[v-model]').forEach(field => {
+                        field.removeAttribute('v-model');
+                    });
+
+
+                    row.parentNode.replaceChild(newRow, row);
+                } else {
+                    const newRow = document.createElement('div');
+                    
+
+                    newRow.setAttribute('name', row.getAttribute('name') ?? "");
+                    newRow.setAttribute('alias', row.getAttribute('alias') ?? "");
+                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode') ?? "false");
+
+                    newRow.setAttribute('class', 'row');
+
+
+                    row.querySelectorAll('[class^="col-sm-"]').forEach(child => {
+                        newRow.appendChild(child);
+                    });
+
+                    newRow.querySelectorAll('[v-model]').forEach(field => {
+                        field.removeAttribute('v-model');
+                    });
+
+
+                    row.parentNode.replaceChild(newRow, row);
+                }
             });
+
 
             return dom.body.innerHTML;
         },
@@ -372,7 +486,7 @@ export default {
                         if (matchedHtmlOutput.includes(`\\"`)) fragmentToParse = processedFragment;
                         else fragmentToParse = processedFragment.replace(matchedHtmlOutput, matchedHtmlOutput.replaceAll(`"`, `\\"`));
                     } else {
-                        const matchedItems = [...processedFragment.matchAll(/items='(.*?)'>/g)].map((g) => g[1]);
+                        const matchedItems = [...processedFragment.matchAll(/items='\[(.*?)\]'>/g)].map((g) => g[1]);
 
                         fragmentToParse = processedFragment;
                         if (matchedItems) {
@@ -385,7 +499,7 @@ export default {
                     }
 
                     // AI 응답이 items에서 items='[{'남자':'male'},{'여자':'female'}' 와 같이 '안에서 "로 감싸지 않은 경우, 이를 대응하기 위해서
-                    const matchedItems = [...fragmentToParse.matchAll(/items='(.*?)'>/g)].map((g) => g[1]);
+                    const matchedItems = [...fragmentToParse.matchAll(/items='\[(.*?)\]'>/g)].map((g) => g[1]);
                     if (matchedItems) {
                         for (let j = 0; j < matchedItems.length; j++) {
                             const matchedItem = matchedItems[j];
@@ -512,19 +626,28 @@ export default {
                 }
             });
 
+
             // Section이 없는 경우, Section으로 감싸서 새로 생성하고, 있는 경우 그대로 사용함
-            let targetSection = null;
-            if (dom.body.children[0].tagName.toLowerCase() === 'section') targetSection = dom.body.children[0];
-            else {
-                const section = document.createElement('section');
-                section.innerHTML = dom.body.innerHTML;
-                targetSection = section;
+            let targetSections = null;
+            if(dom.body.querySelectorAll("section").length == 0) {
+                const rows = Array.from(dom.body.querySelectorAll('.row'));
+                dom.body.innerHTML = rows.map(row => {
+                    const section = document.createElement('section');
+                    section.innerHTML = row.outerHTML;
+                    return section.outerHTML;
+                }).join('').replace(/&quot;/g, `'`);
             }
+            
+            targetSections = Array.from(dom.body.querySelectorAll("section"));
+            
 
             // KEdtior에서 인식할 수 있도록 클래스 추가하기
-            targetSection.setAttribute('class', 'keditor-ui keditor-container-inner');
+            targetSections.forEach(section => {
+                section.setAttribute('class', 'keditor-ui keditor-container-inner');
+            });
+            const loadedValidHTML = targetSections.map(section => section.outerHTML).join('').replace(/&quot;/g, `'`)
 
-            const loadedValidHTML = targetSection.outerHTML.replace(/&quot;/g, `'`);
+
             console.log('### 로드된 유효 HTML 텍스트 ###');
             console.log(loadedValidHTML);
             return loadedValidHTML;

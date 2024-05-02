@@ -13,8 +13,7 @@
                 <div class="ml-auto d-flex">
                     <v-tooltip location="bottom" v-if="!lock && isAdmin" >
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" size="24" class="ml-3 cp-unlock"
-                                @click="openAlertDialog('checkout')">
+                            <v-btn v-bind="props" icon variant="text" size="24" class="ml-3 cp-unlock" @click="openAlertDialog">
                                 <LockIcon width="24" height="24" />
                             </v-btn>
                         </template>
@@ -23,12 +22,7 @@
 
                     <v-tooltip location="bottom" v-if="lock && isAdmin && userName == editUser">
                         <template v-slot:activator="{ props }">
-                            <v-btn 
-                                v-bind="props"
-                                icon variant="text" size="24"
-                                class="cp-lock"
-                                @click="openAlertDialog('checkin')"
-                            >
+                            <v-btn v-bind="props" icon variant="text" size="24" class="cp-lock" @click="openAlertDialog">
                                 <LockOpenIcon width="24" height="24" />
                             </v-btn>
                         </template>
@@ -37,23 +31,18 @@
 
                     <v-tooltip location="bottom" v-if="lock && isAdmin && userName != editUser">
                         <template v-slot:activator="{ props }">
-                            <v-btn 
-                                v-bind="props"
-                                icon variant="text" size="24"
-                                class="cp-lock"
-                                @click="openAlertDialog('checkin')"
-                            >
+                            <v-btn v-bind="props" icon variant="text" size="24" class="cp-lock" @click="openAlertDialog">
                                 <LockIcon width="24" height="24" />
                             </v-btn>
                         </template>
                         <span>{{ $t('processDefinitionMap.lock') }}</span>
                     </v-tooltip>
 
-                    <span v-if="lock && userName && userName != editUser" class="text-body-1 pt-1 mr-1">
+                    <span v-if="lock && userName && userName != editUser" class="ml-1">
                         {{ editUser }} 님이 수정 중 입니다.
                     </span>
 
-                    <v-btn icon variant="text" class="ml-3" :size="24" @click="capturePng">
+                    <v-btn icon variant="text" :size="24" class="ml-3" @click="capturePng">
                         <Icon icon="mage:image-download" width="24" height="24" />
                     </v-btn>
 
@@ -145,6 +134,7 @@ export default {
         alertDialog: false,
         alertMessage: '',
         isAdmin: false,
+        versionHistory: [],
     }),
     computed: {
         useLock() {
@@ -213,7 +203,13 @@ export default {
         },
         async getProcessMap() {
             let map = await backend.getProcessDefinitionMap();
-            this.value = map;
+            if (map.mega_proc_list) {
+                this.value = map;
+            } else {
+                this.value = {
+                    mega_proc_list: []
+                };
+            }
         },
         addProcess(newProcess) {
             var newMegaProc = {
@@ -231,7 +227,9 @@ export default {
         async checkIn() {
             this.lock = false;
             this.enableEdit = false;
-            await this.saveProcess();
+            if (this.userName == this.editUser) {
+                await this.saveProcess();
+            }
             if (this.useLock) {
                 await this.storage.delete('lock/process-map', { key: 'id' });
             }
@@ -250,20 +248,28 @@ export default {
                 await this.storage.putObject('lock', lockObj);
             }
         },
-        openAlertDialog(type) {
-            this.alertType = type;
+        async openAlertDialog() {
             if (this.isAdmin) {
-                if (type == 'checkin') {
+                this.storage = StorageBaseFactory.getStorage();
+                const lockObj = await this.storage.getObject('lock/process-map', { key: 'id' });
+                if (lockObj && lockObj.id && lockObj.user_id) {
+                    this.lock = true;
+                    this.editUser = lockObj.user_id;
                     if (this.editUser == this.userName) {
                         this.alertDialog = true;
                         this.alertMessage = '수정된 내용을 저장 및 체크인 하시겠습니까?';
                     } else {
                         this.alertDialog = true;
                         this.alertMessage = `현재 ${this.editUser} 님께서 수정 중입니다. 체크인 하는 경우 ${this.editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크인 하시겠습니까?`;
+                        this.enableEdit = false;
                     }
-                } else if (type == 'checkout') {
+                    this.alertType = 'checkin';
+                } else {
+                    this.lock = false;
+                    this.enableEdit = false;
                     this.alertDialog = true;
                     this.alertMessage = `프로세스 정의 체계도를 수정하시겠습니까?`;
+                    this.alertType = 'checkout';
                 }
             }
         },

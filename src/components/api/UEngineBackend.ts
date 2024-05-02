@@ -60,6 +60,7 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.put('/definition/raw/' + requestPath + '.' + options.type, definition, config);
         return response.data;
     }
+    // @ts-ignore
     async getRawDefinition(defPath: string, options) {
         const response = await axiosInstance.get(`/definition/raw/${defPath}.${options.type}`);
         return response.data;
@@ -285,8 +286,14 @@ class UEngineBackend implements Backend {
     }
 
     // get Completed WorkList API
-    async getCompletedList() {
-        const response = await axiosInstance.get(`/worklist/search/findCompleted`);
+    async getCompletedList(options) {
+        let basePath = '/worklist/search/findCompleted'
+        if(!options) options = {}
+        if(!options.page) options.page = 0
+        if(!options.size) options.size = 20
+        // if(!options.sort) options.sort = 'startDate,DESC'
+
+        const response = await axiosInstance.get(`${basePath}?page=${options.page}&size=${options.size}`);
         if (!response.data) return null;
         if (!response.data._embedded) return null;
         return response.data._embedded.worklist.map((task: any) => ({

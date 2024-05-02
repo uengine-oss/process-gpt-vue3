@@ -103,14 +103,8 @@ export default {
     }),
     methods: {
         async addProcess(newProcess) {
-            let newProcessId = ''
-            if(!newProcess.id) {
-                newProcessId = newProcess.label
-            } else {
-                newProcessId = newProcess.id
-            }
             var newSubProc = {
-                id: newProcessId,
+                id: newProcess.id || `${this.parent.label}_${newProcess.label}`,
                 label: newProcess.name ? newProcess.name : newProcess.label,
             };
             this.value.sub_proc_list.push(newSubProc);

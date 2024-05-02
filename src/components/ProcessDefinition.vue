@@ -26,7 +26,7 @@
                         </template>
                     </v-tooltip>
                     <!-- 실행 버튼  -->
-                    <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.execution')">
+                    <v-tooltip v-if="!isViewMode && $route.path !== '/definitions/chat'" :text="$t('processDefinition.execution')">
                         <template v-slot:activator="{ props }">
                             <v-btn icon v-bind="props" class="processExecute" @click="executeProcess">
                                 <Icon icon="gridicons:play" width="32" height="32" />
@@ -389,13 +389,12 @@ export default {
                 extensionElements.get('values').push(uengineProperties);
             }
 
-            
             uengineProperties?.variables?.forEach(function (variable) {
-                let obj ={
+                let obj = {
                     name: variable.$attrs.name,
                     type: variable.$attrs.type
                 };
-                if(variable.json) {
+                if (variable.json) {
                     obj.defaultValue = JSON.parse(variable.json).defaultValue;
                 }
                 self.processVariables.push(obj);

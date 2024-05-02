@@ -2,8 +2,8 @@
      <v-card elevation="10" v-if="instance" style="height:calc(100vh - 155px)" :key="updatedKey">
         <v-card-title>
             <v-row class="ma-0 pa-0">
-                <h3>{{instance.name}}(ID: {{instance.instanceId}})</h3>
-                <v-chip size="x-small" variant="outlined" style="margin:2px 0px 0px 5px !important; display: flex; align-items: center;"> {{instance.status}} </v-chip>
+                <h3>{{instance.name}} (ID: {{instance.instanceId}})</h3>
+                <v-chip v-if="instance.status" size="x-small" variant="outlined" style="margin:2px 0px 0px 5px !important; display: flex; align-items: center;"> {{instance.status}} </v-chip>
             </v-row>
         </v-card-title>
         <v-row class="ma-0 pa-0">
@@ -57,7 +57,6 @@ export default {
         instance: null,
         workListByInstId: null,
         currentActivities: [],
-
         // status variables
         updatedKey: 0,
         updatedDefKey: 0,
@@ -70,7 +69,7 @@ export default {
             return window.$mode;
         },
         id() {
-            return this.$route.params.instId
+            return atob(this.$route.params.instId)
         }, 
         messages(){
             if(!this.workListByInstId) return []
@@ -94,7 +93,6 @@ export default {
                     me.instance = await backend.getInstance(me.id);
                     me.bpmn = await backend.getRawDefinition(me.instance.defId, {type: 'bpmn'});
                     me.workListByInstId = await backend.getWorkListByInstId(me.instance.instanceId);
-                   
                     me.currentActivities = me.workListByInstId.map(item=>item.tracingTag)
                     me.updatedDefKey++
                 }
@@ -106,6 +104,7 @@ export default {
     },
 }
 </script>
+
 <style>
 .work-itme-current-component .v-checkbox .v-input__details {
     display: none;

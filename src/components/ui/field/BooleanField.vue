@@ -15,7 +15,7 @@ export default {
     name: "BooleanField",
     
     props: {
-        modelValue: String,
+        modelValue: Boolean,
         vueRenderUUID: String,
         tagName: String,
 
@@ -26,11 +26,11 @@ export default {
 
     data() {
         return {
-            localModelValue: this.modelValue ?? false,
+            localModelValue: false,
 
-            localName: this.name,
-            localAlias: this.alias,
-            localDisabled: this.disabled === "true",
+            localName: "",
+            localAlias: "",
+            localDisabled: false,
 
             settingInfos: [
                 commonSettingInfos["localName"],
@@ -57,6 +57,14 @@ export default {
             immediate: true
         }
     },
+
+    created() {
+        this.localModelValue = this.modelValue ?? false
+        
+        this.localName = this.name ?? "name"
+        this.localAlias = this.alias ?? ""
+        this.localDisabled = this.disabled === "true"
+    }
 }
 </script>
 

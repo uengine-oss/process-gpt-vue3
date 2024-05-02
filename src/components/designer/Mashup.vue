@@ -10,13 +10,23 @@
     </div>
     
     
-    <v-dialog v-model="isOpenSettingDialog">
+    <v-dialog v-model="isOpenComponentSettingDialog">
         <form-definition-panel
           :componentRef="componentRefForSetting"
           @onSave="editFormDefinition"
-          @onClose="isOpenSettingDialog = false"
+          @onClose="isOpenComponentSettingDialog = false"
         >
         </form-definition-panel>
+    </v-dialog>
+
+    <v-dialog v-model="isOpenContainerSettingDialog">
+      <container-setting-panel
+        :sectionId="containerSectionId"
+        :containerProps="containerProps"
+        @onSave="editContainerDefinition"
+        @onClose="isOpenContainerSettingDialog = false"
+      >
+      </container-setting-panel>
     </v-dialog>
   </div>
 </template>
@@ -27,6 +37,7 @@ import axios from 'axios';
 import vuetify from "@/plugins/vuetify";
 import ChatModule from "@/components/ChatModule.vue";
 import FormDefinitionPanel from '@/components/designer/modeling/FormDefinitionPanel.vue';
+import ContainerSettingPanel from '@/components/designer/modeling/ContainerSettingPanel.vue';
 import DynamicComponent from './DynamicComponent.vue';
 
 export default {
@@ -35,7 +46,8 @@ export default {
   mixins: [ChatModule],
   components: {
     DynamicComponent,
-    FormDefinitionPanel
+    FormDefinitionPanel,
+    ContainerSettingPanel
   },
   props: {
     modelValue: String
@@ -53,7 +65,11 @@ export default {
     kEditorContent: `<div id="kEditor1"></div>`,
 
     componentRefForSetting: null,
-    isOpenSettingDialog: false
+    isOpenComponentSettingDialog: false,
+    isOpenContainerSettingDialog: false,
+
+    containerSectionId: "",
+    containerProps: {name: "", alias: "", isMultiDataMode: false}
   }),
 
   methods: {
@@ -157,9 +173,17 @@ export default {
         node.removeAttribute('data-type')
       });
 
-      // Row들을 찾아서 조합시키고 section으로 감싸서 최종적인 저장 형태를 생성하기 위해서
-      const formContentHTML = Array.from(doc.querySelectorAll('.row')).map(row => row.outerHTML).join('').replace(/&quot;/g, `'`);
-      return (isWithSection) ? `<section>${formContentHTML}</section>` : formContentHTML
+      // Row들을 찾아서 해당 Row마다 section 태그로 감싸고, 전부 합쳐서 최종적인 저장 형태를 생성하기 위해서
+      if(isWithSection)
+      {
+        const rows = Array.from(doc.querySelectorAll('.row'));
+        return rows.map(row => {
+          const section = document.createElement('section');
+          section.innerHTML = row.outerHTML;
+          return section.outerHTML;
+        }).join('').replace(/&quot;/g, `'`);
+      } else
+        return doc.body.innerHTML.replace(/&quot;/g, `'`)
     },
 
 
@@ -172,7 +196,23 @@ export default {
         componentRef[settingInfo.dataToUse] = componentProps[settingInfo.dataToUse]
       })
 
-      window.mashup.isOpenSettingDialog = false
+      window.mashup.isOpenComponentSettingDialog = false
+    },
+
+    /**
+     * 유저가 설정창을 통해서 변경한 값은 해당 컨테이너에 반영시키기 위해서
+     * @param {*} sectionId 해당 컨테이너를 감싸는 section 태그에 할당딘 ID
+     * @param {*} localContainerProps 변경시킬 컨테이너의 속성들
+     */
+    editContainerDefinition(sectionId, localContainerProps) {
+      console.log("[*] editContainerDefinition  : ", sectionId, localContainerProps)
+
+      const rowToModify = $(`section#${sectionId} .row`)[0]
+      rowToModify.setAttribute('name', localContainerProps.name)
+      rowToModify.setAttribute('alias', localContainerProps.alias)
+      rowToModify.setAttribute('is_multidata_mode', String(localContainerProps.isMultiDataMode))
+
+      window.mashup.isOpenContainerSettingDialog = false
     },
 
     /**
@@ -194,6 +234,26 @@ export default {
       $('.keditor-content-area').remove()
       $(".keditor-ui").remove()
       $('#kEditor1').data('keditor', null)
+    },
+
+
+    renderWithDynamicComponent(snippetContent, vueRenderUUID, isCopy = false) {
+      const snipptDom = new DOMParser().parseFromString(snippetContent, 'text/html')
+
+      if(isCopy) {
+        snipptDom.body.querySelectorAll("[name]").forEach(
+          (el) => el.setAttribute("name", el.getAttribute("name") + `-copy`)
+        )
+      } else {
+        const nameSeq = Object.values(window.mashup.componentRefs).filter(componentRef => componentRef.localName).length + 1
+        snipptDom.body.querySelectorAll("[name]").forEach(
+          (el) => el.setAttribute("name", el.getAttribute("name") + `-${nameSeq}`)
+        )
+      }
+
+      const app = createApp(DynamicComponent, {content:snipptDom.body.innerHTML, vueRenderUUID:vueRenderUUID})
+                    .use(vuetify).mount('#'+vueRenderUUID);
+      window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
     }
   },
   mounted() {
@@ -272,17 +332,8 @@ export default {
       onContentChanged: function (event, snippetContent, vueRenderUUID) {
         $("#initGuide").css("opacity", "0")
 
-        if(vueRenderUUID && vueRenderUUID.includes("vuemount_"))
-        {
-          const nameSeq = Object.values(window.mashup.componentRefs).filter(componentRef => componentRef.localName).length + 1
-          const snipptDom = new DOMParser().parseFromString(snippetContent, 'text/html')
-          snipptDom.body.querySelectorAll("[name]").forEach(
-            (el) => el.setAttribute("name", el.getAttribute("name") + `-${nameSeq}`)
-          )
-          
-          const app = createApp(DynamicComponent, {content:snipptDom.body.innerHTML, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
-          window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
-        }
+        if(snippetContent && vueRenderUUID && vueRenderUUID.includes("vuemount_"))
+          window.mashup.renderWithDynamicComponent(snippetContent, vueRenderUUID, false)
           
         window.mashup.onchangeKEditor(event, 'onContentChanged');
       },
@@ -315,7 +366,7 @@ export default {
 
 
           window.mashup.componentRefForSetting = componentRef
-          window.mashup.isOpenSettingDialog = true
+          window.mashup.isOpenComponentSettingDialog = true
 
         }
         catch(e)
@@ -327,6 +378,22 @@ export default {
 
       onInitComponent: function (comp) {
         window.mashup.onchangeKEditor(comp, 'onInitComponent');
+
+        // 컴포넌트 복제시에 복제된 컴포넌트가 제대로 렌더링되도록 만들기 위해서
+        if(comp && comp.length > 0 && comp[0].querySelectorAll("div[id^='vuemount_']").length > 0) {
+          const prevVueRenderId = comp[0].querySelectorAll("div[id^='vuemount_']")[0].getAttribute("id")
+          if(prevVueRenderId) {
+            const renderedComponents = window.mashup.kEditor[0].children[0].querySelectorAll(`div[id='${prevVueRenderId}']`)
+            if(renderedComponents.length == 2) {
+              let htmlToRender = window.mashup.kEditorContentToHtml(renderedComponents[0].outerHTML, false)
+              const newVueRenderId = `vuemount_${crypto.randomUUID()}`
+              htmlToRender = htmlToRender.replace(prevVueRenderId, newVueRenderId)
+              comp[0].querySelector(".keditor-component-content").innerHTML = htmlToRender
+
+              window.mashup.renderWithDynamicComponent((new DOMParser().parseFromString(htmlToRender, 'text/html')).body.firstChild.innerHTML, newVueRenderId, true)
+            }
+          }
+        }
       },
       onComponentChanged: function (event) {
         window.mashup.onchangeKEditor(event, 'onComponentChanged');
@@ -340,7 +407,20 @@ export default {
       },
       containerSettingShowFunction: function (form, container, keditor) {
         console.log("containerSettingShowFunction : ", form, container, keditor);
-        alert("미구현입니다.")
+
+
+        const dom = (new DOMParser()).parseFromString(container[0].outerHTML, 'text/html')
+        window.mashup.containerSectionId = dom.querySelector('section').id
+
+        const row = dom.querySelector('.row')
+        window.mashup.containerProps = {
+          name: row ? row.getAttribute('name') || "" : "",
+          alias: row ? row.getAttribute('alias') || "" : "",
+          isMultiDataMode: row ? (row.getAttribute('is_multidata_mode') === 'true') : false
+        }
+
+
+        window.mashup.isOpenContainerSettingDialog = true
       },
       containerSettingHideFunction: function (form, keditor) {
         console.log("containerSettingHideFunction : ", form, keditor);
@@ -365,6 +445,8 @@ export default {
         window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
       })
     }
+
+    window.mashup.kEditorContent  = window.mashup.kEditor[0].children[0].innerHTML
   },
 
   beforeUnmount() {
