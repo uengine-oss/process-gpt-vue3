@@ -98,9 +98,7 @@ export default {
         processDefinitionId: String,
         isViewMode: Boolean,
         roles: Array,
-        processVariables: Array,
-        selectedRole: String,
-        selectedVariable: String
+        processVariables: Array
     },
     created() {
         // console.log(this.element)
@@ -137,7 +135,9 @@ export default {
             editParam: false,
             paramKey: '',
             paramValue: '',
-            definitionCnt: 0
+            definitionCnt: 0,
+            selectedRole: null,
+            selectedVariable: null
         };
     },
     async mounted() {
@@ -160,6 +160,13 @@ export default {
                 });
             });
         });
+
+        if (this.copyUengineProperties.forEachVariable) {
+            this.selectedVariable = this.copyUengineProperties.forEachVariable.name;
+        }
+        if (this.copyUengineProperties.forEachRole) {
+            this.selectedRole = this.copyUengineProperties.forEachRole.name;
+        }
         // // // bpmn2:process 요소 내의 bpmn2:extensionElements 요소를 찾거나 새로 생성합니다.
         // const value = await storage.list('proc_def');
         // if (value) {
@@ -198,10 +205,14 @@ export default {
             };
         },
         selectedVariable(after, before) {
-            const variableObject = this.processVariables.find((variable) => variable.name === after);
-            let DuplicateVo = JSON.parse(JSON.stringify(variableObject))
-            DuplicateVo.type = this.parseType(variableObject.type);
-            this.copyUengineProperties.forEachVariable = DuplicateVo;
+            if (after) {
+                const variableObject = this.processVariables.find((variable) => variable.name === after);
+                if (variableObject) {
+                    let DuplicateVo = JSON.parse(JSON.stringify(variableObject));
+                    DuplicateVo.type = this.parseType(variableObject.type);
+                    this.copyUengineProperties.forEachVariable = DuplicateVo;
+                }
+            }
         }
     },
     methods: {
