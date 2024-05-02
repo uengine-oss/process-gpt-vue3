@@ -57,7 +57,8 @@ export default {
     "onSaveFormDefinition"
   ],
   expose: [
-    "getKEditorContentHtml"
+    "getKEditorContentHtml",
+    "resetStat"
   ],
 
   data: () => ({
