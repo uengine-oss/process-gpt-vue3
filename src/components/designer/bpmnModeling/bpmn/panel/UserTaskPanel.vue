@@ -395,7 +395,7 @@ export default {
 
                 let def = this.bpmnModeler.getDefinitions();
                 const processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
-
+                me.activities = [];
                 if (processElement) {
                     processElement.forEach((process) => {
                         process.flowElements.forEach((ele) => {
