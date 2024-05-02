@@ -39,7 +39,6 @@ import xml from 'highlight.js/lib/languages/xml';
 import VueDiff from 'vue-diff';
 import 'vue-diff/dist/index.css';
 VueDiff.hljs.registerLanguage('xml', xml);
-
 //ScrollTop
 import VueScrollTo from 'vue-scrollto';
 const i18n = createI18n({
@@ -54,7 +53,10 @@ const OpenGraphEmitter = mitt();
 const ModelingEmitter = mitt();
 window.$mode = 'uEngine';
 const app = createApp(App);
-
+// registers the component globally
+// registered name: CronVuetify
+import CronVuetifyPlugin from '@vue-js-cron/vuetify'
+app.use(CronVuetifyPlugin)
 // @ts-ignore
 app.config.globalProperties.$try = app._component.methods.try;
 app.config.globalProperties.EventBus = emitter;

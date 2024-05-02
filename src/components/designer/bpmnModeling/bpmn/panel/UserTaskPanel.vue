@@ -89,6 +89,7 @@
                     :name="name"
                     :roles="roles"
                     :formMapperJson="formMapperJson"
+                    :activities="activities"
                     @saveFormMapperJson="saveFormMapperJson"
                 />
             </v-dialog>
@@ -222,7 +223,8 @@ export default {
             selectedForm: '',
             formMapperJson: '',
             backend: null,
-            copyDefinition: null
+            copyDefinition: null,
+            activities: []
         };
     },
     created() {
@@ -288,13 +290,19 @@ export default {
                 }
 
                 this.copyUengineProperties.variableForHtmlFormContext = variableForHtmlFormContext;
+                this.copyUengineProperties.mappingContext = {}
                 this.$emit('update:uEngineProperties', this.copyUengineProperties);
             }
         },
         isFormActivity(newVal) {
             if (newVal) {
                 this.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
+            }else{
+                delete this.copyUengineProperties._type;
+                delete this.copyUengineProperties.variableForHtmlFormContext;
             }
+
+            this.$emit('update:uEngineProperties', this.copyUengineProperties);
         }
     },
     methods: {
@@ -384,6 +392,19 @@ export default {
                         variable.fields = fields;
                     }
                 });
+
+                let def = this.bpmnModeler.getDefinitions();
+                const processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
+
+                if(processElement){
+                    processElement.forEach((process) => {
+                        process.flowElements.forEach((ele) => {
+                            if(ele.$type == 'bpmn:UserTask'){
+                                me.activities.push(ele)
+                            }
+                        });
+                    });
+                }
 
                 this.isOpenFieldMapper = true;
             }
