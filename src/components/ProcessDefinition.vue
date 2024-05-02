@@ -68,10 +68,12 @@
                         :element="element"
                         @close="closePanel"
                         :roles="roles"
+                        :process-variables="processVariables"
                         :key="element.id"
                         :isViewMode="isViewMode"
                         v-on:updateElement="(val) => updateElement(val)"
                         :definition="thisDefinition"
+                        :processDefinitionId="definitionPath"
                     ></bpmn-property-panel>
                     <!-- {{ definition }} -->
                 </v-card>

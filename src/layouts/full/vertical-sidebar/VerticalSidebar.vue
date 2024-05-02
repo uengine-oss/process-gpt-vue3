@@ -60,7 +60,7 @@ const customizer = useCustomizerStore();
 
             <ProcessInstanceList />
 
-            <div class="pa-6 px-4 userbottom bg-containerBg mt-10">
+            <div class="pa-6 px-4 userbottom bg-containerBg">
                 <ExtraBox />
             </div>
         </perfect-scrollbar>
