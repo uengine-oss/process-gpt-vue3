@@ -68,6 +68,7 @@
                         :element="element"
                         @close="closePanel"
                         :roles="roles"
+                        :process-variables="processVariables"
                         :key="element.id"
                         :isViewMode="isViewMode"
                         v-on:updateElement="(val) => updateElement(val)"
