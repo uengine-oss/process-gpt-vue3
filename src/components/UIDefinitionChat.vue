@@ -94,7 +94,7 @@ var jsondiffpatch = jsondiff.create({
 
 export default {
     mixins: [ChatModule],
-    name: 'ProcessDefinitionChat',
+    name: 'UIDefinitionChat',
     components: {
         Chat,
         AppBaseCard,
@@ -148,6 +148,8 @@ export default {
         $route: {
             deep: true,
             handler(newVal, oldVal) {
+                if (!newVal.path.startsWith('/ui-definitions')) return;
+
                 if (newVal.path !== oldVal.path) this.loadData();
                 else this.isShowMashup = true;
             }
