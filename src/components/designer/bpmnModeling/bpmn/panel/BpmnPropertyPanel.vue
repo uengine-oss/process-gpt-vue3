@@ -28,6 +28,7 @@
                 ref="panelComponent"
                 @update:name="(val) => (name = val)"
                 :definition="definition"
+                :processDefinitionId="processDefinitionId"
             ></component>
         </v-card-text>
     </div>

@@ -56,6 +56,18 @@ export default {
                 let variable = await backend.getVariable(me.workItem.worklist.instId, varName)
                 me.formData = variable ? variable.valueMap : {}
             }
+
+            let processVariables = await backend.getProcessVariables(me.workItem.worklist.instId)
+            if(me.workItem.activity.previousActivities.length > 0){
+                let previousActivity = me.workItem.activity.previousActivities[0]
+                let previousVariableForHtmlFormContext = previousActivity.variableForHtmlFormContext
+
+                let mappingValueMap = processVariables[`:${previousVariableForHtmlFormContext.name}`].valueMap
+                Object.entries(mappingValueMap).forEach(([key, value]) => {
+                    this.formData[key] = value;
+                });
+            }
+
         },
         async saveTask(){
             var me = this
