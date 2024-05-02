@@ -694,9 +694,9 @@ export default {
     padding-left: 0 !important;
 } */
 .form-mapper .left-treeview {
-    width: 200px;
+    width: 250px;
 }
 .form-mapper .right-treeview {
-    width: 200px;
+    width: 250px;
 }
 </style>
