@@ -136,7 +136,8 @@ export default {
             type: String,
             required: true
         },
-        roles: Array
+        roles: Array,
+        activities: Array
     },
     components: {
         BlockComponent,
@@ -315,6 +316,73 @@ export default {
                         };
                     }
                 });
+            }
+
+            if(this.activities.length > 0){
+                if(!this.config.roots.includes('instance')){
+                    this.config.roots.push('instance')
+                }
+
+                if(!nodes['instance']){
+                    nodes['instance'] = {
+                        text: 'instance',
+                        children: []
+                    }
+                }
+
+                let instanceNodes = ['instanceId', 'name', 'locale', 'status', 'info', 'dueDate',
+                                    'mainProcessInstanceId', 'mainActivityTracingTag', 'rootProcessInstanceId',
+                                    'dummy1', 'dummy2', 'dummy3', 'dummy4', 'dummy5']
+
+                instanceNodes.forEach((node) => {
+                    if(nodes['instance']){
+                        nodes['instance'].children.push(node)
+                        nodes[node] = {
+                            text: node,
+                            children: []
+                        }
+                    }
+                })
+            }
+
+            if(this.activities.length > 0){
+                let activityNodes = ['startedTime', 'endTime', 'dueDate', 'duration', 'businessStatus', 'status']
+
+                if(!this.config.roots.includes('activities')){
+                    this.config.roots.push('activities')
+                }
+
+                if(!nodes['activities']){
+                    nodes['activities'] = {
+                        text: 'activities',
+                        children: []
+                    }
+                }
+
+                this.activities.forEach((activity) => {
+                    if(nodes['activities']){
+                        nodes['activities'].children.push(activity.name)
+                        nodes[activity.name] = {
+                            text: activity.name,
+                            children: []
+                        }
+                    }
+                    
+                    activityNodes.forEach((node) => {
+                        if (!nodes[activity.name]) {
+                            nodes[activity.name] = {
+                                text: activity.name,
+                                children: []
+                            };
+                        }
+
+                        nodes[activity.name].children.push(node)
+                        nodes[node] = {
+                            text: node,
+                            children: []
+                        }
+                    })
+                })
             }
 
             this.updateBlockTemplates(nodes, blockName);
