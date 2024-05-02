@@ -1,7 +1,9 @@
 <template>
     <div>
         <v-select
-            :items="localKeys"
+            :items="selectItems"
+            :item-title="item => item.value"
+            :item-value="item => item.key"
             v-model="localModelValue"
             :disabled="localDisabled"
         >
@@ -37,10 +39,10 @@ export default {
     },
 
     computed: {
-        localKeys() {
+        selectItems() {
             if(this.controlItems === undefined || this.controlItems === null ||
                this.controlItems.length === 0 || this.controlItems === "[]") return []
-            return this.controlItems.map(item => Object.keys(item)[0])
+            return this.controlItems.map(item => ({key: Object.keys(item)[0], value: Object.values(item)[0]}))
         }
     },
 

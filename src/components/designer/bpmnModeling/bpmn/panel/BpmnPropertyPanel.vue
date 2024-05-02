@@ -23,10 +23,12 @@
                 :uengine-properties="uengineProperties"
                 :name="name"
                 :roles="roles"
+                :process-variables="processVariables"
                 :element="element"
                 ref="panelComponent"
                 @update:name="(val) => (name = val)"
                 :definition="definition"
+                :processDefinitionId="processDefinitionId"
             ></component>
         </v-card-text>
     </div>
@@ -43,7 +45,8 @@ export default {
         processDefinitionId: String,
         isViewMode: Boolean,
         definition: Object,
-        roles: Array
+        roles: Array,
+        processVariables: Array
     },
     created() {
         // if (!this.element.extensionElements.values[0].json) {

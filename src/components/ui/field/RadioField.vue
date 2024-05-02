@@ -4,7 +4,7 @@
         <v-radio-group v-model="localModelValue">
             <div v-for="(item, index) in controlItems" :key="index">
                 <div v-for="(value, key) in item" :key="key">
-                    <v-radio :label="key" :value="key" :disabled="localDisabled"></v-radio>
+                    <v-radio :label="value" :value="key" :disabled="localDisabled"></v-radio>
                 </div>
             </div>
         </v-radio-group>

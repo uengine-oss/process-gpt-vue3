@@ -233,6 +233,8 @@ export default {
             deep: true,
             handler(newVal, oldVal) {
                 if (newVal.path !== oldVal.path) {
+                    if (!(newVal.path.startsWith('/definitions') || newVal.path.startsWith('/forms'))) return;
+
                     if (newVal.params.pathMatch) {
                         this.init();
                     }

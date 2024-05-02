@@ -503,6 +503,11 @@ export default class StorageBaseSupabase {
                 query = query.gt(orderByField, options.startAfter).lte(orderByField, options.endAt);
             }
 
+            // like 처리
+            if (options.like) {
+                query = query.like(orderByField, options.like);
+            }
+
             // 일치 처리
             if (options.match) {
                 query = query.match(options.match);

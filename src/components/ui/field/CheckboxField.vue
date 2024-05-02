@@ -5,7 +5,7 @@
             <div v-for="(value, key) in item" :key="key">
                 <v-checkbox
                     v-model="localModelValue"
-                    :label="key"
+                    :label="value"
                     :value="key"
                     :disabled="localDisabled"
                 ></v-checkbox>
