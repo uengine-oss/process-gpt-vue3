@@ -361,7 +361,8 @@ export default {
             this.isOpenSaveDialog = false;
 
             if (isNewSave) {
-                this.$router.push(`/ui-definitions/${id}`);
+                await this.$router.push(`/ui-definitions/${id}`);
+                window.location.reload();
             }
         },
 
