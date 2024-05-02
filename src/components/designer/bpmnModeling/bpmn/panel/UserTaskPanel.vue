@@ -392,8 +392,10 @@ export default {
             const parser = new DOMParser();
             const doc = parser.parseFromString(formHtml, 'text/html');
             // const fields = doc.querySelectorAll('text-field, select-field, checkbox-field, radio-field, file-field');
-            const allElements = doc.querySelectorAll('*'); 
-            const fields = Array.from(allElements).filter((el) => el.tagName.toLowerCase().includes('field'));
+            const allElements = doc.querySelectorAll('*');
+            const fields = Array.from(allElements).filter(
+                (el) => el.tagName.toLowerCase().includes('field') && !el.tagName.toLowerCase().includes('label')
+            );
             const result = Array.from(fields).map((field) => {
                 const type = field.tagName.toLowerCase().replace('-field', '');
                 const name = field.getAttribute('name') || '';
