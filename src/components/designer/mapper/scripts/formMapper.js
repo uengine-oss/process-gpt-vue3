@@ -559,6 +559,10 @@ export default {
       var reuslt = text;
       if (text.indexOf("roles.") != -1) {
         reuslt = text.replace("roles.", "[roles].");
+      } else if (text.indexOf("instance.") != -1) {
+        reuslt = text.replace("instance.", "[instance].");
+      } else if (text.indexOf("activities.") != -1) {
+        reuslt = text.replace("activities.", "[activities].");
       } else {
         reuslt = text.replace(rootNodeName + ".", "");
       }
@@ -569,6 +573,10 @@ export default {
       var reuslt = text;
       if (text.indexOf("[roles].") != -1) {
         reuslt = text.replace("[roles].", "roles.");
+      } else if (text.indexOf("[instance].") != -1) {
+        reuslt = text.replace("[instance].", "instance.");
+      } else if (text.indexOf("[activities].") != -1) {
+        reuslt = text.replace("[activities].", "activities.");
       } else {
         reuslt = rootNodeName + "." + text;
       }
