@@ -245,7 +245,7 @@ export default {
 
         let mapperData = {};
         if (!this.copyUengineProperties.mappingContext) {
-            if(!this.copyUengineProperties._type == "org.uengine.kernel.FormActivity") {
+            if (!this.copyUengineProperties._type == 'org.uengine.kernel.FormActivity') {
                 this.copyUengineProperties.mappingContext = mapperData;
             }
         } else {
@@ -391,7 +391,9 @@ export default {
         parseFormHtmlField(formHtml) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(formHtml, 'text/html');
-            const fields = doc.querySelectorAll('text-field, select-field, checkbox-field, radio-field, file-field');
+            // const fields = doc.querySelectorAll('text-field, select-field, checkbox-field, radio-field, file-field');
+            const allElements = doc.querySelectorAll('*'); 
+            const fields = Array.from(allElements).filter((el) => el.tagName.toLowerCase().includes('field'));
             const result = Array.from(fields).map((field) => {
                 const type = field.tagName.toLowerCase().replace('-field', '');
                 const name = field.getAttribute('name') || '';
