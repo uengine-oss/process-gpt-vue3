@@ -115,7 +115,7 @@ class ProcessGPTBackend implements Backend {
                 await storage.delete(`lock/${defId}`, { key: 'id' });
             }
         } catch (e) {
-            throw new Error('error in putRawDefinition');
+            throw new Error('error in putRawDefinition: ' + (e instanceof Error ? e.message : ''));
         }
     }
 

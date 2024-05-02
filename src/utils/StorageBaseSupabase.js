@@ -258,46 +258,44 @@ export default class StorageBaseSupabase {
 
     // PUT
     async putString(path, value, options) {
-        try {
-            let obj = this.formatDataPath(path, options);
-            if (options && options.match) {
-                const { error } = await window.$supabase.from(obj.table).upsert(value).match(options.match);
 
-                if (error) {
-                    throw new StorageBaseError('error in putString', error, arguments);
-                }
-            } else if (obj.searchVal) {
-                const { error } = await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
+        let obj = this.formatDataPath(path, options);
+        if (options && options.match) {
+            const { error } = await window.$supabase.from(obj.table).upsert(value).match(options.match);
 
-                if (error) {
-                    throw new StorageBaseError('error in putString', error, arguments);
-                }
-            } else {
-                const { error } = await window.$supabase.from(obj.table).upsert(value);
-
-                if (error) {
-                    throw new StorageBaseError('error in putString', error, arguments);
-                }
+            if (error) {
+                throw new StorageBaseError('error in putString'+error.message, error, arguments);
             }
-        } catch(error) {
-            throw new StorageBaseError('error in putString', error.message, arguments)
+        } else if (obj.searchVal) {
+            const { error } = await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
+
+            if (error) {
+                throw new StorageBaseError('error in putString'+error.message, error, arguments);
+            }
+        } else {
+            const { error } = await window.$supabase.from(obj.table).upsert(value);
+
+            if (error) {
+                throw new StorageBaseError('error in putString'+error.message, error, arguments);
+            }
         }
+
     }
 
     async putObject(path, value, options) {
-        try {
+
             let obj = this.formatDataPath(path, options);
             if (options && options.match) {
                 const { error } = await window.$supabase.from(obj.table).upsert(value).match(options.match);
 
                 if (error) {
-                    throw new StorageBaseError('error in putObject', error, arguments);
+                    throw new StorageBaseError('error in putObject:' + error.message, error, arguments);
                 }
             } else if (obj.searchVal) {
                 const { error } = await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
 
                 if (error) {
-                    throw new StorageBaseError('error in putObject', error, arguments);
+                    throw new StorageBaseError('error in putObject:' + error.message, error, arguments);
                 }
             } else {
                 // let key = path.split('/').pop();
@@ -306,12 +304,10 @@ export default class StorageBaseSupabase {
                 const { error } = await window.$supabase.from(obj.table).upsert(value);
 
                 if (error) {
-                    throw new StorageBaseError('error in putObject', error, arguments);
+                    throw new StorageBaseError('error in putObject:' + error.message, error, arguments);
                 }
             }
-        } catch(error) {
-            throw new StorageBaseError('error in putObject', error.message, arguments);
-        }
+
     }
 
     // PUSH
