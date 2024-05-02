@@ -6,8 +6,22 @@
             indeterminate
             class="my-progress-linear"
         ></v-progress-linear>
-        <v-snackbar class="custom-snackbar" v-model="snackbar" :timeout="2000" :color="snackbarColor" elevation="24">
-            {{ snackbarMessage }}
+        <v-snackbar v-model="snackbar"
+            class="custom-snackbar"
+            :timeout="snackbarSuccessStatus ? 3000 : 15000" 
+            :color="snackbarColor"
+            elevation="24"
+        >{{ snackbarMessage }}
+            <template v-slot:actions
+                v-if="!snackbarSuccessStatus"
+            >
+                <v-btn
+                    color="pink"
+                    variant="text"
+                    @click="snackbar = false"
+                >x
+                </v-btn>
+            </template>
         </v-snackbar>
         <RouterView></RouterView>
     </div>
@@ -22,7 +36,8 @@ export default {
     },
     data: () => ({
         loading: false,
-        snackbarMessage: String,
+        snackbarSuccessStatus: false,
+        snackbarMessage: '',
         snackbar: false,
         snackbarColor: null
     }),
@@ -39,7 +54,7 @@ export default {
             }
         );
         window.$mode = 'uEngine';
-        // window.$mode = 'ProcessGPT'
+        // window.$mode = 'ProcessGPT';
         window.$app_ = this;
     },
     methods: {
@@ -59,6 +74,7 @@ export default {
                     window.$app_.snackbarMessage = options.successMsg;
                     window.$app_.snackbarColor = 'success';
                     window.$app_.snackbar = true;
+                    window.$app_.snackbarSuccessStatus = true;
                 }
             } catch (e) {
                 if (options.onFail) {
@@ -75,6 +91,7 @@ export default {
                     window.$app_.snackbarMessage = errorMessage;
                     window.$app_.snackbarColor = 'error';
                     window.$app_.snackbar = true;
+                    window.$app_.snackbarSuccessStatus = false;
                 }
                 console.log(e);
             } finally {

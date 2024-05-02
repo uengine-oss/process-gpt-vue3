@@ -1,5 +1,7 @@
 <template>
-    <v-row class="ma-0 pa-0 task-btn">
+    <v-row class="ma-0 pa-0 task-btn"
+        style="right:40px;"
+    >
         <v-spacer></v-spacer>
         <div>
             <v-btn @click="completeTask()" color="#0085DB" style="color: white;" rounded>완료</v-btn>
@@ -45,7 +47,7 @@ export default {
             var me = this
             if(!me.workItem.activity.parameters) me.workItem.activity.parameters = []
             me.inputItems = me.workItem.activity.parameters
-                    .filter(item => item.direction === "OUT")
+                    .filter(item => item.direction.includes("OUT"))
                     .map(item => ({ name: item.variable.name, value: null }));
         },
         async completeTask(){

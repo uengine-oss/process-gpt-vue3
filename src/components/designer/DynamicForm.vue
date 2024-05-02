@@ -91,7 +91,9 @@ export default {
           formValues: me.formValues
         }
       },
-      template: me.formHTML
+      template: `<div id="kEditor1">
+  ${me.formHTML}
+</div>`
     }
     return h(r);
   },

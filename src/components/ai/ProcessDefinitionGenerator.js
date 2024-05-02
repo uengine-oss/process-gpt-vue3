@@ -44,8 +44,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                  "resolutionRule": "how to find the actual user mapping for the role"
               }],
               "activities": [{
+                  "id": "String-based unique id of the activity not including space", // "id" is required
                   "name": "activity name",
-                  "id": "String-based unique id of the activity not including space",
                   "type": "UserActivity" | "EMailActivity" | "ScriptActivity",
                   "description": "description of activity",
                   "instruction": "instruction to user",
@@ -58,26 +58,29 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
               }],
               "gateways": [
                 {
-                  "id": "gateway_id",
+                  "id": "gateway_id", // "id" is required
                   "name": "gateway name",
                   "type": "ExclusiveGateway | ParallelGateway | InclusiveGateway | EventBasedGateway",
                   "description": "선택적 또는 병렬 프로세스 흐름을 제어하는 게이트웨이 설명",
-                  "condition": "분기 조건 설명 (if applicable)"
+                  "condition": "기존 프로세스 정보중 "data" 내에 존재하는 값만을 사용하여 condition 을 생성해야한다. "data" 목록을 보고 condition 생성에 필요한 "data" 의 "name" 만으로 분기 조건, 조건문을 생성해야함."
+                  "role": "role name"
                 }
               ],
               "events": [
+                // Start, End event is required
                 {
-                  "id": "event_id",
+                  "id": "event_id", // "id" is required
                   "name": "event name",
                   "type": "StartEvent | EndEvent | IntermediateCatchEvent | MessageEvent | TimerEvent | ErrorEvent | ConditionalEvent | SignalEvent | TerminationEvent | LinkEvent | CompensationEvent | MultipleEvent | ParallelEvent | EscalationEvent | CancelEvent",
                   "description": "프로세스의 시작, 종료 또는 중간 이벤트 설명",
                   "trigger": "이벤트 트리거 조건 (if applicable)"
                 }
               ],
-              "sequences": [
+              // "sequences" is required
+              "sequences": [ 
                 {
-                    "source": "activity id of source activity",
-                    "target": "activity id of target activity",
+                    "source": "activity id of source activity or gateway id of source gateway",
+                    "target": "activity id of target activity or gateway id of target gateway",
                     "condition": "기존 프로세스 정보중 "data" 내에 존재하는 값만을 사용하여 condition 을 생성해야한다. "data" 목록을 보고 condition 생성에 필요한 "data" 의 "name" 만으로 생성해야함." // 기존 프로세스 정보가 존재하는 경우에만 생성해야하며, 생성시 기존 프로세스 정보를 참고하여 컨디션을 생성해야한다.
                 }
               ]

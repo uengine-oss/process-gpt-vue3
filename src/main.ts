@@ -128,6 +128,7 @@ import type { KeycloakOnLoad } from 'keycloak-js';
                 localStorage.setItem('email', `${keycloak.tokenParsed.email}`);
                 localStorage.setItem('uid', `${keycloak.tokenParsed.sub}`);
                 localStorage.setItem('isAdmin', 'true');
+                localStorage.setItem('execution', 'true');
                 localStorage.setItem('picture', '');
             }
         }

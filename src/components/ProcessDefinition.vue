@@ -26,7 +26,7 @@
                         </template>
                     </v-tooltip>
                     <!-- 실행 버튼  -->
-                    <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.execution')">
+                    <v-tooltip v-if="!isViewMode && $route.path !== '/definitions/chat'" :text="$t('processDefinition.execution')">
                         <template v-slot:activator="{ props }">
                             <v-btn icon v-bind="props" class="processExecute" @click="executeProcess">
                                 <Icon icon="gridicons:play" width="32" height="32" />
