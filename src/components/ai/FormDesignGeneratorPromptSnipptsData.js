@@ -105,6 +105,8 @@ const formDesignGeneratorPromptSnipptsData = {
                     <div class='col-sm-12'>
                         <text-field name='book_title' alias='책 제목'></text-field>
                         <text-field name='book_author' alias='저자'></text-field>
+                        <text-field name='book_price' alias='가격' type='number'></text-field>
+                        <text-field name='book_publish_date' alias='발행날짜' type='date'></text-field>
                         <select-field name='book_genre' alias='책 장르' is_dynamic_load='false' items='[{"novel": "소설"}, {"poem": "시"}, {"essay": "에세이"}]'></select-field>
                         <file-field name='book_cover' alias='책 표지 이미지'></file-field>
                     </div>
