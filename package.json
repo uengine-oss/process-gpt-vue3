@@ -29,6 +29,7 @@
         "@tiptap/starter-kit": "2.0.0-beta.220",
         "@tiptap/vue-3": "2.0.0-beta.220",
         "@types/aos": "^3.0.4",
+        "@vue-js-cron/vuetify": "^5.0.2",
         "@vueuse/core": "^8.9.4",
         "aos": "^2.3.4",
         "apexcharts": "3.40.0",
