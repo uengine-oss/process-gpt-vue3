@@ -1,6 +1,8 @@
 <template>
-    <v-card elevation="10" style="height:calc(100vh - 155px);">
-        <div class="pt-5 pl-6 pr-6 d-flex align-center">
+    <v-card elevation="10"
+        :style="$globalState.state.isZoomed ? 'height: 100vh' : 'height:calc(100vh - 155px);'"
+    >
+        <div class="pa-2 d-flex align-center">
             <div v-if="selectedProc.mega" class="d-flex align-center cursor-pointer"
                 @click="goProcess()">
                 <h6 class="text-h6 font-weight-semibold">{{ selectedProc.mega.label }}</h6>
@@ -39,12 +41,29 @@
             </div>
 
             <div class="ml-auto d-flex">
-                <v-btn icon variant="text" class="ml-3" :size="24" @click="executeProcess">
-                    <Icon icon="carbon:play-outline" width="24" height="24" />
-                </v-btn>
-                <v-btn icon variant="text" class="ml-3" :size="24" @click="capture">
-                    <Icon icon="mage:image-download" width="24" height="24" />
-                </v-btn>
+                <div v-if="onLoad && bpmn">
+                    <v-btn icon variant="text" class="ml-3" :size="24" @click="executeProcess">
+                        <Icon icon="carbon:play-outline" width="24" height="24" />
+                    </v-btn>
+                    <v-btn icon variant="text" class="ml-3" :size="24" @click="capture">
+                        <Icon icon="mage:image-download" width="24" height="24" />
+                    </v-btn>
+                </div>
+                <v-tooltip :text="$t('processDefinition.zoom')">
+                    <template v-slot:activator="{ props }">
+                        <v-btn icon v-bind="props" class="processVariables-zoom" @click="$globalState.methods.toggleZoom()">
+                            <!-- 캔버스 확대 -->
+                            <Icon
+                                v-if="!$globalState.state.isZoomed"
+                                icon="material-symbols:zoom-out-map-rounded"
+                                width="32"
+                                height="32"
+                            />
+                            <!-- 캔버스 축소 -->
+                            <Icon v-else icon="material-symbols:zoom-in-map-rounded" width="32" height="32" />
+                        </v-btn>
+                    </template>
+                </v-tooltip>
             </div>
         </div>
 
