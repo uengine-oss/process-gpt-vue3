@@ -14,7 +14,7 @@
       <v-text-field ref="name" label="Name" v-model.trim="localContainerProps.name"
                       @keyup.enter="save" persistent-placeholder></v-text-field>
       
-      <v-text-field label="Alias" v-model.trim="localContainerProps.alias"
+      <v-text-field label="Label" v-model.trim="localContainerProps.alias"
                       @keyup.enter="save" persistent-placeholder></v-text-field>
         
       <v-checkbox label="MultiDataMode" v-model="localContainerProps.isMultiDataMode"

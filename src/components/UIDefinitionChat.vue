@@ -246,15 +246,12 @@ export default {
                     if((!row.getAttribute('name')) || (row.getAttribute('name').length <= 0)) {
                         throw new Error(`multidataMode가 설정된 레이아웃에 'name' 속성이 없습니다.`);
                     }
-                    if((!row.getAttribute('alias')) || (row.getAttribute('alias').length <= 0)) {
-                        throw new Error(`multidataMode가 설정된 레이아웃에 'alias' 속성이 없습니다.`);
-                    }
 
 
                     const newRow = document.createElement('row-layout');
 
                     newRow.setAttribute('name', row.getAttribute('name'));
-                    newRow.setAttribute('alias', row.getAttribute('alias'));
+                    newRow.setAttribute('alias', row.getAttribute('alias') ?? "");
                     newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode'));
 
                     newRow.setAttribute('v-model', 'formValues');
