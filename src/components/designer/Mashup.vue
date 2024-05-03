@@ -59,7 +59,7 @@ export default {
   ],
   expose: [
     "getKEditorContentHtml",
-    "resetStat"
+    "clearStat"
   ],
 
   data: () => ({
@@ -121,7 +121,7 @@ export default {
     /**
      * KEditor를 조작한 모든 내용을 초기화시키기 위해서
      */
-    resetStat() {
+    clearStat() {
       window.mashup.kEditor[0].children[0].innerHTML = ""
       window.mashup.kEditorContent = ""
       
@@ -280,7 +280,7 @@ export default {
           title: 'Settings',
           content: (
               '<div class="form-horizontal">' +
-              '   <button class="btn btn-primary btn-lg" style="width:100%" id="resetBtn">Reset</button>' +
+              '   <button class="btn btn-primary btn-lg" style="width:100%" id="clearBtn">Clear</button>' +
               '</div>'
           )
         }
@@ -316,8 +316,8 @@ export default {
       },
 
       containerSettingInitFunction: function (form, keditor) {
-        $("#resetBtn").on("click", function (e) {
-          window.mashup.resetStat();
+        $("#clearBtn").on("click", function (e) {
+          window.mashup.clearStat();
         })
         console.log("containerSettingInitFunction  : ", form, keditor);
         form.append(

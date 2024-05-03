@@ -433,7 +433,7 @@ export default {
 
                 this.isShowMashup = true;
             } else {
-                if(this.$refs.mashup) this.$refs.mashup.resetStat();
+                if(this.$refs.mashup) this.$refs.mashup.clearStat();
                 this.isShowMashup = true;
             }
         },
