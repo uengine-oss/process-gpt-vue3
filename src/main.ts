@@ -55,8 +55,8 @@ window.$mode = 'uEngine';
 const app = createApp(App);
 // registers the component globally
 // registered name: CronVuetify
-import CronVuetifyPlugin from '@vue-js-cron/vuetify'
-app.use(CronVuetifyPlugin)
+import CronVuetifyPlugin from '@vue-js-cron/vuetify';
+app.use(CronVuetifyPlugin);
 // @ts-ignore
 app.config.globalProperties.$try = app._component.methods.try;
 app.config.globalProperties.EventBus = emitter;
@@ -105,7 +105,7 @@ app.use(VueDiff, {
 });
 let initOptions = {
     url: `http://localhost:9090/`,
-    realm: `uengine6`,
+    realm: `uengine`,
     clientId: `uengine`,
     onLoad: 'login-required' as KeycloakOnLoad // Explicitly cast to KeycloakOnLoad
 };

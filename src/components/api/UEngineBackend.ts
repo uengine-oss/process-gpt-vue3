@@ -157,8 +157,18 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
+    async fireMessage(instanceId: string, message: any) {
+        const response = await axiosInstance.post(`/instance/${instanceId}/fire-message`, {event: "event",payload: message});
+        return response.data;
+    }
+
     async putWorkItemComplete(taskId: string, workItem: any) {
         const response = await axiosInstance.post(`/work-item/${taskId}/complete`, workItem);
+        return response.data;
+    }
+
+    async getEventList(instanceId: string) {
+        const response = await axiosInstance.get(`/instance/${instanceId}/eventList`);
         return response.data;
     }
 
