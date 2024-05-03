@@ -14,7 +14,7 @@
       <v-text-field ref="name" label="Name" v-model.trim="localContainerProps.name"
                       @keyup.enter="save" persistent-placeholder></v-text-field>
       
-      <v-text-field label="Alias" v-model.trim="localContainerProps.alias"
+      <v-text-field label="Label" v-model.trim="localContainerProps.alias"
                       @keyup.enter="save" persistent-placeholder></v-text-field>
         
       <v-checkbox label="MultiDataMode" v-model="localContainerProps.isMultiDataMode"
@@ -59,6 +59,14 @@
 
     methods: {
       save() {
+        if(this.localContainerProps.isMultiDataMode) {
+          if(!this.localContainerProps.name || this.localContainerProps.name.length <= 0) {
+            alert('Name is required');
+            this.$refs.name.focus();
+            return;
+          }
+        }
+
         this.$emit('onSave', this.sectionId, this.localContainerProps)
       }
     },

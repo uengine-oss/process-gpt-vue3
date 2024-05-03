@@ -290,14 +290,14 @@ export default {
                 }
 
                 this.copyUengineProperties.variableForHtmlFormContext = variableForHtmlFormContext;
-                this.copyUengineProperties.mappingContext = {}
+                this.copyUengineProperties.mappingContext = {};
                 this.$emit('update:uEngineProperties', this.copyUengineProperties);
             }
         },
         isFormActivity(newVal) {
             if (newVal) {
                 this.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
-            }else{
+            } else {
                 delete this.copyUengineProperties._type;
                 delete this.copyUengineProperties.variableForHtmlFormContext;
             }
@@ -395,12 +395,18 @@ export default {
 
                 let def = this.bpmnModeler.getDefinitions();
                 const processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
-
-                if(processElement){
+                me.activities = [];
+                if (processElement) {
                     processElement.forEach((process) => {
                         process.flowElements.forEach((ele) => {
-                            if(ele.$type == 'bpmn:UserTask'){
-                                me.activities.push(ele)
+                            if (ele.$type.toLowerCase().indexOf('task') != -1) {
+                                me.activities.push(ele);
+                            } else if (ele.$type.toLowerCase().indexOf('subprocess') != -1) {
+                                ele.flowElements.forEach((subProcessEle) => {
+                                    if (subProcessEle.$type.toLowerCase().indexOf('task') != -1) {
+                                        me.activities.push(subProcessEle);
+                                    }
+                                });
                             }
                         });
                     });

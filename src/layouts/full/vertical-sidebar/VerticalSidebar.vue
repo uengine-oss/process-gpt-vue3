@@ -94,6 +94,20 @@ export default {
                 disable: true
             },
             {
+                title: "processDefinitionMap.title",
+                icon: 'ri:layout-grid-2-line',
+                BgColor: 'primary',
+                to: "/definition-map",
+                disable: true
+            },
+            {
+                title: "processExecution.title",
+                icon: 'solar:chat-dots-linear',
+                BgColor: 'primary',
+                to: '/instances/chat',
+                disable: true,
+            },
+            {
                 title: 'calendar.title',
                 icon: 'solar:calendar-line-duotone',
                 BgColor: 'primary',

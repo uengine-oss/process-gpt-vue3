@@ -100,6 +100,19 @@ app.use(VueScrollTo, {
     easing: 'ease',
     offset: -50
 });
+
+// 전역으로 복사 가능하게 추가
+document.addEventListener('keydown', function(event) {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
+        navigator.clipboard.writeText(window.getSelection().toString()).then(function() {
+            console.log('Copying to clipboard was successful!');
+        }, function(err) {
+            console.error('Could not copy text: ', err);
+        });
+        event.preventDefault(); // 기본 이벤트 방지
+    }
+});
+
 app.use(VueDiff, {
     componentName: 'vuediff'
 });

@@ -153,9 +153,9 @@
         </AppBaseCard>
     </v-card>
 </template>
-
 <script>
 import partialParse from 'partial-json-parser';
+import xml2js from 'xml2js';
 import { VectorStorage } from 'vector-storage';
 
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
@@ -233,6 +233,8 @@ export default {
             deep: true,
             handler(newVal, oldVal) {
                 if (newVal.path !== oldVal.path) {
+                    if (!(newVal.path.startsWith('/definitions') || newVal.path.startsWith('/forms'))) return;
+
                     if (newVal.params.pathMatch) {
                         this.init();
                     }
@@ -242,7 +244,7 @@ export default {
     },
     computed: {
         fullPath() {
-            const path = this.$route.params.pathMatch.join('/');
+            let path = this.$route.params.pathMatch.join('/');
             if (path.startsWith('/')) {
                 path = fullPath.substring(1);
             }
@@ -445,7 +447,7 @@ export default {
                 context: me,
                 action: async () => {
                     me.isDeleted = false;
-                    const fullPath = me.$route.params.pathMatch.join('/');
+                    let fullPath = me.$route.params.pathMatch.join('/');
                     if (fullPath.startsWith('/')) {
                         fullPath = fullPath.substring(1);
                     }
@@ -574,93 +576,163 @@ export default {
 
             this.isChanged = true;
         },
-
-        convertXMLToJSON(xmlString) {
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
-            // Lanes (Roles) 추출
-            const lanes = xmlDoc.getElementsByTagName('bpmn:lane');
-            const laneMap = Array.from(lanes).reduce((acc, lane) => {
-                const laneName = lane.getAttribute('name');
-                const flowNodeRefs = lane.getElementsByTagName('bpmn:flowNodeRef');
-                Array.from(flowNodeRefs).forEach((flowNodeRef) => {
-                    const activityId = flowNodeRef.textContent;
-                    acc[activityId] = laneName; // Map activity ID to lane (role) name
-                });
-                return acc;
-            }, {});
-
-            // User Tasks 추출
-            const userTasks = xmlDoc.getElementsByTagName('bpmn:userTask');
-            const activities = Array.from(userTasks).map((task) => {
-                const id = task.getAttribute('id');
-                return {
-                    name: task.getAttribute('name'),
-                    id: id,
-                    type: 'UserActivity',
-                    description: '', // XML에서 제공되지 않음
-                    instruction: '', // XML에서 제공되지 않음
-                    role: laneMap[id] || '', // LaneMap에서 Role 할당
-                    inputData: [], // XML에서 제공되지 않음
-                    outputData: [], // XML에서 제공되지 않음
-                    checkpoints: [] // XML에서 제공되지 않음
-                };
-            });
-
-            // Sequence Flows 추출
-            const sequenceFlows = xmlDoc.getElementsByTagName('bpmn:sequenceFlow');
-            const sequences = Array.from(sequenceFlows)
-                .map((flow) => {
-                    if (flow.getAttribute('sourceRef') != 'StartEvent_1' && flow.getAttribute('targetRef') != 'EndEvent')
-                        return {
-                            source: flow.getAttribute('sourceRef'),
-                            target: flow.getAttribute('targetRef')
-                        };
-                })
-                .filter((flow) => flow);
-
-            // activities 배열을 sequenceFlow의 순서에 따라 정렬
-            // const orderedActivities = [];
-            // let currentId = xmlDoc.getElementsByTagName("bpmn:startEvent")[0].getAttribute("id");
-            // while (sequences.length > 0) {
-            //     const currentIndex = sequences.findIndex(seq => seq.source === currentId);
-            //     if (currentIndex === -1) break;
-
-            //     const currentSequence = sequences.splice(currentIndex, 1)[0];
-            //     const activityIndex = activities.findIndex(act => act.id === currentSequence.target);
-            //     if (activityIndex !== -1) {
-            //         orderedActivities.push(activities[activityIndex]);
-            //     }
-            //     currentId = currentSequence.target;
-            // }
-            let orderedActivities = this.orderActivitiesBySequence(activities, sequences);
-
-            return { activities: orderedActivities, sequences };
-        },
-        orderActivitiesBySequence(activities, sequences) {
-            // 시작 활동 찾기: 'source'가 되지만 'target'이 되지 않는 항목
-            const orderedActivities = []
-            let currentId = sequences.find((seq) => !sequences.some((innerSeq) => innerSeq.target === seq.source))?.source;
-            let startActivity = activities.findIndex((act) => act.id === currentId);
-            if (startActivity !== -1) {
-                orderedActivities.push(activities[startActivity]);
-            }
-            const visitedSequences = new Set(); // 중복 방문 방지
-            // orderedActivities.push(ac)
-            while (currentId && sequences.length > visitedSequences.size) {
-                const sequence = sequences.find((seq) => seq.source === currentId && !visitedSequences.has(seq.source + seq.target));
-                if (!sequence) break; // 다음 시퀀스를 찾을 수 없으면 중단
-
-                visitedSequences.add(sequence.source + sequence.target); // 시퀀스 방문 기록
-                const activityIndex = activities.findIndex((act) => act.id === sequence.target);
-                if (activityIndex !== -1) {
-                    orderedActivities.push(activities[activityIndex]);
+        async convertXMLToJSON(xmlString) {
+            try {
+                const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
+                const result = await parser.parseStringPromise(xmlString);
+                const process = result['bpmn:definitions']['bpmn:process'];
+                const startEvent = process['bpmn:startEvent'];
+                function ensureArray(item) {
+                    return Array.isArray(item) ? item : (item ? [item] : []);
                 }
-                currentId = sequence.target; // 다음 대상으로 이동
-            }
+                const lanes = ensureArray(process['bpmn:laneSet']['bpmn:lane']);
+                const activities = ensureArray(process['bpmn:userTask']);
+                const scriptTasks = ensureArray(process['bpmn:scriptTask']);
+                const sequenceFlows = ensureArray(process['bpmn:sequenceFlow']);
 
-            return orderedActivities;
+                const jsonData = {
+                    processDefinitionName: process.id,
+                    processDefinitionId: process.id,
+                    description: "process.description",
+                    data: process['bpmn:extensionElements']['uengine:properties']['uengine:variable'].map(varData => ({
+                        name: varData.name,
+                        description: varData.name + ' description',
+                        type: varData.type
+                    })),
+                    roles: lanes.map(lane => ({
+                        name: lane.name,
+                        resolutionRule: lane.name === 'applicant' ? 'initiator' : 'system'
+                    })),
+                    activities: [
+                        {
+                            name: startEvent.id,
+                            id: startEvent.id,
+                            type: 'StartEvent',
+                            description: 'start event',
+                            role: lanes.find(lane => lane['bpmn:flowNodeRef'].includes(startEvent.id)).name
+                        },
+                        ...activities.map(activity => ({
+                            name: activity.name,
+                            id: activity.id,
+                            type: 'UserActivity',
+                            description: activity.name + ' description',
+                            instruction: activity.name + ' instruction',
+                            role: lanes.find(lane => lane['bpmn:flowNodeRef'].includes(activity.id)).name,
+                            inputData: JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
+                                .filter(param => param.direction === "IN")
+                                .map(param => param.variable.name),
+                            outputData: JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
+                                .filter(param => param.direction === "OUT")
+                                .map(param => param.variable.name)
+                        })),
+                        ...scriptTasks.map(task => ({
+                            name: task.name,
+                            id: task.id,
+                            type: 'ScriptActivity',
+                            description: task.name + ' description',
+                            instruction: task.name + ' instruction',
+                            role: lanes.find(lane => lane['bpmn:flowNodeRef'].includes(task.id)).name,
+                            pythonCode: JSON.parse(task['bpmn:extensionElements']['uengine:properties']['uengine:json']).script
+                        }))
+                    ],
+                    sequences: sequenceFlows.map(flow => ({
+                        source: flow.sourceRef,
+                        target: flow.targetRef,
+                        condition: flow.condition || ''
+                    }))
+                };
+                return jsonData;
+            } catch (error) {
+                console.error('Error parsing XML:', error);
+                throw error;
+            }
         },
+        // convertXMLToJSON(xmlString) {
+        //     const parser = new DOMParser();
+        //     const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+        //     // Lanes (Roles) 추출
+        //     const lanes = xmlDoc.getElementsByTagName('bpmn:lane');
+        //     const laneMap = Array.from(lanes).reduce((acc, lane) => {
+        //         const laneName = lane.getAttribute('name');
+        //         const flowNodeRefs = lane.getElementsByTagName('bpmn:flowNodeRef');
+        //         Array.from(flowNodeRefs).forEach((flowNodeRef) => {
+        //             const activityId = flowNodeRef.textContent;
+        //             acc[activityId] = laneName; // Map activity ID to lane (role) name
+        //         });
+        //         return acc;
+        //     }, {});
+
+        //     // User Tasks 추출
+        //     const userTasks = xmlDoc.getElementsByTagName('bpmn:userTask');
+        //     const activities = Array.from(userTasks).map((task) => {
+        //         const id = task.getAttribute('id');
+        //         return {
+        //             name: task.getAttribute('name'),
+        //             id: id,
+        //             type: 'UserActivity',
+        //             description: '', // XML에서 제공되지 않음
+        //             instruction: '', // XML에서 제공되지 않음
+        //             role: laneMap[id] || '', // LaneMap에서 Role 할당
+        //             inputData: [], // XML에서 제공되지 않음
+        //             outputData: [], // XML에서 제공되지 않음
+        //             checkpoints: [] // XML에서 제공되지 않음
+        //         };
+        //     });
+
+        //     // Sequence Flows 추출
+        //     const sequenceFlows = xmlDoc.getElementsByTagName('bpmn:sequenceFlow');
+        //     const sequences = Array.from(sequenceFlows)
+        //         .map((flow) => {
+        //             if (flow.getAttribute('sourceRef') != 'StartEvent_1' && flow.getAttribute('targetRef') != 'EndEvent')
+        //                 return {
+        //                     source: flow.getAttribute('sourceRef'),
+        //                     target: flow.getAttribute('targetRef')
+        //                 };
+        //         })
+        //         .filter((flow) => flow);
+
+        //     // activities 배열을 sequenceFlow의 순서에 따라 정렬
+        //     // const orderedActivities = [];
+        //     // let currentId = xmlDoc.getElementsByTagName("bpmn:startEvent")[0].getAttribute("id");
+        //     // while (sequences.length > 0) {
+        //     //     const currentIndex = sequences.findIndex(seq => seq.source === currentId);
+        //     //     if (currentIndex === -1) break;
+
+        //     //     const currentSequence = sequences.splice(currentIndex, 1)[0];
+        //     //     const activityIndex = activities.findIndex(act => act.id === currentSequence.target);
+        //     //     if (activityIndex !== -1) {
+        //     //         orderedActivities.push(activities[activityIndex]);
+        //     //     }
+        //     //     currentId = currentSequence.target;
+        //     // }
+        //     let orderedActivities = this.orderActivitiesBySequence(activities, sequences);
+
+        //     return { activities: orderedActivities, sequences };
+        // },
+        // orderActivitiesBySequence(activities, sequences) {
+        //     // 시작 활동 찾기: 'source'가 되지만 'target'이 되지 않는 항목
+        //     const orderedActivities = []
+        //     let currentId = sequences.find((seq) => !sequences.some((innerSeq) => innerSeq.target === seq.source))?.source;
+        //     let startActivity = activities.findIndex((act) => act.id === currentId);
+        //     if (startActivity !== -1) {
+        //         orderedActivities.push(activities[startActivity]);
+        //     }
+        //     const visitedSequences = new Set(); // 중복 방문 방지
+        //     // orderedActivities.push(ac)
+        //     while (currentId && sequences.length > visitedSequences.size) {
+        //         const sequence = sequences.find((seq) => seq.source === currentId && !visitedSequences.has(seq.source + seq.target));
+        //         if (!sequence) break; // 다음 시퀀스를 찾을 수 없으면 중단
+
+        //         visitedSequences.add(sequence.source + sequence.target); // 시퀀스 방문 기록
+        //         const activityIndex = activities.findIndex((act) => act.id === sequence.target);
+        //         if (activityIndex !== -1) {
+        //             orderedActivities.push(activities[activityIndex]);
+        //         }
+        //         currentId = sequence.target; // 다음 대상으로 이동
+        //     }
+
+        //     return orderedActivities;
+        // },
         // convertToProcessDefinition(jsonInput) {
         //     const processDefinition = {
         //         processDefinitionName: jsonInput.name,

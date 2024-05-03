@@ -1,20 +1,12 @@
 <template>
     <v-list class="py-4 px-4 bg-containerBg">
-        <NavGroup :item="instMenu" :key="instMenu.header" />
-        <NavItem class="leftPadding" :item="definitionMap" />
-        <NavItem v-if="!instExecution.disable" class="leftPadding" :item="instExecution" />
-        <NavCollapse
-            v-if="!runningInstances.disable && runningInstances.children.length"
-            class="leftPadding"
-            :item="runningInstances"
-            :level="0"
-        />
-        <NavCollapse
-            v-if="!completeInstances.disable && completeInstances.children.length"
-            class="leftPadding"
-            :item="completeInstances"
-            :level="0"
-        />
+        <!-- <NavGroup :item="instMenu" :key="instMenu.header" /> -->
+        <!-- <NavItem class="leftPadding" :item="definitionMap" /> -->
+        <!-- <NavItem v-if="!instExecution.disable" class="leftPadding" :item="instExecution" /> -->
+        <NavCollapse v-if="!runningInstances.disable && runningInstances.children.length" class="leftPadding" 
+            :item="runningInstances" :level="0" />
+        <NavCollapse v-if="!completeInstances.disable && completeInstances.children.length" class="leftPadding" 
+            :item="completeInstances" :level="0" />
     </v-list>
 </template>
 
@@ -36,19 +28,19 @@ export default {
         instMenu: {
             header: 'instance.title'
         },
-        definitionMap: {
-            title: 'processDefinitionMap.title',
-            icon: 'ri:layout-grid-2-line',
-            BgColor: 'primary',
-            to: '/definition-map'
-        },
-        instExecution: {
-            title: 'processExecution.title',
-            icon: 'solar:chat-dots-linear',
-            BgColor: 'primary',
-            to: '/instances/chat',
-            disable: true
-        },
+        // definitionMap: {
+        //     title: "processDefinitionMap.title",
+        //     icon: 'ri:layout-grid-2-line',
+        //     BgColor: 'primary',
+        //     to: "/definition-map",
+        // },
+        // instExecution: {
+        //     title: "processExecution.title",
+        //     icon: 'solar:chat-dots-linear',
+        //     BgColor: 'primary',
+        //     to: '/instances/chat',
+        //     disable: true,
+        // },
         runningInstances: {
             title: 'runningInstance.title',
             icon: 'solar:list-bold',
@@ -77,7 +69,7 @@ export default {
     },
     async created() {
         if (this.useChat) {
-            this.instExecution.disable = false;
+            // this.instExecution.disable = false;
             this.runningInstances.disable = false;
             this.completeInstances.disable = false;
             await this.loadInstances();
