@@ -386,7 +386,9 @@ export default {
 
             await this.backend.putRawDefinition(html, id, { type: 'form' });
             this.isOpenSaveDialog = false;
+
             this.kEditorContentBeforeSave = this.$refs.mashup.getKEditorContentHtml();
+            this.isAIUpdated = false
 
             if (isNewSave) {
                 await this.$router.push(`/ui-definitions/${id}`);

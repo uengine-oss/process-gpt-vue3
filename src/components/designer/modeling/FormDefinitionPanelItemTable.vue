@@ -200,12 +200,12 @@ export default {
             //#region 유효성 검사
             if(!(this.keyToEdit) || this.keyToEdit.length <= 0) {
                 alert("Key is required")
-                this.$refs.inputKeyToEditItem.focus();
+                this.$refs.inputKeyToEditItem[0].focus();
                 return
             }
             if(!this.regexStr.test(this.keyToEdit)) {
                 alert(this.regexErrorMsg.replace("{{propName}}", "Key"))
-                this.$refs.inputKeyToEditItem.focus();
+                this.$refs.inputKeyToEditItem[0].focus();
                 return
             }
 
@@ -213,7 +213,7 @@ export default {
             if(!(this.localModelValue[itemIndexToEdit].hasOwnProperty(this.keyToEdit))) {
                 if(this.localModelValue.some(item => item.hasOwnProperty(this.keyToEdit))) {
                     alert("Key already exists")
-                    this.$refs.inputKeyToEditItem.focus();
+                    this.$refs.inputKeyToEditItem[0].focus();
                     return
                 }
             }
@@ -221,7 +221,7 @@ export default {
             if(this.valueToEdit && this.valueToEdit.length > 0) {
                 if(!this.regexStr.test(this.valueToEdit)) {
                     alert(this.regexErrorMsg.replace("{{propName}}", "Value"))
-                    this.$refs.inputValueToEditItem.focus();
+                    this.$refs.inputValueToEditItem[0].focus();
                     return
                 }
             }
