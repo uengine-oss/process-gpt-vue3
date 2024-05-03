@@ -276,8 +276,6 @@ export default {
                 if (jsonData.description) {
                     messageWriting.content = jsonData.description;
                 }
-                this.saveInstance(jsonData);
-                this.saveTodolist(jsonData);
             }
 
             this.checkDisableChat();
@@ -296,72 +294,6 @@ export default {
                     messages: this.messages
                 };
                 this.putObject(`proc_inst/${id}`, putObj, { key: 'id' });
-            }
-        },
-        async saveInstance(data) {
-            if (data) {
-                var user_ids = [];
-                if (data.nextActivities && data.nextActivities.length > 0) {
-                    var nextUsers = data.nextActivities.map(item => item.nextUserEmail);
-                    if (nextUsers) user_ids = nextUsers;
-                }
-
-                if (!user_ids.includes(this.userInfo.email))
-                    user_ids.push(this.userInfo.email)
-
-                if (this.processInstance) {
-                    var instObj = await this.getData(`${this.path}/${data.instanceId}`, { key: 'id' });
-                    instObj.user_ids = [...instObj.user_ids, ...user_ids];
-                    instObj.messages = this.messages;
-                    await this.putObject(this.path, instObj);
-
-                } else {
-                    let putObj = {
-                        id: data.instanceId,
-                        name: data.instanceName,
-                        user_ids: user_ids,
-                        messages: this.messages
-                    }
-                    await this.putObject(this.path, putObj);
-                }
-
-                this.sendNotification(data);
-            }
-        },
-        async saveTodolist(data) {
-            if (data) {
-                if (data.nextActivities && data.nextActivities.length > 0) {
-                    const nextAct = data.nextActivities[0];
-                    if (nextAct.nextUserEmail) {
-                        let putObj = {
-                            id: this.uuid(),
-                            user_id: this.userInfo.email,
-                            proc_inst_id: data.instanceId,
-                            proc_def_id: data.processDefinitionId,
-                            activity_id: nextAct.nextActvityId,
-                            start_date: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
-                            status: 'IN_PROGRESS',
-                        }
-                        await this.putObject('todolist', putObj);
-                        if (!this.$route.params.taskId) {
-                            this.$router.replace(`/todolist/${putObj.id}`);
-                        }
-                    }
-                }
-
-                if (data.completedActivities && data.completedActivities.length > 0) {
-                    const completedAct = data.completedActivities[0];
-                    let putObj = {
-                        id: this.uuid(),
-                        user_id: this.userInfo.email,
-                        proc_inst_id: data.instanceId,
-                        proc_def_id: data.processDefinitionId,
-                        activity_id: completedAct.completedActivityId,
-                        end_date: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
-                        status: completedAct.result,
-                    }
-                    await this.putObject('todolist', putObj);
-                }
             }
         },
 

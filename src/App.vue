@@ -6,21 +6,22 @@
             indeterminate
             class="my-progress-linear"
         ></v-progress-linear>
-        <v-snackbar v-model="snackbar"
+        <v-snackbar
+            v-model="snackbar"
             class="custom-snackbar"
-            :timeout="snackbarSuccessStatus ? 3000 : 15000" 
+            :timeout="snackbarSuccessStatus ? 3000 : 15000"
             :color="snackbarColor"
             elevation="24"
-        >{{ snackbarMessage }}
-            <template v-slot:actions
-                v-if="!snackbarSuccessStatus"
-            >
-                <v-btn
-                    color="pink"
-                    variant="text"
-                    @click="snackbar = false"
-                >x
-                </v-btn>
+            location="top"
+            >{{ snackbarMessage }}
+            <v-btn v-if="snackbarMessageDetail" variant="plain" @click="show = !show">
+                {{ show ? '자세히 보기' : '자세히 보기' }}
+            </v-btn>
+            <v-expand-transition>
+                <div v-if="show">{{ snackbarMessageDetail }}</div>
+            </v-expand-transition>
+            <template v-slot:actions v-if="!snackbarSuccessStatus">
+                <v-btn color="pink" variant="text" @click="snackbar = false">x </v-btn>
             </template>
         </v-snackbar>
         <RouterView></RouterView>
@@ -35,9 +36,11 @@ export default {
         RouterView
     },
     data: () => ({
+        show: false,
         loading: false,
         snackbarSuccessStatus: false,
         snackbarMessage: '',
+        snackbarMessageDetail: null,
         snackbar: false,
         snackbarColor: null
     }),
@@ -89,6 +92,7 @@ export default {
                 if (errorMessage) {
                     // alert(errorMessage)
                     window.$app_.snackbarMessage = errorMessage;
+                    window.$app_.snackbarMessageDetail = e.response.data.message;
                     window.$app_.snackbarColor = 'error';
                     window.$app_.snackbar = true;
                     window.$app_.snackbarSuccessStatus = false;
@@ -103,14 +107,14 @@ export default {
 </script>
 
 <style>
-.custom-snackbar {
+/* .custom-snackbar {
     position: fixed !important;
     bottom: auto !important;
     top: 50px !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
     z-index: 1010 !important;
-}
+} */
 
 .custom-snackbar .v-snackbar__content {
     text-align: center;
