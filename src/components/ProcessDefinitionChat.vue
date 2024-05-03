@@ -463,6 +463,11 @@ export default {
                                 me.projectName = value.name;
                             }
                             me.checkedLock(lastPath);
+                        } else {
+                            me.processDefinition = {
+                                processDefinitionId: lastPath,
+                                processDefinitionName: lastPath
+                            }
                         }
                     } else if (lastPath == 'chat') {
                         me.processDefinition = null;
