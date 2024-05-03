@@ -59,6 +59,14 @@
 
     methods: {
       save() {
+        if(this.localContainerProps.isMultiDataMode) {
+          if(!this.localContainerProps.name || this.localContainerProps.name.length <= 0) {
+            alert('Name is required');
+            this.$refs.name.focus();
+            return;
+          }
+        }
+
         this.$emit('onSave', this.sectionId, this.localContainerProps)
       }
     },
