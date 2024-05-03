@@ -54,10 +54,12 @@ export default {
   },
   emits: [
     "onChangeKEditorContent",
-    "onSaveFormDefinition"
+    "onSaveFormDefinition",
+    "onInitKEditorContent"
   ],
   expose: [
-    "getKEditorContentHtml"
+    "getKEditorContentHtml",
+    "clearStat"
   ],
 
   data: () => ({
@@ -119,7 +121,7 @@ export default {
     /**
      * KEditor를 조작한 모든 내용을 초기화시키기 위해서
      */
-    resetStat() {
+    clearStat() {
       window.mashup.kEditor[0].children[0].innerHTML = ""
       window.mashup.kEditorContent = ""
       
@@ -278,7 +280,7 @@ export default {
           title: 'Settings',
           content: (
               '<div class="form-horizontal">' +
-              '   <button class="btn btn-primary btn-lg" style="width:100%" id="resetBtn">Reset</button>' +
+              '   <button class="btn btn-primary btn-lg" style="width:100%" id="clearBtn">Clear</button>' +
               '</div>'
           )
         }
@@ -314,8 +316,8 @@ export default {
       },
 
       containerSettingInitFunction: function (form, keditor) {
-        $("#resetBtn").on("click", function (e) {
-          window.mashup.resetStat();
+        $("#clearBtn").on("click", function (e) {
+          window.mashup.clearStat();
         })
         console.log("containerSettingInitFunction  : ", form, keditor);
         form.append(
@@ -440,13 +442,24 @@ export default {
       const doc = parser.parseFromString(window.mashup.modelValue, 'text/html');
 
       doc.querySelectorAll("div[id^='vuemount_']").forEach(vueRenderElement => {
-        const vueRenderUUID = vueRenderElement.id
-        const app = createApp(DynamicComponent, {content:vueRenderElement.innerHTML, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
-        window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
+        // AI가 태그를 이상하게 생성했을 경우, 이곳에서 에러가 발생할 수 있음. 일단 넘기도록 처리함
+        try {
+
+          const vueRenderUUID = vueRenderElement.id
+          const app = createApp(DynamicComponent, {content:vueRenderElement.innerHTML, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
+          window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
+
+        } catch(e) {
+          console.log("### KEditor에서 Vue 컴포넌트 렌더링시에 오류 발생 ! ###")
+          console.log("window.mashup.modelValue: ", window.mashup.modelValue)
+          console.log("vueRenderElement: ", vueRenderElement)
+          console.error(e)
+        }
       })
     }
 
     window.mashup.kEditorContent  = window.mashup.kEditor[0].children[0].innerHTML
+    window.mashup.$emit('onInitKEditorContent', window.mashup.getKEditorContentHtml())
   },
 
   beforeUnmount() {

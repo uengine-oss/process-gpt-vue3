@@ -6,8 +6,23 @@
             indeterminate
             class="my-progress-linear"
         ></v-progress-linear>
-        <v-snackbar class="custom-snackbar" v-model="snackbar" :timeout="2000" :color="snackbarColor" elevation="24">
-            {{ snackbarMessage }}
+        <v-snackbar
+            v-model="snackbar"
+            class="custom-snackbar"
+            :timeout="snackbarSuccessStatus ? 3000 : 15000"
+            :color="snackbarColor"
+            elevation="24"
+            location="top"
+            >{{ snackbarMessage }}
+            <v-btn v-if="snackbarMessageDetail" variant="plain" @click="show = !show">
+                {{ show ? '자세히 보기' : '자세히 보기' }}
+            </v-btn>
+            <v-expand-transition>
+                <div v-if="show">{{ snackbarMessageDetail }}</div>
+            </v-expand-transition>
+            <template v-slot:actions v-if="!snackbarSuccessStatus">
+                <v-btn color="pink" variant="text" @click="snackbar = false">x </v-btn>
+            </template>
         </v-snackbar>
         <RouterView></RouterView>
     </div>
@@ -21,8 +36,11 @@ export default {
         RouterView
     },
     data: () => ({
+        show: false,
         loading: false,
-        snackbarMessage: String,
+        snackbarSuccessStatus: false,
+        snackbarMessage: '',
+        snackbarMessageDetail: null,
         snackbar: false,
         snackbarColor: null
     }),
@@ -39,7 +57,7 @@ export default {
             }
         );
         window.$mode = 'uEngine';
-        // window.$mode = 'ProcessGPT'
+        // window.$mode = 'ProcessGPT';
         window.$app_ = this;
     },
     methods: {
@@ -59,6 +77,7 @@ export default {
                     window.$app_.snackbarMessage = options.successMsg;
                     window.$app_.snackbarColor = 'success';
                     window.$app_.snackbar = true;
+                    window.$app_.snackbarSuccessStatus = true;
                 }
             } catch (e) {
                 if (options.onFail) {
@@ -73,8 +92,10 @@ export default {
                 if (errorMessage) {
                     // alert(errorMessage)
                     window.$app_.snackbarMessage = errorMessage;
+                    window.$app_.snackbarMessageDetail = e.response.data.message;
                     window.$app_.snackbarColor = 'error';
                     window.$app_.snackbar = true;
+                    window.$app_.snackbarSuccessStatus = false;
                 }
                 console.log(e);
             } finally {
@@ -86,14 +107,14 @@ export default {
 </script>
 
 <style>
-.custom-snackbar {
+/* .custom-snackbar {
     position: fixed !important;
     bottom: auto !important;
     top: 50px !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
     z-index: 1010 !important;
-}
+} */
 
 .custom-snackbar .v-snackbar__content {
     text-align: center;

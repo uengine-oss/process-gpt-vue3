@@ -5,8 +5,52 @@
             <v-autocomplete v-model="copyUengineProperties.definitionId" :items="definitions" :disabled="isViewMode"
                 item-title="name" color="primary" label="Definition" variant="outlined" hide-details></v-autocomplete>
         </div> -->
-        <div :key="definitionCnt">
-            <div>
+        <div style="margin-bottom: 22px">
+            <v-row class="ma-0 pa-0">
+                <div>ForEach Role</div>
+                <v-spacer></v-spacer>
+            </v-row>
+            <v-row>
+                <v-autocomplete
+                    :items="roles"
+                    v-model="selectedRole"
+                    color="primary"
+                    label="Role"
+                    variant="outlined"
+                    hide-details
+                ></v-autocomplete>
+                <!-- <bpmn-parameter-contexts
+                    :for-sub-process="true"
+                    :definition-variables="definitionVariables"
+                    :is-view-mode="isViewMode"
+                    :parameter-contexts="copyUengineProperties.variableBindings"
+                ></bpmn-parameter-contexts> -->
+            </v-row>
+        </div>
+        <div style="margin-bottom: 22px">
+            <v-row class="ma-0 pa-0">
+                <div>ForEach Variable</div>
+                <v-spacer></v-spacer>
+            </v-row>
+            <v-row>
+                <v-autocomplete
+                    :items="processVariables"
+                    :item-props="true"
+                    item-value
+                    item-title="name"
+                    color="primary"
+                    v-model="selectedVariable"
+                    label="Variable"
+                    variant="outlined"
+                ></v-autocomplete>
+                <!-- <bpmn-parameter-contexts
+                    :for-sub-process="true"
+                    :definition-variables="definitionVariables"
+                    :is-view-mode="isViewMode"
+                    :parameter-contexts="copyUengineProperties.variableBindings"
+                ></bpmn-parameter-contexts> -->
+            </v-row>
+            <!-- <div>
                 <v-row class="ma-0 pa-0">
                     <div>Parameter Context</div>
                     <v-spacer></v-spacer>
@@ -33,7 +77,7 @@
                         :is-sub="true"
                     ></bpmn-role-parameter-contexts>
                 </v-row>
-            </div>
+            </div> -->
         </div>
         <!-- <div v-else>
             <v-row>
@@ -52,24 +96,27 @@ export default {
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
-        isViewMode: Boolean
+        isViewMode: Boolean,
+        roles: Array,
+        processVariables: Array
     },
     created() {
         // console.log(this.element)
         // this.uengineProperties = JSON.parse(this.element.extensionElements.values[0].json)
         // 필수 uEngine Properties의 key가 없다면 작업.
-        Object.keys(this.requiredKeyLists).forEach((key) => {
-            this.ensureKeyExists(this.uengineProperties, key, this.requiredKeyLists[key]);
-        });
+        // Object.keys(this.requiredKeyLists).forEach((key) => {
+        //     this.ensureKeyExists(this.uengineProperties, key, this.requiredKeyLists[key]);
+        // });
     },
     data() {
         return {
             requiredKeyLists: {
-                variableBindings: [],
-                roleBindings: [],
+                // variableBindings: [],
+                // roleBindings: [],
                 definitionId: ''
             },
             definitions: [],
+            definitionVariables: [],
             definitionRoles: [],
             calleeDefinitionRoles: [],
             copyUengineProperties: this.uengineProperties,
@@ -88,7 +135,9 @@ export default {
             editParam: false,
             paramKey: '',
             paramValue: '',
-            definitionCnt: 0
+            definitionCnt: 0,
+            selectedRole: null,
+            selectedVariable: null
         };
     },
     async mounted() {
@@ -97,7 +146,7 @@ export default {
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
         let def = this.bpmnModeler.getDefinitions();
-        if (!this.copyUengineProperties.variableBindings) this.copyUengineProperties.variableBindings = [];
+        // if (!this.copyUengineProperties.variableBindings) this.copyUengineProperties.variableBindings = [];
         const processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
         if (!processElement) {
             console.error('bpmn:Process element not found');
@@ -111,39 +160,74 @@ export default {
                 });
             });
         });
-        // // bpmn2:process 요소 내의 bpmn2:extensionElements 요소를 찾거나 새로 생성합니다.
-        const value = await storage.list('proc_def');
-        if (value) {
-            this.definitions = value;
+
+        if (this.copyUengineProperties.forEachVariable) {
+            this.selectedVariable = this.copyUengineProperties.forEachVariable.name;
         }
-        if (this.copyUengineProperties.definitionId) this.setDefinitionInfo(this.copyUengineProperties.definitionId);
+        if (this.copyUengineProperties.forEachRole) {
+            this.selectedRole = this.copyUengineProperties.forEachRole.name;
+        }
+        // // // bpmn2:process 요소 내의 bpmn2:extensionElements 요소를 찾거나 새로 생성합니다.
+        // const value = await storage.list('proc_def');
+        // if (value) {
+        //     this.definitions = value;
+        // }
+        // if (this.copyUengineProperties.definitionId) this.setDefinitionInfo(this.copyUengineProperties.definitionId);
     },
     computed: {
-        inputData() {
-            let params = this.copyUengineProperties.variableBindings;
-            let result = [];
-            if (params)
-                params.forEach((element) => {
-                    if (element.direction == 'IN') result.push(element);
-                });
-            return result;
-        },
-        outputData() {
-            let params = this.copyUengineProperties.variableBindings;
-            let result = [];
-            if (params)
-                params.forEach((element) => {
-                    if (element.direction == 'OUT') result.push(element);
-                });
-            return result;
-        }
+        // inputData() {
+        //     let params = this.copyUengineProperties.variableBindings;
+        //     let result = [];
+        //     if (params)
+        //         params.forEach((element) => {
+        //             if (element.direction == 'IN') result.push(element);
+        //         });
+        //     return result;
+        // },
+        // outputData() {
+        //     let params = this.copyUengineProperties.variableBindings;
+        //     let result = [];
+        //     if (params)
+        //         params.forEach((element) => {
+        //             if (element.direction == 'OUT') result.push(element);
+        //         });
+        //     return result;
+        // }
     },
     watch: {
         'copyUengineProperties.definitionId'(after, before) {
             this.setDefinitionInfo(after);
+        },
+        selectedRole(after, before) {
+            console.log(after);
+            this.copyUengineProperties.forEachRole = {
+                name: after
+            };
+        },
+        selectedVariable(after, before) {
+            if (after) {
+                const variableObject = this.processVariables.find((variable) => variable.name === after);
+                if (variableObject) {
+                    let DuplicateVo = JSON.parse(JSON.stringify(variableObject));
+                    DuplicateVo.type = this.parseType(variableObject.type);
+                    this.copyUengineProperties.forEachVariable = DuplicateVo;
+                }
+            }
         }
     },
     methods: {
+        parseType(type) {
+            switch (type) {
+                case 'Text':
+                    return 'java.lang.String';
+                case 'Number':
+                    return 'java.lang.Number';
+                case 'Date':
+                    return 'java.util.Date';
+                case 'Form':
+                    return 'org.uengine.kernel.FormActivity';
+            }
+        },
         async setDefinitionInfo(definitionId) {
             // definition 정보 호출
             const def = await storage.getObject(`proc_def/${definitionId}`, { key: 'id' });

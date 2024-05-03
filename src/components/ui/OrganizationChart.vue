@@ -19,6 +19,7 @@ export default {
         }
     },
     data: () => ({
+        tree: null,
     }),
     watch: {
         // nodes(newVal) {
@@ -26,14 +27,33 @@ export default {
         // },
         node(newVal) {
             // this.mytree(this.$refs.tree, newVal);
-            if (newVal && newVal.id) {
+            if (newVal && newVal.id && newVal.data) {
                 this.drawTree()
             }
         },
     },
     mounted() {
         // this.mytree(this.$refs.tree, this.nodes);
-        if (this.node && this.node.id) {
+        if (this.node && this.node.id && this.node.data) {
+            const options = {
+                contentKey: 'data',
+                width: 800,
+                height: 500,
+                nodeWidth: 150,
+                nodeHeight: 100,
+                childrenSpacing: 50,
+                siblingSpacing: 20,
+                direction: 'top',
+                enableExpandCollapse: true,
+                nodeTemplate: (content) =>
+                `<div style='display: flex;flex-direction: column;gap: 10px;justify-content: center;align-items: center;height: 100%;'>
+                <img style='width: 50px;height: 50px;border-radius: 50%;' src='${content.img}' alt='' />
+                <div style="font-weight: bold; font-family: Arial; font-size: 14px">${content.name}</div>
+                ${content.email ? `<div style="margin-top: -10px; font-family: Arial; font-size: 12px">${content.email}</div>` : ''}
+                </div>`,
+                enableToolbar: true,
+            };
+            this.tree = new ApexTree(document.getElementById('tree'), options);
             this.drawTree()
         }
     },
@@ -50,27 +70,7 @@ export default {
             });
         },
         drawTree() {
-            const options = {
-                contentKey: 'data',
-                width: 800,
-                height: 500,
-                nodeWidth: 150,
-                nodeHeight: 100,
-                childrenSpacing: 50,
-                siblingSpacing: 20,
-                direction: 'top',
-                enableExpandCollapse: true,
-                nodeTemplate: (content) =>
-                `<div style='display: flex;flex-direction: column;gap: 10px;justify-content: center;align-items: center;height: 100%;'>
-                <img style='width: 50px;height: 50px;border-radius: 50%;' src='${content.img || '/src/assets/images/chat/chat-icon.png'}' alt='' />
-                <div style="font-weight: bold; font-family: Arial; font-size: 14px">${content.name}</div>
-                ${content.email ? `<div style="margin-top: -10px; font-family: Arial; font-size: 12px">${content.email}</div>` : ''}
-                </div>`,
-                // canvasStyle: 'border: 1px solid black;background: #f6f6f6;',
-                enableToolbar: true,
-            };
-            const tree = new ApexTree(document.getElementById('tree'), options);
-            tree.render(this.node);
+            this.tree.render(this.node);
         }
     },
 }

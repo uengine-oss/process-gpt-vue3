@@ -38,7 +38,7 @@
                         </v-tooltip>
                     </span>
                 </div>
-                <v-divider style="margin:0px;" />
+                <v-divider style="margin:0px;" v-if="name && name !== '' || chatInfo || type == 'form'" />
             </div>
 
             <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
@@ -52,12 +52,13 @@
                                 {{ filteredAlert.detail }}
                             </small>
                         </v-alert>
-                        <div v-for="(message, index) in filteredMessages" :key="index" class="px-5 py-1">
+                        <div v-for="(message, index) in filteredMessages" :key="index" class="px-1 py-1">
                             <AgentsChat v-if="message && message._template === 'agent'" :message="message"
                                 :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="index" />
                             <div v-else>
-                                <div v-if="message.email == userInfo.email" class="justify-end d-flex mb-1">
-                                    <div>
+                                <div v-if="message.email == userInfo.email && message.role != 'system'">
+                                    <v-row class="ma-0 pa-0">
+                                        <v-spacer></v-spacer>
                                         <small class="text-medium-emphasis text-subtitle-2" v-if="message.timeStamp">
                                             {{ formatTime(message.timeStamp) }}
                                         </small>
@@ -65,46 +66,67 @@
                                         <v-sheet v-if="message.image" class="mb-1">
                                             <img :src="message.image" class="rounded-md" alt="pro" width="250" />
                                         </v-sheet>
+                                    </v-row>
 
-                                        <v-textarea v-if="editIndex === index" v-model="messages[index].content"
+                                    <div v-if="editIndex === index" class="bg-lightprimary"
+                                        style="border-radius:10px;"
+                                    > 
+                                        <v-textarea v-model="messages[index].content"
                                             variant="solo" hide-details bg-color="lightprimary" class="shadow-none"
-                                            density="compact" auto-grow rows="1">
-                                            <template v-slot:append-inner>
-                                                <v-btn icon variant="text" class="text-medium-emphasis" @click="send">
-                                                    <SendIcon size="20" />
-                                                </v-btn>
-                                                <v-btn icon variant="text" class="text-medium-emphasis" @click="cancel">
-                                                    <Icon icon="solar:backspace-bold" height="20" width="20" />
-                                                </v-btn>
-                                            </template>
+                                            density="compact" auto-grow rows="1"
+                                            autofocus
+                                        >
                                         </v-textarea>
-
-                                        <div v-else class="d-flex justify-end" @mouseover="hoverIndex = index"
-                                            @mouseleave="hoverIndex = -1">
-                                            <v-btn v-if="hoverIndex === index && !disableChat"
-                                                @click="editMessage(index)" icon variant="text" size="x-small"
-                                                class="bg-lightprimary float-left edit-btn">
-                                                <Icon icon="solar:pen-bold" height="20" width="20" />
+                                        <v-row class="pa-0 ma-0 mr-2 pb-2">
+                                            <v-spacer></v-spacer>
+                                            <v-btn @click="send"
+                                                class="text-medium-emphasis"
+                                                icon variant="text" size="x-small"  
+                                                style="background-color:white !important; margin-right:5px;" 
+                                            >
+                                                <SendIcon size="20" />
                                             </v-btn>
+                                            <v-btn @click="cancel"
+                                                class="text-medium-emphasis"
+                                                icon variant="text" size="x-small"  
+                                                style="background-color:white !important;"
+                                            >
+                                                <Icon icon="solar:backspace-bold" height="20" width="20" />
+                                            </v-btn>
+                                        </v-row>
+                                    </div>
 
-                                            <v-sheet class="bg-lightprimary rounded-md px-3 py-2 mb-1">
-                                                <pre class="text-body-1"
-                                                    v-if="message.replyUserName">{{ message.replyUserName }}</pre>
-                                                <pre class="text-body-1"
-                                                    v-if="message.replyContent">{{ message.replyContent }}</pre>
-                                                <v-divider v-if="message.replyContent"></v-divider>
+                                    <div v-else class="d-flex justify-end" @mouseover="hoverIndex = index"
+                                        @mouseleave="hoverIndex = -1"
+                                    >
+                                        <v-sheet class="bg-lightprimary rounded-md px-3 py-2 mb-1">
+                                            <pre class="text-body-1"
+                                                v-if="message.replyUserName">{{ message.replyUserName }}</pre>
+                                            <pre class="text-body-1"
+                                                v-if="message.replyContent">{{ message.replyContent }}</pre>
+                                            <v-divider v-if="message.replyContent"></v-divider>
 
-                                                <pre class="text-body-1">{{ message.content }}</pre>
+                                            <pre class="text-body-1">{{ message.content }}</pre>
 
-                                                <pre v-if="message.jsonContent"
-                                                    class="text-body-1">{{ message.jsonContent }}</pre>
-                                            </v-sheet>
-                                        </div>
+                                            <pre v-if="message.jsonContent"
+                                                class="text-body-1">{{ message.jsonContent }}</pre>
+                                            <v-row class="ma-0 pa-0">
+                                                <v-spacer></v-spacer>
+                                                <v-btn v-if="hoverIndex === index && !disableChat"
+                                                    @click="editMessage(index)" icon variant="text" size="x-small"
+                                                    class="float-left edit-btn"
+                                                    style="background-color:white;"
+                                                >
+                                                    <Icon icon="solar:pen-bold" height="20" width="20" />
+                                                </v-btn>
+                                            </v-row>
+                                        </v-sheet>
                                     </div>
                                 </div>
                                 <div v-else :style="shouldDisplayUserInfo(message, index) ? '' : 'margin-top: -20px;'">
                                     <div v-if="shouldDisplayUserInfo(message, index)"
-                                        class="align-items-start gap-3 mb-1 w-100">
+                                        class="align-items-start gap-3 mb-1 w-100"
+                                    >
                                         <v-row class="ma-0 pa-0" style="margin-bottom:10px !important;">
                                             <v-avatar style="margin-right:10px;">
                                                 <img v-if="message.role == 'system'"
@@ -146,11 +168,27 @@
                                                         @click="startProcess(message)">y</v-btn>
                                                     <v-btn size="small" @click="cancelProcess(message)">n</v-btn>
                                                 </p>
-                                                <div style="position: relative;">
-                                                    <v-btn v-if="replyIndex === index" @click="beforeReply(message)"
-                                                        icon="mdi-reply" variant="text" size="x-small"
-                                                        style="position: absolute;right:0px; bottom:-5px; background-color:white;"></v-btn>
-                                                </div>
+                                                <v-row class="pa-0 ma-0">
+                                                    <v-spacer></v-spacer>
+                                                    <v-btn @click="beforeReply(message)"
+                                                        v-if="replyIndex === index" 
+                                                        variant="text" size="x-small" icon
+                                                        style="background-color:white; margin-right:5px;"
+                                                    >
+                                                        <Icon icon="material-symbols:reply" width="20" height="20" />
+                                                    </v-btn>
+                                                    <v-btn @click="viewJSON(index)"
+                                                        variant="text" size="x-small" icon
+                                                        style="background-color:white;"
+                                                    >
+                                                        <Icon v-if="message.jsonContent && isviewJSONStatus"
+                                                            icon="iconamoon:arrow-up-2" width="20" height="20"
+                                                        />
+                                                        <Icon v-else
+                                                            icon="iconamoon:arrow-down-2" width="20" height="20"
+                                                        />
+                                                    </v-btn>
+                                                </v-row>
 
                                                 <v-row v-if="message.tableData" class="my-5">
                                                     <v-col cols="12">
@@ -187,12 +225,10 @@
                                                         </v-card>
                                                     </v-col>
                                                 </v-row>
-
-                                                <v-btn v-if="message.jsonContent" class="mt-2" elevation="0"
-                                                    @click="viewJSON(index)">View
-                                                    JSON</v-btn>
                                                 <pre v-if="isViewJSON.includes(index)"
-                                                    class="text-body-1">{{ message.jsonContent }}</pre>
+                                                    class="text-body-1"
+                                                    >{{ message.jsonContent }}
+                                                </pre>
                                             </v-sheet>
                                             <v-progress-linear
                                                 v-if="message.role == 'system' && filteredMessages.length - 1 == index && isLoading"
@@ -379,6 +415,7 @@ export default {
             replyIndex: -1,
             replyUser: null,
             isViewJSON: [],
+            isviewJSONStatus: false,
             attachedImg: null,
             showNewMessageNoti: false,
             lastMessage: { name: '', content: '' },
@@ -589,16 +626,15 @@ export default {
             // 위의 조건들을 모두 통과했다면 버튼을 표시
             return true;
         },
-        shouldDisplayUserInfo(message, index) {
-            if (index === 0) return true; // 첫 번째 메시지는 항상 표시
-            const prevMessage = this.filteredMessages[index - 1];
-            if (message.email !== prevMessage.email) return true; // 다른 사용자의 메시지는 표시
-
-            // 시간 차이 계산 (밀리초 단위)
-            const timeDiff = new Date(message.timeStamp) - new Date(prevMessage.timeStamp);
-            if (timeDiff > 60000) return true; // 1분 이상 차이나는 메시지는 표시
-
-            return false; // 그 외의 경우는 표시하지 않음
+        shouldDisplayUserInfo() {
+            return (message, index) => {
+                if (index === 0) return true;
+                const prevMessage = this.filteredMessages[index - 1];
+                if (message.email !== prevMessage.email) return true;
+                const timeDiff = new Date(message.timeStamp) - new Date(prevMessage.timeStamp);
+                if (timeDiff > 60000) return true;
+                return false;
+            };
         },
         requestDraftAgent() {
             this.$emit('requestDraftAgent', this.newMessage);
@@ -689,6 +725,7 @@ export default {
             this.editText = this.messages[this.editIndex].content
         },
         viewJSON(index) {
+            this.isviewJSONStatus = !this.isviewJSONStatus
             if (!this.isViewJSON.includes(index)) {
                 this.isViewJSON.push(index);
             } else {

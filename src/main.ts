@@ -39,7 +39,6 @@ import xml from 'highlight.js/lib/languages/xml';
 import VueDiff from 'vue-diff';
 import 'vue-diff/dist/index.css';
 VueDiff.hljs.registerLanguage('xml', xml);
-
 //ScrollTop
 import VueScrollTo from 'vue-scrollto';
 const i18n = createI18n({
@@ -54,7 +53,10 @@ const OpenGraphEmitter = mitt();
 const ModelingEmitter = mitt();
 window.$mode = 'uEngine';
 const app = createApp(App);
-
+// registers the component globally
+// registered name: CronVuetify
+import CronVuetifyPlugin from '@vue-js-cron/vuetify';
+app.use(CronVuetifyPlugin);
 // @ts-ignore
 app.config.globalProperties.$try = app._component.methods.try;
 app.config.globalProperties.EventBus = emitter;
@@ -98,12 +100,25 @@ app.use(VueScrollTo, {
     easing: 'ease',
     offset: -50
 });
+
+// 전역으로 복사 가능하게 추가
+document.addEventListener('keydown', function(event) {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
+        navigator.clipboard.writeText(window.getSelection().toString()).then(function() {
+            console.log('Copying to clipboard was successful!');
+        }, function(err) {
+            console.error('Could not copy text: ', err);
+        });
+        event.preventDefault(); // 기본 이벤트 방지
+    }
+});
+
 app.use(VueDiff, {
     componentName: 'vuediff'
 });
 let initOptions = {
     url: `http://localhost:9090/`,
-    realm: `uengine6`,
+    realm: `uengine`,
     clientId: `uengine`,
     onLoad: 'login-required' as KeycloakOnLoad // Explicitly cast to KeycloakOnLoad
 };

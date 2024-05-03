@@ -53,7 +53,7 @@ export default {
     created() {
         let me = this;
         this.uengine = BackendFactory.createBackend();
-        this.roles.forEach(function(role) {
+        this.roles.forEach(function (role) {
             me.roleMappings.push({
                 roleName: role,
                 roleEndpoint: '',
