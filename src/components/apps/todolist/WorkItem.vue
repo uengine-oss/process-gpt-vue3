@@ -13,10 +13,10 @@
              <!-- Left -->
             <v-col class="pa-0" cols="4"
                 :style="$globalState.state.isZoomed ? 'height: calc(100vh - 70px);' : 'height: calc(100vh - 215px);'"
+                style="overflow:auto;"
             >
                 <div v-if="currentComponent"
                     class="work-itme-current-component"
-                    style="overflow:auto;"
                 >
                     <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus"></component>
                     <v-tooltip :text="$t('processDefinition.zoom')">
