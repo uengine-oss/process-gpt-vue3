@@ -54,7 +54,8 @@ export default {
   },
   emits: [
     "onChangeKEditorContent",
-    "onSaveFormDefinition"
+    "onSaveFormDefinition",
+    "onInitKEditorContent"
   ],
   expose: [
     "getKEditorContentHtml",
@@ -448,6 +449,7 @@ export default {
     }
 
     window.mashup.kEditorContent  = window.mashup.kEditor[0].children[0].innerHTML
+    window.mashup.$emit('onInitKEditorContent', window.mashup.getKEditorContentHtml())
   },
 
   beforeUnmount() {
