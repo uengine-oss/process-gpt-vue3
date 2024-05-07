@@ -14,13 +14,13 @@
         </v-label>
         <v-divider class="mb-4" />
 
-        <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ 'Project URL' }}</v-label>
+        <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ 'URL' }}</v-label>
         <VTextField 
             v-model="tenantInfo.apiUrl" 
             required 
         ></VTextField>
 
-        <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ 'Project Secret Key' }}</v-label>
+        <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ 'Secret' }}</v-label>
         <VTextField 
             v-model="tenantInfo.apiKey" 
             required 
