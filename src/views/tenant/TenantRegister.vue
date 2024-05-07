@@ -20,8 +20,8 @@ import TenantRegisterForm from '@/components/tenant/TenantRegisterForm.vue';
                 </div>
             </v-col>
             <v-col cols="12" lg="5" xl="4" class="d-flex align-center justify-center bg-surface">
-                <div class="mt-xl-0 mt-5 mw-100" >
-                    <h2 class="text-h3 font-weight-semibold mb-4">{{ $t('createAccount.title') }}</h2>
+                <div class="mt-xl-0 mt-5 mw-100 w-50" >
+                    <h2 class="text-h3 font-weight-semibold mb-4" style="text-align: center;">{{ 'Create Tenant' }}</h2>
                     <TenantRegisterForm />
                 </div>
             </v-col>
