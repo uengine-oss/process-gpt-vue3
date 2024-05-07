@@ -132,6 +132,7 @@
         "inputMessage": "메시지 입력",
         "lock": "체크인(저장)하려면 자물쇠를 눌러 자물쇠를 닫으십시오.",
         "unlock": "체크아웃(편집)하려면 자물쇠를 눌러 자물쇠를 여십시오",
+        "processDefinitionSave": "저장",
         "history": "버전 히스토리",
         "import": "BPMN 파일 불러오기",
         "addImage": "이미지 추가",

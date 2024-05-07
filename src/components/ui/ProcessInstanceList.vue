@@ -3,10 +3,18 @@
         <!-- <NavGroup :item="instMenu" :key="instMenu.header" /> -->
         <!-- <NavItem class="leftPadding" :item="definitionMap" /> -->
         <!-- <NavItem v-if="!instExecution.disable" class="leftPadding" :item="instExecution" /> -->
-        <NavCollapse v-if="!runningInstances.disable && runningInstances.children.length" class="leftPadding" 
-            :item="runningInstances" :level="0" />
-        <NavCollapse v-if="!completeInstances.disable && completeInstances.children.length" class="leftPadding" 
-            :item="completeInstances" :level="0" />
+        <NavCollapse
+            v-if="!runningInstances.disable && runningInstances.children.length"
+            class="leftPadding"
+            :item="runningInstances"
+            :level="0"
+        />
+        <NavCollapse
+            v-if="!completeInstances.disable && completeInstances.children.length"
+            class="leftPadding"
+            :item="completeInstances"
+            :level="0"
+        />
     </v-list>
 </template>
 
@@ -22,11 +30,11 @@ export default {
     components: {
         NavCollapse,
         NavGroup,
-        NavItem,
+        NavItem
     },
     data: () => ({
         instMenu: {
-            header: 'instance.title',
+            header: 'instance.title'
         },
         // definitionMap: {
         //     title: "processDefinitionMap.title",
@@ -46,23 +54,23 @@ export default {
             icon: 'solar:list-bold',
             BgColor: 'primary',
             children: [],
-            disable: true,
+            disable: true
         },
         completeInstances: {
             title: 'completeInstance.title',
             icon: 'solar:list-bold',
             BgColor: 'primary',
             children: [],
-            disable: true,
-        },
+            disable: true
+        }
     }),
     computed: {
         useChat() {
             const execution = localStorage.getItem('execution');
-            if (window.$mode == "ProcessGPT" && execution == "true") {
+            if (window.$mode == 'ProcessGPT' || execution == 'true') {
                 return true;
-            } else if (execution == "true") {
-                return false;
+            } else if (execution == 'true') {
+                return true;
             }
             return false;
         }
@@ -78,24 +86,24 @@ export default {
     methods: {
         async loadInstances() {
             let result = await backend.getInstanceList();
-            if(!result) result = []
+            if (!result) result = [];
             this.runningInstances.children = result.map((item) => {
                 item = {
                     title: item.instName,
-                    to: `/instancelist/${btoa(item.instId)}`,
-                }
+                    to: `/instancelist/${btoa(item.instId)}`
+                };
                 return item;
             });
             let complatedResult = await backend.getCompleteInstanceList();
-            if(!complatedResult) complatedResult = []
+            if (!complatedResult) complatedResult = [];
             this.completeInstances.children = complatedResult.map((item) => {
                 item = {
                     title: item.instName,
-                    to: `/instancelist/${btoa(item.instId)}`,
-                }
+                    to: `/instancelist/${btoa(item.instId)}`
+                };
                 return item;
             });
-        },
+        }
     }
-}
+};
 </script>

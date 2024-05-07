@@ -554,7 +554,27 @@ export default {
         },
         deleteItem(item) {
             const index = this.processVariables.indexOf(item);
-            confirm('Are you sure you want to delete this item?') && this.processVariables.splice(index, 1);
+            if (confirm('Are you sure you want to delete this item?')) {
+                const processElement = this.definitions.rootElements.find((element) => element.$type === 'bpmn:Process');
+                if (!processElement) {
+                    console.error('bpmn:Process element not found');
+                    return;
+                }
+
+                // bpmn2:process 요소 내의 bpmn2:extensionElements 요소를 찾거나 새로 생성합니다.
+                let extensionElements = processElement.extensionElements;
+
+                // uengine:properties 요소를 찾거나 새로 생성합니다.
+                let uengineProperties;
+                if (extensionElements.values) {
+                    uengineProperties = extensionElements.values.find((val) => val.$type === 'uengine:Properties');
+                }
+                console.log(uengineProperties.get('variables').findIndex((val) => val.$attrs.name === item.name));
+                if (index !== -1) {
+                    uengineProperties.get('variables').splice(index, 1);
+                }
+                this.processVariables.splice(index, 1);
+            }
         },
         findElement(obj, key, id) {
             if (obj.hasOwnProperty(key) && obj[key] === id) {
@@ -580,6 +600,25 @@ export default {
         },
         updateVariable(val) {
             this.processVariables[this.editedIndex] = val;
+
+            const processElement = this.definitions.rootElements.find((element) => element.$type === 'bpmn:Process');
+            if (!processElement) {
+                console.error('bpmn:Process element not found');
+                return;
+            }
+
+            // bpmn2:process 요소 내의 bpmn2:extensionElements 요소를 찾거나 새로 생성합니다.
+            let extensionElements = processElement.extensionElements;
+
+            // uengine:properties 요소를 찾거나 새로 생성합니다.
+            let uengineProperties;
+            if (extensionElements.values) {
+                uengineProperties = extensionElements.values.find((val) => val.$type === 'uengine:Properties');
+            }
+            uengineProperties.get('variables')[this.editedIndex].$attrs.name = val.name;
+            uengineProperties.get('variables')[this.editedIndex].$attrs.type = val.type;
+            uengineProperties.get('variables')[this.editedIndex].json = val.json;
+
             this.editDialog = false;
         },
         openProcessVariables() {

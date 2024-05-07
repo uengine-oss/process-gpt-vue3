@@ -46,7 +46,7 @@ export default {
         async init() {
             var me = this;
             let formName = me.workItem.worklist.tool.split(':')[1];
-            let processVariables = await backend.getProcessVariables(me.workItem.worklist.instId);
+            // let processVariables = await backend.getProcessVariables(me.workItem.worklist.instId);
             me.html = await backend.getRawDefinition(formName, { type: 'form' });
             if (me.workItemStatus == 'COMPLETED' || me.workItemStatus == 'DONE') {
                 let varName = me.workItem.activity.variableForHtmlFormContext.name;
@@ -54,16 +54,16 @@ export default {
                 me.formData = variable ? variable.valueMap : {};
             }
 
-            if (me.workItem.activity.previousActivities.length > 0) {
-                let previousActivity = me.workItem.activity.previousActivities[0];
-                let previousVariableForHtmlFormContext = previousActivity.variableForHtmlFormContext;
-                if (previousVariableForHtmlFormContext) {
-                    let mappingValueMap = processVariables[`:${previousVariableForHtmlFormContext.name}`].valueMap;
-                    Object.entries(mappingValueMap).forEach(([key, value]) => {
-                        this.formData[key] = value;
-                    });
-                }
-            }
+            // if (me.workItem.activity.previousActivities.length > 0) {
+            //     let previousActivity = me.workItem.activity.previousActivities[0];
+            //     let previousVariableForHtmlFormContext = previousActivity.variableForHtmlFormContext;
+            //     if (previousVariableForHtmlFormContext) {
+            //         let mappingValueMap = processVariables[`:${previousVariableForHtmlFormContext.name}`].valueMap;
+            //         Object.entries(mappingValueMap).forEach(([key, value]) => {
+            //             this.formData[key] = value;
+            //         });
+            //     }
+            // }
         },
         async saveTask() {
             var me = this;
