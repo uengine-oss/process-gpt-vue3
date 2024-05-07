@@ -49,27 +49,40 @@
                                 </v-tooltip>
                                 <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn" style="display: none;" />
 
-                                <v-tooltip location="bottom">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
-                                            @click="toggleLock">
-                                            <Icon v-if="lock" icon="f7:lock" width="24" height="24"></Icon>
-                                            <Icon v-else icon="f7:lock-open" width="24" height="24"></Icon>
-                                        </v-btn>
-                                    </template>
-                                    <span v-if="lock">{{ $t('chat.unlock') }}</span>
-                                    <span v-else>{{ $t('chat.lock') }}</span>
-                                </v-tooltip>
-                                
-                                <v-tooltip location="bottom">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
-                                            @click="toggleVerMangerDialog">
-                                            <HistoryIcon size="24" />
-                                        </v-btn>
-                                    </template>
-                                    <span>{{ $t('chat.history') }}</span>
-                                </v-tooltip>
+                                <div v-if="bpmn && fullPath != ''">
+                                    <v-tooltip location="bottom">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                                @click="toggleLock">
+                                                <Icon v-if="lock" icon="f7:lock" width="24" height="24"></Icon>
+                                                <Icon v-else icon="f7:lock-open" width="24" height="24"></Icon>
+                                            </v-btn>
+                                        </template>
+                                        <span v-if="lock">{{ $t('chat.unlock') }}</span>
+                                        <span v-else>{{ $t('chat.lock') }}</span>
+                                    </v-tooltip>
+                                    
+                                    <v-tooltip location="bottom">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                                @click="toggleVerMangerDialog">
+                                                <HistoryIcon size="24" />
+                                            </v-btn>
+                                        </template>
+                                        <span>{{ $t('chat.history') }}</span>
+                                    </v-tooltip>
+                                </div>
+                                <div v-else>
+                                    <v-tooltip location="bottom">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                                @click="toggleLock">
+                                                <Icon icon="material-symbols:save" width="24" height="24" />
+                                            </v-btn>
+                                        </template>
+                                        <span>{{ $t('chat.processDefinitionSave') }}</span>
+                                    </v-tooltip>
+                                </div>
                                 
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">

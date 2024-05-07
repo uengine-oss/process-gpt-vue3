@@ -66,6 +66,11 @@ const AuthRoutes = {
         //     path: '/auth/maintenance',
         //     component: () => import('@/views/authentication/Maintenance.vue')
         // },
+        {
+            name: 'Tenant Register',
+            path: '/tenant/register',
+            component: () => import('@/views/tenant/TenantRegister.vue')
+        }
     ]
 };
 
