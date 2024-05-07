@@ -69,7 +69,7 @@ const AuthRoutes = {
         {
             name: 'Tenant Register',
             path: '/tenant/register',
-            component: () => import('@/views/tenant/TenantRegister.vue')
+            component: () => import('@/views/tenant/TenantView.vue')
         }
     ]
 };

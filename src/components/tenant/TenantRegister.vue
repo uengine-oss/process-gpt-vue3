@@ -68,8 +68,7 @@ import { Form } from 'vee-validate';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 
 export default {
-    mixins: [],
-    name: 'UIDefinitionChat',
+    name: 'TenantRegister',
     components: {
         Form
     },
@@ -86,8 +85,7 @@ export default {
 
     methods: {
         async saveTenantInfo() {
-            const storage = StorageBaseFactory.getStorage();
-            await storage.putObject('tenant_def', {
+            await (StorageBaseFactory.getStorage()).putObject('tenant_def', {
                 id: this.tenantInfo.id,
                 url: this.tenantInfo.apiUrl,
                 secret: this.tenantInfo.apiKey

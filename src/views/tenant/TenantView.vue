@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Logo from '@/layouts/full/logo/Logo.vue';
 /* Register form */
-import TenantRegisterForm from '@/components/tenant/TenantRegisterForm.vue';
+import TenantRegister from '@/components/tenant/TenantRegister.vue';
 </script>
 
 <template>
@@ -22,7 +22,7 @@ import TenantRegisterForm from '@/components/tenant/TenantRegisterForm.vue';
             <v-col cols="12" lg="5" xl="4" class="d-flex align-center justify-center bg-surface">
                 <div class="mt-xl-0 mt-5 mw-100 w-50" >
                     <h2 class="text-h3 font-weight-semibold mb-4" style="text-align: center;">{{ 'Create Tenant' }}</h2>
-                    <TenantRegisterForm />
+                    <TenantRegister />
                 </div>
             </v-col>
         </v-row>
