@@ -27,6 +27,10 @@ import RegisterForm from '@/components/auth/RegisterForm.vue';
                         {{ $t('createAccount.already') }}
                         <v-btn variant="plain" to="/auth/login" class="text-primary text-body-1 opacity-1 pl-2">{{ $t('createAccount.login') }}</v-btn>
                     </h6>
+                    <h6 class="text-subtitle-1  text-grey100 d-flex align-center">
+                        {{ '테넌트가 없으신가요?' }}
+                        <v-btn variant="plain" to="/tenant/register" class="text-primary text-body-1 opacity-1 pl-2">{{ '테넌트 생성' }}</v-btn>
+                    </h6>
                 </div>
             </v-col>
         </v-row>
