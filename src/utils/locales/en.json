@@ -117,6 +117,7 @@
         "inputMessage": "Type a Message",
         "lock": "Please press the lock to lock it in order to check in (save).",
         "unlock": "Please press the lock to unlock it in order to check out (edit).",
+        "processDefinitionSave": "Save",
         "history": "history button",
         "import": "Import BPMN File",
         "addImage": "Add Image",

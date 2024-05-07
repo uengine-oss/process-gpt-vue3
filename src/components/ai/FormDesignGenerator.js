@@ -119,6 +119,7 @@ export default class FormDesignGenerator extends AIGenerator{
     sendMessageWithPrevFormOutput(newMessage) {
           const prevFormOutput = ((this.client.prevFormOutput !== '<section></section>') ? (
             `이전에 만들어진 폼이 있고, 현재 수정하려고 해.
+            따라서, '기존의 폼 변경' 가이드를 활용해서 수정과 관련된 JSON 객체를 반환시켜줘.
             이 폼은 무조건 최신 결과라고 생각하면 돼.
             이 이후의 채팅과 관계없이 해당 폼 HTML을 기준으로 작업해줘.
             이전에 만들어진 폼은 다음과 같아.\n\`\`\`` + this.client.prevFormOutput) + `\`\`\`` : "")

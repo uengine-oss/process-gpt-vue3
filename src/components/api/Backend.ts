@@ -35,6 +35,7 @@ export interface Backend {
     getCompletedList(): Promise<any>;
     getInProgressList(): Promise<any>;
     putWorklist(taskId: string, workItem: any): Promise<any>;
+    getEventList(instanceId: string): Promise<any>;
 }
 
 // export type { Backend }

@@ -146,7 +146,7 @@ export default {
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
         let def = this.bpmnModeler.getDefinitions();
-        if (!this.copyUengineProperties.variableBindings) this.copyUengineProperties.variableBindings = [];
+        // if (!this.copyUengineProperties.variableBindings) this.copyUengineProperties.variableBindings = [];
         const processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
         if (!processElement) {
             console.error('bpmn:Process element not found');

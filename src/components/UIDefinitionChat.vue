@@ -28,6 +28,7 @@
                             v-model="kEditorInput"
                             :key="mashupKey"
                             @onSaveFormDefinition="saveFormDefinition"
+                            @onInitKEditorContent="updateKEditorContentBeforeSave"
                         />
                         <div v-else class="d-flex align-center justify-center fill-height">
                             <v-progress-circular color="primary" indeterminate></v-progress-circular>
@@ -132,7 +133,11 @@ export default {
             isDevMode: window.localStorage.getItem('isDevMode') === 'true',
             previewFormValues: ''
         },
-        loadFormId: ''
+        loadFormId: '',
+
+        kEditorContentBeforeSave: "",
+        isAIUpdated: false,
+        isRoutedWithUnsaved: false
     }),
     async created() {
         this.generator = new ChatGenerator(this, {
@@ -150,7 +155,28 @@ export default {
             handler(newVal, oldVal) {
                 if (!newVal.path.startsWith('/ui-definitions')) return;
 
-                if (newVal.path !== oldVal.path) this.loadData();
+                if(this.isRoutedWithUnsaved) {
+                    this.isRoutedWithUnsaved = false;
+                    return;
+                }
+
+                if (newVal.path !== oldVal.path) {
+                    if(this.$refs.mashup) {
+                        if(this.isAIUpdated || (this.$refs.mashup.getKEditorContentHtml() != this.kEditorContentBeforeSave)) {
+                            const answer = window.confirm('You have unsaved changes. Are you sure you want to leave?');
+                            if (answer)
+                                this.loadData();
+                            else {
+                                this.isRoutedWithUnsaved = true;
+                                this.$router.push(oldVal.path);
+                            }
+                        }
+                        else
+                            this.loadData();
+                    }
+                    else
+                        this.loadData();
+                }
                 else this.isShowMashup = true;
             }
         },
@@ -167,6 +193,10 @@ export default {
         }
     },
     methods: {
+        updateKEditorContentBeforeSave(kEditorContent) {
+            this.kEditorContentBeforeSave = kEditorContent;
+        },
+
         openSaveDialog() {
             this.isOpenSaveDialog = true;
         },
@@ -246,15 +276,12 @@ export default {
                     if((!row.getAttribute('name')) || (row.getAttribute('name').length <= 0)) {
                         throw new Error(`multidataMode가 설정된 레이아웃에 'name' 속성이 없습니다.`);
                     }
-                    if((!row.getAttribute('alias')) || (row.getAttribute('alias').length <= 0)) {
-                        throw new Error(`multidataMode가 설정된 레이아웃에 'alias' 속성이 없습니다.`);
-                    }
 
 
                     const newRow = document.createElement('row-layout');
 
                     newRow.setAttribute('name', row.getAttribute('name'));
-                    newRow.setAttribute('alias', row.getAttribute('alias'));
+                    newRow.setAttribute('alias', row.getAttribute('alias') ?? "");
                     newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode'));
 
                     newRow.setAttribute('v-model', 'formValues');
@@ -360,6 +387,9 @@ export default {
             await this.backend.putRawDefinition(html, id, { type: 'form' });
             this.isOpenSaveDialog = false;
 
+            this.kEditorContentBeforeSave = this.$refs.mashup.getKEditorContentHtml();
+            this.isAIUpdated = false
+
             if (isNewSave) {
                 await this.$router.push(`/ui-definitions/${id}`);
                 window.location.reload();
@@ -385,6 +415,8 @@ export default {
                 this.loadFormId = this.loadFormId.substring(1);
             } 
 
+            this.isAIUpdated = false;
+            this.messages = [];
             if (this.loadFormId && this.loadFormId != 'chat') {
                 try {
                     this.storedFormDefHTML = (await this.backend.getRawDefinition(this.loadFormId, { type: 'form' }));
@@ -400,7 +432,10 @@ export default {
                 this.applyNewSrcToMashup(kEditorContent);
 
                 this.isShowMashup = true;
-            } else this.isShowMashup = true;
+            } else {
+                if(this.$refs.mashup) this.$refs.mashup.clearStat();
+                this.isShowMashup = true;
+            }
         },
 
         /**
@@ -447,6 +482,7 @@ export default {
                         const modifiedPrevFormOutput = this.getModifiedPrevFormOutput(messageWriting.jsonContent.modifications);
                         this.applyNewSrcToMashup(this.loadHTMLToKEditorContent(modifiedPrevFormOutput));
                     } else console.error('알 수 없는 JSON 결과: ', JSON.stringify(messageWriting.jsonContent));
+                    this.isAIUpdated = true;
                 }
             } catch (error) {
                 console.log(error);
@@ -726,7 +762,20 @@ export default {
 
     beforeDestroy() {
         this.kEditorInput = null;
-    }
+    },
+
+    async beforeRouteLeave(to, from, next) {
+        if(this.isAIUpdated || (this.$refs.mashup.getKEditorContentHtml() != this.kEditorContentBeforeSave)) {
+            const answer = window.confirm('You have unsaved changes. Are you sure you want to leave?');
+            if (answer) {
+                next();
+            } else {
+                next(false);
+            }
+        } else {
+            next();
+        }
+    },
 };
 </script>
 

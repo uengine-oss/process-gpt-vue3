@@ -49,6 +49,7 @@
         "dom-to-image": "^2.6.0",
         "dotenv": "^16.4.5",
         "eslint-import-resolver-alias": "^1.1.2",
+        "events": "^3.3.0",
         "file-saver": "^2.0.5",
         "firebase": "^8.0.0",
         "highlight.js": "^11.9.0",
@@ -99,6 +100,7 @@
         "vue3-recaptcha-v2": "1.0.1",
         "vuetify": "3.3.3",
         "webfontloader": "^1.6.28",
+        "xml2js": "^0.6.2",
         "yup": "^0.32.11"
     },
     "devDependencies": {

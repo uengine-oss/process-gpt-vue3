@@ -1,28 +1,32 @@
 <template>
     <v-card elevation="10" v-if="workItem" :key="updatedKey">
         <v-card-title>
-            <v-row class="ma-0 pa-0 mt-1 ml-3" style="line-height:100%;">
-                <div style="font-size:20px; font-weight:500;">{{workItem.activity.name}}</div>
-                <v-chip size="small" variant="outlined"
-                    density="comfortable"
-                    style="margin-left:5px;"
-                >{{workItemStatus}}</v-chip>
+            <v-row class="ma-0 pa-0 mt-1 ml-3" style="line-height: 100%">
+                <div style="font-size: 20px; font-weight: 500">{{ workItem.activity.name }}</div>
+                <v-chip size="small" variant="outlined" density="comfortable" style="margin-left: 5px">{{ workItemStatus }}</v-chip>
+                
             </v-row>
         </v-card-title>
         <v-row class="ma-0 pa-2 mt-2">
-             <!-- Left -->
-            <v-col class="pa-0" cols="4"
+            <!-- Left -->
+            <v-col
+                class="pa-0"
+                cols="4"
                 :style="$globalState.state.isZoomed ? 'height: calc(100vh - 70px);' : 'height: calc(100vh - 215px);'"
+                style="overflow:auto;"
             >
                 <div v-if="currentComponent"
                     class="work-itme-current-component"
-                    style="overflow:auto;"
                 >
                     <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus"></component>
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
-                            <v-btn @click="$globalState.methods.toggleZoom()" 
-                                size="small" icon v-bind="props" class="processVariables-zoom task-btn"
+                            <v-btn
+                                @click="$globalState.methods.toggleZoom()"
+                                size="small"
+                                icon
+                                v-bind="props"
+                                class="processVariables-zoom task-btn"
                             >
                                 <!-- 캔버스 확대 -->
                                 <Icon
@@ -47,27 +51,35 @@
                         <v-tab v-if="messages && messages.length > 0" value="history">워크 히스토리</v-tab>
                     </v-tabs>
                     <v-window v-model="selectedTab">
-                        <v-window-item value="progress" >
-                            <div class="pa-2"
+                        <v-window-item value="progress">
+                            <div
+                                class="pa-2"
                                 :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 280px);'"
-                                style="color:black; overflow:auto;"
+                                style="color: black; overflow: auto"
                             >
-                            
-                                <div class="pa-0 pl-2"
-                                    :style="!checkPoints ? 'height:100%;' : 'height:50%;'"
-                                >
-                                    <div v-if="bpmn" style="height: 100%;">
-                                        <process-definition style="height: 100%;" :currentActivities="currentActivities" :bpmn="bpmn" :key="updatedDefKey" :isViewMode="true"></process-definition>
+                                <div class="pa-0 pl-2" :style="!checkPoints ? 'height:100%;' : 'height:50%;'">
+                                    <div v-if="bpmn" style="height: 100%">
+                                        <process-definition
+                                            style="height: 100%"
+                                            :currentActivities="currentActivities"
+                                            :bpmn="bpmn"
+                                            :key="updatedDefKey"
+                                            :isViewMode="true"
+                                        ></process-definition>
                                     </div>
-                                    <div v-else>
-                                        No BPMN found
-                                    </div>
+                                    <div v-else>No BPMN found</div>
                                 </div>
-                                <div v-if="checkPoints" style="overflow:auto; height: 50%;">
-                                    <v-card-title>CheckPoint ({{checkedCount}}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>
-                                    <div style="margin:-15px 0px 0px 5px;">
-                                        <div v-for="(checkPoint, index) in checkPoints" :key="index" style="height:40px;">
-                                            <v-checkbox style="height:40px !important;" v-model="checkPoint.checked" :label="checkPoint.name" color="primary" hide-details></v-checkbox>
+                                <div v-if="checkPoints" style="overflow: auto; height: 50%">
+                                    <v-card-title>CheckPoint ({{ checkedCount }}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>
+                                    <div style="margin: -15px 0px 0px 5px">
+                                        <div v-for="(checkPoint, index) in checkPoints" :key="index" style="height: 40px">
+                                            <v-checkbox
+                                                style="height: 40px !important"
+                                                v-model="checkPoint.checked"
+                                                :label="checkPoint.name"
+                                                color="primary"
+                                                hide-details
+                                            ></v-checkbox>
                                         </div>
                                     </div>
                                 </div>
@@ -76,8 +88,12 @@
                         <v-window-item value="history" class="pa-2">
                             <v-card elevation="10" class="pa-4">
                                 <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                                    <div class="d-flex w-100" style="overflow: auto;" :style="workHistoryHeight">
-                                        <component :is="'work-history-'+mode" :messages="messages" @clickMessage="navigateToWorkItemByTaskId" />
+                                    <div class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
+                                        <component
+                                            :is="'work-history-' + mode"
+                                            :messages="messages"
+                                            @clickMessage="navigateToWorkItemByTaskId"
+                                        />
                                     </div>
                                 </perfect-scrollbar>
                             </v-card>
@@ -95,10 +111,10 @@ import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import DefaultWorkItem from './DefaultWorkItem.vue'; // DefaultWorkItem 컴포넌트 임포트
 import FormWorkItem from './FormWorkItem.vue'; // FormWorkItem 컴포넌트 임포트
 
-import WorkItemChat from "@/components/ui/WorkItemChat.vue";
+import WorkItemChat from '@/components/ui/WorkItemChat.vue';
 import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
 
-const backend = BackendFactory.createBackend()
+const backend = BackendFactory.createBackend();
 export default {
     components: {
         ProcessDefinition,
@@ -120,96 +136,97 @@ export default {
         updatedDefKey: 0,
         loading: false,
         selectedTab: 'progress',
+        eventList: []
     }),
     created() {
         this.init();
     },
-    computed:{
-        mode(){
+    computed: {
+        mode() {
             return window.$mode;
         },
-        checkedCount(){
-            if(!this.checkPoints) return 0
-            return this.checkPoints.filter(checkPoint => checkPoint.checked).length;
+        checkedCount() {
+            if (!this.checkPoints) return 0;
+            return this.checkPoints.filter((checkPoint) => checkPoint.checked).length;
         },
-        messages(){
-            if(!this.workListByInstId) return []
-            return this.workListByInstId.map(workItem => ({
+        messages() {
+            if (!this.workListByInstId) return [];
+            return this.workListByInstId.map((workItem) => ({
                 profile: 'https://avatars0.githubusercontent.com/u/9064066?v=4&s=460',
                 roleName: workItem.task.roleName,
                 _item: workItem,
                 content: workItem.title,
                 description: workItem.description,
                 timeStamp: workItem.startDate
-            }))
+            }));
         },
         id() {
             return this.$route.params.taskId ? this.$route.params.taskId : null;
         },
-        workItemStatus(){
-            if(!this.workItem) return null
-            return this.workItem.worklist.status
+        workItemStatus() {
+            if (!this.workItem) return null;
+            return this.workItem.worklist.status;
         }
     },
     methods: {
         init() {
-            var me = this
+            var me = this;
             me.$try({
                 context: me,
                 action: async () => {
                     me.workItem = await backend.getWorkItem(me.id);
-                    me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, {type: 'bpmn'});
+                    me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, { type: 'bpmn' });
                     me.workListByInstId = await backend.getWorkListByInstId(me.workItem.worklist.instId);
                     me.currentComponent = me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem';
-                    me.currentActivities = [ me.workItem.activity.tracingTag ];
-                    me.updatedDefKey++
+                    me.currentActivities = [me.workItem.activity.tracingTag];
+                    me.updatedDefKey++;
+                    
                 }
-            })
+            });
         },
-        navigateToWorkItemByTaskId(obj){
-            var me = this
+        navigateToWorkItemByTaskId(obj) {
+            var me = this;
             me.$router.push(`/todolist/${obj._item.taskId}`);
             this.$nextTick(() => {
-                me.delay(500)
-                .then(() => {
+                me.delay(500).then(() => {
                     me.init();
                     me.updatedKey++;
                 });
             });
         },
         delay(time) {
-            return new Promise(resolve => setTimeout(resolve, time));
-        },
-    },
-}
+            return new Promise((resolve) => setTimeout(resolve, time));
+        }
+    }
+};
 </script>
 <style>
 .work-itme-current-component .v-checkbox .v-input__details {
     display: none;
 }
 .work-itme-current-component .v-checkbox {
-    height:40px;
+    height: 40px;
 }
 .work-itme-current-component .v-checkbox label {
     opacity: 0.6 !important;
 }
 .work-itme-current-component .form-checkbox-label {
-    font-size:20px;
-    font-weight:500;
+    font-size: 20px;
+    font-weight: 500;
 }
 .work-itme-current-component .form-radio-box {
-    margin-top:25px;
+    margin-top: 25px;
 }
 .work-itme-current-component .form-radio-box .v-radio-group {
-    margin-top:8px;
+    margin-top: 8px;
 }
 .work-itme-current-component .form-radio-box .form-radio-label {
-    font-size:20px;
-    font-weight:500;
+    font-size: 20px;
+    font-weight: 500;
 }
 
 .work-itme-current-component .form-label {
-    font-size:20px;
-    font-weight:500;
+    font-size: 20px;
+    font-weight: 500;
 }
 </style>

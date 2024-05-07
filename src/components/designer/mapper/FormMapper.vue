@@ -158,48 +158,13 @@ export default {
             component_x: 0,
             component_y: 0,
             portIndex: 0,
-            leftNodes: {
-                // id1: {
-                //     text: 'text1',
-                //     children: ['id11', 'id12']
-                // },
-                // id11: {
-                //     text: 'text11'
-                // },
-                // id12: {
-                //     text: 'text12',
-                //     children: ['id123']
-                // },
-                // id2: {
-                //     text: 'text2'
-                // },
-                // id123: {
-                //     text: 'text123'
-                // }
-            },
-            rightNodes: {
-                // id1: {
-                //     text: 'text1',
-                //     children: ['id11', 'id12']
-                // },
-                // id11: {
-                //     text: 'text11'
-                // },
-                // id12: {
-                //     text: 'text12',
-                //     children: ['id123']
-                // },
-                // id2: {
-                //     text: 'text2'
-                // },
-                // id123: {
-                //     text: 'text123'
-                // }
-            },
+            leftNodes: {},
+            rightNodes: {},
             config: {
                 roots: ['id1', 'id2']
             },
-            processVariableDescriptors: []
+            processVariableDescriptors: [],
+            portArray: []
         };
     },
     async created() {
@@ -221,18 +186,6 @@ export default {
                 this.addTreeViewPort();
             }, 500);
         });
-        // processVariables가 준비되었는지 확인
-        // if (this.processVariables && this.processVariables.length > 0) {
-        //     // processVariables 사용
-        //     console.log(this.processVariables);
-        // } else {
-        //     // 데이터가 준비되지 않았다면, watch를 사용하거나 다른 방법으로 처리
-        //     this.$watch('processVariables', (newVal) => {
-        //         if (newVal && newVal.length > 0) {
-        //             console.log(newVal);
-        //         }
-        //     });
-        // }
 
         this.renderFormMapperFromMappingElementJson(this.formMapperJson);
     },
@@ -247,7 +200,7 @@ export default {
                 roots: []
             };
         },
-        async fetchAndProcessFormDefinitions(nodes, variable) {
+        fetchAndProcessFormDefinitions(nodes, variable) {
             let name = variable.name;
             let matchingForm = this.definition.processVariables.find((form) => form.name === name && form.type === 'Form' && form.fields);
 
@@ -268,9 +221,15 @@ export default {
                 });
             }
         },
-        async processVariables(nodes, blockName) {
+        async processNodes(nodes, blockName) {
+            this.processVariableNodes(nodes);
+            this.processRoleNodes(nodes);
+            this.processInstanceNodes(nodes);
+            this.processActivityNodes(nodes);
+            this.updateBlockTemplates(nodes, blockName);
+        },
+        processVariableNodes(nodes) {
             const definition = this.definition;
-
             for (const variable of definition.processVariables) {
                 if (!this.config.roots.includes('Variables')) {
                     this.config.roots.push('Variables');
@@ -279,7 +238,8 @@ export default {
                 if (!nodes['Variables']) {
                     nodes['Variables'] = {
                         text: 'Variables',
-                        children: []
+                        children: [],
+                        parent: null
                     };
                 }
 
@@ -291,10 +251,12 @@ export default {
                     };
                 }
 
-                await this.fetchAndProcessFormDefinitions(nodes, variable);
+                this.fetchAndProcessFormDefinitions(nodes, variable);
             }
-
-            if (this.roles.length > 0) {
+        },
+        processRoleNodes(nodes) {
+            const roles = this.roles;
+            if (roles.length > 0) {
                 if (!this.config.roots.includes('roles')) {
                     this.config.roots.push('roles');
                 }
@@ -307,7 +269,7 @@ export default {
                     };
                 }
 
-                this.roles.forEach((role) => {
+                roles.forEach((role) => {
                     if (nodes['roles']) {
                         nodes['roles'].children.push(role);
                         nodes[role] = {
@@ -317,115 +279,124 @@ export default {
                     }
                 });
             }
-
-            if(this.activities.length > 0){
-                if(!this.config.roots.includes('instance')){
-                    this.config.roots.push('instance')
-                }
-
-                if(!nodes['instance']){
-                    nodes['instance'] = {
-                        text: 'instance',
-                        children: []
-                    }
-                }
-
-                let instanceNodes = ['instanceId', 'name', 'locale', 'status', 'info', 'dueDate',
-                                    'mainProcessInstanceId', 'mainActivityTracingTag', 'rootProcessInstanceId',
-                                    'dummy1', 'dummy2', 'dummy3', 'dummy4', 'dummy5']
-
-                instanceNodes.forEach((node) => {
-                    if(nodes['instance']){
-                        nodes['instance'].children.push(node)
-                        nodes[node] = {
-                            text: node,
-                            children: []
-                        }
-                    }
-                })
+        },
+        processInstanceNodes(nodes) {
+            if (!this.config.roots.includes('instance')) {
+                this.config.roots.push('instance');
             }
 
-            if(this.activities.length > 0){
-                let activityNodes = ['startedTime', 'endTime', 'dueDate', 'duration', 'businessStatus', 'status']
+            if (!this.config.roots.includes('instance')) {
+                this.config.roots.push('instance');
+            }
 
-                if(!this.config.roots.includes('activities')){
-                    this.config.roots.push('activities')
+            if (!nodes['instance']) {
+                nodes['instance'] = {
+                    text: 'instance',
+                    children: [],
+                    parent: null
+                };
+            }
+
+            let instanceNodes = [
+                'instanceId',
+                'name',
+                'locale',
+                'status',
+                'info',
+                'dueDate',
+                'mainProcessInstanceId',
+                'mainActivityTracingTag',
+                'rootProcessInstanceId',
+                'ext1',
+                'ext2',
+                'ext3',
+                'ext4',
+                'ext5'
+            ];
+
+            if (nodes['instance']) {
+                nodes['instance'].children = [];
+                instanceNodes.forEach((node) => {
+                    nodes['instance'].children.push(node);
+                    nodes[node] = {
+                        text: node,
+                        children: []
+                    };
+                });
+            }
+        },
+        processActivityNodes(nodes) {
+            const activities = this.activities;
+            if (activities.length > 0) {
+                let activityNodes = ['startedTime', 'endTime', 'dueDate', 'duration', 'businessStatus', 'status'];
+
+                if (!this.config.roots.includes('activities')) {
+                    this.config.roots.push('activities');
                 }
 
-                if(!nodes['activities']){
+                if (!nodes['activities']) {
                     nodes['activities'] = {
                         text: 'activities',
-                        children: []
-                    }
+                        children: [],
+                        parent: null
+                    };
                 }
 
-                this.activities.forEach((activity) => {
-                    if(nodes['activities']){
-                        nodes['activities'].children.push(activity.name)
+                if (nodes['activities']) {
+                    nodes['activities'].children = [];
+                    activities.forEach((activity) => {
+                        nodes['activities'].children.push(activity.name);
                         nodes[activity.name] = {
                             text: activity.name,
                             children: []
-                        }
-                    }
-                    
-                    activityNodes.forEach((node) => {
-                        if (!nodes[activity.name]) {
-                            nodes[activity.name] = {
-                                text: activity.name,
+                        };
+                        activityNodes.forEach((node) => {
+                            if (!nodes[activity.name]) {
+                                nodes[activity.name] = {
+                                    text: activity.name,
+                                    children: []
+                                };
+                            }
+
+                            nodes[activity.name].children.push(node);
+                            nodes[node] = {
+                                text: node,
                                 children: []
                             };
-                        }
-
-                        nodes[activity.name].children.push(node)
-                        nodes[node] = {
-                            text: node,
-                            children: []
-                        }
-                    })
-                })
+                        });
+                    });
+                }
             }
-
-            this.updateBlockTemplates(nodes, blockName);
         },
         updateBlockTemplates(nodes, blockName) {
             const treeStructure = this.transformData(nodes);
             const nodeHeight = 24;
-            this.resetTreeviewPorts(blockName);
+            this.resetTreeviewPorts(blockName); 
 
-            const updatePorts = (treeNode, path = '', yOffset = 0, isRootClosed = false) => {
-                const treeNodeText = Object.keys(treeNode)[0];
-                const currentPath = path ? `${path}.${treeNodeText}` : treeNodeText;
-                let effectiveYOffset = yOffset + (isRootClosed ? 0 : nodeHeight);
+            var offset = 0;
 
-                if (path != '') {
-                    this.addPortToBlockTemplates(currentPath, effectiveYOffset - (isRootClosed ? 0 : nodeHeight), blockName);
-                }
+            const calculateOffsets = (nodeArray, path = '', parent = null) => {
+                nodeArray.forEach((nodeObj) => {
+                    const nodeName = Object.keys(nodeObj)[0]; 
+                    const children = nodeObj[nodeName]; 
+                    const currentPath = path ? `${path}.${nodeName}` : nodeName;
 
-                const children = treeNode[treeNodeText];
-                if (children.length > 0) {
-                    const nodeOpened = nodes[treeNodeText].state && nodes[treeNodeText].state.opened;
-                    children.forEach((childNode) => {
-                        effectiveYOffset = updatePorts(childNode, currentPath, effectiveYOffset, isRootClosed || !nodeOpened);
-                    });
-                }
-
-                return effectiveYOffset;
+                    if (nodes[nodeName] && parent && nodes[parent] && nodes[parent].state && nodes[parent].state.opened) {
+                        offset += nodeHeight;
+                    }
+                    if (path != '') {
+                        this.addPortToBlockTemplates(currentPath, offset, blockName);
+                    }
+                    if (children.length > 0) {
+                        calculateOffsets(children, currentPath, nodeName);
+                    }
+                    if (parent == null) {
+                        offset += nodeHeight;
+                    }
+                });
             };
 
-            var rootYOffset = 0;
-            treeStructure.forEach((rootNode, index) => {
-                const rootText = Object.keys(rootNode)[0];
-                const rootClosed = !(nodes[rootText].state && nodes[rootText].state.opened);
-                if (index > 0) {
-                    const higherText = Object.keys(treeStructure[index - 1])[0];
-                    const higherClosed = !(nodes[higherText].state && nodes[higherText].state.opened);
-                    if (higherClosed) {
-                        rootYOffset += index * nodeHeight;
-                    }
-                }
-
-                rootYOffset += updatePorts(rootNode, '', rootYOffset, rootClosed);
-            });
+            calculateOffsets(treeStructure);
         },
         addPortToBlockTemplates(nodePath, yOffset, blockName) {
             if (blockName == 'Source') {
@@ -465,14 +436,15 @@ export default {
             }
 
             const result = [];
-            Object.keys(data).forEach((key) => {
+            const rootKeys = Object.keys(data).filter((key) => data[key].parent === null);
+
+            // 필터링된 키에 대해 반복 처리
+            rootKeys.forEach((key) => {
                 const rootNode = data[key];
-                if (rootNode && rootNode.parent === null) {
-                    // Assuming the root nodes have 'parent' set to null
-                    const nodeData = processNode(key);
-                    if (nodeData) {
-                        result.push(nodeData);
-                    }
+                // 이미 parent === null 조건을 만족하는 키들을 필터링 했으므로 추가적인 검사 필요 없음
+                const nodeData = processNode(key);
+                if (nodeData) {
+                    result.push(nodeData);
                 }
             });
 
@@ -556,8 +528,8 @@ export default {
         definition: {
             async handler() {
                 await this.initializeNodesAndConfig();
-                await this.processVariables(this.leftNodes, 'Source');
-                await this.processVariables(this.rightNodes, 'Target');
+                await this.processNodes(this.leftNodes, 'Source');
+                await this.processNodes(this.rightNodes, 'Target');
             },
             deep: true
         }
@@ -694,9 +666,9 @@ export default {
     padding-left: 0 !important;
 } */
 .form-mapper .left-treeview {
-    width: 200px;
+    width: 250px;
 }
 .form-mapper .right-treeview {
-    width: 200px;
+    width: 250px;
 }
 </style>

@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-dialog v-model="isOpen" max-width="400">
+        <v-dialog v-model="isOpen" max-width="400" @click:outside="close()">
             <v-card>
                 <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{ isNew ? 'Save Definition' : 'Version Up'}}</v-card-title>
                 <v-btn icon style="position:absolute; right:5px; top:5px;" @click="close()">
@@ -29,10 +29,11 @@
 </template>
 
 <script>
+import BackendFactory from '@/components/api/BackendFactory';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 // import xmljs from 'xml-js';
 // import diff from 'deep-diff';
-
+const backend = BackendFactory.createBackend();
 export default {
     name: 'ProcessDefinitionVersionDialog',
     components: {},
@@ -70,6 +71,13 @@ export default {
             minor += 1;
             return `${major}.${minor}`
         },
+        useLock() {
+            if (window.$mode == "ProcessGPT") {
+                return true;
+            } else {
+                return false;
+            }
+        }
     },
     watch: {
         "open": function (newVal) {
@@ -92,26 +100,34 @@ export default {
                 action: async () => {
                     if (me.process) {
                         me.isNew = false
-                        let definitionInfo = await me.storage.list(`proc_def`, {  match: { 'id': me.process.processDefinitionId } })
-                        if(definitionInfo){
-                            let versionInfo = await me.storage.list(`proc_def_arcv`, {
-                                sort: 'desc',
-                                orderBy: 'timeStamp',
-                                size: 1,
-                                match: { 'proc_def_id': me.process.processDefinitionId }
-                                })
-                            if (versionInfo.length > 0) {
-                                me.information = versionInfo[0]
-                            } else {
-                                me.information = {
-                                    arcv_id: definitionInfo[0].id,
-                                    version: 0.0,
-                                    name: definitionInfo[0].name,
-                                    proc_def_id: definitionInfo[0].id,
-                                    snapshot: definitionInfo[0].bpmn,
-                                    diff: null,
-                                    timeStamp: null
+                        let bpmn = await backend.getRawDefinition(me.process.processDefinitionId, { type: 'bpmn' })
+                        if(bpmn){
+                            if(me.useLock){
+                                // GPT
+                                 let definitionInfo = await me.storage.list(`proc_def`, {  match: { 'id': me.process.processDefinitionId } })
+                                 let versionInfo = await me.storage.list(`proc_def_arcv`, {
+                                        sort: 'desc',
+                                        orderBy: 'timeStamp',
+                                        size: 1,
+                                        match: { 'proc_def_id': me.process.processDefinitionId }
+                                    })
+                                if (versionInfo.length > 0) {
+                                    me.information = versionInfo[0]
+                                } else {
+                                    me.information = {
+                                        arcv_id: definitionInfo[0].id,
+                                        version: 0.0,
+                                        name: definitionInfo[0].name,
+                                        proc_def_id: definitionInfo[0].id,
+                                        snapshot: definitionInfo[0].bpmn,
+                                        diff: null,
+                                        timeStamp: null
+                                    }
                                 }
+                            } else {
+                                // Uengine
+                                me.information.proc_def_id = me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1]
+                                me.information.name = me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1]
                             }
                         } else {
                             me.isNew = true

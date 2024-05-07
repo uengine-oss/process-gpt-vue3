@@ -161,6 +161,19 @@ export default {
             },
         });
     },
+    beforeRouteLeave(to, from, next) {
+        if (this.lock && this.enableEdit) {
+            this.openAlertDialog().then((proceed) => {
+                if (proceed) {
+                    next();
+                } else {
+                    next(false);
+                }
+            });
+        } else {
+            next();
+        }
+    },
     methods: {
         async checkedLock() {
             if (this.isAdmin) {
@@ -249,29 +262,46 @@ export default {
             }
         },
         async openAlertDialog() {
-            if (this.isAdmin) {
-                this.storage = StorageBaseFactory.getStorage();
-                const lockObj = await this.storage.getObject('lock/process-map', { key: 'id' });
-                if (lockObj && lockObj.id && lockObj.user_id) {
-                    this.lock = true;
-                    this.editUser = lockObj.user_id;
-                    if (this.editUser == this.userName) {
-                        this.alertDialog = true;
-                        this.alertMessage = '수정된 내용을 저장 및 체크인 하시겠습니까?';
+            return new Promise(async (resolve) => {
+                if (this.isAdmin) {
+                    this.storage = StorageBaseFactory.getStorage();
+                    const lockObj = await this.storage.getObject('lock/process-map', { key: 'id' });
+                    if (lockObj && lockObj.id && lockObj.user_id) {
+                        this.lock = true;
+                        this.editUser = lockObj.user_id;
+                        if (this.editUser == this.userName) {
+                            this.alertDialog = true;
+                            this.alertMessage = '수정된 내용을 저장 및 체크인 하시겠습니까?';
+                        } else {
+                            this.alertDialog = true;
+                            this.alertMessage = `현재 ${this.editUser} 님께서 수정 중입니다. 체크인 하는 경우 ${this.editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크인 하시겠습니까?`;
+                            this.enableEdit = false;
+                        }
+                        this.alertType = 'checkin';
+                        // 사용자의 응답을 기다림
+                        this.$nextTick(() => {
+                            // 다이얼로그가 활성화된 후, 사용자의 응답을 처리
+                            const confirmButton = document.getElementById('confirmButton'); // 확인 버튼의 ID
+                            const cancelButton = document.getElementById('cancelButton'); // 취소 버튼의 ID
+                            confirmButton.onclick = () => resolve(true);
+                            cancelButton.onclick = () => resolve(false);
+                        });
                     } else {
-                        this.alertDialog = true;
-                        this.alertMessage = `현재 ${this.editUser} 님께서 수정 중입니다. 체크인 하는 경우 ${this.editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크인 하시겠습니까?`;
+                        this.lock = false;
                         this.enableEdit = false;
+                        this.alertDialog = true;
+                        this.alertMessage = `프로세스 정의 체계도를 수정하시겠습니까?`;
+                        this.alertType = 'checkout';
+                        // 사용자의 응답을 기다림
+                        this.$nextTick(() => {
+                            const confirmButton = document.getElementById('confirmButton');
+                            const cancelButton = document.getElementById('cancelButton');
+                            confirmButton.onclick = () => resolve(true);
+                            cancelButton.onclick = () => resolve(false);
+                        });
                     }
-                    this.alertType = 'checkin';
-                } else {
-                    this.lock = false;
-                    this.enableEdit = false;
-                    this.alertDialog = true;
-                    this.alertMessage = `프로세스 정의 체계도를 수정하시겠습니까?`;
-                    this.alertType = 'checkout';
                 }
-            }
+            });
         },
         closeAlertDialog() {
             this.alertDialog = false;
