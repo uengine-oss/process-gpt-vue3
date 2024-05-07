@@ -65,6 +65,7 @@
 
 <script>
 import { Form } from 'vee-validate';
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
 
 export default {
     mixins: [],
@@ -83,13 +84,16 @@ export default {
         isHelpDialogOpen: false
     }),
 
-    async created() {
-
-    },
-
     methods: {
-        saveTenantInfo() {
-            console.log(this.tenantInfo);
+        async saveTenantInfo() {
+            const storage = StorageBaseFactory.getStorage();
+            await storage.putObject('tenant_def', {
+                id: this.tenantInfo.id,
+                url: this.tenantInfo.apiUrl,
+                secret: this.tenantInfo.apiKey
+            });
+
+            window.location.href = `http://${this.tenantInfo.id}.processgpt.io`;
         }
     }
 };
