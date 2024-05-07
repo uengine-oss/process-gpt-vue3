@@ -307,11 +307,11 @@ export default {
                 'mainProcessInstanceId',
                 'mainActivityTracingTag',
                 'rootProcessInstanceId',
-                'dummy1',
-                'dummy2',
-                'dummy3',
-                'dummy4',
-                'dummy5'
+                'ext1',
+                'ext2',
+                'ext3',
+                'ext4',
+                'ext5'
             ];
 
             if (nodes['instance']) {
