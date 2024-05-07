@@ -442,9 +442,19 @@ export default {
       const doc = parser.parseFromString(window.mashup.modelValue, 'text/html');
 
       doc.querySelectorAll("div[id^='vuemount_']").forEach(vueRenderElement => {
-        const vueRenderUUID = vueRenderElement.id
-        const app = createApp(DynamicComponent, {content:vueRenderElement.innerHTML, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
-        window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
+        // AI가 태그를 이상하게 생성했을 경우, 이곳에서 에러가 발생할 수 있음. 일단 넘기도록 처리함
+        try {
+
+          const vueRenderUUID = vueRenderElement.id
+          const app = createApp(DynamicComponent, {content:vueRenderElement.innerHTML, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
+          window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
+
+        } catch(e) {
+          console.log("### KEditor에서 Vue 컴포넌트 렌더링시에 오류 발생 ! ###")
+          console.log("window.mashup.modelValue: ", window.mashup.modelValue)
+          console.log("vueRenderElement: ", vueRenderElement)
+          console.error(e)
+        }
       })
     }
 

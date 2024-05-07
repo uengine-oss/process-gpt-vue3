@@ -478,6 +478,11 @@ export default {
                                 me.projectName = value.name;
                             }
                             me.checkedLock(lastPath);
+                        } else {
+                            me.processDefinition = {
+                                processDefinitionId: lastPath,
+                                processDefinitionName: lastPath
+                            }
                         }
                     } else if (lastPath == 'chat') {
                         me.processDefinition = null;
@@ -595,6 +600,7 @@ export default {
                 const result = await parser.parseStringPromise(xmlString);
                 const process = result['bpmn:definitions']['bpmn:process'];
                 const startEvent = process['bpmn:startEvent'];
+                const endEvent = process['bpmn:endEvent'];
                 function ensureArray(item) {
                     return Array.isArray(item) ? item : (item ? [item] : []);
                 }
@@ -602,6 +608,7 @@ export default {
                 const activities = ensureArray(process['bpmn:userTask']);
                 const scriptTasks = ensureArray(process['bpmn:scriptTask']);
                 const sequenceFlows = ensureArray(process['bpmn:sequenceFlow']);
+                const gateways = ensureArray(process['bpmn:exclusiveGateway']);
 
                 const jsonData = {
                     processDefinitionName: process.id,
@@ -616,14 +623,23 @@ export default {
                         name: lane.name,
                         resolutionRule: lane.name === 'applicant' ? 'initiator' : 'system'
                     })),
-                    activities: [
+                    events: [
                         {
                             name: startEvent.id,
                             id: startEvent.id,
                             type: 'StartEvent',
                             description: 'start event',
-                            role: lanes.find(lane => lane['bpmn:flowNodeRef'].includes(startEvent.id)).name
+                            role: lanes[0].name
                         },
+                        {
+                            name: endEvent.id,
+                            id: endEvent.id,
+                            type: 'EndEvent',
+                            description: 'end event',
+                            role: lanes[lanes.length - 1].name
+                        }
+                    ],
+                    activities: [
                         ...activities.map(activity => ({
                             name: activity.name,
                             id: activity.id,
@@ -648,10 +664,20 @@ export default {
                             pythonCode: JSON.parse(task['bpmn:extensionElements']['uengine:properties']['uengine:json']).script
                         }))
                     ],
+                    gateways: [
+                        ...gateways.map(gateway => ({
+                            id: gateway.id,
+                            name: gateway.name,
+                            type: "ExclusiveGateway",
+                            description: gateway.name + ' description',
+                            role: lanes.find(lane => lane['bpmn:flowNodeRef'].includes(gateway.id)).name,
+                            condition: JSON.parse(gateway["bpmn:extensionElements"]["uengine:properties"]["uengine:json"]).condition || ''
+                        }))
+                    ],
                     sequences: sequenceFlows.map(flow => ({
                         source: flow.sourceRef,
                         target: flow.targetRef,
-                        condition: flow.condition || ''
+                        condition: JSON.parse(flow["bpmn:extensionElements"]["uengine:properties"]["uengine:json"]).condition || ''
                     }))
                 };
                 return jsonData;
@@ -1021,6 +1047,13 @@ export default {
                     }
                     laneActivityMapping[activity.role].push(activity.id);
                 });
+            if (jsonModel.gateways)
+                jsonModel.gateways.forEach((gateway) => {
+                    if (!laneActivityMapping[gateway?.role]) {
+                        laneActivityMapping[gateway?.role] = [];
+                    }
+                    laneActivityMapping[gateway.role].push(gateway.id);
+                });
 
             // Lanes 생성
             if (jsonModel.roles) {
@@ -1256,7 +1289,17 @@ export default {
                         const bpmnGateway = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:' + gateway.type);
                         bpmnGateway.setAttribute('id', gateway.id);
                         bpmnGateway.setAttribute('name', gateway.name);
-                        
+                        let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
+                        let root = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
+                        let params = xmlDoc.createElementNS('http://uengine', 'uengine:json');
+                        params.setAttribute('key', 'condition');
+                        params.textContent = JSON.stringify({
+                            condition: gateway.condition ? gateway.condition : ''
+                        });
+                        root.appendChild(params);
+                        extensionElements.appendChild(root);
+                        bpmnGateway.appendChild(extensionElements);
+
                         if (outGoing[gateway.id]) {
                             let outGoingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:outgoing');
                             outGoingSeq.textContent = outGoing[gateway.id];
@@ -1267,6 +1310,7 @@ export default {
                             inComingSeq.textContent = inComing[gateway.id];
                             bpmnGateway.appendChild(inComingSeq);
                         }
+
                         process.appendChild(bpmnGateway);
                     });
                 }
