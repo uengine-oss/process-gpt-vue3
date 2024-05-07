@@ -76,6 +76,16 @@ export default {
         updatedDefKey: 0,
         eventList: []
     }),
+    watch: {
+        $route: {
+            deep: true,
+            handler(newVal, oldVal) {
+                if (newVal.path !== oldVal.path) {
+                    this.init();
+                }
+            }
+        }
+    },
     created() {
         this.init();
     },
