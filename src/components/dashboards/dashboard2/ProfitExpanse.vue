@@ -1,7 +1,7 @@
 <template>
     <v-card elevation="10">
         <v-card-item>
-            <div class="d-flex align-center justify-space-between">
+            <div class="align-center justify-space-between">
                 <div>
                     <v-row class="ma-0 pa-0">
                         <h5 class="text-h5 mb-1 font-weight-semibold">직원별 프로세스 실행실적</h5>
@@ -24,11 +24,11 @@
             </div>
 
             <v-row>
-                <v-col cols="12" sm="7" class="pt-7">
+                <v-col cols="12" sm="9" class="pt-7">
                     <apexchart v-if="chartOptions" type="bar" class="profit-expense" height="300" :options="chartOptions"
                         :series="chartOptions.series"> </apexchart>
                 </v-col>
-                <v-col cols="12" sm="5" class="mt-8 pb-6">
+                <v-col cols="12" sm="3" class="mt-8 pb-6">
                     <v-card-title class="mb-3">Total</v-card-title>
                     <div class="d-flex align-center gap-4 mb-3 pb-3">
                         <v-avatar style="background-color:#FFF0B4;">
