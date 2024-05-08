@@ -28,8 +28,8 @@ const currentTabName = ref('normalRegister');
                     <h2 class="text-h3 font-weight-semibold mb-4">{{ $t('createAccount.title') }}</h2>
 
                     <v-tabs v-model="currentTabName" style="position: fixed; z-index: 999" class="text-black" fixed-tabs>
-                        <v-tab value="normalRegister">일반가입</v-tab>
-                        <v-tab value="adminRegister">어드민가입</v-tab>
+                        <v-tab value="normalRegister">{{ $t('createAccount.normalRegister') }}</v-tab>
+                        <v-tab value="adminRegister">{{ $t('createAccount.adminRegister') }}</v-tab>
                     </v-tabs>
                     <v-window v-model="currentTabName">
                         <v-window-item value="normalRegister" class="mt-15">

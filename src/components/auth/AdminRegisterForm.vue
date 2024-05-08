@@ -2,7 +2,7 @@
     <Form @submit="processAdminSignup" v-slot="{ errors, isSubmitting }" class="mt-5">
         <!-- #region 어드민 계정 정보 입력 -->
         <v-label class="text-subtitle-1 font-weight-medium pb-2">
-            {{ '어드민 정보' }}
+            {{ $t('createAdminAccount.createAccountHeader') }}
         </v-label>
         <v-divider class="mb-4" />
 
@@ -46,18 +46,18 @@
         <!-- #endregion -->
         <!-- #region 테넌트 정보 입력 -->
         <v-label class="text-subtitle-1 font-weight-medium pb-2">
-            {{ '테넌트 정보' }}
+            {{ $t('createAdminAccount.createTenantHeader') }}
         </v-label>
         <v-divider class="mb-4" />
 
-        <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ 'Tenant ID' }}</v-label>
+        <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAdminAccount.tenantID') }}</v-label>
         <VTextField 
             v-model="tenantInfo.id" 
             required 
         ></VTextField>
 
         <v-label class="text-subtitle-1 font-weight-medium pb-2">
-            {{ 'Supabase Connection Info' }}
+            {{ $t('createAdminAccount.supabaseConnectionInfo') }}
             <v-btn icon @click="isHelpDialogOpen = true">
                 <v-icon>mdi-help-circle</v-icon>
             </v-btn>
