@@ -376,10 +376,11 @@ export default {
                     const modeler = store.getModeler;
                     const xmlObj = await modeler.saveXML({ format: true, preamble: true });
 
-                    if (me.processDefinition) {
-                        info.definition = me.processDefinition;
-                    } else if (!me.processDefinition && xmlObj && xmlObj.xml) {
-                        me.processDefinition = me.convertXMLToJSON(xmlObj.xml);
+                    // if (me.processDefinition) {
+                    //     info.definition = me.processDefinition;
+                    // }
+                    if (xmlObj && xmlObj.xml) {
+                        me.processDefinition = await me.convertXMLToJSON(xmlObj.xml);
                         info.definition = me.processDefinition;
                     }
 
@@ -824,7 +825,7 @@ export default {
                 context: me,
                 action: async () => {
                     if (!me.processDefinition && xml) {
-                        me.processDefinition = me.convertXMLToJSON(xml);
+                        me.processDefinition = await me.convertXMLToJSON(xml);
                     }
 
                     me.processDefinition.processDefinitionId = info.proc_def_id
