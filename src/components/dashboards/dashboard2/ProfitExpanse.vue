@@ -20,9 +20,6 @@
                             outlined
                         ></v-text-field>
                     </v-row>
-                    <template v-for="topUser in topUsers">
-                        <span>{{topUser}}<br></span>
-                    </template>
                 </div>
             </div>
 
