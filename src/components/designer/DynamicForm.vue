@@ -25,6 +25,7 @@ import TextareaField from '@/components/ui/field/TextareaField.vue';
 import UserSelectField from '@/components/ui/field/UserSelectField.vue';
 import RowLayout from '@/components/ui/field/RowLayout.vue';
 import RowLayoutItemHead from '@/components/ui/field/RowLayoutItemHead.vue';
+import ScriptField from '@/components/ui/field/ScriptField.vue';
 
 export default {
   props: {
@@ -72,6 +73,7 @@ export default {
    */
   render() {
     const me = this
+
     const r = {
       components: {
         TextField,
@@ -84,15 +86,37 @@ export default {
         TextareaField,
         UserSelectField,
         RowLayout,
-        RowLayoutItemHead
+        RowLayoutItemHead,
+        ScriptField
       },
       data() {
         return {
-          formValues: me.formValues
+          formValues: me.formValues,
+
+          watchValueScripts: {},
+          oldFormValues: {}
         }
+      },
+      mounted() {
+        // $watch가 중복되지 않게 하기 위해서
+        if(Date.now() - localStorage.formValuesWatchersInitTime < 500) return
+        localStorage.formValuesWatchersInitTime = Date.now()
+
+        this.oldFormValues = JSON.parse(JSON.stringify(this.formValues))
+        this.$watch(`formValues`, (newVal, oldVal) => {
+          Object.keys(this.watchValueScripts).forEach(key => {
+            if(this.oldFormValues[key] !== this.formValues[key]) {
+              eval(this.watchValueScripts[key])
+            }
+          })
+          this.oldFormValues = JSON.parse(JSON.stringify(this.formValues))
+        }, {deep: true})
       },
       template: `<div id="kEditor1">
   ${me.formHTML}
+<script-field watch_name="name-1" v-model="watchValueScripts['name-1']">
+  alert("Created: " + JSON.stringify(this.oldFormValues["name-1"]) + " / " + JSON.stringify(this.formValues["name-1"]))
+</script-field>
 </div>`
     }
     return h(r);
