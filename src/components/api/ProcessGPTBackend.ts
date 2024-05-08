@@ -8,12 +8,11 @@ class ProcessGPTBackend implements Backend {
 
     async listDefinition(path: string) {
         try {
-
             // 프로세스 정보, 폼 정보를 각각 불러와서 파일명을 포함해서 가공하기 위해서
             let procDefs = await storage.list('proc_def', (path ? { like: `${path}%` } : undefined));
             procDefs.map((item: any) => {
                 item.path = `${item.id}.bpmn`
-                item.name = item.path 
+                item.name = item.name || item.path 
             });
             
             let formDefs = await storage.list('form_def', (path ? { like: `${path.replace(/\//g, "#")}%` } : undefined));
@@ -26,7 +25,6 @@ class ProcessGPTBackend implements Backend {
             return [...procDefs, ...formDefs]
 
         } catch (error) {
-            console.error(error)
             throw new Error('error in listDefinition');
         }
     }
@@ -52,7 +50,7 @@ class ProcessGPTBackend implements Backend {
                 }).then(res => {
                     result = res;
                 }).catch(error => {
-                    result = error
+                    throw new Error(error && error.detail ? error.detail : error);
                 });
             }
             const arcv = await storage.list(`proc_def_arcv/${defId}`, { key: 'proc_def_id' });
@@ -108,7 +106,7 @@ class ProcessGPTBackend implements Backend {
                 }).then(res => {
                     return res
                 }).catch(error => {
-                    return error
+                    throw new Error(error && error.detail ? error.detail : error);
                 });
             }
 
@@ -161,7 +159,7 @@ class ProcessGPTBackend implements Backend {
                     }).then(res => {
                         return res
                     }).catch(error => {
-                        return error
+                        throw new Error(error && error.detail ? error.detail : error);
                     });
                 }
             }
@@ -192,12 +190,21 @@ class ProcessGPTBackend implements Backend {
                 if (res.data) {
                     const data = res.data;
                     if (data.output) {
-                        result = data.output;
+                        result = JSON.parse(data.output);
+                        if (input.answer === "" && result.instanceId) {
+                            const newMessage = {
+                                role: 'system',
+                                timestamp: Date.now(),
+                                content: `프로세스 '${defId}' 이/가 실행되었습니다.\n\n${result.description}`,
+                                jsonContent: result
+                            }
+                            await this.updateInstanceChat(result.instanceId, newMessage);
+                        }
                     }
                 }
             })
             .catch(error => {
-                return error;
+                throw new Error(error && error.detail ? error.detail : error);
             });
 
             return result;
@@ -487,76 +494,56 @@ class ProcessGPTBackend implements Backend {
     }
 
     async putWorkItemComplete(taskId: string, inputData: any) {
-        try {
-            const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
-            const userInfo = await storage.getUserInfo();
-            
-            const newMessage = {
-                role: 'system',
-                timestamp: Date.now(),
-                content: `'${workItem.activity_id}' 를 실행합니다.`
-            }
-            await this.updateInstanceChat(workItem.proc_inst_id, newMessage);
-
-            const input = {
-                answer: JSON.stringify(inputData),
-                process_instance_id: workItem.proc_inst_id,
-                process_definition_id: workItem.proc_def_id,
-                userInfo: userInfo,
-                activity_id: workItem.activity_id,
-            };
-            const req = {
-                input: input
-            };
-            let url = '/complete/invoke';
-            await axios.post(url, req).then(async res => {
-                if (res.data) {
-                    const data = res.data;
-                    if (data.output) {
-                        const output = JSON.parse(data.output);
-
-                        // update todolist
-                        const todo = {
-                            id: taskId,
-                            proc_def_id: output.processDefinitionId,
-                            proc_inst_id: output.instanceId,
-                            end_date: Date.now(),
-                            status: 'DONE',
-                            activity_id: output.completedActivities[0].completedActivityId,
-                        }
-                        await this.putWorklist(taskId, todo);
-
-                        // update instance activity
-                        const inst = {
-                            proc_inst_id: output.instanceId,
-                            current_activity_ids: output.nextActivities,
-                        }
-                        await storage.putObject(output.processDefinitionId, inst);
-                        
-                        // update instance message
-                        const newMessage = {
-                            role: 'system',
-                            timestamp: Date.now(),
-                            content: output.description,
-                            jsonContent: data.output
-                        }
-                        await this.updateInstanceChat(output.instanceId, newMessage);
-                    }
-                }
-            })
-            .catch(error => {
-                return error;
-            });
-
-        } catch (error) {
-            return new Error('error in putWorkItemComplete');
+        let result: any = null;
+        const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
+        const userInfo = await storage.getUserInfo();
+        
+        const newMessage = {
+            role: 'system',
+            timestamp: Date.now(),
+            content: `액티비티 '${workItem.activity_id}' 을/를 실행합니다.`
         }
+        await this.updateInstanceChat(workItem.proc_inst_id, newMessage);
+
+        const input = {
+            answer: JSON.stringify(inputData),
+            process_instance_id: workItem.proc_inst_id,
+            process_definition_id: workItem.proc_def_id,
+            userInfo: userInfo,
+            activity_id: workItem.activity_id,
+        };
+        const req = {
+            input: input
+        };
+        let url = '/complete/invoke';
+        await axios.post(url, req).then(async res => {
+            if (res.data) {
+                const data = res.data;
+                if (data.output) {
+                    const output = JSON.parse(data.output);
+                    // update instance message
+                    const newMessage = {
+                        role: 'system',
+                        timestamp: Date.now(),
+                        content: output.description,
+                        jsonContent: data.output
+                    }
+                    await this.updateInstanceChat(output.instanceId, newMessage);
+                }
+                result = res.data;
+            }
+        })
+        .catch(error => {
+            throw new Error(error && error.detail ? error.detail : error);
+        });
+
+        return result;
     }
 
     async updateInstanceChat(instanceId: string, newMessage: any) {
         try {
             const data = await storage.getObject(`proc_inst/${instanceId}`, { key: 'id' });
-            const messages = data.messages;
+            const messages = data.messages || [];
             messages.push(newMessage);
             const putObj = {
                 id: instanceId,
@@ -649,6 +636,14 @@ class ProcessGPTBackend implements Backend {
             return worklist;
         } catch (e) {
             throw new Error(`error in getWorkListByInstId`);
+        }
+    }
+
+    async getEventList(instanceId: string) {
+        try {
+            return null;
+        } catch (error) {
+            throw new Error(`error in getEventList`);
         }
     }
 }
