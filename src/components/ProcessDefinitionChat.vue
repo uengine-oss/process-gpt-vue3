@@ -832,7 +832,9 @@ export default {
                         : prompt('please give a ID for the process definition');
                     
                     if (!me.processDefinition.processDefinitionName) {
-                        me.processDefinition.processDefinitionName = prompt('please give a name for the process definition');
+                        me.processDefinition.processDefinitionName = info.name
+                        ? info.name
+                        : prompt('please give a name for the process definition');
                     }
 
                     me.projectName = me.processDefinition.processDefinitionName;
