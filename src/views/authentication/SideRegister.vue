@@ -2,6 +2,7 @@
 import Logo from '@/layouts/full/logo/Logo.vue';
 /* Register form */
 import RegisterForm from '@/components/auth/RegisterForm.vue';
+import AdminRegisterForm from '@/components/auth/AdminRegisterForm.vue';
 import { ref } from 'vue';
 
 const currentTabName = ref('normalRegister');
@@ -28,10 +29,14 @@ const currentTabName = ref('normalRegister');
 
                     <v-tabs v-model="currentTabName" style="position: fixed; z-index: 999" class="text-black" fixed-tabs>
                         <v-tab value="normalRegister">일반가입</v-tab>
+                        <v-tab value="adminRegister">어드민가입</v-tab>
                     </v-tabs>
-                    <v-window v-model="currentTabName" class="fill-height">
-                        <v-window-item value="normalRegister" class="fill-height mt-15">
-                            <RegisterForm />
+                    <v-window v-model="currentTabName">
+                        <v-window-item value="normalRegister" class="mt-15">
+                            <RegisterForm key="normalRegister"/>
+                        </v-window-item>
+                        <v-window-item value="adminRegister" class="mt-15" style="overflow-y: auto; overflow-x: hidden; height: 65vh;">
+                            <AdminRegisterForm key="adminRegister"/>
                         </v-window-item>
                     </v-window>
 

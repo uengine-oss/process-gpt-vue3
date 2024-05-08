@@ -40,7 +40,7 @@ const AuthRoutes = {
             name: 'Side Reset Password',
             path: '/auth/reset-password',
             component: () => import('@/views/authentication/SideResetPassword.vue')
-        },
+        }
         // {
         //     name: 'Boxed Forgot Password',
         //     path: '/auth/forgot-password2',
@@ -66,11 +66,6 @@ const AuthRoutes = {
         //     path: '/auth/maintenance',
         //     component: () => import('@/views/authentication/Maintenance.vue')
         // },
-        {
-            name: 'Tenant Register',
-            path: '/tenant/register',
-            component: () => import('@/views/tenant/TenantView.vue')
-        }
     ]
 };
 
