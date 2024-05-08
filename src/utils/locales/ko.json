@@ -12,8 +12,8 @@
         "subTitle": "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
     },
     "DashboardTodoList": {
-        "todo": "할일",
-        "inProgress": "진행중",
+        "todo": "할 일",
+        "inProgress": "진행 중",
         "done": "완료"
     },
     "DashboardUpcomingScheduls": {
