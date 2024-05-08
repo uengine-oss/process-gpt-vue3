@@ -12,8 +12,8 @@
         "subTitle": "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
     },
     "DashboardTodoList": {
-        "todo": "할일",
-        "inProgress": "진행중",
+        "todo": "할 일",
+        "inProgress": "진행 중",
         "done": "완료"
     },
     "DashboardUpcomingScheduls": {
@@ -161,7 +161,7 @@
         "title": "Welcome to Process-GPT",
         "google": "구글 로그인",
         "or": "또는 다음 계정으로 로그인",
-        "userName": "계정",
+        "userName": "이메일",
         "password": "암호",
         "remeber": "이 장치에 기억",
         "login": "로그인",
@@ -176,7 +176,15 @@
         "password": "암호",
         "email": "이메일",
         "google": "구글 로그인",
-        "or": "또는 다음 계정으로 로그인"
+        "or": "또는 다음 계정으로 로그인",
+        "normalRegister": "일반가입",
+        "adminRegister": "어드민가입"
+    },
+    "createAdminAccount": {
+        "createAccountHeader": "어드민 정보",
+        "createTenantHeader": "테넌트 정보",
+        "tenantID": "테넌트 ID",
+        "supabaseConnectionInfo": "Supabase 연결 정보"
     },
     "forgotPassword": {
         "title": "비밀번호 찾기",
