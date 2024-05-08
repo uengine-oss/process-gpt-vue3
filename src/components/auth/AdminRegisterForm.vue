@@ -1,5 +1,6 @@
 <template>
-    <Form @submit="saveTenantInfo" v-slot="{ errors, isSubmitting }" class="mt-5">
+    <Form @submit="processAdminSignup" v-slot="{ errors, isSubmitting }" class="mt-5">
+        <!-- #region 어드민 계정 정보 입력 -->
         <v-label class="text-subtitle-1 font-weight-medium pb-2">
             {{ '어드민 정보' }}
         </v-label>
@@ -22,27 +23,28 @@
 
         <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.userName') }}</v-label>
         <VTextField 
-            v-model="username" 
-            :rules="usernameRules" 
+            v-model="accountInfo.username" 
+            :rules="accountInfoRules.username" 
             required 
         ></VTextField>
         <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.email') }}</v-label>
         <VTextField 
-            v-model="email" 
-            :rules="emailRules" 
+            v-model="accountInfo.email" 
+            :rules="accountInfoRules.email" 
             required 
         ></VTextField>
         <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.password') }}</v-label>
         <VTextField
-            v-model="password"
+            v-model="accountInfo.password"
             :counter="10"
-            :rules="passwordRules"
+            :rules="accountInfoRules.password"
             required
             variant="outlined"
             type="password"
             color="primary"
         ></VTextField>
-
+        <!-- #endregion -->
+        <!-- #region 테넌트 정보 입력 -->
         <v-label class="text-subtitle-1 font-weight-medium pb-2">
             {{ '테넌트 정보' }}
         </v-label>
@@ -83,8 +85,10 @@
             :loading="isSubmitting"
             type="submit"
         >Sign up</v-btn>
+        <!-- #endregion -->
     </Form>
 
+    <!-- #region Supabase 연결 설정 입력 도움말 다이얼로그 -->
     <v-dialog v-model="isHelpDialogOpen" max-width="500">
         <v-card>
             <v-card-item>
@@ -109,19 +113,38 @@
             </v-card-actions>
         </v-card>
     </v-dialog>
+    <!-- #endregion -->
 </template>
 
 <script>
 import { Form } from 'vee-validate';
+import { useAuthStore } from '@/stores/auth';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 
 export default {
-    name: 'TenantRegister',
+    name: 'AdminRegisterForm',
     components: {
         Form
     },
 
     data: () => ({
+        accountInfo: {
+            username: '',
+            email: '',
+            password: ''
+        },
+        accountInfoRules: {
+            username: [
+                (v) => !!v || 'Name is required',
+                (v) => (v && v.length <= 10) || 'Name must be less than 10 characters'
+            ],
+            email: [(v) => !!v || 'E-mail is required', (v) => /.+@.+\..+/.test(v) || 'E-mail must be valid'],
+            password: [
+                (v) => !!v || 'Password is required',
+                (v) => (v && v.length <= 10) || 'Password must be less than 10 characters'
+            ],
+        },
+
         tenantInfo: {
             id: '',
             apiUrl: '',
@@ -131,16 +154,33 @@ export default {
         isHelpDialogOpen: false
     }),
 
+
     methods: {
+        // #region 어드민 가입 처리
+        async processAdminSignup() {
+            await this.saveAccountInfo();
+            await this.saveTenantInfo();
+            window.location.href = `http://${this.tenantInfo.id}.processgpt.io`;
+        },
+
+        async saveAccountInfo() {
+            await this.authStore.signUp(this.accountInfo.username, this.accountInfo.email, this.accountInfo.password);
+        },
+
         async saveTenantInfo() {
-            await (StorageBaseFactory.getStorage()).putObject('tenant_def', {
+            await this.storage.putObject('tenant_def', {
                 id: this.tenantInfo.id,
                 url: this.tenantInfo.apiUrl,
                 secret: this.tenantInfo.apiKey
             });
-
-            window.location.href = `http://${this.tenantInfo.id}.processgpt.io`;
         }
-    }
+        // #endregion
+    },
+
+    created() {
+        this.authStore = useAuthStore()
+        this.storage = StorageBaseFactory.getStorage()
+    },
 };
 </script>
+
