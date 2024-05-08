@@ -1,11 +1,21 @@
 <script setup lang="ts">
+import { onMounted } from 'vue';
 import { CircleXIcon, MailIcon } from 'vue-tabler-icons';
 import { profileDD } from '@/_mockApis/headerData';
 import { useAuthStore } from '@/stores/auth';
 import { Icon } from '@iconify/vue';
 
+const defaultPicture = 'https://github-production-user-asset-6210df.s3.amazonaws.com/59447401/328736072-ee824977-e07b-4e90-ad92-e5ba82fa6bb9.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20240508%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20240508T024233Z&X-Amz-Expires=300&X-Amz-Signature=fca37f9fe89a5686e8565764af1050148193f9394bc7f63733754827355405fc&X-Amz-SignedHeaders=host&actor_id=59447401&key_id=0&repo_id=743777629'; // 기본 이미지 URL 설정
+let picture = localStorage.getItem("picture");
+
+onMounted(() => {
+  if (!picture || picture == "null") {
+    localStorage.setItem("picture", defaultPicture);
+    picture = defaultPicture;
+  }
+});
+
 const name = localStorage.getItem("userName");
-const picture = localStorage.getItem("picture");
 const isAdmin = localStorage.getItem("isAdmin");
 </script>
 
