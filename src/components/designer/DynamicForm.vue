@@ -62,7 +62,8 @@ export default {
   data() {
     return {
       renderedContent: "",
-      formValues: {}
+      formValues: {},
+      cachedHFunc: null // 중복 렌더링을 피하기 위해서
     }
   },
 
@@ -98,10 +99,6 @@ export default {
         }
       },
       mounted() {
-        // $watch가 중복되지 않게 하기 위해서
-        if(Date.now() - localStorage.formValuesWatchersInitTime < 500) return
-        localStorage.formValuesWatchersInitTime = Date.now()
-
         this.oldFormValues = JSON.parse(JSON.stringify(this.formValues))
         this.$watch(`formValues`, (newVal, oldVal) => {
           Object.keys(this.watchValueScripts).forEach(key => {
@@ -119,7 +116,10 @@ export default {
 </script-field>
 </div>`
     }
-    return h(r);
+
+    if(this.cachedHFunc) return this.cachedHFunc
+    this.cachedHFunc = h(r)
+    return this.cachedHFunc;
   },
 };
 </script>
