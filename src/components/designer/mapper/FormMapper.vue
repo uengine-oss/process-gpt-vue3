@@ -307,11 +307,11 @@ export default {
                 'mainProcessInstanceId',
                 'mainActivityTracingTag',
                 'rootProcessInstanceId',
-                'dummy1',
-                'dummy2',
-                'dummy3',
-                'dummy4',
-                'dummy5'
+                'ext1',
+                'ext2',
+                'ext3',
+                'ext4',
+                'ext5'
             ];
 
             if (nodes['instance']) {
@@ -371,44 +371,32 @@ export default {
         updateBlockTemplates(nodes, blockName) {
             const treeStructure = this.transformData(nodes);
             const nodeHeight = 24;
-            this.resetTreeviewPorts(blockName); // Treeview 포트를 리셋합니다.
+            this.resetTreeviewPorts(blockName); 
 
-            
+            var offset = 0;
 
-            const updatePorts = (treeNode, path = '', yOffset = 0, isRootClosed = false) => {
-                const treeNodeText = Object.keys(treeNode)[0];
-                const currentPath = path ? `${path}.${treeNodeText}` : treeNodeText;
-                let effectiveYOffset = yOffset + (isRootClosed ? 0 : nodeHeight);
+            const calculateOffsets = (nodeArray, path = '', parent = null) => {
+                nodeArray.forEach((nodeObj) => {
+                    const nodeName = Object.keys(nodeObj)[0]; 
+                    const children = nodeObj[nodeName]; 
+                    const currentPath = path ? `${path}.${nodeName}` : nodeName;
 
-                if (path != '') {
-                    this.addPortToBlockTemplates(currentPath, effectiveYOffset - (isRootClosed ? 0 : nodeHeight), blockName);
-                }
-
-                const children = treeNode[treeNodeText];
-                if (children.length > 0) {
-                    const nodeOpened = nodes[treeNodeText].state && nodes[treeNodeText].state.opened;
-                    children.forEach((childNode) => {
-                        effectiveYOffset = updatePorts(childNode, currentPath, effectiveYOffset, isRootClosed || !nodeOpened);
-                    });
-                }
-
-                return effectiveYOffset;
+                    if (nodes[nodeName] && parent && nodes[parent] && nodes[parent].state && nodes[parent].state.opened) {
+                        offset += nodeHeight;
+                    }
+                    if (path != '') {
+                        this.addPortToBlockTemplates(currentPath, offset, blockName);
+                    }
+                    if (children.length > 0) {
+                        calculateOffsets(children, currentPath, nodeName);
+                    }
+                    if (parent == null) {
+                        offset += nodeHeight;
+                    }
+                });
             };
 
-            var rootYOffset = 0;
-            treeStructure.forEach((rootNode, index) => {
-                const rootText = Object.keys(rootNode)[0];
-                const rootClosed = !(nodes[rootText].state && nodes[rootText].state.opened);
-                if (index > 0) {
-                    const higherText = Object.keys(treeStructure[index - 1])[0];
-                    const higherClosed = !(nodes[higherText].state && nodes[higherText].state.opened);
-                    if (higherClosed) {
-                        rootYOffset += index * nodeHeight;
-                    }
-                }
-
-                rootYOffset += updatePorts(rootNode, '', rootYOffset, rootClosed);
-            });
+            calculateOffsets(treeStructure);
         },
         addPortToBlockTemplates(nodePath, yOffset, blockName) {
             if (blockName == 'Source') {

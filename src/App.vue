@@ -29,6 +29,7 @@
 </template>
 
 <script>
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { createClient } from '@supabase/supabase-js';
 import { RouterView } from 'vue-router';
 export default {
@@ -42,9 +43,11 @@ export default {
         snackbarMessage: '',
         snackbarMessageDetail: null,
         snackbar: false,
-        snackbarColor: null
+        snackbarColor: null,
+        storage: null
     }),
     async created() {
+        this.storage = StorageBaseFactory.getStorage();
         // window.$supabase = createClient(window._env_.DB_URL, window._env_.DB_PW);
         window.$supabase = createClient(
             'http://127.0.0.1:54321',
@@ -59,6 +62,25 @@ export default {
         window.$mode = 'uEngine';
         // window.$mode = 'ProcessGPT';
         window.$app_ = this;
+        
+        // const subdomain = window.location.host.split('.')[0];
+        // if(subdomain != 'www'){
+        //     let option = {
+        //         key: "id"
+        //     }
+        //     const res = await this.storage.getObject(`db://tenant_def/${subdomain}`, option);
+        //     if(res){
+        //         window.$supabase = createClient(res.url, res.secret, {
+        //             auth: {
+        //                 autoRefreshToken: false,
+        //                 persistSession: false
+        //             }
+        //         });
+        //     } else {
+        //         alert('해당 주소는 존재하지 않는 주소입니다. 가입 후 이용하세요.');
+        //         window.location.href = 'http://www.process-gpt.io';
+        //     }
+        // }
     },
     methods: {
         async try(options, parameters, options_) {

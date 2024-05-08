@@ -3,10 +3,18 @@
         <!-- <NavGroup :item="instMenu" :key="instMenu.header" /> -->
         <!-- <NavItem class="leftPadding" :item="definitionMap" /> -->
         <!-- <NavItem v-if="!instExecution.disable" class="leftPadding" :item="instExecution" /> -->
-        <NavCollapse v-if="!runningInstances.disable && runningInstances.children.length" class="leftPadding" 
-            :item="runningInstances" :level="0" />
-        <NavCollapse v-if="!completeInstances.disable && completeInstances.children.length" class="leftPadding" 
-            :item="completeInstances" :level="0" />
+        <NavCollapse
+            v-if="!runningInstances.disable && runningInstances.children.length"
+            class="leftPadding"
+            :item="runningInstances"
+            :level="0"
+        />
+        <NavCollapse
+            v-if="!completeInstances.disable && completeInstances.children.length"
+            class="leftPadding"
+            :item="completeInstances"
+            :level="0"
+        />
     </v-list>
 </template>
 

@@ -300,6 +300,7 @@ export default {
             } else {
                 delete this.copyUengineProperties._type;
                 delete this.copyUengineProperties.variableForHtmlFormContext;
+                delete this.copyUengineProperties.mappingContext;
             }
 
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
