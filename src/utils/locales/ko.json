@@ -176,7 +176,15 @@
         "password": "암호",
         "email": "이메일",
         "google": "구글 로그인",
-        "or": "또는 다음 계정으로 로그인"
+        "or": "또는 다음 계정으로 로그인",
+        "normalRegister": "일반가입",
+        "adminRegister": "어드민가입"
+    },
+    "createAdminAccount": {
+        "createAccountHeader": "어드민 정보",
+        "createTenantHeader": "테넌트 정보",
+        "tenantID": "테넌트 ID",
+        "supabaseConnectionInfo": "Supabase 연결 정보"
     },
     "forgotPassword": {
         "title": "비밀번호 찾기",
