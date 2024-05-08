@@ -18,7 +18,8 @@
                 <div v-if="currentComponent"
                     class="work-itme-current-component"
                 >
-                    <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus"></component>
+                    <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus"
+                        :isComplete="isComplete"></component>
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
                             <v-btn
@@ -92,6 +93,7 @@
                                         <component
                                             :is="'work-history-' + mode"
                                             :messages="messages"
+                                            :isComplete="isComplete"
                                             @clickMessage="navigateToWorkItemByTaskId"
                                         />
                                     </div>
@@ -166,6 +168,9 @@ export default {
         workItemStatus() {
             if (!this.workItem) return null;
             return this.workItem.worklist.status;
+        },
+        isComplete(){
+            return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
         }
     },
     methods: {
