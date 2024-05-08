@@ -598,45 +598,45 @@ export default {
             try {
                 const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
                 const result = await parser.parseStringPromise(xmlString);
-                const process = result['bpmn:definitions']['bpmn:process'];
-                const startEvent = process['bpmn:startEvent'];
-                const endEvent = process['bpmn:endEvent'];
+                const process = result['bpmn:definitions']['bpmn:process'] || {};
+                const startEvent = process['bpmn:startEvent'] || {};
+                const endEvent = process['bpmn:endEvent'] || {};
                 function ensureArray(item) {
                     return Array.isArray(item) ? item : (item ? [item] : []);
                 }
-                const lanes = ensureArray(process['bpmn:laneSet']['bpmn:lane']);
-                const activities = ensureArray(process['bpmn:userTask']);
-                const scriptTasks = ensureArray(process['bpmn:scriptTask']);
-                const sequenceFlows = ensureArray(process['bpmn:sequenceFlow']);
-                const gateways = ensureArray(process['bpmn:exclusiveGateway']);
+                const lanes = ensureArray(process['bpmn:laneSet'] ? process['bpmn:laneSet']['bpmn:lane'] : []);
+                const activities = ensureArray(process['bpmn:userTask'] || []);
+                const scriptTasks = ensureArray(process['bpmn:scriptTask'] || []);
+                const sequenceFlows = ensureArray(process['bpmn:sequenceFlow'] || []);
+                const gateways = ensureArray(process['bpmn:exclusiveGateway'] || []);
 
                 const jsonData = {
-                    processDefinitionName: process.id,
-                    processDefinitionId: process.id,
+                    processDefinitionName: process.id || 'Unknown',
+                    processDefinitionId: process.id || 'Unknown',
                     description: "process.description",
-                    data: process['bpmn:extensionElements']['uengine:properties']['uengine:variable'].map(varData => ({
+                    data: process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable'].map(varData => ({
                         name: varData.name,
                         description: varData.name + ' description',
                         type: varData.type
-                    })),
+                    })) : [],
                     roles: lanes.map(lane => ({
                         name: lane.name,
                         resolutionRule: lane.name === 'applicant' ? 'initiator' : 'system'
                     })),
                     events: [
                         {
-                            name: startEvent.id,
-                            id: startEvent.id,
+                            name: startEvent.id || 'StartEvent',
+                            id: startEvent.id || 'StartEvent',
                             type: 'StartEvent',
                             description: 'start event',
-                            role: lanes[0].name
+                            role: lanes[0] ? lanes[0].name : 'Unknown'
                         },
                         {
-                            name: endEvent.id,
-                            id: endEvent.id,
+                            name: endEvent.id || 'EndEvent',
+                            id: endEvent.id || 'EndEvent',
                             type: 'EndEvent',
                             description: 'end event',
-                            role: lanes[lanes.length - 1].name
+                            role: lanes.length > 0 ? lanes[lanes.length - 1].name : 'Unknown'
                         }
                     ],
                     activities: [
@@ -646,13 +646,13 @@ export default {
                             type: 'UserActivity',
                             description: activity.name + ' description',
                             instruction: activity.name + ' instruction',
-                            role: lanes.find(lane => lane['bpmn:flowNodeRef'].includes(activity.id)).name,
-                            inputData: JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
+                            role: lanes.find(lane => lane['bpmn:flowNodeRef'] && lane['bpmn:flowNodeRef'].includes(activity.id)) ? lanes.find(lane => lane['bpmn:flowNodeRef'].includes(activity.id)).name : 'Unknown',
+                            inputData: activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
                                 .filter(param => param.direction === "IN")
-                                .map(param => param.variable.name),
-                            outputData: JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
+                                .map(param => param.variable.name) : [],
+                            outputData: activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
                                 .filter(param => param.direction === "OUT")
-                                .map(param => param.variable.name)
+                                .map(param => param.variable.name) : []
                         })),
                         ...scriptTasks.map(task => ({
                             name: task.name,
@@ -660,24 +660,24 @@ export default {
                             type: 'ScriptActivity',
                             description: task.name + ' description',
                             instruction: task.name + ' instruction',
-                            role: lanes.find(lane => lane['bpmn:flowNodeRef'].includes(task.id)).name,
-                            pythonCode: JSON.parse(task['bpmn:extensionElements']['uengine:properties']['uengine:json']).script
+                            role: lanes.find(lane => lane['bpmn:flowNodeRef'] && lane['bpmn:flowNodeRef'].includes(task.id)) ? lanes.find(lane => lane['bpmn:flowNodeRef'].includes(task.id)).name : 'Unknown',
+                            pythonCode: task['bpmn:extensionElements'] && task['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(task['bpmn:extensionElements']['uengine:properties']['uengine:json']).script : ''
                         }))
                     ],
                     gateways: [
                         ...gateways.map(gateway => ({
-                            id: gateway.id,
-                            name: gateway.name,
+                            id: gateway.id || 'Gateway',
+                            name: gateway.name || 'Gateway',
                             type: "ExclusiveGateway",
                             description: gateway.name + ' description',
-                            role: lanes.find(lane => lane['bpmn:flowNodeRef'].includes(gateway.id)).name,
-                            condition: JSON.parse(gateway["bpmn:extensionElements"]["uengine:properties"]["uengine:json"]).condition || ''
+                            role: lanes.find(lane => lane['bpmn:flowNodeRef'] && lane['bpmn:flowNodeRef'].includes(gateway.id)) ? lanes.find(lane => lane['bpmn:flowNodeRef'].includes(gateway.id)).name : 'Unknown',
+                            condition: gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(gateway["bpmn:extensionElements"]["uengine:properties"]["uengine:json"]).condition || '' : ''
                         }))
                     ],
                     sequences: sequenceFlows.map(flow => ({
                         source: flow.sourceRef,
                         target: flow.targetRef,
-                        condition: JSON.parse(flow["bpmn:extensionElements"]["uengine:properties"]["uengine:json"]).condition || ''
+                        condition: flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(flow["bpmn:extensionElements"]["uengine:properties"]["uengine:json"]).condition || '' : ''
                     }))
                 };
                 return jsonData;
