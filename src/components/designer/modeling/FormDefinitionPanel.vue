@@ -16,19 +16,19 @@
 
     <v-card-text>
       <template v-for="(settingInfo, index) in componentRef.settingInfos" :key="index">  
-        <v-text-field v-if="settingInfo.settingType === 'text'" :ref="settingInfo.dataToUse" 
+        <v-text-field v-if="(settingInfo.settingType === 'text') && isShowCheck(settingInfo)" :ref="settingInfo.dataToUse" 
                       :label="settingInfo.settingLabel" v-model.trim="componentProps[settingInfo.dataToUse]"
                       @keyup.enter="save" persistent-placeholder></v-text-field>
         
-        <v-text-field v-else-if="settingInfo.settingType === 'number'" type="number" :ref="settingInfo.dataToUse" 
+        <v-text-field v-else-if="(settingInfo.settingType === 'number') && isShowCheck(settingInfo)" type="number" :ref="settingInfo.dataToUse" 
                       :label="settingInfo.settingLabel" v-model.trim="componentProps[settingInfo.dataToUse]"
                       @keyup.enter="save" persistent-placeholder></v-text-field>
 
-        <v-select v-else-if="settingInfo.settingType === 'select'" :ref="settingInfo.dataToUse" 
+        <v-select v-else-if="(settingInfo.settingType === 'select') && isShowCheck(settingInfo)" :ref="settingInfo.dataToUse" 
                   :label="settingInfo.settingLabel" v-model="componentProps[settingInfo.dataToUse]"
                   :items="settingInfo.settingValue" @keyup.enter="save" persistent-placeholder></v-select>
         
-        <template v-else-if="settingInfo.settingType === 'items'">
+        <template v-else-if="(settingInfo.settingType === 'items') && isShowCheck(settingInfo)">
           <v-tabs v-model="componentProps['localIsDynamicLoad']" class="text-black" fixed-tabs>
               <v-tab :value="false">Fixed Options</v-tab>
               <v-tab :value="true">Data Binding</v-tab>
@@ -46,7 +46,7 @@
           </v-window>
         </template>
         
-        <v-checkbox v-else-if="settingInfo.settingType === 'checkbox'" :ref="settingInfo.dataToUse" 
+        <v-checkbox v-else-if="(settingInfo.settingType === 'checkbox') && isShowCheck(settingInfo)" :ref="settingInfo.dataToUse" 
                     :label="settingInfo.settingLabel" v-model="componentProps[settingInfo.dataToUse]"
                     @keyup.enter="save"></v-checkbox>
       </template>
@@ -95,6 +95,11 @@
         }
 
         this.$emit('onSave', this.componentRef, this.componentProps)
+      },
+
+      isShowCheck(settingInfo) {
+        if(settingInfo.isShowCheck) return settingInfo.isShowCheck(this.componentProps)
+        return true
       }
     },
 

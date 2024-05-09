@@ -40,6 +40,7 @@ export default {
             localName: "",
             localAlias: "",
             localEventType: "",
+            localWatchName: "",
 
             settingInfos: [
                 commonSettingInfos["localName"],
@@ -50,6 +51,17 @@ export default {
                     settingLabel: "Event Type",
                     settingType: "select",
                     settingValue: ["click", "initialize", "validate", "watch"]
+                },
+
+                {
+                    dataToUse: "localWatchName",
+                    htmlAttribute: "watch_name",
+                    settingLabel: "Name to watch",
+                    settingType: "select",
+                    settingValue: ["name-1", "name-2"],
+                    isShowCheck: (props) => {
+                        return props.localEventType === "watch"
+                    }
                 }
             ]
         };
@@ -62,9 +74,10 @@ export default {
     },
 
     created() {
-        this.localName = this.name
-        this.localAlias = this.alias
-        this.localEventType = this.event_type
+        this.localName = this.name ?? "name"
+        this.localAlias = this.alias ?? ""
+        this.localEventType = this.event_type ?? "click"
+        this.localWatchName = this.watch_name ?? ""
 
         if(this.encoded_script === undefined) {
             switch(this.localEventType) {
