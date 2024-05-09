@@ -5,11 +5,13 @@
 
     <div class="d-flex align-center justify-center">
         <img class="mr-2" src="/snippets/default/preview/script.png" style="width: 25px;" />
-        <p>{{ name }}</p>
+        <p>{{ localName }}</p>
     </div>
 </template>
 
 <script>
+import { commonSettingInfos } from "./CommonSettingInfos.vue"
+
 export default {
     name: "ScriptField",
     
@@ -26,24 +28,31 @@ export default {
 
     data() {
         return {
+            localName: "",
+
+            settingInfos: [
+                commonSettingInfos["localName"]
+            ]
         };
     },
 
     created() {
-        if(this.encoded_script !== undefined) return
+        this.localName = this.name
 
-        if (this.event_type === "watch") {
-            this.$emit('update:modelValue', {
-                eventType: this.event_type,
-                watchName: this.watch_name,
-                script: this.$slots.default(0)[0].children
-            });
-        }
-        else if (this.event_type === "validate") {
-            this.$emit('update:modelValue', {
-                eventType: this.event_type,
-                script: this.$slots.default(0)[0].children
-            });
+        if(this.encoded_script === undefined) {
+            if (this.event_type === "watch") {
+                this.$emit('update:modelValue', {
+                    eventType: this.event_type,
+                    watchName: this.watch_name,
+                    script: this.$slots.default(0)[0].children
+                });
+            }
+            else if (this.event_type === "validate") {
+                this.$emit('update:modelValue', {
+                    eventType: this.event_type,
+                    script: this.$slots.default(0)[0].children
+                });
+            }
         }
     }
 }
