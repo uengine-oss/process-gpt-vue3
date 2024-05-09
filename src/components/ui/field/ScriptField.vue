@@ -8,7 +8,7 @@
         <p>{{ localLabel }}</p>
     </div>
     <div v-else-if="this.localEventType === 'click'">
-        <v-btn color="primary" class="w-100 my-5" @click="$emit('onClick')">{{ localLabel }}</v-btn>
+        <v-btn color="primary" class="w-100 my-5" @click="$emit('on_click')">{{ localLabel }}</v-btn>
     </div>
 </template>
 
@@ -20,7 +20,7 @@ export default {
 
     emits: [
         "update:modelValue",
-        "onClick"
+        "on_click"
     ],
     
     props: {
@@ -72,7 +72,7 @@ export default {
                     settingLabel: "Script",
                     settingType: "textarea",
                     rows: 5,
-                    addOns: ["encodedAsBase64"]
+                    addOns: ["encodedAsBase64", "savedAsInnerText"]
                 }
             ]
         };

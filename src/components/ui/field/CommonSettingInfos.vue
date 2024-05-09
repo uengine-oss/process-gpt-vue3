@@ -19,6 +19,7 @@
  * addOns: 특수한 동작을 수행하도록 하기 위해서 관련 문자열들을 리스트 형태로 전달할 수 있음
  *     inputableNameItems: settingType이 select인 경우 입력 항목들이 입력 가능한 요소들의 이름들로 초기화됨
  *     encodedAsBase64: 세팅에 값을 입력하고 저장시에 Base64로 인코딩되어서 저장됨
+ *     savedAsInnerText: 이 속성은 KEditor를 벗어나서 얻을시에 태그의 내부 텍스트로 저장되서 얻어짐
  */
 let commonSettingInfos = {
     "localName": {

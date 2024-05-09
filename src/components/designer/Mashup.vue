@@ -158,6 +158,12 @@ export default {
         componentRef.settingInfos.forEach(settingInfo => {
           if(settingInfo.settingType === 'items')
             newElement.setAttribute(settingInfo.htmlAttribute, JSON.stringify(componentRef[settingInfo.dataToUse]))
+          else if(settingInfo.addOns && settingInfo.addOns.includes("savedAsInnerText")) {
+            if(settingInfo.addOns.includes("encodedAsBase64"))
+              newElement.innerText = atob(componentRef[settingInfo.dataToUse])
+            else
+              newElement.innerText = componentRef[settingInfo.dataToUse]
+          }
           else
             newElement.setAttribute(settingInfo.htmlAttribute, componentRef[settingInfo.dataToUse])
         })
