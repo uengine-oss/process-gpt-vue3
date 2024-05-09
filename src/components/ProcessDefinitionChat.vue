@@ -381,7 +381,7 @@ export default {
                     // if (me.processDefinition) {
                     //     info.definition = me.processDefinition;
                     // }
-                    if (xmlObj && xmlObj.xml) {
+                    if (xmlObj && xmlObj.xml && window.$mode != 'uEngine') {
                         me.processDefinition = await me.convertXMLToJSON(xmlObj.xml);
                         info.definition = me.processDefinition;
                     }
@@ -826,9 +826,9 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    if (!me.processDefinition && xml) {
-                        me.processDefinition = await me.convertXMLToJSON(xml);
-                    }
+                    // if (!me.processDefinition && xml) {
+                    //     me.processDefinition = await me.convertXMLToJSON(xml);
+                    // }
 
                     me.processDefinition.processDefinitionId = info.proc_def_id
                         ? info.proc_def_id
