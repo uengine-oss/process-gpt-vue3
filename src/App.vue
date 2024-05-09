@@ -47,8 +47,6 @@ export default {
         storage: null
     }),
     async created() {
-        // window.$mode = 'uEngine';
-        window.$mode = 'ProcessGPT';
         window.$app_ = this;
     },
     methods: {
@@ -83,10 +81,12 @@ export default {
                 if (errorMessage) {
                     // alert(errorMessage)
                     window.$app_.snackbarMessage = errorMessage;
-                    window.$app_.snackbarMessageDetail = e.response.data.message;
                     window.$app_.snackbarColor = 'error';
                     window.$app_.snackbar = true;
                     window.$app_.snackbarSuccessStatus = false;
+                    if (e.response && e.response.data && e.response.data.message) {
+                        window.$app_.snackbarMessageDetail = e.response.data.message;
+                    }
                 }
                 console.log(e);
             } finally {

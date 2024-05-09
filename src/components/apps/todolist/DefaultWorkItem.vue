@@ -3,7 +3,7 @@
         style="right:40px;"
     >
         <v-spacer></v-spacer>
-        <div>
+        <div v-if="!isComplete">
             <v-btn @click="completeTask()" color="#0085DB" style="color: white;" rounded>완료</v-btn>
         </div>
     </v-row>
@@ -30,7 +30,8 @@ export default {
             default: function () {
                 return null
             },
-        }
+        },
+        isComplete: Boolean
     },
     data: () => ({
         inputItems: null,      

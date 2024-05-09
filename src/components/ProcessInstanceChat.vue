@@ -63,6 +63,9 @@ export default {
         VDataTable,
         // WorkItem,
     },
+    props:{
+        isComplete: Boolean
+    },
     data: () => ({
         headers: [
             { title: 'id', align: 'start', key: 'processDefinitionId' },
@@ -121,6 +124,8 @@ export default {
                     if (!newVal.params.taskId) {
                         this.messages = [];
                     }
+                    await this.init();
+                } else if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
                     await this.init();
                 }
             }
@@ -196,6 +201,10 @@ export default {
             })
         },
         checkDisableChat() {
+            if (this.isComplete) {
+                this.disableChat = true;
+            }
+
             if (this.processInstance) {
                 if (this.processInstance.current_user_ids &&
                     this.processInstance.current_user_ids.length > 0 &&
