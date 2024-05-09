@@ -4,7 +4,6 @@
             <v-row class="ma-0 pa-0 mt-1 ml-3" style="line-height: 100%">
                 <div style="font-size: 20px; font-weight: 500">{{ workItem.activity.name }}</div>
                 <v-chip size="small" variant="outlined" density="comfortable" style="margin-left: 5px">{{ workItemStatus }}</v-chip>
-                
             </v-row>
         </v-card-title>
         <v-row class="ma-0 pa-2 mt-2">
@@ -13,7 +12,7 @@
                 class="pa-0"
                 cols="4"
                 :style="$globalState.state.isZoomed ? 'height: calc(100vh - 70px);' : 'height: calc(100vh - 215px);'"
-                style="overflow:auto;"
+                style="overflow: auto"
             >
                 <div v-if="currentComponent"
                     class="work-itme-current-component"
@@ -181,11 +180,11 @@ export default {
                 action: async () => {
                     me.workItem = await backend.getWorkItem(me.id);
                     me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, { type: 'bpmn' });
+                    if (me.workItem.worklist.execScope) me.workItem.execScope = me.workItem.worklist.execScope;
                     me.workListByInstId = await backend.getWorkListByInstId(me.workItem.worklist.instId);
                     me.currentComponent = me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem';
                     me.currentActivities = [me.workItem.activity.tracingTag];
                     me.updatedDefKey++;
-                    
                 }
             });
         },
