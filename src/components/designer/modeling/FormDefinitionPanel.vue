@@ -23,6 +23,10 @@
         <v-text-field v-else-if="(settingInfo.settingType === 'number') && isShowCheck(settingInfo)" type="number" :ref="settingInfo.dataToUse" 
                       :label="settingInfo.settingLabel" v-model.trim="componentProps[settingInfo.dataToUse]"
                       @keyup.enter="save" persistent-placeholder></v-text-field>
+        
+        <v-textarea v-else-if="(settingInfo.settingType === 'textarea') && isShowCheck(settingInfo)" :ref="settingInfo.dataToUse" 
+                      :label="settingInfo.settingLabel" v-model.trim="componentProps[settingInfo.dataToUse]"
+                      :rows="settingInfo.rows ?? 5" persistent-placeholder></v-textarea>
 
         <v-select v-else-if="(settingInfo.settingType === 'select') && isShowCheck(settingInfo)" :ref="settingInfo.dataToUse" 
                   :label="settingInfo.settingLabel" v-model="componentProps[settingInfo.dataToUse]"
@@ -94,6 +98,11 @@
           }
         }
 
+        this.componentRef.settingInfos.forEach(settingInfo => {
+          if(settingInfo.addOns && settingInfo.addOns.includes("encodedAsBase64"))
+            this.componentProps[settingInfo.dataToUse] = btoa(this.componentProps[settingInfo.dataToUse])
+        })
+
         this.$emit('onSave', this.componentRef, this.componentProps)
       },
 
@@ -107,6 +116,8 @@
       this.componentProps = this.componentRef.settingInfos.reduce((acc, cur) => {
           if(cur.settingType === 'items') {
             acc[cur.dataToUse] = JSON.parse(JSON.stringify(this.componentRef[cur.dataToUse]))
+          } else if(cur.addOns && cur.addOns.includes("encodedAsBase64")) {
+            acc[cur.dataToUse] = atob(this.componentRef[cur.dataToUse])
           } else {
             acc[cur.dataToUse] = this.componentRef[cur.dataToUse]
           }

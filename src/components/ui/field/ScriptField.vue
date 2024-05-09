@@ -41,6 +41,7 @@ export default {
             localAlias: "",
             localEventType: "",
             localWatchName: "",
+            localEncodedScript: "",
 
             settingInfos: [
                 commonSettingInfos["localName"],
@@ -63,6 +64,15 @@ export default {
                         return props.localEventType === "watch"
                     },
                     addOns: ["inputableNameItems"]
+                },
+
+                {
+                    dataToUse: "localEncodedScript",
+                    htmlAttribute: "encoded_script",
+                    settingLabel: "Script",
+                    settingType: "textarea",
+                    rows: 8,
+                    addOns: ["encodedAsBase64"]
                 }
             ]
         };
@@ -79,6 +89,7 @@ export default {
         this.localAlias = this.alias ?? ""
         this.localEventType = this.event_type ?? "click"
         this.localWatchName = this.watch_name ?? ""
+        this.localEncodedScript = this.encoded_script ?? ""
 
         if(this.encoded_script === undefined) {
             switch(this.localEventType) {

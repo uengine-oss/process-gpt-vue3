@@ -6,6 +6,8 @@
  * settingLabel: 변수 값 설정창에서 표시되는 라벨
  * settingType: 설정창에서 입력을 받기 위한 타입
  *     text: 문자열로 입력받는 속성
+ *     textarea: 여러줄의 텍스트를 입력받는 속성
+ *         rows: 입력 텍스트 줄 수
  *     number: 숫자값만 입력받도록 만들기 위한 속성
  *     checkbox: true / false로 입력받는 속성
  *     items: [{"key1":"value1"}, {"key2":"value2"}] 와 같은 형태로 입력받는 속성
@@ -16,6 +18,7 @@
  * isShowCheck(settingProps): 설정창에서 특정 조건에 따라 입력이 가능하도록 만들기위해서 사용되는 함수
  * addOns: 특수한 동작을 수행하도록 하기 위해서 관련 문자열들을 리스트 형태로 전달할 수 있음
  *     inputableNameItems: settingType이 select인 경우 입력 항목들이 입력 가능한 요소들의 이름들로 초기화됨
+ *     encodedAsBase64: 세팅에 값을 입력하고 저장시에 Base64로 인코딩되어서 저장됨
  */
 let commonSettingInfos = {
     "localName": {
