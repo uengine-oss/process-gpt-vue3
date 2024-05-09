@@ -256,6 +256,15 @@ export default {
       const app = createApp(DynamicComponent, {content:snipptDom.body.innerHTML, vueRenderUUID:vueRenderUUID})
                     .use(vuetify).mount('#'+vueRenderUUID);
       window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
+    },
+
+    /**
+     * 유저가 입력할 수 있는 컴포넌트들의 Name 목록을 반환하기 위해서
+     */
+    getUserInputableComponentNames() {
+      return Object.values(window.mashup.componentRefs)
+        .filter(componentRef => (componentRef.tagName !== 'script-field') && (componentRef.localName !== undefined) && (componentRef.localAlias !== undefined))
+        .map(componentRef => componentRef.localName)
     }
   },
   mounted() {
@@ -409,7 +418,6 @@ export default {
       },
       containerSettingShowFunction: function (form, container, keditor) {
         console.log("containerSettingShowFunction : ", form, container, keditor);
-
 
         const dom = (new DOMParser()).parseFromString(container[0].outerHTML, 'text/html')
         window.mashup.containerSectionId = dom.querySelector('section').id

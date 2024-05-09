@@ -3,9 +3,12 @@
         <slot ></slot>
     </div>
 
-    <div class="d-flex align-center justify-center">
+    <div v-if="(this.localEventType !== 'click') && (this.encoded_script !== undefined)" class="d-flex align-center justify-center">
         <img class="mr-2" src="/snippets/default/preview/script.png" style="width: 25px;" />
-        <p>{{ localName }}</p>
+        <p>{{ localLabel }}</p>
+    </div>
+    <div v-else>
+        <v-btn color="primary" class="w-100 my-5" @click="$emit('onClick')">{{ localLabel }}</v-btn>
     </div>
 </template>
 
@@ -14,6 +17,11 @@ import { commonSettingInfos } from "./CommonSettingInfos.vue"
 
 export default {
     name: "ScriptField",
+
+    emits: [
+        "update:modelValue",
+        "onClick"
+    ],
     
     props: {
         modelValue: Object,
@@ -21,6 +29,7 @@ export default {
         tagName: String,
 
         name: String,
+        alias: String,
         event_type: String,
         watch_name: String,
         encoded_script: String
@@ -29,38 +38,51 @@ export default {
     data() {
         return {
             localName: "",
+            localAlias: "",
             localEventType: "",
 
             settingInfos: [
                 commonSettingInfos["localName"],
+                commonSettingInfos["localAlias"],
                 {
                     dataToUse: "localEventType",
                     htmlAttribute: "event_type",
                     settingLabel: "Event Type",
                     settingType: "select",
-                    settingValue: ["watch", "validate"]
+                    settingValue: ["click", "initialize", "validate", "watch"]
                 }
             ]
         };
     },
 
+    computed: {
+        localLabel() {
+            return (this.localAlias && this.localAlias.length > 0) ? this.localAlias : this.localName
+        }
+    },
+
     created() {
         this.localName = this.name
+        this.localAlias = this.alias
         this.localEventType = this.event_type
 
         if(this.encoded_script === undefined) {
-            if (this.localEventType === "watch") {
-                this.$emit('update:modelValue', {
-                    eventType: this.localEventType,
-                    watchName: this.watch_name,
-                    script: this.$slots.default(0)[0].children
-                });
-            }
-            else if (this.localEventType === "validate") {
-                this.$emit('update:modelValue', {
-                    eventType: this.localEventType,
-                    script: this.$slots.default(0)[0].children
-                });
+            switch(this.localEventType) {
+                case "click":
+                case "initialize":
+                case "validate":
+                    this.$emit('update:modelValue', {
+                        eventType: this.localEventType,
+                        script: this.$slots.default(0)[0].children
+                    });
+                    break;
+                case "watch":
+                    this.$emit('update:modelValue', {
+                        eventType: this.localEventType,
+                        watchName: this.watch_name,
+                        script: this.$slots.default(0)[0].children
+                    });
+                    break;
             }
         }
     }
