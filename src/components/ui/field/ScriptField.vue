@@ -71,7 +71,7 @@ export default {
                     htmlAttribute: "encoded_script",
                     settingLabel: "Script",
                     settingType: "textarea",
-                    rows: 8,
+                    rows: 5,
                     addOns: ["encodedAsBase64"]
                 }
             ]
