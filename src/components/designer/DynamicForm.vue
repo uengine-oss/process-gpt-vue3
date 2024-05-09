@@ -139,13 +139,6 @@ export default {
       },
       template: `<div id="kEditor1">
   ${me.formHTML}
-<script-field name="script-name-1" event_type="watch" watch_name="name-1" v-model="scriptInfos['script-name-1']">
-  this.formValues["name-2"] = this.formValues["name-1"];
-</script-field>
-
-<script-field name="script-name-2" event_type="validate" v-model="scriptInfos['script-name-2']">
-if(this.formValues["name-1"] !== "value-1") error = "error message";
-</script-field>
 </div>`
     }
 

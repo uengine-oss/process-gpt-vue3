@@ -2,6 +2,11 @@
     <div v-show="false">
         <slot ></slot>
     </div>
+
+    <div class="d-flex align-center justify-center">
+        <img class="mr-2" src="/snippets/default/preview/script.png" style="width: 25px;" />
+        <p>{{ name }}</p>
+    </div>
 </template>
 
 <script>
@@ -13,8 +18,10 @@ export default {
         vueRenderUUID: String,
         tagName: String,
 
+        name: String,
         event_type: String,
-        watch_name: String
+        watch_name: String,
+        encoded_script: String
     },
 
     data() {
@@ -23,6 +30,8 @@ export default {
     },
 
     created() {
+        if(this.encoded_script !== undefined) return
+
         if (this.event_type === "watch") {
             this.$emit('update:modelValue', {
                 eventType: this.event_type,
