@@ -29,27 +29,36 @@ export default {
     data() {
         return {
             localName: "",
+            localEventType: "",
 
             settingInfos: [
-                commonSettingInfos["localName"]
+                commonSettingInfos["localName"],
+                {
+                    dataToUse: "localEventType",
+                    htmlAttribute: "event_type",
+                    settingLabel: "Event Type",
+                    settingType: "select",
+                    settingValue: ["watch", "validate"]
+                }
             ]
         };
     },
 
     created() {
         this.localName = this.name
+        this.localEventType = this.event_type
 
         if(this.encoded_script === undefined) {
-            if (this.event_type === "watch") {
+            if (this.localEventType === "watch") {
                 this.$emit('update:modelValue', {
-                    eventType: this.event_type,
+                    eventType: this.localEventType,
                     watchName: this.watch_name,
                     script: this.$slots.default(0)[0].children
                 });
             }
-            else if (this.event_type === "validate") {
+            else if (this.localEventType === "validate") {
                 this.$emit('update:modelValue', {
-                    eventType: this.event_type,
+                    eventType: this.localEventType,
                     script: this.$slots.default(0)[0].children
                 });
             }
