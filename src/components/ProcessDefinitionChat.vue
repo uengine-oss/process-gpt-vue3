@@ -967,7 +967,7 @@ export default {
                         ? info.proc_def_id
                         : prompt('please give a ID for the process definition');
                     
-                    if (!me.processDefinition.processDefinitionName) {
+                        if (!me.processDefinition.processDefinitionName) {
                         me.processDefinition.processDefinitionName = info.name
                         ? info.name
                         : prompt('please give a name for the process definition');
