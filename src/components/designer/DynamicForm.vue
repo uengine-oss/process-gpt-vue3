@@ -81,13 +81,18 @@ export default {
       for(const key in this.scriptInfos) {
         const scriptInfo = this.scriptInfos[key]
         if(scriptInfo.eventType === "validate") {
-          let error = null 
-          eval(scriptInfo.script)
+          const error = this.executeScript(key)
           if(error && error.length > 0) return error
         }
       }
 
       return null
+    },
+
+    executeScript(name) {
+      let error = null
+      eval(this.scriptInfos[name].script)
+      return error
     }
   },
 
@@ -122,20 +127,32 @@ export default {
           oldFormValues: {}
         }
       },
+      methods: {
+        executeScript(name) {
+          return me.executeScript(name)
+        }
+      },
       mounted() {
+        me.scriptInfos = this.scriptInfos
+
         this.oldFormValues = JSON.parse(JSON.stringify(this.formValues))
         this.$watch(`formValues`, (newVal, oldVal) => {
           Object.keys(this.scriptInfos).forEach(key => {
             const scriptInfo = this.scriptInfos[key]
             if((scriptInfo.eventType === "watch") && 
                (this.oldFormValues[scriptInfo.watchName] !== this.formValues[scriptInfo.watchName])) {
-              eval(scriptInfo.script)
+              this.executeScript(key)
             }
           })
           this.oldFormValues = JSON.parse(JSON.stringify(this.formValues))
         }, {deep: true})
 
-        me.scriptInfos = this.scriptInfos
+        Object.keys(this.scriptInfos).forEach(key => {
+          const scriptInfo = this.scriptInfos[key]
+          if(scriptInfo.eventType === "initialize") {
+            this.executeScript(key)
+          }
+        })
       },
       template: `<div id="kEditor1">
   ${me.formHTML}

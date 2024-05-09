@@ -7,7 +7,7 @@
         <img class="mr-2" src="/snippets/default/preview/script.png" style="width: 25px;" />
         <p>{{ localLabel }}</p>
     </div>
-    <div v-else>
+    <div v-else-if="this.localEventType === 'click'">
         <v-btn color="primary" class="w-100 my-5" @click="$emit('onClick')">{{ localLabel }}</v-btn>
     </div>
 </template>
