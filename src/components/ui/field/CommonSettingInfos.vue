@@ -6,8 +6,16 @@
  * settingLabel: 변수 값 설정창에서 표시되는 라벨
  * settingType: 설정창에서 입력을 받기 위한 타입
  *     text: 문자열로 입력받는 속성
+ *     number: 숫자값만 입력받도록 만들기 위한 속성
+ *     checkbox: true / false로 입력받는 속성
  *     items: [{"key1":"value1"}, {"key2":"value2"}] 와 같은 형태로 입력받는 속성
- * validCheck: 설정창에서 입력 완료시에 유효성을 확인하는데 사용되는 함수
+ *       items_dynamic: 동적으로 데이터를 불러오기 위해서 추가되는 고정 속성
+ *     select: 여러 값 중에서 하나를 선택하는 속성
+ *       settingValue: 입력받을 항목을 리스트로 나열할 수 있음
+ * validCheck(value, settingProps): 설정창에서 입력 완료시에 유효성을 확인하는데 사용되는 함수
+ * isShowCheck(settingProps): 설정창에서 특정 조건에 따라 입력이 가능하도록 만들기위해서 사용되는 함수
+ * addOns: 특수한 동작을 수행하도록 하기 위해서 관련 문자열들을 리스트 형태로 전달할 수 있음
+ *     inputableNameItems: settingType이 select인 경우 입력 항목들이 입력 가능한 요소들의 이름들로 초기화됨
  */
 let commonSettingInfos = {
     "localName": {

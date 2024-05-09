@@ -58,10 +58,11 @@ export default {
                     htmlAttribute: "watch_name",
                     settingLabel: "Name to watch",
                     settingType: "select",
-                    settingValue: ["name-1", "name-2"],
+                    settingValue: [],
                     isShowCheck: (props) => {
                         return props.localEventType === "watch"
-                    }
+                    },
+                    addOns: ["inputableNameItems"]
                 }
             ]
         };

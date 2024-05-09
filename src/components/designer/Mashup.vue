@@ -375,6 +375,10 @@ export default {
             return
           }
 
+          componentRef.settingInfos.forEach(settingInfo => {
+            if(settingInfo.addOns && settingInfo.addOns.includes("inputableNameItems"))
+              settingInfo.settingValue = window.mashup.getUserInputableComponentNames()
+          })
 
           window.mashup.componentRefForSetting = componentRef
           window.mashup.isOpenComponentSettingDialog = true
