@@ -9,11 +9,12 @@ export default {
     name: "ScriptField",
     
     props: {
-        modelValue: String,
+        modelValue: Object,
         vueRenderUUID: String,
         tagName: String,
 
-        watchName: String
+        event_type: String,
+        watch_name: String
     },
 
     data() {
@@ -22,7 +23,19 @@ export default {
     },
 
     created() {
-        this.$emit('update:modelValue', this.$slots.default(0)[0].children)
+        if (this.event_type === "watch") {
+            this.$emit('update:modelValue', {
+                eventType: this.event_type,
+                watchName: this.watch_name,
+                script: this.$slots.default(0)[0].children
+            });
+        }
+        else if (this.event_type === "validate") {
+            this.$emit('update:modelValue', {
+                eventType: this.event_type,
+                script: this.$slots.default(0)[0].children
+            });
+        }
     }
 }
 </script>

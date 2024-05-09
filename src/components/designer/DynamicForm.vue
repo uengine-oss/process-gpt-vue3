@@ -37,6 +37,11 @@ export default {
     modelValue: Object
   },
 
+  emits: [
+    "validate",
+    "update:modelValue"
+  ],
+
   watch: {
     modelValue: {
       handler() {
@@ -63,7 +68,26 @@ export default {
     return {
       renderedContent: "",
       formValues: {},
-      cachedHFunc: null // 중복 렌더링을 피하기 위해서
+      cachedHFunc: null, // 중복 렌더링을 피하기 위해서
+      scriptInfos: {}
+    }
+  },
+
+  methods: {
+    /**
+     * 유저가 정의한 검증 함수들을 실행시켜서 에러가 있으면 반환하고, 없으면 null을 반환함
+     */
+    validate() {
+      for(const key in this.scriptInfos) {
+        const scriptInfo = this.scriptInfos[key]
+        if(scriptInfo.eventType === "validate") {
+          let error = null 
+          eval(scriptInfo.script)
+          if(error && error.length > 0) return error
+        }
+      }
+
+      return null
     }
   },
 
@@ -94,25 +118,33 @@ export default {
         return {
           formValues: me.formValues,
 
-          watchValueScripts: {},
+          scriptInfos: {},
           oldFormValues: {}
         }
       },
       mounted() {
         this.oldFormValues = JSON.parse(JSON.stringify(this.formValues))
         this.$watch(`formValues`, (newVal, oldVal) => {
-          Object.keys(this.watchValueScripts).forEach(key => {
-            if(this.oldFormValues[key] !== this.formValues[key]) {
-              eval(this.watchValueScripts[key])
+          Object.keys(this.scriptInfos).forEach(key => {
+            const scriptInfo = this.scriptInfos[key]
+            if((scriptInfo.eventType === "watch") && 
+               (this.oldFormValues[scriptInfo.watchName] !== this.formValues[scriptInfo.watchName])) {
+              eval(scriptInfo.script)
             }
           })
           this.oldFormValues = JSON.parse(JSON.stringify(this.formValues))
         }, {deep: true})
+
+        me.scriptInfos = this.scriptInfos
       },
       template: `<div id="kEditor1">
   ${me.formHTML}
-<script-field watch_name="name-1" v-model="watchValueScripts['name-1']">
-  alert("Created: " + JSON.stringify(this.oldFormValues["name-1"]) + " / " + JSON.stringify(this.formValues["name-1"]))
+<script-field name="script-name-1" event_type="watch" watch_name="name-1" v-model="scriptInfos['script-name-1']">
+  this.formValues["name-2"] = this.formValues["name-1"];
+</script-field>
+
+<script-field name="script-name-2" event_type="validate" v-model="scriptInfos['script-name-2']">
+if(this.formValues["name-1"] !== "value-1") error = "error message";
 </script-field>
 </div>`
     }

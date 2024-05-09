@@ -37,7 +37,7 @@
 
                     <v-window-item value="preview" class="fill-height mt-15 pa-5" style="overflow-y: auto">
                         <template v-if="isShowPreview">
-                            <DynamicForm :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
+                            <DynamicForm ref="dynamicForm" :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
 
                             <template v-if="dev.isDevMode">
                                 <v-textarea label="previewFormValuesToTest" rows="10" v-model="dev.previewFormValues"></v-textarea>
@@ -397,6 +397,9 @@ export default {
         },
 
         onClickPreviewSubmitButton() {
+            const error = this.$refs.dynamicForm.validate()
+            if (error && error.length > 0) alert(error)
+
             if (this.dev.isDevMode) this.dev.previewFormValues = JSON.stringify(this.previewFormValues);
             else alert(JSON.stringify(this.previewFormValues));
         },
