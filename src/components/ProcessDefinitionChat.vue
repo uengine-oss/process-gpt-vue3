@@ -49,7 +49,7 @@
                                 </v-tooltip>
                                 <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn" style="display: none;" />
 
-                                <div v-if="bpmn && fullPath != '' && !versionStatus">
+                                <div v-if="bpmn && fullPath != ''">
                                     <v-tooltip location="bottom">
                                         <template v-slot:activator="{ props }">
                                             <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
@@ -86,7 +86,7 @@
                                 
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn v-if="bpmn && fullPath != '' && !versionStatus" v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                        <v-btn v-if="bpmn && fullPath != ''" v-bind="props" icon variant="text" class="text-medium-emphasis"
                                             @click="beforeDelete">
                                             <TrashIcon size="24" />
                                         </v-btn>
@@ -230,7 +230,6 @@ export default {
         versionDialog: false,
         verMangerDialog: false,
         loading: false,
-        versionStatus: true,
         // delete
         deleteDialog: false,
         isDeleted: false,
@@ -354,7 +353,6 @@ export default {
                     } else {
                         // 현재 수정가능 > 잠금 상태로 (저장)
                         me.toggleVersionDialog(true);
-                        this.versionStatus = false
                     }
                 }
             });
