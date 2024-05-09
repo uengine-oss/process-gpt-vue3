@@ -29,6 +29,7 @@
 </template>
 
 <script>
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { createClient } from '@supabase/supabase-js';
 import { RouterView } from 'vue-router';
 export default {
@@ -42,22 +43,10 @@ export default {
         snackbarMessage: '',
         snackbarMessageDetail: null,
         snackbar: false,
-        snackbarColor: null
+        snackbarColor: null,
+        storage: null
     }),
     async created() {
-        // window.$supabase = createClient(window._env_.DB_URL, window._env_.DB_PW);
-        window.$supabase = createClient(
-            'http://127.0.0.1:54321',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
-            {
-                auth: {
-                    autoRefreshToken: false,
-                    persistSession: false
-                }
-            }
-        );
-        window.$mode = 'uEngine';
-        // window.$mode = 'ProcessGPT';
         window.$app_ = this;
     },
     methods: {
@@ -92,10 +81,12 @@ export default {
                 if (errorMessage) {
                     // alert(errorMessage)
                     window.$app_.snackbarMessage = errorMessage;
-                    window.$app_.snackbarMessageDetail = e.response.data.message;
                     window.$app_.snackbarColor = 'error';
                     window.$app_.snackbar = true;
                     window.$app_.snackbarSuccessStatus = false;
+                    if (e.response && e.response.data && e.response.data.message) {
+                        window.$app_.snackbarMessageDetail = e.response.data.message;
+                    }
                 }
                 console.log(e);
             } finally {

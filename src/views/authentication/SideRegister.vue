@@ -2,6 +2,10 @@
 import Logo from '@/layouts/full/logo/Logo.vue';
 /* Register form */
 import RegisterForm from '@/components/auth/RegisterForm.vue';
+import AdminRegisterForm from '@/components/auth/AdminRegisterForm.vue';
+import { ref } from 'vue';
+
+const currentTabName = ref('normalRegister');
 </script>
 
 <template>
@@ -22,7 +26,20 @@ import RegisterForm from '@/components/auth/RegisterForm.vue';
             <v-col cols="12" lg="5" xl="4" class="d-flex align-center justify-center bg-surface">
                 <div class="mt-xl-0 mt-5 mw-100" >
                     <h2 class="text-h3 font-weight-semibold mb-4">{{ $t('createAccount.title') }}</h2>
-                    <RegisterForm />
+
+                    <v-tabs v-model="currentTabName" style="position: fixed; z-index: 999" class="text-black" fixed-tabs>
+                        <v-tab value="normalRegister">{{ $t('createAccount.normalRegister') }}</v-tab>
+                        <v-tab value="adminRegister">{{ $t('createAccount.adminRegister') }}</v-tab>
+                    </v-tabs>
+                    <v-window v-model="currentTabName">
+                        <v-window-item value="normalRegister" class="mt-15">
+                            <RegisterForm key="normalRegister"/>
+                        </v-window-item>
+                        <v-window-item value="adminRegister" class="mt-15" style="overflow-y: auto; overflow-x: hidden; height: 65vh;">
+                            <AdminRegisterForm key="adminRegister"/>
+                        </v-window-item>
+                    </v-window>
+
                     <h6 class="text-subtitle-1  text-grey100 d-flex align-center mt-6">
                         {{ $t('createAccount.already') }}
                         <v-btn variant="plain" to="/auth/login" class="text-primary text-body-1 opacity-1 pl-2">{{ $t('createAccount.login') }}</v-btn>

@@ -40,7 +40,8 @@
                 <v-card elevation="10" class="pa-4">
                     <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
                         <div class="d-flex w-100" style="height: calc(100vh - 300px); overflow: auto">
-                            <component :is="'work-history-' + mode" :messages="messages" @clickMessage="navigateToWorkItemByTaskId" />
+                            <component :is="'work-history-' + mode" :messages="messages" :isComplete="isComplete"
+                                @clickMessage="navigateToWorkItemByTaskId" />
                         </div>
                     </perfect-scrollbar>
                 </v-card>
@@ -79,9 +80,9 @@ export default {
     watch: {
         $route: {
             deep: true,
-            handler(newVal, oldVal) {
-                if (newVal.path !== oldVal.path) {
-                    this.init();
+            async handler(newVal, oldVal) {
+                if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
+                    await this.init();
                 }
             }
         }
@@ -106,7 +107,10 @@ export default {
                 description: workItem.description,
                 timeStamp: workItem.startDate
             }));
-        }
+        },
+        isComplete(){
+            return this.instance.status == "COMPLETED"
+        },
     },
     methods: {
         init() {

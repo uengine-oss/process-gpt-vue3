@@ -51,16 +51,20 @@
                 </div>
                 <v-tooltip :text="$t('processDefinition.zoom')">
                     <template v-slot:activator="{ props }">
-                        <v-btn icon v-bind="props" class="processVariables-zoom" @click="$globalState.methods.toggleZoom()">
+                        <v-btn :size="30"
+                            icon variant="text" class="ml-3"
+                            v-bind="props"
+                            @click="$globalState.methods.toggleZoom()"
+                        >
                             <!-- 캔버스 확대 -->
                             <Icon
                                 v-if="!$globalState.state.isZoomed"
                                 icon="material-symbols:zoom-out-map-rounded"
-                                width="32"
-                                height="32"
+                                width="24"
+                                height="24"
                             />
                             <!-- 캔버스 축소 -->
-                            <Icon v-else icon="material-symbols:zoom-in-map-rounded" width="32" height="32" />
+                            <Icon v-else icon="material-symbols:zoom-in-map-rounded" width="24" height="24" />
                         </v-btn>
                     </template>
                 </v-tooltip>

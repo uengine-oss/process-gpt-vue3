@@ -29,19 +29,19 @@
         <div class="">
             <div class="d-flex flex-row mt-sm-8 mt-5 overflow-hidden">
                 <div class="slider-group">
-                    <img src="@/assets/images/landingpage/slider/slider-group3.png" />
+                    <img src="@/assets/images/landingpage/slider/slider-group4.png" />
                 </div>
                 <div class="slider-group">
-                    <img src="@/assets/images/landingpage/slider/slider-group3.png" />
+                    <img src="@/assets/images/landingpage/slider/slider-group4.png" />
                 </div>
                 <div class="slider-group">
-                    <img src="@/assets/images/landingpage/slider/slider-group3.png" />
+                    <img src="@/assets/images/landingpage/slider/slider-group4.png" />
                 </div>
                 <div class="slider-group">
-                    <img src="@/assets/images/landingpage/slider/slider-group3.png" />
+                    <img src="@/assets/images/landingpage/slider/slider-group4.png" />
                 </div>
                 <div class="slider-group">
-                    <img src="@/assets/images/landingpage/slider/slider-group3.png" />
+                    <img src="@/assets/images/landingpage/slider/slider-group4.png" />
                 </div>
             </div>
         </div>

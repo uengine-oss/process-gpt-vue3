@@ -51,11 +51,11 @@ export default defineConfig({
                 changeOrigin: true,
             },
             '/process-db-schema': {
-                target: 'http://localhost:8001',
+                target: 'http://localhost:8000',
                 changeOrigin: true,
             },
             '/drop-process-table': {
-                target: 'http://localhost:8001',
+                target: 'http://localhost:8000',
                 changeOrigin: true,
             }
         }

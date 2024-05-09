@@ -300,6 +300,7 @@ export default {
             } else {
                 delete this.copyUengineProperties._type;
                 delete this.copyUengineProperties.variableForHtmlFormContext;
+                delete this.copyUengineProperties.mappingContext;
             }
 
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
@@ -418,23 +419,38 @@ export default {
         parseFormHtmlField(formHtml) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(formHtml, 'text/html');
-            // const fields = doc.querySelectorAll('text-field, select-field, checkbox-field, radio-field, file-field');
-            const allElements = doc.querySelectorAll('*');
-            const fields = Array.from(allElements).filter(
-                (el) => el.tagName.toLowerCase().includes('field') && !el.tagName.toLowerCase().includes('label')
-            );
-            const result = Array.from(fields).map((field) => {
-                const type = field.tagName.toLowerCase().replace('-field', '');
-                const name = field.getAttribute('name') || '';
-                const alias = field.getAttribute('alias') || '';
-                return {
-                    name: name,
-                    type: type,
-                    alias: alias
-                };
-            });
-            console.log(result);
-            return result;
+
+            function extractFields(element) {
+                let fields = [];
+                if (element.hasChildNodes()) {
+                    Array.from(element.children).forEach((child) => {
+                        const tagName = child.tagName.toLowerCase();
+                        if (tagName.includes('field') && !tagName.includes('label')) {
+                            const type = tagName.replace('-field', '');
+                            const name = child.getAttribute('name');
+                            const alias = child.getAttribute('alias');
+                            const fieldData = {
+                                name,
+                                type,
+                                alias,
+                                children: []
+                            };
+                            fieldData.children = extractFields(child);
+                            fields.push(fieldData);
+                        } else {
+                            fields = fields.concat(extractFields(child));
+                        }
+                    });
+                }
+                return fields;
+            }
+
+            const rowLayouts = doc.querySelectorAll('row-layout');
+            return Array.from(rowLayouts).map((rowLayout) => ({
+                name: rowLayout.getAttribute('name'),
+                alias: rowLayout.getAttribute('alias'),
+                fields: extractFields(rowLayout)
+            }));
         }
     }
 };

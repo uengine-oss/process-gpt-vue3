@@ -1,6 +1,7 @@
 <template>
     <div class="align-center pa-2 cursor-pointer sub-process-hover sub-process-style pr-3 pl-3"
-        @click="goProcess(value.id, 'sub')">
+        @click="goProcess(value.id, 'sub')"
+    >
         <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-2 font-weight-semibold">
             <v-row class="ma-0 pa-0">
                 <v-col :cols="enableEdit ? '6' : '12'" class="ma-0 pa-0 text-left align-center">
