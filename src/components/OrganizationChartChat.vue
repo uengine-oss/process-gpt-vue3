@@ -8,14 +8,32 @@
                 @sendMessage="beforeSendMessage"
                 @sendEditedMessage="sendEditedMessage"
                 @stopMessage="stopMessage"
-                @getMoreChat="getMoreChat"
             ></Chat>
+
+            <v-dialog v-model="userDialog" max-width="500">
+                <v-card>
+                    <v-card-title>신규 입사자 가입</v-card-title>
+                    <v-card-text class="overflow-y-auto">
+                        <div v-for="(user, index) in newUserList" :key="index" class="py-2">
+                            <v-text-field v-model="user.name" label="이름"></v-text-field>
+                            <v-text-field v-model="user.email" label="이메일"></v-text-field>
+                            <v-divider></v-divider>
+                        </div>
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn color="primary" @click="createNewUser(newUserList)">가입</v-btn>
+                        <v-btn color="error" @click="userDialog = false">닫기</v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
         </template>
 
         <template v-slot:rightpart>
             <OrganizationChart
                     :node="organizationChart"
                     :key="organizationChart.id"
+                    :userList="userList"
             ></OrganizationChart>
         </template>
 
@@ -28,6 +46,24 @@
                 @sendEditedMessage="sendEditedMessage"
                 @stopMessage="stopMessage"
             ></Chat>
+
+            <v-dialog v-model="userDialog" max-width="500">
+                <v-card>
+                    <v-card-title>신규 입사자 가입</v-card-title>
+                    <v-card-text>
+                        <div v-for="(user, index) in newUserList" :key="index" class="py-2">
+                            <v-text-field v-model="user.name" label="이름"></v-text-field>
+                            <v-text-field v-model="user.email" label="이메일"></v-text-field>
+                            <v-divider></v-divider>
+                        </div>
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn color="primary" @click="createNewUser(newUserList)">가입</v-btn>
+                        <v-btn color="error" @click="userDialog = false">닫기</v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
         </template>
     </AppBaseCard>
 </template>
@@ -59,6 +95,8 @@ export default {
             title: "organizationChartDefinition.cardTitle",
             text: "organizationChartDefinition.organizationChartExplanation"
         },
+        userDialog: false,
+        newUserList: [],
     }),
     async created() {
         await this.init();
@@ -125,15 +163,16 @@ export default {
             let messageWriting = this.messages[this.messages.length - 1];
 
             if (messageWriting.jsonContent) {
-                let unknown
+                let unknown;
                 try {
                     unknown = partialParse(messageWriting.jsonContent);
                 } catch(e) {
                     console.log(e)
-                    unknown = JSON.parse(messageWriting.jsonContent)
+                    return;
                 }
 
                 if (unknown && unknown.modifications) {
+                    console.log(unknown.modifications)
                     unknown.modifications.forEach(modification => {
                         if (modification.action == "replace") {
                             this.jsonPathReplace(this, modification.targetJsonPath, modification.value)
@@ -146,20 +185,20 @@ export default {
                 }
 
                 if (unknown && unknown.newUsers) {
-                    this.createNewUser(unknown.newUsers);
-                }
-                if (unknown && unknown.deleteUsers) {
+                    this.newUserList = unknown.newUsers;
+                    this.userDialog = true;
+                } else if (unknown && unknown.deleteUsers) {
                     this.deleteUser(unknown.deleteUsers);
+                } else {
+                    const putObj =  {
+                        key: 'organization',
+                        value: {
+                            chart: this.organizationChart,
+                        }
+                    };
+                    this.drawChart(this.organizationChart);
+                    this.putObject(storageKey, putObj);
                 }
-
-                const putObj =  {
-                    key: 'organization',
-                    value: {
-                        chart: this.organizationChart,
-                    }
-                };
-                this.drawChart(this.organizationChart);
-                this.putObject(storageKey, putObj);
             }
 
             const msgObj =  {
@@ -201,6 +240,8 @@ export default {
                 });
                 this.userList = await this.storage.list("users");
             }
+            this.newUserList = [];
+            this.userDialog = false;
         },
 
         async deleteUser(users) {
