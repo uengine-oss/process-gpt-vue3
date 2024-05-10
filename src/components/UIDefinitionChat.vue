@@ -586,6 +586,17 @@ export default {
                             }
                         }
                     }
+
+                    // AI 응답에서 code-field 관련 필드의 문자열들을 파싱하기 위해서
+                    const matchedCodeFields = [...fragmentToParse.matchAll(/<code-field .*?>(.*)<\/code-field>/g)].map((g) => g[1]);
+                    if (matchedCodeFields) {
+                        for (let j = 0; j < matchedCodeFields.length; j++) {
+                            const matchedCodeField = matchedCodeFields[j];
+                            if (!matchedCodeField.includes(`\\\\`)) {
+                                fragmentToParse = fragmentToParse.replace(matchedCodeField, matchedCodeField.replaceAll(`\\`, `\\\\`));
+                            }
+                        }
+                    }
                 } catch (error) {
                     console.log('### 유효 문자열을 JSON에 적합한 문자열로 변환시키는 과정에서 오류 발생! ###');
                     console.log(error);
