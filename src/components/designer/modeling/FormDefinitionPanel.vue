@@ -144,7 +144,7 @@
 
         this.componentRef.settingInfos.forEach(settingInfo => {
           if(settingInfo.addOns && settingInfo.addOns.includes("encodedAsBase64"))
-            this.componentProps[settingInfo.dataToUse] = btoa(this.componentProps[settingInfo.dataToUse])
+            this.componentProps[settingInfo.dataToUse] = btoa(encodeURIComponent(this.componentProps[settingInfo.dataToUse]))
         })
 
         this.$emit('onSave', this.componentRef, this.componentProps)
@@ -161,7 +161,7 @@
           if(cur.settingType === 'items') {
             acc[cur.dataToUse] = JSON.parse(JSON.stringify(this.componentRef[cur.dataToUse]))
           } else if(cur.addOns && cur.addOns.includes("encodedAsBase64")) {
-            acc[cur.dataToUse] = atob(this.componentRef[cur.dataToUse])
+            acc[cur.dataToUse] = decodeURIComponent(atob(this.componentRef[cur.dataToUse]))
           } else {
             acc[cur.dataToUse] = this.componentRef[cur.dataToUse]
           }

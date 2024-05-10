@@ -160,7 +160,7 @@ export default {
             newElement.setAttribute(settingInfo.htmlAttribute, JSON.stringify(componentRef[settingInfo.dataToUse]))
           else if(settingInfo.addOns && settingInfo.addOns.includes("savedAsInnerText")) {
             if(settingInfo.addOns.includes("encodedAsBase64"))
-              newElement.innerText = atob(componentRef[settingInfo.dataToUse])
+              newElement.innerText = decodeURIComponent(atob(componentRef[settingInfo.dataToUse]))
             else
               newElement.innerText = componentRef[settingInfo.dataToUse]
           }
@@ -462,7 +462,7 @@ export default {
       const codeFields = doc.querySelectorAll('code-field');
       codeFields.forEach(field => {
         const innerText = field.innerText;
-        const encodedText = btoa(innerText);
+        const encodedText = btoa(encodeURIComponent(innerText));
         field.setAttribute('encoded_code', encodedText);
         field.innerText = '';
       });
