@@ -3,8 +3,8 @@
         <slot ></slot>
     </div>
 
-    <div v-if="(this.localEventType !== 'click') && (this.encoded_script !== undefined)" class="d-flex align-center justify-center">
-        <img class="mr-2" src="/snippets/default/preview/script.png" style="width: 25px;" />
+    <div v-if="(this.localEventType !== 'click') && (this.encoded_code !== undefined)" class="d-flex align-center justify-center">
+        <img class="mr-2" src="/snippets/default/preview/input-code.png" style="width: 25px;" />
         <p>{{ localLabel }}</p>
     </div>
     <div v-else-if="this.localEventType === 'click'">
@@ -16,7 +16,7 @@
 import { commonSettingInfos } from "./CommonSettingInfos.vue"
 
 export default {
-    name: "ScriptField",
+    name: "CodeField",
 
     emits: [
         "update:modelValue",
@@ -32,7 +32,7 @@ export default {
         alias: String,
         event_type: String,
         watch_name: String,
-        encoded_script: String
+        encoded_code: String
     },
 
     data() {
@@ -41,7 +41,7 @@ export default {
             localAlias: "",
             localEventType: "",
             localWatchName: "",
-            localEncodedScript: "",
+            localEncodedCode: "",
 
             settingInfos: [
                 commonSettingInfos["localName"],
@@ -67,9 +67,9 @@ export default {
                 },
 
                 {
-                    dataToUse: "localEncodedScript",
-                    htmlAttribute: "encoded_script",
-                    settingLabel: "Script",
+                    dataToUse: "localEncodedCode",
+                    htmlAttribute: "encoded_code",
+                    settingLabel: "Code",
                     settingType: "textarea",
                     rows: 5,
                     addOns: ["encodedAsBase64", "savedAsInnerText"]
@@ -89,23 +89,23 @@ export default {
         this.localAlias = this.alias ?? ""
         this.localEventType = this.event_type ?? "click"
         this.localWatchName = this.watch_name ?? ""
-        this.localEncodedScript = this.encoded_script ?? ""
+        this.localEncodedCode = this.encoded_code ?? ""
 
-        if(this.encoded_script === undefined) {
+        if(this.encoded_code === undefined) {
             switch(this.localEventType) {
                 case "click":
                 case "initialize":
                 case "validate":
                     this.$emit('update:modelValue', {
                         eventType: this.localEventType,
-                        script: this.$slots.default(0)[0].children
+                        code: this.$slots.default(0)[0].children
                     });
                     break;
                 case "watch":
                     this.$emit('update:modelValue', {
                         eventType: this.localEventType,
                         watchName: this.watch_name,
-                        script: this.$slots.default(0)[0].children
+                        code: this.$slots.default(0)[0].children
                     });
                     break;
             }

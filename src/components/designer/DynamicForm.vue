@@ -25,7 +25,7 @@ import TextareaField from '@/components/ui/field/TextareaField.vue';
 import UserSelectField from '@/components/ui/field/UserSelectField.vue';
 import RowLayout from '@/components/ui/field/RowLayout.vue';
 import RowLayoutItemHead from '@/components/ui/field/RowLayoutItemHead.vue';
-import ScriptField from '@/components/ui/field/ScriptField.vue';
+import CodeField from '@/components/ui/field/CodeField.vue';
 
 export default {
   props: {
@@ -69,7 +69,7 @@ export default {
       renderedContent: "",
       formValues: {},
       cachedHFunc: null, // 중복 렌더링을 피하기 위해서
-      scriptInfos: {}
+      codeInfos: {}
     }
   },
 
@@ -78,10 +78,10 @@ export default {
      * 유저가 정의한 검증 함수들을 실행시켜서 에러가 있으면 반환하고, 없으면 null을 반환함
      */
     validate() {
-      for(const key in this.scriptInfos) {
-        const scriptInfo = this.scriptInfos[key]
-        if(scriptInfo.eventType === "validate") {
-          const error = this.executeScript(key)
+      for(const key in this.codeInfos) {
+        const codeInfo = this.codeInfos[key]
+        if(codeInfo.eventType === "validate") {
+          const error = this.executeCode(key)
           if(error && error.length > 0) return error
         }
       }
@@ -89,9 +89,9 @@ export default {
       return null
     },
 
-    executeScript(name) {
+    executeCode(name) {
       let error = null
-      eval(this.scriptInfos[name].script)
+      eval(this.codeInfos[name].code)
       return error
     }
   },
@@ -117,40 +117,40 @@ export default {
         UserSelectField,
         RowLayout,
         RowLayoutItemHead,
-        ScriptField
+        CodeField
       },
       data() {
         return {
           formValues: me.formValues,
 
-          scriptInfos: {},
+          codeInfos: {},
           oldFormValues: {}
         }
       },
       methods: {
-        executeScript(name) {
-          return me.executeScript(name)
+        executeCode(name) {
+          return me.executeCode(name)
         }
       },
       mounted() {
-        me.scriptInfos = this.scriptInfos
+        me.codeInfos = this.codeInfos
 
         this.oldFormValues = JSON.parse(JSON.stringify(this.formValues))
         this.$watch(`formValues`, (newVal, oldVal) => {
-          Object.keys(this.scriptInfos).forEach(key => {
-            const scriptInfo = this.scriptInfos[key]
-            if((scriptInfo.eventType === "watch") && 
-               (this.oldFormValues[scriptInfo.watchName] !== this.formValues[scriptInfo.watchName])) {
-              this.executeScript(key)
+          Object.keys(this.codeInfos).forEach(key => {
+            const codeInfo = this.codeInfos[key]
+            if((codeInfo.eventType === "watch") && 
+               (this.oldFormValues[codeInfo.watchName] !== this.formValues[codeInfo.watchName])) {
+              this.executeCode(key)
             }
           })
           this.oldFormValues = JSON.parse(JSON.stringify(this.formValues))
         }, {deep: true})
 
-        Object.keys(this.scriptInfos).forEach(key => {
-          const scriptInfo = this.scriptInfos[key]
-          if(scriptInfo.eventType === "initialize") {
-            this.executeScript(key)
+        Object.keys(this.codeInfos).forEach(key => {
+          const codeInfo = this.codeInfos[key]
+          if(codeInfo.eventType === "initialize") {
+            this.executeCode(key)
           }
         })
       },
