@@ -9,7 +9,7 @@ import LabelField from '@/components/ui/field/LabelField.vue';
 import BooleanField from '@/components/ui/field/BooleanField.vue';
 import TextareaField from '@/components/ui/field/TextareaField.vue';
 import UserSelectField from '@/components/ui/field/UserSelectField.vue';
-import ScriptField from '@/components/ui/field/ScriptField.vue';
+import CodeField from '@/components/ui/field/CodeField.vue';
 
 export default {
   props: {
@@ -80,8 +80,8 @@ export default {
         return this.createComponentWithRef(TextareaField, {vueRenderUUID:this.vueRenderUUID, tagName: tagName, ...this.parseContentToProps(this.content)});
       case "user-select-field":
         return this.createComponentWithRef(UserSelectField, {vueRenderUUID:this.vueRenderUUID, tagName: tagName, ...this.parseContentToProps(this.content)});
-      case "script-field":
-        return this.createComponentWithRef(ScriptField, {vueRenderUUID:this.vueRenderUUID, tagName: tagName, ...this.parseContentToProps(this.content)});
+      case "code-field":
+        return this.createComponentWithRef(CodeField, {vueRenderUUID:this.vueRenderUUID, tagName: tagName, ...this.parseContentToProps(this.content)});
       default:
         console.error("유효하지 않은 렌더링 content:", this.content)
         return "";

@@ -243,13 +243,13 @@ export default {
 
             const rows = dom.querySelectorAll('div.row');
 
-            // rows의 is_multidata_mode가 true인 경우, 그 안에는 script-field가 존재하면 안되며, 그럴경우, 예외 발생
+            // rows의 is_multidata_mode가 true인 경우, 그 안에는 code-field가 존재하면 안되며, 그럴경우, 예외 발생
             for(let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 const isMultiDataMode = row.getAttribute('is_multidata_mode');
                 if (isMultiDataMode === "true") {
-                    const scriptField = row.querySelector('script-field');
-                    if(scriptField) throw new Error(`multidataMode가 설정된 레이아웃 안에 script-field가 존재할 수 없습니다.`);
+                    const codeField = row.querySelector('code-field');
+                    if(codeField) throw new Error(`multidataMode가 설정된 레이아웃 안에 code-field가 존재할 수 없습니다.`);
                 }
             }
             
@@ -275,13 +275,13 @@ export default {
                     });
 
                     innerRow.querySelectorAll('[name]').forEach(field => {
-                        if(field.tagName.toLowerCase() === "script-field") {
+                        if(field.tagName.toLowerCase() === "code-field") {
                             const name = field.getAttribute('name');
-                            field.setAttribute('v-model', `scriptInfos['${name}']`);
+                            field.setAttribute('v-model', `codeInfos['${name}']`);
 
                             const event_type = field.getAttribute('event_type');
                             if(event_type === "click") {
-                                field.setAttribute('v-on:on_click', `executeScript('${name}')`);
+                                field.setAttribute('v-on:on_click', `executeCode('${name}')`);
                             }
                         } else {
                             const name = field.getAttribute('name');

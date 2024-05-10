@@ -269,7 +269,7 @@ export default {
      */
     getUserInputableComponentNames() {
       return Object.values(window.mashup.componentRefs)
-        .filter(componentRef => (componentRef.tagName !== 'script-field') && (componentRef.localName !== undefined) && (componentRef.localAlias !== undefined))
+        .filter(componentRef => (componentRef.tagName.toLowerCase() !== 'code-field') && (componentRef.localName !== undefined) && (componentRef.localAlias !== undefined))
         .map(componentRef => componentRef.localName)
     }
   },
