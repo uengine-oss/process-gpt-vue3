@@ -54,7 +54,7 @@ drop table public.users;
 create table public.users (
     id uuid not null primary key,
     username text null,
-    profile text null,
+    profile text null default '/src/assets/images/profile/defaultUser.png'::text,
     email text null,
     is_admin boolean not null default false,
     notifications jsonb null,

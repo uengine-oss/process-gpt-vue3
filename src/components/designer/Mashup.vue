@@ -158,6 +158,12 @@ export default {
         componentRef.settingInfos.forEach(settingInfo => {
           if(settingInfo.settingType === 'items')
             newElement.setAttribute(settingInfo.htmlAttribute, JSON.stringify(componentRef[settingInfo.dataToUse]))
+          else if(settingInfo.addOns && settingInfo.addOns.includes("savedAsInnerText")) {
+            if(settingInfo.addOns.includes("encodedAsBase64"))
+              newElement.innerText = decodeURIComponent(atob(componentRef[settingInfo.dataToUse]))
+            else
+              newElement.innerText = componentRef[settingInfo.dataToUse]
+          }
           else
             newElement.setAttribute(settingInfo.htmlAttribute, componentRef[settingInfo.dataToUse])
         })
@@ -183,9 +189,9 @@ export default {
           const section = document.createElement('section');
           section.innerHTML = row.outerHTML;
           return section.outerHTML;
-        }).join('').replace(/&quot;/g, `'`);
+        }).join('').replace(/&quot;/g, `'`).replace("<br>", "\n");
       } else
-        return doc.body.innerHTML.replace(/&quot;/g, `'`)
+        return doc.body.innerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n")
     },
 
 
@@ -256,6 +262,15 @@ export default {
       const app = createApp(DynamicComponent, {content:snipptDom.body.innerHTML, vueRenderUUID:vueRenderUUID})
                     .use(vuetify).mount('#'+vueRenderUUID);
       window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
+    },
+
+    /**
+     * 유저가 입력할 수 있는 컴포넌트들의 Name 목록을 반환하기 위해서
+     */
+    getUserInputableComponentNames() {
+      return Object.values(window.mashup.componentRefs)
+        .filter(componentRef => (componentRef.tagName.toLowerCase() !== 'code-field') && (componentRef.localName !== undefined) && (componentRef.localAlias !== undefined))
+        .map(componentRef => componentRef.localName)
     }
   },
   mounted() {
@@ -366,6 +381,10 @@ export default {
             return
           }
 
+          componentRef.settingInfos.forEach(settingInfo => {
+            if(settingInfo.addOns && settingInfo.addOns.includes("inputableNameItems"))
+              settingInfo.settingValue = window.mashup.getUserInputableComponentNames()
+          })
 
           window.mashup.componentRefForSetting = componentRef
           window.mashup.isOpenComponentSettingDialog = true
@@ -410,7 +429,6 @@ export default {
       containerSettingShowFunction: function (form, container, keditor) {
         console.log("containerSettingShowFunction : ", form, container, keditor);
 
-
         const dom = (new DOMParser()).parseFromString(container[0].outerHTML, 'text/html')
         window.mashup.containerSectionId = dom.querySelector('section').id
 
@@ -440,6 +458,14 @@ export default {
       $("#initGuide").css("opacity", "0")
       const parser = new DOMParser();
       const doc = parser.parseFromString(window.mashup.modelValue, 'text/html');
+
+      const codeFields = doc.querySelectorAll('code-field');
+      codeFields.forEach(field => {
+        const innerText = field.innerText;
+        const encodedText = btoa(encodeURIComponent(innerText));
+        field.setAttribute('encoded_code', encodedText);
+        field.innerText = '';
+      });
 
       doc.querySelectorAll("div[id^='vuemount_']").forEach(vueRenderElement => {
         // AI가 태그를 이상하게 생성했을 경우, 이곳에서 에러가 발생할 수 있음. 일단 넘기도록 처리함

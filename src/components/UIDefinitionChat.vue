@@ -37,7 +37,7 @@
 
                     <v-window-item value="preview" class="fill-height mt-15 pa-5" style="overflow-y: auto">
                         <template v-if="isShowPreview">
-                            <DynamicForm :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
+                            <DynamicForm ref="dynamicForm" :formHTML="previewHTML" v-model="previewFormValues" :key="previewFormValuesKey"></DynamicForm>
 
                             <template v-if="dev.isDevMode">
                                 <v-textarea label="previewFormValuesToTest" rows="10" v-model="dev.previewFormValues"></v-textarea>
@@ -128,6 +128,7 @@ export default {
         previewHTML: '',
         previewFormValues: {},
         isShowPreview: false,
+        previewFormValuesKey: 0,
 
         dev: {
             isDevMode: window.localStorage.getItem('isDevMode') === 'true',
@@ -242,6 +243,17 @@ export default {
 
 
             const rows = dom.querySelectorAll('div.row');
+
+            // rows의 is_multidata_mode가 true인 경우, 그 안에는 code-field가 존재하면 안되며, 그럴경우, 예외 발생
+            for(let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const isMultiDataMode = row.getAttribute('is_multidata_mode');
+                if (isMultiDataMode === "true") {
+                    const codeField = row.querySelector('code-field');
+                    if(codeField) throw new Error(`multidataMode가 설정된 레이아웃 안에 code-field가 존재할 수 없습니다.`);
+                }
+            }
+            
             rows.forEach(row => {
                 const isMultiDataMode = row.getAttribute('is_multidata_mode');
                 if (!isMultiDataMode || (isMultiDataMode === 'false')) {
@@ -264,8 +276,18 @@ export default {
                     });
 
                     innerRow.querySelectorAll('[name]').forEach(field => {
-                        const name = field.getAttribute('name');
-                        field.setAttribute('v-model', `slotProps.modelValue['${name}']`);
+                        if(field.tagName.toLowerCase() === "code-field") {
+                            const name = field.getAttribute('name');
+                            field.setAttribute('v-model', `codeInfos['${name}']`);
+
+                            const event_type = field.getAttribute('event_type');
+                            if(event_type === "click") {
+                                field.setAttribute('v-on:on_click', `executeCode('${name}')`);
+                            }
+                        } else {
+                            const name = field.getAttribute('name');
+                            field.setAttribute('v-model', `slotProps.modelValue['${name}']`);
+                        }
                     });
 
                     newRow.appendChild(innerRow);
@@ -305,7 +327,7 @@ export default {
             });
 
 
-            return dom.body.innerHTML;
+            return dom.body.innerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n");
         },
 
         /**
@@ -337,6 +359,14 @@ export default {
                         field.removeAttribute('v-model');
                     });
 
+                    newRow.querySelectorAll('*').forEach(field => {
+                        Array.from(field.attributes).forEach(attr => {
+                            if (attr.name.startsWith('v-on:')) {
+                                field.removeAttribute(attr.name);
+                            }
+                        });
+                    });
+
 
                     row.parentNode.replaceChild(newRow, row);
                 } else {
@@ -358,13 +388,21 @@ export default {
                         field.removeAttribute('v-model');
                     });
 
+                    newRow.querySelectorAll('*').forEach(field => {
+                        Array.from(field.attributes).forEach(attr => {
+                            if (attr.name.startsWith('v-on:')) {
+                                field.removeAttribute(attr.name);
+                            }
+                        });
+                    });
+
 
                     row.parentNode.replaceChild(newRow, row);
                 }
             });
 
 
-            return dom.body.innerHTML;
+            return dom.body.innerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n");
         },
 
         /**
@@ -397,6 +435,9 @@ export default {
         },
 
         onClickPreviewSubmitButton() {
+            const error = this.$refs.dynamicForm.validate()
+            if (error && error.length > 0) alert(error)
+
             if (this.dev.isDevMode) this.dev.previewFormValues = JSON.stringify(this.previewFormValues);
             else alert(JSON.stringify(this.previewFormValues));
         },
@@ -545,6 +586,17 @@ export default {
                             }
                         }
                     }
+
+                    // AI 응답에서 code-field 관련 필드의 문자열들을 파싱하기 위해서
+                    const matchedCodeFields = [...fragmentToParse.matchAll(/<code-field .*?>(.*)<\/code-field>/g)].map((g) => g[1]);
+                    if (matchedCodeFields) {
+                        for (let j = 0; j < matchedCodeFields.length; j++) {
+                            const matchedCodeField = matchedCodeFields[j];
+                            if (!matchedCodeField.includes(`\\\\`)) {
+                                fragmentToParse = fragmentToParse.replace(matchedCodeField, matchedCodeField.replaceAll(`\\`, `\\\\`));
+                            }
+                        }
+                    }
                 } catch (error) {
                     console.log('### 유효 문자열을 JSON에 적합한 문자열로 변환시키는 과정에서 오류 발생! ###');
                     console.log(error);
@@ -682,7 +734,7 @@ export default {
             targetSections.forEach(section => {
                 section.setAttribute('class', 'keditor-ui keditor-container-inner');
             });
-            const loadedValidHTML = targetSections.map(section => section.outerHTML).join('').replace(/&quot;/g, `'`)
+            const loadedValidHTML = targetSections.map(section => section.outerHTML).join('').replace(/&quot;/g, `'`).replace("<br>", "\n")
 
 
             console.log('### 로드된 유효 HTML 텍스트 ###');
@@ -728,7 +780,7 @@ export default {
                 }
             });
 
-            const modifiedPrevFormOutput = dom.body.outerHTML.replace(/&quot;/g, `'`);
+            const modifiedPrevFormOutput = dom.body.outerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n");
             console.log('### 수정된 이전 폼 출력 ###');
             console.log(modifiedPrevFormOutput);
             return modifiedPrevFormOutput;
@@ -746,9 +798,11 @@ export default {
                 context: me,
                 action: async () => {
                     me.previewHTML = me.keditorContentHTMLToDynamicFormHTML(me.$refs.mashup.getKEditorContentHtml());
+                    me.previewFormValuesKey += 1;
                 },
                 onFail: () => {
                     me.previewHTML = '';
+                    me.previewFormValuesKey += 1;
                 }
             });
             me.previewFormValues = {};
