@@ -70,7 +70,7 @@ export default {
                     dataToUse: "localEncodedCode",
                     htmlAttribute: "encoded_code",
                     settingLabel: "Code",
-                    settingType: "textarea",
+                    settingType: "textarea_code",
                     rows: 5,
                     addOns: ["encodedAsBase64", "savedAsInnerText"]
                 }
