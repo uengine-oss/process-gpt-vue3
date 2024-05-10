@@ -90,6 +90,22 @@ const formDesignGeneratorPromptSnipptsData = {
             tag: `<label-field label='<입력시킬 라벨 값>'></label-field>`,
             purpose: `특정 컴포넌트를 설명하기 위해서`,
             limit: "name, alias가 있는 경우에는 이미 내부적으로 label이 설정되기 때문에 쓸 필요가 없음"
+        },
+
+        {
+            tag: `<code-field name='<이 코드의 고유한 이름>' alias='<이 코드의 별명>' event_type='<click|initialize|validate|watch>' watch_name='<event_type이 watch인 경우, 감시할 name 속성>'>실행시킬 Javascript 코드</code-field>`,
+            purpose: `지정된 이벤트가 발생하면 코드를 실행하기 위해서`,
+            limit: `* event_type에 따라서 코드를 실행하는 방식이 달라짐\n` +
+                   `click인 경우, alias가 적힌 버튼을 누를 경우, 주어진 코드가 실행됨\n` +
+                   `initialize인 경우, 맨 처음 폼이 표시될때 주어진 코드가 실행됨\n` +
+                   `validate인 경우, 폼을 제출할시에 주어진 코드가 실행됨\n` +
+                   `watch인 경우, watch_name 속성에 정의된 값이 변경될 경우, 주어진 코드가 실행됨\n` +
+                   `* 코드 작성 규칙은 다음과 같음\n` +
+                   `1. 각각의 코드 작성 줄이 끝나면 ';'를 붙여야 함\n` +
+                   `2. 주어진 코드가 실행되기 위해서는 반드시 자바스크립트 코드를 사용해야 함\n` +
+                   `3. 현재 유저가 입력한 값은 this.codeInfos[<name 속성>]에 저장되어 있음\n` +
+                   `4. event_type이 watch인 경우, this.oldFormValues[<name 속성>]에 이전 값이 저장되어 있음\n` +
+                   `5. event_type이 validate인 경우, 에러가 있을 경우, error 속성에 에러메시지를 저장하고, 없을 경우 아무것도 하지 않으면 됨`
         }
     ],
 

@@ -358,6 +358,14 @@ export default {
                         field.removeAttribute('v-model');
                     });
 
+                    newRow.querySelectorAll('*').forEach(field => {
+                        Array.from(field.attributes).forEach(attr => {
+                            if (attr.name.startsWith('v-on:')) {
+                                field.removeAttribute(attr.name);
+                            }
+                        });
+                    });
+
 
                     row.parentNode.replaceChild(newRow, row);
                 } else {
@@ -377,6 +385,14 @@ export default {
 
                     newRow.querySelectorAll('[v-model]').forEach(field => {
                         field.removeAttribute('v-model');
+                    });
+
+                    newRow.querySelectorAll('*').forEach(field => {
+                        Array.from(field.attributes).forEach(attr => {
+                            if (attr.name.startsWith('v-on:')) {
+                                field.removeAttribute(attr.name);
+                            }
+                        });
                     });
 
 

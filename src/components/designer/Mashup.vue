@@ -459,6 +459,14 @@ export default {
       const parser = new DOMParser();
       const doc = parser.parseFromString(window.mashup.modelValue, 'text/html');
 
+      const codeFields = doc.querySelectorAll('code-field');
+      codeFields.forEach(field => {
+        const innerText = field.innerText;
+        const encodedText = btoa(innerText);
+        field.setAttribute('encoded_code', encodedText);
+        field.innerText = '';
+      });
+
       doc.querySelectorAll("div[id^='vuemount_']").forEach(vueRenderElement => {
         // AI가 태그를 이상하게 생성했을 경우, 이곳에서 에러가 발생할 수 있음. 일단 넘기도록 처리함
         try {
