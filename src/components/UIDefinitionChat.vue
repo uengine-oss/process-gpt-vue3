@@ -327,7 +327,7 @@ export default {
             });
 
 
-            return dom.body.innerHTML;
+            return dom.body.innerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n");
         },
 
         /**
@@ -402,7 +402,7 @@ export default {
             });
 
 
-            return dom.body.innerHTML;
+            return dom.body.innerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n");
         },
 
         /**
@@ -723,7 +723,7 @@ export default {
             targetSections.forEach(section => {
                 section.setAttribute('class', 'keditor-ui keditor-container-inner');
             });
-            const loadedValidHTML = targetSections.map(section => section.outerHTML).join('').replace(/&quot;/g, `'`)
+            const loadedValidHTML = targetSections.map(section => section.outerHTML).join('').replace(/&quot;/g, `'`).replace("<br>", "\n")
 
 
             console.log('### 로드된 유효 HTML 텍스트 ###');
@@ -769,7 +769,7 @@ export default {
                 }
             });
 
-            const modifiedPrevFormOutput = dom.body.outerHTML.replace(/&quot;/g, `'`);
+            const modifiedPrevFormOutput = dom.body.outerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n");
             console.log('### 수정된 이전 폼 출력 ###');
             console.log(modifiedPrevFormOutput);
             return modifiedPrevFormOutput;

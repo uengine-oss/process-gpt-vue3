@@ -189,9 +189,9 @@ export default {
           const section = document.createElement('section');
           section.innerHTML = row.outerHTML;
           return section.outerHTML;
-        }).join('').replace(/&quot;/g, `'`);
+        }).join('').replace(/&quot;/g, `'`).replace("<br>", "\n");
       } else
-        return doc.body.innerHTML.replace(/&quot;/g, `'`)
+        return doc.body.innerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n")
     },
 
 
