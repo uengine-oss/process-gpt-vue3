@@ -125,10 +125,11 @@ const formDesignGeneratorPromptSnipptsData = {
                         <text-field name='book_publish_date' alias='발행날짜' type='date'></text-field>
                         <select-field name='book_genre' alias='책 장르' is_dynamic_load='false' items='[{"novel": "소설"}, {"poem": "시"}, {"essay": "에세이"}]'></select-field>
                         <file-field name='book_cover' alias='책 표지 이미지'></file-field>
+                    
+                        <code-field name="checkBookTitle" alias="책 제목 검사" event_type="validate">
+                            if(this.formValues["book_title"] === "") error = "책 제목은 반드시 입력해야 합니다."
+                        </code-field>  
                     </div>
-                    <code-field name="checkBookTitle" alias="책 제목 검사" event_type="validate">
-                        if(this.formValues["book_title"] === "") error = "책 제목은 반드시 입력해야 합니다."
-                    </code-field>  
                 </div>"
             }
             \`\`\``
