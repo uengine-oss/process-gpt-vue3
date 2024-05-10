@@ -49,7 +49,7 @@
                                 </v-tooltip>
                                 <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn" style="display: none;" />
 
-                                <div v-if="bpmn && fullPath != '' && !versionStatus">
+                                <div v-if="bpmn && fullPath != ''">
                                     <v-tooltip location="bottom">
                                         <template v-slot:activator="{ props }">
                                             <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
@@ -86,7 +86,7 @@
                                 
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn v-if="bpmn && fullPath != '' && !versionStatus" v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                        <v-btn v-if="bpmn && fullPath != ''" v-bind="props" icon variant="text" class="text-medium-emphasis"
                                             @click="beforeDelete">
                                             <TrashIcon size="24" />
                                         </v-btn>
@@ -230,7 +230,6 @@ export default {
         versionDialog: false,
         verMangerDialog: false,
         loading: false,
-        versionStatus: true,
         // delete
         deleteDialog: false,
         isDeleted: false,
@@ -241,6 +240,123 @@ export default {
             isStream: true,
             preferredLanguage: 'Korean'
         });
+        let json = {
+            "megaProcessId": "ITSupport",
+            "majorProcessId": "IssueHandling",
+            "processDefinitionName": "장애처리 프로세스",
+            "processDefinitionId": "issue_handling_process",
+            "description": "장애를 처리하는 프로세스",
+            "data": [
+                {
+                "name": "issue",
+                "description": "담당자에게 처리해야 할 장애에 대한 정보",
+                "type": "Document"
+                }
+            ],
+            "roles": [
+                {
+                "name": "신고자",
+                "resolutionRule": "신고자는 직접 장애를 발견한 사람이다"
+                },
+                {
+                "name": "관리자",
+                "resolutionRule": "관리자는 장애에 대한 동작을 지시하고 확인하는 역할을 한다"
+                },
+                {
+                "name": "담당자",
+                "resolutionRule": "담당자는 관리자에게 지정받은 장애를 처리하는 역할을 한다"
+                }
+            ],
+            "events": [
+                {
+                "id": "start_event",
+                "name": "장애신고",
+                "type": "StartEvent",
+                "description": "신고자가 장애신고를 하는 이벤트",
+                "trigger": "신고자에게서 장애신고가 들어옴"
+                },
+                {
+                "id": "end_event",
+                "name": "완료처리",
+                "type": "EndEvent",
+                "description": "장애처리 완료 후 관리자에게 알리는 이벤트",
+                "trigger": "장애처리 완료"
+                }
+            ],
+            "activities": [
+                {
+                "id": "issue_assignment",
+                "name": "장애사항 배정",
+                "type": "UserActivity",
+                "description": "관리자가 장애를 처리할 수 있는 담당자를 지정하고 지시하는 활동",
+                "instruction": "관리자에게 장애를 처리할 담당자를 지정하고 지시",
+                "role": "관리자",
+                "inputData": [{"name": "issue"}],
+                "outputData": [{"name": "issue"}]
+                },
+                {
+                "id": "issue_resolving",
+                "name": "장애처리",
+                "type": "UserActivity",
+                "description": "담당자가 장애를 처리하는 활동",
+                "instruction": "담당자에게 장애를 처리",
+                "role": "담당자",
+                "inputData": [{"name": "issue"}],
+                "outputData": [{"name": "issue"}]
+                },
+                {
+                "id": "completion_notification",
+                "name": "완료 알림",
+                "type": "EMailActivity",
+                "description": "담당자가 장애 처리 완료를 관리자에게 알리는 활동",
+                "instruction": "장애 처리 완료 알림을 관리자에게 보내기",
+                "role": "담당자",
+                "inputData": [{"name": "issue"}],
+                "outputData": []
+                }
+            ],
+            "gateways": [
+                {
+                "id": "issue_resolved",
+                "name": "장애 해결 체크",
+                "type": "ExclusiveGateway",
+                "description": "장애가 해결되었는지 확인하는 게이트웨이",
+                "condition": "장애 해결여부",
+                "role": "담당자"
+                }
+            ],
+            "sequences": [
+                {
+                "source": "start_event",
+                "target": "issue_assignment"
+                },
+                {
+                "source": "issue_assignment",
+                "target": "issue_resolving"
+                },
+                {
+                "source": "issue_resolving",
+                "target": "issue_resolved"
+                },
+                {
+                "source": "issue_resolved",
+                "target": "completion_notification",
+                "condition": "장애가 해결됨"
+                },
+                {
+                "source": "issue_resolved",
+                "target": "issue_resolving",
+                "condition": "장애가 해결되지 않음"
+                },
+                {
+                "source": "completion_notification",
+                "target": "end_event"
+                }
+            ]
+            }
+        this.bpmn = this.createBpmnXml(json);
+        this.processDefinition = json
+        this.definitionChangeCount++;
     },
     watch: {
         $route: {
@@ -354,7 +470,6 @@ export default {
                     } else {
                         // 현재 수정가능 > 잠금 상태로 (저장)
                         me.toggleVersionDialog(true);
-                        this.versionStatus = false
                     }
                 }
             });
@@ -617,7 +732,7 @@ export default {
                     processDefinitionName: process.id || 'Unknown',
                     processDefinitionId: process.id || 'Unknown',
                     description: "process.description",
-                    data: process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable'].map(varData => ({
+                    data: process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] ? (Array.isArray(process['bpmn:extensionElements']['uengine:properties']['uengine:variable']) ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable'] : [process['bpmn:extensionElements']['uengine:properties']['uengine:variable']]).map(varData => ({
                         name: varData.name,
                         description: varData.name + ' description',
                         type: varData.type
@@ -649,7 +764,13 @@ export default {
                             type: 'UserActivity',
                             description: activity.name + ' description',
                             instruction: activity.name + ' instruction',
-                            role: lanes.find(lane => lane['bpmn:flowNodeRef'] && lane['bpmn:flowNodeRef'].includes(activity.id)) ? lanes.find(lane => lane['bpmn:flowNodeRef'].includes(activity.id)).name : 'Unknown',
+                            role: lanes.find(lane => {
+                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                return flowNodeRefs.includes(activity.id);
+                            }) ? lanes.find(lane => {
+                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                return flowNodeRefs.includes(activity.id);
+                            }).name : 'Unknown',
                             inputData: activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
                                 .filter(param => param.direction === "IN")
                                 .map(param => param.variable.name) : [],
@@ -663,7 +784,13 @@ export default {
                             type: 'ScriptActivity',
                             description: task.name + ' description',
                             instruction: task.name + ' instruction',
-                            role: lanes.find(lane => lane['bpmn:flowNodeRef'] && lane['bpmn:flowNodeRef'].includes(task.id)) ? lanes.find(lane => lane['bpmn:flowNodeRef'].includes(task.id)).name : 'Unknown',
+                            role: lanes.find(lane => {
+                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                return flowNodeRefs.includes(task.id);
+                            }) ? lanes.find(lane => {
+                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                return flowNodeRefs.includes(task.id);
+                            }).name : 'Unknown',
                             pythonCode: task['bpmn:extensionElements'] && task['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(task['bpmn:extensionElements']['uengine:properties']['uengine:json']).script : ''
                         }))
                     ],
@@ -673,7 +800,13 @@ export default {
                             name: gateway.name || 'Gateway',
                             type: "ExclusiveGateway",
                             description: gateway.name + ' description',
-                            role: lanes.find(lane => lane['bpmn:flowNodeRef'] && lane['bpmn:flowNodeRef'].includes(gateway.id)) ? lanes.find(lane => lane['bpmn:flowNodeRef'].includes(gateway.id)).name : 'Unknown',
+                            role: lanes.find(lane => {
+                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                return flowNodeRefs.includes(gateway.id);
+                            }) ? lanes.find(lane => {
+                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                return flowNodeRefs.includes(gateway.id);
+                            }).name : 'Unknown',
                             condition: gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(gateway["bpmn:extensionElements"]["uengine:properties"]["uengine:json"]).condition || '' : ''
                         }))
                     ],
@@ -1088,11 +1221,14 @@ export default {
             let positionMapping = {};
             // Sequences 생성
             if (jsonModel.sequences)
-                jsonModel.sequences.forEach((sequence) => {
+                jsonModel.sequences.forEach((sequence, idx) => {
                     if (!positionMapping[sequence.source]) {
                         positionMapping[sequence.source] = lastXPos;
-                        lastXPos += 120; // 다음 요소의 위치를 위해 간격 추가
+                        lastXPos += 120; 
                     }
+                    if(idx === jsonModel.sequences.length - 1){
+                        positionMapping[sequence.target] = lastXPos
+                    }   
                     const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:sequenceFlow');
                     sequenceFlow.setAttribute('id', 'SequenceFlow_' + sequence.source + '_' + sequence.target);
                     sequenceFlow.setAttribute('name', sequence.name ? sequence.name : '');
@@ -1397,18 +1533,19 @@ export default {
                     //     lastXPos = lastXPos;
                     //     lastXPos += 120;
                     // }
+                    let activityX = positionMapping[activity.id] ? positionMapping[activity.id] : (activityIndex == 0 ? lastXPos + 120 : lastXPos)
                     let activityY = parseInt(rolePos[activity.role].y);
                     const activityShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
                     activityShape.setAttribute('id', `BPMNShape_${activity.id}`);
                     activityShape.setAttribute('bpmnElement', activity.id);
 
                     const dcBoundsActivity = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
-                    dcBoundsActivity.setAttribute('x', positionMapping[activity.id]);
+                    dcBoundsActivity.setAttribute('x', activityX);
                     dcBoundsActivity.setAttribute('y', activityY + 10);
                     dcBoundsActivity.setAttribute('width', 100);
                     dcBoundsActivity.setAttribute('height', 80);
                     activityPos[activity.id] = {
-                        x: positionMapping[activity.id],
+                        x: activityX,
                         y: activityY + 10,
                         width: 100,
                         height: 80
@@ -1422,8 +1559,8 @@ export default {
 
                     activityShape.appendChild(dcBoundsActivity);
                     bpmnPlane.appendChild(activityShape);
-                    // lastXPos = lastXPos;
-                    // lastXPos += 120;
+                    rolePos[activity.role].x = lastXPos
+                    lastXPos += 120;
 
                     // if (activityIndex == jsonModel.activities.length - 1 && lastActivity.role) {
                     //     // EndEvent의 BPMNShape 추가
@@ -1496,12 +1633,13 @@ export default {
 
             if (jsonModel.gateways){
                 jsonModel.gateways.forEach((gateway) => {
+                    let gatewayX = positionMapping[gateway.id] ? positionMapping[gateway.id] : rolePos[gateway.role].x + 120;
                     let gatewayY = parseInt(rolePos[gateway.role].y);
                     const gatewayShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
                     gatewayShape.setAttribute('id', `Shape_${gateway.id}`);
                     gatewayShape.setAttribute('bpmnElement', gateway.id);
                     const dcBounds = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
-                    dcBounds.setAttribute('x', positionMapping[gateway.id]); 
+                    dcBounds.setAttribute('x', gatewayX); 
                     dcBounds.setAttribute('y', gatewayY + 25); 
                     dcBounds.setAttribute('width', '50');
                     dcBounds.setAttribute('height', '50');
@@ -1509,11 +1647,12 @@ export default {
                     bpmnPlane.appendChild(gatewayShape);
 
                     activityPos[gateway.id] = {
-                        x: positionMapping[gateway.id],
+                        x: gatewayX,
                         y: gatewayY + 25,
                         width: 50,
                         height: 50
                     };
+                    rolePos[gateway.role].x += 120;
                 });
             }
 
@@ -1523,10 +1662,10 @@ export default {
                     let eventX
                     let eventY
                     if(event.type == 'StartEvent'){
-                        eventX = positionMapping[event.id]
+                        eventX = 140
                         eventY = parseInt(rolePos[jsonModel.activities[0].role].y) + 32;
                     } else if(event.type == 'EndEvent') {
-                        eventX = lastXPos + 120
+                        eventX = positionMapping[event.id] ? positionMapping[event.id] : lastXPos + 120
                         eventY = parseInt(rolePos[jsonModel.activities[jsonModel.activities.length - 1].role].y) + 32;
                     } else {
                         eventX = 200
