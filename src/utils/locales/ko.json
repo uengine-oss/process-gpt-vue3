@@ -136,7 +136,8 @@
         "history": "버전 히스토리",
         "import": "BPMN 파일 불러오기",
         "addImage": "이미지 추가",
-        "fileUpLoad": "파일 업로드"
+        "fileUpLoad": "파일 업로드",
+        "generateProcessDef": "프로세스 정의 생성"
     },
     "accountTab": {
         "accountSetting": "계정 설정",

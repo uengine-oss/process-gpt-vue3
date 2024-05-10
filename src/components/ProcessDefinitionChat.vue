@@ -29,7 +29,7 @@
             </template>
             <template v-slot:rightpart>
                 <div class="no-scrollbar">
-                    <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" :lock="lock" 
+                    <Chat :prompt="prompt" :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" :lock="lock" 
                         :disableChat="disableChat" @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" 
                         @stopMessage="stopMessage">
                         <template v-slot:custom-tools>
@@ -111,7 +111,7 @@
             </template>
 
             <template v-slot:mobileLeftContent>
-                <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" :lock="lock"
+                <Chat :prompt="prompt" :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" :lock="lock"
                     :disableChat="disableChat" @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage">
                     <template v-slot:custom-tools>
@@ -210,6 +210,7 @@ export default {
         ProcessDefinitionVersionManager
     },
     data: () => ({
+        prompt: "",
         processDefinition: null,
         bpmn: null,
         changedXML: '',
@@ -240,123 +241,12 @@ export default {
             isStream: true,
             preferredLanguage: 'Korean'
         });
-        let json = {
-            "megaProcessId": "ITSupport",
-            "majorProcessId": "IssueHandling",
-            "processDefinitionName": "장애처리 프로세스",
-            "processDefinitionId": "issue_handling_process",
-            "description": "장애를 처리하는 프로세스",
-            "data": [
-                {
-                "name": "issue",
-                "description": "담당자에게 처리해야 할 장애에 대한 정보",
-                "type": "Document"
-                }
-            ],
-            "roles": [
-                {
-                "name": "신고자",
-                "resolutionRule": "신고자는 직접 장애를 발견한 사람이다"
-                },
-                {
-                "name": "관리자",
-                "resolutionRule": "관리자는 장애에 대한 동작을 지시하고 확인하는 역할을 한다"
-                },
-                {
-                "name": "담당자",
-                "resolutionRule": "담당자는 관리자에게 지정받은 장애를 처리하는 역할을 한다"
-                }
-            ],
-            "events": [
-                {
-                "id": "start_event",
-                "name": "장애신고",
-                "type": "StartEvent",
-                "description": "신고자가 장애신고를 하는 이벤트",
-                "trigger": "신고자에게서 장애신고가 들어옴"
-                },
-                {
-                "id": "end_event",
-                "name": "완료처리",
-                "type": "EndEvent",
-                "description": "장애처리 완료 후 관리자에게 알리는 이벤트",
-                "trigger": "장애처리 완료"
-                }
-            ],
-            "activities": [
-                {
-                "id": "issue_assignment",
-                "name": "장애사항 배정",
-                "type": "UserActivity",
-                "description": "관리자가 장애를 처리할 수 있는 담당자를 지정하고 지시하는 활동",
-                "instruction": "관리자에게 장애를 처리할 담당자를 지정하고 지시",
-                "role": "관리자",
-                "inputData": [{"name": "issue"}],
-                "outputData": [{"name": "issue"}]
-                },
-                {
-                "id": "issue_resolving",
-                "name": "장애처리",
-                "type": "UserActivity",
-                "description": "담당자가 장애를 처리하는 활동",
-                "instruction": "담당자에게 장애를 처리",
-                "role": "담당자",
-                "inputData": [{"name": "issue"}],
-                "outputData": [{"name": "issue"}]
-                },
-                {
-                "id": "completion_notification",
-                "name": "완료 알림",
-                "type": "EMailActivity",
-                "description": "담당자가 장애 처리 완료를 관리자에게 알리는 활동",
-                "instruction": "장애 처리 완료 알림을 관리자에게 보내기",
-                "role": "담당자",
-                "inputData": [{"name": "issue"}],
-                "outputData": []
-                }
-            ],
-            "gateways": [
-                {
-                "id": "issue_resolved",
-                "name": "장애 해결 체크",
-                "type": "ExclusiveGateway",
-                "description": "장애가 해결되었는지 확인하는 게이트웨이",
-                "condition": "장애 해결여부",
-                "role": "담당자"
-                }
-            ],
-            "sequences": [
-                {
-                "source": "start_event",
-                "target": "issue_assignment"
-                },
-                {
-                "source": "issue_assignment",
-                "target": "issue_resolving"
-                },
-                {
-                "source": "issue_resolving",
-                "target": "issue_resolved"
-                },
-                {
-                "source": "issue_resolved",
-                "target": "completion_notification",
-                "condition": "장애가 해결됨"
-                },
-                {
-                "source": "issue_resolved",
-                "target": "issue_resolving",
-                "condition": "장애가 해결되지 않음"
-                },
-                {
-                "source": "completion_notification",
-                "target": "end_event"
-                }
-            ]
-            }
-        this.bpmn = this.createBpmnXml(json);
-        this.processDefinition = json
-        this.definitionChangeCount++;
+        if(this.$store.state.messages) {
+            const messagesString = JSON.stringify(this.$store.state.messages);
+            this.prompt = `아래 대화 내용에서 프로세스를 유추하여 프로세스 정의를 생성해주세요. 이때 가능한 프로세스를 일반화하여 작성:
+            ${messagesString}.`;
+            this.$store.commit('clearMessages');
+        }
     },
     watch: {
         $route: {
