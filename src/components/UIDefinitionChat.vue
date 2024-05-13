@@ -37,7 +37,7 @@
 
                     <v-window-item value="preview" class="fill-height mt-15 pa-5" style="overflow-y: auto">
                         <template v-if="isShowPreview">
-                            <DynamicForm ref="dynamicForm" :formHTML="previewHTML" v-model="previewFormValues" :key="previewHTML"></DynamicForm>
+                            <DynamicForm ref="dynamicForm" :formHTML="previewHTML" v-model="previewFormValues" :key="dynamicFormKey"></DynamicForm>
 
                             <template v-if="dev.isDevMode">
                                 <v-textarea label="previewFormValuesToTest" rows="10" v-model="dev.previewFormValues"></v-textarea>
@@ -127,6 +127,7 @@ export default {
 
         previewHTML: '',
         previewFormValues: {},
+        dynamicFormKey: 0,
         isShowPreview: false,
 
         dev: {
@@ -443,6 +444,7 @@ export default {
 
         onClickPreviewApplyButton() {
             this.previewFormValues = JSON.parse(this.dev.previewFormValues);
+            this.dynamicFormKey += 1
         },
 
         /**
@@ -797,9 +799,11 @@ export default {
                 context: me,
                 action: async () => {
                     me.previewHTML = me.keditorContentHTMLToDynamicFormHTML(me.$refs.mashup.getKEditorContentHtml());
+                    me.dynamicFormKey += 1
                 },
                 onFail: () => {
                     me.previewHTML = '';
+                    me.dynamicFormKey += 1
                 }
             });
             me.previewFormValues = {};
