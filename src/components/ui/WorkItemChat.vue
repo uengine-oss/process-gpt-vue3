@@ -33,7 +33,7 @@
                             </v-row>
                             <div v-if="message.open" style="margin-top: 20px;">
                                 <div v-if="toolFormat(message).includes('formHandler')">
-                                    <DynamicForm class="message-layout-dyna" v-if="message.open" :formHTML="message.html" v-model="message.formData" :key="message.html"></DynamicForm>
+                                    <DynamicForm class="message-layout-dyna" v-if="message.open" :formHTML="message.html" v-model="message.formData" :key="message.formDataKey"></DynamicForm>
                                 </div>
                                 <div v-else-if="toolFormat(message) == 'defaultHandler'">
                                     <DefaultForm :inputItems="message.formData"></DefaultForm>
@@ -81,6 +81,7 @@ export default {
                 message.open = false
                 message.html = null
                 message.formData = null
+                message.formDataKey = 0
 
                 return message
             })
@@ -115,6 +116,8 @@ export default {
                         // get variable
                         let variable = await backend.getVariable(workHistory.instId, varName) 
                         me.filterMessages[index].formData = variable ? variable.valueMap : {}
+
+                        me.filterMessages[index].formDataKey += 1
                     } else {
                         // DefaultHandler
                         const workItem = await backend.getWorkItem(workHistory.taskId);
@@ -127,6 +130,8 @@ export default {
                             }
                         }
                         me.filterMessages[index].formData = result
+
+                        me.filterMessages[index].formDataKey += 1
                     }
                    
                     // open
