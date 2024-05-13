@@ -99,23 +99,31 @@ class ProcessGPTBackend implements Backend {
 
             const list = await storage.list(defId);
             if (list.code == "42P01") {
-                await axios.post('/process-db-schema/invoke', {
-                    "input": {
-                        "process_definition_id": defId
-                    }
-                }).then(res => {
-                    return res
-                }).catch(error => {
-                    throw new Error(error && error.detail ? error.detail : error);
-                });
+                try{
+                    await axios.post('/process-db-schema/invoke', {
+                        "input": {
+                            "process_definition_id": defId
+                        }
+                    })
+                }catch(error){
+                    //@ts-ignore
+                    throw new Error("Error when to creating database for the definition: " + (error && error.detail ? error.detail : error));
+                }
             }
 
-            const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
-            if (isLocked) {
-                await storage.delete(`lock/${defId}`, { key: 'id' });
+            try{
+                const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
+                if (isLocked) {
+                    await storage.delete(`lock/${defId}`, { key: 'id' });
+                }    
+
+            }catch(error){
+                //@ts-ignore
+                throw new Error("Error when to unlock: " + (error && error.detail ? error.detail : error));
+
             }
         } catch (e) {
-            throw new Error('error in putRawDefinition: ' + (e instanceof Error ? e.message : ''));
+            throw new Error('error when to save definition: ' + (e instanceof Error ? e.message : ''));
         }
     }
 

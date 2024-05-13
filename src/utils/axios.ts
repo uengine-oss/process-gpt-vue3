@@ -10,7 +10,7 @@ const axiosServices = axios.create();
 axiosServices.interceptors.response.use(
   (response) => response,
   (error) =>
-    Promise.reject((error.response && error.response.data) || "Wrong Services")
+    Promise.reject((error.response && error.response.data) || "Target service has some problem")
 );
 
 export default axiosServices;

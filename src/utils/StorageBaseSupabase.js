@@ -292,19 +292,19 @@ export default class StorageBaseSupabase {
                     throw new StorageBaseError('error in putObject:' + error.message, error, arguments);
                 }
             } else if (obj.searchVal) {
-                const { error } = await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
+                const { error, status, statusText } = await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
 
-                if (error) {
-                    throw new StorageBaseError('error in putObject:' + error.message, error, arguments);
+                if (status!=200 && error) {
+                    throw new StorageBaseError('error in putObject:' + status + " " + statusText + " " + error.message, error, arguments);
                 }
             } else {
                 // let key = path.split('/').pop();
                 // let updateObj = {id: key, value: value}
 
-                const { error } = await window.$supabase.from(obj.table).upsert(value);
+                const { error, status, statusText } = await window.$supabase.from(obj.table).upsert(value);
 
-                if (error) {
-                    throw new StorageBaseError('error in putObject:' + error.message, error, arguments);
+                if (status!=200 && error) {
+                    throw new StorageBaseError('error in putObject:' + status + " " + statusText  + " " +  error.message, error, arguments);
                 }
             }
 
@@ -370,19 +370,19 @@ export default class StorageBaseSupabase {
         try {
             let obj = this.formatDataPath(path, options);
             if (options && options.match) {
-                const { error } = await window.$supabase
+                const { error, status, statusText } = await window.$supabase
                     .from(obj.table)
                     .delete()
                     .match(options.match);
 
-                if (error) {
-                    throw new StorageBaseError('error in delete', error, arguments);
+                if (error && status!=200) {
+                    throw new StorageBaseError('error in delete ' + status + " " + statusText, error, arguments);
                 }
             } else if (obj.searchVal) {
-                const { error } = await window.$supabase.from(obj.table).delete().eq(obj.searchKey, obj.searchVal);
+                const { error, status, statusText  } = await window.$supabase.from(obj.table).delete().eq(obj.searchKey, obj.searchVal);
 
-                if (error) {
-                    throw new StorageBaseError('error in delete', error, arguments);
+                if (error && status!=200) {
+                    throw new StorageBaseError('error in delete ' + status + " " + statusText, error, arguments);
                 }
             }
 
