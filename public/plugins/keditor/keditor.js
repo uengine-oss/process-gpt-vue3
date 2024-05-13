@@ -1162,7 +1162,7 @@
             
             flog('Initialize $.fn.sortable for container content');
             containerContent.sortable({
-                handle: '.btn-component-reposition',
+                handle: '.btn-component-reposition, .btn-container-reposition',
                 items: '> section',
                 connectWith: '.keditor-container-content',
                 tolerance: 'pointer',
