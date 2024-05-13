@@ -33,7 +33,7 @@
                             </v-row>
                             <div v-if="message.open" style="margin-top: 20px;">
                                 <div v-if="toolFormat(message).includes('formHandler')">
-                                    <DynamicForm class="message-layout-dyna" v-if="message.open" :formHTML="message.html" v-model="message.formData"></DynamicForm>
+                                    <DynamicForm class="message-layout-dyna" v-if="message.open" :formHTML="message.html" v-model="message.formData" :key="message.html"></DynamicForm>
                                 </div>
                                 <div v-else-if="toolFormat(message) == 'defaultHandler'">
                                     <DefaultForm :inputItems="message.formData"></DefaultForm>

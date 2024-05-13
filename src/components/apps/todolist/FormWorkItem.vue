@@ -8,7 +8,7 @@
     </v-row>
     <div class="pa-4">
         <!-- <FormMapper></FormMapper> -->
-        <DynamicForm :formHTML="html" v-model="formData" :key="previewFormValuesKey"></DynamicForm>
+        <DynamicForm :formHTML="html" v-model="formData" :key="html"></DynamicForm>
     </div>
 </template>
 
@@ -34,8 +34,7 @@ export default {
     },
     data: () => ({
         html: null,
-        formData: {},
-        previewFormValuesKey: 0
+        formData: {}
     }),
     components: {
         DynamicForm
@@ -58,7 +57,6 @@ export default {
                 me.formData = {};
             }
 
-            me.previewFormValuesKey += 1;
             // }
 
             // if (me.workItem.activity.previousActivities.length > 0) {
