@@ -106,7 +106,7 @@
                                                 v-if="message.replyContent">{{ message.replyContent }}</pre>
                                             <v-divider v-if="message.replyContent"></v-divider>
 
-                                            <pre class="text-body-1">{{ message.content }}</pre>
+                                            <pre class="text-body-1" v-html="linkify(message.content)"></pre>
 
                                             <pre v-if="message.jsonContent"
                                                 class="text-body-1">{{ message.jsonContent }}</pre>
@@ -301,6 +301,14 @@
                             ></v-file-input>
                         </v-row>
                     </v-form>
+                    <v-tooltip v-if="type == 'chats'" :text="$t('chat.generateProcessDef')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn icon variant="text" class="text-medium-emphasis" @click="generateProcessDef" v-bind="props"
+                                style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
+                                <Icon icon="fluent-mdl2:server-processes" width="20" height="20" />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
                 </v-row>
             </div>
             <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
@@ -389,6 +397,7 @@ export default {
         ScrollBottomHandle
     ],
     props: {
+        prompt: String,
         name: String,
         messages: Array,
         userInfo: Object,
@@ -435,7 +444,18 @@ export default {
             }
         });
     },
+    watch: {
+        prompt(newVal, oldVal) {
+            if (newVal !== oldVal) {
+                this.newMessage = newVal
+                this.beforeSend()
+            }
+        }
+    },
     computed: {
+        isSystemMentioned() {
+            return this.mentionedUsers.some(user => user.id === 'system_id');
+        },
         filteredUserList() {
             if (!this.showUserList || this.mentionStartIndex === null || !this.userList) {
                 return [];
@@ -499,6 +519,27 @@ export default {
         },
     },
     methods: {
+        linkify(inputText) {
+            var replacedText, replacePattern1, replacePattern2, replacePattern3;
+
+            //URLs starting with http://, https://, or ftp://
+            replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
+            replacedText = inputText.replace(replacePattern1, '<a href="$1" target="_blank">$1</a>');
+
+            //URLs starting with "www." (without // before it, or it'd re-link the ones done above).
+            replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
+            replacedText = replacedText.replace(replacePattern2, '$1<a href="http://$2" target="_blank">$2</a>');
+
+            //Change email addresses to mailto:: links.
+            replacePattern3 = /(([a-zA-Z0-9\-\_\.])+@[a-zA-Z\_]+?(\.[a-zA-Z]{2,6})+)/gim;
+            replacedText = replacedText.replace(replacePattern3, '<a href="mailto:$1">$1</a>');
+
+            return replacedText;
+        },
+        generateProcessDef() {
+            this.$store.dispatch('updateMessages', this.messages);
+            this.$router.push('/definitions/chat');
+        },
         async startRecording() {
             this.isRecording = true;
 
@@ -569,6 +610,25 @@ export default {
                 this.mentionStartIndex = atIndex;
             } else {
                 this.showUserList = false;
+            }
+            // 멘션된 유저 이름이 변경되었는지 확인
+            this.mentionedUsers = this.mentionedUsers.filter(user => {
+                const regex = new RegExp(`@${user.username}`, 'g');
+                return text.match(regex);
+            });
+
+            // 채팅 시작 문자에 따른 System 유저 추가
+            if (text.startsWith('>') || text.startsWith('!')) {
+                if (!this.mentionedUsers.some(user => user.id === 'system_id')) {
+                    this.mentionedUsers.push({
+                        email: "system@uengine.org",
+                        id: "system_id",
+                        profile: "src/assets/images/chat/chat-icon.png",
+                        username: "System"
+                    });
+                }
+            } else {
+                this.mentionedUsers = this.mentionedUsers.filter(user => user.id !== 'system_id');
             }
         },
         selectUser(user) {
@@ -641,10 +701,11 @@ export default {
         },
         setMessageForUser(content) {
             if (content.includes(`"messageForUser":`)) {
-                let contentObj = partialParse(content)
-                return contentObj.messageForUser || content;
+                let contentObj = partialParse(content);
+                let messageForUserContent = contentObj.messageForUser || content;
+                return this.linkify(messageForUserContent); // URL을 하이퍼링크로 변환
             } else {
-                return content
+                return this.linkify(content); // URL을 하이퍼링크로 변환
             }
         },
         setTableName(content) {
@@ -680,7 +741,7 @@ export default {
             this.replyUser = message;
         },
         beforeSend($event) {
-            if ($event.shiftKey) return;
+            if ($event && $event.shiftKey) return;
             if (this.isLoading) {
                 this.isLoading = false;
                 this.$emit('stopMessage');

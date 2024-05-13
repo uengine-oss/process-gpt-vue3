@@ -25,6 +25,7 @@ import TextareaField from '@/components/ui/field/TextareaField.vue';
 import UserSelectField from '@/components/ui/field/UserSelectField.vue';
 import RowLayout from '@/components/ui/field/RowLayout.vue';
 import RowLayoutItemHead from '@/components/ui/field/RowLayoutItemHead.vue';
+import CodeField from '@/components/ui/field/CodeField.vue';
 
 export default {
   props: {
@@ -35,6 +36,11 @@ export default {
     },
     modelValue: Object
   },
+
+  emits: [
+    "validate",
+    "update:modelValue"
+  ],
 
   watch: {
     modelValue: {
@@ -61,7 +67,32 @@ export default {
   data() {
     return {
       renderedContent: "",
-      formValues: {}
+      formValues: {},
+      cachedHFunc: null, // 중복 렌더링을 피하기 위해서
+      codeInfos: {}
+    }
+  },
+
+  methods: {
+    /**
+     * 유저가 정의한 검증 함수들을 실행시켜서 에러가 있으면 반환하고, 없으면 null을 반환함
+     */
+    validate() {
+      for(const key in this.codeInfos) {
+        const codeInfo = this.codeInfos[key]
+        if(codeInfo.eventType === "validate") {
+          const error = this.executeCode(key)
+          if(error && error.length > 0) return error
+        }
+      }
+
+      return null
+    },
+
+    executeCode(name) {
+      let error = null
+      eval(this.codeInfos[name].code)
+      return error
     }
   },
 
@@ -72,6 +103,7 @@ export default {
    */
   render() {
     const me = this
+
     const r = {
       components: {
         TextField,
@@ -84,18 +116,52 @@ export default {
         TextareaField,
         UserSelectField,
         RowLayout,
-        RowLayoutItemHead
+        RowLayoutItemHead,
+        CodeField
       },
       data() {
         return {
-          formValues: me.formValues
+          formValues: me.formValues,
+
+          codeInfos: {},
+          oldFormValues: {}
         }
+      },
+      methods: {
+        executeCode(name) {
+          return me.executeCode(name)
+        }
+      },
+      mounted() {
+        me.codeInfos = this.codeInfos
+
+        this.oldFormValues = JSON.parse(JSON.stringify(this.formValues))
+        this.$watch(`formValues`, (newVal, oldVal) => {
+          Object.keys(this.codeInfos).forEach(key => {
+            const codeInfo = this.codeInfos[key]
+            if((codeInfo.eventType === "watch") && 
+               (this.oldFormValues[codeInfo.watchName] !== this.formValues[codeInfo.watchName])) {
+              this.executeCode(key)
+            }
+          })
+          this.oldFormValues = JSON.parse(JSON.stringify(this.formValues))
+        }, {deep: true})
+
+        Object.keys(this.codeInfos).forEach(key => {
+          const codeInfo = this.codeInfos[key]
+          if(codeInfo.eventType === "initialize") {
+            this.executeCode(key)
+          }
+        })
       },
       template: `<div id="kEditor1">
   ${me.formHTML}
 </div>`
     }
-    return h(r);
+
+    if(this.cachedHFunc) return this.cachedHFunc
+    this.cachedHFunc = h(r)
+    return this.cachedHFunc;
   },
 };
 </script>

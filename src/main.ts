@@ -7,6 +7,7 @@ import VueApexCharts from 'vue3-apexcharts';
 import 'vue3-carousel/dist/carousel.css';
 import PerfectScrollbar from 'vue3-perfect-scrollbar';
 import App from './App.vue';
+import store from './store';
 import { createClient } from '@supabase/supabase-js';
 import vuetify from './plugins/vuetify';
 import { router } from './router';
@@ -177,6 +178,7 @@ if(window.location.host.includes('localhost') || window.location.host.includes('
 }
 
 const app = createApp(App);
+app.use(store);
 // registers the component globally
 // registered name: CronVuetify
 import CronVuetifyPlugin from '@vue-js-cron/vuetify';

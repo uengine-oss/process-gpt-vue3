@@ -121,7 +121,8 @@
         "history": "history button",
         "import": "Import BPMN File",
         "addImage": "Add Image",
-        "fileUpLoad": "File Up Load"
+        "fileUpLoad": "File Up Load",
+        "generateProcessDef": "Generate ProcessDefinition"
     },
     "accountTab": {
         "accountSetting": "Account Settings",

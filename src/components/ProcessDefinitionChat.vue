@@ -29,7 +29,7 @@
             </template>
             <template v-slot:rightpart>
                 <div class="no-scrollbar">
-                    <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" :lock="lock" 
+                    <Chat :prompt="prompt" :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" :lock="lock" 
                         :disableChat="disableChat" @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" 
                         @stopMessage="stopMessage">
                         <template v-slot:custom-tools>
@@ -49,7 +49,7 @@
                                 </v-tooltip>
                                 <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn" style="display: none;" />
 
-                                <div v-if="bpmn && fullPath != '' && !versionStatus">
+                                <div v-if="bpmn && fullPath != ''">
                                     <v-tooltip location="bottom">
                                         <template v-slot:activator="{ props }">
                                             <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
@@ -86,7 +86,7 @@
                                 
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn v-if="bpmn && fullPath != '' && !versionStatus" v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                        <v-btn v-if="bpmn && fullPath != ''" v-bind="props" icon variant="text" class="text-medium-emphasis"
                                             @click="beforeDelete">
                                             <TrashIcon size="24" />
                                         </v-btn>
@@ -111,7 +111,7 @@
             </template>
 
             <template v-slot:mobileLeftContent>
-                <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" :lock="lock"
+                <Chat :prompt="prompt" :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" :lock="lock"
                     :disableChat="disableChat" @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage">
                     <template v-slot:custom-tools>
@@ -210,6 +210,7 @@ export default {
         ProcessDefinitionVersionManager
     },
     data: () => ({
+        prompt: "",
         processDefinition: null,
         bpmn: null,
         changedXML: '',
@@ -230,7 +231,6 @@ export default {
         versionDialog: false,
         verMangerDialog: false,
         loading: false,
-        versionStatus: true,
         // delete
         deleteDialog: false,
         isDeleted: false,
@@ -241,6 +241,12 @@ export default {
             isStream: true,
             preferredLanguage: 'Korean'
         });
+        if(this.$store.state.messages) {
+            const messagesString = JSON.stringify(this.$store.state.messages);
+            this.prompt = `아래 대화 내용에서 프로세스를 유추하여 프로세스 정의를 생성해주세요. 이때 가능한 프로세스를 일반화하여 작성:
+            ${messagesString}.`;
+            this.$store.commit('clearMessages');
+        }
     },
     watch: {
         $route: {
@@ -354,7 +360,6 @@ export default {
                     } else {
                         // 현재 수정가능 > 잠금 상태로 (저장)
                         me.toggleVersionDialog(true);
-                        this.versionStatus = false
                     }
                 }
             });
@@ -617,7 +622,7 @@ export default {
                     processDefinitionName: process.id || 'Unknown',
                     processDefinitionId: process.id || 'Unknown',
                     description: "process.description",
-                    data: process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable'].map(varData => ({
+                    data: process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] ? (Array.isArray(process['bpmn:extensionElements']['uengine:properties']['uengine:variable']) ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable'] : [process['bpmn:extensionElements']['uengine:properties']['uengine:variable']]).map(varData => ({
                         name: varData.name,
                         description: varData.name + ' description',
                         type: varData.type
@@ -649,7 +654,13 @@ export default {
                             type: 'UserActivity',
                             description: activity.name + ' description',
                             instruction: activity.name + ' instruction',
-                            role: lanes.find(lane => lane['bpmn:flowNodeRef'] && lane['bpmn:flowNodeRef'].includes(activity.id)) ? lanes.find(lane => lane['bpmn:flowNodeRef'].includes(activity.id)).name : 'Unknown',
+                            role: lanes.find(lane => {
+                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                return flowNodeRefs.includes(activity.id);
+                            }) ? lanes.find(lane => {
+                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                return flowNodeRefs.includes(activity.id);
+                            }).name : 'Unknown',
                             inputData: activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
                                 .filter(param => param.direction === "IN")
                                 .map(param => param.variable.name) : [],
@@ -663,7 +674,13 @@ export default {
                             type: 'ScriptActivity',
                             description: task.name + ' description',
                             instruction: task.name + ' instruction',
-                            role: lanes.find(lane => lane['bpmn:flowNodeRef'] && lane['bpmn:flowNodeRef'].includes(task.id)) ? lanes.find(lane => lane['bpmn:flowNodeRef'].includes(task.id)).name : 'Unknown',
+                            role: lanes.find(lane => {
+                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                return flowNodeRefs.includes(task.id);
+                            }) ? lanes.find(lane => {
+                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                return flowNodeRefs.includes(task.id);
+                            }).name : 'Unknown',
                             pythonCode: task['bpmn:extensionElements'] && task['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(task['bpmn:extensionElements']['uengine:properties']['uengine:json']).script : ''
                         }))
                     ],
@@ -673,7 +690,13 @@ export default {
                             name: gateway.name || 'Gateway',
                             type: "ExclusiveGateway",
                             description: gateway.name + ' description',
-                            role: lanes.find(lane => lane['bpmn:flowNodeRef'] && lane['bpmn:flowNodeRef'].includes(gateway.id)) ? lanes.find(lane => lane['bpmn:flowNodeRef'].includes(gateway.id)).name : 'Unknown',
+                            role: lanes.find(lane => {
+                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                return flowNodeRefs.includes(gateway.id);
+                            }) ? lanes.find(lane => {
+                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                return flowNodeRefs.includes(gateway.id);
+                            }).name : 'Unknown',
                             condition: gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(gateway["bpmn:extensionElements"]["uengine:properties"]["uengine:json"]).condition || '' : ''
                         }))
                     ],
@@ -1088,11 +1111,14 @@ export default {
             let positionMapping = {};
             // Sequences 생성
             if (jsonModel.sequences)
-                jsonModel.sequences.forEach((sequence) => {
+                jsonModel.sequences.forEach((sequence, idx) => {
                     if (!positionMapping[sequence.source]) {
                         positionMapping[sequence.source] = lastXPos;
-                        lastXPos += 120; // 다음 요소의 위치를 위해 간격 추가
+                        lastXPos += 120; 
                     }
+                    if(idx === jsonModel.sequences.length - 1){
+                        positionMapping[sequence.target] = lastXPos
+                    }   
                     const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:sequenceFlow');
                     sequenceFlow.setAttribute('id', 'SequenceFlow_' + sequence.source + '_' + sequence.target);
                     sequenceFlow.setAttribute('name', sequence.name ? sequence.name : '');
@@ -1397,18 +1423,19 @@ export default {
                     //     lastXPos = lastXPos;
                     //     lastXPos += 120;
                     // }
+                    let activityX = positionMapping[activity.id] ? positionMapping[activity.id] : (activityIndex == 0 ? lastXPos + 120 : lastXPos)
                     let activityY = parseInt(rolePos[activity.role].y);
                     const activityShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
                     activityShape.setAttribute('id', `BPMNShape_${activity.id}`);
                     activityShape.setAttribute('bpmnElement', activity.id);
 
                     const dcBoundsActivity = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
-                    dcBoundsActivity.setAttribute('x', positionMapping[activity.id]);
+                    dcBoundsActivity.setAttribute('x', activityX);
                     dcBoundsActivity.setAttribute('y', activityY + 10);
                     dcBoundsActivity.setAttribute('width', 100);
                     dcBoundsActivity.setAttribute('height', 80);
                     activityPos[activity.id] = {
-                        x: positionMapping[activity.id],
+                        x: activityX,
                         y: activityY + 10,
                         width: 100,
                         height: 80
@@ -1422,8 +1449,8 @@ export default {
 
                     activityShape.appendChild(dcBoundsActivity);
                     bpmnPlane.appendChild(activityShape);
-                    // lastXPos = lastXPos;
-                    // lastXPos += 120;
+                    rolePos[activity.role].x = lastXPos
+                    lastXPos += 120;
 
                     // if (activityIndex == jsonModel.activities.length - 1 && lastActivity.role) {
                     //     // EndEvent의 BPMNShape 추가
@@ -1496,12 +1523,13 @@ export default {
 
             if (jsonModel.gateways){
                 jsonModel.gateways.forEach((gateway) => {
+                    let gatewayX = positionMapping[gateway.id] ? positionMapping[gateway.id] : rolePos[gateway.role].x + 120;
                     let gatewayY = parseInt(rolePos[gateway.role].y);
                     const gatewayShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
                     gatewayShape.setAttribute('id', `Shape_${gateway.id}`);
                     gatewayShape.setAttribute('bpmnElement', gateway.id);
                     const dcBounds = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
-                    dcBounds.setAttribute('x', positionMapping[gateway.id]); 
+                    dcBounds.setAttribute('x', gatewayX); 
                     dcBounds.setAttribute('y', gatewayY + 25); 
                     dcBounds.setAttribute('width', '50');
                     dcBounds.setAttribute('height', '50');
@@ -1509,11 +1537,12 @@ export default {
                     bpmnPlane.appendChild(gatewayShape);
 
                     activityPos[gateway.id] = {
-                        x: positionMapping[gateway.id],
+                        x: gatewayX,
                         y: gatewayY + 25,
                         width: 50,
                         height: 50
                     };
+                    rolePos[gateway.role].x += 120;
                 });
             }
 
@@ -1523,10 +1552,10 @@ export default {
                     let eventX
                     let eventY
                     if(event.type == 'StartEvent'){
-                        eventX = positionMapping[event.id]
+                        eventX = 140
                         eventY = parseInt(rolePos[jsonModel.activities[0].role].y) + 32;
                     } else if(event.type == 'EndEvent') {
-                        eventX = lastXPos + 120
+                        eventX = positionMapping[event.id] ? positionMapping[event.id] : lastXPos + 120
                         eventY = parseInt(rolePos[jsonModel.activities[jsonModel.activities.length - 1].role].y) + 32;
                     } else {
                         eventX = 200

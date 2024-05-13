@@ -131,9 +131,9 @@ class ProcessGPTBackend implements Backend {
                     return data.html;
                 } else if(options.type === "bpmn") {
                     const data = await storage.getString(`proc_def/${defId}`, { key: 'id', column: 'bpmn' });
-                    if(!data) {
-                        throw new Error('no such bpmn definition');
-                    }
+                    // if(!data) {
+                    //     throw new Error('no such bpmn definition');
+                    // }
                     return data;
                 }
             } else {
@@ -225,7 +225,6 @@ class ProcessGPTBackend implements Backend {
             data.defId = defId;
             data.instanceId = instanceId;
             data.name = data.proc_inst_name;
-            data.status = data.current_activity_ids.length > 0 ? "RUNNING" : "COMPLETED";
             return data;
         } catch (error) {
             throw new Error('error in getInstance');
@@ -499,6 +498,13 @@ class ProcessGPTBackend implements Backend {
         const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
         const userInfo = await storage.getUserInfo();
         
+        const newMessage = {
+            role: 'system',
+            timestamp: Date.now(),
+            content: `액티비티 '${workItem.activity_id}' 을/를 실행합니다.`
+        }
+        await this.updateInstanceChat(workItem.proc_inst_id, newMessage);
+
         const input = {
             answer: JSON.stringify(inputData),
             process_instance_id: workItem.proc_inst_id,
@@ -519,7 +525,7 @@ class ProcessGPTBackend implements Backend {
                     const newMessage = {
                         role: 'system',
                         timestamp: Date.now(),
-                        content: `액티비티 '${workItem.activity_id}' 이/가 실행되었습니다.\n\n${output.description}`,
+                        content: output.description,
                         jsonContent: data.output
                     }
                     await this.updateInstanceChat(output.instanceId, newMessage);
