@@ -1173,48 +1173,87 @@
                 receive: function (event, ui) {
                     flog('On received snippet', event, ui);
                     
-                    var helper = ui.helper;
-                    var item = ui.item;
-                    var container;
-                    var snippetContent; 
-                    const vueRenderUUID = `vuemount_${crypto.randomUUID()}`
-                    
-                    if (item.is('.keditor-snippet')) {
-                        var snippetContentElement = body.find(item.attr('data-snippet'));
-                        var snippetContent = snippetContentElement.html();
-                        var componentType = item.attr('data-type');
-                        flog('Snippet content', snippetContent);
+                    if(ui.item.attr("data-type") === 'component-object-form') {
+
+                        var helper = ui.helper;
+                        var item = ui.item;
+                        var container;
+                        var snippetContent; 
+                        const vueRenderUUID = `vuemount_${crypto.randomUUID()}`
                         
-                        var dataAttributes = self.getDataAttributes(snippetContentElement, null, true);
-                        var component = $(
-                            '<section class="keditor-ui keditor-component" data-type="' + componentType + '" ' + dataAttributes.join(' ') + '>' +
-                            `   <section class="keditor-ui keditor-component-content"><div id="${vueRenderUUID}"></div></section>` +
-                            '</section>'
-                        );
-                        helper.replaceWith(component);
-                        
-                        container = component.closest('.keditor-container');
-                        
-                        if (typeof options.onComponentSnippetDropped === 'function') {
-                            options.onComponentSnippetDropped.call(contentArea, event, component, ui.item);
+                        if (item.is('.keditor-snippet')) {
+                            var snippetContentElement = body.find(item.attr('data-snippet'));
+                            var snippetContent = snippetContentElement.html();
+                            var componentType = item.attr('data-type');
+                            flog('Snippet content', snippetContent);
+                            
+                            var dataAttributes = self.getDataAttributes(snippetContentElement, null, true);
+                            var component = $(
+                                '<section class="keditor-ui keditor-component" data-type="' + componentType + '" ' + dataAttributes.join(' ') + '>' +
+                                `   <section class="keditor-ui keditor-component-content"><div id="${vueRenderUUID}"></div></section>` +
+                                '</section>'
+                            );
+                            helper.replaceWith(component);
+                            
+                            container = component.closest('.keditor-container');
+                            
+                            if (typeof options.onComponentSnippetDropped === 'function') {
+                                options.onComponentSnippetDropped.call(contentArea, event, component, ui.item);
+                            }
+                            
+                            self.initComponent(contentArea, container, component);
+                        } else {
+                            container = item.closest('.keditor-container');
                         }
                         
-                        self.initComponent(contentArea, container, component);
+                        if (!container.hasClass('showed-keditor-toolbar')) {
+                            $('.keditor-container.showed-keditor-toolbar').removeClass('showed-keditor-toolbar');
+                            container.addClass('showed-keditor-toolbar');
+                        }
+                        
+                        if (typeof options.onContainerChanged === 'function') {
+                            options.onContainerChanged.call(contentArea, event, container);
+                        }
+                        
+                        if (typeof options.onContentChanged === 'function') {
+                            options.onContentChanged.call(contentArea, event, snippetContent, vueRenderUUID);
+                        }
+
                     } else {
-                        container = item.closest('.keditor-container');
-                    }
-                    
-                    if (!container.hasClass('showed-keditor-toolbar')) {
-                        $('.keditor-container.showed-keditor-toolbar').removeClass('showed-keditor-toolbar');
-                        container.addClass('showed-keditor-toolbar');
-                    }
-                    
-                    if (typeof options.onContainerChanged === 'function') {
-                        options.onContainerChanged.call(contentArea, event, container);
-                    }
-                    
-                    if (typeof options.onContentChanged === 'function') {
-                        options.onContentChanged.call(contentArea, event, snippetContent, vueRenderUUID);
+
+                        var helper = ui.helper;
+                        var item = ui.item;
+                        var snippetContent; 
+                        
+                        if (item.is('.keditor-snippet')) {
+                            snippetContent = body.find(item.attr('data-snippet')).html();
+                            flog('Snippet content', snippetContent);
+                            
+                            var container = $(
+                                '<section class="keditor-ui keditor-container">' +
+                                '   <section class="keditor-ui keditor-container-inner">' + snippetContent + '</section>' +
+                                '</section>'
+                            );
+                            helper.replaceWith(container);
+                            
+                            if (!container.hasClass('showed-keditor-toolbar')) {
+                                $('.keditor-container.showed-keditor-toolbar').removeClass('showed-keditor-toolbar');
+                                container.addClass('showed-keditor-toolbar');
+                            }
+                            
+                            if (typeof options.onContainerSnippetDropped === 'function') {
+                                options.onContainerSnippetDropped.call(contentArea, event, container, ui.item);
+                            }
+                            
+                            self.initContainer(contentArea, container);
+                        }
+                        
+                        self.hideSettingPanel();
+                        
+                        if (typeof options.onContentChanged === 'function') {
+                            options.onContentChanged.call(contentArea, event, snippetContent);
+                        }
+                        
                     }
                 }
             });
