@@ -664,7 +664,7 @@
             snippetsList.find('.keditor-snippet[data-type=container]').draggable({
                 helper: 'clone',
                 revert: 'invalid',
-                connectToSortable: body.find('.keditor-content-area'),
+                connectToSortable: '.keditor-content-area, .keditor-container-content',
                 start: function () {
                     $('[contenteditable]').blur();
                     $('.keditor-container.showed-keditor-toolbar').removeClass('showed-keditor-toolbar');
