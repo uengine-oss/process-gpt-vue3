@@ -1,6 +1,5 @@
 <script setup>
 import { ref } from 'vue';
-import user1 from '@/assets/images/profile/user-1.jpg';
 
 const name = localStorage.getItem("userName");
 const email = localStorage.getItem("email");

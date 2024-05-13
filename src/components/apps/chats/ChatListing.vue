@@ -53,7 +53,7 @@ const filteredChats = computed(() => {
 
 const getProfile = (email) => {
     const user = props.userList.find(user => user.email === email);
-    return user ? user.profile : '';
+    return user && user.profile ? user.profile : '/images/defaultUser.png';
 };
 
 // const items = ref([{ title: 'Sort by time' }, { title: 'Sort by Unread' }, { title: 'Mark all as read' }]);
