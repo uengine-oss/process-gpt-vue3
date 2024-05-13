@@ -61,8 +61,8 @@ declare global {
     }
   }
   
-// window.$mode = 'uEngine';
-window.$mode = 'ProcessGPT';
+window.$mode = 'uEngine';
+// window.$mode = 'ProcessGPT';
 
 if(window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1') || window.$mode == 'uEngine'){
     window.$supabase = createClient(
