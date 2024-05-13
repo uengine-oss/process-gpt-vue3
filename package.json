@@ -99,7 +99,7 @@
         "vue3-print-nb": "^0.1.4",
         "vue3-recaptcha-v2": "1.0.1",
         "vuetify": "3.3.3",
-        "vuex": "^4.0.2",
+        "vuex": "^4.1.0",
         "webfontloader": "^1.6.28",
         "xml2js": "^0.6.2",
         "yup": "^0.32.11"

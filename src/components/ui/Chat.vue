@@ -107,7 +107,7 @@
                                                     v-if="message.replyContent">{{ message.replyContent }}</pre>
                                                 <v-divider v-if="message.replyContent"></v-divider>
 
-                                                <pre class="text-body-1">{{ message.content }}</pre>
+                                                <pre class="text-body-1" v-html="linkify(message.content)"></pre>
 
                                                 <pre v-if="message.jsonContent"
                                                     class="text-body-1">{{ message.jsonContent }}</pre>
@@ -295,22 +295,22 @@
                             </v-tooltip>
                             <v-file-input class="chat-file-up-load"
                                 :class="{'chat-file-up-load-display': file && file.length > 0}"
-                                :style="file && file.length > 0 ? '' : 'padding:5px 0px 0px 8px !important;'"
+                                :style="file && file.length > 0 ? '' : 'padding:5px 0px 0px 8px !important; width:30px !important; height:30px !important;'"
                                 v-model="file"
                                 label="Choose a file"
                                 prepend-icon="mdi-paperclip"
                                 outlined
                             ></v-file-input>
+                            <v-tooltip v-if="type == 'chats'" :text="$t('chat.generateProcessDef')">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn icon variant="text" class="text-medium-emphasis" @click="generateProcessDef" v-bind="props"
+                                        style="width:30px; height:30px; margin-left:12px;" :disabled="disableChat">
+                                        <Icon icon="fluent-mdl2:server-processes" width="20" height="20" />
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
                         </v-row>
                     </v-form>
-                    <v-tooltip v-if="type == 'chats'" :text="$t('chat.generateProcessDef')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn icon variant="text" class="text-medium-emphasis" @click="generateProcessDef" v-bind="props"
-                                style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
-                                <Icon icon="fluent-mdl2:server-processes" width="20" height="20" />
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
                 </v-row>
             </div>
             <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
@@ -521,6 +521,23 @@ export default {
         },
     },
     methods: {
+        linkify(inputText) {
+            var replacedText, replacePattern1, replacePattern2, replacePattern3;
+
+            //URLs starting with http://, https://, or ftp://
+            replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
+            replacedText = inputText.replace(replacePattern1, '<a href="$1" target="_blank">$1</a>');
+
+            //URLs starting with "www." (without // before it, or it'd re-link the ones done above).
+            replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
+            replacedText = replacedText.replace(replacePattern2, '$1<a href="http://$2" target="_blank">$2</a>');
+
+            //Change email addresses to mailto:: links.
+            replacePattern3 = /(([a-zA-Z0-9\-\_\.])+@[a-zA-Z\_]+?(\.[a-zA-Z]{2,6})+)/gim;
+            replacedText = replacedText.replace(replacePattern3, '<a href="mailto:$1">$1</a>');
+
+            return replacedText;
+        },
         generateProcessDef() {
             this.$store.dispatch('updateMessages', this.messages);
             this.$router.push('/definitions/chat');
@@ -675,10 +692,11 @@ export default {
         },
         setMessageForUser(content) {
             if (content.includes(`"messageForUser":`)) {
-                let contentObj = partialParse(content)
-                return contentObj.messageForUser || content;
+                let contentObj = partialParse(content);
+                let messageForUserContent = contentObj.messageForUser || content;
+                return this.linkify(messageForUserContent); // URL을 하이퍼링크로 변환
             } else {
-                return content
+                return this.linkify(content); // URL을 하이퍼링크로 변환
             }
         },
         setTableName(content) {

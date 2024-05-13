@@ -2,7 +2,9 @@
     <!-- ---------------------------------------------------- -->
     <!-- Table Basic -->
     <!-- ---------------------------------------------------- -->
-    <v-card elevation="10" class="mb-3 cursor-pointer pa-3" @click="executeTask">
+    <v-card elevation="10" class="mb-3 cursor-pointer pa-3" @click="executeTask"
+        :class="{'border-primary': isDueTodayOrTomorrow, 'border-purple': isPastDue}"
+    >
         <v-card-title class="ma-0 pa-0">
             <v-row class="ma-0 pa-0 mt-1" style="line-height:100%;">
                 <!-- 가로배치 -->
@@ -91,12 +93,43 @@ export default {
         managed: false,
         dialog: false,
         dialogType: '',
-        mode: window.$mode
+        mode: window.$mode,
     }),
     mounted() {
         this.mode = window.$mode; // 클라이언트 사이드에서 확실하게 설정
     },
     computed: {
+        remainingDays() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const dueDate = new Date(this.task.dueDate);
+            dueDate.setHours(0, 0, 0, 0);
+
+            const timeDiff = dueDate - today;
+            const daysDiff = timeDiff / (1000 * 3600 * 24);
+
+            return daysDiff >= 0 ? `${daysDiff} days remaining` : `Due date passed`;
+        },
+        isDueTodayOrTomorrow() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // 오늘 날짜의 자정
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1); // 내일 날짜의 자정
+
+            const dueDate = new Date(this.task.dueDate);
+            dueDate.setHours(0, 0, 0, 0); // 기한 날짜의 자정
+
+            return dueDate >= today && dueDate <= tomorrow;
+        },
+        isPastDue() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // 오늘 날짜의 자정
+
+            const dueDate = new Date(this.task.dueDate);
+            dueDate.setHours(0, 0, 0, 0); // 기한 날짜의 자정
+
+            return dueDate < today;
+        },
         formattedDate() {
             var dateString = "";
             if (this.task.startDate) {
@@ -141,3 +174,12 @@ export default {
     },
 }
 </script>
+
+<style scoped>
+.border-primary {
+    border: solid 3px #1976D2; /* 예시 색상, 실제 프로젝트의 primary 색상을 사용하세요 */
+}
+.border-purple {
+    border: solid 3px #7B1FA2;
+}
+</style>

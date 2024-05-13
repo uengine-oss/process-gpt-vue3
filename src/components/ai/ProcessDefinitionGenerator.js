@@ -73,7 +73,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   "type": "UserActivity" | "EMailActivity" | "ScriptActivity",
                   "description": "description of activity",
                   "instruction": "instruction to user",
-                  "role": "role name",
+                  "role": "role name", // You must use the name among the created "roles".
                   "inputData": [{"name": "name of data for input"}],
                    "outputData": [
                      {"name": "name of data for output"}
@@ -87,7 +87,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   "type": "ExclusiveGateway | ParallelGateway | InclusiveGateway | EventBasedGateway",
                   "description": "선택적 또는 병렬 프로세스 흐름을 제어하는 게이트웨이 설명",
                   "condition": "기존 프로세스 정보중 "data" 내에 존재하는 값만을 사용하여 condition 을 생성해야한다. "data" 목록을 보고 condition 생성에 필요한 "data" 의 "name" 만으로 분기 조건, 조건문을 생성해야함."
-                  "role": "role name"
+                  "role": "role name" // You must use the name among the created "roles".
                 }
               ]
               "sequences": [ 
