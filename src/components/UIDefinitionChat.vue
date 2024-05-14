@@ -154,6 +154,11 @@ export default {
         const processDefUrlData = urlParams.get('process_def_url_data');
         if(processDefUrlData) {
             this.processDefUrlData = JSON.parse(decodeURIComponent(atob(processDefUrlData)));
+            this.beforeSendMessage({
+                "image": null,
+                "text": this.processDefUrlData.initPrompt,
+                "mentionedUsers": []
+            });
         }
         // #endregion
     },
@@ -525,6 +530,10 @@ export default {
                 let messageWriting = this.messages[this.messages.length - 1];
                 messageWriting.jsonContent = this.extractLastJSON(response);
                 messageWriting.content = messageWriting.content.replace(messageWriting.jsonContent, '');
+
+                // messageWriting.jsonContent에 내용이 있어도, messageWriting.content에 내용이 없으면 메세지가 표시되지 않기때문에 추가함
+                if(messageWriting.content.length == 0) messageWriting.content = " "
+                
 
                 // 생성된 HTML을 보여주기 위해서
                 if (messageWriting.jsonContent) {
