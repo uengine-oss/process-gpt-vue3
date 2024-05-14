@@ -117,8 +117,11 @@ export default {
                     });
                     variable.valueMap._type = 'java.util.HashMap';
                     await backend.setVariable(me.workItem.worklist.instId, varName, variable);
+                    let workItem = { parameterValues: {} };
+                    if (me.workItem.execScope) workItem.execScope = me.workItem.execScope;
+
                     ///////////////////////////////////
-                    await backend.putWorkItemComplete(me.$route.params.taskId, { parameterValues: {} });
+                    await backend.putWorkItemComplete(me.$route.params.taskId, workItem);
                     me.$router.push('/todolist');
                 },
                 successMsg: '해당 업무 완료'
