@@ -484,23 +484,27 @@ export default {
 
             const channel = new BroadcastChannel(urlData["channelId"])
             channel.onmessage = (event) => {
-                console.log(event)
-                alert("받아진 데이터를 적절하게 처리하기")
-            }
+                const formValueInfo = {
+                    name: event.data.name,
+                    id: event.data.id
+                }
 
-            // 테스트
-            this.$emit('addUengineVariable', {
-                "name": "휴가신청폼",
-                "type": "Form",
-                "defaultValue": "untitled/1715328313413",
-                "description": "",
-                "datasource": {
-                    "type": "",
-                    "sql": ""
-                },
-                "table": "",
-                "backend": null
-            })
+
+                this.$emit('addUengineVariable', {
+                    "name": formValueInfo.name,
+                    "type": "Form",
+                    "defaultValue": formValueInfo.id,
+                    "description": "",
+                    "datasource": {
+                        "type": "",
+                        "sql": ""
+                    },
+                    "table": "",
+                    "backend": null
+                })
+
+                this.selectedForm = formValueInfo.name
+            }
         }
     }
 };
