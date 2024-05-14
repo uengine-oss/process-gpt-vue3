@@ -138,7 +138,9 @@ export default {
 
         kEditorContentBeforeSave: "",
         isAIUpdated: false,
-        isRoutedWithUnsaved: false
+        isRoutedWithUnsaved: false,
+
+        processDefUrlData: null
     }),
     async created() {
         this.generator = new ChatGenerator(this, {
@@ -146,6 +148,14 @@ export default {
             preferredLanguage: 'Korean'
         });
         await this.init();
+
+        // #region 프로세스 정의에서 폼 생성 요청으로 새 탭을 열었을 경우, 이를 적절하게 처리
+        const urlParams = new URLSearchParams(window.location.search);
+        const processDefUrlData = urlParams.get('process_def_url_data');
+        if(processDefUrlData) {
+            this.processDefUrlData = JSON.parse(decodeURIComponent(atob(processDefUrlData)));
+        }
+        // #endregion
     },
     watch: {
         /**
