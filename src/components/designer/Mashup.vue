@@ -400,18 +400,26 @@ export default {
       onInitComponent: function (comp) {
         window.mashup.onchangeKEditor(comp, 'onInitComponent');
 
-        // 컴포넌트 복제시에 복제된 컴포넌트가 제대로 렌더링되도록 만들기 위해서
-        if(comp && comp.length > 0 && comp[0].querySelectorAll("div[id^='vuemount_']").length > 0) {
-          const prevVueRenderId = comp[0].querySelectorAll("div[id^='vuemount_']")[0].getAttribute("id")
-          if(prevVueRenderId) {
-            const renderedComponents = window.mashup.kEditor[0].children[0].querySelectorAll(`div[id='${prevVueRenderId}']`)
-            if(renderedComponents.length == 2) {
-              let htmlToRender = window.mashup.kEditorContentToHtml(renderedComponents[0].outerHTML, false)
-              const newVueRenderId = `vuemount_${crypto.randomUUID()}`
-              htmlToRender = htmlToRender.replace(prevVueRenderId, newVueRenderId)
-              comp[0].querySelector(".keditor-component-content").innerHTML = htmlToRender
+        
+        if(comp.hasClass("keditor-container")) {
+          // 컨테이너 복제시에 복제된 컨테이너와 관련해서 일부 속성들을 새롭게 설정하기 위해서
+          if(comp && comp.length > 0) {
+            comp[0].setAttribute("id", `keditor-container-${(new Date()).getTime()}`)
+          }
+        } else {
+          // 컴포넌트 복제시에 복제된 컴포넌트가 제대로 렌더링되도록 만들기 위해서
+          if(comp && comp.length > 0 && comp[0].querySelectorAll("div[id^='vuemount_']").length > 0) {
+            const prevVueRenderId = comp[0].querySelectorAll("div[id^='vuemount_']")[0].getAttribute("id")
+            if(prevVueRenderId) {
+              const renderedComponents = window.mashup.kEditor[0].children[0].querySelectorAll(`div[id='${prevVueRenderId}']`)
+              if(renderedComponents.length == 2) {
+                let htmlToRender = window.mashup.kEditorContentToHtml(renderedComponents[0].outerHTML, false)
+                const newVueRenderId = `vuemount_${crypto.randomUUID()}`
+                htmlToRender = htmlToRender.replace(prevVueRenderId, newVueRenderId)
+                comp[0].querySelector(".keditor-component-content").innerHTML = htmlToRender
 
-              window.mashup.renderWithDynamicComponent((new DOMParser().parseFromString(htmlToRender, 'text/html')).body.firstChild.innerHTML, newVueRenderId, true)
+                window.mashup.renderWithDynamicComponent((new DOMParser().parseFromString(htmlToRender, 'text/html')).body.firstChild.innerHTML, newVueRenderId, true)
+              }
             }
           }
         }
