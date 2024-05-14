@@ -1267,6 +1267,9 @@
         },
 // >>>
         convertToComponent: function (contentArea, container, target, isExisting) {
+            if(target.hasClass("keditor-container")) {
+                return
+            }
             flog('convertToComponent', contentArea, container, target, isExisting);
             
             var self = this;
