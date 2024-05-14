@@ -471,7 +471,7 @@ export default {
         },
         createForm() {
             let urlData = {}
-            urlData["formName"] = this.name
+            urlData["formName"] = `${this.name}폼`
             urlData["inputNames"] = this.copyUengineProperties.parameters.map(p => p.argument.text)
             urlData["initPrompt"] = `'${urlData["formName"]}'폼을 생성해줘. 입력해야하는 값들은 다음과 같아: ${urlData["inputNames"].join(", ")}`
             urlData["processId"] = this.processDefinitionId

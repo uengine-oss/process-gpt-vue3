@@ -69,7 +69,8 @@
     </v-card>
 
     <v-dialog v-model="isOpenSaveDialog">
-        <form-design-save-panel @onClose="isOpenSaveDialog = false" @onSave="tryToSaveFormDefinition" :savedId="(loadFormId === 'chat') ? null : loadFormId">
+        <form-design-save-panel @onClose="isOpenSaveDialog = false" @onSave="tryToSaveFormDefinition" :savedId="(loadFormId === 'chat') ? null : loadFormId"
+            :formNameByUrl="formNameByUrl">
         </form-design-save-panel>
     </v-dialog>
 </template>
@@ -140,7 +141,8 @@ export default {
         isAIUpdated: false,
         isRoutedWithUnsaved: false,
 
-        processDefUrlData: null
+        processDefUrlData: null,
+        formNameByUrl: null
     }),
     async created() {
         this.generator = new ChatGenerator(this, {
@@ -159,6 +161,8 @@ export default {
                 "text": this.processDefUrlData.initPrompt,
                 "mentionedUsers": []
             });
+
+            this.formNameByUrl = this.processDefUrlData.formName;
         }
         // #endregion
     },
