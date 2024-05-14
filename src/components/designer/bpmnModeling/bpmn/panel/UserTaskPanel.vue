@@ -169,6 +169,18 @@
             </v-row>
         </div> -->
     </div>
+    <v-dialog v-model="isOpenFormCreateDialog" max-width="500">
+        <v-card>
+            <v-card-text>
+                {{"폼 생성을 하시겠습니까?"}}
+            </v-card-text>
+            <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn color="error" @click="isOpenFormCreateDialog = false">아니오</v-btn>
+                <v-btn color="primary" @click="isOpenFormCreateDialog = false; createForm()">예</v-btn>
+            </v-card-actions>
+        </v-card>
+    </v-dialog> 
 </template>
 <script>
 import BpmnParameterContexts from '@/components/designer/bpmnModeling/bpmn/variable/BpmnParameterContexts.vue';
@@ -224,7 +236,8 @@ export default {
             formMapperJson: '',
             backend: null,
             copyDefinition: null,
-            activities: []
+            activities: [],
+            isOpenFormCreateDialog: false
         };
     },
     created() {
@@ -304,6 +317,10 @@ export default {
             }
 
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
+
+            if(newVal === true) {
+                this.isOpenFormCreateDialog = true
+            }
         }
     },
     methods: {
@@ -451,6 +468,9 @@ export default {
                 alias: rowLayout.getAttribute('alias'),
                 fields: extractFields(rowLayout)
             }));
+        },
+        createForm() {
+            alert("TODO: createForm")
         }
     }
 };
