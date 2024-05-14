@@ -470,7 +470,16 @@ export default {
             }));
         },
         createForm() {
-            alert("TODO: createForm")
+            let urlData = []
+            urlData["formName"] = this.name
+            urlData["inputNames"] = this.copyUengineProperties.parameters.map(p => p.argument.text)
+            urlData["initPrompt"] = `'${urlData["formName"]}'폼을 생성해줘. 입력해야하는 값들은 다음과 같아: ${urlData["inputNames"].join(", ")}`
+            urlData["processId"] = this.processDefinitionId
+            urlData["channelId"] = crypto.randomUUID()
+
+            console.log(urlData)
+
+            alert("TODO: 새탭을 열어서 나머지 구현")
         }
     }
 };
