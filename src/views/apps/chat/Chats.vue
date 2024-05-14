@@ -14,23 +14,25 @@
                 </div>
             </template>
             <template v-slot:rightpart>
-                <Chat
-                    :messages="messages"
-                    :userInfo="userInfo"
-                    :agentInfo="agentInfo"
-                    :userList="userList"
-                    :currentChatRoom="currentChatRoom"
-                    :type="path"
-                    @requestDraftAgent="requestDraftAgent"
-                    @requestFile="requestFile"
-                    @beforeReply="beforeReply"
-                    @sendMessage="beforeSendMessage"
-                    @startProcess="startProcess"
-                    @cancelProcess="cancelProcess"
-                    @sendEditedMessage="sendEditedMessage"
-                    @stopMessage="stopMessage"
-                    @getMoreChat="getMoreChat"
-                ></Chat>
+                <div :key="chatRenderKey">
+                    <Chat
+                        :messages="messages"
+                        :userInfo="userInfo"
+                        :agentInfo="agentInfo"
+                        :userList="userList"
+                        :currentChatRoom="currentChatRoom"
+                        :type="path"
+                        @requestDraftAgent="requestDraftAgent"
+                        @requestFile="requestFile"
+                        @beforeReply="beforeReply"
+                        @sendMessage="beforeSendMessage"
+                        @startProcess="startProcess"
+                        @cancelProcess="cancelProcess"
+                        @sendEditedMessage="sendEditedMessage"
+                        @stopMessage="stopMessage"
+                        @getMoreChat="getMoreChat"
+                    ></Chat>
+                </div>
             </template>
 
             <template v-slot:mobileLeftContent>
@@ -76,6 +78,7 @@ export default {
         calendarData: null,
         currentChatRoom: null,
         userList: [],
+        chatRenderKey: 0,
     }),
     computed: {
         filteredChatRoomList() {
@@ -103,6 +106,10 @@ export default {
         await this.getChatRoomList();
         await this.getUserList();
         await this.getCalendar();
+
+        this.EventBus.on('messages-updated', () => {
+            this.chatRenderKey++;
+        });
     },
     methods: {
         async getCalendar(){
@@ -305,8 +312,12 @@ export default {
                 let responseObj = partialParse(response.content)
                 let systemMsg
                 if(responseObj.work == 'StartProcessInstance'){
+                    if(this.lastSendMessage){
+                        localStorage.setItem('instancePrompt', this.lastSendMessage)
+                    } else {
+                        localStorage.setItem('instancePrompt', this.messages[this.messages.length - 2].content)
+                    }
                     systemMsg = `"${responseObj.title}" 프로세스를 시작하겠습니다.`
-                    localStorage.setItem('instancePrompt', JSON.stringify(responseObj.prompt))
                     me.$router.push('/instances/chat')
                 } else if(responseObj.work == 'TodoListRegistration'){
                     systemMsg = `"${responseObj.activity_id}" 할 일이 추가되었습니다.`
@@ -381,7 +392,11 @@ export default {
                         }
                         me.putObject(`calendar/${participant}`, calendarObj);
                     });
-                } 
+                } else if(responseObj.work == 'CreateProcessDefinition'){
+                    systemMsg = `프로세스 정의가 생성되었습니다.`
+                    me.$store.dispatch('updateMessages', me.messages);
+                    me.$router.push('/definitions/chat');
+                }
                 systemMsg = `${me.userInfo.name}님이 요청하신 ${systemMsg}`
                 me.putMessage(me.createMessageObj(systemMsg, 'system'))
                 me.deleteSystemMessage(response)

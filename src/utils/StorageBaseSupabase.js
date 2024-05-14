@@ -13,31 +13,43 @@ export default class StorageBaseSupabase {
     //extends StorageBase{
 
     async signIn(userInfo) {
-        const result = await window.$supabase.auth.signInWithPassword({
-            email: userInfo.email,
-            password: userInfo.password
-        });
-        if (!result.error) {
-            // await this.writeUserData(result.data);
-            return result.data;
-        } else {
-            const users = await this.list('users');
-            const checkedId = users.some((user) => user.email == userInfo.email);
-            if (checkedId) {
-                result.errorMsg = '비밀번호가 틀렸습니다.';
+        try {
+            const result = await window.$supabase.auth.signInWithPassword({
+                email: userInfo.email,
+                password: userInfo.password
+            });
+            if (!result.error) {
+                return result.data;
             } else {
-                result.errorMsg = '아이디가 틀렸습니다.';
+                const users = await this.list('users');
+                if (users && users.length > 0) {
+                    const checkedId = users.some((user) => user.email == userInfo.email);
+                    if (checkedId) {
+                        result.errorMsg = '비밀번호가 틀렸습니다.';
+                    } else {
+                        result.errorMsg = '아이디가 틀렸습니다.';
+                    }
+                    return result;
+                } else {
+                    throw new StorageBaseError(result.error);
+                }
             }
-            return result;
+    
+        } catch(e) {
+            throw new StorageBaseError('error in signIn', e, arguments);
         }
     }
     async signInWithKeycloak() {
-        const { data, error } = await window.$supabase.auth.signInWithOAuth({
-            provider: 'keycloak',
-            options: {
-                scopes: 'openid'
-            }
-        });
+        try {
+            const { data, error } = await window.$supabase.auth.signInWithOAuth({
+                provider: 'keycloak',
+                options: {
+                    scopes: 'openid'
+                }
+            });                
+        } catch(e) {
+            throw new StorageBaseError('error in signInWithKeycloak', e, arguments);
+        }
     }
     async signUp(userInfo) {
         try {
@@ -64,65 +76,64 @@ export default class StorageBaseSupabase {
     }
 
     async signOut() {
-        window.localStorage.removeItem('accessToken');
-        window.localStorage.removeItem('author');
-        window.localStorage.removeItem('userName');
-        window.localStorage.removeItem('email');
-        window.localStorage.removeItem('picture');
-        window.localStorage.removeItem('uid');
-        window.localStorage.removeItem('isAdmin');
-        window.localStorage.removeItem('execution');
-        return await window.$supabase.auth.signOut();
+        try {
+            window.localStorage.removeItem('accessToken');
+            window.localStorage.removeItem('author');
+            window.localStorage.removeItem('userName');
+            window.localStorage.removeItem('email');
+            window.localStorage.removeItem('picture');
+            window.localStorage.removeItem('uid');
+            window.localStorage.removeItem('isAdmin');
+            window.localStorage.removeItem('execution');
+            return await window.$supabase.auth.signOut();            
+        } catch(e) {
+            throw new StorageBaseError('error in signOut', e, arguments);
+        }
     }
 
     async createUser(userInfo) {
-        const result = await window.$supabase.auth.admin.createUser({
-            email: userInfo.email, 
-            password: userInfo.password,
-            options: {
-                data: {
-                    name: userInfo.username,
+        try {
+            const result = await window.$supabase.auth.admin.createUser({
+                email: userInfo.email, 
+                password: userInfo.password,
+                options: {
+                    data: {
+                        name: userInfo.username,
+                    }
                 }
+            });
+    
+            if (!result.error) {
+                return result.data;
+            } else {
+                throw new StorageBaseError(result.error);
             }
-        });
-
-        if (!result.error) {
-            return result.data;
-        } else {
-            result.errorMsg = result.error.message;
-            return result;
+        } catch(e) {
+            throw new StorageBaseError('error in createUser', e, arguments);
         }
     }
 
     async getUserInfo() {
-        // var { data, error } = await window.$supabase.auth.getUser();
-        const uid = window.localStorage.getItem("uid");
-        var { data, error } = await window.$supabase.auth.admin.getUserById(uid);
-        const user = data.user;
+        try {
+            const email = window.localStorage.getItem("email");
+            var { data, error } = await window.$supabase.from('users').select().eq('email', email).maybeSingle();
 
-        if (!error && user) {
-            var { data } = await window.$supabase
-                .from('users')
-                .select('profile')
-                .eq('id', user.id)
-                .maybeSingle()
-
-            const userInfo = {
-                email: user.email,
-                name: user.user_metadata.name,
-                profile: data ? data.profile:null,
-                uid: user.id,
-                role: user.role,
-                last_sign_in_at: user.last_sign_in_at,
+            if (!error && data) {
+                return {
+                    email: data.email,
+                    name: data.username,
+                    profile: data.profile,
+                    uid: data.id,
+                    role: data.role
+                }
+            } else {
+                throw new StorageBaseError('error in getUserInfo', e, arguments);
             }
-
-            return userInfo;
-
-        } else {
-            return error;
+        } catch(e) {
+            throw new StorageBaseError('error in getUserInfo', e, arguments);
         }
     }
-1
+
     async resetPassword(email) {
         try {
             const result = await window.$supabase.auth.resetPasswordForEmail(email, {
@@ -264,23 +275,23 @@ export default class StorageBaseSupabase {
                 const { error } = await window.$supabase.from(obj.table).upsert(value).match(options.match);
 
                 if (error) {
-                    throw new StorageBaseError('error in putString', error, arguments);
+                    throw new StorageBaseError('error in putString'+error.message, error, arguments);
                 }
             } else if (obj.searchVal) {
                 const { error } = await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
 
                 if (error) {
-                    throw new StorageBaseError('error in putString', error, arguments);
+                    throw new StorageBaseError('error in putString'+error.message, error, arguments);
                 }
             } else {
                 const { error } = await window.$supabase.from(obj.table).upsert(value);
 
                 if (error) {
-                    throw new StorageBaseError('error in putString', error, arguments);
+                    throw new StorageBaseError('error in putString'+error.message, error, arguments);
                 }
             }
-        } catch(error) {
-            throw new StorageBaseError('error in putString', error.message, arguments)
+        } catch (error) {
+            throw new StorageBaseError('error in putString', error, arguments);
         }
     }
 
@@ -291,26 +302,26 @@ export default class StorageBaseSupabase {
                 const { error } = await window.$supabase.from(obj.table).upsert(value).match(options.match);
 
                 if (error) {
-                    throw new StorageBaseError('error in putObject', error, arguments);
+                    throw new StorageBaseError('error in putObject:' + error.message, error, arguments);
                 }
             } else if (obj.searchVal) {
-                const { error } = await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
+                const { error, status, statusText } = await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
 
-                if (error) {
-                    throw new StorageBaseError('error in putObject', error, arguments);
+                if (status!=200 && error) {
+                    throw new StorageBaseError('error in putObject:' + status + " " + statusText + " " + error.message, error, arguments);
                 }
             } else {
                 // let key = path.split('/').pop();
                 // let updateObj = {id: key, value: value}
 
-                const { error } = await window.$supabase.from(obj.table).upsert(value);
+                const { error, status, statusText } = await window.$supabase.from(obj.table).upsert(value);
 
-                if (error) {
-                    throw new StorageBaseError('error in putObject', error, arguments);
+                if (status!=200 && error) {
+                    throw new StorageBaseError('error in putObject:' + status + " " + statusText  + " " +  error.message, error, arguments);
                 }
             }
-        } catch(error) {
-            throw new StorageBaseError('error in putObject', error.message, arguments);
+        } catch (error) {
+            throw new StorageBaseError('error in putObject', error, arguments);
         }
     }
 
@@ -374,19 +385,19 @@ export default class StorageBaseSupabase {
         try {
             let obj = this.formatDataPath(path, options);
             if (options && options.match) {
-                const { error } = await window.$supabase
+                const { error, status, statusText } = await window.$supabase
                     .from(obj.table)
                     .delete()
                     .match(options.match);
 
-                if (error) {
-                    throw new StorageBaseError('error in delete', error, arguments);
+                if (error && status!=200) {
+                    throw new StorageBaseError('error in delete ' + status + " " + statusText, error, arguments);
                 }
             } else if (obj.searchVal) {
-                const { error } = await window.$supabase.from(obj.table).delete().eq(obj.searchKey, obj.searchVal);
+                const { error, status, statusText  } = await window.$supabase.from(obj.table).delete().eq(obj.searchKey, obj.searchVal);
 
-                if (error) {
-                    throw new StorageBaseError('error in delete', error, arguments);
+                if (error && status!=200) {
+                    throw new StorageBaseError('error in delete ' + status + " " + statusText, error, arguments);
                 }
             }
 
@@ -536,9 +547,6 @@ export default class StorageBaseSupabase {
             }
             if (value.user) {
                 window.localStorage.setItem('author', value.user.email);
-                window.localStorage.setItem('userName', value.user.user_metadata.name);
-                window.localStorage.setItem('email', value.user.email);
-                window.localStorage.setItem('uid', value.user.id);
     
                 const count = await this.getCount('users');
                 if (count && count === 1) {
@@ -567,42 +575,36 @@ export default class StorageBaseSupabase {
                     if (data.role && data.role !== '') {
                         window.localStorage.setItem('role', data.role);
                     }
+                    window.localStorage.setItem('userName', data.username);
+                    window.localStorage.setItem('email', data.email);
                 }
             }
-    
-            const options = {
-                headers: {
-                    Authorization: 'bearer ' + localStorage.getItem('accessToken')
-                }
-            }
-            await axios.get('/test/execution', options).then(res => {
-                window.localStorage.setItem("execution", "true");
-            })
-            .catch(error => {
-                // console.log(error);
-            });
         } catch(e) {
             throw new StorageBaseError('error in writeUserData', e, arguments);
         }
     }
 
     formatDataPath(path, options) {
-        path = path.includes('://') ? path.split('://')[1] : path;
-        let obj = {
-            table: ''
-        };
-
-        if (path.includes('/')) {
-            obj.table = path.split('/')[0];
-            if (options && options.key) {
-                obj.searchKey = options.key;
-                obj.searchVal = path.split('/')[1];
+        try {
+            path = path.includes('://') ? path.split('://')[1] : path;
+            let obj = {
+                table: ''
+            };
+    
+            if (path.includes('/')) {
+                obj.table = path.split('/')[0];
+                if (options && options.key) {
+                    obj.searchKey = options.key;
+                    obj.searchVal = path.split('/')[1];
+                }
+            } else {
+                obj.table = path;
             }
-        } else {
-            obj.table = path;
+    
+            return obj;
+        } catch (error) {
+            throw new StorageBaseError('error in formatDataPath', error, arguments);
         }
-
-        return obj;
     }
 
     async getCount(path, options) {

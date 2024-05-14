@@ -69,7 +69,8 @@
     </v-card>
 
     <v-dialog v-model="isOpenSaveDialog">
-        <form-design-save-panel @onClose="isOpenSaveDialog = false" @onSave="tryToSaveFormDefinition" :savedId="(loadFormId === 'chat') ? null : loadFormId">
+        <form-design-save-panel @onClose="isOpenSaveDialog = false" @onSave="tryToSaveFormDefinition" :savedId="(loadFormId === 'chat') ? null : loadFormId"
+            :formNameByUrl="formNameByUrl">
         </form-design-save-panel>
     </v-dialog>
 </template>
@@ -138,7 +139,10 @@ export default {
 
         kEditorContentBeforeSave: "",
         isAIUpdated: false,
-        isRoutedWithUnsaved: false
+        isRoutedWithUnsaved: false,
+
+        processDefUrlData: null,
+        formNameByUrl: null
     }),
     async created() {
         this.generator = new ChatGenerator(this, {
@@ -146,6 +150,21 @@ export default {
             preferredLanguage: 'Korean'
         });
         await this.init();
+
+        // #region 프로세스 정의에서 폼 생성 요청으로 새 탭을 열었을 경우, 이를 적절하게 처리
+        const urlParams = new URLSearchParams(window.location.search);
+        const processDefUrlData = urlParams.get('process_def_url_data');
+        if(processDefUrlData) {
+            this.processDefUrlData = JSON.parse(decodeURIComponent(atob(processDefUrlData)));
+            this.beforeSendMessage({
+                "image": null,
+                "text": this.processDefUrlData.initPrompt,
+                "mentionedUsers": []
+            });
+
+            this.formNameByUrl = this.processDefUrlData.formName;
+        }
+        // #endregion
     },
     watch: {
         /**
@@ -432,6 +451,17 @@ export default {
                 await this.$router.push(`/ui-definitions/${id}`);
                 window.location.reload();
             }
+
+
+            if(this.processDefUrlData) {
+                const channel = new BroadcastChannel(this.processDefUrlData.channelId);
+                channel.postMessage({
+                    "name": this.processDefUrlData.formName,
+                    "id": id
+                })
+
+                window.close();
+            }
         },
 
         onClickPreviewSubmitButton() {
@@ -515,6 +545,10 @@ export default {
                 let messageWriting = this.messages[this.messages.length - 1];
                 messageWriting.jsonContent = this.extractLastJSON(response);
                 messageWriting.content = messageWriting.content.replace(messageWriting.jsonContent, '');
+
+                // messageWriting.jsonContent에 내용이 있어도, messageWriting.content에 내용이 없으면 메세지가 표시되지 않기때문에 추가함
+                if(messageWriting.content.length == 0) messageWriting.content = " "
+                
 
                 // 생성된 HTML을 보여주기 위해서
                 if (messageWriting.jsonContent) {

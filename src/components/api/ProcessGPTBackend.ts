@@ -99,23 +99,31 @@ class ProcessGPTBackend implements Backend {
 
             const list = await storage.list(defId);
             if (list.code == "42P01") {
-                await axios.post('/process-db-schema/invoke', {
-                    "input": {
-                        "process_definition_id": defId
-                    }
-                }).then(res => {
-                    return res
-                }).catch(error => {
-                    throw new Error(error && error.detail ? error.detail : error);
-                });
+                try{
+                    await axios.post('/process-db-schema/invoke', {
+                        "input": {
+                            "process_definition_id": defId
+                        }
+                    })
+                }catch(error){
+                    //@ts-ignore
+                    throw new Error("Error when to creating database for the definition: " + (error && error.detail ? error.detail : error));
+                }
             }
 
-            const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
-            if (isLocked) {
-                await storage.delete(`lock/${defId}`, { key: 'id' });
+            try{
+                const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
+                if (isLocked) {
+                    await storage.delete(`lock/${defId}`, { key: 'id' });
+                }    
+
+            }catch(error){
+                //@ts-ignore
+                throw new Error("Error when to unlock: " + (error && error.detail ? error.detail : error));
+
             }
         } catch (e) {
-            throw new Error('error in putRawDefinition');
+            throw new Error('error when to save definition: ' + (e instanceof Error ? e.message : ''));
         }
     }
 
@@ -149,7 +157,7 @@ class ProcessGPTBackend implements Backend {
     async start(input: any) {
         try {
             let defId = input.process_definition_id || input.processDefinitionId;
-            if (defId) {
+            if (defId && defId != '') {
                 const list = await storage.list(defId);
                 if (list.code == "42P01") {
                     await axios.post('/process-db-schema/invoke', {
@@ -162,9 +170,13 @@ class ProcessGPTBackend implements Backend {
                         throw new Error(error && error.detail ? error.detail : error);
                     });
                 }
+            } else {
+                if (input.process_instance_id && input.process_instance_id != '') {
+                    defId = input.process_instance_id.split('.')[0];
+                }
             }
 
-            input['process_definition_id'] = defId.toLowerCase();
+            let newMessage;
             if (!input.answer) {
                 input.answer = "";
             }
@@ -174,7 +186,18 @@ class ProcessGPTBackend implements Backend {
             if (!input.userInfo) {
                 input.userInfo = await storage.getUserInfo();
             }
-            
+            input['process_definition_id'] = defId.toLowerCase();
+
+            if (input.answer != "" && input.process_instance_id && input.process_instance_id != '') {
+                newMessage = {
+                    role: 'user',
+                    name: input.userInfo.name,
+                    email: input.userInfo.email,
+                    timestamp: Date.now(),
+                    content: input.answer,
+                }
+                await this.updateInstanceChat(input.process_instance_id, newMessage);
+            }
             
             var result: any = null;
             var url = '/complete/invoke';
@@ -191,11 +214,20 @@ class ProcessGPTBackend implements Backend {
                     const data = res.data;
                     if (data.output) {
                         result = JSON.parse(data.output);
+                        console.log(result)
                         if (input.answer === "" && result.instanceId) {
-                            const newMessage = {
+                            newMessage = {
                                 role: 'system',
                                 timestamp: Date.now(),
                                 content: `프로세스 '${defId}' 이/가 실행되었습니다.\n\n${result.description}`,
+                                jsonContent: result
+                            }
+                            await this.updateInstanceChat(result.instanceId, newMessage);
+                        } else {
+                            newMessage = {
+                                role: 'system',
+                                timestamp: Date.now(),
+                                content: result.description || "",
                                 jsonContent: result
                             }
                             await this.updateInstanceChat(result.instanceId, newMessage);
@@ -209,7 +241,7 @@ class ProcessGPTBackend implements Backend {
 
             return result;
         } catch (error) {
-            throw new Error('error in start');
+            throw new Error('error in start' + error);
         }
     }
 
@@ -241,7 +273,7 @@ class ProcessGPTBackend implements Backend {
                 activityInfo = defInfo.definition.activities.find((activity: any) => activity.id === data.activity_id);
                 if (activityInfo.outputData) {
                     parameters = activityInfo.outputData.map((item: any) => {
-                        const key = Object.keys(item)[0];
+                        const key = item;
                         return {
                             direction: 'OUT',
                             variable: {
@@ -494,57 +526,67 @@ class ProcessGPTBackend implements Backend {
     }
 
     async putWorkItemComplete(taskId: string, inputData: any) {
-        let result: any = null;
-        const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
-        const userInfo = await storage.getUserInfo();
-        
-        const newMessage = {
-            role: 'system',
-            timestamp: Date.now(),
-            content: `액티비티 '${workItem.activity_id}' 을/를 실행합니다.`
-        }
-        await this.updateInstanceChat(workItem.proc_inst_id, newMessage);
-
-        const input = {
-            answer: JSON.stringify(inputData),
-            process_instance_id: workItem.proc_inst_id,
-            process_definition_id: workItem.proc_def_id,
-            userInfo: userInfo,
-            activity_id: workItem.activity_id,
-        };
-        const req = {
-            input: input
-        };
-        let url = '/complete/invoke';
-        await axios.post(url, req).then(async res => {
-            if (res.data) {
-                const data = res.data;
-                if (data.output) {
-                    const output = JSON.parse(data.output);
-                    // update instance message
-                    const newMessage = {
-                        role: 'system',
-                        timestamp: Date.now(),
-                        content: output.description,
-                        jsonContent: data.output
-                    }
-                    await this.updateInstanceChat(output.instanceId, newMessage);
-                }
-                result = res.data;
+        try {
+            let result: any = null;
+            const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
+            const userInfo = await storage.getUserInfo();
+            
+            const newMessage = {
+                role: 'system',
+                timestamp: Date.now(),
+                content: `액티비티 '${workItem.activity_id}' 을/를 실행합니다.`,
+                jsonContent: inputData
             }
-        })
-        .catch(error => {
-            throw new Error(error && error.detail ? error.detail : error);
-        });
+            await this.updateInstanceChat(workItem.proc_inst_id, newMessage);
+    
+            const input = {
+                answer: JSON.stringify(inputData),
+                process_instance_id: workItem.proc_inst_id,
+                process_definition_id: workItem.proc_def_id,
+                userInfo: userInfo,
+                activity_id: workItem.activity_id,
+            };
+            const req = {
+                input: input
+            };
+            let url = '/complete/invoke';
+            await axios.post(url, req).then(async res => {
+                if (res.data) {
+                    const data = res.data;
+                    if (data.output) {
+                        const output = JSON.parse(data.output);
+                        // update instance message
+                        const newMessage = {
+                            role: 'system',
+                            timestamp: Date.now(),
+                            content: output.description,
+                            jsonContent: data.output
+                        }
+                        await this.updateInstanceChat(output.instanceId, newMessage);
+                    }
+                    result = res.data;
+                }
+            })
+            .catch(error => {
+                result = error
+                console.log(error)
+                throw new Error(error && error.detail ? error.detail : error);
+            });
+    
+            return result;
 
-        return result;
+        } catch (e) {
+            throw new Error('error in putWorkItemComplete');
+        }
     }
 
     async updateInstanceChat(instanceId: string, newMessage: any) {
         try {
             const data = await storage.getObject(`proc_inst/${instanceId}`, { key: 'id' });
             const messages = data.messages || [];
-            messages.push(newMessage);
+            if (newMessage) {
+                messages.push(newMessage);
+            }
             const putObj = {
                 id: instanceId,
                 messages: messages

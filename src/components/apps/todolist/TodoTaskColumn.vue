@@ -7,14 +7,12 @@
             <draggable class="dragArea list-group cursor-move" :list="column.tasks"
                 :animation="200" ghost-class="ghost-card" group="tasks" @add="updateTask"
                 :component-data="getComponentData()" :move="checkDraggable">
-                <div>
                     <transition-group>
                         <div v-for="task in column.tasks" :key="task.taskId" class="cursor-move todo-task-item-card-style">
                             <TodoTaskItemCard :task="task" @deleteTask="deleteTask" @executeTask="executeTask"
                                 @add="addTask" />
                         </div>
                     </transition-group>
-                </div>
             </draggable>
         </div>
     </v-card>
@@ -49,6 +47,7 @@ export default {
         },
         checkDraggable(event) {
             const task = event.draggedContext.element;
+            console.log(task)
             if (!task.instId) {
                 return true;
             } else {
