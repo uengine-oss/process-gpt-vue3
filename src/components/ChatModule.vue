@@ -158,6 +158,7 @@ export default {
                         return new Date(a.timeStamp) - new Date(b.timeStamp);
                     });
                     me.messages = allMessages;
+                    me.EventBus.emit('messages-updated');
                 }
                 me.isInitDone = true;
             });
@@ -303,7 +304,7 @@ export default {
                     //     this.startGenerate();
                     // }
                     if(message.mentionedUsers){
-                        if(message.mentionedUsers.some(user => user.id === 'system_id')){
+                        if(message.mentionedUsers.some(user => user.id === 'system_id') || message.text.startsWith('>') || message.text.startsWith('!')){
                             this.startGenerate();
                         }
                     }
