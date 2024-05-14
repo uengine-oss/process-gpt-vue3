@@ -74,6 +74,7 @@
                         v-on:updateElement="(val) => updateElement(val)"
                         :definition="thisDefinition"
                         :processDefinitionId="definitionPath"
+                        @addUengineVariable="addUengineVariable"
                     ></bpmn-property-panel>
                     <!-- {{ definition }} -->
                 </v-card>

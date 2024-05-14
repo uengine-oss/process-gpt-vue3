@@ -487,6 +487,20 @@ export default {
                 console.log(event)
                 alert("받아진 데이터를 적절하게 처리하기")
             }
+
+            // 테스트
+            this.$emit('addUengineVariable', {
+                "name": "휴가신청폼",
+                "type": "Form",
+                "defaultValue": "untitled/1715328313413",
+                "description": "",
+                "datasource": {
+                    "type": "",
+                    "sql": ""
+                },
+                "table": "",
+                "backend": null
+            })
         }
     }
 };
