@@ -451,6 +451,17 @@ export default {
                 await this.$router.push(`/ui-definitions/${id}`);
                 window.location.reload();
             }
+
+
+            if(this.processDefUrlData) {
+                const channel = new BroadcastChannel(this.processDefUrlData.channelId);
+                channel.postMessage({
+                    "name": this.processDefUrlData.formName,
+                    "id": id
+                })
+
+                window.close();
+            }
         },
 
         onClickPreviewSubmitButton() {
