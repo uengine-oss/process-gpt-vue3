@@ -470,16 +470,23 @@ export default {
             }));
         },
         createForm() {
-            let urlData = []
+            let urlData = {}
             urlData["formName"] = this.name
             urlData["inputNames"] = this.copyUengineProperties.parameters.map(p => p.argument.text)
             urlData["initPrompt"] = `'${urlData["formName"]}'폼을 생성해줘. 입력해야하는 값들은 다음과 같아: ${urlData["inputNames"].join(", ")}`
             urlData["processId"] = this.processDefinitionId
             urlData["channelId"] = crypto.randomUUID()
+            console.log("새로운 폼을 만들기 위한 데이터: " + JSON.stringify(urlData))
+            console.log("채널 ID: " + urlData["channelId"])
 
-            console.log(urlData)
+            const formTabUrl = `/ui-definitions/chat?process_def_url_data=${btoa(encodeURIComponent(JSON.stringify(urlData)))}`
+            window.open(formTabUrl, '_blank')
 
-            alert("TODO: 새탭을 열어서 나머지 구현")
+            const channel = new BroadcastChannel(urlData["channelId"])
+            channel.onmessage = (event) => {
+                console.log(event)
+                alert("받아진 데이터를 적절하게 처리하기")
+            }
         }
     }
 };
