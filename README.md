@@ -3,6 +3,20 @@
 # Install
 
 ### supabase Initial Script
+
+#### Easy way:
+Using CLI and docker :  https://supabase.com/docs/guides/cli/getting-started
+```
+supabase init
+supabase start
+```
+and navigate to the 
+
+http://localhost:54323
+
+
+#### Complex way:
+
 ```sh
 # Get the code
 git clone --depth 1 https://github.com/supabase/supabase
@@ -60,6 +74,17 @@ create table proc_def (
 );
 
 create table
+  public.proc_def_arcv (
+    arcv_id text not null,
+    proc_def_id text not null,
+    version double precision not null,
+    snapshot text null,
+    "timeStamp" timestamp without time zone null default current_timestamp,
+    diff text null,
+    constraint proc_def_arcv_pkey primary key (arcv_id)
+  ) tablespace pg_default;
+
+create table
   public.chats (
     uuid text not null,
     id text not null,
@@ -82,4 +107,16 @@ create table
     name text null,
     constraint chat_rooms_pkey primary key (id)
   ) tablespace pg_default;
+```
+
+#### Don't forget to set the OPENAI_API_KEY for configuration:
+
+- navigate to the supabase console:
+http://localhost:54323
+
+- find the configuration table and set the openai_key field as value set:
+```
+{
+  "key": "sk-..."
+}
 ```
