@@ -249,7 +249,7 @@ class ProcessGPTBackend implements Backend {
                 activityInfo = defInfo.definition.activities.find((activity: any) => activity.id === data.activity_id);
                 if (activityInfo.outputData) {
                     parameters = activityInfo.outputData.map((item: any) => {
-                        const key = Object.keys(item)[0];
+                        const key = item;
                         return {
                             direction: 'OUT',
                             variable: {
