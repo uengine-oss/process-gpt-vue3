@@ -307,7 +307,7 @@ export default {
                 this.$emit('update:uEngineProperties', this.copyUengineProperties);
             }
         },
-        isFormActivity(newVal) {
+        isFormActivity(newVal, oldVal) {
             if (newVal) {
                 this.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
             } else {
@@ -318,7 +318,7 @@ export default {
 
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
 
-            if(newVal === true) {
+            if(oldVal === false && newVal === true && this.selectedForm === '') {
                 this.isOpenFormCreateDialog = true
             }
         }
