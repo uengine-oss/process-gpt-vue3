@@ -66,6 +66,11 @@
 //
 .slider-group {
     animation: slide 45s linear infinite;
+    height:600px;
+}
+
+.slider-group img{
+    height:600px;
 }
 
 @keyframes slide {
