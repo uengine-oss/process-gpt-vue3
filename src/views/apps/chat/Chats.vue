@@ -312,8 +312,12 @@ export default {
                 let responseObj = partialParse(response.content)
                 let systemMsg
                 if(responseObj.work == 'StartProcessInstance'){
+                    if(this.lastSendMessage){
+                        localStorage.setItem('instancePrompt', this.lastSendMessage)
+                    } else {
+                        localStorage.setItem('instancePrompt', this.messages[this.messages.length - 2].content)
+                    }
                     systemMsg = `"${responseObj.title}" 프로세스를 시작하겠습니다.`
-                    localStorage.setItem('instancePrompt', JSON.stringify(responseObj.prompt))
                     me.$router.push('/instances/chat')
                 } else if(responseObj.work == 'TodoListRegistration'){
                     systemMsg = `"${responseObj.activity_id}" 할 일이 추가되었습니다.`
