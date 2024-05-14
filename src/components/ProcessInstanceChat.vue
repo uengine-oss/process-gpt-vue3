@@ -105,8 +105,7 @@ export default {
             preferredLanguage: 'Korean'
         });
         if (localStorage.getItem('instancePrompt')) {
-            let prompt = JSON.parse(localStorage.getItem('instancePrompt'))
-            this.beforeSendMessage(prompt)
+            this.beforeSendMessage(localStorage.getItem('instancePrompt'))
             localStorage.removeItem('instancePrompt')
         }
     },
