@@ -1117,7 +1117,7 @@ export default {
                         lastXPos += 120; 
                     }
                     if(idx === jsonModel.sequences.length - 1){
-                        positionMapping[sequence.target] = lastXPos
+                        positionMapping[sequence.target] = lastXPos += 80
                     }   
                     const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:sequenceFlow');
                     sequenceFlow.setAttribute('id', 'SequenceFlow_' + sequence.source + '_' + sequence.target);
@@ -1520,7 +1520,7 @@ export default {
                     // }
                 });
             }
-
+            //gateway 스티커
             if (jsonModel.gateways){
                 jsonModel.gateways.forEach((gateway) => {
                     let gatewayX = positionMapping[gateway.id] ? positionMapping[gateway.id] : rolePos[gateway.role].x + 120;
@@ -1545,7 +1545,7 @@ export default {
                     rolePos[gateway.role].x += 120;
                 });
             }
-
+            // srtart, end event(동그라미 스티커)
             if (jsonModel.events){
                 jsonModel.events.forEach((event) => {
                     // let eventX = 140
@@ -1553,10 +1553,10 @@ export default {
                     let eventY
                     if(event.type == 'StartEvent'){
                         eventX = 140
-                        eventY = parseInt(rolePos[jsonModel.activities[0].role].y) + 32;
+                        eventY = parseInt(rolePos[jsonModel.activities[0].role].y) + 33;
                     } else if(event.type == 'EndEvent') {
                         eventX = positionMapping[event.id] ? positionMapping[event.id] : lastXPos + 120
-                        eventY = parseInt(rolePos[jsonModel.activities[jsonModel.activities.length - 1].role].y) + 32;
+                        eventY = parseInt(rolePos[jsonModel.activities[jsonModel.activities.length - 1].role].y) + 33;
                     } else {
                         eventX = 200
                         eventY = 200
@@ -1567,16 +1567,16 @@ export default {
                     const dcBounds = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
                     dcBounds.setAttribute('x', eventX);
                     dcBounds.setAttribute('y', eventY);
-                    dcBounds.setAttribute('width', '80');
-                    dcBounds.setAttribute('height', '40');
+                    dcBounds.setAttribute('width', '34');
+                    dcBounds.setAttribute('height', '34');
                     eventShape.appendChild(dcBounds);
                     bpmnPlane.appendChild(eventShape);
 
                     activityPos[event.id] = {
                         x: eventX,
                         y: eventY,
-                        width: 50,
-                        height: 50
+                        width: 34,
+                        height: 34
                     };
                 });
             }
