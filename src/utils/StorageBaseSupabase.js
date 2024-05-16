@@ -1,4 +1,3 @@
-import axios from '@/utils/axios';
 
 // import StorageBase from "./StorageBase";
 class StorageBaseError extends Error {
@@ -298,27 +297,20 @@ export default class StorageBaseSupabase {
     async putObject(path, value, options) {
         try {
             let obj = this.formatDataPath(path, options);
+            let result;
             if (options && options.match) {
-                const { error } = await window.$supabase.from(obj.table).upsert(value).match(options.match);
+                result = await window.$supabase.from(obj.table).upsert(value).match(options.match);
 
-                if (error) {
-                    throw new StorageBaseError('error in putObject:' + error.message, error, arguments);
-                }
             } else if (obj.searchVal) {
-                const { error, status, statusText } = await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
-
-                if (status!=200 && error) {
-                    throw new StorageBaseError('error in putObject:' + status + " " + statusText + " " + error.message, error, arguments);
-                }
+                result = await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);                
             } else {
-                // let key = path.split('/').pop();
-                // let updateObj = {id: key, value: value}
+                result = await window.$supabase.from(obj.table).upsert(value);
 
-                const { error, status, statusText } = await window.$supabase.from(obj.table).upsert(value);
+            }
 
-                if (status!=200 && error) {
-                    throw new StorageBaseError('error in putObject:' + status + " " + statusText  + " " +  error.message, error, arguments);
-                }
+            const {error, status, statusText} = result
+            if (status!=200 && error) {
+                throw new StorageBaseError('error in putObject:' + status + " " + statusText + " " + error.message, error, arguments);
             }
         } catch (error) {
             throw new StorageBaseError('error in putObject', error, arguments);

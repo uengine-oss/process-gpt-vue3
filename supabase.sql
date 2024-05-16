@@ -43,10 +43,12 @@ create table todolist (
     proc_inst_id text,
     proc_def_id text,
     activity_id text,
+    activity_name text,
     start_date timestamp,
     end_date timestamp,
     status text,
-    description text
+    description text,
+    tool text
 );
 
 -- table users

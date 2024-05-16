@@ -1,11 +1,11 @@
 <script>
 import jp from 'jsonpath';
 
+import BackendFactory from '@/components/api/BackendFactory';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { encodingForModel } from "js-tiktoken";
-import GeneratorAgent from "./GeneratorAgent.vue"
 import _ from 'lodash';
-import BackendFactory from '@/components/api/BackendFactory';
+import GeneratorAgent from "./GeneratorAgent.vue";
 export default {
     mixins: [GeneratorAgent],
     data: () => ({
@@ -262,7 +262,7 @@ export default {
                     role: 'user'
                 };
                 if(this.generator){
-                    this.generator.model = "gpt-4";
+                    this.generator.model = "gpt-4o";
                 }
                 if (message.image && message.image != '') {
                     chatObj.content = [

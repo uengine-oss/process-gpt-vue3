@@ -293,12 +293,13 @@ class ProcessGPTBackend implements Backend {
                     taskId: data.id,
                     startDate: data.start_date,
                     dueDate: data.end_date,
-                    status: data.status,
+                    status: data.status === 'TODO' ? 'NEW' : data.status === 'DONE' ? 'COMPLETED' : data.status,
                     description: data.description || "",
-                    tool: ""
+                    tool: data.tool || ""
+                    
                 },
                 activity: {
-                    name: data.activity_id,
+                    name: data.activity_name,
                     tracingTag: data.activity_id,
                     parameters: parameters || []
                 }
@@ -326,10 +327,10 @@ class ProcessGPTBackend implements Backend {
                         startDate: item.start_date,
                         dueDate: item.end_date,
                         status: item.status,
-                        title: item.activity_id,
+                        title: item.activity_name,
                         tracingTag: item.activity_id,
                         description: item.description || "",
-                        tool: ""
+                        tool: item.tool || ""
                     };
                     if (item.proc_inst_id) {
                         const data = await storage.getString(item.proc_def_id, { 
@@ -498,10 +499,10 @@ class ProcessGPTBackend implements Backend {
                         startDate: item.start_date,
                         dueDate: item.end_date,
                         status: item.status,
-                        title: item.activity_id,
+                        title: item.activity_name,
                         tracingTag: item.activity_id,
                         description: item.description || "",
-                        tool: ""
+                        tool: item.tool || ""
                     };
                     if (item.proc_inst_id) {
                         const data = await storage.getString(item.proc_def_id, { 
@@ -576,7 +577,8 @@ class ProcessGPTBackend implements Backend {
             return result;
 
         } catch (e) {
-            throw new Error('error in putWorkItemComplete');
+            //@ts-ignore
+            throw new Error(e.message);
         }
     }
 
@@ -668,7 +670,7 @@ class ProcessGPTBackend implements Backend {
                     startDate: item.start_date,
                     dueDate: item.end_date,
                     status: item.status,
-                    title: item.activity_id,
+                    title: item.activity_name,
                     tool: item.tool || '',
                     tracingTag: item.activity_id,
                     description: item.description || '',
