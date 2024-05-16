@@ -171,27 +171,50 @@ export default {
         vueRenderElement.innerHTML = newElement.outerHTML
       })
 
+
+      doc.querySelectorAll('div.keditor-toolbar').forEach(toolbar => {
+        toolbar.remove();
+      });
+
+      // 특정 컴포넌트 안의 내용을 남겨주고, 그 컴포넌트를 제거 시킴
+      const removeParentComponent = (parentComponent) => {
+        const parentSection = parentComponent.parentElement;
+        while (parentComponent.firstChild) {
+          parentSection.insertBefore(parentComponent.firstChild, parentComponent);
+        }
+        parentSection.removeChild(parentComponent);
+      }
+
+      const removeParentComponentByQuerySelector = (query) => {
+        doc.querySelectorAll(query).forEach(parentComponent => {
+          removeParentComponent(parentComponent)
+        })
+      }
+      
+      // id가 "vuemount_"로 시작하는 모든 요소들을 찾아서 제거시키기 위해서
+      removeParentComponentByQuerySelector('[id^="vuemount_"]')
+      removeParentComponentByQuerySelector('section.keditor-component-content')
+      removeParentComponentByQuerySelector('section.keditor-initialized-component')
+      removeParentComponentByQuerySelector('section.keditor-container-inner')
+
+      // 모든 section.keditor-initialized-container에 대해서 모든 class 및 id를 제거하는 과정을 수행
+      doc.querySelectorAll('section.keditor-initialized-container').forEach(section => {
+        section.removeAttribute('class');
+        section.removeAttribute('id');
+      });
+
       // 칼럼이 되는 class를 찾아서 불필요한 클래스 및 속성들을 제거시키기 위해서
       doc.querySelectorAll('[class^="col-sm-"]').forEach(node => {
-        const components = Array.from(node.querySelectorAll('*')).filter(el => el.tagName.toLowerCase().endsWith('-field'))
-        node.innerHTML = components.map(el => el.outerHTML).join('');
-
         node.setAttribute("class", node.getAttribute("class").split(" ").filter((className) => className.includes("col-sm-")).join(" "))
         node.removeAttribute('id')
         node.removeAttribute('data-type')
       });
 
-      // Row들을 찾아서 해당 Row마다 section 태그로 감싸고, 전부 합쳐서 최종적인 저장 형태를 생성하기 위해서
+
       if(isWithSection)
-      {
-        const rows = Array.from(doc.querySelectorAll('.row'));
-        return rows.map(row => {
-          const section = document.createElement('section');
-          section.innerHTML = row.outerHTML;
-          return section.outerHTML;
-        }).join('').replace(/&quot;/g, `'`).replace("<br>", "\n");
-      } else
-        return doc.body.innerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n")
+        return doc.body.innerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n");
+      else
+        return doc.body.firstChild.innerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n")
     },
 
 
