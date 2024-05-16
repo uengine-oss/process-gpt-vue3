@@ -20,23 +20,6 @@
 
                     <!-- slot 추가 -->
                     <slot name="custom-tools"></slot>
-
-                    <!-- 폼 저장을 위해서 -->
-                    <span v-if="type == 'form'" class="d-flex gap-2 flex-row-reverse" style="height: 0px">
-                        <v-tooltip>
-                            <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props"
-                                    icon variant="text"
-                                    class="text-medium-emphasis"
-                                    style="bottom: 35px; left: 15px;"
-                                    @click="$emit('onClickSaveFormButton')"
-                                >
-                                    <Icon icon="material-symbols:save" width="24" height="24" />
-                                </v-btn>
-                            </template>
-                            <span>{{ $t('uiDefinition.save') }}</span>
-                        </v-tooltip>
-                    </span>
                 </div>
                 <v-divider style="margin:0px;" v-if="name && name !== '' || chatInfo || type == 'form'" />
             </div>
@@ -575,7 +558,7 @@ export default {
             formData.append('audio', audioBlob);
 
             try {
-                const response = await axios.post('http://localhost:8003/upload', formData);
+                const response = await axios.post('http://localhost:8000/upload', formData);
                 const data = response.data;
                 this.newMessage = data.transcript; 
             } catch (error) {

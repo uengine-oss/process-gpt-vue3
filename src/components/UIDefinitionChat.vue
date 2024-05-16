@@ -8,11 +8,40 @@
                         :messages="messages"
                         :userInfo="userInfo"
                         type="form"
-                        @onClickSaveFormButton="openSaveDialog"
                         @sendMessage="beforeSendMessage"
                         @sendEditedMessage="sendEditedMessage"
                         @stopMessage="stopMessage"
-                    ></Chat>
+                    >
+                        <template v-slot:custom-tools>
+                            <div class="d-flex flex-row-reverse" style="height: 0px; position: relative; bottom: 35px; left: 10px">
+                                <v-tooltip>
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-bind="props"
+                                            icon variant="text"
+                                            class="text-medium-emphasis"
+                                            @click="openSaveDialog"
+                                        >
+                                            <Icon icon="material-symbols:save" width="24" height="24" />
+                                        </v-btn>
+                                    </template>
+                                    <span>{{ $t('uiDefinition.save') }}</span>
+                                </v-tooltip>
+
+                                <v-tooltip>
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-if="isLoadedForm" 
+                                            v-bind="props" 
+                                            icon  variant="text" 
+                                            class="text-medium-emphasis"
+                                            @click="openDeleteDialog">
+                                            <TrashIcon size="24" />
+                                        </v-btn>
+                                    </template>
+                                    <span>{{ $t('uiDefinition.deleteForm') }}</span>
+                                </v-tooltip>
+                            </div>
+                        </template>
+                    </Chat>
                 </div>
             </template>
             <template v-slot:rightpart>
@@ -59,18 +88,60 @@
                     :messages="messages"
                     :userInfo="userInfo"
                     type="form"
-                    @onClickSaveFormButton="openSaveDialog"
                     @sendMessage="beforeSendMessage"
                     @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage"
-                ></Chat>
+                >
+                    <template v-slot:custom-tools>
+                        <div class="d-flex flex-row-reverse" style="height: 0px; position: relative; bottom: 35px; left: 10px">
+                            <v-tooltip>
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props"
+                                        icon variant="text"
+                                        class="text-medium-emphasis"
+                                        @click="openSaveDialog"
+                                    >
+                                        <Icon icon="material-symbols:save" width="24" height="24" />
+                                    </v-btn>
+                                </template>
+                                <span>{{ $t('uiDefinition.save') }}</span>
+                            </v-tooltip>
+
+                            <v-tooltip location="bottom">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-if="isLoadedForm" 
+                                        v-bind="props" 
+                                        icon  variant="text" 
+                                        class="text-medium-emphasis"
+                                        @click="openDeleteDialog">
+                                        <TrashIcon size="24" />
+                                    </v-btn>
+                                </template>
+                                <span>{{ $t('uiDefinition.deleteForm') }}</span>
+                            </v-tooltip>
+                        </div>
+                    </template>
+                </Chat>
             </template>
         </AppBaseCard>
     </v-card>
 
     <v-dialog v-model="isOpenSaveDialog">
-        <form-design-save-panel @onClose="isOpenSaveDialog = false" @onSave="tryToSaveFormDefinition" :savedId="(loadFormId === 'chat') ? null : loadFormId">
+        <form-design-save-panel @onClose="isOpenSaveDialog = false" @onSave="tryToSaveFormDefinition" :savedId="(loadFormId === 'chat') ? null : loadFormId"
+            :formNameByUrl="formNameByUrl">
         </form-design-save-panel>
+    </v-dialog>
+
+    <v-dialog v-model="isOpenDeleteDialog" max-width="500">
+        <v-card>
+            <v-card-text>
+                {{ $t('uiDefinition.deleteFormMessage') }}
+            </v-card-text>
+            <v-card-actions class="justify-center pt-0">
+                <v-btn color="primary" variant="flat" @click="deleteForm">{{ $t('uiDefinition.delete') }}</v-btn>
+                <v-btn color="error" variant="flat" @click="isOpenDeleteDialog = false">{{ $t('uiDefinition.cancel') }}</v-btn>
+            </v-card-actions>
+        </v-card>
     </v-dialog>
 </template>
 
@@ -135,10 +206,16 @@ export default {
             previewFormValues: ''
         },
         loadFormId: '',
+        isLoadedForm: false,
 
         kEditorContentBeforeSave: "",
         isAIUpdated: false,
-        isRoutedWithUnsaved: false
+        isRoutedWithUnsaved: false,
+
+        processDefUrlData: null,
+        formNameByUrl: null,
+
+        isOpenDeleteDialog: false
     }),
     async created() {
         this.generator = new ChatGenerator(this, {
@@ -146,6 +223,21 @@ export default {
             preferredLanguage: 'Korean'
         });
         await this.init();
+
+        // #region 프로세스 정의에서 폼 생성 요청으로 새 탭을 열었을 경우, 이를 적절하게 처리
+        const urlParams = new URLSearchParams(window.location.search);
+        const processDefUrlData = urlParams.get('process_def_url_data');
+        if(processDefUrlData) {
+            this.processDefUrlData = JSON.parse(decodeURIComponent(atob(processDefUrlData)));
+            this.beforeSendMessage({
+                "image": null,
+                "text": this.processDefUrlData.initPrompt,
+                "mentionedUsers": []
+            });
+
+            this.formNameByUrl = this.processDefUrlData.formName;
+        }
+        // #endregion
     },
     watch: {
         /**
@@ -200,6 +292,10 @@ export default {
 
         openSaveDialog() {
             this.isOpenSaveDialog = true;
+        },
+
+        openDeleteDialog() {
+            this.isOpenDeleteDialog = true;
         },
 
         /**
@@ -432,6 +528,17 @@ export default {
                 await this.$router.push(`/ui-definitions/${id}`);
                 window.location.reload();
             }
+
+
+            if(this.processDefUrlData) {
+                const channel = new BroadcastChannel(this.processDefUrlData.channelId);
+                channel.postMessage({
+                    "name": this.processDefUrlData.formName,
+                    "id": id
+                })
+
+                window.close();
+            }
         },
 
         onClickPreviewSubmitButton() {
@@ -456,10 +563,11 @@ export default {
             if (this.loadFormId.startsWith('/')) {
                 this.loadFormId = this.loadFormId.substring(1);
             } 
+            this.isLoadedForm = (this.loadFormId && this.loadFormId != 'chat')
 
             this.isAIUpdated = false;
             this.messages = [];
-            if (this.loadFormId && this.loadFormId != 'chat') {
+            if (this.isLoadedForm) {
                 try {
                     this.storedFormDefHTML = (await this.backend.getRawDefinition(this.loadFormId, { type: 'form' }));
                 } catch(error) {
@@ -515,6 +623,10 @@ export default {
                 let messageWriting = this.messages[this.messages.length - 1];
                 messageWriting.jsonContent = this.extractLastJSON(response);
                 messageWriting.content = messageWriting.content.replace(messageWriting.jsonContent, '');
+
+                // messageWriting.jsonContent에 내용이 있어도, messageWriting.content에 내용이 없으면 메세지가 표시되지 않기때문에 추가함
+                if(messageWriting.content.length == 0) messageWriting.content = " "
+                
 
                 // 생성된 HTML을 보여주기 위해서
                 if (messageWriting.jsonContent) {
@@ -811,6 +923,20 @@ export default {
 
             me.$nextTick(() => {
                 me.dev.previewFormValues = JSON.stringify(me.previewFormValues);
+            });
+        },
+
+        async deleteForm() {
+            var me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    await this.backend.deleteDefinition(this.loadFormId, {type: 'form'});
+                    this.isOpenDeleteDialog = false;
+                    await this.$router.push('/ui-definitions/chat');
+                    window.location.reload();
+                },
+                successMsg: '삭제되었습니다.'
             });
         }
     },

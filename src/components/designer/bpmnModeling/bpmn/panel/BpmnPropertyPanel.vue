@@ -29,6 +29,7 @@
                 @update:name="(val) => (name = val)"
                 :definition="definition"
                 :processDefinitionId="processDefinitionId"
+                @addUengineVariable="(val) => $emit('addUengineVariable', val)"
             ></component>
         </v-card-text>
     </div>

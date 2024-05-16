@@ -79,27 +79,27 @@ export default {
     },
     data: () => ({
         sidebarItem: [
-            {
-                title: 'dashboard.title',
-                icon: 'lucide:layout-panel-top',
-                BgColor: 'primary',
-                to: '/dashboard2',
-                disable: true
-            },
-            {
-                title: 'todoList.title',
-                icon: 'pajamas:overview',
-                BgColor: 'primary',
-                to: '/todolist',
-                disable: true
-            },
-            {
-                title: 'calendar.title',
-                icon: 'solar:calendar-line-duotone',
-                BgColor: 'primary',
-                to: '/calendar',
-                disable: false
-            },
+            // {
+            //     title: 'dashboard.title',
+            //     icon: 'lucide:layout-panel-top',
+            //     BgColor: 'primary',
+            //     to: '/dashboard2',
+            //     disable: true
+            // },
+            // {
+            //     title: 'todoList.title',
+            //     icon: 'pajamas:overview',
+            //     BgColor: 'primary',
+            //     to: '/todolist',
+            //     disable: true
+            // },
+            // {
+            //     title: 'calendar.title',
+            //     icon: 'solar:calendar-line-duotone',
+            //     BgColor: 'primary',
+            //     to: '/calendar',
+            //     disable: false
+            // },
             {
                 title: 'chats.title',
                 icon: 'solar:chat-round-unread-line-duotone',

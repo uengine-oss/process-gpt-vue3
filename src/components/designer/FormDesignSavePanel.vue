@@ -30,7 +30,8 @@ export default {
         "onSave"
     ],
     props: {
-        savedId: String
+        savedId: String,
+        formNameByUrl: String
     },
     data: () => ({
         infoToSave: {
@@ -72,6 +73,10 @@ export default {
 
         if(this.savedId) {
             this.infoToSave.id = this.savedId
+        }
+
+        if(this.formNameByUrl && this.formNameByUrl.length > 0) {
+            this.infoToSave.id = this.formNameByUrl
         }
     },
     mounted() {

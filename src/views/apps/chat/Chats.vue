@@ -428,7 +428,7 @@ export default {
                         });
                         obj.memento.sources = sources
 
-                        const responseTable = await axios.post('http://localhost:8006/process-data-query/invoke', {
+                        const responseTable = await axios.post('http://localhost:8000/process-data-query/invoke', {
                             input: {
                                 var_name: responseObj.content
                             }
