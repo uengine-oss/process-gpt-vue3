@@ -195,7 +195,8 @@ export default {
       removeParentComponentByQuerySelector('[id^="vuemount_"]')
       removeParentComponentByQuerySelector('section.keditor-component-content')
       removeParentComponentByQuerySelector('section.keditor-initialized-component')
-      removeParentComponentByQuerySelector('section.keditor-container-inner')
+      removeParentComponentByQuerySelector('section.keditor-initializing-component')
+      removeParentComponentByQuerySelector('section.keditor-container-inner:not(.keditor-container)')
 
       // 모든 section.keditor-initialized-container에 대해서 모든 class 및 id를 제거하는 과정을 수행
       doc.querySelectorAll('section.keditor-initialized-container').forEach(section => {
