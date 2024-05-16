@@ -114,7 +114,7 @@ export default {
     methods: {
         async generateSql() {
             try {
-                const response = await axios.post('http://localhost:8006/process-var-sql/invoke', {
+                const response = await axios.post('http://localhost:8000/process-var-sql/invoke', {
                     input: {
                         var_name: this.processVariable.name,
                         resolution_rule: this.processVariable.description
@@ -127,7 +127,7 @@ export default {
         },
         async testSql() {
             try {
-                const response = await axios.post('http://localhost:8006/process-data-query/invoke', {
+                const response = await axios.post('http://localhost:8000/process-data-query/invoke', {
                     input: {
                         var_name: this.processVariable.name
                     }

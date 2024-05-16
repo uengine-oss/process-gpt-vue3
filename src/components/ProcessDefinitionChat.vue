@@ -168,8 +168,8 @@
 </template>
 <script>
 import partialParse from 'partial-json-parser';
-import xml2js from 'xml2js';
 import { VectorStorage } from 'vector-storage';
+import xml2js from 'xml2js';
 
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import ProcessDefinitionVersionDialog from '@/components/ProcessDefinitionVersionDialog.vue';
@@ -236,17 +236,19 @@ export default {
         isDeleted: false,
     }),
     async created() {
-        await this.init();
-        this.generator = new ChatGenerator(this, {
-            isStream: true,
-            preferredLanguage: 'Korean'
-        });
-        if(this.$store.state.messages) {
-            const messagesString = JSON.stringify(this.$store.state.messages);
-            this.prompt = `아래 대화 내용에서 프로세스를 유추하여 프로세스 정의를 생성해주세요. 이때 가능한 프로세스를 일반화하여 작성:
-            ${messagesString}.`;
-            this.$store.commit('clearMessages');
-        }
+        $try(async ()=>{
+            await this.init();
+            this.generator = new ChatGenerator(this, {
+                isStream: true,
+                preferredLanguage: 'Korean'
+            });
+            if(this.$store.state.messages) {
+                const messagesString = JSON.stringify(this.$store.state.messages);
+                this.prompt = `아래 대화 내용에서 프로세스를 유추하여 프로세스 정의를 생성해주세요. 이때 가능한 프로세스를 일반화하여 작성:
+                ${messagesString}.`;
+                this.$store.commit('clearMessages');
+            }
+        })
     },
     watch: {
         $route: {
@@ -604,6 +606,8 @@ export default {
         },
         async convertXMLToJSON(xmlString) {
             try {
+                xmlString = xmlString.replace(/\$type/g, '_type');//sanitizing for $type
+
                 const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
                 const result = await parser.parseStringPromise(xmlString);
                 const process = result['bpmn:definitions']['bpmn:process'] || {};
@@ -1170,15 +1174,15 @@ export default {
                     let outputDataList = [];
                     activity?.inputData?.forEach((data) => {
                         inputDataList.push({
-                            argument: { text: data.name },
-                            variable: { name: data.name },
+                            argument: { text: data },
+                            variable: { name: data },
                             direction: 'OUT'
                         });
                     });
                     activity?.outputData?.forEach((data) => {
                         outputDataList.push({
-                            argument: { text: data.name },
-                            variable: { name: data.name },
+                            argument: { text: data },
+                            variable: { name: data },
                             direction: 'IN'
                         });
                     });
