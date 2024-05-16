@@ -13,19 +13,31 @@
                         @stopMessage="stopMessage"
                     >
                         <template v-slot:custom-tools>
-                            <div class="d-flex gap-2 flex-row-reverse" style="height: 0px;">
+                            <div class="d-flex flex-row-reverse" style="height: 0px; position: relative; bottom: 35px; left: 10px">
                                 <v-tooltip>
                                     <template v-slot:activator="{ props }">
                                         <v-btn v-bind="props"
                                             icon variant="text"
                                             class="text-medium-emphasis"
-                                            style="bottom: 35px; left: 15px;"
+                                            
                                             @click="openSaveDialog"
                                         >
                                             <Icon icon="material-symbols:save" width="24" height="24" />
                                         </v-btn>
                                     </template>
                                     <span>{{ $t('uiDefinition.save') }}</span>
+                                </v-tooltip>
+
+                                <v-tooltip location="bottom">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-if="isLoadedForm" 
+                                            v-bind="props" 
+                                            icon  variant="text" 
+                                            class="text-medium-emphasis">
+                                            <TrashIcon size="24" />
+                                        </v-btn>
+                                    </template>
+                                    <span>{{ $t('uiDefinition.deleteForm') }}</span>
                                 </v-tooltip>
                             </div>
                         </template>
@@ -170,6 +182,7 @@ export default {
             previewFormValues: ''
         },
         loadFormId: '',
+        isLoadedForm: false,
 
         kEditorContentBeforeSave: "",
         isAIUpdated: false,
@@ -520,10 +533,11 @@ export default {
             if (this.loadFormId.startsWith('/')) {
                 this.loadFormId = this.loadFormId.substring(1);
             } 
+            this.isLoadedForm = (this.loadFormId && this.loadFormId != 'chat')
 
             this.isAIUpdated = false;
             this.messages = [];
-            if (this.loadFormId && this.loadFormId != 'chat') {
+            if (this.isLoadedForm) {
                 try {
                     this.storedFormDefHTML = (await this.backend.getRawDefinition(this.loadFormId, { type: 'form' }));
                 } catch(error) {
