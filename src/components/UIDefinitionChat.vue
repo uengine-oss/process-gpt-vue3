@@ -37,7 +37,7 @@
 
                     <v-window-item value="preview" class="fill-height mt-15 pa-5" style="overflow-y: auto">
                         <template v-if="isShowPreview">
-                            <DynamicForm :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
+                            <DynamicForm ref="dynamicForm" :formHTML="previewHTML" v-model="previewFormValues" :key="dynamicFormKey"></DynamicForm>
 
                             <template v-if="dev.isDevMode">
                                 <v-textarea label="previewFormValuesToTest" rows="10" v-model="dev.previewFormValues"></v-textarea>
@@ -69,7 +69,8 @@
     </v-card>
 
     <v-dialog v-model="isOpenSaveDialog">
-        <form-design-save-panel @onClose="isOpenSaveDialog = false" @onSave="tryToSaveFormDefinition" :savedId="(loadFormId === 'chat') ? null : loadFormId">
+        <form-design-save-panel @onClose="isOpenSaveDialog = false" @onSave="tryToSaveFormDefinition" :savedId="(loadFormId === 'chat') ? null : loadFormId"
+            :formNameByUrl="formNameByUrl">
         </form-design-save-panel>
     </v-dialog>
 </template>
@@ -127,6 +128,7 @@ export default {
 
         previewHTML: '',
         previewFormValues: {},
+        dynamicFormKey: 0,
         isShowPreview: false,
 
         dev: {
@@ -137,7 +139,10 @@ export default {
 
         kEditorContentBeforeSave: "",
         isAIUpdated: false,
-        isRoutedWithUnsaved: false
+        isRoutedWithUnsaved: false,
+
+        processDefUrlData: null,
+        formNameByUrl: null
     }),
     async created() {
         this.generator = new ChatGenerator(this, {
@@ -145,6 +150,21 @@ export default {
             preferredLanguage: 'Korean'
         });
         await this.init();
+
+        // #region 프로세스 정의에서 폼 생성 요청으로 새 탭을 열었을 경우, 이를 적절하게 처리
+        const urlParams = new URLSearchParams(window.location.search);
+        const processDefUrlData = urlParams.get('process_def_url_data');
+        if(processDefUrlData) {
+            this.processDefUrlData = JSON.parse(decodeURIComponent(atob(processDefUrlData)));
+            this.beforeSendMessage({
+                "image": null,
+                "text": this.processDefUrlData.initPrompt,
+                "mentionedUsers": []
+            });
+
+            this.formNameByUrl = this.processDefUrlData.formName;
+        }
+        // #endregion
     },
     watch: {
         /**
@@ -242,6 +262,17 @@ export default {
 
 
             const rows = dom.querySelectorAll('div.row');
+
+            // rows의 is_multidata_mode가 true인 경우, 그 안에는 code-field가 존재하면 안되며, 그럴경우, 예외 발생
+            for(let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const isMultiDataMode = row.getAttribute('is_multidata_mode');
+                if (isMultiDataMode === "true") {
+                    const codeField = row.querySelector('code-field');
+                    if(codeField) throw new Error(`multidataMode가 설정된 레이아웃 안에 code-field가 존재할 수 없습니다.`);
+                }
+            }
+            
             rows.forEach(row => {
                 const isMultiDataMode = row.getAttribute('is_multidata_mode');
                 if (!isMultiDataMode || (isMultiDataMode === 'false')) {
@@ -264,8 +295,18 @@ export default {
                     });
 
                     innerRow.querySelectorAll('[name]').forEach(field => {
-                        const name = field.getAttribute('name');
-                        field.setAttribute('v-model', `slotProps.modelValue['${name}']`);
+                        if(field.tagName.toLowerCase() === "code-field") {
+                            const name = field.getAttribute('name');
+                            field.setAttribute('v-model', `codeInfos['${name}']`);
+
+                            const event_type = field.getAttribute('event_type');
+                            if(event_type === "click") {
+                                field.setAttribute('v-on:on_click', `executeCode('${name}')`);
+                            }
+                        } else {
+                            const name = field.getAttribute('name');
+                            field.setAttribute('v-model', `slotProps.modelValue['${name}']`);
+                        }
                     });
 
                     newRow.appendChild(innerRow);
@@ -305,7 +346,7 @@ export default {
             });
 
 
-            return dom.body.innerHTML;
+            return dom.body.innerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n");
         },
 
         /**
@@ -337,6 +378,14 @@ export default {
                         field.removeAttribute('v-model');
                     });
 
+                    newRow.querySelectorAll('*').forEach(field => {
+                        Array.from(field.attributes).forEach(attr => {
+                            if (attr.name.startsWith('v-on:')) {
+                                field.removeAttribute(attr.name);
+                            }
+                        });
+                    });
+
 
                     row.parentNode.replaceChild(newRow, row);
                 } else {
@@ -358,13 +407,21 @@ export default {
                         field.removeAttribute('v-model');
                     });
 
+                    newRow.querySelectorAll('*').forEach(field => {
+                        Array.from(field.attributes).forEach(attr => {
+                            if (attr.name.startsWith('v-on:')) {
+                                field.removeAttribute(attr.name);
+                            }
+                        });
+                    });
+
 
                     row.parentNode.replaceChild(newRow, row);
                 }
             });
 
 
-            return dom.body.innerHTML;
+            return dom.body.innerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n");
         },
 
         /**
@@ -394,15 +451,30 @@ export default {
                 await this.$router.push(`/ui-definitions/${id}`);
                 window.location.reload();
             }
+
+
+            if(this.processDefUrlData) {
+                const channel = new BroadcastChannel(this.processDefUrlData.channelId);
+                channel.postMessage({
+                    "name": this.processDefUrlData.formName,
+                    "id": id
+                })
+
+                window.close();
+            }
         },
 
         onClickPreviewSubmitButton() {
+            const error = this.$refs.dynamicForm.validate()
+            if (error && error.length > 0) alert(error)
+
             if (this.dev.isDevMode) this.dev.previewFormValues = JSON.stringify(this.previewFormValues);
             else alert(JSON.stringify(this.previewFormValues));
         },
 
         onClickPreviewApplyButton() {
             this.previewFormValues = JSON.parse(this.dev.previewFormValues);
+            this.dynamicFormKey += 1
         },
 
         /**
@@ -474,6 +546,10 @@ export default {
                 messageWriting.jsonContent = this.extractLastJSON(response);
                 messageWriting.content = messageWriting.content.replace(messageWriting.jsonContent, '');
 
+                // messageWriting.jsonContent에 내용이 있어도, messageWriting.content에 내용이 없으면 메세지가 표시되지 않기때문에 추가함
+                if(messageWriting.content.length == 0) messageWriting.content = " "
+                
+
                 // 생성된 HTML을 보여주기 위해서
                 if (messageWriting.jsonContent) {
                     if (messageWriting.jsonContent.htmlOutput) {
@@ -542,6 +618,17 @@ export default {
                             const matchedItem = matchedItems[j];
                             if (matchedItem.includes(`'`)) {
                                 fragmentToParse = fragmentToParse.replace(matchedItem, matchedItem.replaceAll(`'`, `\\"`));
+                            }
+                        }
+                    }
+
+                    // AI 응답에서 code-field 관련 필드의 문자열들을 파싱하기 위해서
+                    const matchedCodeFields = [...fragmentToParse.matchAll(/<code-field .*?>(.*)<\/code-field>/g)].map((g) => g[1]);
+                    if (matchedCodeFields) {
+                        for (let j = 0; j < matchedCodeFields.length; j++) {
+                            const matchedCodeField = matchedCodeFields[j];
+                            if (!matchedCodeField.includes(`\\\\`)) {
+                                fragmentToParse = fragmentToParse.replace(matchedCodeField, matchedCodeField.replaceAll(`\\`, `\\\\`));
                             }
                         }
                     }
@@ -682,7 +769,7 @@ export default {
             targetSections.forEach(section => {
                 section.setAttribute('class', 'keditor-ui keditor-container-inner');
             });
-            const loadedValidHTML = targetSections.map(section => section.outerHTML).join('').replace(/&quot;/g, `'`)
+            const loadedValidHTML = targetSections.map(section => section.outerHTML).join('').replace(/&quot;/g, `'`).replace("<br>", "\n")
 
 
             console.log('### 로드된 유효 HTML 텍스트 ###');
@@ -728,7 +815,7 @@ export default {
                 }
             });
 
-            const modifiedPrevFormOutput = dom.body.outerHTML.replace(/&quot;/g, `'`);
+            const modifiedPrevFormOutput = dom.body.outerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n");
             console.log('### 수정된 이전 폼 출력 ###');
             console.log(modifiedPrevFormOutput);
             return modifiedPrevFormOutput;
@@ -746,9 +833,11 @@ export default {
                 context: me,
                 action: async () => {
                     me.previewHTML = me.keditorContentHTMLToDynamicFormHTML(me.$refs.mashup.getKEditorContentHtml());
+                    me.dynamicFormKey += 1
                 },
                 onFail: () => {
                     me.previewHTML = '';
+                    me.dynamicFormKey += 1
                 }
             });
             me.previewFormValues = {};

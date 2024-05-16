@@ -8,12 +8,11 @@ class ProcessGPTBackend implements Backend {
 
     async listDefinition(path: string) {
         try {
-
             // 프로세스 정보, 폼 정보를 각각 불러와서 파일명을 포함해서 가공하기 위해서
             let procDefs = await storage.list('proc_def', (path ? { like: `${path}%` } : undefined));
             procDefs.map((item: any) => {
                 item.path = `${item.id}.bpmn`
-                item.name = item.path 
+                item.name = item.name || item.path 
             });
             
             let formDefs = await storage.list('form_def', (path ? { like: `${path.replace(/\//g, "#")}%` } : undefined));
@@ -26,7 +25,6 @@ class ProcessGPTBackend implements Backend {
             return [...procDefs, ...formDefs]
 
         } catch (error) {
-            console.error(error)
             throw new Error('error in listDefinition');
         }
     }
@@ -52,7 +50,7 @@ class ProcessGPTBackend implements Backend {
                 }).then(res => {
                     result = res;
                 }).catch(error => {
-                    result = error
+                    throw new Error(error && error.detail ? error.detail : error);
                 });
             }
             const arcv = await storage.list(`proc_def_arcv/${defId}`, { key: 'proc_def_id' });
@@ -101,23 +99,31 @@ class ProcessGPTBackend implements Backend {
 
             const list = await storage.list(defId);
             if (list.code == "42P01") {
-                await axios.post('/process-db-schema/invoke', {
-                    "input": {
-                        "process_definition_id": defId
-                    }
-                }).then(res => {
-                    return res
-                }).catch(error => {
-                    return error
-                });
+                try{
+                    await axios.post('/process-db-schema/invoke', {
+                        "input": {
+                            "process_definition_id": defId
+                        }
+                    })
+                }catch(error){
+                    //@ts-ignore
+                    throw new Error("Error when to creating database for the definition: " + (error && error.detail ? error.detail : error));
+                }
             }
 
-            const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
-            if (isLocked) {
-                await storage.delete(`lock/${defId}`, { key: 'id' });
+            try{
+                const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
+                if (isLocked) {
+                    await storage.delete(`lock/${defId}`, { key: 'id' });
+                }    
+
+            }catch(error){
+                //@ts-ignore
+                throw new Error("Error when to unlock: " + (error && error.detail ? error.detail : error));
+
             }
         } catch (e) {
-            throw new Error('error in putRawDefinition');
+            throw new Error('error when to save definition: ' + (e instanceof Error ? e.message : ''));
         }
     }
 
@@ -133,9 +139,9 @@ class ProcessGPTBackend implements Backend {
                     return data.html;
                 } else if(options.type === "bpmn") {
                     const data = await storage.getString(`proc_def/${defId}`, { key: 'id', column: 'bpmn' });
-                    if(!data) {
-                        throw new Error('no such bpmn definition');
-                    }
+                    // if(!data) {
+                    //     throw new Error('no such bpmn definition');
+                    // }
                     return data;
                 }
             } else {
@@ -151,7 +157,7 @@ class ProcessGPTBackend implements Backend {
     async start(input: any) {
         try {
             let defId = input.process_definition_id || input.processDefinitionId;
-            if (defId) {
+            if (defId && defId != '') {
                 const list = await storage.list(defId);
                 if (list.code == "42P01") {
                     await axios.post('/process-db-schema/invoke', {
@@ -161,12 +167,16 @@ class ProcessGPTBackend implements Backend {
                     }).then(res => {
                         return res
                     }).catch(error => {
-                        return error
+                        throw new Error(error && error.detail ? error.detail : error);
                     });
+                }
+            } else {
+                if (input.process_instance_id && input.process_instance_id != '') {
+                    defId = input.process_instance_id.split('.')[0];
                 }
             }
 
-            input['process_definition_id'] = defId.toLowerCase();
+            let newMessage;
             if (!input.answer) {
                 input.answer = "";
             }
@@ -176,7 +186,18 @@ class ProcessGPTBackend implements Backend {
             if (!input.userInfo) {
                 input.userInfo = await storage.getUserInfo();
             }
-            
+            input['process_definition_id'] = defId.toLowerCase();
+
+            if (input.answer != "" && input.process_instance_id && input.process_instance_id != '') {
+                newMessage = {
+                    role: 'user',
+                    name: input.userInfo.name,
+                    email: input.userInfo.email,
+                    timestamp: Date.now(),
+                    content: input.answer,
+                }
+                await this.updateInstanceChat(input.process_instance_id, newMessage);
+            }
             
             var result: any = null;
             var url = '/complete/invoke';
@@ -192,17 +213,35 @@ class ProcessGPTBackend implements Backend {
                 if (res.data) {
                     const data = res.data;
                     if (data.output) {
-                        result = data.output;
+                        result = JSON.parse(data.output);
+                        console.log(result)
+                        if (input.answer === "" && result.instanceId) {
+                            newMessage = {
+                                role: 'system',
+                                timestamp: Date.now(),
+                                content: `프로세스 '${defId}' 이/가 실행되었습니다.\n\n${result.description}`,
+                                jsonContent: result
+                            }
+                            await this.updateInstanceChat(result.instanceId, newMessage);
+                        } else {
+                            newMessage = {
+                                role: 'system',
+                                timestamp: Date.now(),
+                                content: result.description || "",
+                                jsonContent: result
+                            }
+                            await this.updateInstanceChat(result.instanceId, newMessage);
+                        }
                     }
                 }
             })
             .catch(error => {
-                return error;
+                throw new Error(error && error.detail ? error.detail : error);
             });
 
             return result;
         } catch (error) {
-            throw new Error('error in start');
+            throw new Error('error in start' + error);
         }
     }
 
@@ -234,7 +273,7 @@ class ProcessGPTBackend implements Backend {
                 activityInfo = defInfo.definition.activities.find((activity: any) => activity.id === data.activity_id);
                 if (activityInfo.outputData) {
                     parameters = activityInfo.outputData.map((item: any) => {
-                        const key = Object.keys(item)[0];
+                        const key = item;
                         return {
                             direction: 'OUT',
                             variable: {
@@ -488,16 +527,18 @@ class ProcessGPTBackend implements Backend {
 
     async putWorkItemComplete(taskId: string, inputData: any) {
         try {
+            let result: any = null;
             const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
             const userInfo = await storage.getUserInfo();
             
             const newMessage = {
                 role: 'system',
                 timestamp: Date.now(),
-                content: `'${workItem.activity_id}' 를 실행합니다.`
+                content: `액티비티 '${workItem.activity_id}' 을/를 실행합니다.`,
+                jsonContent: inputData
             }
             await this.updateInstanceChat(workItem.proc_inst_id, newMessage);
-
+    
             const input = {
                 answer: JSON.stringify(inputData),
                 process_instance_id: workItem.proc_inst_id,
@@ -514,25 +555,6 @@ class ProcessGPTBackend implements Backend {
                     const data = res.data;
                     if (data.output) {
                         const output = JSON.parse(data.output);
-
-                        // update todolist
-                        const todo = {
-                            id: taskId,
-                            proc_def_id: output.processDefinitionId,
-                            proc_inst_id: output.instanceId,
-                            end_date: Date.now(),
-                            status: 'DONE',
-                            activity_id: output.completedActivities[0].completedActivityId,
-                        }
-                        await this.putWorklist(taskId, todo);
-
-                        // update instance activity
-                        const inst = {
-                            proc_inst_id: output.instanceId,
-                            current_activity_ids: output.nextActivities,
-                        }
-                        await storage.putObject(output.processDefinitionId, inst);
-                        
                         // update instance message
                         const newMessage = {
                             role: 'system',
@@ -542,22 +564,29 @@ class ProcessGPTBackend implements Backend {
                         }
                         await this.updateInstanceChat(output.instanceId, newMessage);
                     }
+                    result = res.data;
                 }
             })
             .catch(error => {
-                return error;
+                result = error
+                console.log(error)
+                throw new Error(error && error.detail ? error.detail : error);
             });
+    
+            return result;
 
-        } catch (error) {
-            return new Error('error in putWorkItemComplete');
+        } catch (e) {
+            throw new Error('error in putWorkItemComplete');
         }
     }
 
     async updateInstanceChat(instanceId: string, newMessage: any) {
         try {
             const data = await storage.getObject(`proc_inst/${instanceId}`, { key: 'id' });
-            const messages = data.messages;
-            messages.push(newMessage);
+            const messages = data.messages || [];
+            if (newMessage) {
+                messages.push(newMessage);
+            }
             const putObj = {
                 id: instanceId,
                 messages: messages
@@ -649,6 +678,14 @@ class ProcessGPTBackend implements Backend {
             return worklist;
         } catch (e) {
             throw new Error(`error in getWorkListByInstId`);
+        }
+    }
+
+    async getEventList(instanceId: string) {
+        try {
+            return null;
+        } catch (error) {
+            throw new Error(`error in getEventList`);
         }
     }
 }

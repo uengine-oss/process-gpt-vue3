@@ -26,7 +26,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
             activity에 있는 role이 roles에 없으면 추가적으로 생성해줘.
             프로세스에 대한 설명입니다.
 
-            "sequences" and "events" are items that must be created.
+            "sequences" and "events" are items that must be created no matter what.
             In "events", "Start Event" and "End Event" must be created.
             "sequences" must include a "Start Event" and an "End Event".
             The "source" of the first object in the "sequences" must be the id of the start event, and the "target" of the last object must be the id of the end event.
@@ -58,13 +58,6 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                  "name": "role name",
                  "resolutionRule": "how to find the actual user mapping for the role"
               }],
-              "sequences": [ 
-                {
-                    "source": "activity id of source activity or gateway id of source gateway", e.g. start_event_id, activity_id, gateway_id ...
-                    "target": "activity id of target activity or gateway id of target gateway", e.g. end, activity_id, gateway_id ...
-                    "condition": "기존 프로세스 정보중 "data" 내에 존재하는 값만을 사용하여 condition 을 생성해야한다. "data" 목록을 보고 condition 생성에 필요한 "data" 의 "name" 만으로 생성해야함." // 기존 프로세스 정보가 존재하는 경우에만 생성해야하며, 생성시 기존 프로세스 정보를 참고하여 컨디션을 생성해야한다.
-                }
-              ],
               "events": [
                 {
                   "id": "event_id",
@@ -80,10 +73,10 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   "type": "UserActivity" | "EMailActivity" | "ScriptActivity",
                   "description": "description of activity",
                   "instruction": "instruction to user",
-                  "role": "role name",
-                  "inputData": [{"name": "name of data for input"}],
+                  "role": "role name", // You must use the name among the created "roles".
+                  "inputData": ["name of data for input"],
                    "outputData": [
-                     {"name": "name of data for output"}
+                     "name of data for output"
                    ],
                    "checkpoints":["checkpoint 1", "checkpoint 2"]
               }],
@@ -94,9 +87,16 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   "type": "ExclusiveGateway | ParallelGateway | InclusiveGateway | EventBasedGateway",
                   "description": "선택적 또는 병렬 프로세스 흐름을 제어하는 게이트웨이 설명",
                   "condition": "기존 프로세스 정보중 "data" 내에 존재하는 값만을 사용하여 condition 을 생성해야한다. "data" 목록을 보고 condition 생성에 필요한 "data" 의 "name" 만으로 분기 조건, 조건문을 생성해야함."
-                  "role": "role name"
+                  "role": "role name" // You must use the name among the created "roles".
                 }
               ]
+              "sequences": [ 
+                {
+                    "source": "activity id of source activity or gateway id of source gateway", e.g. start_event_id, activity_id, gateway_id ...
+                    "target": "activity id of target activity or gateway id of target gateway", e.g. end, activity_id, gateway_id ...
+                    "condition": "기존 프로세스 정보중 "data" 내에 존재하는 값만을 사용하여 condition 을 생성해야한다. "data" 목록을 보고 condition 생성에 필요한 "data" 의 "name" 만으로 생성해야함." // 기존 프로세스 정보가 존재하는 경우에만 생성해야하며, 생성시 기존 프로세스 정보를 참고하여 컨디션을 생성해야한다.
+                }
+              ],
             }
              
             \`\`\`

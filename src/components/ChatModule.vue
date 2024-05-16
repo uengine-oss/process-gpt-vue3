@@ -23,7 +23,8 @@ export default {
             isRunning: false,
             isConnection: false,
         },
-        backend: null
+        backend: null,
+        lastSendMessage: null,
     }),
     computed: {
         useLock() {
@@ -158,6 +159,7 @@ export default {
                         return new Date(a.timeStamp) - new Date(b.timeStamp);
                     });
                     me.messages = allMessages;
+                    me.EventBus.emit('messages-updated');
                 }
                 me.isInitDone = true;
             });
@@ -297,13 +299,14 @@ export default {
                 this.messages.push(chatObj);
 
                 if (message && message.callType && message.callType == 'chats') {
+                    this.lastSendMessage = message.text
                     // if (message.mentionedUsers.length == 0) {
                     //     this.debouncedGenerate();
                     // } else if(message.mentionedUsers.some(user => user.id === 'system_id')){
                     //     this.startGenerate();
                     // }
                     if(message.mentionedUsers){
-                        if(message.mentionedUsers.some(user => user.id === 'system_id')){
+                        if(message.mentionedUsers.some(user => user.id === 'system_id') || message.text.startsWith('>') || message.text.startsWith('!')){
                             this.startGenerate();
                         }
                     }
@@ -315,6 +318,12 @@ export default {
             }
         },
         async startGenerate() {
+            this.messages.push({
+                role: 'system',
+                content: '...',
+                isLoading: true
+            });
+
             const encoding = encodingForModel("gpt-3.5-turbo-16k");
             let stringifiedMessages = JSON.stringify(this.generator.previousMessages);
             let tokens = encoding.encode(stringifiedMessages);
@@ -328,11 +337,6 @@ export default {
                 tokenLength = tokens.length;
             }
             
-            this.messages.push({
-                role: 'system',
-                content: '...',
-                isLoading: true
-            });
             await this.generator.generate();
         },
         stopMessage() {
@@ -454,6 +458,7 @@ export default {
                     let messageWriting = this.messages[this.messages.length - 1];
                     messageWriting.content = response;
                     messageWriting.jsonContent = this.extractJSON(response);
+                    // messageWriting.systemRequest = false;
 
                     let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
                     const match = messageWriting.content.match(regex);

@@ -169,6 +169,18 @@
             </v-row>
         </div> -->
     </div>
+    <v-dialog v-model="isOpenFormCreateDialog" max-width="500">
+        <v-card>
+            <v-card-text>
+                {{"폼 생성을 하시겠습니까?"}}
+            </v-card-text>
+            <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn color="error" @click="isOpenFormCreateDialog = false">아니오</v-btn>
+                <v-btn color="primary" @click="isOpenFormCreateDialog = false; createForm()">예</v-btn>
+            </v-card-actions>
+        </v-card>
+    </v-dialog> 
 </template>
 <script>
 import BpmnParameterContexts from '@/components/designer/bpmnModeling/bpmn/variable/BpmnParameterContexts.vue';
@@ -224,7 +236,8 @@ export default {
             formMapperJson: '',
             backend: null,
             copyDefinition: null,
-            activities: []
+            activities: [],
+            isOpenFormCreateDialog: false
         };
     },
     created() {
@@ -294,7 +307,7 @@ export default {
                 this.$emit('update:uEngineProperties', this.copyUengineProperties);
             }
         },
-        isFormActivity(newVal) {
+        isFormActivity(newVal, oldVal) {
             if (newVal) {
                 this.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
             } else {
@@ -304,6 +317,10 @@ export default {
             }
 
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
+
+            if(oldVal === false && newVal === true && this.selectedForm === '') {
+                this.isOpenFormCreateDialog = true
+            }
         }
     },
     methods: {
@@ -419,23 +436,75 @@ export default {
         parseFormHtmlField(formHtml) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(formHtml, 'text/html');
-            // const fields = doc.querySelectorAll('text-field, select-field, checkbox-field, radio-field, file-field');
-            const allElements = doc.querySelectorAll('*');
-            const fields = Array.from(allElements).filter(
-                (el) => el.tagName.toLowerCase().includes('field') && !el.tagName.toLowerCase().includes('label')
-            );
-            const result = Array.from(fields).map((field) => {
-                const type = field.tagName.toLowerCase().replace('-field', '');
-                const name = field.getAttribute('name') || '';
-                const alias = field.getAttribute('alias') || '';
-                return {
-                    name: name,
-                    type: type,
-                    alias: alias
-                };
-            });
-            console.log(result);
-            return result;
+
+            function extractFields(element) {
+                let fields = [];
+                if (element.hasChildNodes()) {
+                    Array.from(element.children).forEach((child) => {
+                        const tagName = child.tagName.toLowerCase();
+                        if (tagName.includes('field') && !tagName.includes('label')) {
+                            const type = tagName.replace('-field', '');
+                            const name = child.getAttribute('name');
+                            const alias = child.getAttribute('alias');
+                            const fieldData = {
+                                name,
+                                type,
+                                alias,
+                                children: []
+                            };
+                            fieldData.children = extractFields(child);
+                            fields.push(fieldData);
+                        } else {
+                            fields = fields.concat(extractFields(child));
+                        }
+                    });
+                }
+                return fields;
+            }
+
+            const rowLayouts = doc.querySelectorAll('row-layout');
+            return Array.from(rowLayouts).map((rowLayout) => ({
+                name: rowLayout.getAttribute('name'),
+                alias: rowLayout.getAttribute('alias'),
+                fields: extractFields(rowLayout)
+            }));
+        },
+        createForm() {
+            let urlData = {}
+            urlData["formName"] = `${this.name}폼`
+            urlData["inputNames"] = this.copyUengineProperties.parameters.map(p => p.argument.text)
+            urlData["initPrompt"] = `'${urlData["formName"]}'폼을 생성해줘. 입력해야하는 값들은 다음과 같아: ${urlData["inputNames"].join(", ")}`
+            urlData["processId"] = this.processDefinitionId
+            urlData["channelId"] = crypto.randomUUID()
+            console.log("새로운 폼을 만들기 위한 데이터: " + JSON.stringify(urlData))
+            console.log("채널 ID: " + urlData["channelId"])
+
+            const formTabUrl = `/ui-definitions/chat?process_def_url_data=${btoa(encodeURIComponent(JSON.stringify(urlData)))}`
+            window.open(formTabUrl, '_blank')
+
+            const channel = new BroadcastChannel(urlData["channelId"])
+            channel.onmessage = (event) => {
+                const formValueInfo = {
+                    name: event.data.name,
+                    id: event.data.id
+                }
+
+
+                this.$emit('addUengineVariable', {
+                    "name": formValueInfo.name,
+                    "type": "Form",
+                    "defaultValue": formValueInfo.id,
+                    "description": "",
+                    "datasource": {
+                        "type": "",
+                        "sql": ""
+                    },
+                    "table": "",
+                    "backend": null
+                })
+
+                this.selectedForm = formValueInfo.name
+            }
         }
     }
 };

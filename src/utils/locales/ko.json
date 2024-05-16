@@ -12,8 +12,8 @@
         "subTitle": "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
     },
     "DashboardTodoList": {
-        "todo": "할일",
-        "inProgress": "진행중",
+        "todo": "할 일",
+        "inProgress": "진행 중",
         "done": "완료"
     },
     "DashboardUpcomingScheduls": {
@@ -74,7 +74,7 @@
     "organizationChartDefinition": {
         "title": "조직도 정의",
         "cardTitle": "조직도 관리",
-        "organizationChartExplanation": "대화형으로 조직도를 관리하십시오.\n 팀(부서) 롤(역할), 직원들을 등록 수정 삭제할 수 있습니다. \n예를 들어, '개발팀, 관리팀을 등록하고, 홍길동님을 신입사원으로 관리팀에 등록해줘. 역할은 개발자로 들어오셨어. 관리팀의 팀장은 아무개 팀장님이야.' 와 같은 명령을 할 수 있습니다."
+        "organizationChartExplanation": "대화형으로 조직도를 관리하십시오.\n 팀(부서) 롤(역할), 직원들을 등록 수정 삭제할 수 있습니다. \n예를 들어, '개발팀, 관리팀을 등록하고, 홍길동님(gdhong@uengine.org)을 신입사원으로 관리팀에 등록해줘. 역할은 개발자로 들어오셨어. 관리팀의 팀장은 아무개 팀장님(amk@uengine.org)이야.' 와 같은 명령을 할 수 있습니다."
     },
     "processDefinitionMap": {
         "title": "프로세스 정의 체계도",
@@ -126,7 +126,7 @@
         "edit": "수정"
     },
     "processList": {
-        "title": "프로세스 목록"
+        "title": "정의 목록"
     },
     "chat": {
         "inputMessage": "메시지 입력",
@@ -136,7 +136,8 @@
         "history": "버전 히스토리",
         "import": "BPMN 파일 불러오기",
         "addImage": "이미지 추가",
-        "fileUpLoad": "파일 업로드"
+        "fileUpLoad": "파일 업로드",
+        "generateProcessDef": "프로세스 정의 생성"
     },
     "accountTab": {
         "accountSetting": "계정 설정",
@@ -161,7 +162,7 @@
         "title": "Welcome to Process-GPT",
         "google": "구글 로그인",
         "or": "또는 다음 계정으로 로그인",
-        "userName": "계정",
+        "userName": "이메일",
         "password": "암호",
         "remeber": "이 장치에 기억",
         "login": "로그인",
@@ -176,7 +177,15 @@
         "password": "암호",
         "email": "이메일",
         "google": "구글 로그인",
-        "or": "또는 다음 계정으로 로그인"
+        "or": "또는 다음 계정으로 로그인",
+        "normalRegister": "일반가입",
+        "adminRegister": "어드민가입"
+    },
+    "createAdminAccount": {
+        "createAccountHeader": "어드민 정보",
+        "createTenantHeader": "테넌트 정보",
+        "tenantID": "테넌트 ID",
+        "supabaseConnectionInfo": "Supabase 연결 정보"
     },
     "forgotPassword": {
         "title": "비밀번호 찾기",

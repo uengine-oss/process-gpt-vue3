@@ -201,24 +201,25 @@ export default {
             };
         },
         fetchAndProcessFormDefinitions(nodes, variable) {
-            let name = variable.name;
-            let matchingForm = this.definition.processVariables.find((form) => form.name === name && form.type === 'Form' && form.fields);
-
-            if (matchingForm) {
-                matchingForm.fields.forEach((field) => {
-                    if (!nodes[variable.name]) {
-                        nodes[variable.name] = {
-                            text: variable.name,
-                            children: []
-                        };
-                    }
-                    let fieldNameAlias = field.name + '_' + field.alias;
-                    nodes[variable.name].children.push(field.name);
-                    nodes[field.name] = {
+             // 재귀적으로 필드를 처리하는 함수
+            const processFields = (fields, parentNode) => {
+                fields.forEach(field => {
+                    let node = {
                         text: field.name,
-                        object: field
+                        alias: field.alias,
+                        children: []
                     };
+                    parentNode.children.push(field.name); // 현재 노드를 부모 노드의 자식으로 추가
+                    nodes[field.name] = node; // nodes 객체에 현재 필드 노드 저장
+                    if (field.fields && field.fields.length > 0) {
+                        processFields(field.fields, node); // 하위 필드가 있으면 재귀적으로 처리
+                    }
                 });
+            };
+
+            // 최상위 필드 처리 시작
+            if (variable.fields && variable.fields.length > 0) {
+                processFields(variable.fields, nodes[variable.name]);
             }
         },
         async processNodes(nodes, blockName) {

@@ -11,6 +11,8 @@ import 'bpmn-js/dist/assets/diagram-js.css';
 import BpmnModeler from 'bpmn-js/lib/Modeler';
 import BpmnViewer from 'bpmn-js/lib/Viewer';
 import BpmnModdle from 'bpmn-moddle';
+import ZoomScroll from 'diagram-js/lib/navigation/zoomscroll';
+import MoveCanvas from 'diagram-js/lib/navigation/movecanvas';
 
 export default {
     name: 'bpmn-uengine',
@@ -65,11 +67,20 @@ export default {
         );
 
         if (self.isViewMode) {
-            self.bpmnViewer = new BpmnViewer(_options);
-            self.bpmnStore.setModeler(self.bpmnViewer)
+            var viewerOptions = {
+                ..._options,
+                additionalModules: [
+                    ...(Array.isArray(_options.additionalModules) ? _options.additionalModules : []),
+                    ZoomScroll,
+                    MoveCanvas
+                ]
+            };
+
+            self.bpmnViewer = new BpmnViewer(viewerOptions);
+            self.bpmnStore.setModeler(self.bpmnViewer);
         } else {
-            self.bpmnViewer = new BpmnModeler(_options); //new BpmnJS(_options);  //
-            self.bpmnStore.setModeler(self.bpmnViewer)
+            self.bpmnViewer = new BpmnModeler(_options);
+            self.bpmnStore.setModeler(self.bpmnViewer);
         }
 
         var eventBus = this.bpmnViewer.get('eventBus');

@@ -29,7 +29,7 @@
             </template>
             <template v-slot:rightpart>
                 <div class="no-scrollbar">
-                    <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" :lock="lock" 
+                    <Chat :prompt="prompt" :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" :lock="lock" 
                         :disableChat="disableChat" @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" 
                         @stopMessage="stopMessage">
                         <template v-slot:custom-tools>
@@ -111,7 +111,7 @@
             </template>
 
             <template v-slot:mobileLeftContent>
-                <Chat :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" :lock="lock"
+                <Chat :prompt="prompt" :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" :lock="lock"
                     :disableChat="disableChat" @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage">
                     <template v-slot:custom-tools>
@@ -210,6 +210,7 @@ export default {
         ProcessDefinitionVersionManager
     },
     data: () => ({
+        prompt: "",
         processDefinition: null,
         bpmn: null,
         changedXML: '',
@@ -240,6 +241,12 @@ export default {
             isStream: true,
             preferredLanguage: 'Korean'
         });
+        if(this.$store.state.messages) {
+            const messagesString = JSON.stringify(this.$store.state.messages);
+            this.prompt = `아래 대화 내용에서 프로세스를 유추하여 프로세스 정의를 생성해주세요. 이때 가능한 프로세스를 일반화하여 작성:
+            ${messagesString}.`;
+            this.$store.commit('clearMessages');
+        }
     },
     watch: {
         $route: {
@@ -376,10 +383,11 @@ export default {
                     const modeler = store.getModeler;
                     const xmlObj = await modeler.saveXML({ format: true, preamble: true });
 
-                    if (me.processDefinition) {
-                        info.definition = me.processDefinition;
-                    } else if (!me.processDefinition && xmlObj && xmlObj.xml) {
-                        me.processDefinition = me.convertXMLToJSON(xmlObj.xml);
+                    // if (me.processDefinition) {
+                    //     info.definition = me.processDefinition;
+                    // }
+                    if (xmlObj && xmlObj.xml && window.$mode != 'uEngine') {
+                        me.processDefinition = await me.convertXMLToJSON(xmlObj.xml);
                         info.definition = me.processDefinition;
                     }
 
@@ -598,45 +606,45 @@ export default {
             try {
                 const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
                 const result = await parser.parseStringPromise(xmlString);
-                const process = result['bpmn:definitions']['bpmn:process'];
-                const startEvent = process['bpmn:startEvent'];
-                const endEvent = process['bpmn:endEvent'];
+                const process = result['bpmn:definitions']['bpmn:process'] || {};
+                const startEvent = process['bpmn:startEvent'] || {};
+                const endEvent = process['bpmn:endEvent'] || {};
                 function ensureArray(item) {
                     return Array.isArray(item) ? item : (item ? [item] : []);
                 }
-                const lanes = ensureArray(process['bpmn:laneSet']['bpmn:lane']);
-                const activities = ensureArray(process['bpmn:userTask']);
-                const scriptTasks = ensureArray(process['bpmn:scriptTask']);
-                const sequenceFlows = ensureArray(process['bpmn:sequenceFlow']);
-                const gateways = ensureArray(process['bpmn:exclusiveGateway']);
+                const lanes = ensureArray(process['bpmn:laneSet'] ? process['bpmn:laneSet']['bpmn:lane'] : []);
+                const activities = ensureArray(process['bpmn:userTask'] || []);
+                const scriptTasks = ensureArray(process['bpmn:scriptTask'] || []);
+                const sequenceFlows = ensureArray(process['bpmn:sequenceFlow'] || []);
+                const gateways = ensureArray(process['bpmn:exclusiveGateway'] || []);
 
                 const jsonData = {
-                    processDefinitionName: process.id,
-                    processDefinitionId: process.id,
+                    processDefinitionName: process.id || 'Unknown',
+                    processDefinitionId: process.id || 'Unknown',
                     description: "process.description",
-                    data: process['bpmn:extensionElements']['uengine:properties']['uengine:variable'].map(varData => ({
+                    data: process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] ? (Array.isArray(process['bpmn:extensionElements']['uengine:properties']['uengine:variable']) ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable'] : [process['bpmn:extensionElements']['uengine:properties']['uengine:variable']]).map(varData => ({
                         name: varData.name,
                         description: varData.name + ' description',
                         type: varData.type
-                    })),
+                    })) : [],
                     roles: lanes.map(lane => ({
                         name: lane.name,
                         resolutionRule: lane.name === 'applicant' ? 'initiator' : 'system'
                     })),
                     events: [
                         {
-                            name: startEvent.id,
-                            id: startEvent.id,
+                            name: startEvent.id || 'StartEvent',
+                            id: startEvent.id || 'StartEvent',
                             type: 'StartEvent',
                             description: 'start event',
-                            role: lanes[0].name
+                            role: lanes[0] ? lanes[0].name : 'Unknown'
                         },
                         {
-                            name: endEvent.id,
-                            id: endEvent.id,
+                            name: endEvent.id || 'EndEvent',
+                            id: endEvent.id || 'EndEvent',
                             type: 'EndEvent',
                             description: 'end event',
-                            role: lanes[lanes.length - 1].name
+                            role: lanes.length > 0 ? lanes[lanes.length - 1].name : 'Unknown'
                         }
                     ],
                     activities: [
@@ -646,13 +654,19 @@ export default {
                             type: 'UserActivity',
                             description: activity.name + ' description',
                             instruction: activity.name + ' instruction',
-                            role: lanes.find(lane => lane['bpmn:flowNodeRef'].includes(activity.id)).name,
-                            inputData: JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
+                            role: lanes.find(lane => {
+                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                return flowNodeRefs.includes(activity.id);
+                            }) ? lanes.find(lane => {
+                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                return flowNodeRefs.includes(activity.id);
+                            }).name : 'Unknown',
+                            inputData: activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
                                 .filter(param => param.direction === "IN")
-                                .map(param => param.variable.name),
-                            outputData: JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
+                                .map(param => param.variable.name) : [],
+                            outputData: activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
                                 .filter(param => param.direction === "OUT")
-                                .map(param => param.variable.name)
+                                .map(param => param.variable.name) : []
                         })),
                         ...scriptTasks.map(task => ({
                             name: task.name,
@@ -660,24 +674,36 @@ export default {
                             type: 'ScriptActivity',
                             description: task.name + ' description',
                             instruction: task.name + ' instruction',
-                            role: lanes.find(lane => lane['bpmn:flowNodeRef'].includes(task.id)).name,
-                            pythonCode: JSON.parse(task['bpmn:extensionElements']['uengine:properties']['uengine:json']).script
+                            role: lanes.find(lane => {
+                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                return flowNodeRefs.includes(task.id);
+                            }) ? lanes.find(lane => {
+                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                return flowNodeRefs.includes(task.id);
+                            }).name : 'Unknown',
+                            pythonCode: task['bpmn:extensionElements'] && task['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(task['bpmn:extensionElements']['uengine:properties']['uengine:json']).script : ''
                         }))
                     ],
                     gateways: [
                         ...gateways.map(gateway => ({
-                            id: gateway.id,
-                            name: gateway.name,
+                            id: gateway.id || 'Gateway',
+                            name: gateway.name || 'Gateway',
                             type: "ExclusiveGateway",
                             description: gateway.name + ' description',
-                            role: lanes.find(lane => lane['bpmn:flowNodeRef'].includes(gateway.id)).name,
-                            condition: JSON.parse(gateway["bpmn:extensionElements"]["uengine:properties"]["uengine:json"]).condition || ''
+                            role: lanes.find(lane => {
+                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                return flowNodeRefs.includes(gateway.id);
+                            }) ? lanes.find(lane => {
+                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                return flowNodeRefs.includes(gateway.id);
+                            }).name : 'Unknown',
+                            condition: gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(gateway["bpmn:extensionElements"]["uengine:properties"]["uengine:json"]).condition || '' : ''
                         }))
                     ],
                     sequences: sequenceFlows.map(flow => ({
                         source: flow.sourceRef,
                         target: flow.targetRef,
-                        condition: JSON.parse(flow["bpmn:extensionElements"]["uengine:properties"]["uengine:json"]).condition || ''
+                        condition: flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(flow["bpmn:extensionElements"]["uengine:properties"]["uengine:json"]).condition || '' : ''
                     }))
                 };
                 return jsonData;
@@ -823,16 +849,18 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    if (!me.processDefinition && xml) {
-                        me.processDefinition = me.convertXMLToJSON(xml);
-                    }
+                    // if (!me.processDefinition && xml) {
+                    //     me.processDefinition = await me.convertXMLToJSON(xml);
+                    // }
 
                     me.processDefinition.processDefinitionId = info.proc_def_id
                         ? info.proc_def_id
                         : prompt('please give a ID for the process definition');
                     
-                    if (!me.processDefinition.processDefinitionName) {
-                        me.processDefinition.processDefinitionName = prompt('please give a name for the process definition');
+                        if (!me.processDefinition.processDefinitionName) {
+                        me.processDefinition.processDefinitionName = info.name
+                        ? info.name
+                        : prompt('please give a name for the process definition');
                     }
 
                     me.projectName = me.processDefinition.processDefinitionName;
@@ -1083,11 +1111,14 @@ export default {
             let positionMapping = {};
             // Sequences 생성
             if (jsonModel.sequences)
-                jsonModel.sequences.forEach((sequence) => {
+                jsonModel.sequences.forEach((sequence, idx) => {
                     if (!positionMapping[sequence.source]) {
                         positionMapping[sequence.source] = lastXPos;
-                        lastXPos += 120; // 다음 요소의 위치를 위해 간격 추가
+                        lastXPos += 120; 
                     }
+                    if(idx === jsonModel.sequences.length - 1){
+                        positionMapping[sequence.target] = lastXPos += 130
+                    }   
                     const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:sequenceFlow');
                     sequenceFlow.setAttribute('id', 'SequenceFlow_' + sequence.source + '_' + sequence.target);
                     sequenceFlow.setAttribute('name', sequence.name ? sequence.name : '');
@@ -1199,9 +1230,9 @@ export default {
                     // root.appendChild(params)
                     // extensionElements.appendChild(root)
                     // userTask.appendChild(extensionElements)
-                    
+
                     if (jsonModel.events) {
-                        jsonModel.events.forEach((event) => {
+                        jsonModel.events.forEach((event, index) => {
                             const bpmnEvent = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:' + event.type);
                             bpmnEvent.setAttribute('id', event.id);
                             bpmnEvent.setAttribute('name', event.name);
@@ -1331,7 +1362,8 @@ export default {
             const dcBoundsParticipant = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
             dcBoundsParticipant.setAttribute('x', '70');
             dcBoundsParticipant.setAttribute('y', `100`);
-            dcBoundsParticipant.setAttribute('width', `${lastXPos + 170}`);
+            // 스윔라인을 감싸고있는 가장 바깥 라인의 길이
+            dcBoundsParticipant.setAttribute('width', `${lastXPos + 30}`);
             dcBoundsParticipant.setAttribute('height', participantHeight);
             participantShape.appendChild(dcBoundsParticipant);
             bpmnPlane.appendChild(participantShape);
@@ -1355,7 +1387,8 @@ export default {
                     const dcBoundsLane = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
                     dcBoundsLane.setAttribute('x', '100');
                     dcBoundsLane.setAttribute('y', `${100 + roleIndex * 100}`);
-                    dcBoundsLane.setAttribute('width', `${lastXPos + 140}`);
+                    // 가장 바깥 라인 안쪽의 스윔라인 자체 길이
+                    dcBoundsLane.setAttribute('width', `${lastXPos}`);
                     dcBoundsLane.setAttribute('height', '100');
                     laneShape.appendChild(dcBoundsLane);
                     bpmnPlane.appendChild(laneShape);
@@ -1365,138 +1398,55 @@ export default {
                     };
                 });
 
-            if (jsonModel.activities) {
-                jsonModel.activities.forEach((activity, activityIndex) => {
-                    if (!activity.role) {
-                        return false;
-                    }
-                    // if (activityIndex == 0 && firstActivity.role) {
-                    //     // StartEvent의 BPMNShape 추가
-                    //     let eventY = parseInt(rolePos[firstActivity.role].y) + 32;
-                    //     const startEventShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
-                    //     startEventShape.setAttribute('id', `StartEvent_di`);
-                    //     startEventShape.setAttribute('bpmnElement', `StartEvent_1`);
-                    //     const startEventBounds = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
-                    //     startEventBounds.setAttribute('x', lastXPos);
-                    //     startEventBounds.setAttribute('y', eventY);
-                    //     startEventBounds.setAttribute('width', 36);
-                    //     startEventBounds.setAttribute('height', 36);
-                    //     startEventShape.appendChild(startEventBounds);
-                    //     bpmnPlane.appendChild(startEventShape);
-                    //     activityPos['startEvent'] = {
-                    //         x: lastXPos,
-                    //         y: eventY,
-                    //         width: 36,
-                    //         height: 36
-                    //     };
-                    //     lastXPos = lastXPos;
-                    //     lastXPos += 120;
-                    // }
-                    let activityY = parseInt(rolePos[activity.role].y);
-                    const activityShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
-                    activityShape.setAttribute('id', `BPMNShape_${activity.id}`);
-                    activityShape.setAttribute('bpmnElement', activity.id);
+                if (jsonModel.activities) {
+                    jsonModel.activities.forEach((activity, activityIndex) => {
+                        if (!activity.role) {
+                            return false;
+                        }
 
-                    const dcBoundsActivity = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
-                    dcBoundsActivity.setAttribute('x', positionMapping[activity.id]);
-                    dcBoundsActivity.setAttribute('y', activityY + 10);
-                    dcBoundsActivity.setAttribute('width', 100);
-                    dcBoundsActivity.setAttribute('height', 80);
-                    activityPos[activity.id] = {
-                        x: positionMapping[activity.id],
-                        y: activityY + 10,
-                        width: 100,
-                        height: 80
-                    };
-                    // if (!activity.pos)
-                    //     activity.pos = {}
-                    // activity.pos.x = lastXPos
-                    // activity.pos.y =  activityY + 20
-                    // activity.pos.width = 80
-                    // activity.pos.height = 60
+                        // 기본 activityX 설정
+                        let activityX = positionMapping[activity.id] ? positionMapping[activity.id] - 20 : lastXPos + 120;
+                        let activityY = parseInt(rolePos[activity.role].y);
 
-                    activityShape.appendChild(dcBoundsActivity);
-                    bpmnPlane.appendChild(activityShape);
-                    // lastXPos = lastXPos;
-                    // lastXPos += 120;
+                        // 레인을 넘어가는 활동(task)에 대해서만 위치를 더 오른쪽으로 이동
+                        if (activityIndex > 0 && jsonModel.activities[activityIndex - 1].role !== activity.role) {
+                            activityX = lastXPos + 40; // 원하는 만큼 오른쪽으로 이동
+                        }
 
-                    // if (activityIndex == jsonModel.activities.length - 1 && lastActivity.role) {
-                    //     // EndEvent의 BPMNShape 추가
-                    //     let eventY = parseInt(rolePos[lastActivity.role].y) + 32;
-                    //     const endEventShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
-                    //     endEventShape.setAttribute('id', `EndEvent_di`);
-                    //     endEventShape.setAttribute('bpmnElement', `EndEvent`);
-                    //     const endEventBounds = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
-                    //     // endEventBounds.setAttribute('x', '100'); // 위치는 예시이며, 실제 모델에 따라 조정 필요
-                    //     // endEventBounds.setAttribute('y', '218');
-                    //     endEventBounds.setAttribute('x', lastXPos);
-                    //     endEventBounds.setAttribute('y', eventY);
-                    //     endEventBounds.setAttribute('width', 36);
-                    //     endEventBounds.setAttribute('height', 36);
-                    //     endEventShape.appendChild(endEventBounds);
-                    //     bpmnPlane.appendChild(endEventShape);
+                        const activityShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
+                        activityShape.setAttribute('id', `BPMNShape_${activity.id}`);
+                        activityShape.setAttribute('bpmnElement', activity.id);
 
-                    //     // 마지막엔 Event들 Sequence 생성
-                    //     // Start Event
-                    //     const startBpmnEdge = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNEdge');
-                    //     startBpmnEdge.setAttribute('id', `BPMNEdge_StartEvent_${firstActivity.id}`);
-                    //     startBpmnEdge.setAttribute('bpmnElement', 'SequenceFlow_' + 'StartEvent' + '_' + firstActivity.id);
-                    //     const startWaypoint1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                    //     // let startX, startY, endX, endY;
+                        const dcBoundsActivity = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
+                        dcBoundsActivity.setAttribute('x', activityX);
+                        dcBoundsActivity.setAttribute('y', activityY + 10);
+                        dcBoundsActivity.setAttribute('width', 100);
+                        dcBoundsActivity.setAttribute('height', 80);
+                        activityPos[activity.id] = {
+                            x: activityX,
+                            y: activityY + 10,
+                            width: 100,
+                            height: 80
+                        };
 
-                    //     startWaypoint1.setAttribute(
-                    //         'x',
-                    //         parseInt(activityPos['startEvent']?.x) + parseInt(activityPos['startEvent']?.width)
-                    //     );
-                    //     startWaypoint1.setAttribute(
-                    //         'y',
-                    //         parseInt(activityPos['startEvent']?.y) + parseInt(activityPos['startEvent']?.height) / 2
-                    //     );
-                    //     startBpmnEdge.appendChild(startWaypoint1);
-                    //     const startWaypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                        activityShape.appendChild(dcBoundsActivity);
+                        bpmnPlane.appendChild(activityShape);
 
-                    //     startWaypoint2.setAttribute('x', parseInt(activityPos[firstActivity.id]?.x));
-                    //     startWaypoint2.setAttribute(
-                    //         'y',
-                    //         parseInt(activityPos[firstActivity.id]?.y) + parseInt(activityPos[firstActivity.id]?.height) / 2
-                    //     );
-                    //     startBpmnEdge.appendChild(startWaypoint2);
-
-                    //     const endBpmnEdge = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNEdge');
-                    //     endBpmnEdge.setAttribute('id', `BPMNEdge_${lastActivity.id}_EndEvent`);
-                    //     endBpmnEdge.setAttribute('bpmnElement', 'SequenceFlow_' + lastActivity.id + '_' + 'EndEvent');
-                    //     const endWaypoint1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                    //     // startX =
-                    //     // startY =
-                    //     endWaypoint1.setAttribute(
-                    //         'x',
-                    //         parseInt(activityPos[lastActivity.id]?.x) + parseInt(activityPos[lastActivity.id]?.width)
-                    //     );
-                    //     endWaypoint1.setAttribute(
-                    //         'y',
-                    //         parseInt(activityPos[lastActivity.id]?.y) + parseInt(activityPos[lastActivity.id]?.height) / 2
-                    //     );
-                    //     endBpmnEdge.appendChild(endWaypoint1);
-                    //     const endWaypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                    //     // endX = parseInt(activityPos['endEvent'].x)
-                    //     // endY = parseInt(activityPos[sequence.target].y) + (parseInt(activityPos[sequence.target].height) / 2)
-                    //     endWaypoint2.setAttribute('x', lastXPos);
-                    //     endWaypoint2.setAttribute('y', eventY + 18);
-                    //     endBpmnEdge.appendChild(endWaypoint2);
-                    //     bpmnPlane.appendChild(startBpmnEdge);
-                    //     bpmnPlane.appendChild(endBpmnEdge);
-                    // }
-                });
-            }
-
+                        // 활동의 X 좌표를 업데이트
+                        rolePos[activity.role].x = activityX + 120;
+                        lastXPos = activityX + 120;
+                    });
+                }
+            //gateway 스티커
             if (jsonModel.gateways){
                 jsonModel.gateways.forEach((gateway) => {
+                    let gatewayX = positionMapping[gateway.id] ? positionMapping[gateway.id] : rolePos[gateway.role].x + 120;
                     let gatewayY = parseInt(rolePos[gateway.role].y);
                     const gatewayShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
                     gatewayShape.setAttribute('id', `Shape_${gateway.id}`);
                     gatewayShape.setAttribute('bpmnElement', gateway.id);
                     const dcBounds = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
-                    dcBounds.setAttribute('x', positionMapping[gateway.id]); 
+                    dcBounds.setAttribute('x', gatewayX); 
                     dcBounds.setAttribute('y', gatewayY + 25); 
                     dcBounds.setAttribute('width', '50');
                     dcBounds.setAttribute('height', '50');
@@ -1504,25 +1454,27 @@ export default {
                     bpmnPlane.appendChild(gatewayShape);
 
                     activityPos[gateway.id] = {
-                        x: positionMapping[gateway.id],
+                        x: gatewayX,
                         y: gatewayY + 25,
                         width: 50,
                         height: 50
                     };
+                    rolePos[gateway.role].x += 120;
                 });
             }
-
+            // start, end event(동그라미 스티커)
             if (jsonModel.events){
                 jsonModel.events.forEach((event) => {
                     // let eventX = 140
                     let eventX
                     let eventY
                     if(event.type == 'StartEvent'){
-                        eventX = positionMapping[event.id]
-                        eventY = parseInt(rolePos[jsonModel.activities[0].role].y) + 32;
+                        // 시작 이벤트(동그라미 스티커에 대해서 동그라미 스티커가 생성되는 위치 )
+                        eventX = 160
+                        eventY = parseInt(rolePos[jsonModel.activities[0].role].y) + 33;
                     } else if(event.type == 'EndEvent') {
-                        eventX = lastXPos + 120
-                        eventY = parseInt(rolePos[jsonModel.activities[jsonModel.activities.length - 1].role].y) + 32;
+                        eventX = positionMapping[event.id] ? positionMapping[event.id] : lastXPos + 120
+                        eventY = parseInt(rolePos[jsonModel.activities[jsonModel.activities.length - 1].role].y) + 33;
                     } else {
                         eventX = 200
                         eventY = 200
@@ -1533,21 +1485,21 @@ export default {
                     const dcBounds = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
                     dcBounds.setAttribute('x', eventX);
                     dcBounds.setAttribute('y', eventY);
-                    dcBounds.setAttribute('width', '80');
-                    dcBounds.setAttribute('height', '40');
+                    dcBounds.setAttribute('width', '34');
+                    dcBounds.setAttribute('height', '34');
                     eventShape.appendChild(dcBounds);
                     bpmnPlane.appendChild(eventShape);
 
                     activityPos[event.id] = {
                         x: eventX,
                         y: eventY,
-                        width: 50,
-                        height: 50
+                        width: 34,
+                        height: 34
                     };
                 });
             }
 
-            if (jsonModel.sequences)
+            if (jsonModel.sequences) {
                 jsonModel.sequences.forEach((sequence) => {
                     if (!activityPos[sequence.source] || !activityPos[sequence.target]) {
                         return false;
@@ -1556,25 +1508,57 @@ export default {
                     bpmnEdge.setAttribute('id', `BPMNEdge_${sequence.source}_${sequence.target}`);
                     bpmnEdge.setAttribute('bpmnElement', 'SequenceFlow_' + sequence.source + '_' + sequence.target);
 
-                    // 예시로, 시작점과 끝점만 정의합니다. 실제 좌표는 모델에 따라 달라집니다.
-                    const waypoint1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                    // activity
                     let startX, startY, endX, endY;
                     startX = parseInt(activityPos[sequence.source].x) + parseInt(activityPos[sequence.source].width);
                     startY = parseInt(activityPos[sequence.source].y) + parseInt(activityPos[sequence.source].height) / 2;
+
+                    endX = parseInt(activityPos[sequence.target].x);
+                    endY = parseInt(activityPos[sequence.target].y) + parseInt(activityPos[sequence.target].height) / 2;
+
+                    // 첫 번째 waypoint (시작점)
+                    const waypoint1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
                     waypoint1.setAttribute('x', startX);
                     waypoint1.setAttribute('y', startY);
                     bpmnEdge.appendChild(waypoint1);
 
-                    const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                    endX = parseInt(activityPos[sequence.target].x);
-                    endY = parseInt(activityPos[sequence.target].y) + parseInt(activityPos[sequence.target].height) / 2;
-                    waypoint2.setAttribute('x', endX);
-                    waypoint2.setAttribute('y', endY);
-                    bpmnEdge.appendChild(waypoint2);
+                    // 시작점과 끝점이 같은 레인에 있는 경우
+                    if (startY === endY) {
+                        // 두 번째 waypoint (끝점)
+                        const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                        waypoint2.setAttribute('x', endX);
+                        waypoint2.setAttribute('y', endY);
+                        bpmnEdge.appendChild(waypoint2);
+                    } else {
+                        // 시작점과 끝점이 다른 레인에 있는 경우
+                        // 첫 번째 변곡점 (레인 변경 시작)
+                        const waypointMiddle1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                        waypointMiddle1.setAttribute('x', startX + 25); // X 좌표를 조정하여 레인 변경 시작
+                        waypointMiddle1.setAttribute('y', startY);
+                        bpmnEdge.appendChild(waypointMiddle1);
+
+                        // 두 번째 변곡점 (레인 변경 완료)
+                        const waypointMiddle2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                        waypointMiddle2.setAttribute('x', startX + 25); // X 좌표를 유지
+                        waypointMiddle2.setAttribute('y', endY); // Y 좌표를 끝점의 Y로 변경하여 레인 변경 완료
+                        bpmnEdge.appendChild(waypointMiddle2);
+
+                        // 세 번째 변곡점 (끝점으로 이동)
+                        const waypointMiddle3 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                        waypointMiddle3.setAttribute('x', endX); // X 좌표를 끝점의 X로 변경
+                        waypointMiddle3.setAttribute('y', endY); // Y 좌표를 유지
+                        bpmnEdge.appendChild(waypointMiddle3);
+
+                        // 두 번째 waypoint (끝점)
+                        const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                        waypoint2.setAttribute('x', endX);
+                        waypoint2.setAttribute('y', endY);
+                        bpmnEdge.appendChild(waypoint2);
+                    }
 
                     bpmnPlane.appendChild(bpmnEdge);
                 });
+            }
+            
             // XML 문자열로 변환 및 반환
             const serializer = new XMLSerializer();
             const bpmnXml = serializer.serializeToString(xmlDoc);

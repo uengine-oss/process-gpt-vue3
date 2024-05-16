@@ -6,17 +6,17 @@
                     프로세스 정의 목록
                 </v-card-title>
                 <v-card-text>
-                    <VDataTable v-if="onLoad" v-model="processDefinitions" :headers="headers" :items="definitions"
-                        item-value="id" select-strategy="single" show-select return-object
-                    ></VDataTable>
+                    <VDataTable v-if="onLoad" :headers="headers" :items="definitions"
+                        item-value="processDefinitionId">
+                        <template v-slot:item.actions="{ item }">
+                            <v-btn color="primary" class="px-4 rounded-pill mx-auto" variant="tonal"
+                                @click="beforeSendMessage(null, item.raw.processDefinitionId)">Select</v-btn>
+                        </template>
+                    </VDataTable>
                     <div v-else style="height: 100%; text-align: center">
                         <v-progress-circular style="top: 50%" indeterminate color="primary"></v-progress-circular>
                     </div>
                 </v-card-text>
-                <v-card-actions>
-                    <v-btn color="success" class="px-4 rounded-pill mx-auto" variant="tonal"
-                        @click="beforeSendMessage()">Select</v-btn>
-                </v-card-actions>
             </v-card>
         </v-dialog>
         <Chat :messages="messages" :agentInfo="agentInfo" :chatInfo="chatInfo"
@@ -63,15 +63,19 @@ export default {
         VDataTable,
         // WorkItem,
     },
+    props:{
+        isComplete: Boolean
+    },
     data: () => ({
         headers: [
             { title: 'id', align: 'start', key: 'processDefinitionId' },
             { title: 'name', align: 'start', key: 'processDefinitionName' },
             { title: 'description', align: 'start', key: 'description' },
+            { title: 'actions', align: 'start', key: 'actions' },
         ],
         definitions: null,
         definitionDialog: false,
-        processDefinitions: [],
+        processDefinition: null,
         processInstance: null,
         path: 'proc_inst',
         organizationChart: [],
@@ -102,8 +106,7 @@ export default {
             preferredLanguage: 'Korean'
         });
         if (localStorage.getItem('instancePrompt')) {
-            let prompt = JSON.parse(localStorage.getItem('instancePrompt'))
-            this.beforeSendMessage(prompt)
+            this.beforeSendMessage(localStorage.getItem('instancePrompt'))
             localStorage.removeItem('instancePrompt')
         }
     },
@@ -121,6 +124,8 @@ export default {
                     if (!newVal.params.taskId) {
                         this.messages = [];
                     }
+                    await this.init();
+                } else if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
                     await this.init();
                 }
             }
@@ -196,6 +201,10 @@ export default {
             })
         },
         checkDisableChat() {
+            if (this.isComplete) {
+                this.disableChat = true;
+            }
+
             if (this.processInstance) {
                 if (this.processInstance.current_user_ids &&
                     this.processInstance.current_user_ids.length > 0 &&
@@ -205,7 +214,7 @@ export default {
                 }
             }
         },
-        async beforeSendMessage(newMessage) {
+        async beforeSendMessage(newMessage, definition) {
 
             if (newMessage && newMessage.text != '') {
                 if (this.processInstance && this.processInstance.proc_inst_id) {
@@ -216,7 +225,6 @@ export default {
                     this.onLoad = false;
                     this.definitionDialog = true;
 
-                    this.processDefinitions = [];
                     this.generator.beforeGenerate(newMessage, true);
 
                     var procDefs = await this.queryFromVectorDB(newMessage.text);
@@ -226,16 +234,11 @@ export default {
                         this.onLoad = true;
                     }
                 }
-            } else {
+            } else if (definition) {
 
-                if (this.processDefinitions) {
-                    // !! prompt!! , 
-                    // 이전 message : this.messages
-                    // 현재: newMessage.text (string)
-
-                    // let agents = this.processDefinition[0].roles ? this.processDefinition[0].roles : []
-                    // this.agentInfo.draftPrompt = `The topic is ${this.processDefinition[0].description} and the agents involved are ${JSON.stringify(agents)}.`
-                    this.agentInfo.draftPrompt = `${this.processDefinitions[0].description}`
+                if (definition) {
+                    this.processDefinition = definition;
+                    this.agentInfo.draftPrompt = this.processDefinition.description;
                 }
 
                 if (this.processInstance && this.processInstance.proc_inst_id) {

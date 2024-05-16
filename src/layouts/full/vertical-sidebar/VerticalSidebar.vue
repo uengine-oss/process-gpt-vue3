@@ -42,6 +42,8 @@ const customizer = useCustomizerStore();
                     <!---End Single Item-->
                 </template>
 
+                <ProcessInstanceList />
+
                 <!-- definition menu item -->
                 <template v-if="definitionItem.length" v-for="item in definitionItem" :key="item.title">
                     <!---Item Sub Header -->
@@ -57,8 +59,6 @@ const customizer = useCustomizerStore();
                 </template>
                 <!-- <Moreoption/> -->
             </v-list>
-
-            <ProcessInstanceList />
 
             <div class="pa-6 px-4 userbottom bg-containerBg">
                 <ExtraBox />
@@ -92,20 +92,6 @@ export default {
                 BgColor: 'primary',
                 to: '/todolist',
                 disable: true
-            },
-            {
-                title: "processDefinitionMap.title",
-                icon: 'ri:layout-grid-2-line',
-                BgColor: 'primary',
-                to: "/definition-map",
-                disable: true
-            },
-            {
-                title: "processExecution.title",
-                icon: 'solar:chat-dots-linear',
-                BgColor: 'primary',
-                to: '/instances/chat',
-                disable: true,
             },
             {
                 title: 'calendar.title',
