@@ -37,8 +37,13 @@ class ProcessGPTBackend implements Backend {
         throw new Error("Method not implemented.");
     }
 
-    async deleteDefinition(defId: string) {
+    async deleteDefinition(defId: string, options: any) {
         try {
+            if(options && options.type === "form") {
+                await storage.delete(`form_def/${defId.replace(/\//g, "#")}`, { key: 'id' });
+                return
+            }
+
             let result: any;
             await storage.delete(`proc_def/${defId}`, { key: 'id' });
             const list = await storage.list(defId);
