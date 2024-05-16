@@ -10,52 +10,105 @@ import ProfileDD from './ProfileDD.vue';
 import Searchbar from './Searchbar.vue';
 import RightMobileSidebar from './RightMobileSidebar.vue';
 import Logo from '../logo/Logo.vue';
+import { useRouter } from 'vue-router';
 import { Icon } from '@iconify/vue';
+
 const customizer = useCustomizerStore();
 const showSearch = ref(false);
 const appsdrawer = ref(false);
 const priority = ref(customizer.setHorizontalLayout ? 0 : 0);
+const router = useRouter();
+
+interface SidebarItem {
+    title: string;
+    icon: string;
+    to: string;
+    disable: boolean;
+}
+const sidebarItems = ref<SidebarItem[]>([
+    {
+        title: 'headerMenu.dashboard',
+        icon: 'lucide:layout-panel-top',
+        to: '/dashboard2',
+        disable: false
+    },
+    {
+        title: 'headerMenu.todoList',
+        icon: 'pajamas:overview',
+        to: '/todolist',
+        disable: false
+    },
+    {
+        title: 'headerMenu.calendar',
+        icon: 'solar:calendar-line-duotone',
+        to: '/calendar',
+        disable: false
+    }
+]);
+
 function searchbox() {
     showSearch.value = !showSearch.value;
 }
+
 watch(priority, (newPriority) => {
     priority.value = newPriority;
 });
 
-// count items
 const store = useEcomStore();
 const getCart = computed(() => {
     return store.cart;
 });
 
-//For on Scroll Effect on Header
 onBeforeMount(() => {
   window.addEventListener('scroll', handleScroll)
-})
-const stickyHeader = ref(false)
+});
+
+const stickyHeader = ref(false);
+
 function handleScroll() {
   if (window.pageYOffset) {
-    stickyHeader.value = true
+    stickyHeader.value = true;
   } else {
-    stickyHeader.value = false
+    stickyHeader.value = false;
   }
 }
 
-
+function navigateTo(item: SidebarItem) {
+    if (!item.disable) {
+        router.push(item.to);
+    }
+}
 </script>
 
 <template>
     <div class="container">
         <div class="maxWidth">
             <v-app-bar elevation="0" :priority="priority" height="75"  id="top" :class="stickyHeader ? 'sticky' : ''">
-                <v-btn class="hidden-md-and-down" icon variant="text" size="small"
-                    @click.stop="customizer.SET_MINI_SIDEBAR(!customizer.mini_sidebar)">
-                    <Icon icon="solar:list-bold-duotone" height="24" width="24" />
-                </v-btn>
-                <v-btn class="customizer-btn" size="small" icon variant="flat"
-                    @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
-                    <SettingsIcon />
-                </v-btn>
+                <v-tooltip :text="$t('headerMenu.sidebar')">
+                    <template v-slot:activator="{ props }">
+                        <v-btn v-bind="props" class="hidden-md-and-down" icon variant="text" size="small"
+                            @click.stop="customizer.SET_MINI_SIDEBAR(!customizer.mini_sidebar)">
+                            <Icon icon="solar:list-bold-duotone" height="24" width="24" />
+                        </v-btn>
+                    </template>
+                </v-tooltip>
+                <template v-for="item in sidebarItems" :key="item.title">
+                    <v-tooltip :text="$t(item.title)">
+                        <template v-slot:activator="{ props }">
+                            <v-btn icon v-bind="props" @click="navigateTo(item)">
+                                <Icon :icon="item.icon" height="24" width="24" />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+                </template>
+                <v-tooltip :text="$t('headerMenu.layoutSetting')">
+                    <template v-slot:activator="{ props }">
+                        <v-btn v-bind="props" class="customizer-btn" size="small" icon variant="flat"
+                            @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
+                            <SettingsIcon />
+                        </v-btn>
+                    </template>
+                </v-tooltip>
                 <v-btn class="hidden-lg-and-up" icon variant="text"
                     @click.stop="customizer.SET_SIDEBAR_DRAWER" size="small">
                     <Icon class="cp-menu-open" icon="solar:list-bold-duotone" height="24" width="24" />
