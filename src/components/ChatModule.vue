@@ -97,7 +97,9 @@ export default {
         },
         async init() {
             this.disableChat = false;
-            this.userInfo = await this.storage.getUserInfo();
+            if (this.useLock) {
+                this.userInfo = await this.storage.getUserInfo();
+            }
             this.backend = BackendFactory.createBackend();
 
             await this.loadData(this.getDataPath());
