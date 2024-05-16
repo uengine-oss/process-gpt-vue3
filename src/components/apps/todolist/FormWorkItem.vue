@@ -131,7 +131,7 @@ export default {
             let workItem = { parameterValues: {} };
 
             if($mode=="uEngine")
-                me.saveForm()
+                await me.saveForm()
             
             if($mode=="ProcessGPT"){
                 workItem.parameterValues = me.formData
