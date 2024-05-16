@@ -1512,6 +1512,15 @@
                 var container = btn.closest('.keditor-container');
                 var contentArea = container.parent();
                 var newContainer = $(self.getContainerContent(container));
+
+
+                var newContainerComponents = newContainer.find('section.keditor-container');
+
+                newContainerComponents.each(function () {
+                    var newContainerComponent = $(this);
+                    newContainerComponent.attr('id', `keditor-container-${(new Date()).getTime()}`);
+                });
+                
                 
                 container.after(newContainer);
                 self.convertToContainer(contentArea, newContainer);
