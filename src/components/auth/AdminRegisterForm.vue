@@ -7,10 +7,10 @@
         <v-divider class="mb-4" />
 
         <!-- Social -->
-        <v-row class="d-flex mb-3">
+        <!-- <v-row class="d-flex mb-3">
             <v-col cols="12" sm="12">
                 <v-btn variant="outlined" size="large" class="border text-subtitle-1 text-gray200 font-weight-semibold" block>
-                    <!-- <img :src="google" height="16" class="mr-2" alt="google" /> -->
+                    <img :src="google" height="16" class="mr-2" alt="google" />
                     <span class="d-sm-flex d-none mr-1">{{ $t('createAccount.google') }}</span>
                 </v-btn>
             </v-col>
@@ -19,7 +19,7 @@
             <div class="text-h6 w-100 px-5 font-weight-regular auth-divider position-relative">
                 <span class="bg-surface px-5 py-3 position-relative text-subtitle-1 text-grey100">{{ $t('createAccount.or') }}</span>
             </div>  
-        </div>
+        </div> -->
 
         <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.userName') }}</v-label>
         <VTextField 
