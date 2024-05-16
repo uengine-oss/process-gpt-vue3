@@ -1063,7 +1063,7 @@
             });
             
             flog('Initialize existing containers in content area');
-            contentArea.children('section').each(function () {
+            contentArea.find('section').each(function () {
                 self.convertToContainer(contentArea, $(this));
             });
             
@@ -1121,7 +1121,8 @@
                 
                 container.attr('id', self.generateId('container'));
                 
-                var containerContents = container.find('[data-type="container-content"]');
+                var containerContents = container
+                    .children('.keditor-container-inner').children('div.row').children('[data-type="container-content"]');
                 flog('Initialize ' + containerContents.length + ' container content(s)');
                 containerContents.each(function () {
                     var containerContent = $(this);
