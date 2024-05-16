@@ -8,11 +8,28 @@
                         :messages="messages"
                         :userInfo="userInfo"
                         type="form"
-                        @onClickSaveFormButton="openSaveDialog"
                         @sendMessage="beforeSendMessage"
                         @sendEditedMessage="sendEditedMessage"
                         @stopMessage="stopMessage"
-                    ></Chat>
+                    >
+                        <template v-slot:custom-tools>
+                            <div class="d-flex gap-2 flex-row-reverse" style="height: 0px;">
+                                <v-tooltip>
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-bind="props"
+                                            icon variant="text"
+                                            class="text-medium-emphasis"
+                                            style="bottom: 35px; left: 15px;"
+                                            @click="openSaveDialog"
+                                        >
+                                            <Icon icon="material-symbols:save" width="24" height="24" />
+                                        </v-btn>
+                                    </template>
+                                    <span>{{ $t('uiDefinition.save') }}</span>
+                                </v-tooltip>
+                            </div>
+                        </template>
+                    </Chat>
                 </div>
             </template>
             <template v-slot:rightpart>
@@ -55,15 +72,32 @@
 
             <template v-slot:mobileLeftContent>
                 <Chat
-                    :chatInfo="chatInfo"
-                    :messages="messages"
-                    :userInfo="userInfo"
-                    type="form"
-                    @onClickSaveFormButton="openSaveDialog"
-                    @sendMessage="beforeSendMessage"
-                    @sendEditedMessage="sendEditedMessage"
-                    @stopMessage="stopMessage"
-                ></Chat>
+                        :chatInfo="chatInfo"
+                        :messages="messages"
+                        :userInfo="userInfo"
+                        type="form"
+                        @sendMessage="beforeSendMessage"
+                        @sendEditedMessage="sendEditedMessage"
+                        @stopMessage="stopMessage"
+                    >
+                        <template v-slot:custom-tools>
+                            <div class="d-flex gap-2 flex-row-reverse" style="height: 0px;">
+                                <v-tooltip>
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-bind="props"
+                                            icon variant="text"
+                                            class="text-medium-emphasis"
+                                            style="bottom: 35px; left: 15px;"
+                                            @click="openSaveDialog"
+                                        >
+                                            <Icon icon="material-symbols:save" width="24" height="24" />
+                                        </v-btn>
+                                    </template>
+                                    <span>{{ $t('uiDefinition.save') }}</span>
+                                </v-tooltip>
+                            </div>
+                        </template>
+                    </Chat>
             </template>
         </AppBaseCard>
     </v-card>
