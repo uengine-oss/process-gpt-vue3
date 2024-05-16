@@ -19,7 +19,6 @@
                                         <v-btn v-bind="props"
                                             icon variant="text"
                                             class="text-medium-emphasis"
-                                            
                                             @click="openSaveDialog"
                                         >
                                             <Icon icon="material-symbols:save" width="24" height="24" />
@@ -28,12 +27,13 @@
                                     <span>{{ $t('uiDefinition.save') }}</span>
                                 </v-tooltip>
 
-                                <v-tooltip location="bottom">
+                                <v-tooltip>
                                     <template v-slot:activator="{ props }">
                                         <v-btn v-if="isLoadedForm" 
                                             v-bind="props" 
                                             icon  variant="text" 
-                                            class="text-medium-emphasis">
+                                            class="text-medium-emphasis"
+                                            @click="openDeleteDialog">
                                             <TrashIcon size="24" />
                                         </v-btn>
                                     </template>
@@ -84,32 +84,44 @@
 
             <template v-slot:mobileLeftContent>
                 <Chat
-                        :chatInfo="chatInfo"
-                        :messages="messages"
-                        :userInfo="userInfo"
-                        type="form"
-                        @sendMessage="beforeSendMessage"
-                        @sendEditedMessage="sendEditedMessage"
-                        @stopMessage="stopMessage"
-                    >
-                        <template v-slot:custom-tools>
-                            <div class="d-flex gap-2 flex-row-reverse" style="height: 0px;">
-                                <v-tooltip>
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn v-bind="props"
-                                            icon variant="text"
-                                            class="text-medium-emphasis"
-                                            style="bottom: 35px; left: 15px;"
-                                            @click="openSaveDialog"
-                                        >
-                                            <Icon icon="material-symbols:save" width="24" height="24" />
-                                        </v-btn>
-                                    </template>
-                                    <span>{{ $t('uiDefinition.save') }}</span>
-                                </v-tooltip>
-                            </div>
-                        </template>
-                    </Chat>
+                    :chatInfo="chatInfo"
+                    :messages="messages"
+                    :userInfo="userInfo"
+                    type="form"
+                    @sendMessage="beforeSendMessage"
+                    @sendEditedMessage="sendEditedMessage"
+                    @stopMessage="stopMessage"
+                >
+                    <template v-slot:custom-tools>
+                        <div class="d-flex flex-row-reverse" style="height: 0px; position: relative; bottom: 35px; left: 10px">
+                            <v-tooltip>
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props"
+                                        icon variant="text"
+                                        class="text-medium-emphasis"
+                                        @click="openSaveDialog"
+                                    >
+                                        <Icon icon="material-symbols:save" width="24" height="24" />
+                                    </v-btn>
+                                </template>
+                                <span>{{ $t('uiDefinition.save') }}</span>
+                            </v-tooltip>
+
+                            <v-tooltip location="bottom">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-if="isLoadedForm" 
+                                        v-bind="props" 
+                                        icon  variant="text" 
+                                        class="text-medium-emphasis"
+                                        @click="openDeleteDialog">
+                                        <TrashIcon size="24" />
+                                    </v-btn>
+                                </template>
+                                <span>{{ $t('uiDefinition.deleteForm') }}</span>
+                            </v-tooltip>
+                        </div>
+                    </template>
+                </Chat>
             </template>
         </AppBaseCard>
     </v-card>
@@ -118,6 +130,18 @@
         <form-design-save-panel @onClose="isOpenSaveDialog = false" @onSave="tryToSaveFormDefinition" :savedId="(loadFormId === 'chat') ? null : loadFormId"
             :formNameByUrl="formNameByUrl">
         </form-design-save-panel>
+    </v-dialog>
+
+    <v-dialog v-model="isOpenDeleteDialog" max-width="500">
+        <v-card>
+            <v-card-text>
+                {{ $t('uiDefinition.deleteFormMessage') }}
+            </v-card-text>
+            <v-card-actions class="justify-center pt-0">
+                <v-btn color="primary" variant="flat" @click="deleteForm">{{ $t('uiDefinition.delete') }}</v-btn>
+                <v-btn color="error" variant="flat" @click="isOpenDeleteDialog = false">{{ $t('uiDefinition.cancel') }}</v-btn>
+            </v-card-actions>
+        </v-card>
     </v-dialog>
 </template>
 
@@ -189,7 +213,9 @@ export default {
         isRoutedWithUnsaved: false,
 
         processDefUrlData: null,
-        formNameByUrl: null
+        formNameByUrl: null,
+
+        isOpenDeleteDialog: false
     }),
     async created() {
         this.generator = new ChatGenerator(this, {
@@ -266,6 +292,10 @@ export default {
 
         openSaveDialog() {
             this.isOpenSaveDialog = true;
+        },
+
+        openDeleteDialog() {
+            this.isOpenDeleteDialog = true;
         },
 
         /**
@@ -893,6 +923,20 @@ export default {
 
             me.$nextTick(() => {
                 me.dev.previewFormValues = JSON.stringify(me.previewFormValues);
+            });
+        },
+
+        async deleteForm() {
+            var me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    await this.backend.deleteDefinition(this.loadFormId, {type: 'form'});
+                    this.isOpenDeleteDialog = false;
+                    await this.$router.push('/ui-definitions/chat');
+                    window.location.reload();
+                },
+                successMsg: '삭제되었습니다.'
             });
         }
     },

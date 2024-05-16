@@ -93,7 +93,8 @@
         "delete": "삭제",
         "cancel": "취소",
         "save": "화면 저장",
-        "deleteForm": "폼 삭제"
+        "deleteForm": "폼 삭제",
+        "deleteFormMessage": "폼을 삭제하시겠습니까?"
     },
     "processDefinition": {
         "title": "프로세스 정의",
