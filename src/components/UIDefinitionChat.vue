@@ -350,6 +350,7 @@ export default {
                 }
             }
             
+
             rows.forEach(row => {
                 const isMultiDataMode = row.getAttribute('is_multidata_mode');
                 if (!isMultiDataMode || (isMultiDataMode === 'false')) {
@@ -371,7 +372,10 @@ export default {
                         innerRow.appendChild(child);
                     });
 
-                    innerRow.querySelectorAll('[name]').forEach(field => {
+
+                    $(innerRow).children('[class^="col-sm-"]').children('[name]').each(function () {
+                        var field = ($(this))[0];
+                        
                         if(field.tagName.toLowerCase() === "code-field") {
                             const name = field.getAttribute('name');
                             field.setAttribute('v-model', `codeInfos['${name}']`);
@@ -386,8 +390,8 @@ export default {
                         }
                     });
 
-                    newRow.appendChild(innerRow);
 
+                    newRow.appendChild(innerRow);
 
                     row.parentNode.replaceChild(newRow, row);
                 } else {
