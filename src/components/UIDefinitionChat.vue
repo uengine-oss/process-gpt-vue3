@@ -780,6 +780,39 @@ export default {
 
             const dom = new DOMParser().parseFromString(htmlTextToLoad, 'text/html');
 
+
+            // 만약 AI 생성오류 등으로 row안에 있는 col-sm-{숫자}의 총합이 12가 아니라면 모든 내용을 col-sm-12에 담아버림
+            dom.querySelectorAll('div.row').forEach((row) => {
+
+                let totalColSpaceSum = 0
+                $(row).children('[class^="col-sm-"]').each(function () {
+                    var col = ($(this))[0];
+
+                    const colClassMatch = col.className.match(/col-sm-(\d+)/);
+                    if (colClassMatch) {
+                        const colSize = parseInt(colClassMatch[1], 10);
+                        totalColSpaceSum += colSize;
+                    }
+                });
+
+                if(totalColSpaceSum !== 12) {
+                    const newCol = document.createElement('div');
+                    newCol.setAttribute('class', 'col-sm-12');
+
+                    $(row).children('[class^="col-sm-"]').each(function () {
+                        var col = ($(this))[0];
+                        Array.from(col.children).forEach(child => {
+                            newCol.appendChild(child);
+                        });
+                    });
+
+                    row.innerHTML = '';
+                    row.appendChild(newCol);
+                }
+
+            });
+
+
             // 컨테이너인 경우, data-type 속성을 추가해서 KEditor에서 인식할 수 있도록 만들기 위해서서
             const nodes = dom.querySelectorAll('[class^="col-sm-"]');
             nodes.forEach((node) => {
