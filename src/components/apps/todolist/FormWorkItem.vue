@@ -8,7 +8,7 @@
     </v-row>
     <div class="pa-4">
         <!-- <FormMapper></FormMapper> -->
-        <DynamicForm :formHTML="html" v-model="formData" :key="formDataKey"></DynamicForm>
+        <DynamicForm :formHTML="html" v-model="formData"></DynamicForm>
     </div>
 </template>
 
@@ -34,8 +34,7 @@ export default {
     },
     data: () => ({
         html: null,
-        formData: {},
-        formDataKey: 0
+        formData: {}
     }),
     components: {
         DynamicForm
@@ -76,8 +75,6 @@ export default {
             } else {
                 me.formData = {};
             }
-
-            me.formDataKey += 1;
         },
         async saveTask() {
             var me = this;

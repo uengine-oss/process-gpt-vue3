@@ -114,8 +114,8 @@ export default class StorageBaseSupabase {
 
     async getUserInfo() {
         try {
-            const email = window.localStorage.getItem("email");
-            var { data, error } = await window.$supabase.from('users').select().eq('email', email).maybeSingle();
+            const uid = window.localStorage.getItem("uid");
+            var { data, error } = await window.$supabase.from('users').select().eq('id', uid).maybeSingle();
 
             if (!error && data) {
                 return {
