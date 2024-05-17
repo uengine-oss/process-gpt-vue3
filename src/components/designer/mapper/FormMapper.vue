@@ -200,10 +200,20 @@ export default {
                 roots: []
             };
         },
+        reverseObject(obj) {
+            const reversedObj = {};
+            const keys = Object.keys(obj).reverse();
+
+            keys.forEach((key) => {
+                reversedObj[key] = obj[key];
+            });
+
+            return reversedObj;
+        },
         fetchAndProcessFormDefinitions(nodes, variable) {
-             // 재귀적으로 필드를 처리하는 함수
+            // 재귀적으로 필드를 처리하는 함수
             const processFields = (fields, parentNode) => {
-                fields.forEach(field => {
+                fields.forEach((field) => {
                     let node = {
                         text: field.name,
                         alias: field.alias,
@@ -228,6 +238,8 @@ export default {
             this.processInstanceNodes(nodes);
             this.processActivityNodes(nodes);
             this.updateBlockTemplates(nodes, blockName);
+            this.blockTemplates.Source.ports = this.reverseObject(this.blockTemplates.Source.ports);
+            this.blockTemplates.Target.ports = this.reverseObject(this.blockTemplates.Target.ports);
         },
         processVariableNodes(nodes) {
             const definition = this.definition;
@@ -372,14 +384,14 @@ export default {
         updateBlockTemplates(nodes, blockName) {
             const treeStructure = this.transformData(nodes);
             const nodeHeight = 24;
-            this.resetTreeviewPorts(blockName); 
+            this.resetTreeviewPorts(blockName);
 
             var offset = 0;
 
             const calculateOffsets = (nodeArray, path = '', parent = null) => {
                 nodeArray.forEach((nodeObj) => {
-                    const nodeName = Object.keys(nodeObj)[0]; 
-                    const children = nodeObj[nodeName]; 
+                    const nodeName = Object.keys(nodeObj)[0];
+                    const children = nodeObj[nodeName];
                     const currentPath = path ? `${path}.${nodeName}` : nodeName;
 
                     if (nodes[nodeName] && parent && nodes[parent] && nodes[parent].state && nodes[parent].state.opened) {
@@ -398,6 +410,7 @@ export default {
             };
 
             calculateOffsets(treeStructure);
+
         },
         addPortToBlockTemplates(nodePath, yOffset, blockName) {
             if (blockName == 'Source') {
@@ -476,6 +489,8 @@ export default {
         handleNodeClick(nodes, blockName) {
             this.portIndex = 0;
             this.updateBlockTemplates(nodes, blockName);
+            this.blockTemplates.Source.ports = this.reverseObject(this.blockTemplates.Source.ports);
+            this.blockTemplates.Target.ports = this.reverseObject(this.blockTemplates.Target.ports);
         },
         saveFormMapperJson() {
             var jsonString = JSON.stringify(this.getMappingElementsJson(), null, 2);

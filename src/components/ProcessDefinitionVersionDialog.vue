@@ -101,10 +101,10 @@ export default {
                     if (me.process) {
                         me.isNew = false
                         let bpmn = await backend.getRawDefinition(me.process.processDefinitionId, { type: 'bpmn' })
-                        if(bpmn){
-                            if(me.useLock){
+                        if(bpmn) {
+                            if(me.useLock) {
                                 // GPT
-                                 let definitionInfo = await me.storage.list(`proc_def`, {  match: { 'id': me.process.processDefinitionId } })
+                                 let definitionInfo = await backend.getRawDefinition(me.process.processDefinitionId);
                                  let versionInfo = await me.storage.list(`proc_def_arcv`, {
                                         sort: 'desc',
                                         orderBy: 'timeStamp',
@@ -113,13 +113,14 @@ export default {
                                     })
                                 if (versionInfo.length > 0) {
                                     me.information = versionInfo[0]
+                                    me.information.name = definitionInfo.name
                                 } else {
                                     me.information = {
-                                        arcv_id: definitionInfo[0].id,
+                                        arcv_id: definitionInfo.id,
                                         version: 0.0,
-                                        name: definitionInfo[0].name,
-                                        proc_def_id: definitionInfo[0].id,
-                                        snapshot: definitionInfo[0].bpmn,
+                                        name: definitionInfo.name,
+                                        proc_def_id: definitionInfo.id,
+                                        snapshot: bpmn,
                                         diff: null,
                                         timeStamp: null
                                     }

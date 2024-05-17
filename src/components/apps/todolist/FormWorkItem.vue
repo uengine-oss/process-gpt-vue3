@@ -51,7 +51,6 @@ export default {
             me.html = await backend.getRawDefinition(formName, { type: 'form' });
             // if (me.workItemStatus == 'COMPLETED' || me.workItemStatus == 'DONE') {
             this.loadForm()
-            me.formDataKey += 1;
             // }
 
             // if (me.workItem.activity.previousActivities.length > 0) {
@@ -78,6 +77,7 @@ export default {
                 me.formData = {};
             }
 
+            me.formDataKey += 1;
         },
         async saveTask() {
             var me = this;
@@ -131,7 +131,7 @@ export default {
             let workItem = { parameterValues: {} };
 
             if($mode=="uEngine")
-                me.saveForm()
+                await me.saveForm()
             
             if($mode=="ProcessGPT"){
                 workItem.parameterValues = me.formData
