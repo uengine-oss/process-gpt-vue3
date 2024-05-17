@@ -11,6 +11,13 @@
         "title": "AI를 기반한 프로세스 관리에서 실행까지를 손쉽게 시작하세요",
         "subTitle": "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
     },
+    "headerMenu" : {
+        "sidebar" : "사이드바",
+        "dashboard" : "대시보드",
+        "todoList" : "할 일",
+        "calendar" : "달력",
+        "layoutSetting" : "레이아웃 설정"
+    },
     "DashboardTodoList": {
         "todo": "할 일",
         "inProgress": "진행 중",
@@ -92,7 +99,9 @@
         "edit": "수정",
         "delete": "삭제",
         "cancel": "취소",
-        "save": "화면 저장"
+        "save": "화면 저장",
+        "deleteForm": "폼 삭제",
+        "deleteFormMessage": "폼을 삭제하시겠습니까?"
     },
     "processDefinition": {
         "title": "프로세스 정의",

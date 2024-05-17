@@ -1469,21 +1469,20 @@ export default {
                 });
             }
             // start, end event(동그라미 스티커)
-            if (jsonModel.events){
+            if (jsonModel.events) {
                 jsonModel.events.forEach((event) => {
-                    // let eventX = 140
-                    let eventX
-                    let eventY
-                    if(event.type == 'StartEvent'){
+                    let eventX;
+                    let eventY;
+                    if (event.type == 'StartEvent') {
                         // 시작 이벤트(동그라미 스티커에 대해서 동그라미 스티커가 생성되는 위치 )
-                        eventX = 160
+                        eventX = 160;
                         eventY = parseInt(rolePos[jsonModel.activities[0].role].y) + 33;
-                    } else if(event.type == 'EndEvent') {
-                        eventX = positionMapping[event.id] ? positionMapping[event.id] : lastXPos + 120
+                    } else if (event.type == 'EndEvent') {
+                        eventX = positionMapping[event.id] ? positionMapping[event.id] : lastXPos + 120;
                         eventY = parseInt(rolePos[jsonModel.activities[jsonModel.activities.length - 1].role].y) + 33;
                     } else {
-                        eventX = 200
-                        eventY = 200
+                        eventX = 200;
+                        eventY = 200;
                     }
                     const eventShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
                     eventShape.setAttribute('id', `Shape_${event.id}`);
@@ -1494,6 +1493,17 @@ export default {
                     dcBounds.setAttribute('width', '34');
                     dcBounds.setAttribute('height', '34');
                     eventShape.appendChild(dcBounds);
+
+                    // 라벨 추가
+                    const eventLabel = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNLabel');
+                    const dcBoundsLabel = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
+                    dcBoundsLabel.setAttribute('x', eventX - 15); // 라벨의 x 좌표
+                    dcBoundsLabel.setAttribute('y', eventY + 40); // 라벨의 y 좌표, 원하는 값으로 수정
+                    dcBoundsLabel.setAttribute('width', '64');
+                    dcBoundsLabel.setAttribute('height', '14');
+                    eventLabel.appendChild(dcBoundsLabel);
+                    eventShape.appendChild(eventLabel);
+
                     bpmnPlane.appendChild(eventShape);
 
                     activityPos[event.id] = {
