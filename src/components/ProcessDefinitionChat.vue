@@ -604,6 +604,8 @@ export default {
 
             this.isChanged = true;
         },
+        afterModelStopped(response) {
+        },
         async convertXMLToJSON(xmlString) {
             try {
                 xmlString = xmlString.replace(/\$type/g, '_type');//sanitizing for $type

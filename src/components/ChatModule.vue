@@ -462,16 +462,18 @@ export default {
                     messageWriting.jsonContent = this.extractJSON(response);
                     // messageWriting.systemRequest = false;
 
-                    let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
-                    const match = messageWriting.content.match(regex);
-                    if (match) {
-                        messageWriting.content = messageWriting.content.replace(match[1], '');
-                        regex = /`{3}(?:json|markdown)?\s?\n/g;
-                        messageWriting.content = messageWriting.content.replace(regex, '');
-                        messageWriting.content = messageWriting.content.replace(/\s?\n?`{3}?\s?\n/g, '');
-                        messageWriting.content = messageWriting.content.replace(/`{3}/g, '');
+                    if (messageWriting.jsonContent) {
+                        let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
+                        const match = messageWriting.content.match(regex);
+                        if (match) {
+                            messageWriting.content = messageWriting.content.replace(match[1], '');
+                            regex = /`{3}(?:json|markdown)?\s?\n/g;
+                            messageWriting.content = messageWriting.content.replace(regex, '');
+                            messageWriting.content = messageWriting.content.replace(/\s?\n?`{3}?\s?\n/g, '');
+                            messageWriting.content = messageWriting.content.replace(/`{3}/g, '');
+                        }
                     }
-
+                    
                     this.afterModelCreated(response);
                 },
                 onFail: () => {
@@ -495,8 +497,13 @@ export default {
         },
         onGenerationFinished(response) {
             let messageWriting = this.messages[this.messages.length - 1];
-            delete messageWriting.isLoading;
             messageWriting.timeStamp = Date.now();
+
+            this.messages.forEach((message) => {
+                if (message.role == 'system') {
+                    delete message.isLoading;
+                }
+            });
 
             this.afterGenerationFinished(response);
         },
@@ -518,9 +525,9 @@ export default {
                         "key": apiKey
                     }
                 }
-                this.putObject('configuration', token)
-
-                this.generator.generate();
+                this.putObject('configuration', token);
+                this.openaiToken = apiKey;
+                this.startGenerate();
             } else {
                 let messageWriting = this.messages[this.messages.length - 1];
                 if (messageWriting.role == 'system' && messageWriting.isLoading) {
