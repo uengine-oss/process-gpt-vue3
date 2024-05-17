@@ -45,10 +45,13 @@ class ProcessGPTBackend implements Backend {
                 return
             }
 
-            let result: any;
             await storage.delete(`proc_def/${defId}`, { key: 'id' });
             
-            const arcv = await storage.list(`proc_def_arcv/${defId}`, { key: 'proc_def_id' });
+            const arcv = await storage.list('proc_def_arcv', {
+                sort: 'desc',
+                orderBy: 'timeStamp',
+                match: { 'proc_def_id': defId }
+            });
             if (arcv && arcv.length > 0) {
                 await storage.delete(`proc_def_arcv/${defId}`, { key: 'proc_def_id' });
             }
