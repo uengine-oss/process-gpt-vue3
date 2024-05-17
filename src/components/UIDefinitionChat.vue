@@ -455,11 +455,15 @@ export default {
                         newRow.appendChild(child);
                     });
 
-                    newRow.querySelectorAll('[v-model]').forEach(field => {
+                    $(newRow).children('[class^="col-sm-"]').children('[v-model]').each(function () {
+                        var field = ($(this))[0];
+                        
                         field.removeAttribute('v-model');
                     });
 
-                    newRow.querySelectorAll('*').forEach(field => {
+                    $(newRow).children('[class^="col-sm-"]').children('*').each(function () {
+                        var field = ($(this))[0];
+                        
                         Array.from(field.attributes).forEach(attr => {
                             if (attr.name.startsWith('v-on:')) {
                                 field.removeAttribute(attr.name);
@@ -834,7 +838,6 @@ export default {
 
 
             // Section이 없는 경우, Section으로 감싸서 새로 생성하고, 있는 경우 그대로 사용함
-            let targetSections = null;
             if(dom.body.querySelectorAll("section").length == 0) {
                 const rows = Array.from(dom.body.querySelectorAll('.row'));
                 dom.body.innerHTML = rows.map(row => {
@@ -844,14 +847,12 @@ export default {
                 }).join('').replace(/&quot;/g, `'`);
             }
             
-            targetSections = Array.from(dom.body.querySelectorAll("section"));
             
-
             // KEdtior에서 인식할 수 있도록 클래스 추가하기
-            targetSections.forEach(section => {
-                section.setAttribute('class', 'keditor-ui keditor-container-inner');
+            Array.from(dom.body.querySelectorAll("section")).forEach(section => {
+                section.setAttribute('class', 'keditor-container');
             });
-            const loadedValidHTML = targetSections.map(section => section.outerHTML).join('').replace(/&quot;/g, `'`).replace("<br>", "\n")
+            const loadedValidHTML = Array.from(dom.body.childNodes).map(section => section.outerHTML).join('').replace(/&quot;/g, `'`).replace("<br>", "\n")
 
 
             console.log('### 로드된 유효 HTML 텍스트 ###');
