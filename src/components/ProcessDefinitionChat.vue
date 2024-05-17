@@ -390,6 +390,9 @@ export default {
                     // }
                     if (xmlObj && xmlObj.xml && window.$mode != 'uEngine') {
                         me.processDefinition = await me.convertXMLToJSON(xmlObj.xml);
+                        if (info.name && info.name != '') {
+                            me.processDefinition.processDefinitionName = info.name;
+                        }
                         info.definition = me.processDefinition;
                     }
 
@@ -485,7 +488,7 @@ export default {
                             const value = await backend.getRawDefinition(fullPath);
                             if (value) {
                                 me.processDefinition = value.definition;
-                                me.projectName = value.name;
+                                me.projectName = me.processDefinition.processDefinitionName;
                             }
                             me.checkedLock(lastPath);
                         } else {
@@ -603,6 +606,8 @@ export default {
             }
 
             this.isChanged = true;
+        },
+        afterModelStopped(response) {
         },
         async convertXMLToJSON(xmlString) {
             try {
@@ -857,14 +862,12 @@ export default {
                     //     me.processDefinition = await me.convertXMLToJSON(xml);
                     // }
 
-                    me.processDefinition.processDefinitionId = info.proc_def_id
-                        ? info.proc_def_id
-                        : prompt('please give a ID for the process definition');
-                    
-                        if (!me.processDefinition.processDefinitionName) {
+                    me.processDefinition.processDefinitionId = info.proc_def_id ? info.proc_def_id : prompt('please give a ID for the process definition');
+
+                    if (!me.processDefinition.processDefinitionName && info.name) {
                         me.processDefinition.processDefinitionName = info.name
-                        ? info.name
-                        : prompt('please give a name for the process definition');
+                    } else if (!me.processDefinition.processDefinitionName && !info.name) {
+                        me.processDefinition.processDefinitionName = prompt('please give a name for the process definition');
                     }
 
                     me.projectName = me.processDefinition.processDefinitionName;

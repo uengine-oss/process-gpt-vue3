@@ -24,8 +24,9 @@ class ProcessGPTBackend implements Backend {
             
             return [...procDefs, ...formDefs]
 
-        } catch (error) {
-            throw new Error('error in listDefinition');
+        } catch (e) {
+            //@ts-ignore
+            throw new Error(e.message);
         }
     }
 
@@ -44,21 +45,13 @@ class ProcessGPTBackend implements Backend {
                 return
             }
 
-            let result: any;
             await storage.delete(`proc_def/${defId}`, { key: 'id' });
-            const list = await storage.list(defId);
-            if (list && list.length > 0) {
-                await axios.post('/drop-process-table/invoke', {
-                    "input": {
-                        "process_definition_id": defId
-                    }
-                }).then(res => {
-                    result = res;
-                }).catch(error => {
-                    throw new Error(error && error.detail ? error.detail : error);
-                });
-            }
-            const arcv = await storage.list(`proc_def_arcv/${defId}`, { key: 'proc_def_id' });
+            
+            const arcv = await storage.list('proc_def_arcv', {
+                sort: 'desc',
+                orderBy: 'timeStamp',
+                match: { 'proc_def_id': defId }
+            });
             if (arcv && arcv.length > 0) {
                 await storage.delete(`proc_def_arcv/${defId}`, { key: 'proc_def_id' });
             }
@@ -66,9 +59,17 @@ class ProcessGPTBackend implements Backend {
             if (isLocked) {
                 await storage.delete(`lock/${defId}`, { key: 'id' });
             }
-            return result;
-        } catch (error) {
-            throw new Error('error in deleteDefinition');
+            // supabase table 삭제
+            await axios.post('/drop-process-table/invoke', {
+                "input": {
+                    "process_definition_id": defId
+                }
+            }).catch(error => {
+                throw new Error(error && error.detail ? error.detail : error);
+            });
+        } catch (e) {
+            //@ts-ignore
+            throw new Error(e.message);
         }
     }
 
@@ -101,32 +102,32 @@ class ProcessGPTBackend implements Backend {
                 diff: options.diffs,
             }
             await storage.putObject('proc_def_arcv', procDefArcv);
+            
+            try {
+                const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
+                if (isLocked) {
+                    await storage.delete(`lock/${defId}`, { key: 'id' });
+                }
+            } catch(error) {
+                //@ts-ignore
+                throw new Error("Error when to unlock: " + (error && error.detail ? error.detail : error));
+            }
 
             const list = await storage.list(defId);
             if (list.code == "42P01") {
-                try{
+                try {
                     await axios.post('/process-db-schema/invoke', {
                         "input": {
                             "process_definition_id": defId
                         }
                     })
-                }catch(error){
+                } catch(error) {
                     //@ts-ignore
                     throw new Error("Error when to creating database for the definition: " + (error && error.detail ? error.detail : error));
                 }
             }
 
-            try{
-                const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
-                if (isLocked) {
-                    await storage.delete(`lock/${defId}`, { key: 'id' });
-                }    
-
-            }catch(error){
-                //@ts-ignore
-                throw new Error("Error when to unlock: " + (error && error.detail ? error.detail : error));
-
-            }
+            
         } catch (e) {
             throw new Error('error when to save definition: ' + (e instanceof Error ? e.message : ''));
         }
@@ -169,8 +170,6 @@ class ProcessGPTBackend implements Backend {
                         "input": {
                             "process_definition_id": defId
                         }
-                    }).then(res => {
-                        return res
                     }).catch(error => {
                         throw new Error(error && error.detail ? error.detail : error);
                     });
@@ -192,24 +191,12 @@ class ProcessGPTBackend implements Backend {
                 input.userInfo = await storage.getUserInfo();
             }
             input['process_definition_id'] = defId.toLowerCase();
-
-            if (input.answer != "" && input.process_instance_id && input.process_instance_id != '') {
-                newMessage = {
-                    role: 'user',
-                    name: input.userInfo.name,
-                    email: input.userInfo.email,
-                    timestamp: Date.now(),
-                    content: input.answer,
-                }
-                await this.updateInstanceChat(input.process_instance_id, newMessage);
-            }
             
             var result: any = null;
             var url = '/complete/invoke';
             if (input.image != null) {
                 url = '/vision-complete/invoke';
             }
-            
             var req = {
                 input: input
             };
@@ -219,7 +206,6 @@ class ProcessGPTBackend implements Backend {
                     const data = res.data;
                     if (data.output) {
                         result = JSON.parse(data.output);
-                        console.log(result)
                         if (input.answer === "" && result.instanceId) {
                             newMessage = {
                                 role: 'system',
@@ -229,6 +215,14 @@ class ProcessGPTBackend implements Backend {
                             }
                             await this.updateInstanceChat(result.instanceId, newMessage);
                         } else {
+                            newMessage = {
+                                role: 'user',
+                                name: input.userInfo.name,
+                                email: input.userInfo.email,
+                                timestamp: Date.now(),
+                                content: input.answer,
+                            }
+                            await this.updateInstanceChat(result.instanceId, newMessage);
                             newMessage = {
                                 role: 'system',
                                 timestamp: Date.now(),
@@ -241,12 +235,14 @@ class ProcessGPTBackend implements Backend {
                 }
             })
             .catch(error => {
+                result = error
                 throw new Error(error && error.detail ? error.detail : error);
             });
 
             return result;
         } catch (error) {
-            throw new Error('error in start' + error);
+            //@ts-ignore
+            throw new Error(error.message);
         }
     }
 
@@ -263,8 +259,9 @@ class ProcessGPTBackend implements Backend {
             data.instanceId = instanceId;
             data.name = data.proc_inst_name;
             return data;
-        } catch (error) {
-            throw new Error('error in getInstance');
+        } catch (e) {
+            //@ts-ignore
+            throw new Error(e.message);
         }
     }
 
@@ -310,8 +307,9 @@ class ProcessGPTBackend implements Backend {
                 }
             }
             return workItem;
-        } catch (error) {
-            throw new Error('error in getWorkItem');
+        } catch (e) {
+            //@ts-ignore
+            throw new Error(e.message);
         }
     }
 
@@ -575,7 +573,6 @@ class ProcessGPTBackend implements Backend {
             })
             .catch(error => {
                 result = error
-                console.log(error)
                 throw new Error(error && error.detail ? error.detail : error);
             });
     
@@ -590,7 +587,7 @@ class ProcessGPTBackend implements Backend {
     async updateInstanceChat(instanceId: string, newMessage: any) {
         try {
             const data = await storage.getObject(`proc_inst/${instanceId}`, { key: 'id' });
-            const messages = data.messages || [];
+            const messages = data && data.messages ? data.messages : [];
             if (newMessage) {
                 messages.push(newMessage);
             }
@@ -600,7 +597,8 @@ class ProcessGPTBackend implements Backend {
             }
             await storage.putObject('proc_inst', putObj);
         } catch (e) {
-            return new Error('error in updateInstanceChat');
+            //@ts-ignore
+            throw new Error(e.message);
         }
     }
 

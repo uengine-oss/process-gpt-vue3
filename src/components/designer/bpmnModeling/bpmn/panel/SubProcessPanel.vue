@@ -200,9 +200,13 @@ export default {
         },
         selectedRole(after, before) {
             console.log(after);
-            this.copyUengineProperties.forEachRole = {
-                name: after
-            };
+            if (after) {
+                this.copyUengineProperties.forEachRole = {
+                    name: after
+                };
+            } else {
+                delete this.copyUengineProperties.forEachRole;
+            }
         },
         selectedVariable(after, before) {
             if (after) {
