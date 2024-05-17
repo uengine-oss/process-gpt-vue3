@@ -368,7 +368,7 @@ export default {
                     const innerRow = document.createElement('div');
                     innerRow.setAttribute('class', 'row');
 
-                    Array.from(row.childNodes).forEach(child => {
+                    Array.from(row.children).forEach(child => {
                         innerRow.appendChild(child);
                     });
 
@@ -433,7 +433,7 @@ export default {
                     const rowDiv = document.createElement('div');
                     rowDiv.classList.add('row');
 
-                    Array.from(row.childNodes).forEach(child => {
+                    Array.from(row.children).forEach(child => {
                         rowDiv.appendChild(child);
                     });
 
@@ -478,7 +478,7 @@ export default {
                     newRow.setAttribute('class', 'row');
 
 
-                    Array.from(row.firstChild.childNodes).forEach(child => {
+                    Array.from(row.firstChild.children).forEach(child => {
                         newRow.appendChild(child);
                     });
 
@@ -916,7 +916,7 @@ export default {
             Array.from(dom.body.querySelectorAll("section")).forEach(section => {
                 section.setAttribute('class', 'keditor-container');
             });
-            const loadedValidHTML = Array.from(dom.body.childNodes).map(section => section.outerHTML).join('').replace(/&quot;/g, `'`).replace("<br>", "\n")
+            const loadedValidHTML = Array.from(dom.body.children).map(section => section.outerHTML).join('').replace(/&quot;/g, `'`).replace("<br>", "\n")
 
 
             console.log('### 로드된 유효 HTML 텍스트 ###');
