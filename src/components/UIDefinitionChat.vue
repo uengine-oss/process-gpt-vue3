@@ -399,6 +399,17 @@ export default {
                         throw new Error(`multidataMode가 설정된 레이아웃에 'name' 속성이 없습니다.`);
                     }
 
+                    // row의 부모 노드를 계속 탐색해서. 그 노드가 is_multidata_mode="true"의 속성을 가졌는지 확인함
+                    let isPerentNodeMultiDataMode = false;
+                    let parentNode = row.parentNode;
+                    while(parentNode && parentNode.tagName.toLowerCase() !== 'body') {
+                        if(parentNode.getAttribute('is_multidata_mode') === "true") {
+                            isPerentNodeMultiDataMode = true;
+                            break;
+                        }
+                        parentNode = parentNode.parentNode;
+                    }
+
 
                     const newRow = document.createElement('row-layout');
 
@@ -406,21 +417,37 @@ export default {
                     newRow.setAttribute('alias', row.getAttribute('alias') ?? "");
                     newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode'));
 
-                    newRow.setAttribute('v-model', 'formValues');
+                    newRow.setAttribute('v-model', (isPerentNodeMultiDataMode) ? 'item' : 'formValues');
                     newRow.setAttribute('v-slot', 'slotProps');
 
-                    newRow.innerHTML = `<div v-for="(item, index) in slotProps.modelValue" :key="index">
-    <row-layout-item-head :index="index" @on_delete_item="slotProps.deleteItem(index)"></row-layout-item-head>
-    <div class="row">
-    ${row.innerHTML}
-    </div>
-</div>`
 
+                    const containerDiv = document.createElement('div');
+                    containerDiv.setAttribute('v-for', '(item, index) in slotProps.modelValue');
+                    containerDiv.setAttribute(':key', 'index');
 
-                    newRow.querySelectorAll('[name]').forEach(field => {
+                    const head = document.createElement('row-layout-item-head');
+                    head.setAttribute(':index', 'index');
+                    head.setAttribute('v-on:on_delete_item', 'slotProps.deleteItem(index)');
+                    containerDiv.appendChild(head);
+
+                    const rowDiv = document.createElement('div');
+                    rowDiv.classList.add('row');
+
+                    Array.from(row.childNodes).forEach(child => {
+                        rowDiv.appendChild(child);
+                    });
+
+                    containerDiv.appendChild(rowDiv);
+
+                    newRow.appendChild(containerDiv);
+
+                    $(newRow).children('div').children('div.row')
+                        .children('[class^="col-sm-"]').children('[name]').each(function () {
+                        var field = ($(this))[0];
                         const name = field.getAttribute('name');
                         field.setAttribute('v-model', `item['${name}']`);
-                    });
+                    })
+
 
                     row.parentNode.replaceChild(newRow, row);
                 }
@@ -847,7 +874,7 @@ export default {
                 }).join('').replace(/&quot;/g, `'`);
             }
             
-            
+
             // KEdtior에서 인식할 수 있도록 클래스 추가하기
             Array.from(dom.body.querySelectorAll("section")).forEach(section => {
                 section.setAttribute('class', 'keditor-container');
