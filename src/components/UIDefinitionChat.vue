@@ -511,21 +511,25 @@ export default {
                     newRow.setAttribute('class', 'row');
 
 
-                    row.querySelectorAll('[class^="col-sm-"]').forEach(child => {
-                        newRow.appendChild(child);
-                    });
+                    $(row).children('div').children('div.row')
+                        .children('[class^="col-sm-"]').each(function () {
+                        var field = ($(this))[0];
+                        newRow.appendChild(field);
+                    })
 
-                    newRow.querySelectorAll('[v-model]').forEach(field => {
+                    $(newRow).children('[class^="col-sm-"]').children('[v-model]').each(function () {
+                        var field = ($(this))[0];
                         field.removeAttribute('v-model');
-                    });
+                    })
 
-                    newRow.querySelectorAll('*').forEach(field => {
+                    $(newRow).children('[class^="col-sm-"]').children('*').each(function () {
+                        var field = ($(this))[0];
                         Array.from(field.attributes).forEach(attr => {
                             if (attr.name.startsWith('v-on:')) {
                                 field.removeAttribute(attr.name);
                             }
                         });
-                    });
+                    })
 
 
                     row.parentNode.replaceChild(newRow, row);
