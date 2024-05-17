@@ -810,6 +810,45 @@ export default {
 
             });
 
+            // 만약, AI가 class='row' 바깥에 section으로 감싸라는 지시를 제대로 따르지 못했을 경우, 적절하게 처리하기 위해서
+            let isInvalidSectionParsing = false
+            dom.querySelectorAll('div.row').forEach((row) => {
+                if (row.parentElement.tagName.toLowerCase() !== 'section') {
+                    isInvalidSectionParsing = true
+                }
+            });
+
+            dom.querySelectorAll('section').forEach((section) => {
+                if(section.children.length !== 1) {
+                    isInvalidSectionParsing = true
+                }
+            });
+
+            if(isInvalidSectionParsing) {
+                // 특정 컴포넌트 안의 내용을 남겨주고, 그 컴포넌트를 제거 시킴
+                const removeParentComponent = (parentComponent) => {
+                    const parentSection = parentComponent.parentElement;
+                    while (parentComponent.firstChild) {
+                        parentSection.insertBefore(parentComponent.firstChild, parentComponent);
+                    }
+                        parentSection.removeChild(parentComponent);
+                }
+
+                const removeParentComponentByQuerySelector = (query) => {
+                    dom.querySelectorAll(query).forEach(parentComponent => {
+                        removeParentComponent(parentComponent)
+                    })
+                }
+
+                removeParentComponentByQuerySelector('section');
+
+                dom.querySelectorAll('div.row').forEach((row) => {
+                    const section = document.createElement('section');
+                    row.parentElement.insertBefore(section, row);
+                    section.appendChild(row);
+                });
+            }
+
 
             // 컨테이너인 경우, data-type 속성을 추가해서 KEditor에서 인식할 수 있도록 만들기 위해서서
             const nodes = dom.querySelectorAll('[class^="col-sm-"]');
