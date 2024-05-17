@@ -437,7 +437,7 @@ export default {
             const parser = new DOMParser();
             const doc = parser.parseFromString(formHtml, 'text/html');
 
-            function extractFields(element) {
+            const extractFields = (element) => {
                 let fields = [];
                 if (element.hasChildNodes()) {
                     Array.from(element.children).forEach((child) => {
@@ -460,14 +460,47 @@ export default {
                     });
                 }
                 return fields;
-            }
+            };
+
+            const extractSingleFields = (element) => {
+                let fields = [];
+                if (element.hasChildNodes()) {
+                    Array.from(element.children).forEach((child) => {
+                        const tagName = child.tagName.toLowerCase();
+                        if (tagName.includes('field') && !tagName.includes('label')) {
+                            const type = tagName.replace('-field', '');
+                            const name = child.getAttribute('name');
+                            const alias = child.getAttribute('alias');
+                            const fieldData = {
+                                name,
+                                type,
+                                alias,
+                                children: []
+                            };
+                            fieldData.children = extractFields(child);
+                            fields.push(fieldData);
+                        }
+                        fields = fields.concat(extractSingleFields(child));
+                    });
+                }
+                return fields;
+            };
 
             const rowLayouts = doc.querySelectorAll('row-layout');
-            return Array.from(rowLayouts).map((rowLayout) => ({
-                name: rowLayout.getAttribute('name'),
-                alias: rowLayout.getAttribute('alias'),
-                fields: extractFields(rowLayout)
-            }));
+            const parsedLayouts = Array.from(rowLayouts).map((rowLayout) => {
+                const isMultiDataMode = rowLayout.getAttribute('is_multidata_mode') === 'true';
+                if (isMultiDataMode) {
+                    return {
+                        name: rowLayout.getAttribute('name'),
+                        alias: rowLayout.getAttribute('alias'),
+                        fields: extractFields(rowLayout)
+                    };
+                } else {
+                    return extractSingleFields(rowLayout);
+                }
+            });
+
+            return parsedLayouts.flat();
         },
         createForm() {
             let urlData = {}
