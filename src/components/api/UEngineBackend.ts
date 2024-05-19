@@ -296,7 +296,7 @@ class UEngineBackend implements Backend {
     }
 
     // get Completed WorkList API
-    async getCompletedList(options) {
+    async getCompletedList(options?: any) {
         let basePath = '/worklist/search/findCompleted'
         if(!options) options = {}
         if(!options.page) options.page = 0

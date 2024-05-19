@@ -61,6 +61,7 @@ class ProcessGPTBackend implements Backend {
             }
             // supabase table 삭제
             await axios.post('/drop-process-table/invoke', {
+            // await axios.post('http://execution.process-gpt.io/drop-process-table/invoke', {
                 "input": {
                     "process_definition_id": defId
                 }
@@ -117,6 +118,7 @@ class ProcessGPTBackend implements Backend {
             if (list.code == "42P01") {
                 try {
                     await axios.post('/process-db-schema/invoke', {
+                    // await axios.post('http://execution.process-gpt.io/process-db-schema/invoke', {
                         "input": {
                             "process_definition_id": defId
                         }
@@ -167,6 +169,7 @@ class ProcessGPTBackend implements Backend {
                 const list = await storage.list(defId);
                 if (list.code == "42P01") {
                     await axios.post('/process-db-schema/invoke', {
+                    // await axios.post('http://execution.process-gpt.io/process-db-schema/invoke', {
                         "input": {
                             "process_definition_id": defId
                         }
@@ -197,6 +200,10 @@ class ProcessGPTBackend implements Backend {
             if (input.image != null) {
                 url = '/vision-complete/invoke';
             }
+            // var url = 'http://execution.process-gpt.io/complete/invoke';
+            // if (input.image != null) {
+            //     url = 'http://execution.process-gpt.io/vision-complete/invoke';
+            // }
             var req = {
                 input: input
             };
@@ -556,6 +563,7 @@ class ProcessGPTBackend implements Backend {
                 input: input
             };
             let url = '/complete/invoke';
+            // let url = 'http://execution.process-gpt.io/complete/invoke';
             await axios.post(url, req).then(async res => {
                 if (res.data) {
                     const data = res.data;

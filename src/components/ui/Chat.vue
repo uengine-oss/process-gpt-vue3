@@ -151,11 +151,11 @@
                                                         <pre class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
                                                         <!-- <pre class="text-body-1">{{ message.content }}</pre> -->
 
-                                                        <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
+                                                        <!-- <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
                                                             <v-btn style="margin-right: 5px" size="small"
                                                                 @click="startProcess(message)">y</v-btn>
                                                             <v-btn size="small" @click="cancelProcess(message)">n</v-btn>
-                                                        </p>
+                                                        </p> -->
                                                         <v-row class="pa-0 ma-0">
                                                             <v-spacer></v-spacer>
                                                             <v-btn @click="beforeReply(message)"
@@ -268,104 +268,149 @@
                             <v-row class="ma-0 pa-0"
                                 :style="file && file.length > 0 ? 'margin:-13px 0px 0px 7px !important;' : ''"
                             >
-                                <v-tooltip :text="$t('chat.fileUpLoad')">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn v-if="file && file.length > 0" type="submit" 
-                                            v-bind="props"
-                                            icon variant="text"
-                                            class="text-medium-emphasis"
-                                            style="width:30px;
-                                                height:30px;
-                                                margin:12.5px 0px 0px 0px;"
-                                        >
-                                            <Icon icon="material-symbols:upload" width="24" height="24" />
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip>
-                                <v-file-input class="chat-file-up-load"
-                                    :class="{'chat-file-up-load-display': file && file.length > 0}"
-                                    :style="file && file.length > 0 ? '' : 'padding:5px 0px 0px 8px !important; width:30px !important; height:30px !important;'"
-                                    v-model="file"
-                                    label="Choose a file"
-                                    prepend-icon="mdi-paperclip"
-                                    outlined
-                                ></v-file-input>
-                                <v-tooltip v-if="type == 'chats'" :text="$t('chat.generateProcessDef')">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="generateProcessDef" v-bind="props"
-                                            style="width:30px; height:30px; margin-left:12px;" :disabled="disableChat">
-                                            <Icon icon="fluent-mdl2:server-processes" width="20" height="20" />
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip>
-                            </v-row>
-                        </v-form>
-                    </v-row>
-                </div>
-                <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
-                    <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
-                </div> -->
+                            <v-tooltip :text="$t('chat.fileUpLoad')">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-if="file && file.length > 0" type="submit" 
+                                        v-bind="props"
+                                        icon variant="text"
+                                        class="text-medium-emphasis"
+                                        style="width:30px;
+                                            height:30px;
+                                            margin:12.5px 0px 0px 0px;"
+                                    >
+                                        <Icon icon="material-symbols:upload" width="24" height="24" />
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                            <v-file-input class="chat-file-up-load"
+                                :class="{'chat-file-up-load-display': file && file.length > 0}"
+                                :style="file && file.length > 0 ? '' : 'padding:5px 0px 0px 8px !important; width:30px !important; height:30px !important;'"
+                                v-model="file"
+                                label="Choose a file"
+                                prepend-icon="mdi-paperclip"
+                                outlined
+                            ></v-file-input>
+                            <v-tooltip v-if="type == 'chats'" :text="ProcessGPTActive ? $t('chat.isDisableProcessGPT') : $t('chat.isEnableProcessGPT')">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn icon variant="text" class="text-medium-emphasis" @click="toggleProcessGPTActive" v-bind="props"
+                                        style="width:30px; height:30px; margin-left:12px;" :disabled="disableChat">
+                                        <v-icon :color="ProcessGPTActive ? 'primary' : ''" icon="$vuetify"></v-icon>
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                            <v-tooltip v-if="type == 'chats'" text="가능한 작업 내역">
+                                <template v-slot:activator="{ props }">
+                                    <v-chip small class="ma-1" :value="true" color="primary" text-color="white">
+                                        {{ generatedWorkList.length }}
+                                    </v-chip>
+                                    <v-btn icon variant="text" class="text-medium-emphasis" @click="showGeneratedWorkList = !showGeneratedWorkList" v-bind="props"
+                                        style="width:30px; height:30px; margin-left:12px;" :disabled="disableChat">
+                                        <Icon icon="fluent-mdl2:server-processes" width="20" height="20" />
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                            <v-card v-if="showGeneratedWorkList" class="mt-3">
+                                <v-list>
+                                    <v-list-item-group>
+                                        <v-list-item v-for="(work, index) in generatedWorkList" :key="index" class="d-flex align-items-center">
+                                            <v-list-item-content class="flex-grow-1 d-flex align-items-center">
+                                                {{ work.messageForUser }}
+                                                <v-btn icon @click="work.expanded = !work.expanded" class="ml-2">
+                                                    <v-icon>{{ work.expanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+                                                </v-btn>
+                                                <v-btn style="margin-right: 5px" size="small"
+                                                    @click="startProcess(work, index)">y</v-btn>
+                                                <v-btn size="small" @click="deleteWorkList(index)">n</v-btn>
+                                            </v-list-item-content>
+                                            <v-divider v-if="index < generatedWorkList.length - 1"></v-divider>
+                                            <v-expand-transition>
+                                                <div v-if="work.expanded" class="mt-2 w-100">
+                                                    <pre>{{ work }}</pre>
+                                                </div>
+                                            </v-expand-transition>
+                                        </v-list-item>
+                                    </v-list-item-group>
+                                </v-list>
+                            </v-card>
+                        </v-row>
+                    </v-form>
+                </v-row>
             </div>
-            <v-divider />
-
-            <!-- <div v-if="showNewMessageNoti"
-                style="position: absolute; z-index: 9; max-width: 1000px; left: 50%; transform: translateX(-50%); bottom: 150px;">
-                <v-chip color="primary" closable @click:close="showNewMessageNoti = false" style="cursor: pointer;">
-                    <div @click="clickToScroll">
-                        <span>{{ lastMessage.name }}: {{ lastMessage.content }}</span>
-                    </div>
-                </v-chip>
+            <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
+                <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
             </div> -->
-            <div class="text-body-1" v-if="isReply" style="margin-left: 10px">
-                {{ replyUser.name }}님에게 답장
-                <v-icon @click="cancelReply()">mdi-close</v-icon>
-                <p>{{ replyUser.content }}</p>
-                <v-divider />
-            </div>
+        </div>
+        <v-divider />
 
-            <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
-            <div id="imagePreview" style="max-width: 200px;"></div>
-            <form class="d-flex align-center pa-0">
-                <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
-                    class="shadow-none message-input-box cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
-                    auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
-                    style="font-size:20px !important;" @input="handleTextareaInput">
-                    <template v-slot:prepend-inner>
-                        <v-btn icon @click="isRecording ? stopRecording() : startRecording()">
-                            <v-icon v-if="isRecording">mdi-stop</v-icon>
-                            <Icon v-else icon="ic:round-headset" width="24" height="24" />
+    <!-- <div v-if="showNewMessageNoti"
+        style="position: absolute; z-index: 9; max-width: 1000px; left: 50%; transform: translateX(-50%); bottom: 150px;">
+        <v-chip color="primary" closable @click:close="showNewMessageNoti = false" style="cursor: pointer;">
+            <div @click="clickToScroll">
+                <span>{{ lastMessage.name }}: {{ lastMessage.content }}</span>
+            </div>
+            <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
+                <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
+            </div> -->
+        </div>
+        <v-divider />
+
+        <!-- <div v-if="showNewMessageNoti"
+            style="position: absolute; z-index: 9; max-width: 1000px; left: 50%; transform: translateX(-50%); bottom: 150px;">
+            <v-chip color="primary" closable @click:close="showNewMessageNoti = false" style="cursor: pointer;">
+                <div @click="clickToScroll">
+                    <span>{{ lastMessage.name }}: {{ lastMessage.content }}</span>
+                </div>
+            </v-chip>
+        </div> -->
+        <div class="text-body-1" v-if="isReply" style="margin-left: 10px">
+            {{ replyUser.name }}님에게 답장
+            <v-icon @click="cancelReply()">mdi-close</v-icon>
+            <p>{{ replyUser.content }}</p>
+            <v-divider />
+        </div>
+
+        <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
+        <div id="imagePreview" style="max-width: 200px;"></div>
+        <form class="d-flex align-center pa-0">
+            <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
+                class="shadow-none message-input-box cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
+                auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
+                style="font-size:20px !important;" @input="handleTextareaInput">
+                <template v-slot:prepend-inner>
+                    <v-btn icon @click="isRecording ? stopRecording() : startRecording()">
+                        <v-icon v-if="isRecording">mdi-stop</v-icon>
+                        <Icon v-else icon="ic:round-headset" width="24" height="24" />
+                    </v-btn>
+                </template>
+                <template v-slot:append-inner>
+                    <div style="height: -webkit-fill-available; margin-right: 10px; margin-top: 10px;">
+                        <v-btn v-if="!isLoading" class="cp-send" icon variant="text" type="submit" @click="beforeSend"
+                            style="width:30px; height:30px;" :disabled="!newMessage">
+                            <Icon icon="teenyicons:send-outline" width="20" height="20" />
                         </v-btn>
-                    </template>
-                    <template v-slot:append-inner>
-                        <div style="height: -webkit-fill-available; margin-right: 10px; margin-top: 10px;">
-                            <v-btn v-if="!isLoading" class="cp-send" icon variant="text" type="submit" @click="beforeSend"
-                                style="width:30px; height:30px;" :disabled="!newMessage">
-                                <Icon icon="teenyicons:send-outline" width="20" height="20" />
-                            </v-btn>
-                            <v-btn v-else icon variant="text" @click="isLoading = !isLoading"
-                                style="width:30px; height:30px;">
-                                <Icon icon="ic:outline-stop-circle" width="20" height="20" />
-                            </v-btn>
-                            <!-- <v-btn icon variant="text" class="text-medium-emphasis">
-                                <PaperclipIcon size="20" />
-                            </v-btn> -->
-                        </div>
-                    </template>
-                </v-textarea>
-                <div v-if="showUserList" class="user-list"
-                    style="position: absolute; bottom: 16%; left: 0; background-color: white; z-index: 100;">
-                    <div v-for="user in filteredUserList" :key="user.id" @click="selectUser(user)" class="user-item"
-                        style="display: flex; align-items: center; padding: 10px; cursor: pointer;">
-                        <img :src="user.profile" alt="profile"
-                            style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px;">
-                        <div>
-                            <div>{{ user.username }}</div>
-                            <div style="font-size: 0.8em; color: #666;">{{ user.email }}</div>
-                        </div>
+                        <v-btn v-else icon variant="text" @click="isLoading = !isLoading"
+                            style="width:30px; height:30px;">
+                            <Icon icon="ic:outline-stop-circle" width="20" height="20" />
+                        </v-btn>
+                        <!-- <v-btn icon variant="text" class="text-medium-emphasis">
+                            <PaperclipIcon size="20" />
+                        </v-btn> -->
+                    </div>
+                </template>
+            </v-textarea>
+            <div v-if="showUserList" class="user-list"
+                style="position: absolute; bottom: 16%; left: 0; background-color: white; z-index: 100;">
+                <div v-for="user in filteredUserList" :key="user.id" @click="selectUser(user)" class="user-item"
+                    style="display: flex; align-items: center; padding: 10px; cursor: pointer;">
+                    <img :src="user.profile" alt="profile"
+                        style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px;">
+                    <div>
+                        <div>{{ user.username }}</div>
+                        <div style="font-size: 0.8em; color: #666;">{{ user.email }}</div>
                     </div>
                 </div>
-            </form>
-        </div>
+            </div>
+        </form>
     </div>
 </template>
 
@@ -406,9 +451,12 @@ export default {
         currentChatRoom: Object,
         // documentQueryStr: String,
         lock: Boolean,
+        generatedWorkList: Array,
+        ProcessGPTActive: Boolean
     },
     data() {
         return {
+            showGeneratedWorkList: false,
             mediaRecorder: null,
             audioChunks: [],
             isRecording: false,
@@ -515,6 +563,9 @@ export default {
         },
     },
     methods: {
+        toggleProcessGPTActive() {
+            this.$emit('toggleProcessGPTActive');
+        },
         linkify(inputText) {
             var replacedText, replacePattern1, replacePattern2, replacePattern3;
 
@@ -531,10 +582,6 @@ export default {
             replacedText = replacedText.replace(replacePattern3, '<a href="mailto:$1">$1</a>');
 
             return replacedText;
-        },
-        generateProcessDef() {
-            this.$store.dispatch('updateMessages', this.messages);
-            this.$router.push('/definitions/chat');
         },
         async startRecording() {
             this.isRecording = true;
@@ -658,19 +705,19 @@ export default {
             const user = this.userList.find(user => user.email === email);
             return user ? user.profile : '';
         },
-        shouldDisplayButtons(message, index) {
-            if (message.role !== 'system' || !message.systemRequest || message.requestUserEmail !== this.userInfo.email) {
-                return false;
-            }
-            // 현재 메시지 이후로 동일한 userInfo.email을 가진 메시지가 있는지 확인
-            for (let i = index + 1; i < this.filteredMessages.length; i++) {
-                if (this.filteredMessages[i].email === this.userInfo.email) {
-                    return false; // 동일한 email을 가진 메시지가 있다면 버튼을 표시하지 않음
-                }
-            }
-            // 위의 조건들을 모두 통과했다면 버튼을 표시
-            return true;
-        },
+        // shouldDisplayButtons(message, index) {
+        //     if (message.role !== 'system' || !message.systemRequest || message.requestUserEmail !== this.userInfo.email) {
+        //         return false;
+        //     }
+        //     // 현재 메시지 이후로 동일한 userInfo.email을 가진 메시지가 있는지 확인
+        //     for (let i = index + 1; i < this.filteredMessages.length; i++) {
+        //         if (this.filteredMessages[i].email === this.userInfo.email) {
+        //             return false; // 동일한 email을 가진 메시지가 있다면 버튼을 표시하지 않음
+        //         }
+        //     }
+        //     // 위의 조건들을 모두 통과했다면 버튼을 표시
+        //     return true;
+        // },
         shouldDisplayUserInfo() {
             return (message, index) => {
                 if (index === 0) return true;
@@ -706,11 +753,12 @@ export default {
             var timeString = dateString.split(' ')[4].substring(0, 5);
             return timeString;
         },
-        startProcess(messageObj) {
+        startProcess(messageObj, index) {
             this.$emit('startProcess', messageObj)
+            this.$emit('deleteWorkList', index)
         },
-        cancelProcess(messageObj) {
-            this.$emit('cancelProcess', messageObj)
+        deleteWorkList(index) {
+            this.$emit('deleteWorkList', index)
         },
         getMoreChat() {
             this.$emit('getMoreChat');

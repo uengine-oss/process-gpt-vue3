@@ -22,15 +22,18 @@
                         :userList="userList"
                         :currentChatRoom="currentChatRoom"
                         :type="path"
+                        :generatedWorkList="generatedWorkList"
+                        :ProcessGPTActive="ProcessGPTActive"
                         @requestDraftAgent="requestDraftAgent"
                         @requestFile="requestFile"
                         @beforeReply="beforeReply"
                         @sendMessage="beforeSendMessage"
                         @startProcess="startProcess"
-                        @cancelProcess="cancelProcess"
+                        @deleteWorkList="deleteWorkList"
                         @sendEditedMessage="sendEditedMessage"
                         @stopMessage="stopMessage"
                         @getMoreChat="getMoreChat"
+                        @toggleProcessGPTActive="toggleProcessGPTActive"
                     >
                         <template v-slot:custom-chat>
                             <VDataTable v-if="onLoad" :headers="headers" :items="definitions" item-value="processDefinitionId">
@@ -98,6 +101,7 @@ export default {
         currentChatRoom: null,
         userList: [],
         chatRenderKey: 0,
+        generatedWorkList: [],
     }),
     computed: {
         filteredChatRoomList() {
@@ -131,6 +135,9 @@ export default {
         });
     },
     methods: {
+        toggleProcessGPTActive() {
+            this.ProcessGPTActive = !this.ProcessGPTActive;
+        },
         async getCalendar(){
             let option = {
                 key: "uid"
@@ -246,6 +253,11 @@ export default {
         async beforeSendMessage(newMessage) {
             if (newMessage && newMessage.text != '') {
                 this.putMessage(this.createMessageObj(newMessage.text))
+                if(!this.generator.contexts) {
+                    let contexts = await this.queryFromVectorDB(newMessage.text);
+                    this.generator.setContexts(contexts);
+                }
+                this.generator.setWorkList(this.generatedWorkList);
                 newMessage.callType = 'chats'
                 this.sendMessage(newMessage);
             }
@@ -267,18 +279,19 @@ export default {
 
         afterModelCreated(response) {
         },
-        deleteSystemMessage(response){
-            this.storage.delete(`chats/${response.uuid}`, {key: 'uuid'});
+        // deleteSystemMessage(response){
+        //     this.storage.delete(`chats/${response.uuid}`, {key: 'uuid'});
+        // },
+        deleteWorkList(index){
+            // let systemMsg = `${this.userInfo.name}님의 요청이 취소되었습니다.`
+            // this.putMessage(this.createMessageObj(systemMsg, 'system'))
+            // this.deleteSystemMessage(response)
+            this.generatedWorkList.splice(index, 1);
         },
-        cancelProcess(response){
-            let systemMsg = `${this.userInfo.name}님의 요청이 취소되었습니다.`
-            this.putMessage(this.createMessageObj(systemMsg, 'system'))
-            this.deleteSystemMessage(response)
-        },
-        async startProcess(response){
+        async startProcess(responseObj){
             var me = this
-            if(response.content && response.content.includes("{")){
-                let responseObj = partialParse(response.content)
+            // if(response.content && response.content.includes("{")){
+                // let responseObj = partialParse(response.content)
                 let systemMsg
                 
                 // process instance execute
@@ -372,53 +385,64 @@ export default {
                 }
                 systemMsg = `${me.userInfo.name}님이 요청하신 ${systemMsg}`
                 me.putMessage(me.createMessageObj(systemMsg, 'system'))
-                me.deleteSystemMessage(response)
-            }
+                // me.deleteSystemMessage(response)
+            // }
         },
         afterModelStopped(response) {
             // console.log(response)
         },
         async afterGenerationFinished(response) {
-            let obj = this.createMessageObj(response, 'system')
             if(response && response.includes("{")){
                 let responseObj = partialParse(response)
-                if(responseObj.messageForUser){
-                    obj.messageForUser = responseObj.messageForUser
-                }
-
-                if(responseObj.work == 'CompanyQuery'){
-                    try{
-                        let responseMemento = await axios.post('http://localhost:8005/query', { query: responseObj.content});
-                        obj.memento = {}
-                        obj.memento.response = responseMemento.data.response
-                        if (!responseMemento.data.metadata) return {};
-                        const unique = {};
-                        const sources = Object.values(responseMemento.data.metadata).filter(obj => {
-                            if (!unique[obj.file_path]) {
-                                unique[obj.file_path] = true;
-                                return true;
-                            }
-                        });
-                        obj.memento.sources = sources
-
-                        const responseTable = await axios.post('http://localhost:8000/process-data-query/invoke', {
-                            input: {
-                                var_name: responseObj.content
-                            }
-                        });
-                        obj.tableData = responseTable.data.output
-                    } catch(error){
-                        alert(error);
-                    }
-                } else if(responseObj.work == 'ScheduleQuery'){
-                    console.log(responseObj)
+                if(responseObj.work == 'SKIP'){
+                    this.messages.pop();
                 } else {
-                    obj.uuid = this.uuid()
-                    obj.systemRequest = true
-                    obj.requestUserEmail = this.userInfo.email
+                    this.messages.pop();
+                    if(responseObj.work == 'CompanyQuery' || responseObj.work == 'ScheduleQuery'){
+                        let obj = this.createMessageObj(response, 'system')
+                        if(responseObj.messageForUser){
+                            obj.messageForUser = responseObj.messageForUser
+                        }
+                        if(responseObj.work == 'CompanyQuery'){
+                            try{
+                                let responseMemento = await axios.post('http://localhost:8005/query', { query: responseObj.content});
+                                obj.memento = {}
+                                obj.memento.response = responseMemento.data.response
+                                if (!responseMemento.data.metadata) return {};
+                                const unique = {};
+                                const sources = Object.values(responseMemento.data.metadata).filter(obj => {
+                                    if (!unique[obj.file_path]) {
+                                        unique[obj.file_path] = true;
+                                        return true;
+                                    }
+                                });
+                                obj.memento.sources = sources
+        
+                                const responseTable = await axios.post('http://execution.process-gpt.io/process-data-query/invoke', {
+                                    input: {
+                                        var_name: responseObj.content
+                                    }
+                                });
+                                obj.tableData = responseTable.data.output
+                            } catch(error){
+                                alert(error);
+                            }
+                        } else if(responseObj.work == 'ScheduleQuery'){
+                            console.log(responseObj)
+                        }
+                        this.putMessage(obj)
+                    } else {
+                        responseObj.expanded = false
+                        this.generatedWorkList.push(responseObj)
+                    }
+                    // else {
+                    //     obj.uuid = this.uuid()
+                    //     obj.systemRequest = true
+                    //     obj.requestUserEmail = this.userInfo.email
+                    // }
+
                 }
             }
-            this.putMessage(obj)
         },
 
         async queryFromVectorDB(messsage){
