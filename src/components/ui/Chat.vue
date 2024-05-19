@@ -314,20 +314,32 @@
                                     <v-list-item-group>
                                         <v-list-item v-for="(work, index) in generatedWorkList" :key="index" class="d-flex align-items-center">
                                             <v-list-item-content class="flex-grow-1 d-flex align-items-center">
-                                                {{ work.messageForUser }}
-                                                <v-btn icon @click="work.expanded = !work.expanded" class="ml-2">
-                                                    <v-icon>{{ work.expanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
-                                                </v-btn>
-                                                <v-btn style="margin-right: 5px" size="small"
-                                                    @click="startProcess(work, index)">y</v-btn>
-                                                <v-btn size="small" @click="deleteWorkList(index)">n</v-btn>
+                                                <div class="d-flex flex-column w-100">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        {{ work.messageForUser }}
+                                                        <div>
+                                                            <v-btn icon @click="work.expanded = !work.expanded" class="ml-2">
+                                                                <v-icon>{{ work.expanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+                                                            </v-btn>
+                                                            <v-btn style="margin-right: 5px" size="small" @click="startProcess(work, index)">y</v-btn>
+                                                            <v-btn size="small" @click="deleteWorkList(index)">n</v-btn>
+                                                        </div>
+                                                    </div>
+                                                    <v-expand-transition>
+                                                        <div v-if="work.expanded" class="mt-2 w-100">
+                                                            <pre>{{ work }}</pre>
+                                                        </div>
+                                                    </v-expand-transition>
+                                                    <v-img
+                                                        v-if="work.work == 'CreateProcessDefinition'"
+                                                        :width="300"
+                                                        aspect-ratio="16/9"
+                                                        cover
+                                                        src="https://github.com/jhyg/project-shop-test/assets/65217813/1b551056-0428-41b6-9b90-76dd7942affc"
+                                                    ></v-img>
+                                                </div>
                                             </v-list-item-content>
                                             <v-divider v-if="index < generatedWorkList.length - 1"></v-divider>
-                                            <v-expand-transition>
-                                                <div v-if="work.expanded" class="mt-2 w-100">
-                                                    <pre>{{ work }}</pre>
-                                                </div>
-                                            </v-expand-transition>
                                         </v-list-item>
                                     </v-list-item-group>
                                 </v-list>
@@ -423,7 +435,7 @@ import ScrollBottomHandle from '@/components/ui/ScrollBottomHandle.vue';
 import AgentsChat from './AgentsChat.vue';
 import axios from 'axios';
 import { HistoryIcon } from 'vue-tabler-icons';
-import Record from './Record.vue';
+// import Record from './Record.vue';
 // import Record from './Record2.vue';
 
 export default {
@@ -431,7 +443,7 @@ export default {
         Icon,
         RetrievalBox,
         AgentsChat,
-        Record
+        // Record
     },
     mixins: [
         ProgressAnimated,
