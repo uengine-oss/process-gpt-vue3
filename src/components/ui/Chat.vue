@@ -148,11 +148,11 @@
                                                     <pre class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
                                                     <!-- <pre class="text-body-1">{{ message.content }}</pre> -->
 
-                                                    <!-- <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
+                                                    <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
                                                         <v-btn style="margin-right: 5px" size="small"
                                                             @click="startProcess(message)">y</v-btn>
                                                         <v-btn size="small" @click="cancelProcess(message)">n</v-btn>
-                                                    </p> -->
+                                                    </p>
                                                     <v-row class="pa-0 ma-0">
                                                         <v-spacer></v-spacer>
                                                         <v-btn @click="beforeReply(message)"
@@ -687,19 +687,19 @@ export default {
             const user = this.userList.find(user => user.email === email);
             return user ? user.profile : '';
         },
-        // shouldDisplayButtons(message, index) {
-        //     if (message.role !== 'system' || !message.systemRequest || message.requestUserEmail !== this.userInfo.email) {
-        //         return false;
-        //     }
-        //     // 현재 메시지 이후로 동일한 userInfo.email을 가진 메시지가 있는지 확인
-        //     for (let i = index + 1; i < this.filteredMessages.length; i++) {
-        //         if (this.filteredMessages[i].email === this.userInfo.email) {
-        //             return false; // 동일한 email을 가진 메시지가 있다면 버튼을 표시하지 않음
-        //         }
-        //     }
-        //     // 위의 조건들을 모두 통과했다면 버튼을 표시
-        //     return true;
-        // },
+        shouldDisplayButtons(message, index) {
+            if (message.role !== 'system' || !message.systemRequest || message.requestUserEmail !== this.userInfo.email) {
+                return false;
+            }
+            // 현재 메시지 이후로 동일한 userInfo.email을 가진 메시지가 있는지 확인
+            for (let i = index + 1; i < this.filteredMessages.length; i++) {
+                if (this.filteredMessages[i].email === this.userInfo.email) {
+                    return false; // 동일한 email을 가진 메시지가 있다면 버튼을 표시하지 않음
+                }
+            }
+            // 위의 조건들을 모두 통과했다면 버튼을 표시
+            return true;
+        },
         shouldDisplayUserInfo() {
             return (message, index) => {
                 if (index === 0) return true;
@@ -737,7 +737,12 @@ export default {
         },
         startProcess(messageObj, index) {
             this.$emit('startProcess', messageObj)
-            this.$emit('deleteWorkList', index)
+            if(this.ProcessGPTActive){
+                this.$emit('deleteWorkList', index)
+            }
+        },
+        cancelProcess(messageObj) {
+            this.$emit('cancelProcess', messageObj)
         },
         deleteWorkList(index) {
             this.$emit('deleteWorkList', index)
