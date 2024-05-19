@@ -129,7 +129,8 @@
         "import": "Import BPMN File",
         "addImage": "Add Image",
         "fileUpLoad": "File Up Load",
-        "generateProcessDef": "Generate ProcessDefinition"
+        "isEnableProcessGPT": "Enable Process-GPT",
+        "isDisableProcessGPT": "Disable Process-GPT"
     },
     "accountTab": {
         "accountSetting": "Account Settings",

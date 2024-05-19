@@ -25,6 +25,7 @@ export default {
         },
         backend: null,
         lastSendMessage: null,
+        ProcessGPTActive: false,
     }),
     computed: {
         useLock() {
@@ -70,7 +71,7 @@ export default {
         this.storage = StorageBaseFactory.getStorage();
         this.openaiToken = await this.getToken();
 
-        this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
+        // this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
     },
     methods: {
         requestDraftAgent(newVal) {
@@ -307,13 +308,16 @@ export default {
                     // } else if(message.mentionedUsers.some(user => user.id === 'system_id')){
                     //     this.startGenerate();
                     // }
-                    if(message.mentionedUsers){
-                        if(message.mentionedUsers.some(user => user.id === 'system_id') || message.text.startsWith('>') || message.text.startsWith('!')){
-                            this.startGenerate();
-                        }
-                    }
+                    // if(message.mentionedUsers){
+                        // if(message.mentionedUsers.some(user => user.id === 'system_id') || message.text.startsWith('>') || message.text.startsWith('!')){
+                            if(this.ProcessGPTActive){
+                                this.startGenerate();
+                            }
+                        // }
+                    // }
                 } else {
-                    this.debouncedGenerate();
+                    // this.debouncedGenerate();
+                    this.startGenerate();
                 }
                 
                 this.replyUser = null;

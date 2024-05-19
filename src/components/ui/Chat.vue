@@ -147,11 +147,11 @@
                                                     <pre class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
                                                     <!-- <pre class="text-body-1">{{ message.content }}</pre> -->
 
-                                                    <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
+                                                    <!-- <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
                                                         <v-btn style="margin-right: 5px" size="small"
                                                             @click="startProcess(message)">y</v-btn>
                                                         <v-btn size="small" @click="cancelProcess(message)">n</v-btn>
-                                                    </p>
+                                                    </p> -->
                                                     <v-row class="pa-0 ma-0">
                                                         <v-spacer></v-spacer>
                                                         <v-btn @click="beforeReply(message)"
@@ -284,14 +284,48 @@
                                 prepend-icon="mdi-paperclip"
                                 outlined
                             ></v-file-input>
-                            <v-tooltip v-if="type == 'chats'" :text="$t('chat.generateProcessDef')">
+                            <v-tooltip v-if="type == 'chats'" :text="ProcessGPTActive ? $t('chat.isDisableProcessGPT') : $t('chat.isEnableProcessGPT')">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn icon variant="text" class="text-medium-emphasis" @click="generateProcessDef" v-bind="props"
+                                    <v-btn icon variant="text" class="text-medium-emphasis" @click="toggleProcessGPTActive" v-bind="props"
+                                        style="width:30px; height:30px; margin-left:12px;" :disabled="disableChat">
+                                        <v-icon :color="ProcessGPTActive ? 'primary' : ''" icon="$vuetify"></v-icon>
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                            <v-tooltip v-if="type == 'chats'" text="가능한 작업 내역">
+                                <template v-slot:activator="{ props }">
+                                    <v-chip small class="ma-1" :value="true" color="primary" text-color="white">
+                                        {{ generatedWorkList.length }}
+                                    </v-chip>
+                                    <v-btn icon variant="text" class="text-medium-emphasis" @click="showGeneratedWorkList = !showGeneratedWorkList" v-bind="props"
                                         style="width:30px; height:30px; margin-left:12px;" :disabled="disableChat">
                                         <Icon icon="fluent-mdl2:server-processes" width="20" height="20" />
                                     </v-btn>
                                 </template>
                             </v-tooltip>
+                            <v-card v-if="showGeneratedWorkList" class="mt-3">
+                                <v-list>
+                                    <v-list-item-group>
+                                        <v-list-item v-for="(work, index) in generatedWorkList" :key="index" class="d-flex align-items-center">
+                                            <v-list-item-content class="flex-grow-1 d-flex align-items-center">
+                                                {{ work.messageForUser }}
+                                                <v-btn icon @click="work.expanded = !work.expanded" class="ml-2">
+                                                    <v-icon>{{ work.expanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+                                                </v-btn>
+                                                <v-btn style="margin-right: 5px" size="small"
+                                                    @click="startProcess(work, index)">y</v-btn>
+                                                <v-btn size="small" @click="deleteWorkList(index)">n</v-btn>
+                                            </v-list-item-content>
+                                            <v-divider v-if="index < generatedWorkList.length - 1"></v-divider>
+                                            <v-expand-transition>
+                                                <div v-if="work.expanded" class="mt-2 w-100">
+                                                    <pre>{{ work }}</pre>
+                                                </div>
+                                            </v-expand-transition>
+                                        </v-list-item>
+                                    </v-list-item-group>
+                                </v-list>
+                            </v-card>
                         </v-row>
                     </v-form>
                 </v-row>
@@ -395,9 +429,12 @@ export default {
         currentChatRoom: Object,
         // documentQueryStr: String,
         lock: Boolean,
+        generatedWorkList: Array,
+        ProcessGPTActive: Boolean
     },
     data() {
         return {
+            showGeneratedWorkList: false,
             mediaRecorder: null,
             audioChunks: [],
             isRecording: false,
@@ -504,6 +541,9 @@ export default {
         },
     },
     methods: {
+        toggleProcessGPTActive() {
+            this.$emit('toggleProcessGPTActive');
+        },
         linkify(inputText) {
             var replacedText, replacePattern1, replacePattern2, replacePattern3;
 
@@ -520,10 +560,6 @@ export default {
             replacedText = replacedText.replace(replacePattern3, '<a href="mailto:$1">$1</a>');
 
             return replacedText;
-        },
-        generateProcessDef() {
-            this.$store.dispatch('updateMessages', this.messages);
-            this.$router.push('/definitions/chat');
         },
         async startRecording() {
             this.isRecording = true;
@@ -647,19 +683,19 @@ export default {
             const user = this.userList.find(user => user.email === email);
             return user ? user.profile : '';
         },
-        shouldDisplayButtons(message, index) {
-            if (message.role !== 'system' || !message.systemRequest || message.requestUserEmail !== this.userInfo.email) {
-                return false;
-            }
-            // 현재 메시지 이후로 동일한 userInfo.email을 가진 메시지가 있는지 확인
-            for (let i = index + 1; i < this.filteredMessages.length; i++) {
-                if (this.filteredMessages[i].email === this.userInfo.email) {
-                    return false; // 동일한 email을 가진 메시지가 있다면 버튼을 표시하지 않음
-                }
-            }
-            // 위의 조건들을 모두 통과했다면 버튼을 표시
-            return true;
-        },
+        // shouldDisplayButtons(message, index) {
+        //     if (message.role !== 'system' || !message.systemRequest || message.requestUserEmail !== this.userInfo.email) {
+        //         return false;
+        //     }
+        //     // 현재 메시지 이후로 동일한 userInfo.email을 가진 메시지가 있는지 확인
+        //     for (let i = index + 1; i < this.filteredMessages.length; i++) {
+        //         if (this.filteredMessages[i].email === this.userInfo.email) {
+        //             return false; // 동일한 email을 가진 메시지가 있다면 버튼을 표시하지 않음
+        //         }
+        //     }
+        //     // 위의 조건들을 모두 통과했다면 버튼을 표시
+        //     return true;
+        // },
         shouldDisplayUserInfo() {
             return (message, index) => {
                 if (index === 0) return true;
@@ -695,11 +731,12 @@ export default {
             var timeString = dateString.split(' ')[4].substring(0, 5);
             return timeString;
         },
-        startProcess(messageObj) {
+        startProcess(messageObj, index) {
             this.$emit('startProcess', messageObj)
+            this.$emit('deleteWorkList', index)
         },
-        cancelProcess(messageObj) {
-            this.$emit('cancelProcess', messageObj)
+        deleteWorkList(index) {
+            this.$emit('deleteWorkList', index)
         },
         getMoreChat() {
             this.$emit('getMoreChat');

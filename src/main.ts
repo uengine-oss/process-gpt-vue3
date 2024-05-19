@@ -235,11 +235,14 @@ app.use(VueScrollTo, {
 // 전역으로 복사 가능하게 추가
 document.addEventListener('keydown', function(event) {
     if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
-        navigator.clipboard.writeText(window.getSelection().toString()).then(function() {
-            console.log('Copying to clipboard was successful!');
-        }, function(err) {
-            console.error('Could not copy text: ', err);
-        });
+        let selection = window.getSelection();
+        if (selection) {
+            navigator.clipboard.writeText(selection.toString()).then(function() {
+                console.log('Copying to clipboard was successful!');
+            }, function(err) {
+                console.error('Could not copy text: ', err);
+            });
+        }
         event.preventDefault(); // 기본 이벤트 방지
     }
 });
@@ -285,3 +288,4 @@ let initOptions = {
         console.error('Failed to initialize adapter:', error);
     }
 })();
+
