@@ -539,7 +539,8 @@ export default class StorageBaseSupabase {
             }
             if (value.user) {
                 window.localStorage.setItem('author', value.user.email);
-    
+                window.localStorage.setItem('uid', value.user.id);
+                
                 const count = await this.getCount('users');
                 if (count && count === 1) {
                     await this.putObject('users', {

@@ -112,14 +112,8 @@ export default {
         definitionList: null
     }),
     computed: {
-        useChat() {
-            const execution = localStorage.getItem('execution');
-            if (window.$mode == "ProcessGPT" && execution == "true") {
-                return true;
-            } else if (execution == "true") {
-                return true;
-            }
-            return false;
+        JMS() {
+            return window.$jms;
         }
     },
     async created() {
@@ -155,7 +149,7 @@ export default {
             this.getDefinitionList();
         }
 
-        if (this.useChat) {
+        if (!this.JMS) {
             this.sidebarItem.forEach((item) => {
                 if (item.disable) {
                     item.disable = false;

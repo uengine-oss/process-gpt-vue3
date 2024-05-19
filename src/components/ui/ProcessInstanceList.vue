@@ -1,9 +1,8 @@
 <template>
     <div>
         <NavItem class="leftPadding" :item="definitionMap" />
-        <NavItem v-if="!instExecution.disable" class="leftPadding" :item="instExecution" />
-        <NavCollapse v-if="!runningInstances.disable" class="leftPadding" :item="runningInstances" :level="0" />
-        <NavCollapse v-if="!completeInstances.disable" class="leftPadding" :item="completeInstances" :level="0" />
+        <NavCollapse v-if="!JMS" class="leftPadding" :item="runningInstances" :level="0" />
+        <NavCollapse v-if="!JMS" class="leftPadding" :item="completeInstances" :level="0" />
     </div>
 </template>
 
@@ -28,45 +27,25 @@ export default {
             BgColor: 'primary',
             to: "/definition-map",
         },
-        instExecution: {
-            title: "processExecution.title",
-            icon: 'solar:chat-dots-linear',
-            BgColor: 'primary',
-            to: '/instances/chat',
-            disable: true,
-        },
         runningInstances: {
             title: 'runningInstance.title',
             icon: 'solar:list-bold',
             BgColor: 'primary',
             children: [],
-            disable: true
         },
         completeInstances: {
             title: 'completeInstance.title',
             icon: 'solar:list-bold',
             BgColor: 'primary',
             children: [],
-            disable: true
         }
     }),
-    computed: {
-        useChat() {
-            const execution = localStorage.getItem('execution');
-            if (window.$mode == 'ProcessGPT' || execution == 'true') {
-                return true;
-            } else if (execution == 'true') {
-                return true;
-            }
-            return false;
-        }
-    },
     async created() {
-        if (this.useChat) {
-            this.instExecution.disable = false;
-            this.runningInstances.disable = false;
-            this.completeInstances.disable = false;
-            await this.loadInstances();
+        await this.loadInstances();
+    },
+    computed: {
+        JMS() {
+            return window.$jms;
         }
     },
     methods: {

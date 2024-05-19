@@ -59,12 +59,15 @@ declare global {
       $masterDB: any;
       $mode: any; 
       $supabase: any;
+      $jms: any;
     }
   }
   
 //window.$mode = 'uEngine';
- window.$mode = 'ProcessGPT';
- if(window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1') || window.$mode == 'uEngine'){
+window.$mode = 'ProcessGPT';
+window.$jms = false;
+
+if(window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1') || window.$mode == 'uEngine'){
     window.$supabase = createClient('http://127.0.0.1:54321','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU', {
         auth: {
             autoRefreshToken: false,
@@ -273,7 +276,6 @@ let initOptions = {
                 localStorage.setItem('email', `${keycloak.tokenParsed.email}`);
                 localStorage.setItem('uid', `${keycloak.tokenParsed.sub}`);
                 localStorage.setItem('isAdmin', 'true');
-                localStorage.setItem('execution', 'true');
                 localStorage.setItem('picture', '');
             }
         }
