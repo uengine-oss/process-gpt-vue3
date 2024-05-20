@@ -627,15 +627,18 @@ export default {
                 const sequenceFlows = ensureArray(process['bpmn:sequenceFlow'] || []);
                 const gateways = ensureArray(process['bpmn:exclusiveGateway'] || []);
 
+                const data = process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] ? (Array.isArray(process['bpmn:extensionElements']['uengine:properties']['uengine:variable']) ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable'] : [process['bpmn:extensionElements']['uengine:properties']['uengine:variable']]).map(varData => ({
+                        name: varData.name,
+                        description: varData.name + ' description',
+                        type: varData.type
+                    })) : [];
+
+
                 const jsonData = {
                     processDefinitionName: process.id || 'Unknown',
                     processDefinitionId: process.id || 'Unknown',
                     description: "process.description",
-                    data: process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] ? (Array.isArray(process['bpmn:extensionElements']['uengine:properties']['uengine:variable']) ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable'] : [process['bpmn:extensionElements']['uengine:properties']['uengine:variable']]).map(varData => ({
-                        name: varData.name,
-                        description: varData.name + ' description',
-                        type: varData.type
-                    })) : [],
+                    data: data,
                     roles: lanes.map(lane => ({
                         name: lane.name,
                         resolutionRule: lane.name === 'applicant' ? 'initiator' : 'system'
@@ -657,26 +660,37 @@ export default {
                         }
                     ],
                     activities: [
-                        ...activities.map(activity => ({
-                            name: activity.name,
-                            id: activity.id,
-                            type: 'UserActivity',
-                            description: activity.name + ' description',
-                            instruction: activity.name + ' instruction',
-                            role: lanes.find(lane => {
-                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
-                                return flowNodeRefs.includes(activity.id);
-                            }) ? lanes.find(lane => {
-                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
-                                return flowNodeRefs.includes(activity.id);
-                            }).name : 'Unknown',
-                            inputData: activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
-                                .filter(param => param.direction === "IN")
-                                .map(param => param.variable.name) : [],
-                            outputData: activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
-                                .filter(param => param.direction === "OUT")
-                                .map(param => param.variable.name) : []
-                        })),
+                        ...activities.map(activity => {
+
+                            let task = {
+                                name: activity.name,
+                                id: activity.id,
+                                type: 'UserActivity',
+                                description: activity.name + ' description',
+                                instruction: activity.name + ' instruction',
+                                role: lanes.find(lane => {
+                                    const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                    return flowNodeRefs.includes(activity.id);
+                                }) ? lanes.find(lane => {
+                                    const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                    return flowNodeRefs.includes(activity.id);
+                                }).name : 'Unknown',
+                                inputData: activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
+                                    .filter(param => param.direction === "IN")
+                                    .map(param => param.variable.name) : [],
+                                outputData: activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
+                                    .filter(param => param.direction === "OUT")
+                                    .map(param => param.variable.name) : []
+                            }
+
+                            try{
+                                task.tool = "formHandler:" + JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).variableForHtmlFormContext.name
+                            }catch(e){}
+
+                            return task
+                        }
+                        
+                        ),
                         ...scriptTasks.map(task => ({
                             name: task.name,
                             id: task.id,
