@@ -3,6 +3,7 @@
         <div style="margin-bottom:20px;">
             <div>{{ $t('BpnmPropertyPanel.script') }}</div>
             <v-textarea v-model="copyUengineProperties.script" :disabled="isViewMode" style="width:100%"></v-textarea>
+            <GenerateScriptPanel v-model="copyUengineProperties.script" />
         </div>
         <div v-if="inputData.length > 0" style="margin-bottom:20px;">
             <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.inputData') }}</div>
@@ -116,6 +117,7 @@
 import { useBpmnStore } from '@/stores/bpmn';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { Icon } from '@iconify/vue';
+import GenerateScriptPanel from './GenerateScriptPanel.vue'
 const storage = StorageBaseFactory.getStorage()
 export default {
     name: 'script-task-panel',
@@ -123,6 +125,9 @@ export default {
         uengineProperties: Object,
         processDefinitionId: String,
         isViewMode: Boolean
+    },
+    components: {
+        GenerateScriptPanel
     },
     created() {
     },
