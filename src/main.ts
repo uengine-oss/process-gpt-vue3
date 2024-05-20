@@ -42,6 +42,8 @@ import VueDiff from 'vue-diff';
 import 'vue-diff/dist/index.css';
 VueDiff.hljs.registerLanguage('xml', xml);
 //ScrollTop
+window.$mode = 'uEngine';
+
 import VueScrollTo from 'vue-scrollto';
 const i18n = createI18n({
     locale: 'ko',
@@ -62,7 +64,6 @@ declare global {
     }
   }
   
-window.$mode = 'uEngine';
 // window.$mode = 'ProcessGPT';
 
 if(window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1') || window.$mode == 'uEngine'){

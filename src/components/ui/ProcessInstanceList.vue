@@ -2,7 +2,7 @@
     <div>
         <NavItem class="leftPadding" :item="definitionMap" />
         <NavItem v-if="!instExecution.disable" class="leftPadding" :item="instExecution" />
-        <NavCollapse v-if="!runningInstances.disable" class="leftPadding" :item="runningInstances" :level="0" />
+        <NavCollapse @click="loadInstances()" v-if="!runningInstances.disable" class="leftPadding" :item="runningInstances" :level="0" />
         <NavCollapse v-if="!completeInstances.disable" class="leftPadding" :item="completeInstances" :level="0" />
     </div>
 </template>

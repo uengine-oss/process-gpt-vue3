@@ -209,6 +209,7 @@
         "outputData": "출력 데이터",
         "checkPoints": "체크포인트",
         "script": "스크립트",
+        "scriptType": "스크립트 유형",
         "add": "추가"
     }
 }
