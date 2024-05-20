@@ -134,8 +134,10 @@ export default {
                 this.type = 'None';
             } else if (this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.kernel.DirectRoleResolutionContext') {
                 this.type = 'org.uengine.kernel.DirectRoleResolutionContext';
+                this.scope = this.copyUengineProperties.roleResolutionContext.scope
             } else if (this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.five.overriding.IAMRoleResolutionContext') {
                 this.type = 'org.uengine.five.overriding.IAMRoleResolutionContext';
+                this.endpoint = this.copyUengineProperties.roleResolutionContext.endpoint
             }
         },
         async setDefinitionInfo(definitionId) {

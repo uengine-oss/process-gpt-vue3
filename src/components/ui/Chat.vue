@@ -500,7 +500,8 @@ export default {
         // documentQueryStr: String,
         lock: Boolean,
         generatedWorkList: Array,
-        ProcessGPTActive: Boolean
+        ProcessGPTActive: Boolean,
+        isAgentMode: Boolean
     },
     data() {
         return {
@@ -858,13 +859,21 @@ export default {
         },
         beforeSend($event) {
             if ($event && $event.shiftKey) return;
-            if (this.isLoading) {
-                this.isLoading = false;
-                this.$emit('stopMessage');
+
+            if(this.isAgentMode){
+                this.requestDraftAgent();
+                setTimeout(() => {
+                    this.newMessage = "";
+                }, 100);
+            } else {
+                if (this.isLoading) {
+                    this.isLoading = false;
+                    this.$emit('stopMessage');
+                }
+                var copyMsg = this.newMessage.replace(/(?:\r\n|\r|\n)/g, '');
+                if (copyMsg.length > 0)
+                    this.send();
             }
-            var copyMsg = this.newMessage.replace(/(?:\r\n|\r|\n)/g, '');
-            if (copyMsg.length > 0)
-                this.send();
         },
         send() {
             if (this.editIndex >= 0) {

@@ -42,6 +42,8 @@ import VueDiff from 'vue-diff';
 import 'vue-diff/dist/index.css';
 VueDiff.hljs.registerLanguage('xml', xml);
 //ScrollTop
+window.$mode = 'uEngine';
+
 import VueScrollTo from 'vue-scrollto';
 const i18n = createI18n({
     locale: 'ko',
@@ -60,12 +62,14 @@ declare global {
       $mode: any; 
       $supabase: any;
       $jms: any;
+      $backend: any;
     }
   }
   
 //window.$mode = 'uEngine';
 window.$mode = 'ProcessGPT';
 window.$jms = false;
+window.$backend = '';
 
 if(window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1') || window.$mode == 'uEngine'){
     window.$supabase = createClient('http://127.0.0.1:54321','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU', {
@@ -81,6 +85,7 @@ if(window.location.host.includes('localhost') || window.location.host.includes('
             persistSession: false
         }
     });
+    window.$backend = 'http://execution.process-gpt.io';
 //     window.$masterDB = createClient(
 //         'http://127.0.0.1:54321',
 //         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',

@@ -26,6 +26,8 @@ export default {
         backend: null,
         lastSendMessage: null,
         ProcessGPTActive: false,
+        lastFinishedTime: 0,
+        processInstanceId: null,
     }),
     computed: {
         useLock() {
@@ -54,6 +56,17 @@ export default {
 
                 if (callback.isFinished) {
                     me.agentInfo.isRunning = false
+                    const now = Date.now();
+                    if (now - me.lastFinishedTime > 3000) { 
+                        me.lastFinishedTime = now; 
+                        if (me.processInstanceId) {
+                            let putObj = {
+                                id: me.processInstanceId,
+                                agent_messages: me.messages
+                            };
+                            me.putObject(`proc_inst/${me.processInstanceId}`, putObj, { key: 'id' });
+                        }
+                    }
                 } else {
                     me.agentInfo.isRunning = true
                 }
@@ -195,6 +208,21 @@ export default {
             }
         },
 
+        async loadAgentMessages(path, options) {
+            const callPath = path ? path : this.path;
+            
+            const value = await this.getData(callPath, options);
+            if (value && value.agent_messages) {
+                this.messages = value.agent_messages
+            }
+
+            // await this.storage.watch(`db://${callPath}`, async () => {
+            //     const value = await this.getData(callPath, options);
+            //     if (value && value.messages) {
+            //         this.messages = value.messages
+            //     }
+            // });
+        },
         async loadMessages(path, options) {
             const callPath = path ? path : this.path;
             
