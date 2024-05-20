@@ -11,6 +11,13 @@
         "title": "Easily initiate from AI-based process management to execution.",
         "subTitle": "Process definition, organizational chart management, To-Do management, process execution, process monitoring, process analysis."
     },
+    "headerMenu" : {
+        "sidebar" : "Sidebar",
+        "dashboard" : "Dashboard",
+        "todoList" : "Todo List",
+        "calendar" : "Calendar",
+        "layoutSetting" : "Layout Setting"
+    },
     "DashboardUpcomingScheduls": {
         "title": "Upcoming Schedules",
         "schedule": "Schedule",
@@ -122,7 +129,8 @@
         "import": "Import BPMN File",
         "addImage": "Add Image",
         "fileUpLoad": "File Up Load",
-        "generateProcessDef": "Generate ProcessDefinition"
+        "isEnableProcessGPT": "Enable Process-GPT",
+        "isDisableProcessGPT": "Disable Process-GPT"
     },
     "accountTab": {
         "accountSetting": "Account Settings",

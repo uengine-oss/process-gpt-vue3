@@ -9,7 +9,7 @@ export interface Backend {
     getDefinition(defPath: string): Promise<any>;
     renameOrMove(definition: any, requestPath: string): Promise<any>;
     createFolder(newResource: any, requestPath: string): Promise<any>;
-    deleteDefinition(requestPath: string): Promise<any>;
+    deleteDefinition(requestPath: string, options: any): Promise<any>;
     putRawDefinition(definition: any, requestPath: string, options: any): Promise<any>;
     start(command: any): Promise<any>;
     stop(instanceId: string): Promise<any>;
@@ -32,7 +32,7 @@ export interface Backend {
     getProcessDefinitionMap(): Promise<any>;
     putProcessDefinitionMap(definitionMap: any): Promise<any>;
     getPendingList(): Promise<any>;
-    getCompletedList(): Promise<any>;
+    getCompletedList(options?: any): Promise<any>;
     getInProgressList(): Promise<any>;
     putWorklist(taskId: string, workItem: any): Promise<any>;
     getEventList(instanceId: string): Promise<any>;

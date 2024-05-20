@@ -39,20 +39,43 @@ export default class FormDesignGenerator extends AIGenerator{
           맨 처음에는 각 컴포넌트를 넣기 위한 레이아웃을 만들어줘야 해.
           레이아웃의 구성 예는 다음과 같아.
           """
-          <div class='row' name='<이 레이아웃의 고유한 이름>' alias='<이 레이아웃의 별명>' is_multidata_mode='<true|false>'>
-              <div class='col-sm-6'>
-              </div>
-              <div class='col-sm-6'>
-              </div>
-          </div>
+          <section>
+            <div class='row' name='<이 레이아웃의 고유한 이름>' alias='<이 레이아웃의 별명>' is_multidata_mode='<true|false>'>
+                <div class='col-sm-6'>
+                </div>
+                <div class='col-sm-6'>
+                </div>
+            </div>
+          </section>
           """
-          다음과 같이 "class='row'"가 선언된 div안에 "class='col-sm-{숫자}'"로 지정된 div들을 생성해서 각 칼럼이 차지하는 공간을 각각 만들어주면 돼.
-          모든 "class='col-sm-{숫자}'"의 총합은 12가 되어야 하고, 반드시 아래에 제시되는 숫자 조합 중에 하나를 사용해야 해.
+          다음과 같이 section으로 감싸진 "class='row'"가 선언된 div안에 "class='col-sm-{숫자}'"로 지정된 div들을 생성해서 각 칼럼이 차지하는 공간을 각각 만들어주면 돼.
+          하나의 section은 자식 요소로 하나의 "class='row'"가 선언된 div를 가질 수 있음에 주의해야해.
+          하나의 "class='row'"가 선언된 div안에 들어가는 "class='col-sm-{숫자}'"에서 '{숫자}'의 총합은 12가 되어야 하고, 반드시 아래에 제시되는 숫자 조합 중에 하나를 사용해야 해.
           > 허용되는 숫자 조합: ${containerSpaceSetsPromptStr}
 
           class='row'로 선언된 div 안에는 name, alias 이외에도 is_multidata_mode 속성을 설정할 수 있어.
           is_multidata_mode이 true인 경우에는 내부에서 사용되는 컴포넌트들을 사용해서 마치 테이블의 행을 추가하는 것 처럼 사용할 수 있어.
           is_multidata_mode이 false인 경우에는 일반적인 레이아웃과 동일하게 동작해.
+
+          레이아웃은 중첩해서도 사용할 수 있어.
+          중첩해서 사용할 경우에는 반드시 'col-sm-{숫자}'로 지정된 div안에 이전과 같이 section 태그를 사용해서 넣어줘야 해.
+          예를 들어 다음과 같이 이중으로 레이아웃을 중첩시킬 수 있어.
+          """
+          <section>
+            <div class='row' name='<이 레이아웃의 고유한 이름>' alias='<이 레이아웃의 별명>' is_multidata_mode='<true|false>'>
+              <div class='col-sm-12'>
+                <section>
+                  <div class='row' name='<이 레이아웃의 고유한 이름>' alias='<이 레이아웃의 별명>' is_multidata_mode='<true|false>'>
+                    <div class='col-sm-6'>
+                    </div>
+                    <div class='col-sm-6'>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </section>
+          """
 
           * 컴포넌트 추가
           레이아웃을 만들었다면, 이제 각 컴포넌트를 추가해 줘야 해.

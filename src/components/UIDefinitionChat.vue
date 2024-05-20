@@ -8,11 +8,40 @@
                         :messages="messages"
                         :userInfo="userInfo"
                         type="form"
-                        @onClickSaveFormButton="openSaveDialog"
                         @sendMessage="beforeSendMessage"
                         @sendEditedMessage="sendEditedMessage"
                         @stopMessage="stopMessage"
-                    ></Chat>
+                    >
+                        <template v-slot:custom-tools>
+                            <div class="d-flex flex-row-reverse" style="height: 0px; position: relative; bottom: 35px; left: 10px">
+                                <v-tooltip>
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-bind="props"
+                                            icon variant="text"
+                                            class="text-medium-emphasis"
+                                            @click="openSaveDialog"
+                                        >
+                                            <Icon icon="material-symbols:save" width="24" height="24" />
+                                        </v-btn>
+                                    </template>
+                                    <span>{{ $t('uiDefinition.save') }}</span>
+                                </v-tooltip>
+
+                                <v-tooltip>
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-if="isLoadedForm" 
+                                            v-bind="props" 
+                                            icon  variant="text" 
+                                            class="text-medium-emphasis"
+                                            @click="openDeleteDialog">
+                                            <TrashIcon size="24" />
+                                        </v-btn>
+                                    </template>
+                                    <span>{{ $t('uiDefinition.deleteForm') }}</span>
+                                </v-tooltip>
+                            </div>
+                        </template>
+                    </Chat>
                 </div>
             </template>
             <template v-slot:rightpart>
@@ -37,7 +66,7 @@
 
                     <v-window-item value="preview" class="fill-height mt-15 pa-5" style="overflow-y: auto">
                         <template v-if="isShowPreview">
-                            <DynamicForm ref="dynamicForm" :formHTML="previewHTML" v-model="previewFormValues" :key="dynamicFormKey"></DynamicForm>
+                            <DynamicForm ref="dynamicForm" :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
 
                             <template v-if="dev.isDevMode">
                                 <v-textarea label="previewFormValuesToTest" rows="10" v-model="dev.previewFormValues"></v-textarea>
@@ -59,11 +88,40 @@
                     :messages="messages"
                     :userInfo="userInfo"
                     type="form"
-                    @onClickSaveFormButton="openSaveDialog"
                     @sendMessage="beforeSendMessage"
                     @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage"
-                ></Chat>
+                >
+                    <template v-slot:custom-tools>
+                        <div class="d-flex flex-row-reverse" style="height: 0px; position: relative; bottom: 35px; left: 10px">
+                            <v-tooltip>
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props"
+                                        icon variant="text"
+                                        class="text-medium-emphasis"
+                                        @click="openSaveDialog"
+                                    >
+                                        <Icon icon="material-symbols:save" width="24" height="24" />
+                                    </v-btn>
+                                </template>
+                                <span>{{ $t('uiDefinition.save') }}</span>
+                            </v-tooltip>
+
+                            <v-tooltip location="bottom">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-if="isLoadedForm" 
+                                        v-bind="props" 
+                                        icon  variant="text" 
+                                        class="text-medium-emphasis"
+                                        @click="openDeleteDialog">
+                                        <TrashIcon size="24" />
+                                    </v-btn>
+                                </template>
+                                <span>{{ $t('uiDefinition.deleteForm') }}</span>
+                            </v-tooltip>
+                        </div>
+                    </template>
+                </Chat>
             </template>
         </AppBaseCard>
     </v-card>
@@ -72,6 +130,18 @@
         <form-design-save-panel @onClose="isOpenSaveDialog = false" @onSave="tryToSaveFormDefinition" :savedId="(loadFormId === 'chat') ? null : loadFormId"
             :formNameByUrl="formNameByUrl">
         </form-design-save-panel>
+    </v-dialog>
+
+    <v-dialog v-model="isOpenDeleteDialog" max-width="500">
+        <v-card>
+            <v-card-text>
+                {{ $t('uiDefinition.deleteFormMessage') }}
+            </v-card-text>
+            <v-card-actions class="justify-center pt-0">
+                <v-btn color="primary" variant="flat" @click="deleteForm">{{ $t('uiDefinition.delete') }}</v-btn>
+                <v-btn color="error" variant="flat" @click="isOpenDeleteDialog = false">{{ $t('uiDefinition.cancel') }}</v-btn>
+            </v-card-actions>
+        </v-card>
     </v-dialog>
 </template>
 
@@ -128,7 +198,6 @@ export default {
 
         previewHTML: '',
         previewFormValues: {},
-        dynamicFormKey: 0,
         isShowPreview: false,
 
         dev: {
@@ -136,13 +205,16 @@ export default {
             previewFormValues: ''
         },
         loadFormId: '',
+        isLoadedForm: false,
 
         kEditorContentBeforeSave: "",
         isAIUpdated: false,
         isRoutedWithUnsaved: false,
 
         processDefUrlData: null,
-        formNameByUrl: null
+        formNameByUrl: null,
+
+        isOpenDeleteDialog: false
     }),
     async created() {
         this.generator = new ChatGenerator(this, {
@@ -221,6 +293,10 @@ export default {
             this.isOpenSaveDialog = true;
         },
 
+        openDeleteDialog() {
+            this.isOpenDeleteDialog = true;
+        },
+
         /**
          * ID 정보를 제공하고, 'Save' 버튼을 누를 경우, 최종 결과를 DB에 저장시키기 위해서
          */
@@ -273,6 +349,7 @@ export default {
                 }
             }
             
+
             rows.forEach(row => {
                 const isMultiDataMode = row.getAttribute('is_multidata_mode');
                 if (!isMultiDataMode || (isMultiDataMode === 'false')) {
@@ -290,11 +367,14 @@ export default {
                     const innerRow = document.createElement('div');
                     innerRow.setAttribute('class', 'row');
 
-                    Array.from(row.childNodes).forEach(child => {
+                    Array.from(row.children).forEach(child => {
                         innerRow.appendChild(child);
                     });
 
-                    innerRow.querySelectorAll('[name]').forEach(field => {
+
+                    $(innerRow).children('[class^="col-sm-"]').children('[name]').each(function () {
+                        var field = ($(this))[0];
+                        
                         if(field.tagName.toLowerCase() === "code-field") {
                             const name = field.getAttribute('name');
                             field.setAttribute('v-model', `codeInfos['${name}']`);
@@ -309,13 +389,24 @@ export default {
                         }
                     });
 
-                    newRow.appendChild(innerRow);
 
+                    newRow.appendChild(innerRow);
 
                     row.parentNode.replaceChild(newRow, row);
                 } else {
                     if((!row.getAttribute('name')) || (row.getAttribute('name').length <= 0)) {
                         throw new Error(`multidataMode가 설정된 레이아웃에 'name' 속성이 없습니다.`);
+                    }
+
+                    // row의 부모 노드를 계속 탐색해서. 그 노드가 is_multidata_mode="true"의 속성을 가졌는지 확인함
+                    let isPerentNodeMultiDataMode = false;
+                    let parentNode = row.parentNode;
+                    while(parentNode && parentNode.tagName.toLowerCase() !== 'body') {
+                        if(parentNode.getAttribute('is_multidata_mode') === "true") {
+                            isPerentNodeMultiDataMode = true;
+                            break;
+                        }
+                        parentNode = parentNode.parentNode;
                     }
 
 
@@ -325,21 +416,37 @@ export default {
                     newRow.setAttribute('alias', row.getAttribute('alias') ?? "");
                     newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode'));
 
-                    newRow.setAttribute('v-model', 'formValues');
+                    newRow.setAttribute('v-model', (isPerentNodeMultiDataMode) ? 'item' : 'formValues');
                     newRow.setAttribute('v-slot', 'slotProps');
 
-                    newRow.innerHTML = `<div v-for="(item, index) in slotProps.modelValue" :key="index">
-    <row-layout-item-head :index="index" @on_delete_item="slotProps.deleteItem(index)"></row-layout-item-head>
-    <div class="row">
-    ${row.innerHTML}
-    </div>
-</div>`
 
+                    const containerDiv = document.createElement('div');
+                    containerDiv.setAttribute('v-for', '(item, index) in slotProps.modelValue');
+                    containerDiv.setAttribute(':key', 'index');
 
-                    newRow.querySelectorAll('[name]').forEach(field => {
+                    const head = document.createElement('row-layout-item-head');
+                    head.setAttribute(':index', 'index');
+                    head.setAttribute('v-on:on_delete_item', 'slotProps.deleteItem(index)');
+                    containerDiv.appendChild(head);
+
+                    const rowDiv = document.createElement('div');
+                    rowDiv.classList.add('row');
+
+                    Array.from(row.children).forEach(child => {
+                        rowDiv.appendChild(child);
+                    });
+
+                    containerDiv.appendChild(rowDiv);
+
+                    newRow.appendChild(containerDiv);
+
+                    $(newRow).children('div').children('div.row')
+                        .children('[class^="col-sm-"]').children('[name]').each(function () {
+                        var field = ($(this))[0];
                         const name = field.getAttribute('name');
                         field.setAttribute('v-model', `item['${name}']`);
-                    });
+                    })
+
 
                     row.parentNode.replaceChild(newRow, row);
                 }
@@ -370,15 +477,19 @@ export default {
                     newRow.setAttribute('class', 'row');
 
 
-                    Array.from(row.firstChild.childNodes).forEach(child => {
+                    Array.from(row.firstChild.children).forEach(child => {
                         newRow.appendChild(child);
                     });
 
-                    newRow.querySelectorAll('[v-model]').forEach(field => {
+                    $(newRow).children('[class^="col-sm-"]').children('[v-model]').each(function () {
+                        var field = ($(this))[0];
+                        
                         field.removeAttribute('v-model');
                     });
 
-                    newRow.querySelectorAll('*').forEach(field => {
+                    $(newRow).children('[class^="col-sm-"]').children('*').each(function () {
+                        var field = ($(this))[0];
+                        
                         Array.from(field.attributes).forEach(attr => {
                             if (attr.name.startsWith('v-on:')) {
                                 field.removeAttribute(attr.name);
@@ -399,21 +510,25 @@ export default {
                     newRow.setAttribute('class', 'row');
 
 
-                    row.querySelectorAll('[class^="col-sm-"]').forEach(child => {
-                        newRow.appendChild(child);
-                    });
+                    $(row).children('div').children('div.row')
+                        .children('[class^="col-sm-"]').each(function () {
+                        var field = ($(this))[0];
+                        newRow.appendChild(field);
+                    })
 
-                    newRow.querySelectorAll('[v-model]').forEach(field => {
+                    $(newRow).children('[class^="col-sm-"]').children('[v-model]').each(function () {
+                        var field = ($(this))[0];
                         field.removeAttribute('v-model');
-                    });
+                    })
 
-                    newRow.querySelectorAll('*').forEach(field => {
+                    $(newRow).children('[class^="col-sm-"]').children('*').each(function () {
+                        var field = ($(this))[0];
                         Array.from(field.attributes).forEach(attr => {
                             if (attr.name.startsWith('v-on:')) {
                                 field.removeAttribute(attr.name);
                             }
                         });
-                    });
+                    })
 
 
                     row.parentNode.replaceChild(newRow, row);
@@ -474,7 +589,6 @@ export default {
 
         onClickPreviewApplyButton() {
             this.previewFormValues = JSON.parse(this.dev.previewFormValues);
-            this.dynamicFormKey += 1
         },
 
         /**
@@ -486,10 +600,11 @@ export default {
             if (this.loadFormId.startsWith('/')) {
                 this.loadFormId = this.loadFormId.substring(1);
             } 
+            this.isLoadedForm = (this.loadFormId && this.loadFormId != 'chat')
 
             this.isAIUpdated = false;
             this.messages = [];
-            if (this.loadFormId && this.loadFormId != 'chat') {
+            if (this.isLoadedForm) {
                 try {
                     this.storedFormDefHTML = (await this.backend.getRawDefinition(this.loadFormId, { type: 'form' }));
                 } catch(error) {
@@ -663,6 +778,78 @@ export default {
 
             const dom = new DOMParser().parseFromString(htmlTextToLoad, 'text/html');
 
+
+            // 만약 AI 생성오류 등으로 row안에 있는 col-sm-{숫자}의 총합이 12가 아니라면 모든 내용을 col-sm-12에 담아버림
+            dom.querySelectorAll('div.row').forEach((row) => {
+
+                let totalColSpaceSum = 0
+                $(row).children('[class^="col-sm-"]').each(function () {
+                    var col = ($(this))[0];
+
+                    const colClassMatch = col.className.match(/col-sm-(\d+)/);
+                    if (colClassMatch) {
+                        const colSize = parseInt(colClassMatch[1], 10);
+                        totalColSpaceSum += colSize;
+                    }
+                });
+
+                if(totalColSpaceSum !== 12) {
+                    const newCol = document.createElement('div');
+                    newCol.setAttribute('class', 'col-sm-12');
+
+                    $(row).children('[class^="col-sm-"]').each(function () {
+                        var col = ($(this))[0];
+                        Array.from(col.children).forEach(child => {
+                            newCol.appendChild(child);
+                        });
+                    });
+
+                    row.innerHTML = '';
+                    row.appendChild(newCol);
+                }
+
+            });
+
+            // 만약, AI가 class='row' 바깥에 section으로 감싸라는 지시를 제대로 따르지 못했을 경우, 적절하게 처리하기 위해서
+            let isInvalidSectionParsing = false
+            dom.querySelectorAll('div.row').forEach((row) => {
+                if (row.parentElement.tagName.toLowerCase() !== 'section') {
+                    isInvalidSectionParsing = true
+                }
+            });
+
+            dom.querySelectorAll('section').forEach((section) => {
+                if(section.children.length !== 1) {
+                    isInvalidSectionParsing = true
+                }
+            });
+
+            if(isInvalidSectionParsing) {
+                // 특정 컴포넌트 안의 내용을 남겨주고, 그 컴포넌트를 제거 시킴
+                const removeParentComponent = (parentComponent) => {
+                    const parentSection = parentComponent.parentElement;
+                    while (parentComponent.firstChild) {
+                        parentSection.insertBefore(parentComponent.firstChild, parentComponent);
+                    }
+                        parentSection.removeChild(parentComponent);
+                }
+
+                const removeParentComponentByQuerySelector = (query) => {
+                    dom.querySelectorAll(query).forEach(parentComponent => {
+                        removeParentComponent(parentComponent)
+                    })
+                }
+
+                removeParentComponentByQuerySelector('section');
+
+                dom.querySelectorAll('div.row').forEach((row) => {
+                    const section = document.createElement('section');
+                    row.parentElement.insertBefore(section, row);
+                    section.appendChild(row);
+                });
+            }
+
+
             // 컨테이너인 경우, data-type 속성을 추가해서 KEditor에서 인식할 수 있도록 만들기 위해서서
             const nodes = dom.querySelectorAll('[class^="col-sm-"]');
             nodes.forEach((node) => {
@@ -752,7 +939,6 @@ export default {
 
 
             // Section이 없는 경우, Section으로 감싸서 새로 생성하고, 있는 경우 그대로 사용함
-            let targetSections = null;
             if(dom.body.querySelectorAll("section").length == 0) {
                 const rows = Array.from(dom.body.querySelectorAll('.row'));
                 dom.body.innerHTML = rows.map(row => {
@@ -762,14 +948,12 @@ export default {
                 }).join('').replace(/&quot;/g, `'`);
             }
             
-            targetSections = Array.from(dom.body.querySelectorAll("section"));
-            
 
             // KEdtior에서 인식할 수 있도록 클래스 추가하기
-            targetSections.forEach(section => {
-                section.setAttribute('class', 'keditor-ui keditor-container-inner');
+            Array.from(dom.body.querySelectorAll("section")).forEach(section => {
+                section.setAttribute('class', 'keditor-container');
             });
-            const loadedValidHTML = targetSections.map(section => section.outerHTML).join('').replace(/&quot;/g, `'`).replace("<br>", "\n")
+            const loadedValidHTML = Array.from(dom.body.children).map(section => section.outerHTML).join('').replace(/&quot;/g, `'`).replace("<br>", "\n")
 
 
             console.log('### 로드된 유효 HTML 텍스트 ###');
@@ -833,11 +1017,9 @@ export default {
                 context: me,
                 action: async () => {
                     me.previewHTML = me.keditorContentHTMLToDynamicFormHTML(me.$refs.mashup.getKEditorContentHtml());
-                    me.dynamicFormKey += 1
                 },
                 onFail: () => {
                     me.previewHTML = '';
-                    me.dynamicFormKey += 1
                 }
             });
             me.previewFormValues = {};
@@ -845,6 +1027,20 @@ export default {
 
             me.$nextTick(() => {
                 me.dev.previewFormValues = JSON.stringify(me.previewFormValues);
+            });
+        },
+
+        async deleteForm() {
+            var me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    await this.backend.deleteDefinition(this.loadFormId, {type: 'form'});
+                    this.isOpenDeleteDialog = false;
+                    await this.$router.push('/ui-definitions/chat');
+                    window.location.reload();
+                },
+                successMsg: '삭제되었습니다.'
             });
         }
     },

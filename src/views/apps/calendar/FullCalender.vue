@@ -177,9 +177,23 @@ export default defineComponent({
         delete this.calendarData[`${year}_${month}`][this.selectedEvent.id]
       }
 
+      let uid = localStorage.getItem('uid');
+      if (!uid) {
+        // this.calendarData의 첫 번째 이벤트 객체의 id를 가져옵니다.
+        const firstMonthKey = Object.keys(this.calendarData)[0];
+        if (firstMonthKey && this.calendarData[firstMonthKey]) {
+          const firstEventKey = Object.keys(this.calendarData[firstMonthKey])[0];
+          if (firstEventKey && this.calendarData[firstMonthKey][firstEventKey]) {
+            uid = this.calendarData[firstMonthKey][firstEventKey].id;
+            // 로컬 스토리지에 uid를 저장합니다.
+            localStorage.setItem('uid', uid);
+          }
+        }
+      }
+
       let calendarObj = {
-          "uid": localStorage.getItem('uid'),
-          "data": this.calendarData
+        "uid": uid,
+        "data": this.calendarData
       }
       await this.storage.putObject(`db://calendar`, calendarObj);
       this.calendarKey++;

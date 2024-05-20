@@ -79,27 +79,27 @@ export default {
     },
     data: () => ({
         sidebarItem: [
-            {
-                title: 'dashboard.title',
-                icon: 'lucide:layout-panel-top',
-                BgColor: 'primary',
-                to: '/dashboard2',
-                disable: true
-            },
-            {
-                title: 'todoList.title',
-                icon: 'pajamas:overview',
-                BgColor: 'primary',
-                to: '/todolist',
-                disable: true
-            },
-            {
-                title: 'calendar.title',
-                icon: 'solar:calendar-line-duotone',
-                BgColor: 'primary',
-                to: '/calendar',
-                disable: false
-            },
+            // {
+            //     title: 'dashboard.title',
+            //     icon: 'lucide:layout-panel-top',
+            //     BgColor: 'primary',
+            //     to: '/dashboard2',
+            //     disable: true
+            // },
+            // {
+            //     title: 'todoList.title',
+            //     icon: 'pajamas:overview',
+            //     BgColor: 'primary',
+            //     to: '/todolist',
+            //     disable: true
+            // },
+            // {
+            //     title: 'calendar.title',
+            //     icon: 'solar:calendar-line-duotone',
+            //     BgColor: 'primary',
+            //     to: '/calendar',
+            //     disable: false
+            // },
             {
                 title: 'chats.title',
                 icon: 'solar:chat-round-unread-line-duotone',
@@ -112,14 +112,8 @@ export default {
         definitionList: null
     }),
     computed: {
-        useChat() {
-            const execution = localStorage.getItem('execution');
-            if (window.$mode == "ProcessGPT" && execution == "true") {
-                return true;
-            } else if (execution == "true") {
-                return true;
-            }
-            return false;
+        JMS() {
+            return window.$jms;
         }
     },
     async created() {
@@ -155,7 +149,7 @@ export default {
             this.getDefinitionList();
         }
 
-        if (this.useChat) {
+        if (!this.JMS) {
             this.sidebarItem.forEach((item) => {
                 if (item.disable) {
                     item.disable = false;

@@ -3,12 +3,12 @@
         <v-spacer></v-spacer>
         <div v-if="workItemStatus == 'NEW' || workItemStatus == 'DRAFT'">
             <v-btn @click="saveTask()" color="#0085DB" style="color: white" rounded>중간 저장</v-btn>
-            <v-btn @click="completeTask()" variant="tex" rounded>제출 완료</v-btn>
+            <v-btn @click="$try(completeTask, null, {sucessMsg: '워크아이템 완료'})" variant="tex" rounded>제출 완료</v-btn>
         </div>
     </v-row>
     <div class="pa-4">
         <!-- <FormMapper></FormMapper> -->
-        <DynamicForm :formHTML="html" v-model="formData" :key="formDataKey"></DynamicForm>
+        <DynamicForm :formHTML="html" v-model="formData"></DynamicForm>
     </div>
 </template>
 
@@ -34,8 +34,7 @@ export default {
     },
     data: () => ({
         html: null,
-        formData: {},
-        formDataKey: 0
+        formData: {}
     }),
     components: {
         DynamicForm
@@ -50,14 +49,7 @@ export default {
             // let processVariables = await backend.getProcessVariables(me.workItem.worklist.instId);
             me.html = await backend.getRawDefinition(formName, { type: 'form' });
             // if (me.workItemStatus == 'COMPLETED' || me.workItemStatus == 'DONE') {
-            let varName = me.workItem.activity.variableForHtmlFormContext.name;
-            let variable = await backend.getVariable(me.workItem.worklist.instId, varName);
-            if (variable && variable.valueMap) {
-                me.formData = variable.valueMap;
-            } else {
-                me.formData = {};
-            }
-            me.formDataKey += 1;
+            this.loadForm()
             // }
 
             // if (me.workItem.activity.previousActivities.length > 0) {
@@ -70,6 +62,19 @@ export default {
             //         });
             //     }
             // }
+        },
+        async loadForm(){
+            var me = this;
+
+            if(!me.workItem.activity || !me.workItem.activity.variableForHtmlFormContext) return;
+
+            let varName = me.workItem.activity.variableForHtmlFormContext.name;
+            let variable = await backend.getVariable(me.workItem.worklist.instId, varName);
+            if (variable && variable.valueMap) {
+                me.formData = variable.valueMap;
+            } else {
+                me.formData = {};
+            }
         },
         async saveTask() {
             var me = this;
@@ -97,35 +102,44 @@ export default {
                 successMsg: '중간 저장 완료'
             });
         },
-        async completeTask() {
-            var me = this;
-            me.$try({
-                context: me,
-                action: async () => {
-                    // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드
-                    let varName = me.workItem.activity.variableForHtmlFormContext.name;
-                    let variable = await backend.getVariable(me.workItem.worklist.instId, varName);
-                    if (!variable) variable = {};
-                    variable._type = 'org.uengine.contexts.HtmlFormContext';
-                    variable.valueMap = this.formData;
-                    Object.keys(variable.valueMap).forEach((key) => {
-                        if (typeof variable.valueMap[key] == 'object') {
-                            variable.valueMap[key].forEach((item) => {
-                                item._type = 'java.util.HashMap';
-                            });
-                        }
-                    });
-                    variable.valueMap._type = 'java.util.HashMap';
-                    await backend.setVariable(me.workItem.worklist.instId, varName, variable);
-                    let workItem = { parameterValues: {} };
-                    if (me.workItem.execScope) workItem.execScope = me.workItem.execScope;
 
-                    ///////////////////////////////////
-                    await backend.putWorkItemComplete(me.$route.params.taskId, workItem);
-                    me.$router.push('/todolist');
-                },
-                successMsg: '해당 업무 완료'
+        async saveForm(){
+            let me = this;
+
+            let varName = me.workItem.activity.variableForHtmlFormContext.name;
+            let variable = await backend.getVariable(me.workItem.worklist.instId, varName);
+            if (!variable) variable = {};
+            variable._type = 'org.uengine.contexts.HtmlFormContext';
+            variable.valueMap = this.formData;
+            Object.keys(variable.valueMap).forEach((key) => {
+                if (typeof variable.valueMap[key] == 'object') {
+                    variable.valueMap[key].forEach((item) => {
+                        item._type = 'java.util.HashMap';
+                    });
+                }
             });
+            variable.valueMap._type = 'java.util.HashMap';
+            await backend.setVariable(me.workItem.worklist.instId, varName, variable);
+
+        },
+        async completeTask() {
+            let me = this
+            // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드
+            let workItem = { parameterValues: {} };
+
+            if($mode=="uEngine")
+                await me.saveForm()
+            
+            if($mode=="ProcessGPT"){
+                workItem.parameterValues = me.formData
+            }
+
+            if (me.workItem.execScope) workItem.execScope = me.workItem.execScope;
+
+            ///////////////////////////////////
+            await backend.putWorkItemComplete(me.$route.params.taskId, workItem);
+            me.$router.push('/todolist');
+        
         }
     }
 };

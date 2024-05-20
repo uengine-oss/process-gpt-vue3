@@ -8,7 +8,7 @@ export default class AIGenerator {
         this.gptResponseId = null;
         this.openaiToken = null
         // this.model = "gpt-3.5-turbo-16k" 
-        this.model = "gpt-4" 
+        this.model = "gpt-4o" 
         //this.model = "gpt-4-vision-preview"
 
         if(this.model.includes("vision")){

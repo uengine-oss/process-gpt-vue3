@@ -1,11 +1,11 @@
 <script>
 import jp from 'jsonpath';
 
+import BackendFactory from '@/components/api/BackendFactory';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { encodingForModel } from "js-tiktoken";
-import GeneratorAgent from "./GeneratorAgent.vue"
 import _ from 'lodash';
-import BackendFactory from '@/components/api/BackendFactory';
+import GeneratorAgent from "./GeneratorAgent.vue";
 export default {
     mixins: [GeneratorAgent],
     data: () => ({
@@ -25,6 +25,7 @@ export default {
         },
         backend: null,
         lastSendMessage: null,
+        ProcessGPTActive: false,
     }),
     computed: {
         useLock() {
@@ -70,7 +71,7 @@ export default {
         this.storage = StorageBaseFactory.getStorage();
         this.openaiToken = await this.getToken();
 
-        this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
+        // this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
     },
     methods: {
         requestDraftAgent(newVal) {
@@ -97,7 +98,9 @@ export default {
         },
         async init() {
             this.disableChat = false;
-            // this.userInfo = await this.storage.getUserInfo();
+            if (this.useLock) {
+                this.userInfo = await this.storage.getUserInfo();
+            }
             this.backend = BackendFactory.createBackend();
 
             await this.loadData(this.getDataPath());
@@ -262,7 +265,7 @@ export default {
                     role: 'user'
                 };
                 if(this.generator){
-                    this.generator.model = "gpt-4";
+                    this.generator.model = "gpt-4o";
                 }
                 if (message.image && message.image != '') {
                     chatObj.content = [
@@ -305,13 +308,14 @@ export default {
                     // } else if(message.mentionedUsers.some(user => user.id === 'system_id')){
                     //     this.startGenerate();
                     // }
-                    if(message.mentionedUsers){
-                        if(message.mentionedUsers.some(user => user.id === 'system_id') || message.text.startsWith('>') || message.text.startsWith('!')){
+                    // if(message.mentionedUsers){
+                        if(this.ProcessGPTActive || message.mentionedUsers.some(user => user.id === 'system_id') || message.text.startsWith('>') || message.text.startsWith('!')){
                             this.startGenerate();
                         }
-                    }
+                    // }
                 } else {
-                    this.debouncedGenerate();
+                    // this.debouncedGenerate();
+                    this.startGenerate();
                 }
                 
                 this.replyUser = null;
@@ -460,16 +464,18 @@ export default {
                     messageWriting.jsonContent = this.extractJSON(response);
                     // messageWriting.systemRequest = false;
 
-                    let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
-                    const match = messageWriting.content.match(regex);
-                    if (match) {
-                        messageWriting.content = messageWriting.content.replace(match[1], '');
-                        regex = /`{3}(?:json|markdown)?\s?\n/g;
-                        messageWriting.content = messageWriting.content.replace(regex, '');
-                        messageWriting.content = messageWriting.content.replace(/\s?\n?`{3}?\s?\n/g, '');
-                        messageWriting.content = messageWriting.content.replace(/`{3}/g, '');
+                    if (messageWriting.jsonContent) {
+                        let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
+                        const match = messageWriting.content.match(regex);
+                        if (match) {
+                            messageWriting.content = messageWriting.content.replace(match[1], '');
+                            regex = /`{3}(?:json|markdown)?\s?\n/g;
+                            messageWriting.content = messageWriting.content.replace(regex, '');
+                            messageWriting.content = messageWriting.content.replace(/\s?\n?`{3}?\s?\n/g, '');
+                            messageWriting.content = messageWriting.content.replace(/`{3}/g, '');
+                        }
                     }
-
+                    
                     this.afterModelCreated(response);
                 },
                 onFail: () => {
@@ -493,8 +499,13 @@ export default {
         },
         onGenerationFinished(response) {
             let messageWriting = this.messages[this.messages.length - 1];
-            delete messageWriting.isLoading;
             messageWriting.timeStamp = Date.now();
+
+            this.messages.forEach((message) => {
+                if (message.role == 'system') {
+                    delete message.isLoading;
+                }
+            });
 
             this.afterGenerationFinished(response);
         },
@@ -516,9 +527,9 @@ export default {
                         "key": apiKey
                     }
                 }
-                this.putObject('configuration', token)
-
-                this.generator.generate();
+                this.putObject('configuration', token);
+                this.openaiToken = apiKey;
+                this.startGenerate();
             } else {
                 let messageWriting = this.messages[this.messages.length - 1];
                 if (messageWriting.role == 'system' && messageWriting.isLoading) {

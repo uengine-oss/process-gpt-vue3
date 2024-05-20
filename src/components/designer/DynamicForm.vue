@@ -43,11 +43,18 @@ export default {
   ],
 
   watch: {
+    formHTML: {
+      handler() {
+        this.cachedHFunc = null
+      }
+    },
+
     modelValue: {
       handler() {
         if(JSON.stringify(this.formValues) === JSON.stringify(this.modelValue)) return
 
         this.formValues = this.modelValue
+        this.cachedHFunc = null
       },
       deep: true,
       immediate: true

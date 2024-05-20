@@ -9,3 +9,15 @@ spec:
     targetPort: 8080
   selector:
     app: my-app
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: process-gpt-execution-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8000
+  selector:
+    app: process-gpt-execution

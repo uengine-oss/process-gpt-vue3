@@ -14,6 +14,26 @@ spec:
     spec:
       containers:
       - name: my-app
-        image: gcr.io/process-gpt-419207/process-gpt:v1.0.9
+        image: gcr.io/process-gpt-419207/process-gpt:v2.0.0
         ports:
         - containerPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: process-gpt-execution-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: process-gpt-execution
+  template:
+    metadata:
+      labels:
+        app: process-gpt-execution
+    spec:
+      containers:
+      - name: process-gpt-execution
+        image: gcr.io/process-gpt-419207/process-gpt-execution:v0.0.14
+        ports:
+        - containerPort: 8000

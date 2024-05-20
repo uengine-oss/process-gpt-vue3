@@ -1,5 +1,6 @@
 import '@/scss/style.scss';
 import { fakeBackend } from '@/utils/helpers/fake-backend';
+import { createClient } from '@supabase/supabase-js';
 import { createPinia } from 'pinia';
 import { createApp } from 'vue';
 import VueTablerIcons from 'vue-tabler-icons';
@@ -7,10 +8,9 @@ import VueApexCharts from 'vue3-apexcharts';
 import 'vue3-carousel/dist/carousel.css';
 import PerfectScrollbar from 'vue3-perfect-scrollbar';
 import App from './App.vue';
-import store from './store';
-import { createClient } from '@supabase/supabase-js';
 import vuetify from './plugins/vuetify';
 import { router } from './router';
+import store from './store';
 //Mock Api data
 import Maska from 'maska';
 import VCalendar from 'v-calendar';
@@ -61,121 +61,126 @@ declare global {
       $masterDB: any;
       $mode: any; 
       $supabase: any;
+      $jms: any;
     }
   }
   
-// window.$mode = 'ProcessGPT';
+//window.$mode = 'uEngine';
+window.$mode = 'ProcessGPT';
+window.$jms = false;
 
 if(window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1') || window.$mode == 'uEngine'){
-    window.$supabase = createClient(
-        'http://127.0.0.1:54321',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
-        {
-            auth: {
-                autoRefreshToken: false,
-                persistSession: false
-            }
+    window.$supabase = createClient('http://127.0.0.1:54321','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU', {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
         }
-    );
+    });
 } else {
-    window.$masterDB = createClient(
-        'http://127.0.0.1:54321',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
-        {
-            auth: {
-                autoRefreshToken: false,
-                persistSession: false
-            }
+    window.$supabase = createClient("https://hcnalfeqlkcovkxymgfx.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjbmFsZmVxbGtjb3ZreHltZ2Z4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxMjU2NTYzOSwiZXhwIjoyMDI4MTQxNjM5fQ.ycOarKbGVfzFx8K2GGQ8DuSE6tHylseUHla0qxZCKOk", {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
         }
-    );
-    const subdomain = window.location.host.split('.')[0];
-    if(subdomain != 'www'){
-        let res
-        let options: {
-            key: string;
-            match?: Record<string, any>;
-        } = {
-            key: "id"
-        };
-        let obj: {
-            table: string;
-            searchKey?: string;
-            searchVal?: string;
-        } = {
-            table: ''
-        };
+    });
+//     window.$masterDB = createClient(
+//         'http://127.0.0.1:54321',
+//         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
+//         {
+//             auth: {
+//                 autoRefreshToken: false,
+//                 persistSession: false
+//             }
+//         }
+//     );
+//     const subdomain = window.location.host.split('.')[0];
+//     if(subdomain != 'www'){
+//         let res
+//         let options: {
+//             key: string;
+//             match?: Record<string, any>;
+//         } = {
+//             key: "id"
+//         };
+//         let obj: {
+//             table: string;
+//             searchKey?: string;
+//             searchVal?: string;
+//         } = {
+//             table: ''
+//         };
     
-        let path = `db://tenant_def/${subdomain}`
-        path = path.includes('://') ? path.split('://')[1] : path;
+//         let path = `db://tenant_def/${subdomain}`
+//         path = path.includes('://') ? path.split('://')[1] : path;
     
-        if (path.includes('/')) {
-            obj.table = path.split('/')[0];
-            if (options && options.key) {
-                obj.searchKey = options.key;
-                obj.searchVal = path.split('/')[1];
-            }
-        } else {
-            obj.table = path;
-        }
-        if (options && options.match) {
-            const { data, error } = await window.$masterDB
-                .from(obj.table)
-                .select()
-                .match(options.match)
-                .maybeSingle()
+//         if (path.includes('/')) {
+//             obj.table = path.split('/')[0];
+//             if (options && options.key) {
+//                 obj.searchKey = options.key;
+//                 obj.searchVal = path.split('/')[1];
+//             }
+//         } else {
+//             obj.table = path;
+//         }
+//         if (options && options.match) {
+//             const { data, error } = await window.$masterDB
+//                 .from(obj.table)
+//                 .select()
+//                 .match(options.match)
+//                 .maybeSingle()
     
-            if (error) {
-                res = error;
-            } else if (data) {
-                res = data;
-            }
-        } else if (obj.searchVal) {
-            const { data, error } = await window.$masterDB
-                .from(obj.table)
-                .select()
-                .eq(obj.searchKey, obj.searchVal)
-                .maybeSingle()
+//             if (error) {
+//                 res = error;
+//             } else if (data) {
+//                 res = data;
+//             }
+//         } else if (obj.searchVal) {
+//             const { data, error } = await window.$masterDB
+//                 .from(obj.table)
+//                 .select()
+//                 .eq(obj.searchKey, obj.searchVal)
+//                 .maybeSingle()
     
-            if (error) {
-                res = error;
-            } else if (data) {
-                res = data;
-            }
-        } else {
-            const { data, error } = await window.$masterDB
-                .from(obj.table)
-                .select()
-                .maybeSingle()
+//             if (error) {
+//                 res = error;
+//             } else if (data) {
+//                 res = data;
+//             }
+//         } else {
+//             const { data, error } = await window.$masterDB
+//                 .from(obj.table)
+//                 .select()
+//                 .maybeSingle()
             
-            if (error) {
-                res = error;
-            } else if (data) {
-                res = data;
-            }
-        }
-        if(res){
-            window.$supabase = createClient(res.url, res.secret, {
-                auth: {
-                    autoRefreshToken: false,
-                    persistSession: false
-                }
-            });
-        } else {
-            alert('해당 주소는 존재하지 않는 주소입니다. 가입 후 이용하세요.');
-            window.location.href = 'http://www.process-gpt.io';
-        }
-    } else {
-        window.$supabase = createClient(
-            'http://127.0.0.1:54321',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
-            {
-                auth: {
-                    autoRefreshToken: false,
-                    persistSession: false
-                }
-            }
-        );
-    }
+//             if (error) {
+//                 res = error;
+//             } else if (data) {
+//                 res = data;
+//             }
+//         }
+//         if(res){
+//             window.$supabase = createClient(res.url, res.secret, {
+//                 auth: {
+//                     autoRefreshToken: false,
+//                     persistSession: false
+//                 }
+//             });
+//         } else {
+//             alert('해당 주소는 존재하지 않는 주소입니다. 가입 후 이용하세요.');
+//             window.location.href = 'http://www.process-gpt.io';
+//         }
+//     } else {
+//         window.$supabase = createClient(
+//             'http://127.0.0.1:54321',
+//             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
+//             {
+//                 auth: {
+//                     autoRefreshToken: false,
+//                     persistSession: false
+//                 }
+//             }
+//         );
+//     }
 }
 
 const app = createApp(App);
@@ -186,6 +191,8 @@ import CronVuetifyPlugin from '@vue-js-cron/vuetify';
 app.use(CronVuetifyPlugin);
 // @ts-ignore
 app.config.globalProperties.$try = app._component.methods.try;
+// @ts-ignore
+window.$try = app._component.methods.try;
 app.config.globalProperties.EventBus = emitter;
 app.config.globalProperties.OGBus = OpenGraphEmitter;
 app.config.globalProperties.ModelingBus = ModelingEmitter;
@@ -196,6 +203,8 @@ import ModelerImageGenerator from '@/components/designer/ModelerImageGenerator.v
 app.component('modeler-image-generator', ModelerImageGenerator);
 // modeler-image-generator
 // Use plugins
+import type { KeycloakOnLoad } from 'keycloak-js';
+import Keycloak from 'keycloak-js';
 import loadbpmnComponents from './components/designer/bpmnModeling/bpmn';
 import loadOpengraphComponents from './opengraph';
 
@@ -231,11 +240,14 @@ app.use(VueScrollTo, {
 // 전역으로 복사 가능하게 추가
 document.addEventListener('keydown', function(event) {
     if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
-        navigator.clipboard.writeText(window.getSelection().toString()).then(function() {
-            console.log('Copying to clipboard was successful!');
-        }, function(err) {
-            console.error('Could not copy text: ', err);
-        });
+        let selection = window.getSelection();
+        if (selection) {
+            navigator.clipboard.writeText(selection.toString()).then(function() {
+                console.log('Copying to clipboard was successful!');
+            }, function(err) {
+                console.error('Could not copy text: ', err);
+            });
+        }
         event.preventDefault(); // 기본 이벤트 방지
     }
 });
@@ -249,8 +261,6 @@ let initOptions = {
     clientId: `uengine`,
     onLoad: 'login-required' as KeycloakOnLoad // Explicitly cast to KeycloakOnLoad
 };
-import Keycloak from 'keycloak-js';
-import type { KeycloakOnLoad } from 'keycloak-js';
 (async () => {
     let keycloak = new Keycloak(initOptions);
     try {
@@ -268,7 +278,6 @@ import type { KeycloakOnLoad } from 'keycloak-js';
                 localStorage.setItem('email', `${keycloak.tokenParsed.email}`);
                 localStorage.setItem('uid', `${keycloak.tokenParsed.sub}`);
                 localStorage.setItem('isAdmin', 'true');
-                localStorage.setItem('execution', 'true');
                 localStorage.setItem('picture', '');
             }
         }
@@ -283,3 +292,4 @@ import type { KeycloakOnLoad } from 'keycloak-js';
         console.error('Failed to initialize adapter:', error);
     }
 })();
+
