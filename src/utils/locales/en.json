@@ -60,6 +60,7 @@
         "title": "Process Execution",
         "cardTitle": "Process Execution",
         "processDefinitionExplanation": "Execute the process interactively. For example, you can issue commands like: \n'I'd like to apply for a vacation:\n 1. Reason: Personal matter\n 2. Start date of leave: Today\n 3. Return date from leave: Friday'",
+        "agent": "Use the Agent feature to draft your proposal.",
         "search": "Search",
         "newChat": "New Chat",
         "recentChats": "Recent Chats",
