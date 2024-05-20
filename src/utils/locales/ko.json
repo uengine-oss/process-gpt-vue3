@@ -219,8 +219,9 @@
         "outputData": "출력 데이터",
         "checkPoints": "체크포인트",
         "script": "스크립트",
-        "add": "추가",
         "generateScript": "스크립트 생성",
-        "scriptPrompt": "프롬프트 입력"
+        "scriptPrompt": "프롬프트 입력",
+        "scriptType": "스크립트 유형",
+        "add": "추가"
     }
 }
