@@ -92,7 +92,7 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
                 persistSession: false
             }
         }
-    });
+    );
     window.$backend = 'http://execution.process-gpt.io';
 //     window.$masterDB = createClient(
 //         'http://127.0.0.1:54321',
