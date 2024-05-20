@@ -46,7 +46,7 @@
                     item-props
                     :item-value="item"
                     :item-title="(item) => item.name"
-                    v-model="selectedOut"
+                    v-model="copyUengineProperties.selectedOut"
                 ></v-autocomplete>
                 <!-- <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts> -->
             </v-row>
