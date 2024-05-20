@@ -11,16 +11,16 @@
                     <Icon icon="mdi:magic" width="24" height="24" />
                 </v-btn>
             </template>
-            <span>{{ "스크립트 생성" }}</span>
+            <span>{{ $t('BpnmPropertyPanel.generateScript') }}</span>
         </v-tooltip>
     </div>
     <!-- #endregion -->
 
     <!-- #region 프롬프트 입력 항목 -->
     <div v-if="promptInput.isVisible">
-        <div>{{ "프롬프트 입력" }}</div>
+        <div>{{ $t('BpnmPropertyPanel.scriptPrompt') }}</div>
         <v-textarea v-model="promptInput.prompt" style="width:100%" :disabled="disabled.promptTextarea"></v-textarea>
-        <v-btn @click="generateScript" class="w-100" :disabled="disabled.generateScriptBtn"> 스크립트 생성 </v-btn>
+        <v-btn @click="generateScript" class="w-100" :disabled="disabled.generateScriptBtn"> {{ $t('BpnmPropertyPanel.generateScript') }} </v-btn>
     </div>
     <!-- #endregion -->
 </template>
