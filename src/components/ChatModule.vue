@@ -309,11 +309,9 @@ export default {
                     //     this.startGenerate();
                     // }
                     // if(message.mentionedUsers){
-                        // if(message.mentionedUsers.some(user => user.id === 'system_id') || message.text.startsWith('>') || message.text.startsWith('!')){
-                            if(this.ProcessGPTActive){
-                                this.startGenerate();
-                            }
-                        // }
+                        if(this.ProcessGPTActive || message.mentionedUsers.some(user => user.id === 'system_id') || message.text.startsWith('>') || message.text.startsWith('!')){
+                            this.startGenerate();
+                        }
                     // }
                 } else {
                     // this.debouncedGenerate();

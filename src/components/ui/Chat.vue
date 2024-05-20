@@ -109,35 +109,54 @@
                                                             </v-btn>
                                                         </v-row>
                                                     </v-sheet>
-                                                    <div v-if="type == 'chats' && filteredMessages.length -1 == index">
+                                                    <div v-if="type == 'chats' && filteredMessages.length -1 == index && generatedWorkList.length != 0">
                                                         <div  @click="showGeneratedWorkList = !showGeneratedWorkList"
                                                             class="find-message"
                                                         >{{ generatedWorkList.length }}
                                                         </div>
                                                     </div>
                                                 </div>
+
                                                 <v-card v-if="showGeneratedWorkList && filteredMessages.length -1 == index" class="mt-3">
                                                     <v-list>
                                                         <v-list-item-group>
                                                             <v-list-item v-for="(work, index) in generatedWorkList" :key="index" class="d-flex align-items-center">
                                                                 <v-list-item-content class="flex-grow-1 d-flex align-items-center">
-                                                                    {{ work.messageForUser }}
-                                                                    <v-btn icon @click="work.expanded = !work.expanded" class="ml-2">
-                                                                        <v-icon>{{ work.expanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
-                                                                    </v-btn>
-                                                                    <v-btn style="margin-right: 5px" size="small"
-                                                                        @click="startProcess(work, index)">y</v-btn>
-                                                                    <v-btn size="small" @click="deleteWorkList(index)">n</v-btn>
+                                                                    <div class="d-flex flex-column w-100">
+                                                                        <div class="d-flex justify-content-between align-items-center">
+                                                                            <Icon :icon="workIcons[work.work]" />{{ work.messageForUser }}
+                                                                            <div>
+                                                                                <v-btn icon @click="work.expanded = !work.expanded" class="ml-2">
+                                                                                    <v-icon>{{ work.expanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+                                                                                </v-btn>
+                                                                                <v-btn style="margin-right: 5px" size="small" @click="startProcess(work, index)"
+                                                                                    icon density="comfortable"
+                                                                                >
+                                                                                    <Icon icon="carbon:play-outline" width="24" height="24" />
+                                                                                </v-btn>
+                                                                            </div>
+                                                                        </div>
+                                                                        <v-expand-transition>
+                                                                            <div v-if="work.expanded" class="mt-2 w-100">
+                                                                                <pre>{{ work }}</pre>
+                                                                            </div>
+                                                                        </v-expand-transition>
+                                                                        <v-img
+                                                                            v-if="work.work == 'CreateProcessDefinition'"
+                                                                            :width="300"
+                                                                            aspect-ratio="16/9"
+                                                                            cover
+                                                                            src="https://github.com/jhyg/project-shop-test/assets/65217813/1b551056-0428-41b6-9b90-76dd7942affc"
+                                                                        ></v-img>
+                                                                    </div>
                                                                 </v-list-item-content>
                                                                 <v-divider v-if="index < generatedWorkList.length - 1"></v-divider>
-                                                                <v-expand-transition>
-                                                                    <div v-if="work.expanded" class="mt-2 w-100">
-                                                                        <pre>{{ work }}</pre>
-                                                                    </div>
-                                                                </v-expand-transition>
                                                             </v-list-item>
                                                         </v-list-item-group>
                                                     </v-list>
+                                                    <v-btn size="small" @click="deleteAllWorkList()">
+                                                        <Icon icon="el:trash" />
+                                                    </v-btn>
                                                 </v-card>
                                             </div>
                                             <div v-else :style="shouldDisplayUserInfo(message, index) ? '' : 'margin-top: -20px;'">
@@ -180,11 +199,11 @@
                                                             <pre class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
                                                             <!-- <pre class="text-body-1">{{ message.content }}</pre> -->
 
-                                                            <!-- <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
+                                                            <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
                                                                 <v-btn style="margin-right: 5px" size="small"
                                                                     @click="startProcess(message)">y</v-btn>
                                                                 <v-btn size="small" @click="cancelProcess(message)">n</v-btn>
-                                                            </p> -->
+                                                            </p>
                                                             <v-row class="pa-0 ma-0">
                                                                 <v-spacer></v-spacer>
                                                                 <v-btn @click="beforeReply(message)"
@@ -330,17 +349,6 @@
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
-                                <!-- <v-tooltip v-if="type == 'chats'" text="가능한 작업 내역">
-                                    <template v-slot:activator="{ props }">
-                                        <v-chip small class="ma-1" :value="true" color="primary" text-color="white">
-                                            
-                                        </v-chip>
-                                        <v-btn icon variant="text" class="text-medium-emphasis" v-bind="props"
-                                            style="width:30px; height:30px; margin-left:12px;" :disabled="disableChat">
-                                            <Icon icon="fluent-mdl2:server-processes" width="20" height="20" />
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip> -->
                             </v-row>
                         </v-form>
                     </v-row>
@@ -469,6 +477,12 @@ export default {
     },
     data() {
         return {
+            workIcons: {
+                "ScheduleRegistration" : "icon-park-solid:headset",
+                "TodoListRegistration" : "flat-color-icons:headset",
+                "StartProcessInstance" : "icon-park-solid:headset",
+                "CreateProcessDefinition" : "flat-color-icons:headset"
+            },
             showGeneratedWorkList: false,
             mediaRecorder: null,
             audioChunks: [],
@@ -718,19 +732,19 @@ export default {
             const user = this.userList.find(user => user.email === email);
             return user ? user.profile : '';
         },
-        // shouldDisplayButtons(message, index) {
-        //     if (message.role !== 'system' || !message.systemRequest || message.requestUserEmail !== this.userInfo.email) {
-        //         return false;
-        //     }
-        //     // 현재 메시지 이후로 동일한 userInfo.email을 가진 메시지가 있는지 확인
-        //     for (let i = index + 1; i < this.filteredMessages.length; i++) {
-        //         if (this.filteredMessages[i].email === this.userInfo.email) {
-        //             return false; // 동일한 email을 가진 메시지가 있다면 버튼을 표시하지 않음
-        //         }
-        //     }
-        //     // 위의 조건들을 모두 통과했다면 버튼을 표시
-        //     return true;
-        // },
+        shouldDisplayButtons(message, index) {
+            if (message.role !== 'system' || !message.systemRequest || message.requestUserEmail !== this.userInfo.email) {
+                return false;
+            }
+            // 현재 메시지 이후로 동일한 userInfo.email을 가진 메시지가 있는지 확인
+            for (let i = index + 1; i < this.filteredMessages.length; i++) {
+                if (this.filteredMessages[i].email === this.userInfo.email) {
+                    return false; // 동일한 email을 가진 메시지가 있다면 버튼을 표시하지 않음
+                }
+            }
+            // 위의 조건들을 모두 통과했다면 버튼을 표시
+            return true;
+        },
         shouldDisplayUserInfo() {
             return (message, index) => {
                 if (index === 0) return true;
@@ -768,7 +782,15 @@ export default {
         },
         startProcess(messageObj, index) {
             this.$emit('startProcess', messageObj)
-            this.$emit('deleteWorkList', index)
+            if(this.ProcessGPTActive){
+                this.$emit('deleteWorkList', index)
+            }
+        },
+        cancelProcess(messageObj) {
+            this.$emit('cancelProcess', messageObj)
+        },
+        deleteAllWorkList() {
+            this.$emit('deleteAllWorkList')
         },
         deleteWorkList(index) {
             this.$emit('deleteWorkList', index)
@@ -865,11 +887,11 @@ export default {
 @keyframes breathe {
   0%, 100% {
     transform: scale(0.9);  /* 기본 크기 */
-    opacity: 0.7;  /* 약간 투명 */
+    opacity: 1;  /* 약간 투명 */
   }
   50% {
     transform: scale(1);  /* 20% 더 크게 */
-    opacity: 1;  /* 완전 불투명 */
+    opacity: 0.7;  /* 완전 불투명 */
   }
 }
 
@@ -879,7 +901,7 @@ export default {
     background-color: blue;  /* 배경색 */
     color: white;  /* 글자 색상 */
     border-radius: 100%;  /* 동그랗게 */
-    animation: breathe 2s ease-in-out 3;  /* 2초 동안 한 번만 실행 */
+    animation: breathe 2s infinite ease-in-out;  /* 2초 동안 한 번만 실행 */
     margin-top: 10px;
     margin-left: 5px;
     display: flex;  /* 플렉스박스 사용 */
