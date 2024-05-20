@@ -5,39 +5,57 @@ export default class ScriptGenerator extends AIGenerator{
     constructor(client, language){
         super(client, language);
         
-        this.previousMessages = [{
+        this.prevMessageFormat = {
           role: 'system', 
-          content: `사용자가 입력한 프롬프트를 따라서 그대로 응답해줘.`
-        }]
+          content: `너는 '{{language}}' 언어로 스크립트를 생성하는 모델이야.
+사용자가 입력한 프롬프트에 따라서 올바른 스크립트를 생성해줘.
+{{promptWithPrevScript}}
+
+* 예시
+[input]
+{{exampleInput}}
+[output]
+{{exampleOutput}}
+`
+        }
     }
 
-    generateScript(prompt, prevScript) {
-        // const prevFormOutput = ((this.client.prevFormOutput !== '<section></section>') ? (
-        //   `이전에 만들어진 폼이 있고, 현재 수정하려고 해.
-        //   따라서, '기존의 폼 변경' 가이드를 활용해서 수정과 관련된 JSON 객체를 반환시켜줘.
-        //   이 폼은 무조건 최신 결과라고 생각하면 돼.
-        //   이 이후의 채팅과 관계없이 해당 폼 HTML을 기준으로 작업해줘.
-        //   이전에 만들어진 폼은 다음과 같아.\n\`\`\`` + this.client.prevFormOutput) + `\`\`\`` : "")
+    generateScript(prompt, language, prevScript) {
+
+        // #region 입력 프롬프트를 입력된 파라미터에 맞게 변형
+        const copiedPrevMessageFormat = {...this.prevMessageFormat}
+        copiedPrevMessageFormat.content = copiedPrevMessageFormat.content
+            .replace("{{language}}", language)
+            .replace("{{promptWithPrevScript}}", (prevScript && prevScript.trim().length > 0) ? 
+                `현재 사용자가 입력한 스크립트가 있고, 해당 스크립트를 수정해서 결과를 반환해줘. 스크립트는 다음과 같아. \n\`\`\`\n${prevScript}\n\`\`\`\n` : "")
         
-        
-        // const copiedPrevMessageFormat = {...this.prevMessageFormat}
-        // copiedPrevMessageFormat.content = copiedPrevMessageFormat.content.replace("{{prevMessageFormat}}", prevFormOutput)
-        // this.previousMessages = [copiedPrevMessageFormat];
-        
-        
+        // 각각의 언어에 맞는 예시 생성
+        if(language === 'python'){
+            copiedPrevMessageFormat.content = copiedPrevMessageFormat.content
+                .replace("{{exampleInput}}", "'Hello, World'를 출력시켜줘")
+                .replace("{{exampleOutput}}", "print('Hello, World')")
+        } else {
+            copiedPrevMessageFormat.content = copiedPrevMessageFormat.content
+                .replace("{{exampleInput}}", "Hello, World를 출력시켜줘")
+                .replace("{{exampleOutput}}", "console.log('Hello, World')")
+        }
+        // #endregion
+        this.previousMessages = [copiedPrevMessageFormat];
         console.log("### 전달되는 시스템상 AI 메시지 ###")
         console.log(this.previousMessages)
+
+        
         this.client.sendMessage({
             image: null,
-            text: prompt,
+            text: `[input]
+${prompt}
+[output]`,
             mentionedUsers: null
         });
+
   }
 
   createMessages() {
-    // let messages = super.createMessages();
-    // messages[messages.length - 1].content = `- 입력: ${messages[messages.length - 1].content}\n- 출력: `
-    // return [messages[0], messages[messages.length - 1]];
     return super.createMessages();
   }
 

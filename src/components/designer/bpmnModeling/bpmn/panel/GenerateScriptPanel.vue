@@ -32,7 +32,8 @@ export default {
     mixins: [ChatModule],
     name: 'generate-script-panel',
     props: {
-        modelValue: String
+        modelValue: String,
+        language: String
     },
     emits: ['update:modelValue', 'onGenerateStarted', 'onGenerateFinished'],
 
@@ -80,7 +81,7 @@ export default {
             //#endregion
             this.$emit('onGenerateStarted');
 
-            this.generator.generateScript(this.promptInput.prompt, this.localModelValue);
+            this.generator.generateScript(this.promptInput.prompt, this.language, this.localModelValue);
         },
 
         afterModelCreated(response) {
@@ -98,6 +99,18 @@ export default {
         },
 
         processResponse(response) {
+            console.log("### AI 출력 결과 ###")
+            console.log(response)
+
+            //#region 백틱으로 감싼 결과를 반환한 경우, 제거시키기 위해서
+            if (response.startsWith("```") && response.endsWith("```")) {
+                response = response.replace("```"+this.language, "").replace("```", "").trim()
+            }
+            //#endregion
+
+            console.log("### 제거 후 결과 ###")
+            console.log(response)
+
             this.localModelValue = response;
         }
         //#endregion

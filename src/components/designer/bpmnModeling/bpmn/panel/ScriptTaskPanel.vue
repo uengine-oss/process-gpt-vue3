@@ -3,7 +3,7 @@
         <div style="margin-bottom:20px;">
             <div>{{ $t('BpnmPropertyPanel.script') }}</div>
             <v-textarea v-model="copyUengineProperties.script" :disabled="isViewMode" style="width:100%"></v-textarea>
-            <GenerateScriptPanel v-model="copyUengineProperties.script"/>
+            <GenerateScriptPanel v-model="copyUengineProperties.script" :language="'python'"/>
         </div>
         <div v-if="inputData.length > 0" style="margin-bottom:20px;">
             <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.inputData') }}</div>
