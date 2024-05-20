@@ -13,7 +13,40 @@
                 <v-radio id="Java" name="Java" value="1" label="Java" style="margin-right: 8px !important; font-size: 15px"></v-radio>
             </v-radio-group>
             <div>{{ $t('BpnmPropertyPanel.script') }}</div>
-            <v-textarea v-model="copyUengineProperties.script" :disabled="isViewMode" style="width: 100%"></v-textarea>
+            <v-textarea v-model="copyUengineProperties.script" :disabled="isViewMode" style="width:100%"></v-textarea>
+            <GenerateScriptPanel v-model="copyUengineProperties.script" :language="'python'"/>
+        </div>
+        <div v-if="inputData.length > 0" style="margin-bottom:20px;">
+            <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.inputData') }}</div>
+            <v-row class="ma-0 pa-0">
+                <div v-for="(inputData, idx) in inputData" :key="idx" class="mr-2 mt-2">
+                    <v-chip v-if="inputData.mandatory" color="primary" variant="outlined" class="text-body-2"
+                        @click="deleteInputData(inputData)">
+                        {{ inputData.key }}
+                        <CircleXIcon class="ml-2" start size="20" />
+                    </v-chip>
+                    <v-chip v-else class="text-body-2" variant="outlined" @click="deleteInputData(inputData)">
+                        {{ inputData.key }}
+                        <CircleXIcon class="ml-2" start size="20" />
+                    </v-chip>
+                </div>
+            </v-row>
+        </div>
+        <div v-if="outputData.length > 0" style="margin-bottom:20px;">
+            <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.outputData') }}</div>
+            <v-row class="ma-0 pa-0">
+                <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
+                    <v-chip v-if="output.mandatory" color="primary" class="text-body-2" variant="outlined"
+                        @click="deleteOutputData(output)">
+                        {{ output.variable.name }}
+                        <CircleXIcon class="ml-2" start size="20" />
+                    </v-chip>
+                    <v-chip v-else class="text-body-2" variant="outlined" @click="deleteOutputData(output)">
+                        {{ output.variable.name }}
+                        <CircleXIcon class="ml-2" start size="20" />
+                    </v-chip>
+                </div>
+            </v-row>
         </div>
         <div>
             <div>Return 값을 저장 할 변수</div>
@@ -33,14 +66,19 @@
 import { useBpmnStore } from '@/stores/bpmn';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { Icon } from '@iconify/vue';
-const storage = StorageBaseFactory.getStorage();
+import GenerateScriptPanel from './GenerateScriptPanel.vue'
+const storage = StorageBaseFactory.getStorage()
 export default {
     name: 'script-task-panel',
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
-        isViewMode: Boolean,
-        definition: Object
+        isViewMode: Boolean
+    },
+    components: {
+        GenerateScriptPanel
+    },
+    created() {
     },
     created() {},
     data() {

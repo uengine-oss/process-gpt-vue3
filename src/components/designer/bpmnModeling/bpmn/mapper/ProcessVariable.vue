@@ -114,8 +114,8 @@ export default {
     methods: {
         async generateSql() {
             try {
-                const response = await axios.post('http://localhost:8000/process-var-sql/invoke', {
-                // const response = await axios.post('http://execution.process-gpt.io/process-var-sql/invoke', {
+                var url = window.$backend == '' ? 'http://localhost:8000' : window.$backend
+                const response = await axios.post(`${url}/process-var-sql/invoke`, {
                     input: {
                         var_name: this.processVariable.name,
                         resolution_rule: this.processVariable.description
@@ -128,8 +128,8 @@ export default {
         },
         async testSql() {
             try {
-                const response = await axios.post('http://localhost:8000/process-data-query/invoke', {
-                // const response = await axios.post('http://execution.process-gpt.io/process-data-query/invoke', {
+                var url = window.$backend == '' ? 'http://localhost:8000' : window.$backend
+                const response = await axios.post(`${url}/process-data-query/invoke`, {
                     input: {
                         var_name: this.processVariable.name
                     }

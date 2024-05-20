@@ -58,16 +58,18 @@ const ModelingEmitter = mitt();
 
 declare global {
     interface Window {
-        $masterDB: any;
-        $mode: any;
-        $supabase: any;
-        $jms: any;
+      $masterDB: any;
+      $mode: any; 
+      $supabase: any;
+      $jms: any;
+      $backend: any;
     }
 }
 
 //window.$mode = 'uEngine';
 window.$mode = 'ProcessGPT';
 window.$jms = false;
+window.$backend = '';
 
 if (window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1') || window.$mode == 'uEngine') {
     window.$supabase = createClient(
@@ -90,105 +92,106 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
                 persistSession: false
             }
         }
-    );
-    //     window.$masterDB = createClient(
-    //         'http://127.0.0.1:54321',
-    //         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
-    //         {
-    //             auth: {
-    //                 autoRefreshToken: false,
-    //                 persistSession: false
-    //             }
-    //         }
-    //     );
-    //     const subdomain = window.location.host.split('.')[0];
-    //     if(subdomain != 'www'){
-    //         let res
-    //         let options: {
-    //             key: string;
-    //             match?: Record<string, any>;
-    //         } = {
-    //             key: "id"
-    //         };
-    //         let obj: {
-    //             table: string;
-    //             searchKey?: string;
-    //             searchVal?: string;
-    //         } = {
-    //             table: ''
-    //         };
-
-    //         let path = `db://tenant_def/${subdomain}`
-    //         path = path.includes('://') ? path.split('://')[1] : path;
-
-    //         if (path.includes('/')) {
-    //             obj.table = path.split('/')[0];
-    //             if (options && options.key) {
-    //                 obj.searchKey = options.key;
-    //                 obj.searchVal = path.split('/')[1];
-    //             }
-    //         } else {
-    //             obj.table = path;
-    //         }
-    //         if (options && options.match) {
-    //             const { data, error } = await window.$masterDB
-    //                 .from(obj.table)
-    //                 .select()
-    //                 .match(options.match)
-    //                 .maybeSingle()
-
-    //             if (error) {
-    //                 res = error;
-    //             } else if (data) {
-    //                 res = data;
-    //             }
-    //         } else if (obj.searchVal) {
-    //             const { data, error } = await window.$masterDB
-    //                 .from(obj.table)
-    //                 .select()
-    //                 .eq(obj.searchKey, obj.searchVal)
-    //                 .maybeSingle()
-
-    //             if (error) {
-    //                 res = error;
-    //             } else if (data) {
-    //                 res = data;
-    //             }
-    //         } else {
-    //             const { data, error } = await window.$masterDB
-    //                 .from(obj.table)
-    //                 .select()
-    //                 .maybeSingle()
-
-    //             if (error) {
-    //                 res = error;
-    //             } else if (data) {
-    //                 res = data;
-    //             }
-    //         }
-    //         if(res){
-    //             window.$supabase = createClient(res.url, res.secret, {
-    //                 auth: {
-    //                     autoRefreshToken: false,
-    //                     persistSession: false
-    //                 }
-    //             });
-    //         } else {
-    //             alert('해당 주소는 존재하지 않는 주소입니다. 가입 후 이용하세요.');
-    //             window.location.href = 'http://www.process-gpt.io';
-    //         }
-    //     } else {
-    //         window.$supabase = createClient(
-    //             'http://127.0.0.1:54321',
-    //             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
-    //             {
-    //                 auth: {
-    //                     autoRefreshToken: false,
-    //                     persistSession: false
-    //                 }
-    //             }
-    //         );
-    //     }
+    });
+    window.$backend = 'http://execution.process-gpt.io';
+//     window.$masterDB = createClient(
+//         'http://127.0.0.1:54321',
+//         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
+//         {
+//             auth: {
+//                 autoRefreshToken: false,
+//                 persistSession: false
+//             }
+//         }
+//     );
+//     const subdomain = window.location.host.split('.')[0];
+//     if(subdomain != 'www'){
+//         let res
+//         let options: {
+//             key: string;
+//             match?: Record<string, any>;
+//         } = {
+//             key: "id"
+//         };
+//         let obj: {
+//             table: string;
+//             searchKey?: string;
+//             searchVal?: string;
+//         } = {
+//             table: ''
+//         };
+    
+//         let path = `db://tenant_def/${subdomain}`
+//         path = path.includes('://') ? path.split('://')[1] : path;
+    
+//         if (path.includes('/')) {
+//             obj.table = path.split('/')[0];
+//             if (options && options.key) {
+//                 obj.searchKey = options.key;
+//                 obj.searchVal = path.split('/')[1];
+//             }
+//         } else {
+//             obj.table = path;
+//         }
+//         if (options && options.match) {
+//             const { data, error } = await window.$masterDB
+//                 .from(obj.table)
+//                 .select()
+//                 .match(options.match)
+//                 .maybeSingle()
+    
+//             if (error) {
+//                 res = error;
+//             } else if (data) {
+//                 res = data;
+//             }
+//         } else if (obj.searchVal) {
+//             const { data, error } = await window.$masterDB
+//                 .from(obj.table)
+//                 .select()
+//                 .eq(obj.searchKey, obj.searchVal)
+//                 .maybeSingle()
+    
+//             if (error) {
+//                 res = error;
+//             } else if (data) {
+//                 res = data;
+//             }
+//         } else {
+//             const { data, error } = await window.$masterDB
+//                 .from(obj.table)
+//                 .select()
+//                 .maybeSingle()
+            
+//             if (error) {
+//                 res = error;
+//             } else if (data) {
+//                 res = data;
+//             }
+//         }
+//         if(res){
+//             window.$supabase = createClient(res.url, res.secret, {
+//                 auth: {
+//                     autoRefreshToken: false,
+//                     persistSession: false
+//                 }
+//             });
+//         } else {
+//             alert('해당 주소는 존재하지 않는 주소입니다. 가입 후 이용하세요.');
+//             window.location.href = 'http://www.process-gpt.io';
+//         }
+//     } else {
+//         window.$supabase = createClient(
+//             'http://127.0.0.1:54321',
+//             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
+//             {
+//                 auth: {
+//                     autoRefreshToken: false,
+//                     persistSession: false
+//                 }
+//             }
+//         );
+//     }
 }
 
 const app = createApp(App);
