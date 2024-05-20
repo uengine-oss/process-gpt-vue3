@@ -32,7 +32,7 @@ export default {
             microphone: null,
             dataArray: null,
             volume: 0, // 데시벨 수치
-            threshold: 30, // 임계값 설정
+            threshold: 15, // 임계값 설정
             isRecording: false, // 녹음 상태
             stream: null // 마이크 스트림
         };
@@ -73,6 +73,7 @@ export default {
                 this.isRecording = true;
                 await this.getMicrophoneInput();
             }
+            this.$emit('start');
         },
         stopRecording() {
             this.isRecording = false;
@@ -84,6 +85,7 @@ export default {
                 this.stream.getTracks().forEach(track => track.stop());
                 this.stream = null;
             }
+            this.$emit('stop');
         },
         closeRecording() {
             this.stopRecording();
@@ -92,8 +94,8 @@ export default {
     },
     computed: {
         circleSize() {
-            if (this.volume < this.threshold) return 300; // 임계값 이하일 때 기본 크기
-            return 300 + ((this.volume - this.threshold) / (100 - this.threshold)) * 5; // 원의 기본 크기 100px에 볼륨에 따라 크기 조정 (증가 폭을 줄임)
+            if (this.volume < this.threshold) return 250; // 임계값 이하일 때 기본 크기
+            return 250 + ((this.volume - this.threshold) / (100 - this.threshold)) * 20; // 원의 기본 크기 100px에 볼륨에 따라 크기 조정 (증가 폭을 줄임)
         }
     }
 };
@@ -101,6 +103,16 @@ export default {
 
 
 <style scoped>
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(0.97);  /* 기본 크기 */
+    opacity: 1;  /* 약간 투명 */
+  }
+  50% {
+    transform: scale(1);  /* 20% 더 크게 */
+    opacity: 0.9;  /* 완전 불투명 */
+  }
+}
 .record-close-btn {
     position:absolute;
     top:10px;
@@ -123,6 +135,7 @@ export default {
     background-color: white; /* 배경색 검은색으로 변경 */
     position: absolute;
     top:120px;
+    animation: breathe 2s infinite ease-in-out;
 }
 
 .controls {
