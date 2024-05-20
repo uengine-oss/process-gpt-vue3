@@ -104,7 +104,12 @@ export default {
 
             //#region 백틱으로 감싼 결과를 반환한 경우, 제거시키기 위해서
             if (response.startsWith("```") && response.endsWith("```")) {
-                response = response.replace("```"+this.language, "").replace("```", "").trim()
+                if(response.startsWith("```"+this.language)) {
+                    response = response.slice(this.language.length + 3, response.length - 3).trim()
+                }
+                else {
+                    response = response.slice(3, response.length - 3).trim()
+                }
             }
             //#endregion
 
