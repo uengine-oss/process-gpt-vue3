@@ -25,7 +25,11 @@
     <!-- #endregion -->
 </template>
 <script>
+import ChatModule from '@/components/ChatModule.vue'
+import ChatGenerator from '@/components/ai/ScriptGenerator.js'
+
 export default {
+    mixins: [ChatModule],
     name: 'generate-script-panel',
     props: {
         modelValue: String
@@ -45,8 +49,6 @@ export default {
     watch: {
     },
 
-    created() {
-    },
     data() {
         return {
             promptInput: {
@@ -55,10 +57,33 @@ export default {
             }
         }
     },
+
+    async created() {
+        this.generator = new ChatGenerator(this, {
+            isStream: true,
+            preferredLanguage: 'Korean'
+        });
+        await this.init();
+    },
+
     methods: {
+        //#region AI 스크립트 생성 요청 및 응답 처리
         generateScript() {
-            this.localModelValue = this.promptInput.prompt
+            this.generator.generateScript(this.promptInput.prompt, this.localModelValue);
+        },
+
+        afterModelCreated(response) {
+            this.processResponse(response);
+        },
+
+        afterGenerationFinished(response) {
+            this.processResponse(response);
+        },
+
+        processResponse(response) {
+            this.localModelValue = response;
         }
+        //#endregion
     }
 };
 </script>
