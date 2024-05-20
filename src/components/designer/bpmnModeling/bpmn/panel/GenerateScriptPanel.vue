@@ -19,8 +19,8 @@
     <!-- #region 프롬프트 입력 항목 -->
     <div v-if="promptInput.isVisible">
         <div>{{ "프롬프트 입력" }}</div>
-        <v-textarea v-model="promptInput.prompt" style="width:100%"></v-textarea>
-        <v-btn @click="generateScript" class="w-100"> 스크립트 생성 </v-btn>
+        <v-textarea v-model="promptInput.prompt" style="width:100%" :disabled="disabled.promptTextarea"></v-textarea>
+        <v-btn @click="generateScript" class="w-100" :disabled="disabled.generateScriptBtn"> 스크립트 생성 </v-btn>
     </div>
     <!-- #endregion -->
 </template>
@@ -34,7 +34,7 @@ export default {
     props: {
         modelValue: String
     },
-    emits: ['update:modelValue'],
+    emits: ['update:modelValue', 'onGenerateStarted', 'onGenerateFinished'],
 
     computed: {
         localModelValue: {
@@ -54,6 +54,11 @@ export default {
             promptInput: {
                 isVisible: false,
                 prompt: ""
+            },
+
+            disabled: {
+                promptTextarea: false,
+                generateScriptBtn: false
             }
         }
     },
@@ -69,6 +74,12 @@ export default {
     methods: {
         //#region AI 스크립트 생성 요청 및 응답 처리
         generateScript() {
+            //#region 스크립트 생성 도중에 상호작용 방지
+            this.disabled.promptTextarea = true;
+            this.disabled.generateScriptBtn = true;
+            //#endregion
+            this.$emit('onGenerateStarted');
+
             this.generator.generateScript(this.promptInput.prompt, this.localModelValue);
         },
 
@@ -78,6 +89,12 @@ export default {
 
         afterGenerationFinished(response) {
             this.processResponse(response);
+
+            //#region 스크립트 생성 완료 후 상호작용 허용
+            this.disabled.promptTextarea = false;
+            this.disabled.generateScriptBtn = false;
+            //#endregion
+            this.$emit('onGenerateFinished');
         },
 
         processResponse(response) {
