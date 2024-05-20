@@ -49,7 +49,7 @@
                         <v-tab value="progress" v-if="checkPoints">진행 상황/체크포인트</v-tab>
                         <v-tab value="progress" v-else>진행 상황</v-tab>
                         <v-tab v-if="messages && messages.length > 0" value="history">워크 히스토리</v-tab>
-                        <v-tab v-if="messages && messages.length > 0" value="agent">Agent 초안 생성</v-tab>
+                        <v-tab v-if="messages" value="agent">Agent 초안 생성</v-tab>
                     </v-tabs>
                     <v-window v-model="selectedTab">
                         <v-window-item value="progress">
