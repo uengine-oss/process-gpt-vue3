@@ -268,7 +268,7 @@ export default {
                 } else if (element && typeof element === 'object') {
                     element.$parent = parent;
                     Object.keys(element).forEach((prop) => {
-                        if (prop === '$type' || prop === '$parent') return;
+                        if (prop === 'type' || prop === '$parent') return;
                         const value = element[prop];
                         if (Array.isArray(value) || (value && typeof value === 'object')) {
                             assignParents(value, element); // 재귀적으로 자식 요소에 대해 부모를 설정합니다.
@@ -350,8 +350,8 @@ export default {
             // let bpmnModdle = this.bpmnViewer.get('moddle');
             return JSON.parse(jsonString, function reviver(key, value) {
                 // $type 속성이 있는 객체만 moddle element로 변환합니다.
-                if (value && typeof value === 'object' && value.$type) {
-                    return bpmnModdle.create(value.$type, value);
+                if (value && typeof value === 'object' && value.type) {
+                    return bpmnModdle.create(value.type, value);
                 }
                 // $type 속성이 없는 객체나 다른 값들은 변경하지 않고 그대로 반환합니다.
                 return value;
@@ -359,8 +359,8 @@ export default {
         },
         createModdleElement(element) {
             let bpmnModdle = this.bpmnViewer.get('moddle');
-            const { $type, ...properties } = element;
-            return bpmnModdle.create($type, properties);
+            const { type, ...properties } = element;
+            return bpmnModdle.create(type, properties);
         },
         convertToModdleElements(json) {
             const { rootElements, diagrams, ...definitionsProps } = json;
