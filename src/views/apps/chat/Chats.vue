@@ -31,6 +31,7 @@
                         @startProcess="startProcess"
                         @cancelProcess="cancelProcess"
                         @deleteWorkList="deleteWorkList"
+                        @deleteAllWorkList="deleteAllWorkList"
                         @sendEditedMessage="sendEditedMessage"
                         @stopMessage="stopMessage"
                         @getMoreChat="getMoreChat"
@@ -290,6 +291,9 @@ export default {
         },
         deleteWorkList(index){
             this.generatedWorkList.splice(index, 1);
+        },
+        deleteAllWorkList(){
+            this.generatedWorkList = [];
         },
         async startProcess(response){
             var me = this

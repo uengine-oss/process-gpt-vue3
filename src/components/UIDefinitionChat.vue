@@ -871,32 +871,39 @@ export default {
 
                 // 속성중에서 items인 경우, 키와 값 각각이 [가-힣a-zA-Z0-9_\-. ]에 해당하는 문자가 아닌 경우, 전부 제거함
                 if (component.hasAttribute('items')) {
-                    try {
-                        // AI가 메뉴얼을 따르지 않고, '[A, B, ..., C]'와 같이 나열 연산자를 사용할 경우, 제거시켜버름
-                        let items = JSON.parse(
-                            component
-                                .getAttribute('items')
-                                .replace(/'/g, '"')
-                                .replace(/[ ]*,[ ]*\.\.\.[ ]*,[ ]*/, ',')
-                        );
-                        let newItems = [];
-
-                        items.forEach((item) => {
-                            Object.keys(item).forEach((key) => {
-                                const value = item[key];
-                                const validKeyChars = key.match(/[가-힣a-zA-Z0-9_\-. ]/g);
-                                const validValueChars = value.match(/[가-힣a-zA-Z0-9_\-. ]/g);
-
-                                const cleanedKey = validKeyChars ? validKeyChars.join('') : '';
-                                const cleanedValue = validValueChars ? validValueChars.join('') : '';
-                                newItems.push({ [cleanedKey]: cleanedValue });
-                            });
-                        });
-
-                        component.setAttribute('items', JSON.stringify(newItems));
-                    } catch (error) {
-                        console.log(error);
+                    if(component.getAttribute('items').length == 0) {
                         component.setAttribute('items', '[]');
+                    }
+                    else if(component.getAttribute('items') !== "[]") {
+                     
+                        try {
+                            // AI가 메뉴얼을 따르지 않고, '[A, B, ..., C]'와 같이 나열 연산자를 사용할 경우, 제거시켜버름
+                            let items = JSON.parse(
+                                component
+                                    .getAttribute('items')
+                                    .replace(/'/g, '"')
+                                    .replace(/[ ]*,[ ]*\.\.\.[ ]*,[ ]*/, ',')
+                            );
+                            let newItems = [];
+
+                            items.forEach((item) => {
+                                Object.keys(item).forEach((key) => {
+                                    const value = item[key];
+                                    const validKeyChars = key.match(/[가-힣a-zA-Z0-9_\-. ]/g);
+                                    const validValueChars = value.match(/[가-힣a-zA-Z0-9_\-. ]/g);
+
+                                    const cleanedKey = validKeyChars ? validKeyChars.join('') : '';
+                                    const cleanedValue = validValueChars ? validValueChars.join('') : '';
+                                    newItems.push({ [cleanedKey]: cleanedValue });
+                                });
+                            });
+
+                            component.setAttribute('items', JSON.stringify(newItems));
+                        } catch (error) {
+                            console.log(error);
+                            component.setAttribute('items', '[]');
+                        }
+
                     }
                 }
 

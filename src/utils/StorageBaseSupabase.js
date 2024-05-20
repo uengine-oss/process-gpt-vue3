@@ -570,6 +570,7 @@ export default class StorageBaseSupabase {
                     }
                     window.localStorage.setItem('userName', data.username);
                     window.localStorage.setItem('email', data.email);
+                    window.localStorage.setItem('uid', data.id);
                 }
             }
         } catch(e) {
