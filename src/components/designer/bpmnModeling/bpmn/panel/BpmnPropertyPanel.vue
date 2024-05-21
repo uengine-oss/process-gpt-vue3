@@ -18,6 +18,7 @@
                     v-model="uengineProperties.description"></v-textarea>
             </div> -->
             <component
+                style="height: 60%"
                 :is="panelName"
                 :isViewMode="isViewMode"
                 :uengine-properties="uengineProperties"
@@ -27,6 +28,7 @@
                 :element="element"
                 ref="panelComponent"
                 @update:name="(val) => (name = val)"
+                @updae:text="(val) => (text = text)"
                 :definition="definition"
                 :processDefinitionId="processDefinitionId"
                 @addUengineVariable="(val) => $emit('addUengineVariable', val)"
@@ -112,6 +114,7 @@ export default {
         this.bpmnModeler = store.getModeler;
         this.name = this.element.name;
         this.$refs.cursor.focus();
+        this.text = this.element.text;
     },
     computed: {
         panelName() {
@@ -179,6 +182,7 @@ export default {
             const task = elementRegistry.get(this.element.id);
             this.elementCopy.extensionElements.values[0].json = JSON.stringify(this.uengineProperties);
             this.elementCopy.name = this.name;
+            if (this.elementCopy.text) this.elementCopy.text = this.text;
             modeling.updateProperties(task, this.elementCopy);
             this.$emit('close');
         }

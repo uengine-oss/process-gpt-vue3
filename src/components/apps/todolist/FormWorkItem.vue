@@ -8,7 +8,7 @@
     </v-row>
     <div class="pa-4">
         <!-- <FormMapper></FormMapper> -->
-        <DynamicForm :formHTML="html" v-model="formData"></DynamicForm>
+        <DynamicForm ref="dynamicForm" :formHTML="html" v-model="formData"></DynamicForm>
     </div>
 </template>
 
@@ -137,6 +137,16 @@ export default {
             if (me.workItem.execScope) workItem.execScope = me.workItem.execScope;
 
             ///////////////////////////////////
+
+
+            //#region 폼 정의시에 검증 스크립트가 등록된 경우, 해당 스크립트를 실행시켜서 유효성을 검사
+            const error = me.$refs.dynamicForm.validate()
+            if (error && error.length > 0) {
+                alert("※ 폼에 정의된 유효성 검사에 실패했습니다 !\n> " + error)
+                return;
+            }
+            //#endregion
+
             await backend.putWorkItemComplete(me.$route.params.taskId, workItem);
             me.$router.push('/todolist');
         

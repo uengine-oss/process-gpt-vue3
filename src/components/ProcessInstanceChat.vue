@@ -20,7 +20,7 @@
             </v-card>
         </v-dialog> -->
         <Chat :messages="messages" :agentInfo="agentInfo" :chatInfo="chatInfo"
-            :userInfo="userInfo" :disableChat="disableChat" :type="'instances'" :name="chatName"
+            :isAgentMode="isAgentMode" :userInfo="userInfo" :disableChat="disableChat" :type="'instances'" :name="chatName"
             @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
             @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
         ></Chat>
@@ -64,7 +64,8 @@ export default {
         // WorkItem,
     },
     props:{
-        isComplete: Boolean
+        isComplete: Boolean,
+        isAgentMode: Boolean
     },
     data: () => ({
         headers: [
@@ -79,10 +80,7 @@ export default {
         processInstance: null,
         path: 'proc_inst',
         organizationChart: [],
-        chatInfo: {
-            title: 'processExecution.cardTitle',
-            text: "processExecution.processDefinitionExplanation"
-        },
+        chatInfo: null,
         // bpmn
         onLoad: false,
         bpmn: null,
@@ -112,6 +110,17 @@ export default {
             this.processDefinition = this.$route.query.process;
             await this.beforeSendMessage(newMessage)
             localStorage.removeItem('instancePrompt')
+        }
+        if(!this.isAgentMode){
+            this.chatInfo = {
+                title: 'processExecution.cardTitle',
+                text: "processExecution.processDefinitionExplanation"
+            }
+        } else {
+            this.chatInfo = {
+                title: 'processExecution.cardTitle',
+                text: "processExecution.agent"
+            }
         }
     },
     mounted() {
@@ -143,8 +152,9 @@ export default {
             var me = this
             me.$try({
                 context: me,
-                action(me) {
+                action() {
                     if (newVal) me.agentInfo.draftPrompt = newVal
+                    me.messages.push(me.createMessageObj(newVal))
 
                     if (!me.agentInfo.draftPrompt) return;
                     me.agentInfo.isRunning = true
@@ -199,7 +209,12 @@ export default {
                             me.checkDisableChat();
                         }
                         await me.loadProcess();
-                        await me.loadMessages(`proc_inst/${value.proc_inst_id}`, { key: 'id' });
+                        if(this.isAgentMode){
+                            await me.loadAgentMessages(`proc_inst/${value.proc_inst_id}`, { key: 'id' });
+                            me.processInstanceId = value.proc_inst_id
+                        } else {
+                            await me.loadMessages(`proc_inst/${value.proc_inst_id}`, { key: 'id' });
+                        }
                     }                    
                 }
             })
