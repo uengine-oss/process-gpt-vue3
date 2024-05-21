@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: my-app
-        image: gcr.io/process-gpt-419207/process-gpt:v2.0.0
+        image: gcr.io/process-gpt-419207/process-gpt:v2.0.1
         ports:
         - containerPort: 8080
 ---
@@ -37,3 +37,43 @@ spec:
         image: gcr.io/process-gpt-419207/process-gpt-execution:v0.0.14
         ports:
         - containerPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autonomous-backend-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: process-gpt-autonomous
+  template:
+    metadata:
+      labels:
+        app: process-gpt-autonomous
+    spec:
+      containers:
+      - name: process-gpt-autonomous
+        image: gcr.io/process-gpt-419207/process-gpt-autonomus:v0.0.3
+        ports:
+        - containerPort: 6789
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memento-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: process-gpt-memento
+  template:
+    metadata:
+      labels:
+        app: process-gpt-memento
+    spec:
+      containers:
+      - name: process-gpt-memento
+        image: gcr.io/process-gpt-419207/process-gpt-memento:v0.0.2
+        ports:
+        - containerPort: 8005

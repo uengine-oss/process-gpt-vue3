@@ -35,3 +35,37 @@ spec:
             name: process-gpt-execution-service
             port:
               number: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: autonomous-ingress
+spec:
+  rules:
+  - host: autonomous.process-gpt.io
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: autonomous-service
+            port:
+              number: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: memento-ingress
+spec:
+  rules:
+  - host: memento.process-gpt.io
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: memento-service
+            port:
+              number: 80
