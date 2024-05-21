@@ -18,7 +18,7 @@
             :isLoading="isLoading"
         />
         <div class="controls">
-            <v-btn v-if="!isRecording" @click="toggleRecording" icon density="comfortable">
+            <v-btn v-if="!isRecording && !isAudioPlaying" @click="toggleRecording" icon density="comfortable">
                 <Icon icon='bi:mic-fill' width="24" height="24" />
             </v-btn>
             <v-btn v-else @click="stopRecording" icon density="comfortable">
@@ -136,37 +136,37 @@ export default {
 /* ===== GPT 답변 애니메이션 시작 */
 @keyframes increaseHeight1 {
   0%, 100% {
-    height: 70px;
+    height: 30px;
+  }
+  50% {
+    height: 60px;
+  }
+}
+
+@keyframes increaseHeight2 {
+  0%, 100% {
+    height: 30px;
+  }
+  50% {
+    height: 80px;
+  }
+}
+
+@keyframes increaseHeight3 {
+  0%, 100% {
+    height: 30px;
   }
   50% {
     height: 100px;
   }
 }
 
-@keyframes increaseHeight2 {
+@keyframes increaseHeight4 {
   0%, 100% {
-    height: 70px;
-  }
-  50% {
-    height: 140px;
-  }
-}
-
-@keyframes increaseHeight3 {
-  0%, 100% {
-    height: 80px;
+    height: 30px;
   }
   50% {
     height: 120px;
-  }
-}
-
-@keyframes increaseHeight4 {
-  0%, 100% {
-    height: 60px;
-  }
-  50% {
-    height: 110px;
   }
 }
 
@@ -174,30 +174,33 @@ export default {
     display: flex;
     align-items: flex-end;
     gap: 5px;
+    position: relative; /* 상대 위치 설정 */
+    height: 100px; /* 최대 높이 설정 */
+    top: -160px;
 }
 
 .audio-bar {
     width: 50px;
     background-color: white;
     margin: 0 0 10px 0;
-    align-self: flex-end;
-    border-radius: 30px;
+    border-radius: 50px;
+    transform-origin: bottom; /* 변환의 기준점을 하단으로 설정 */
 }
 
 .gpt-animation1 {
-    animation: increaseHeight1 1.65s infinite ease-in-out;
+    animation: increaseHeight1 0.7s infinite ease-in-out;
 }
 
 .gpt-animation2 {
-    animation: increaseHeight2 1.8s infinite ease-in-out;
+    animation: increaseHeight2 0.7s infinite ease-in-out;
 }
 
 .gpt-animation3 {
-    animation: increaseHeight3 1.2s infinite ease-in-out;
+    animation: increaseHeight3 0.7s infinite ease-in-out;
 }
 
 .gpt-animation4 {
-    animation: increaseHeight4 1.5s infinite ease-in-out;
+    animation: increaseHeight4 0.7s infinite ease-in-out;
 }
 
 
@@ -305,7 +308,7 @@ export default {
   align-items: center;
   justify-content: center;
   height: calc(100vh - 155px);
-  background-color: black;
+  background-color: #1976D2;
 }
 
 .circle {
@@ -313,7 +316,7 @@ export default {
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background-color: white; /* 배경색 검은색으로 변경 */
+    background-color: white;
     position: absolute;
     top:120px;
     animation: breathe 2s infinite ease-in-out;

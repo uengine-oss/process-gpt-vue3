@@ -116,14 +116,16 @@
                                                             </v-btn>
                                                         </v-row>
                                                     </v-sheet>
-                                                    <transition name="slide-fade">
-                                                        <!-- <div v-if="shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)"> -->
-                                                        <div v-if="type == 'chats' && filteredMessages.length -1 == index && generatedWorkList.length != 0">
+                                                    <!-- <transition name="slide-fade"> -->
+                                                        <div v-if="shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)"
+                                                            :key="isRender"
+                                                        >
+                                                        <!-- <div v-if="type == 'chats' && filteredMessages.length -1 == index && generatedWorkList.length != 0"> -->
                                                             <div @click="showGeneratedWorkList = !showGeneratedWorkList" class="find-message">
                                                             {{ generatedWorkList.length }}
                                                             </div>
                                                         </div>
-                                                    </transition>
+                                                    <!-- </transition> -->
                                                 </div>
 
                                                 <v-card v-if="showGeneratedWorkList && shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)" class="mt-3">
@@ -547,6 +549,7 @@ export default {
             mentionStartIndex: null,
             mentionedUsers: [], // Mention된 유저들의 정보를 저장할 배열
             file: null,
+            isRender: false,
         };
     },
     mounted() {
@@ -604,10 +607,10 @@ export default {
                     let data = JSON.parse(JSON.stringify(item));
                     if (data.content || data.jsonContent || data.image) {
                         list.push(data);
+                        this.setRenderTime();
                     }
                 });
             }
-
             return list;
         },
         // isLoading 상태의 변화를 감시합니다.
@@ -650,13 +653,23 @@ export default {
         // 애니메이션 표시를 위해 system의 답변이 있더라도 표시 가능하게 하려고 만든 methods
         shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index) {
             let nonSystemMessageCount = 0;
+            var renderVariable = 0;
+            if(!this.isRender) {
+                renderVariable = -1;
+            }
             for (let i = 0; i <= index; i++) {
                 if (filteredMessages[i].role !== 'system') {
                     nonSystemMessageCount++;
                 }
             }
             const userMessagesLength = filteredMessages.filter(message => message.role === 'user').length;
-            return type === 'chats' && nonSystemMessageCount - 1 === userMessagesLength - 1 && generatedWorkList.length !== 0;
+            return type === 'chats' && nonSystemMessageCount - 1 === userMessagesLength + renderVariable - 1 && generatedWorkList.length !== 0;
+        },
+        setRenderTime() {
+                this.isRender = false
+            setTimeout(() => {
+                this.isRender = true
+            },3000)
         },
         getWorkIcon(workType) {
             return this.workIcons[workType] || this.defaultWorkIcon;
@@ -1014,15 +1027,6 @@ export default {
     font-weight: 700;
     cursor: pointer;
     font-size: 12px;
-}
-
-.slide-fade-enter-active, .slide-fade-leave-active {
-    transition: all 1.5s ease;
-}
-
-.slide-fade-enter, .slide-fade-leave-to {
-    transform: translateY(67px);
-    opacity: 0; /* 이동 애니메이션 동안 투명하게 설정 */
 }
 
 
