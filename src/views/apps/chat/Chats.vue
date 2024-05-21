@@ -420,7 +420,8 @@ export default {
                     }
                     if(responseObj.work == 'CompanyQuery'){
                         try{
-                            let responseMemento = await axios.post('http://localhost:8005/query', { query: responseObj.content});
+                            var url = window.$memento == '' ? 'http://localhost:8005' : window.$memento
+                            let responseMemento = await axios.post(`${url}/query`, { query: responseObj.content});
                             obj.memento = {}
                             obj.memento.response = responseMemento.data.response
                             if (!responseMemento.data.metadata) return {};
