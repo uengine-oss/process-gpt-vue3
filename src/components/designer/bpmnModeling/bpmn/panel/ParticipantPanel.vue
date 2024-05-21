@@ -1,41 +1,20 @@
 <template>
     <div>
-        <div class="included" style="margin-bottom: 22px">
-            <div style="margin-bottom: 8px">Select Role Type</div>
-            <v-radio-group v-model="type" row style="margin-top: 0px !important">
-                <v-radio
-                    id="roleResolution"
-                    name="roleResolution"
-                    value="None"
-                    label="None"
-                    style="margin-right: 8px !important; font-size: 15px"
-                ></v-radio>
-                <v-radio
-                    id="roleResolution"
-                    name="roleResolution"
-                    value="org.uengine.five.overriding.IAMRoleResolutionContext"
-                    label="Role Resolution By IAM Scope"
-                    style="margin-right: 8px !important; font-size: 15px"
-                ></v-radio>
-                <v-radio
-                    id="roleResolution"
-                    name="roleResolution"
-                    value="org.uengine.kernel.DirectRoleResolutionContext"
-                    label="Role Resolution By Direct user"
-                    style="margin-right: 8px !important; font-size: 15px"
-                ></v-radio>
-            </v-radio-group>
-            <v-text-field
-                v-if="type == 'org.uengine.five.overriding.IAMRoleResolutionContext'"
-                v-model="copyUengineProperties.roleResolutionContext.scope"
-                label="Scope Name"
-            ></v-text-field>
-
-            <v-text-field
-                v-if="type == 'org.uengine.kernel.DirectRoleResolutionContext'"
-                v-model="copyUengineProperties.roleResolutionContext.endpoint"
-                label="User ID"
-            ></v-text-field>
+        <div class="included" style="margin-bottom: 22px; height: 100%">
+            <div style="margin-bottom: 8px">API URL</div>
+            <v-row class="ma-0 pa-0">
+                <v-text-field v-model="copyUengineProperties.serviceURL"></v-text-field>
+            </v-row>
+            <div style="margin-bottom: 8px">Open API 스펙</div>
+            <v-row class="ma-0 pa-0" style="height: 100%">
+                <vue-monaco-editor
+                    v-model:value="copyUengineProperties.openAPI"
+                    theme="vs-dark"
+                    language="yaml"
+                    :options="MONACO_EDITOR_OPTIONS"
+                    @mount="handleMount"
+                />
+            </v-row>
         </div>
     </div>
 </template>
@@ -43,24 +22,21 @@
 import { useBpmnStore } from '@/stores/bpmn';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
-
 export default {
-    name: 'lane-panel',
+    name: 'participant-panel',
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
         isViewMode: Boolean
     },
-    created() {
-        // console.log(this.element)
-        // this.uengineProperties = JSON.parse(this.element.extensionElements.values[0].json)
-        // 필수 uEngine Properties의 key가 없다면 작업.
-        // Object.keys(this.requiredKeyLists).forEach((key) => {
-        //     this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
-        // });
-    },
+    created() {},
     data() {
         return {
+            MONACO_EDITOR_OPTIONS: {
+                automaticLayout: true,
+                formatOnType: true,
+                formatOnPaste: true
+            },
             definitions: [],
             definitionRoles: [],
             calleeDefinitionRoles: [],
@@ -81,7 +57,8 @@ export default {
             paramKey: '',
             paramValue: '',
             definitionCnt: 0,
-            type: 'None'
+            type: 'None',
+            editorRef: {}
         };
     },
     async mounted() {
@@ -113,13 +90,14 @@ export default {
     watch: {
         type(after, before) {
             if (after == 'org.uengine.five.overriding.IAMRoleResolutionContext') {
-                if(!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {}
+                if (!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {};
                 this.copyUengineProperties.roleResolutionContext._type = 'org.uengine.five.overriding.IAMRoleResolutionContext';
-                if(!this.copyUengineProperties.roleResolutionContext.scope) this.copyUengineProperties.roleResolutionContext.scope = ''
+                if (!this.copyUengineProperties.roleResolutionContext.scope) this.copyUengineProperties.roleResolutionContext.scope = '';
             } else if (after == 'org.uengine.kernel.DirectRoleResolutionContext') {
-                if(!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {}
+                if (!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {};
                 this.copyUengineProperties.roleResolutionContext._type = 'org.uengine.kernel.DirectRoleResolutionContext';
-                if(!this.copyUengineProperties.roleResolutionContext.endpoint) this.copyUengineProperties.roleResolutionContext.endpoint = ''
+                if (!this.copyUengineProperties.roleResolutionContext.endpoint)
+                    this.copyUengineProperties.roleResolutionContext.endpoint = '';
             } else if (after == 'None') {
                 if (this.copyUengineProperties.roleResolutionContext) {
                     delete this.copyUengineProperties.roleResolutionContext;
@@ -128,15 +106,18 @@ export default {
         }
     },
     methods: {
+        handleMount(editor) {
+            this.editorRef.value = editor;
+        },
         checkType() {
             if (!this.copyUengineProperties.roleResolutionContext) {
                 this.type = 'None';
             } else if (this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.kernel.DirectRoleResolutionContext') {
                 this.type = 'org.uengine.kernel.DirectRoleResolutionContext';
-                this.scope = this.copyUengineProperties.roleResolutionContext.scope
+                this.scope = this.copyUengineProperties.roleResolutionContext.scope;
             } else if (this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.five.overriding.IAMRoleResolutionContext') {
                 this.type = 'org.uengine.five.overriding.IAMRoleResolutionContext';
-                this.endpoint = this.copyUengineProperties.roleResolutionContext.endpoint
+                this.endpoint = this.copyUengineProperties.roleResolutionContext.endpoint;
             }
         },
         ensureKeyExists(obj, key, defaultValue) {

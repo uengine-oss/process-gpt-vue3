@@ -876,23 +876,33 @@ export default {
                     //     me.processDefinition = await me.convertXMLToJSON(xml);
                     // }
 
-                    me.processDefinition.processDefinitionId = info.proc_def_id ? info.proc_def_id : prompt('please give a ID for the process definition');
+                    if(window.$mode != 'uEngine') {
 
-                    if (!me.processDefinition.processDefinitionName && info.name) {
-                        me.processDefinition.processDefinitionName = info.name
-                    } else if (!me.processDefinition.processDefinitionName && !info.name) {
-                        me.processDefinition.processDefinitionName = prompt('please give a name for the process definition');
-                    }
+                        me.processDefinition.processDefinitionId = info.proc_def_id ? info.proc_def_id : prompt('please give a ID for the process definition');
 
-                    me.projectName = me.processDefinition.processDefinitionName;
-                    if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
-                        throw new Error('processDefinitionId or processDefinitionName is missing');
-                    }
-                    await backend.putRawDefinition(xml, info.proc_def_id, info);
-                    await this.saveToVectorStore(me.processDefinition);
+                        if (!me.processDefinition.processDefinitionName && info.name) {
+                            me.processDefinition.processDefinitionName = info.name
+                        } else if (!me.processDefinition.processDefinitionName && !info.name) {
+                            me.processDefinition.processDefinitionName = prompt('please give a name for the process definition');
+                        }
 
-                    if (me.$route.fullPath == '/definitions/chat') {
-                        me.$router.push('/definitions/' + me.processDefinition.processDefinitionId);
+                        me.projectName = me.processDefinition.processDefinitionName;
+                        if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
+                            throw new Error('processDefinitionId or processDefinitionName is missing');
+                        }
+                        await backend.putRawDefinition(xml, info.proc_def_id, info);
+                        await this.saveToVectorStore(me.processDefinition);
+
+                        if (me.$route.fullPath == '/definitions/chat') {
+                            me.$router.push('/definitions/' + me.processDefinition.processDefinitionId);
+                        }
+
+                    } else {
+                        await backend.putRawDefinition(xml, info.proc_def_id, info);
+
+                        if (me.$route.fullPath == '/definitions/chat') {
+                            me.$router.push('/definitions/' + info.proc_def_id);
+                        }
                     }
                 }
             });

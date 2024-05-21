@@ -126,7 +126,7 @@ export default class StorageBaseSupabase {
                     role: data.role
                 }
             } else {
-                throw new StorageBaseError('error in getUserInfo', e, arguments);
+                throw new StorageBaseError('error in getUserInfo', error, arguments);
             }
         } catch(e) {
             throw new StorageBaseError('error in getUserInfo', e, arguments);

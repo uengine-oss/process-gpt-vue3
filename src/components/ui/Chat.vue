@@ -1,6 +1,11 @@
 <template>
     <div class="customHeight" style="background-color: rgba( 255, 255, 255, 1 );">
-        <Record v-if="isRecording" @close="isRecording ? stopRecording() : startRecording()" />
+        <Record v-if="recordingMode"
+            @close="recordingModeChange()"
+            @start="startRecording()"
+            @stop="stopRecording()"
+            :audioResponse="newMessage"
+        />
         <div v-else>
             <div>
                 <div>
@@ -41,13 +46,14 @@
                                 
                                 <div v-for="(message, index) in filteredMessages" :key="index" class="px-1 py-1">
                                     <AgentsChat v-if="message && message._template === 'agent'" :message="message"
-                                        :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="index" />
+                                        :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="index"
+                                    />
                                     <div v-else>
-                                        <div v-if="message.content && !message.content.includes('아래 대화 내용에서 프로세스를 유추하여 프로세스 정의를 생성해주세요. 이때 가능한 프로세스를 일반화하여 작성:')">
+                                        <div>
                                             <div v-if="message.email == userInfo.email && message.role != 'system'">
                                                 <v-row class="ma-0 pa-0">
                                                     <v-spacer></v-spacer>
-                                                    <small class="text-medium-emphasis text-subtitle-2" v-if="message.timeStamp">
+                                                    <small class="text-medium-emphasis text-subtitle-2 mr-2" v-if="message.timeStamp">
                                                         {{ formatTime(message.timeStamp) }}
                                                     </small>
 
@@ -84,7 +90,8 @@
                                                     </v-row>
                                                 </div>
 
-                                                <div v-else class="d-flex justify-end" @mouseover="hoverIndex = index"
+                                                <div v-else class="d-flex justify-end"
+                                                    @mouseover="hoverIndex = index"
                                                     @mouseleave="hoverIndex = -1"
                                                 >
                                                     <v-sheet class="bg-lightprimary rounded-md px-3 py-2 mb-1">
@@ -94,7 +101,7 @@
                                                             v-if="message.replyContent">{{ message.replyContent }}</pre>
                                                         <v-divider v-if="message.replyContent"></v-divider>
 
-                                                        <pre class="text-body-1" v-html="linkify(message.content)"></pre>
+                                                        <pre v-if="message.content" class="text-body-1" v-html="linkify(message.content)"></pre>
 
                                                         <pre v-if="message.jsonContent"
                                                             class="text-body-1">{{ message.jsonContent }}</pre>
@@ -109,33 +116,55 @@
                                                             </v-btn>
                                                         </v-row>
                                                     </v-sheet>
-                                                    <div v-if="type == 'chats' && filteredMessages.length -1 == index && generatedWorkList.length != 0">
-                                                        <div  @click="showGeneratedWorkList = !showGeneratedWorkList"
-                                                            class="find-message"
-                                                        >{{ generatedWorkList.length }}
+                                                    <transition name="slide-fade">
+                                                        <!-- <div v-if="shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)"> -->
+                                                        <div v-if="type == 'chats' && filteredMessages.length -1 == index && generatedWorkList.length != 0">
+                                                            <div @click="showGeneratedWorkList = !showGeneratedWorkList" class="find-message">
+                                                            {{ generatedWorkList.length }}
+                                                            </div>
                                                         </div>
-                                                    </div>
+                                                    </transition>
                                                 </div>
 
-                                                <v-card v-if="showGeneratedWorkList && filteredMessages.length -1 == index" class="mt-3">
+                                                <v-card v-if="showGeneratedWorkList && shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)" class="mt-3">
+                                                    <v-btn @click="deleteAllWorkList()"
+                                                        size="small" icon density="comfortable"
+                                                        style="position:absolute; right:5px; top:5px; z-index:1;"
+                                                    >
+                                                        <Icon icon="el:trash" />
+                                                    </v-btn>
                                                     <v-list>
-                                                        <v-list-item-group>
+                                                        <v-list-group>
                                                             <v-list-item v-for="(work, index) in generatedWorkList" :key="index" class="d-flex align-items-center">
-                                                                <v-list-item-content class="flex-grow-1 d-flex align-items-center">
-                                                                    <div class="d-flex flex-column w-100">
-                                                                        <div class="d-flex justify-content-between align-items-center">
-                                                                            <Icon :icon="workIcons[work.work]" />{{ work.messageForUser }}
+                                                                <v-list-item-content v-if="work.messageForUser" class="flex-grow-1 d-flex align-items-center">
+                                                                    <div class="w-100">
+                                                                        <v-row class="ma-0 pa-3">
+                                                                            <template v-if="!workIcons[work.work]">
+                                                                                <img :src="defaultWorkIcon" alt="Default Icon"
+                                                                                    style="width:20px; height:20px;"
+                                                                                />
+                                                                            </template>
+                                                                            <template v-else>
+                                                                                <div style="padding-top:2px;">
+                                                                                    <Icon :icon="getWorkIcon(work.work)" />
+                                                                                </div>
+                                                                            </template>
+                                                                            <div style="margin-left:5px; margin-top:0px;">{{ work.messageForUser }}</div>
                                                                             <div>
-                                                                                <v-btn icon @click="work.expanded = !work.expanded" class="ml-2">
-                                                                                    <v-icon>{{ work.expanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
-                                                                                </v-btn>
-                                                                                <v-btn style="margin-right: 5px" size="small" @click="startProcess(work, index)"
-                                                                                    icon density="comfortable"
+                                                                                <v-btn @click="work.expanded = !work.expanded"
+                                                                                    class="ml-2"
+                                                                                    size="small" icon density="comfortable"
                                                                                 >
-                                                                                    <Icon icon="carbon:play-outline" width="24" height="24" />
+                                                                                    <Icon :icon="work.expanded ? 'iconamoon:arrow-up-2' : 'iconamoon:arrow-down-2'" width="24" height="24"/>
+                                                                                </v-btn>
+                                                                                <v-btn  @click="startProcess(work, index)"
+                                                                                    class="ml-2"
+                                                                                    size="small" icon density="comfortable"
+                                                                                >
+                                                                                    <Icon icon="gridicons:play" width="24" height="24" />
                                                                                 </v-btn>
                                                                             </div>
-                                                                        </div>
+                                                                        </v-row>
                                                                         <v-expand-transition>
                                                                             <div v-if="work.expanded" class="mt-2 w-100">
                                                                                 <pre>{{ work }}</pre>
@@ -152,11 +181,8 @@
                                                                 </v-list-item-content>
                                                                 <v-divider v-if="index < generatedWorkList.length - 1"></v-divider>
                                                             </v-list-item>
-                                                        </v-list-item-group>
+                                                        </v-list-group>
                                                     </v-list>
-                                                    <v-btn size="small" @click="deleteAllWorkList()">
-                                                        <Icon icon="el:trash" />
-                                                    </v-btn>
                                                 </v-card>
                                             </div>
                                             <div v-else :style="shouldDisplayUserInfo(message, index) ? '' : 'margin-top: -20px;'">
@@ -206,24 +232,25 @@
                                                             </p>
                                                             <v-row class="pa-0 ma-0">
                                                                 <v-spacer></v-spacer>
-                                                                <v-btn @click="beforeReply(message)"
-                                                                    v-if="replyIndex === index" 
-                                                                    variant="text" size="x-small" icon
-                                                                    style="background-color:white; margin-right:5px;"
-                                                                >
-                                                                    <Icon icon="material-symbols:reply" width="20" height="20" />
-                                                                </v-btn>
-                                                                <v-btn @click="viewJSON(index)"
-                                                                    variant="text" size="x-small" icon
-                                                                    style="background-color:white;"
-                                                                >
-                                                                    <Icon v-if="message.jsonContent && isviewJSONStatus"
-                                                                        icon="iconamoon:arrow-up-2" width="20" height="20"
-                                                                    />
-                                                                    <Icon v-else
-                                                                        icon="iconamoon:arrow-down-2" width="20" height="20"
-                                                                    />
-                                                                </v-btn>
+                                                                <div v-if="replyIndex === index" >
+                                                                    <v-btn @click="beforeReply(message)"
+                                                                        variant="text" size="x-small" icon
+                                                                        style="background-color:white; margin-right:5px;"
+                                                                    >
+                                                                        <Icon icon="material-symbols:reply" width="20" height="20" />
+                                                                    </v-btn>
+                                                                    <v-btn @click="viewJSON(index)"
+                                                                        variant="text" size="x-small" icon
+                                                                        style="background-color:white;"
+                                                                    >
+                                                                        <Icon v-if="message.jsonContent && isviewJSONStatus"
+                                                                            icon="iconamoon:arrow-up-2" width="20" height="20"
+                                                                        />
+                                                                        <Icon v-else
+                                                                            icon="iconamoon:arrow-down-2" width="20" height="20"
+                                                                        />
+                                                                    </v-btn>
+                                                                </div>
                                                             </v-row>
 
                                                             <v-row v-if="message.tableData" class="my-5">
@@ -286,6 +313,14 @@
                     </perfect-scrollbar>
                     <div style="position:relative">
                         <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
+                            <v-tooltip :text="$t('chat.addImage')">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn icon variant="text" class="text-medium-emphasis" @click="capture" v-bind="props"
+                                        style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
+                                        <Icon icon="iconoir:camera" width="20" height="20" />
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
                             <v-tooltip :text="$t('chat.addImage')">
                                 <template v-slot:activator="{ props }">
                                     <v-btn icon variant="text" class="text-medium-emphasis" @click="uploadImage" v-bind="props"
@@ -385,7 +420,9 @@
                 <p>{{ replyUser.content }}</p>
                 <v-divider />
             </div>
-
+            <!-- camera capture -->
+            <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
+            <!-- image upload -->
             <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
             <div id="imagePreview" style="max-width: 200px;"></div>
             <form class="d-flex align-center pa-0">
@@ -394,18 +431,17 @@
                     auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
                     style="font-size:20px !important;" @input="handleTextareaInput">
                     <template v-slot:prepend-inner>
-                        <v-btn @click="isRecording ? stopRecording() : startRecording()"
+                        <v-btn @click="recordingModeChange()"
                             density="comfortable"
                             icon
                         >
-                            <v-icon v-if="isRecording">mdi-stop</v-icon>
-                            <Icon v-else icon="ic:round-headset" width="24" height="24" />
+                            <Icon icon="ic:round-headset" width="24" height="24" />
                         </v-btn>
                     </template>
                     <template v-slot:append-inner>
                         <div style="height: -webkit-fill-available; margin-right: 10px; margin-top: 10px;">
                             <v-btn v-if="!isLoading" class="cp-send" icon variant="text" type="submit" @click="beforeSend"
-                                style="width:30px; height:30px;" :disabled="!newMessage">
+                                style="width:30px; height:30px;" :disabled="disableBtn">
                                 <Icon icon="teenyicons:send-outline" width="20" height="20" />
                             </v-btn>
                             <v-btn v-else icon variant="text" @click="isLoading = !isLoading"
@@ -446,6 +482,8 @@ import axios from 'axios';
 import { HistoryIcon } from 'vue-tabler-icons';
 import Record from './Record.vue';
 // import Record from './Record2.vue';
+import defaultWorkIcon from '@/assets/images/chat/chat-icon.png';
+
 
 export default {
     components: {
@@ -479,11 +517,15 @@ export default {
     data() {
         return {
             workIcons: {
-                "ScheduleRegistration" : "icon-park-solid:headset",
-                "TodoListRegistration" : "flat-color-icons:headset",
-                "StartProcessInstance" : "icon-park-solid:headset",
-                "CreateProcessDefinition" : "flat-color-icons:headset"
+                "ScheduleQuery" : "solar:calendar-line-duotone", // 달력 아이콘
+                "ScheduleRegistration" : "solar:calendar-line-duotone", // 달력 아이콘
+                "TodoListRegistration" : "pajamas:overview", // TODO 리스트 아이콘
+                "StartProcessInstance" : "carbon:ibm-process-mining",
+                "CreateProcessDefinition" : "tabler:device-imac-cog"
             },
+            recordingMode: false,
+            defaultWorkIcon: defaultWorkIcon,
+            displayGeneratedWorkList: false,  // 애니메이션 후에 표시하기 위한 상태
             showGeneratedWorkList: false,
             mediaRecorder: null,
             audioChunks: [],
@@ -560,7 +602,7 @@ export default {
             if (this.messages && this.messages.length > 0) {
                 this.messages.forEach((item) => {
                     let data = JSON.parse(JSON.stringify(item));
-                    if (data.content || data.jsonContent) {
+                    if (data.content || data.jsonContent || data.image) {
                         list.push(data);
                     }
                 });
@@ -589,8 +631,36 @@ export default {
                 }
             }
         },
+        disableBtn() {
+            if (this.disableChat) {
+                return true
+            } else {
+                if (this.newMessage !== '' || this.attachedImg !== null) {
+                    return false
+                } else {
+                    return true
+                }
+            }
+        }
     },
     methods: {
+        recordingModeChange() {
+            this.recordingMode = !this.recordingMode
+        },
+        // 애니메이션 표시를 위해 system의 답변이 있더라도 표시 가능하게 하려고 만든 methods
+        shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index) {
+            let nonSystemMessageCount = 0;
+            for (let i = 0; i <= index; i++) {
+                if (filteredMessages[i].role !== 'system') {
+                    nonSystemMessageCount++;
+                }
+            }
+            const userMessagesLength = filteredMessages.filter(message => message.role === 'user').length;
+            return type === 'chats' && nonSystemMessageCount - 1 === userMessagesLength - 1 && generatedWorkList.length !== 0;
+        },
+        getWorkIcon(workType) {
+            return this.workIcons[workType] || this.defaultWorkIcon;
+        },
         toggleProcessGPTActive() {
             this.$emit('toggleProcessGPTActive');
         },
@@ -873,6 +943,8 @@ export default {
             }
         },
         uploadImage() {
+            this.$refs.uploader.value = '';
+            this.attachedImg = null;
             this.$refs.uploader.click();
         },
         changeImage(e) {
@@ -890,6 +962,11 @@ export default {
                 reader.readAsDataURL(imageFile);
             }
         },
+        capture() {
+            this.$refs.captureImg.value = '';
+            this.attachedImg = null;
+            this.$refs.captureImg.click();
+        },
     }
 };
 </script>
@@ -897,30 +974,41 @@ export default {
 <style lang="scss">
 @keyframes breathe {
   0%, 100% {
-    transform: scale(0.9);  /* 기본 크기 */
-    opacity: 1;  /* 약간 투명 */
+    transform: scale(0.9);
+    opacity: 1;
   }
   50% {
-    transform: scale(1);  /* 20% 더 크게 */
-    opacity: 0.7;  /* 완전 불투명 */
+    transform: scale(1);
+    opacity: 0.85;
   }
 }
 
 .find-message {
-    width: 24px;  /* 초기 너비 */
-    height: 24px;  /* 초기 높이 */
-    background-color: blue;  /* 배경색 */
-    color: white;  /* 글자 색상 */
-    border-radius: 100%;  /* 동그랗게 */
-    animation: breathe 2s infinite ease-in-out;  /* 2초 동안 한 번만 실행 */
+    width: 24px;
+    height: 24px;
+    background-color: #1976D2;
+    color: white;
+    border-radius: 100%;
+    animation: breathe 1.5s infinite ease-in-out;
     margin-top: 10px;
     margin-left: 5px;
-    display: flex;  /* 플렉스박스 사용 */
-    align-items: center;  /* 수직 가운데 정렬 */
-    justify-content: center;  /* 수평 가운데 정렬 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-weight: 700;
     cursor: pointer;
+    font-size: 12px;
 }
+
+.slide-fade-enter-active, .slide-fade-leave-active {
+    transition: all 1.5s ease;
+}
+
+.slide-fade-enter, .slide-fade-leave-to {
+    transform: translateY(67px);
+    opacity: 0; /* 이동 애니메이션 동안 투명하게 설정 */
+}
+
 
 .chat-file-up-load .v-input__control {
     display: none;

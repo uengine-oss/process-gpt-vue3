@@ -257,7 +257,8 @@ export default {
                     email: role ? role + '@uengine.org' : this.userInfo.email,
                     role: role ? role : 'user',
                     timeStamp: Date.now(),
-                    content: message,
+                    content: message.text,
+                    image: message.image || "",
                     replyUserName: this.replyUser.name,
                     replyContent: this.replyUser.content,
                     replyUserEmail: this.replyUser.email,
@@ -268,14 +269,15 @@ export default {
                     email: role ? role + '@uengine.org' : this.userInfo.email,
                     role: role ? role : 'user',
                     timeStamp: Date.now(),
-                    content: message,
+                    content: message.text,
+                    image: message.image || ""
                 };
             }
 
             return obj;
         },
         async sendMessage(message) {
-            if (message.text !== '') {
+            if (message.text !== '' || message.image !== null) {
                 let chatMsgs = [];
 
                 if (this.messages && this.messages.length > 0) {
@@ -330,7 +332,7 @@ export default {
                 this.messages.push(chatObj);
 
                 if (message && message.callType && message.callType == 'chats') {
-                    this.lastSendMessage = message.text
+                    this.lastSendMessage = message;
                     // if (message.mentionedUsers.length == 0) {
                     //     this.debouncedGenerate();
                     // } else if(message.mentionedUsers.some(user => user.id === 'system_id')){

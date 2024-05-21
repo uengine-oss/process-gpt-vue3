@@ -65,28 +65,36 @@ declare global {
       $backend: any;
       $memento: any;
     }
-  }
-  
+}
+
 //window.$mode = 'uEngine';
 window.$mode = 'ProcessGPT';
 window.$jms = false;
 window.$backend = '';
 window.$memento = '';
 
-if(window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1') || window.$mode == 'uEngine'){
-    window.$supabase = createClient('http://127.0.0.1:54321','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU', {
-        auth: {
-            autoRefreshToken: false,
-            persistSession: false
+if (window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1') || window.$mode == 'uEngine') {
+    window.$supabase = createClient(
+        'http://127.0.0.1:54321',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
+        {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false
+            }
         }
-    });
+    );
 } else {
-    window.$supabase = createClient("https://hcnalfeqlkcovkxymgfx.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjbmFsZmVxbGtjb3ZreHltZ2Z4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxMjU2NTYzOSwiZXhwIjoyMDI4MTQxNjM5fQ.ycOarKbGVfzFx8K2GGQ8DuSE6tHylseUHla0qxZCKOk", {
-        auth: {
-            autoRefreshToken: false,
-            persistSession: false
+    window.$supabase = createClient(
+        'https://hcnalfeqlkcovkxymgfx.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjbmFsZmVxbGtjb3ZreHltZ2Z4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxMjU2NTYzOSwiZXhwIjoyMDI4MTQxNjM5fQ.ycOarKbGVfzFx8K2GGQ8DuSE6tHylseUHla0qxZCKOk',
+        {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false
+            }
         }
-    });
+    );
     window.$backend = 'http://execution.process-gpt.io';
     window.$memento = 'http://memento.process-gpt.io';
 //     window.$masterDB = createClient(
@@ -190,6 +198,13 @@ if(window.location.host.includes('localhost') || window.location.host.includes('
 }
 
 const app = createApp(App);
+import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor';
+app.use(VueMonacoEditorPlugin, {
+    paths: {
+        // The recommended CDN config
+        vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.43.0/min/vs'
+    }
+});
 app.use(store);
 // registers the component globally
 // registered name: CronVuetify
@@ -244,15 +259,18 @@ app.use(VueScrollTo, {
 });
 
 // 전역으로 복사 가능하게 추가
-document.addEventListener('keydown', function(event) {
+document.addEventListener('keydown', function (event) {
     if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
         let selection = window.getSelection();
         if (selection) {
-            navigator.clipboard.writeText(selection.toString()).then(function() {
-                console.log('Copying to clipboard was successful!');
-            }, function(err) {
-                console.error('Could not copy text: ', err);
-            });
+            navigator.clipboard.writeText(selection.toString()).then(
+                function () {
+                    console.log('Copying to clipboard was successful!');
+                },
+                function (err) {
+                    console.error('Could not copy text: ', err);
+                }
+            );
         }
         event.preventDefault(); // 기본 이벤트 방지
     }
@@ -298,4 +316,3 @@ let initOptions = {
         console.error('Failed to initialize adapter:', error);
     }
 })();
-
