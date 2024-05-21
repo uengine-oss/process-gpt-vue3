@@ -43,11 +43,11 @@
                                     <AgentsChat v-if="message && message._template === 'agent'" :message="message"
                                         :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="index" />
                                     <div v-else>
-                                        <div v-if="message.content && !message.content.includes('아래 대화 내용에서 프로세스를 유추하여 프로세스 정의를 생성해주세요. 이때 가능한 프로세스를 일반화하여 작성:')">
+                                        <div>
                                             <div v-if="message.email == userInfo.email && message.role != 'system'">
                                                 <v-row class="ma-0 pa-0">
                                                     <v-spacer></v-spacer>
-                                                    <small class="text-medium-emphasis text-subtitle-2" v-if="message.timeStamp">
+                                                    <small class="text-medium-emphasis text-subtitle-2 mr-2" v-if="message.timeStamp">
                                                         {{ formatTime(message.timeStamp) }}
                                                     </small>
 
@@ -94,7 +94,7 @@
                                                             v-if="message.replyContent">{{ message.replyContent }}</pre>
                                                         <v-divider v-if="message.replyContent"></v-divider>
 
-                                                        <pre class="text-body-1" v-html="linkify(message.content)"></pre>
+                                                        <pre v-if="message.content" class="text-body-1" v-html="linkify(message.content)"></pre>
 
                                                         <pre v-if="message.jsonContent"
                                                             class="text-body-1">{{ message.jsonContent }}</pre>
@@ -119,9 +119,9 @@
 
                                                 <v-card v-if="showGeneratedWorkList && filteredMessages.length -1 == index" class="mt-3">
                                                     <v-list>
-                                                        <v-list-item-group>
+                                                        <v-list-group>
                                                             <v-list-item v-for="(work, index) in generatedWorkList" :key="index" class="d-flex align-items-center">
-                                                                <v-list-item-content class="flex-grow-1 d-flex align-items-center">
+                                                                <v-list-item-title class="flex-grow-1 d-flex align-items-center">
                                                                     <div class="d-flex flex-column w-100">
                                                                         <div class="d-flex justify-content-between align-items-center">
                                                                             <Icon :icon="workIcons[work.work]" />{{ work.messageForUser }}
@@ -149,10 +149,10 @@
                                                                             src="https://github.com/jhyg/project-shop-test/assets/65217813/1b551056-0428-41b6-9b90-76dd7942affc"
                                                                         ></v-img>
                                                                     </div>
-                                                                </v-list-item-content>
+                                                                </v-list-item-title>
                                                                 <v-divider v-if="index < generatedWorkList.length - 1"></v-divider>
                                                             </v-list-item>
-                                                        </v-list-item-group>
+                                                        </v-list-group>
                                                     </v-list>
                                                     <v-btn size="small" @click="deleteAllWorkList()">
                                                         <Icon icon="el:trash" />
@@ -288,6 +288,14 @@
                         <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
                             <v-tooltip :text="$t('chat.addImage')">
                                 <template v-slot:activator="{ props }">
+                                    <v-btn icon variant="text" class="text-medium-emphasis" @click="capture" v-bind="props"
+                                        style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
+                                        <Icon icon="iconoir:camera" width="20" height="20" />
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                            <v-tooltip :text="$t('chat.addImage')">
+                                <template v-slot:activator="{ props }">
                                     <v-btn icon variant="text" class="text-medium-emphasis" @click="uploadImage" v-bind="props"
                                         style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
                                         <Icon icon="iconoir:add-media-image" width="20" height="20" />
@@ -385,7 +393,9 @@
                 <p>{{ replyUser.content }}</p>
                 <v-divider />
             </div>
-
+            <!-- camera capture -->
+            <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
+            <!-- image upload -->
             <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
             <div id="imagePreview" style="max-width: 200px;"></div>
             <form class="d-flex align-center pa-0">
@@ -405,7 +415,7 @@
                     <template v-slot:append-inner>
                         <div style="height: -webkit-fill-available; margin-right: 10px; margin-top: 10px;">
                             <v-btn v-if="!isLoading" class="cp-send" icon variant="text" type="submit" @click="beforeSend"
-                                style="width:30px; height:30px;" :disabled="!newMessage">
+                                style="width:30px; height:30px;" :disabled="disableBtn">
                                 <Icon icon="teenyicons:send-outline" width="20" height="20" />
                             </v-btn>
                             <v-btn v-else icon variant="text" @click="isLoading = !isLoading"
@@ -559,7 +569,7 @@ export default {
             if (this.messages && this.messages.length > 0) {
                 this.messages.forEach((item) => {
                     let data = JSON.parse(JSON.stringify(item));
-                    if (data.content || data.jsonContent) {
+                    if (data.content || data.jsonContent || data.image) {
                         list.push(data);
                     }
                 });
@@ -588,6 +598,17 @@ export default {
                 }
             }
         },
+        disableBtn() {
+            if (this.disableChat) {
+                return true
+            } else {
+                if (this.newMessage !== '' || this.attachedImg !== null) {
+                    return false
+                } else {
+                    return true
+                }
+            }
+        }
     },
     methods: {
         toggleProcessGPTActive() {
@@ -815,8 +836,9 @@ export default {
                 this.$emit('stopMessage');
             }
             var copyMsg = this.newMessage.replace(/(?:\r\n|\r|\n)/g, '');
-            if (copyMsg.length > 0)
+            if (copyMsg.length > 0 || this.attachedImg != null) {
                 this.send();
+            }
         },
         send() {
             if (this.editIndex >= 0) {
@@ -862,6 +884,8 @@ export default {
             }
         },
         uploadImage() {
+            this.$refs.uploader.value = '';
+            this.attachedImg = null;
             this.$refs.uploader.click();
         },
         changeImage(e) {
@@ -878,6 +902,11 @@ export default {
             if (imageFile) {
                 reader.readAsDataURL(imageFile);
             }
+        },
+        capture() {
+            this.$refs.captureImg.value = '';
+            this.attachedImg = null;
+            this.$refs.captureImg.click();
         },
     }
 };
