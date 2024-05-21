@@ -1,146 +1,65 @@
 <template>
     <div>
-        <div v-if="inputData.length > 0" style="margin-bottom: 20px">
-            <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.inputData') }}</div>
+        <div>
+            Method Type & URL
             <v-row class="ma-0 pa-0">
-                <div v-for="(inputData, idx) in inputData" :key="idx" class="mr-2 mt-2">
-                    <v-chip
-                        v-if="inputData.mandatory"
-                        color="primary"
-                        variant="outlined"
-                        class="text-body-2"
-                        @click="deleteInputData(inputData)"
-                    >
-                        {{ inputData.key }}
-                        <CircleXIcon class="ml-2" start size="20" />
-                    </v-chip>
-                    <v-chip v-else class="text-body-2" variant="outlined" @click="deleteInputData(inputData)">
-                        {{ inputData.key }}
-                        <CircleXIcon class="ml-2" start size="20" />
-                    </v-chip>
-                </div>
+                <v-col cols="4">
+                    <v-autocomplete
+                        labels="Methods Type"
+                        :items="methodList"
+                        theme="light"
+                        rounded
+                        density="comfortable"
+                        variant="solo"
+                        v-model="copyUengineProperties.httpMethods"
+                    ></v-autocomplete>
+                </v-col>
+                <v-col cols="8">
+                    <v-text-field label="API URL" v-model="copyUengineProperties.API"></v-text-field>
+                </v-col>
             </v-row>
         </div>
-        <div v-if="outputData.length > 0" style="margin-bottom: 20px">
-            <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.outputData') }}</div>
-            <v-row class="ma-0 pa-0">
-                <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
-                    <v-chip
-                        v-if="output.mandatory"
-                        color="primary"
-                        class="text-body-2"
-                        variant="outlined"
-                        @click="deleteOutputData(output)"
-                    >
-                        {{ output.variable.name }}
-                        <CircleXIcon class="ml-2" start size="20" />
-                    </v-chip>
-                    <v-chip v-else class="text-body-2" variant="outlined" @click="deleteOutputData(output)">
-                        {{ output.variable.name }}
-                        <CircleXIcon class="ml-2" start size="20" />
-                    </v-chip>
-                </div>
+        <div style="height: 70%">
+            <v-row class="ma-0 pa-0" style="height: 100%">
+                <vue-monaco-editor
+                    v-model:value="copyUengineProperties.payload"
+                    theme="vs-dark"
+                    language="json"
+                    :options="MONACO_EDITOR_OPTIONS"
+                    @mount="handleMount"
+                />
             </v-row>
+        </div>
+        <div align="right" @click="generateAPI">
+            <v-btn prepend-icon color="primary">
+                <template v-slot:prepend>
+                    <Icon icon="mdi:wand" />
+                </template>
+                생성
+            </v-btn>
         </div>
         <div>
+            <div>Return 값을 저장 할 변수</div>
             <v-row class="ma-0 pa-0">
-                <v-text-field v-model="copyUengineProperties.inputPayloadTemplate" label="입력 데이터 (JSON/XML)"></v-text-field>
-            </v-row>
-            <v-row class="ma-0 pa-0">
-                <v-text-field v-model="copyUengineProperties.dataInput.name" label="결과 입력 변수"></v-text-field>
+                <v-autocomplete
+                    :items="processVariables"
+                    item-props
+                    :item-value="item"
+                    :item-title="(item) => item.name"
+                    v-model="copyUengineProperties.selectedOut"
+                ></v-autocomplete>
+                <!-- <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts> -->
             </v-row>
         </div>
-
-        <!-- <div>
-            <v-row class="ma-0 pa-0">
-                <div>{{ $t('BpnmPropertyPanel.checkPoints') }}</div>
-                <v-spacer></v-spacer>
-                <v-icon v-if="editCheckpoint" @click="editCheckpoint = false" style="margin-top: 2px">mdi-close</v-icon>
-            </v-row>
-            <div v-for="(checkpoint, idx) in copyUengineProperties.checkpoints" :key="idx">
-                <div>
-                    <v-checkbox-btn
-                        color="success"
-                        :disabled="isViewMode"
-                        :label="checkpoint.checkpoint"
-                        hide-details
-                        v-model="checkbox"
-                    ></v-checkbox-btn>
-                </div>
-                <v-btn icon flat @click="deleteCheckPoint(checkpoint)" v-if="!isViewMode" v-bind="props">
-                    <TrashIcon stroke-width="1.5" size="20" class="text-error" />
-                </v-btn>
-            </div>
-            <v-text-field v-if="editCheckpoint" v-model="checkpointMessage.checkpoint" :disabled="isViewMode"></v-text-field>
-            <v-row class="ma-0 pa-0" v-if="!isViewMode">
-                <v-spacer></v-spacer>
-                <v-btn v-if="editCheckpoint" @click="addCheckpoint" color="primary" rounded="pill" size="small">{{
-                    $t('BpnmPropertyPanel.add')
-                }}</v-btn>
-                <v-card
-                    v-else
-                    @click="editCheckpoint = !editCheckpoint"
-                    elevation="9"
-                    variant="outlined"
-                    style="padding: 5px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important"
-                >
-                    <div style="display: flex; justify-content: center; align-items: center">
-                        <Icon icon="streamline:add-1-solid" width="20" height="20" style="color: #5eb2e8" />
-                    </div>
-                </v-card>
-            </v-row>
-        </div>
-        <div>
-            <v-row class="ma-0 pa-0">
-                <div>Extended Property</div>
-            </v-row>
-            <v-row class="ma-0 pa-0">
-                <v-table>
-                    <thead>
-                        <tr>
-                            <th class="text-h6">Key</th>
-                            <th class="text-h6">Value</th>
-                            <th class="text-h6">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="param in copyUengineProperties.extendedProperties" :key="param.key" class="month-item">
-                            <td>
-                                {{ param.key }}
-                            </td>
-                            <td>
-                                {{ param.value }}
-                            </td>
-                            <td>
-                                <v-btn icon flat @click="deleteExtendedProperty(param)" v-bind="props">
-                                    <TrashIcon stroke-width="1.5" size="20" class="text-error" />
-                                </v-btn>
-                            </td>
-                        </tr>
-                    </tbody>
-                </v-table>
-                <v-btn v-if="!isViewMode" flat color="primary" @click="editParam = !editParam">add Key/Value</v-btn>
-
-                <v-card v-if="editParam" style="margin-top: 12px">
-                    <v-card-title>Add Parameter</v-card-title>
-                    <v-card-text>
-                        <v-text-field v-model="paramKey" label="Key"></v-text-field>
-                        <v-text-field v-model="paramValue" label="Value"></v-text-field>
-                    </v-card-text>
-                    <v-card-actions>
-                        <v-btn @click="addParameter">add</v-btn>
-                        <v-btn @click="editParam = !editParam">cancel</v-btn>
-                    </v-card-actions>
-                </v-card>
-            </v-row>
-        </div> -->
     </div>
 </template>
 <script>
+import partialParse from 'partial-json-parser';
 import { useBpmnStore } from '@/stores/bpmn';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { Icon } from '@iconify/vue';
 const storage = StorageBaseFactory.getStorage();
+import BPMNAPIGenerator from '@/components/ai/BPMNAPIGenerator.js';
 // import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
 
 export default {
@@ -148,22 +67,27 @@ export default {
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
-        isViewMode: Boolean
+        isViewMode: Boolean,
+        element: Object,
+        definition: Object
     },
-    created() {
-        this.copyUengineProperties = this.uengineProperties
+    async created() {
+        this.copyUengineProperties = this.uengineProperties;
+        this.storage = StorageBaseFactory.getStorage();
+        this.openaiToken = await this.getToken();
         Object.keys(this.requiredKeyLists).forEach((key) => {
             this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
         });
     },
     data() {
         return {
-            requiredKeyLists: {
-                parameters: [],
-                checkpoints: [],
-                dataInput: { name: '' }
+            MONACO_EDITOR_OPTIONS: {
+                automaticLayout: true,
+                formatOnType: true,
+                formatOnPaste: true
             },
-            methodList: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
+            requiredKeyLists: { payload: '' },
+            methodList: ['GET', 'POST', 'PUT', 'PATCH'],
             copyUengineProperties: null,
             name: '',
             checkpoints: [],
@@ -179,96 +103,139 @@ export default {
             stroage: null,
             editParam: false,
             paramKey: '',
-            paramValue: ''
+            paramValue: '',
+            generator: null,
+            openAI: null,
+            httpMethods: null,
+            copyDefinition: this.definition,
+            processVariables: [],
+            apiServiceURL: ''
         };
     },
     async mounted() {
         let me = this;
-
+        this.processVariables = this.copyDefinition.processVariables
+            .filter((variable) => variable.type !== 'Form')
+            .map((variable) => ({
+                name: variable.name,
+                type: variable.type,
+                defaultValue: variable.defaultValue
+            }));
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
-        // Object.keys(this.requiredKeyLists).forEach((key) => {
-        //     this.ensureKeyExists(this.uengineProperties, key, this.requiredKeyLists[key]);
-        // });
     },
-    computed: {
-        inputData() {
-            let params = this.copyUengineProperties.parameters;
-            let result = [];
-            if (params)
-                params.forEach((element) => {
-                    if (element.direction == 'IN') result.push(element);
-                });
-            return result;
-        },
-        outputData() {
-            let params = this.copyUengineProperties.parameters;
-            let result = [];
-            if (params)
-                params.forEach((element) => {
-                    if (element.direction == 'OUT') result.push(element);
-                });
-            return result;
-        }
-    },
+    computed: {},
     watch: {},
     methods: {
-        deleteInputData(inputData) {
-            const index = this.copyUengineProperties.parameters.findIndex((element) => element.key === inputData.key);
-            if (index > -1) {
-                this.copyUengineProperties.parameters.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties);
-            }
+        async getToken() {
+            let option = {
+                key: 'key'
+            };
+            const res = await this.storage.getObject('db://configuration/openai_key', option);
+            return res?.value?.key || window.localStorage.getItem('openAIToken') || null;
         },
-        deleteOutputData(outputData) {
-            const index = this.copyUengineProperties.parameters.findIndex((element) => element.key === outputData.key);
-            if (index > -1) {
-                this.copyUengineProperties.parameters.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties);
-            }
+        generateAPI() {
+            this.$try({
+                context: this,
+                action: async () => {
+                    let def = this.bpmnModeler.getDefinitions();
+                    let target = null;
+                    def.rootElements.forEach((element) => {
+                        if (element.$type == 'bpmn:Collaboration') {
+                            element.messageFlows.forEach((messageFlow) => {
+                                if (messageFlow.sourceRef.id == this.element.id) {
+                                    target = messageFlow.targetRef.id;
+                                }
+                            });
+                        }
+                    });
+
+                    if (target) {
+                        let targetElement = this.findElement(def, 'id', target);
+                        let targetProcessId = targetElement.$parent.id;
+
+                        def.rootElements.forEach((element) => {
+                            if (element.$type == 'bpmn:Collaboration') {
+                                element.participants.forEach((participant) => {
+                                    if (participant.processRef.id == targetProcessId) {
+                                        let openAPIInfo = JSON.parse(participant.extensionElements.values[0].json);
+                                        this.openAPI = openAPIInfo.API;
+                                        this.apiServiceURL = openAPIInfo.serviceURL;
+                                    }
+                                });
+                            }
+                        });
+                        this.generator = new BPMNAPIGenerator(this, {
+                            isStream: true,
+                            preferredLanguage: 'Korean'
+                        });
+                        this.generator.generate();
+                    } else {
+                        throw new Error('생성할 수 없는 요소입니다.');
+                    }
+                }
+            });
         },
         ensureKeyExists(obj, key, defaultValue) {
             if (!obj.hasOwnProperty(key)) {
                 obj[key] = defaultValue;
             }
         },
-        deleteExtendedProperty(item) {
-            const index = this.copyUengineProperties.extendedProperties.findIndex((element) => element.key === item.key);
-            if (index > -1) {
-                this.copyUengineProperties.extendedProperties.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties);
+        onGenerationFinished(response) {
+            this.$try({
+                context: this,
+                action: async () => {
+                    // Changed to arrow function
+                    this.copyUengineProperties.API = response.API;
+                    this.copyUengineProperties.payload = JSON.stringify(response.payloadJSON);
+                    this.copyUengineProperties.httpMethods = response.httpMethods;
+                }
+            });
+        },
+        findElement(obj, key, id) {
+            if (obj.hasOwnProperty(key) && obj[key] === id) {
+                return obj;
             }
-        },
-        deleteCheckPoint(item) {
-            const index = this.copyUengineProperties.checkpoints.findIndex((element) => element.checkpoint === item.checkpoint);
-            if (index > -1) {
-                this.copyUengineProperties.checkpoints.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties);
+
+            for (let prop in obj) {
+                if (obj[prop] instanceof Object) {
+                    let result = this.findElement(obj[prop], key, id);
+                    if (result) {
+                        return result;
+                    }
+                }
             }
+
+            return null;
         },
-        addParameter() {
-            this.copyUengineProperties.extendedProperties.push({ key: this.paramKey, value: this.paramValue });
-            this.$emit('update:uEngineProperties', this.copyUengineProperties);
-            // const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
-            // // this.checkpoints.push(this.checkpointMessage)
-            // const parameter = bpmnFactory.create('uengine:ExtendedProperty', { key: this.paramKey, value: this.paramValue });
-            // if (!this.elementCopy.extensionElements.values[0].ExtendedProperties) this.elementCopy.extensionElements.values[0].ExtendedProperties = []
-            // this.elementCopy.extensionElements.values[0].ExtendedProperties.push(parameter)
-            // this.paramKey = ""
-            // this.paramValue = ""
-        },
-        async getData(path, options) {
-            // let value;
-            // if (path) {
-            //     value = await this.storage.getObject(`db://${path}`, options);
-            // } else {
-            //     value = await this.storage.getObject(`db://${this.path}`, options);
-            // }
-            // return value;
-        },
-        addCheckpoint() {
-            this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
-            this.$emit('update:uEngineProperties', this.copyUengineProperties);
+        extractJSON(inputString, checkFunction) {
+            try {
+                JSON.parse(inputString); // if no problem, just return the whole thing
+                return inputString;
+            } catch (e) {}
+
+            if (this.hasUnclosedTripleBackticks(inputString)) {
+                inputString = inputString + '\n```';
+            }
+
+            // 정규 표현식 정의
+            //const regex = /^.*?`{3}(?:json)?\n(.*?)`{3}.*?$/s;
+            const regex = /```(?:json)?\s*([\s\S]*?)\s*```/;
+
+            // 정규 표현식을 사용하여 입력 문자열에서 JSON 부분 추출
+            const match = inputString.match(regex);
+
+            // 매치된 결과가 있다면, 첫 번째 캡쳐 그룹(즉, JSON 부분)을 반환
+            if (match) {
+                if (checkFunction)
+                    match.forEach((shouldBeJson) => {
+                        if (checkFunction(shouldBeJson)) return shouldBeJson;
+                    });
+                else return match[1];
+            }
+
+            // 매치된 결과가 없으면 null 반환
+            return null;
         }
     }
 };

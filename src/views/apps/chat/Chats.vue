@@ -433,7 +433,7 @@ export default {
                             });
                             obj.memento.sources = sources
     
-                            const responseTable = await axios.post('http://execution.process-gpt.io/process-data-query/invoke', {
+                            const responseTable = await axios.post(`${window.$backend}/process-data-query/invoke`, {
                                 input: {
                                     var_name: responseObj.content
                                 }

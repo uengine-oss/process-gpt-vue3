@@ -114,12 +114,15 @@ USING (true);
 
 -- table proc_inst
 drop table proc_inst;
-create table proc_inst (
-    id text primary key,
-    name text,
-    user_ids text[],
-    messages jsonb
-);
+create table
+  public.proc_inst (
+    id text not null,
+    name text null,
+    user_ids text[] null,
+    messages jsonb null,
+    agent_messages jsonb null,
+    constraint proc_inst_pkey primary key (id)
+  ) tablespace pg_default;
 
 
 create table public.chats (
