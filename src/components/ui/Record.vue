@@ -136,7 +136,7 @@ export default {
 /* ===== GPT 답변 애니메이션 시작 */
 @keyframes increaseHeight1 {
   0%, 100% {
-    height: 50px;
+    height: 70px;
   }
   50% {
     height: 100px;
@@ -145,7 +145,7 @@ export default {
 
 @keyframes increaseHeight2 {
   0%, 100% {
-    height: 40px;
+    height: 70px;
   }
   50% {
     height: 140px;
@@ -154,7 +154,7 @@ export default {
 
 @keyframes increaseHeight3 {
   0%, 100% {
-    height: 50px;
+    height: 80px;
   }
   50% {
     height: 120px;
@@ -163,7 +163,7 @@ export default {
 
 @keyframes increaseHeight4 {
   0%, 100% {
-    height: 50px;
+    height: 60px;
   }
   50% {
     height: 110px;
@@ -210,7 +210,7 @@ export default {
         opacity: 1;  /* 약간 투명 */
     }
     50% {
-        transform: scale(1);  /* 20% 더 크게 */
+        transform: scale(1.1);  /* 20% 더 크게 */
         opacity: 0.9;  /* 완전 불투명 */
     }
 }
