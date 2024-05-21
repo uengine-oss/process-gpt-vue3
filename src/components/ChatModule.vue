@@ -537,7 +537,10 @@ export default {
                 }
             });
 
-            this.afterGenerationFinished(response);
+            let jsonData = this.extractJSON(response);
+            jsonData = JSON.parse(jsonData);
+
+            this.afterGenerationFinished(jsonData);
         },
 
         onModelStopped(response) {

@@ -34,14 +34,13 @@
                         @deleteAllWorkList="deleteAllWorkList"
                         @sendEditedMessage="sendEditedMessage"
                         @stopMessage="stopMessage"
-                        @getMoreChat="getMoreChat"
                         @toggleProcessGPTActive="toggleProcessGPTActive"
                     >
                         <template v-slot:custom-chat>
-                            <VDataTable v-if="onLoad" :headers="headers" :items="definitions" item-value="processDefinitionId">
+                            <VDataTable v-if="onLoad" :headers="headers" :items="definitions" item-value="processDefinitionId" class="overflow-x-auto">
                                 <template v-slot:item.actions="{ item }">
                                     <v-btn color="primary" class="px-4 rounded-pill mx-auto" variant="tonal"
-                                        @click="executeProcess(item.raw.processDefinitionId)">Select</v-btn>
+                                        @click="executeProcess(item.raw.id)">Select</v-btn>
                                 </template>
                             </VDataTable>
                         </template>
@@ -255,10 +254,10 @@ export default {
         async beforeSendMessage(newMessage) {
             if (newMessage && (newMessage.text != '' || newMessage.image != null)) {
                 this.putMessage(this.createMessageObj(newMessage))
-                // if(!this.generator.contexts) {
-                //     let contexts = await this.queryFromVectorDB(newMessage.text);
-                //     this.generator.setContexts(contexts);
-                // }
+                if(!this.generator.contexts) {
+                    let contexts = await this.storage.list(`proc_def`);
+                    this.generator.setContexts(contexts);
+                }
                 
                 this.generator.setWorkList(this.generatedWorkList);
                 newMessage.callType = 'chats'
@@ -267,19 +266,25 @@ export default {
         },
 
         async beforeExecuteProcess(newMessage) {
-            var url = '/process-search/invoke'
-            var req = {
-                input: {
-                    answer: newMessage.text || '',
-                    image: newMessage.image || ''
+            var me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    var url = '/process-search/invoke'
+                    var req = {
+                        input: {
+                            answer: newMessage.text || '',
+                            image: newMessage.image || ''
+                        }
+                    }
+                    let response = await axios.post(url, req);
+                    const output = JSON.parse(response.data.output)
+                    if (output && output.processDefinitionList) {
+                        me.definitions = output.processDefinitionList;
+                        me.onLoad = true;
+                    }
                 }
-            }
-            let response = await axios.post(url, req);
-            const output = JSON.parse(response.data.output)
-            if (output && output.processDefinitionList) {
-                this.definitions = output.processDefinitionList;
-                this.onLoad = true;
-            }
+            })
 
             // if(!this.generator.contexts) {
             //     var procDefs = await this.queryFromVectorDB(newMessage.text);
@@ -326,7 +331,7 @@ export default {
                         const userMsgs = this.messages.filter(msg => msg.role === 'user');
                         this.lastSendMessage = userMsgs[userMsgs.length - 1];
                     }
-                    localStorage.setItem('instancePrompt', this.lastSendMessage.content)
+                    localStorage.setItem('instancePrompt', this.lastSendMessage.text)
                     systemMsg = `"${responseObj.title}" 프로세스를 시작하겠습니다.`
                     // me.$router.push('/instances/chat')
                     this.beforeExecuteProcess({ text: responseObj.title, image: this.lastSendMessage.image });
@@ -419,56 +424,54 @@ export default {
             // console.log(response)
         },
         async afterGenerationFinished(response) {
-            if(response && response.includes("{")){
-                let responseObj = partialParse(response)
-                if(responseObj.work == 'SKIP'){
+            let responseObj = response
+            if(responseObj.work == 'SKIP'){
+                this.messages.pop();
+            } else {
+                if(this.ProcessGPTActive){
                     this.messages.pop();
+                    responseObj.expanded = false
+                    this.generatedWorkList.push(responseObj)
+                }
+                let obj = this.createMessageObj(response, 'system')
+                if(responseObj.messageForUser){
+                    obj.messageForUser = responseObj.messageForUser
+                }
+                if(responseObj.work == 'CompanyQuery'){
+                    try{
+                        let responseMemento = await axios.post('http://localhost:8005/query', { query: responseObj.content});
+                        obj.memento = {}
+                        obj.memento.response = responseMemento.data.response
+                        if (!responseMemento.data.metadata) return {};
+                        const unique = {};
+                        const sources = Object.values(responseMemento.data.metadata).filter(obj => {
+                            if (!unique[obj.file_path]) {
+                                unique[obj.file_path] = true;
+                                return true;
+                            }
+                        });
+                        obj.memento.sources = sources
+
+                        const responseTable = await axios.post(`${window.$backend}/process-data-query/invoke`, {
+                            input: {
+                                var_name: responseObj.content
+                            }
+                        });
+                        obj.tableData = responseTable.data.output
+                    } catch(error){
+                        alert(error);
+                    }
+                } else if(responseObj.work == 'ScheduleQuery'){
+                    console.log(responseObj)
                 } else {
-                    if(this.ProcessGPTActive){
-                        this.messages.pop();
-                        responseObj.expanded = false
-                        this.generatedWorkList.push(responseObj)
-                    }
-                    let obj = this.createMessageObj(response, 'system')
-                    if(responseObj.messageForUser){
-                        obj.messageForUser = responseObj.messageForUser
-                    }
-                    if(responseObj.work == 'CompanyQuery'){
-                        try{
-                            let responseMemento = await axios.post('http://localhost:8005/query', { query: responseObj.content});
-                            obj.memento = {}
-                            obj.memento.response = responseMemento.data.response
-                            if (!responseMemento.data.metadata) return {};
-                            const unique = {};
-                            const sources = Object.values(responseMemento.data.metadata).filter(obj => {
-                                if (!unique[obj.file_path]) {
-                                    unique[obj.file_path] = true;
-                                    return true;
-                                }
-                            });
-                            obj.memento.sources = sources
-    
-                            const responseTable = await axios.post(`${window.$backend}/process-data-query/invoke`, {
-                                input: {
-                                    var_name: responseObj.content
-                                }
-                            });
-                            obj.tableData = responseTable.data.output
-                        } catch(error){
-                            alert(error);
-                        }
-                    } else if(responseObj.work == 'ScheduleQuery'){
-                        console.log(responseObj)
-                    } else {
-                        if(!this.ProcessGPTActive){
-                            obj.uuid = this.uuid()
-                            obj.systemRequest = true
-                            obj.requestUserEmail = this.userInfo.email
-                        }
-                    }
                     if(!this.ProcessGPTActive){
-                        this.putMessage(obj)
+                        obj.uuid = this.uuid()
+                        obj.systemRequest = true
+                        obj.requestUserEmail = this.userInfo.email
                     }
+                }
+                if(!this.ProcessGPTActive){
+                    this.putMessage(obj)
                 }
             }
         },
