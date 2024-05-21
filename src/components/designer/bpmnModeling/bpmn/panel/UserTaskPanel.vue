@@ -437,70 +437,40 @@ export default {
             const parser = new DOMParser();
             const doc = parser.parseFromString(formHtml, 'text/html');
 
-            const extractFields = (element) => {
+            const extractFieldsRecursively = (element) => {
                 let fields = [];
                 if (element.hasChildNodes()) {
                     Array.from(element.children).forEach((child) => {
                         const tagName = child.tagName.toLowerCase();
-                        if (tagName.includes('field') && !tagName.includes('label') && !tagName.includes('code-field')) {
-                            const type = tagName.replace('-field', '');
-                            const name = child.getAttribute('name');
-                            const alias = child.getAttribute('alias');
-                            const fieldData = {
-                                name,
-                                type,
-                                alias,
+
+                        // 입력 필드인 경우, 해당 변수명을 추가
+                        if(tagName.includes('field') && !tagName.includes('label') && !tagName.includes('code-field')) {
+                            
+                            fields.push({
+                                name: child.getAttribute('name'),
+                                alias: child.getAttribute('alias'),
+                                type: tagName.replace('-field', ''),
                                 children: []
-                            };
-                            fieldData.children = extractFields(child);
-                            fields.push(fieldData);
-                        } else {
-                            fields = fields.concat(extractFields(child));
-                        }
+                            });
+
+                        // 레이아웃인 경우 멀티 데이터 설정시에만 해당 이름을 필드로 추가하고, 하위 필드를 탐색
+                        } else if(tagName.includes('row-layout') && child.getAttribute('is_multidata_mode') === 'true') {
+
+                            fields.push({
+                                name: child.getAttribute('name'),
+                                alias: child.getAttribute('alias'),
+                                fields: extractFieldsRecursively(child)
+                            })
+
+                        // 그외의 경우에는 하위 노드들을 계속 탐색
+                        } else 
+                            fields = fields.concat(extractFieldsRecursively(child));
                     });
                 }
                 return fields;
-            };
+            }
 
-            const extractSingleFields = (element) => {
-                let fields = [];
-                if (element.hasChildNodes()) {
-                    Array.from(element.children).forEach((child) => {
-                        const tagName = child.tagName.toLowerCase();
-                        if (tagName.includes('field') && !tagName.includes('label') && !tagName.includes('code-field')) {
-                            const type = tagName.replace('-field', '');
-                            const name = child.getAttribute('name');
-                            const alias = child.getAttribute('alias');
-                            const fieldData = {
-                                name,
-                                type,
-                                alias,
-                                children: []
-                            };
-                            fieldData.children = extractFields(child);
-                            fields.push(fieldData);
-                        }
-                        fields = fields.concat(extractSingleFields(child));
-                    });
-                }
-                return fields;
-            };
-
-            const rowLayouts = doc.querySelectorAll('row-layout');
-            const parsedLayouts = Array.from(rowLayouts).map((rowLayout) => {
-                const isMultiDataMode = rowLayout.getAttribute('is_multidata_mode') === 'true';
-                if (isMultiDataMode) {
-                    return {
-                        name: rowLayout.getAttribute('name'),
-                        alias: rowLayout.getAttribute('alias'),
-                        fields: extractFields(rowLayout)
-                    };
-                } else {
-                    return extractSingleFields(rowLayout);
-                }
-            });
-
-            return parsedLayouts.flat();
+            return extractFieldsRecursively(doc.body)
         },
         createForm() {
             let urlData = {}

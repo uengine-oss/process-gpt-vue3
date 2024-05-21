@@ -1,4 +1,5 @@
 import '@/scss/style.scss';
+import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor';
 import { fakeBackend } from '@/utils/helpers/fake-backend';
 import { createClient } from '@supabase/supabase-js';
 import { createPinia } from 'pinia';
@@ -63,6 +64,7 @@ declare global {
       $supabase: any;
       $jms: any;
       $backend: any;
+      $memento: any;
     }
 }
 
@@ -70,6 +72,7 @@ declare global {
 window.$mode = 'ProcessGPT';
 window.$jms = false;
 window.$backend = '';
+window.$memento = '';
 
 if (window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1') || window.$mode == 'uEngine') {
     window.$supabase = createClient(
@@ -94,6 +97,7 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
         }
     );
     window.$backend = 'http://execution.process-gpt.io';
+    window.$memento = 'http://memento.process-gpt.io';
 //     window.$masterDB = createClient(
 //         'http://127.0.0.1:54321',
 //         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
@@ -195,7 +199,6 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
 }
 
 const app = createApp(App);
-import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor';
 app.use(VueMonacoEditorPlugin, {
     paths: {
         // The recommended CDN config

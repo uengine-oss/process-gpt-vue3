@@ -63,15 +63,15 @@
 </template>
 
 <script>
-import AppBaseCard from '@/components/shared/AppBaseCard.vue';
+import ChatModule from "@/components/ChatModule.vue";
+import ChatGenerator from "@/components/ai/WorkAssistantGenerator.js";
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
+import AppBaseCard from '@/components/shared/AppBaseCard.vue';
+import Chat from "@/components/ui/Chat.vue";
+import axios from 'axios';
 import partialParse from "partial-json-parser";
 import { VectorStorage } from "vector-storage";
-import ChatGenerator from "@/components/ai/WorkAssistantGenerator.js";
-import Chat from "@/components/ui/Chat.vue";
-import ChatModule from "@/components/ChatModule.vue";
-import axios from 'axios';
 import { VDataTable } from 'vuetify/labs/VDataTable';
 
 
@@ -170,7 +170,7 @@ export default {
                         me.getChatList(me.filteredChatRoomList[0].id);
                         me.setReadMessage(0);
                     } else {
-                        alert("Create a new chat room")
+                       // alert("Create a new chat room")
                     }
                 }
             });

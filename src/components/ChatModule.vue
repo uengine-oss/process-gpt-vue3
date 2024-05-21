@@ -320,7 +320,7 @@ export default {
                 chatMsgs.push(chatObj);
                 this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs];
 
-                chatObj = this.createMessageObj(message.text);
+                chatObj = this.createMessageObj(message);
                 if (message.image && message.image != '') {
                     chatObj['image'] = message.image;
                 }
