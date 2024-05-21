@@ -178,7 +178,7 @@
                                                                             src="https://github.com/jhyg/project-shop-test/assets/65217813/1b551056-0428-41b6-9b90-76dd7942affc"
                                                                         ></v-img>
                                                                     </div>
-                                                                </v-list-item-title>
+                                                                </v-list-item-content>
                                                                 <v-divider v-if="index < generatedWorkList.length - 1"></v-divider>
                                                             </v-list-item>
                                                         </v-list-group>
