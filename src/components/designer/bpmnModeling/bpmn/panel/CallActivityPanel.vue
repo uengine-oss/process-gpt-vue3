@@ -30,7 +30,7 @@
             </div>
             <div>
                 <v-row class="ma-0 pa-0">
-                    <div>Extended Property</div>
+                    <div>Role Mapping</div>
                 </v-row>
                 <v-row>
                     <bpmn-role-parameter-contexts
@@ -153,11 +153,16 @@ export default {
         async setDefinitionInfo(definitionId) {
             // definition 정보 호출
             const backend = BackendFactory.createBackend();
-            const def = await backend.getDefinition(definitionId);
+            if (definitionId.includes('.')) {
+                definitionId = definitionId.split('.')[0];
+            }
+            const def = await backend.getRawDefinition(definitionId, { type: 'bpmn' });
             // XML에서 role 정보 추출
-            this.definitionRoles = this.extractLanesFromBpmnXml(def.bpmn);
-            this.definitionVariables = this.extractVariablesFromBpmnXml(def.bpmn);
-            this.definitionCnt++;
+            if (def) {
+                this.definitionRoles = this.extractLanesFromBpmnXml(def);
+                this.definitionVariables = this.extractVariablesFromBpmnXml(def);
+                this.definitionCnt++;
+            }
         },
         extractVariablesFromBpmnXml(bpmnXml) {
             const parser = new DOMParser();
