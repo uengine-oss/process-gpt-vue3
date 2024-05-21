@@ -84,7 +84,7 @@ export default {
         this.storage = StorageBaseFactory.getStorage();
         this.openaiToken = await this.getToken();
 
-        // this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
+        this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
     },
     methods: {
         requestDraftAgent(newVal) {
@@ -339,7 +339,9 @@ export default {
                     //     this.startGenerate();
                     // }
                     // if(message.mentionedUsers){
-                        if(this.ProcessGPTActive || message.mentionedUsers.some(user => user.id === 'system_id') || message.text.startsWith('>') || message.text.startsWith('!')){
+                        if(this.ProcessGPTActive){
+                            this.debouncedGenerate();
+                        } else if(message.mentionedUsers.some(user => user.id === 'system_id') || message.text.startsWith('>') || message.text.startsWith('!')){
                             this.startGenerate();
                         }
                     // }
@@ -352,11 +354,13 @@ export default {
             }
         },
         async startGenerate() {
-            this.messages.push({
-                role: 'system',
-                content: '...',
-                isLoading: true
-            });
+            if(!this.ProcessGPTActive){
+                this.messages.push({
+                    role: 'system',
+                    content: '...',
+                    isLoading: true
+                });
+            }
 
             const encoding = encodingForModel("gpt-3.5-turbo-16k");
             let stringifiedMessages = JSON.stringify(this.generator.previousMessages);
@@ -489,24 +493,26 @@ export default {
             this.$try({
                 context: this,
                 action: async () => { // Changed to arrow function
-                    let messageWriting = this.messages[this.messages.length - 1];
-                    messageWriting.content = response;
-                    messageWriting.jsonContent = this.extractJSON(response);
-                    // messageWriting.systemRequest = false;
-
-                    if (messageWriting.jsonContent) {
-                        let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
-                        const match = messageWriting.content.match(regex);
-                        if (match) {
-                            messageWriting.content = messageWriting.content.replace(match[1], '');
-                            regex = /`{3}(?:json|markdown)?\s?\n/g;
-                            messageWriting.content = messageWriting.content.replace(regex, '');
-                            messageWriting.content = messageWriting.content.replace(/\s?\n?`{3}?\s?\n/g, '');
-                            messageWriting.content = messageWriting.content.replace(/`{3}/g, '');
+                    if(!this.ProcessGPTActive){
+                        let messageWriting = this.messages[this.messages.length - 1];
+                        messageWriting.content = response;
+                        messageWriting.jsonContent = this.extractJSON(response);
+                        // messageWriting.systemRequest = false;
+    
+                        if (messageWriting.jsonContent) {
+                            let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
+                            const match = messageWriting.content.match(regex);
+                            if (match) {
+                                messageWriting.content = messageWriting.content.replace(match[1], '');
+                                regex = /`{3}(?:json|markdown)?\s?\n/g;
+                                messageWriting.content = messageWriting.content.replace(regex, '');
+                                messageWriting.content = messageWriting.content.replace(/\s?\n?`{3}?\s?\n/g, '');
+                                messageWriting.content = messageWriting.content.replace(/`{3}/g, '');
+                            }
                         }
+                        this.afterModelCreated(response);
                     }
                     
-                    this.afterModelCreated(response);
                 },
                 onFail: () => {
                     this.onModelStopped();
@@ -528,14 +534,16 @@ export default {
             };
         },
         onGenerationFinished(response) {
-            let messageWriting = this.messages[this.messages.length - 1];
-            messageWriting.timeStamp = Date.now();
+            if(!this.ProcessGPTActive){
+                let messageWriting = this.messages[this.messages.length - 1];
+                messageWriting.timeStamp = Date.now();
 
-            this.messages.forEach((message) => {
-                if (message.role == 'system') {
-                    delete message.isLoading;
-                }
-            });
+                this.messages.forEach((message) => {
+                    if (message.role == 'system') {
+                        delete message.isLoading;
+                    }
+                });
+            }
 
             this.afterGenerationFinished(response);
         },

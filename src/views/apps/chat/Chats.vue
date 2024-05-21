@@ -422,10 +422,10 @@ export default {
             if(response && response.includes("{")){
                 let responseObj = partialParse(response)
                 if(responseObj.work == 'SKIP'){
-                    this.messages.pop();
+                    // this.messages.pop();
                 } else {
                     if(this.ProcessGPTActive){
-                        this.messages.pop();
+                        // this.messages.pop();
                         responseObj.expanded = false
                         this.generatedWorkList.push(responseObj)
                     }

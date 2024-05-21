@@ -41,7 +41,8 @@ export default {
             if(me.sourceBuffer == null) {
                 me.sourceBuffer = me.mediaSource.addSourceBuffer('audio/mpeg');
             }
-            fetch('http://localhost:8000/audio-stream', {
+            var url = window.$backend == '' ? 'http://localhost:8000' : window.$backend
+            fetch(`${url}/audio-stream`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'text/plain'

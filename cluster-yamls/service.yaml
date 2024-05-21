@@ -27,8 +27,9 @@ kind: Service
 metadata:
   name: autonomous-backend-service
 spec:
+  type: LoadBalancer
   selector:
-    app: autonomous-backend
+    app: process-gpt-autonomous
   ports:
     - protocol: TCP
       port: 80
@@ -39,6 +40,7 @@ kind: Service
 metadata:
   name: memento-service
 spec:
+  type: LoadBalancer
   selector:
     app: memento
   ports:

@@ -40,6 +40,8 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: autonomous-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/upgrade-websocket: "true"
 spec:
   rules:
   - host: autonomous.process-gpt.io
@@ -49,7 +51,7 @@ spec:
         path: "/"
         backend:
           service:
-            name: autonomous-service
+            name: autonomous-backend-service
             port:
               number: 80
 ---
