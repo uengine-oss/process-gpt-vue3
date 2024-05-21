@@ -89,8 +89,8 @@ export default {
     },
     data: () => ({
         headers: [
-            { title: 'id', align: 'start', key: 'processDefinitionId' },
-            { title: 'name', align: 'start', key: 'processDefinitionName' },
+            { title: 'id', align: 'start', key: 'id' },
+            { title: 'name', align: 'start', key: 'name' },
             { title: 'description', align: 'start', key: 'description' },
             { title: 'actions', align: 'start', key: 'actions' },
         ],
@@ -253,27 +253,42 @@ export default {
             }
         },
         async beforeSendMessage(newMessage) {
-            if (newMessage && newMessage.text != '') {
-                this.putMessage(this.createMessageObj(newMessage.text))
-                if(!this.generator.contexts) {
-                    let contexts = await this.queryFromVectorDB(newMessage.text);
-                    this.generator.setContexts(contexts);
-                }
+            if (newMessage && (newMessage.text != '' || newMessage.image != null)) {
+                this.putMessage(this.createMessageObj(newMessage))
+                // if(!this.generator.contexts) {
+                //     let contexts = await this.queryFromVectorDB(newMessage.text);
+                //     this.generator.setContexts(contexts);
+                // }
+                
                 this.generator.setWorkList(this.generatedWorkList);
                 newMessage.callType = 'chats'
                 this.sendMessage(newMessage);
             }
         },
 
-        async beforeExecuteProcess(newMessage){
-            if(!this.generator.contexts) {
-                var procDefs = await this.queryFromVectorDB(newMessage.text);
-                if (procDefs) {
-                    procDefs = procDefs.map(item => JSON.parse(item));
-                    this.definitions = procDefs;
-                    this.onLoad = true;
+        async beforeExecuteProcess(newMessage) {
+            var url = '/process-search/invoke'
+            var req = {
+                input: {
+                    answer: newMessage.text || '',
+                    image: newMessage.image || ''
                 }
             }
+            let response = await axios.post(url, req);
+            const output = JSON.parse(response.data.output)
+            if (output && output.processDefinitionList) {
+                this.definitions = output.processDefinitionList;
+                this.onLoad = true;
+            }
+
+            // if(!this.generator.contexts) {
+            //     var procDefs = await this.queryFromVectorDB(newMessage.text);
+            //     if (procDefs) {
+            //         procDefs = procDefs.map(item => JSON.parse(item));
+            //         this.definitions = procDefs;
+            //         this.onLoad = true;
+            //     }
+            // }
         },
         executeProcess(processDefinitionId) {
             this.$router.push('/instances/chat?process=' + processDefinitionId)
@@ -306,15 +321,15 @@ export default {
                     responseObj = response
                 }
                 // process instance execute
-                if(responseObj.work == 'StartProcessInstance'){
-                    if(this.lastSendMessage){
-                        localStorage.setItem('instancePrompt', this.lastSendMessage)
-                    } else {
-                        localStorage.setItem('instancePrompt', this.messages[this.messages.length - 2].content)
+                if(responseObj.work == 'StartProcessInstance') {
+                    if(!this.lastSendMessage) {
+                        const userMsgs = this.messages.filter(msg => msg.role === 'user');
+                        this.lastSendMessage = userMsgs[userMsgs.length - 1];
                     }
+                    localStorage.setItem('instancePrompt', this.lastSendMessage.content)
                     systemMsg = `"${responseObj.title}" 프로세스를 시작하겠습니다.`
                     // me.$router.push('/instances/chat')
-                    this.beforeExecuteProcess({text: `${responseObj.title}`});
+                    this.beforeExecuteProcess({ text: responseObj.title, image: this.lastSendMessage.image });
 
                 } else if(responseObj.work == 'TodoListRegistration'){
                     systemMsg = `"${responseObj.activity_id}" 할 일이 추가되었습니다.`

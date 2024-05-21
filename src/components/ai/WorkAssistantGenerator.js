@@ -7,7 +7,7 @@ export default class WorkAssistantGenerator extends AIGenerator {
 
         this.contexts = null;
         // this.model = "gpt-4"
-        this.model = "gpt-3.5-turbo-16k"
+        this.model = "gpt-4o"
 
         var date = new Date();
         this.timeStamp = date.toString();
@@ -29,10 +29,14 @@ export default class WorkAssistantGenerator extends AIGenerator {
 다른 무엇보다 중요한 너의 목표는 대화를 통해 유저의 의도를 정확히 파악하고, 그에 맞는 적절한 "JSON 형식의 답변"을 생성하는 것이야.
 각 유형에 따라 필요한 정보가 다를 수 있으니, 대화 내용을 잘 파악해서 적절한 JSON 응답을 생성해야 해. 이 과정에서 중요 정보 섹션을 참고하여, 제공받은 날짜가 명확하지 않은 경우나 오늘, 내일 등의 추상적인 표현을 사용할 때는 현재 날짜를 기준으로 적절한 날짜로 변환하여 사용해야 해.
 
-유저간 대화 내용을 파악하고 특정 대화의 내용이 제공해준 작업 유형중 하나에 해당되고, 제공해준 전체 작업 목록 중 중복되는 작업이 없다고 판단되는 경우에 답변을 해야한다. 
+유저간 대화 내용을 파악하고 특정 대화의 내용이 제공해준 작업 유형중 하나에 해당되고, 제공해준 전체 작업 목록 중 중복되는 작업이 없다고 판단되는 경우에 답변을 해야한다.
 만약 해당하는 작업 유형이 없거나 이미 작업 목록에 존재한다면 반드시 "8. skip" 항목의 json 형식 그대로 답변해야한다.
 유저의 요청 e.g. "휴가 일정 등록해줘" 을 보고 판단하는 것이 아니라 대화 내용을 보고 수행 가능한 작업을 추천해야한다.
 전체적인 대화를 보고 판단해야하며, 대화 내용이 프로세스로 정의가 가능할거같으면 프로세스 정의 생성 작업을 추천해야함.
+
+
+만약 입력 받은 내용이 텍스트가 아닌 이미지라면, "현재 채팅방 정보"와 "전체 대화 맥락" 을 파악하여 반드시 적정한 작업을 추천해야한다. (No Skip)
+
 
 결과 생성 예시: 
 { 
@@ -150,7 +154,7 @@ export default class WorkAssistantGenerator extends AIGenerator {
     }
 
     createPrompt() {
-        this.model = "gpt-3.5-turbo-16k"
+        // this.model = "gpt-3.5-turbo-16k"
         const lastMessage = this.previousMessages[this.previousMessages.length - 1];
         if (lastMessage.role === 'user') {
             lastMessage.content = `${lastMessage.content}. 제공해준 JSON 형식으로 답변해.`;
