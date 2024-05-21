@@ -424,53 +424,43 @@ export default {
             // console.log(response)
         },
         async afterGenerationFinished(response) {
-            if(response && response.includes("{")){
-                let responseObj = partialParse(response)
-                if(responseObj.work == 'SKIP'){
+            let responseObj = response
+            if(responseObj.work == 'SKIP'){
+                // this.messages.pop();
+            } else {
+                if(this.ProcessGPTActive){
                     // this.messages.pop();
-                } else {
-                    if(this.ProcessGPTActive){
-                        // this.messages.pop();
-                        responseObj.expanded = false
-                        this.generatedWorkList.push(responseObj)
-                    }
-                    let obj = this.createMessageObj(response, 'system')
-                    if(responseObj.messageForUser){
-                        obj.messageForUser = responseObj.messageForUser
-                    }
-                    if(responseObj.work == 'CompanyQuery'){
-                        try{
-                            var url = window.$memento == '' ? 'http://localhost:8005' : window.$memento
-                            let responseMemento = await axios.post(`${url}/query`, { query: responseObj.content});
-                            obj.memento = {}
-                            obj.memento.response = responseMemento.data.response
-                            if (!responseMemento.data.metadata) return {};
-                            const unique = {};
-                            const sources = Object.values(responseMemento.data.metadata).filter(obj => {
-                                if (!unique[obj.file_path]) {
-                                    unique[obj.file_path] = true;
-                                    return true;
-                                }
-                            });
-                            obj.memento.sources = sources
-    
-                            const responseTable = await axios.post(`${window.$backend}/process-data-query/invoke`, {
-                                input: {
-                                    var_name: responseObj.content
-                                }
-                            });
-                            obj.tableData = responseTable.data.output
-                        } catch(error){
-                            alert(error);
-                        }
-                    } else if(responseObj.work == 'ScheduleQuery'){
-                        console.log(responseObj)
-                    } else {
-                        if(!this.ProcessGPTActive){
-                            obj.uuid = this.uuid()
-                            obj.systemRequest = true
-                            obj.requestUserEmail = this.userInfo.email
-                        }
+                    responseObj.expanded = false
+                    this.generatedWorkList.push(responseObj)
+                }
+                let obj = this.createMessageObj(response, 'system')
+                if(responseObj.messageForUser){
+                    obj.messageForUser = responseObj.messageForUser
+                }
+                if(responseObj.work == 'CompanyQuery'){
+                    try{
+                        var url = window.$memento == '' ? 'http://localhost:8005' : window.$memento
+                        let responseMemento = await axios.post(`${url}/query`, { query: responseObj.content});
+                        obj.memento = {}
+                        obj.memento.response = responseMemento.data.response
+                        if (!responseMemento.data.metadata) return {};
+                        const unique = {};
+                        const sources = Object.values(responseMemento.data.metadata).filter(obj => {
+                            if (!unique[obj.file_path]) {
+                                unique[obj.file_path] = true;
+                                return true;
+                            }
+                        });
+                        obj.memento.sources = sources
+
+                        const responseTable = await axios.post(`${window.$backend}/process-data-query/invoke`, {
+                            input: {
+                                var_name: responseObj.content
+                            }
+                        });
+                        obj.tableData = responseTable.data.output
+                    } catch(error){
+                        alert(error);
                     }
                 } else if(responseObj.work == 'ScheduleQuery'){
                     console.log(responseObj)
