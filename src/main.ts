@@ -1,4 +1,5 @@
 import '@/scss/style.scss';
+import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor';
 import { fakeBackend } from '@/utils/helpers/fake-backend';
 import { createClient } from '@supabase/supabase-js';
 import { createPinia } from 'pinia';
@@ -198,7 +199,6 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
 }
 
 const app = createApp(App);
-import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor';
 app.use(VueMonacoEditorPlugin, {
     paths: {
         // The recommended CDN config
