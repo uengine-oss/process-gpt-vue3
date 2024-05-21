@@ -264,12 +264,11 @@ export default class AIGenerator {
 
     createMessages() {
         var me = this;
-        if (me.client.openAiMessageList) {
-            me.client.openAiMessageList.push({
-                role: 'user',
-                content: me.createPrompt() + (me.preferredLanguage ? '\n please generate in ' + me.preferredLanguage : '')
-            });
-            me.previousMessages = me.client.openAiMessageList;
+        if (me.previousMessages && me.previousMessages.length > 0) {
+            // me.previousMessages.push({
+            //     role: 'user',
+            //     content: me.createPrompt() + (me.preferredLanguage ? '\n please generate in ' + me.preferredLanguage : '')
+            // });
         } else {
             let prompt = me.createPrompt();
             if (prompt) {

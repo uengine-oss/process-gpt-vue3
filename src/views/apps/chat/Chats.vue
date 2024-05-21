@@ -426,10 +426,11 @@ export default {
         async afterGenerationFinished(response) {
             let responseObj = response
             if(responseObj.work == 'SKIP'){
-                // this.messages.pop();
+                if(!this.ProcessGPTActive){
+                    this.messages.pop();
+                }
             } else {
                 if(this.ProcessGPTActive){
-                    // this.messages.pop();
                     responseObj.expanded = false
                     this.generatedWorkList.push(responseObj)
                 }
@@ -472,6 +473,7 @@ export default {
                     }
                 }
                 if(!this.ProcessGPTActive){
+                    // this.messages.pop();
                     this.putMessage(obj)
                 }
             }

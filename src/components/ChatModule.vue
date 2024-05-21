@@ -136,7 +136,7 @@ export default {
                             if(data.new.id == me.currentChatRoom.id){
                                 if ((me.messages && me.messages.length > 0) 
                                 && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
-                                &&  me.messages[me.messages.length - 1].content === data.new.messages.content) {
+                                &&  me.messages[me.messages.length - 1].content.replace(/\s+/g, '') === data.new.messages.content.replace(/\s+/g, '')) {
                                     me.messages[me.messages.length - 1] = data.new.messages
                                 } else {
                                     me.messages.push(data.new.messages)
@@ -257,7 +257,7 @@ export default {
                     email: role ? role + '@uengine.org' : this.userInfo.email,
                     role: role ? role : 'user',
                     timeStamp: Date.now(),
-                    content: message.text,
+                    content: role ? JSON.stringify(message) : message.text,
                     image: message.image || "",
                     replyUserName: this.replyUser.name,
                     replyContent: this.replyUser.content,
@@ -269,7 +269,7 @@ export default {
                     email: role ? role + '@uengine.org' : this.userInfo.email,
                     role: role ? role : 'user',
                     timeStamp: Date.now(),
-                    content: message.text,
+                    content: role ? JSON.stringify(message) : message.text,
                     image: message.image || ""
                 };
             }
@@ -342,6 +342,7 @@ export default {
                         if(this.ProcessGPTActive){
                             this.debouncedGenerate();
                         } else if(message.mentionedUsers.some(user => user.id === 'system_id') || message.text.startsWith('>') || message.text.startsWith('!')){
+                            this.ProcessGPTActive = false
                             this.startGenerate();
                         }
                     // }
@@ -362,18 +363,24 @@ export default {
                 });
             }
 
-            const encoding = encodingForModel("gpt-3.5-turbo-16k");
-            let stringifiedMessages = JSON.stringify(this.generator.previousMessages);
-            let tokens = encoding.encode(stringifiedMessages);
-            let tokenLength = tokens.length;
+            // const encoding = encodingForModel("gpt-4");
+            // let totalTokenLength = 0;
+            // let indexToCut = this.generator.previousMessages.length;
 
-            // 16385
-            while (tokenLength > 16000 && this.generator.previousMessages.length > 1) {
-                this.generator.previousMessages.splice(1, 1); 
-                stringifiedMessages = JSON.stringify(this.generator.previousMessages);
-                tokens = encoding.encode(stringifiedMessages);
-                tokenLength = tokens.length;
-            }
+            // for (let i = 0; i < this.generator.previousMessages.length; i++) {
+            //     const message = this.generator.previousMessages[i];
+            //     const messageTokens = encoding.encode(JSON.stringify(message));
+            //     totalTokenLength += messageTokens.length;
+
+            //     if (totalTokenLength > 16000) {
+            //         indexToCut = i;
+            //         break;
+            //     }
+            // }
+
+            // if (indexToCut < this.generator.previousMessages.length) {
+            //     this.generator.previousMessages = this.generator.previousMessages.slice(0, indexToCut);
+            // }
             
             await this.generator.generate();
         },
