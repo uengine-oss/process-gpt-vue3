@@ -57,6 +57,14 @@ export default defineConfig({
             '/drop-process-table': {
                 target: 'http://localhost:8000',
                 changeOrigin: true,
+            },
+            '/process-search': {
+                target: 'http://localhost:8000',
+                changeOrigin: true,
+            },
+            '/vision-process-search': {
+                target: 'http://localhost:8000',
+                changeOrigin: true,
             }
             // '/complete': {
             //     target: 'http://execution.process-gpt.io',
