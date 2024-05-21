@@ -442,7 +442,7 @@ export default {
                 if (element.hasChildNodes()) {
                     Array.from(element.children).forEach((child) => {
                         const tagName = child.tagName.toLowerCase();
-                        if (tagName.includes('field') && !tagName.includes('label')) {
+                        if (tagName.includes('field') && !tagName.includes('label') && !tagName.includes('code-field')) {
                             const type = tagName.replace('-field', '');
                             const name = child.getAttribute('name');
                             const alias = child.getAttribute('alias');
@@ -467,7 +467,7 @@ export default {
                 if (element.hasChildNodes()) {
                     Array.from(element.children).forEach((child) => {
                         const tagName = child.tagName.toLowerCase();
-                        if (tagName.includes('field') && !tagName.includes('label')) {
+                        if (tagName.includes('field') && !tagName.includes('label') && !tagName.includes('code-field')) {
                             const type = tagName.replace('-field', '');
                             const name = child.getAttribute('name');
                             const alias = child.getAttribute('alias');
