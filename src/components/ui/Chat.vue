@@ -4,6 +4,7 @@
             @close="recordingModeChange()"
             @start="startRecording()"
             @stop="stopRecording()"
+            :audioResponse="newMessage"
         />
         <div v-else>
             <div>

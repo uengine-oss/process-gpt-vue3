@@ -4,6 +4,7 @@
             <v-icon>mdi-close</v-icon>
         </v-btn>
         <div class="circle" :style="{ width: circleSize + 'px', height: circleSize + 'px' }"></div>
+        <AudioStream :audioResponse="audioResponse" />
         <div class="controls">
             <v-btn v-if="!isRecording" @click="toggleRecording" icon density="comfortable">
                 <Icon icon='bi:mic-fill' width="24" height="24" />
@@ -20,10 +21,15 @@
 
 <script>
 import { Icon } from '@iconify/vue';
+import AudioStream from './AudioStream.vue'
 
 export default {
     components: {
-        Icon
+        Icon,
+        AudioStream
+    },
+    props: {
+        audioResponse: String
     },
     data() {
         return {
