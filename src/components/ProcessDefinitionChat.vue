@@ -618,7 +618,7 @@ export default {
 
                 const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
                 const result = await parser.parseStringPromise(xmlString);
-                const process = result['bpmn:definitions']['bpmn:process'] || {};
+                const process = result['bpmn:definitions'] && result['bpmn:definitions']['bpmn:process'] ? result['bpmn:definitions']['bpmn:process'] : {};
                 const startEvent = process['bpmn:startEvent'] || {};
                 const endEvent = process['bpmn:endEvent'] || {};
                 function ensureArray(item) {

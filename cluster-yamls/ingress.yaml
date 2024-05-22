@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: my-app-ingress
+  name: frontend-ingress
   annotations:
     kubernetes.io/ingress.class: "nginx"
 spec:
@@ -13,14 +13,14 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: my-app-service
+            name: frontend-service
             port:
               number: 80
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: process-gpt-execution-ingress
+  name: execution-ingress
   annotations:
     kubernetes.io/ingress.class: "nginx"
 spec:
@@ -32,7 +32,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: process-gpt-execution-service
+            name: execution-service
             port:
               number: 80
 ---
@@ -41,6 +41,7 @@ kind: Ingress
 metadata:
   name: autonomous-ingress
   annotations:
+    kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/upgrade-websocket: "true"
 spec:
   rules:
@@ -48,17 +49,19 @@ spec:
     http:
       paths:
       - pathType: Prefix
-        path: "/"
+        path: "/ws"
         backend:
           service:
-            name: autonomous-backend-service
+            name: autonomous-service
             port:
-              number: 80
+              number: 6789
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: memento-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
 spec:
   rules:
   - host: memento.process-gpt.io
