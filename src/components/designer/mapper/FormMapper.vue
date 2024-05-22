@@ -169,6 +169,9 @@ export default {
     },
     async created() {
         await this.initializeStorage();
+        await this.initializeNodesAndConfig();
+        await this.processNodes(this.leftNodes, 'Source');
+        await this.processNodes(this.rightNodes, 'Target');
         this.renderKey++;
     },
     mounted() {

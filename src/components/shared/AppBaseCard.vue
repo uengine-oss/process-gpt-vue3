@@ -37,7 +37,12 @@ const chatReSizeDisplay = computed(() => {
 });
 const canvasReSize = computed(() => {
     // globalState의 isZoomed 상태에 따라 width 스타일 속성을 반환합니다.
-    return globalState?.state.isZoomed ? 'width: 100%;' : '';
+    if(globalState?.state.isZoomed) {
+        return 'width: 100%;';
+    } else if (globalState?.state.isRightZoomed) {
+        return 'display:none';
+    }
+    return ""
 });
 // 조건에 따라 슬롯 이름을 결정하는 계산된 속성
 const slotName = computed(() => {
@@ -52,7 +57,7 @@ const slotName = computed(() => {
 
 <template>
     <!---/Left chat list -->
-    <div class="d-flex mainbox" :class="chatReSizeDisplay">
+    <div class="d-flex mainbox" :class="chatReSizeDisplay" :style="!$globalState.state.isRightZoomed ? 'height:calc(100vh - 155px)' : 'height:100vh;'">
         <div class="left-part" v-if="lgAndUp" :style="canvasReSize">
             <!-- <perfect-scrollbar style="height: calc(100vh - 290px)"> -->
             <slot name="leftpart"></slot>
@@ -63,7 +68,9 @@ const slotName = computed(() => {
         <div class="right-part">
             <!---Toggle Button For mobile-->
             <v-btn block @click="sDrawer = !sDrawer" variant="text" class="d-lg-none d-md-flex d-sm-flex"
-                style="z-index:1; background-color:white;">
+                style="z-index:1; background-color:white;"
+                :style="!$globalState.state.isRightZoomed ? '' : 'display:none;'"    
+            >
                 <Menu2Icon size="20" class="mr-2 cp-dialog-open" /> Menu
             </v-btn>
             <v-divider class="d-lg-none d-block" />

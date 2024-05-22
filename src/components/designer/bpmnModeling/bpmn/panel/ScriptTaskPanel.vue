@@ -14,7 +14,7 @@
             </v-radio-group>
             <div>{{ $t('BpnmPropertyPanel.script') }}</div>
             <v-textarea v-model="copyUengineProperties.script" :disabled="isViewMode" style="width:100%"></v-textarea>
-            <GenerateScriptPanel v-model="copyUengineProperties.script" :language="'python'"/>
+            <GenerateScriptPanel v-model="copyUengineProperties.script" :language="languageLabel"/>
         </div>
         <div v-if="inputData.length > 0" style="margin-bottom:20px;">
             <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.inputData') }}</div>
@@ -123,6 +123,17 @@ export default {
         // }
     },
     computed: {
+        languageLabel() {
+            if(!this.copyUengineProperties) return "javascript"
+            switch(this.copyUengineProperties.language){
+                case "0":
+                    return "javascript"
+                case "1":
+                    return "java"
+                default:
+                    return "javascript"
+            }
+        }
         // inputData() {
         //     let params = this.copyUengineProperties.parameters;
         //     let result = [];
