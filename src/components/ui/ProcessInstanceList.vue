@@ -43,6 +43,13 @@ export default {
     async created() {
         await this.loadInstances();
     },
+    async mounted() {
+        if(window.$mode === "ProcessGPT") {
+            this.EventBus.on('instances-updated', async () => {
+                await this.loadInstances();
+            });
+        }
+    },
     computed: {
         JMS() {
             return window.$jms;

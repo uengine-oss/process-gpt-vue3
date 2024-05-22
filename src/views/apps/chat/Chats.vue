@@ -35,16 +35,7 @@
                         @sendEditedMessage="sendEditedMessage"
                         @stopMessage="stopMessage"
                         @toggleProcessGPTActive="toggleProcessGPTActive"
-                    >
-                        <template v-slot:custom-chat>
-                            <VDataTable v-if="onLoad" :headers="headers" :items="definitions" item-value="processDefinitionId" class="overflow-x-auto">
-                                <template v-slot:item.actions="{ item }">
-                                    <v-btn color="primary" class="px-4 rounded-pill mx-auto" variant="tonal"
-                                        @click="executeProcess(item.raw.id)">Select</v-btn>
-                                </template>
-                            </VDataTable>
-                        </template>
-                    </Chat>
+                    ></Chat>
                 </div>
             </template>
 
@@ -120,7 +111,7 @@ export default {
         }
     },  
     async created() {
-        // this.init();
+        this.init();
         this.generator = new ChatGenerator(this, {
             isStream: true,
             preferredLanguage: "Korean"
@@ -280,23 +271,21 @@ export default {
                     let response = await axios.post(url, req);
                     const output = JSON.parse(response.data.output)
                     if (output && output.processDefinitionList) {
-                        me.definitions = output.processDefinitionList;
-                        me.onLoad = true;
+                        const processDefinition = output.processDefinitionList.pop();
+                        me.executeProcess(processDefinition.id);
                     }
                 }
             })
-
-            // if(!this.generator.contexts) {
-            //     var procDefs = await this.queryFromVectorDB(newMessage.text);
-            //     if (procDefs) {
-            //         procDefs = procDefs.map(item => JSON.parse(item));
-            //         this.definitions = procDefs;
-            //         this.onLoad = true;
-            //     }
-            // }
         },
-        executeProcess(processDefinitionId) {
-            this.$router.push('/instances/chat?process=' + processDefinitionId)
+        async executeProcess(processDefinitionId) {
+            var me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    await me.backend.start({processDefinitionId: processDefinitionId});
+                }
+            })
+            me.EventBus.emit('instances-updated');
         },
 
         afterModelCreated(response) {
@@ -331,9 +320,13 @@ export default {
                         const userMsgs = this.messages.filter(msg => msg.role === 'user');
                         this.lastSendMessage = userMsgs[userMsgs.length - 1];
                     }
-                    localStorage.setItem('instancePrompt', this.lastSendMessage.text)
+                    // if (this.lastSendMessage.text != '') {
+                    //     localStorage.setItem('instancePrompt', this.lastSendMessage.text)
+                    // } else {
+                    //     localStorage.setItem('instancePrompt', responseObj.title)
+                    // }
+                    // console.log(localStorage.getItem('instancePrompt'))
                     systemMsg = `"${responseObj.title}" 프로세스를 시작하겠습니다.`
-                    // me.$router.push('/instances/chat')
                     this.beforeExecuteProcess({ text: responseObj.title, image: this.lastSendMessage.image });
 
                 } else if(responseObj.work == 'TodoListRegistration'){

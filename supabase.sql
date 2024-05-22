@@ -121,6 +121,7 @@ create table
     user_ids text[] null,
     messages jsonb null,
     agent_messages jsonb null,
+    status text null,
     constraint proc_inst_pkey primary key (id)
   ) tablespace pg_default;
 

@@ -258,12 +258,12 @@ export default {
         },
         afterModelCreated(response) {
         },
-        async afterGenerationFinished(response) {
+        afterGenerationFinished(response) {
             var me = this;
             me.$try({
                 context: me,
-                action() {
-                    let messageWriting = this.messages[this.messages.length - 1];
+                async action() {
+                    let messageWriting = me.messages[me.messages.length - 1];
                     messageWriting.jsonContent = response;
 
                     // const jsonData = JSON.parse(response);
@@ -272,7 +272,10 @@ export default {
                         messageWriting.content = jsonData.nextActivities.map(item => item.messageToUser).join('\n\n');
                     }
 
+                    me.processInstance = await backend.getInstance(jsonData.instanceId);
                     me.checkDisableChat();
+                    me.EventBus.emit('instances-updated');
+                    me.EventBus.emit('process-definition-updated');
                 },
             })
         },
