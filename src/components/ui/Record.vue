@@ -1,6 +1,8 @@
 <template>
-    <div class="container">
-        <v-btn class="record-close-btn" icon density="comfortable" @click="closeRecording">
+    <div class="container" :style="!$globalState.state.isRightZoomed ? 'height:calc(100vh - 155px)' : 'height:100vh;'">
+        <v-btn class="record-close-btn" icon density="comfortable" @click="closeRecording"
+            :style="!$globalState.state.isRightZoomed ? '' : 'top:10px;'"
+        >
             <v-icon>mdi-close</v-icon>
         </v-btn>
         <div v-if="isLoading" class="loading-circle">
@@ -297,18 +299,17 @@ export default {
 
 /* =============== */
 .record-close-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
+    position: absolute;
+    top: 10px;
+    right: 10px;
 }
 
 .container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: calc(100vh - 155px);
-  background-color: #1976D2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #1976D2;
 }
 
 .circle {
@@ -347,8 +348,19 @@ export default {
 @media only screen and (max-width: 1279px) {
   .record-close-btn {
     position: absolute;
-    top: 50px;
-    right: 10px;
+    top: 50px !important;
+    right: 30px;
+  }
+  .container {
+    height: calc(100vh - 194px);
+  }
+}
+
+@media only screen and (max-width: 700px) {
+  .record-close-btn {
+    position: absolute;
+    top: 10px !important;
+    right:10px;
   }
   .container {
     height: calc(100vh - 194px);

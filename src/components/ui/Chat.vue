@@ -33,7 +33,7 @@
                     </div>
 
                     <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                        <div class="d-flex w-100" style="height: calc(100vh - 307px);">
+                        <div class="d-flex w-100" :style="!$globalState.state.isRightZoomed ? 'height:calc(100vh - 307px)' : 'height:100vh;'">
                             <v-col>
                                 <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
                                     <template v-slot:title>
@@ -121,8 +121,13 @@
                                                             :key="isRender"
                                                         >
                                                         <!-- <div v-if="type == 'chats' && filteredMessages.length -1 == index && generatedWorkList.length != 0"> -->
-                                                            <div @click="showGeneratedWorkList = !showGeneratedWorkList" class="find-message">
-                                                            {{ generatedWorkList.length }}
+                                                            <div @click="showGeneratedWorkList = !showGeneratedWorkList"
+                                                                class="find-message"
+                                                                :style="generatedWorkList.length ? 'opacity:1' : 'opacity0.4' "
+                                                            >
+                                                                <img src="@/assets/images/chat/chat-icon.png"
+                                                                    style="height:24px;"
+                                                                />
                                                             </div>
                                                         </div>
                                                     <!-- </transition> -->
@@ -649,6 +654,7 @@ export default {
     methods: {
         recordingModeChange() {
             this.recordingMode = !this.recordingMode
+            this.$globalState.methods.toggleRightZoom();
         },
         // 애니메이션 표시를 위해 system의 답변이 있더라도 표시 가능하게 하려고 만든 methods
         shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index) {
@@ -1004,29 +1010,16 @@ export default {
 @keyframes breathe {
   0%, 100% {
     transform: scale(0.9);
-    opacity: 1;
   }
   50% {
-    transform: scale(1);
-    opacity: 0.85;
+    transform: scale(1.1);
   }
 }
 
 .find-message {
-    width: 24px;
-    height: 24px;
-    background-color: #1976D2;
-    color: white;
-    border-radius: 100%;
     animation: breathe 1.5s infinite ease-in-out;
-    margin-top: 10px;
-    margin-left: 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
+    margin: 5px 0px 0px 4px;
     cursor: pointer;
-    font-size: 12px;
 }
 
 
