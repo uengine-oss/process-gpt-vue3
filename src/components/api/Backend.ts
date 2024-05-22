@@ -5,11 +5,13 @@ export interface Backend {
     versionUp(version: string, major: boolean, makeProduction: boolean): Promise<any>;
     makeProduction(version: string): Promise<any>;
     getProduction(): Promise<any>;
+    getDefinitionVersions(defId: string, options: any) : Promise<any>;
     getVersion(version: string): Promise<any>;
     getDefinition(defPath: string): Promise<any>;
     renameOrMove(definition: any, requestPath: string): Promise<any>;
     createFolder(newResource: any, requestPath: string): Promise<any>;
     deleteDefinition(requestPath: string, options: any): Promise<any>;
+    getRawDefinition(defId: string, options: any): Promise<any>;
     putRawDefinition(definition: any, requestPath: string, options: any): Promise<any>;
     start(command: any): Promise<any>;
     stop(instanceId: string): Promise<any>;

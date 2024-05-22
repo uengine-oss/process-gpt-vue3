@@ -135,6 +135,8 @@ class ProcessGPTBackend implements Backend {
 
     async getRawDefinition(defId: string, options: any) {
         try {
+            if(defId) defId = defId.toLowerCase();
+
             if (options) {
                 // 폼 정보를 불러오기 위해서
                 if(options.type === "form") {
@@ -406,6 +408,16 @@ class ProcessGPTBackend implements Backend {
         await storage.putObject('configuration', putObj);
     }
 
+    async getDefinitionVersions(defId: string, options: any) {
+        if(!options) options = {};
+
+        defId = defId.toLowerCase();
+        if(!options.match) options.match = {}
+        options.match.proc_def_id = defId;
+        
+       
+        return await storage.list('proc_def_arcv', options);
+    }
     // Add stub implementations for the missing methods and properties
     async versionUp() {
         throw new Error("Method not implemented.");

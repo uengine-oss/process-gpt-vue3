@@ -35,6 +35,10 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.get('/version/production');
         return response.data;
     }
+    async getDefinitionVersions(defId: string, options: any) {
+        // const response = await axiosInstance.get(`/version`, options);
+        return []
+    }
     async getVersion(version: string) {
         const response = await axiosInstance.get(`/version/${version}`);
         return response.data;
