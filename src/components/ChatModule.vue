@@ -84,7 +84,7 @@ export default {
         this.storage = StorageBaseFactory.getStorage();
         this.openaiToken = await this.getToken();
 
-        // this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
+        this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
     },
     methods: {
         requestDraftAgent(newVal) {
@@ -136,7 +136,7 @@ export default {
                             if(data.new.id == me.currentChatRoom.id){
                                 if ((me.messages && me.messages.length > 0) 
                                 && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
-                                &&  me.messages[me.messages.length - 1].content === data.new.messages.content) {
+                                &&  me.messages[me.messages.length - 1].content.replace(/\s+/g, '') === data.new.messages.content.replace(/\s+/g, '')) {
                                     me.messages[me.messages.length - 1] = data.new.messages
                                 } else {
                                     me.messages.push(data.new.messages)
@@ -257,7 +257,7 @@ export default {
                     email: role ? role + '@uengine.org' : this.userInfo.email,
                     role: role ? role : 'user',
                     timeStamp: Date.now(),
-                    content: message.text,
+                    content: role ? JSON.stringify(message) : message.text,
                     image: message.image || "",
                     replyUserName: this.replyUser.name,
                     replyContent: this.replyUser.content,
@@ -269,7 +269,7 @@ export default {
                     email: role ? role + '@uengine.org' : this.userInfo.email,
                     role: role ? role : 'user',
                     timeStamp: Date.now(),
-                    content: message.text,
+                    content: role ? JSON.stringify(message) : message.text,
                     image: message.image || ""
                 };
             }
@@ -320,7 +320,7 @@ export default {
                 chatMsgs.push(chatObj);
                 this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs];
 
-                chatObj = this.createMessageObj(message.text);
+                chatObj = this.createMessageObj(message);
                 if (message.image && message.image != '') {
                     chatObj['image'] = message.image;
                 }
@@ -339,7 +339,10 @@ export default {
                     //     this.startGenerate();
                     // }
                     // if(message.mentionedUsers){
-                        if(this.ProcessGPTActive || message.mentionedUsers.some(user => user.id === 'system_id') || message.text.startsWith('>') || message.text.startsWith('!')){
+                        if(this.ProcessGPTActive){
+                            this.debouncedGenerate();
+                        } else if(message.mentionedUsers.some(user => user.id === 'system_id') || message.text.startsWith('>') || message.text.startsWith('!')){
+                            this.ProcessGPTActive = false
                             this.startGenerate();
                         }
                     // }
@@ -352,24 +355,32 @@ export default {
             }
         },
         async startGenerate() {
-            this.messages.push({
-                role: 'system',
-                content: '...',
-                isLoading: true
-            });
-
-            const encoding = encodingForModel("gpt-3.5-turbo-16k");
-            let stringifiedMessages = JSON.stringify(this.generator.previousMessages);
-            let tokens = encoding.encode(stringifiedMessages);
-            let tokenLength = tokens.length;
-
-            // 16385
-            while (tokenLength > 16000 && this.generator.previousMessages.length > 1) {
-                this.generator.previousMessages.splice(1, 1); 
-                stringifiedMessages = JSON.stringify(this.generator.previousMessages);
-                tokens = encoding.encode(stringifiedMessages);
-                tokenLength = tokens.length;
+            if(!this.ProcessGPTActive){
+                this.messages.push({
+                    role: 'system',
+                    content: '...',
+                    isLoading: true
+                });
             }
+
+            // const encoding = encodingForModel("gpt-4");
+            // let totalTokenLength = 0;
+            // let indexToCut = this.generator.previousMessages.length;
+
+            // for (let i = 0; i < this.generator.previousMessages.length; i++) {
+            //     const message = this.generator.previousMessages[i];
+            //     const messageTokens = encoding.encode(JSON.stringify(message));
+            //     totalTokenLength += messageTokens.length;
+
+            //     if (totalTokenLength > 16000) {
+            //         indexToCut = i;
+            //         break;
+            //     }
+            // }
+
+            // if (indexToCut < this.generator.previousMessages.length) {
+            //     this.generator.previousMessages = this.generator.previousMessages.slice(0, indexToCut);
+            // }
             
             await this.generator.generate();
         },
@@ -489,24 +500,26 @@ export default {
             this.$try({
                 context: this,
                 action: async () => { // Changed to arrow function
-                    let messageWriting = this.messages[this.messages.length - 1];
-                    messageWriting.content = response;
-                    messageWriting.jsonContent = this.extractJSON(response);
-                    // messageWriting.systemRequest = false;
-
-                    if (messageWriting.jsonContent) {
-                        let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
-                        const match = messageWriting.content.match(regex);
-                        if (match) {
-                            messageWriting.content = messageWriting.content.replace(match[1], '');
-                            regex = /`{3}(?:json|markdown)?\s?\n/g;
-                            messageWriting.content = messageWriting.content.replace(regex, '');
-                            messageWriting.content = messageWriting.content.replace(/\s?\n?`{3}?\s?\n/g, '');
-                            messageWriting.content = messageWriting.content.replace(/`{3}/g, '');
+                    if(!this.ProcessGPTActive){
+                        let messageWriting = this.messages[this.messages.length - 1];
+                        messageWriting.content = response;
+                        messageWriting.jsonContent = this.extractJSON(response);
+                        // messageWriting.systemRequest = false;
+    
+                        if (messageWriting.jsonContent) {
+                            let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
+                            const match = messageWriting.content.match(regex);
+                            if (match) {
+                                messageWriting.content = messageWriting.content.replace(match[1], '');
+                                regex = /`{3}(?:json|markdown)?\s?\n/g;
+                                messageWriting.content = messageWriting.content.replace(regex, '');
+                                messageWriting.content = messageWriting.content.replace(/\s?\n?`{3}?\s?\n/g, '');
+                                messageWriting.content = messageWriting.content.replace(/`{3}/g, '');
+                            }
                         }
+                        this.afterModelCreated(response);
                     }
                     
-                    this.afterModelCreated(response);
                 },
                 onFail: () => {
                     this.onModelStopped();
@@ -528,16 +541,21 @@ export default {
             };
         },
         onGenerationFinished(response) {
-            let messageWriting = this.messages[this.messages.length - 1];
-            messageWriting.timeStamp = Date.now();
+            if(!this.ProcessGPTActive){
+                let messageWriting = this.messages[this.messages.length - 1];
+                messageWriting.timeStamp = Date.now();
 
-            this.messages.forEach((message) => {
-                if (message.role == 'system') {
-                    delete message.isLoading;
-                }
-            });
+                this.messages.forEach((message) => {
+                    if (message.role == 'system') {
+                        delete message.isLoading;
+                    }
+                });
+            }
 
-            this.afterGenerationFinished(response);
+            let jsonData = this.extractJSON(response);
+            jsonData = JSON.parse(jsonData);
+
+            this.afterGenerationFinished(jsonData);
         },
 
         onModelStopped(response) {

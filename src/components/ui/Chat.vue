@@ -33,7 +33,7 @@
                     </div>
 
                     <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                        <div class="d-flex w-100" style="height: calc(100vh - 307px);">
+                        <div class="d-flex w-100" :style="!$globalState.state.isRightZoomed ? 'height:calc(100vh - 307px)' : 'height:100vh;'">
                             <v-col>
                                 <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
                                     <template v-slot:title>
@@ -116,14 +116,21 @@
                                                             </v-btn>
                                                         </v-row>
                                                     </v-sheet>
-                                                    <transition name="slide-fade">
-                                                        <!-- <div v-if="shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)"> -->
-                                                        <div v-if="type == 'chats' && filteredMessages.length -1 == index && generatedWorkList.length != 0">
-                                                            <div @click="showGeneratedWorkList = !showGeneratedWorkList" class="find-message">
-                                                            {{ generatedWorkList.length }}
+                                                    <!-- <transition name="slide-fade"> -->
+                                                        <div v-if="shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)"
+                                                            :key="isRender"
+                                                        >
+                                                        <!-- <div v-if="type == 'chats' && filteredMessages.length -1 == index && generatedWorkList.length != 0"> -->
+                                                            <div @click="showGeneratedWorkList = !showGeneratedWorkList"
+                                                                class="find-message"
+                                                                :style="generatedWorkList.length ? 'opacity:1' : 'opacity0.4' "
+                                                            >
+                                                                <img src="@/assets/images/chat/chat-icon.png"
+                                                                    style="height:24px;"
+                                                                />
                                                             </div>
                                                         </div>
-                                                    </transition>
+                                                    <!-- </transition> -->
                                                 </div>
 
                                                 <v-card v-if="showGeneratedWorkList && shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)" class="mt-3">
@@ -134,7 +141,7 @@
                                                         <Icon icon="el:trash" />
                                                     </v-btn>
                                                     <v-list>
-                                                        <v-list-group>
+                                                        <v-list-item-group>
                                                             <v-list-item v-for="(work, index) in generatedWorkList" :key="index" class="d-flex align-items-center">
                                                                 <v-list-item-content v-if="work.messageForUser" class="flex-grow-1 d-flex align-items-center">
                                                                     <div class="w-100">
@@ -181,7 +188,7 @@
                                                                 </v-list-item-content>
                                                                 <v-divider v-if="index < generatedWorkList.length - 1"></v-divider>
                                                             </v-list-item>
-                                                        </v-list-group>
+                                                        </v-list-item-group>
                                                     </v-list>
                                                 </v-card>
                                             </div>
@@ -205,8 +212,8 @@
                                                 </div>
 
                                                 <div class="w-100 pb-5">
-                                                    <v-sheet v-if="message.type == 'img'" class="mb-1">
-                                                        <img :src="message.content" class="rounded-md" alt="pro" width="250" />
+                                                    <v-sheet v-if="message.image" class="mb-1">
+                                                        <img :src="message.image" class="rounded-md" alt="pro" width="250" />
                                                     </v-sheet>
 
                                                     <div class="progress-border" :class="{ 'animate': borderCompletedAnimated }">
@@ -216,7 +223,7 @@
                                                                 :class="{ 'opacity': !borderCompletedAnimated }" v-for="n in 5"
                                                                 :key="n"></div>
                                                         </template>
-                                                        <v-sheet class="bg-lightsecondary rounded-md px-3 py-2"
+                                                        <v-sheet v-if="message.content" class="bg-lightsecondary rounded-md px-3 py-2"
                                                             @mouseover="replyIndex = index" @mouseleave="replyIndex = -1">
                                                             <pre class="text-body-1" v-if="message.replyUserName">{{ message.replyUserName }}</pre>
                                                             <pre class="text-body-1" v-if="message.replyContent">{{ message.replyContent }}</pre>
@@ -313,7 +320,7 @@
                     </perfect-scrollbar>
                     <div style="position:relative">
                         <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
-                            <v-tooltip :text="$t('chat.addImage')">
+                            <v-tooltip :text="'카메라'">
                                 <template v-slot:activator="{ props }">
                                     <v-btn icon variant="text" class="text-medium-emphasis" @click="capture" v-bind="props"
                                         style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
@@ -547,6 +554,7 @@ export default {
             mentionStartIndex: null,
             mentionedUsers: [], // Mention된 유저들의 정보를 저장할 배열
             file: null,
+            isRender: false,
         };
     },
     mounted() {
@@ -604,10 +612,10 @@ export default {
                     let data = JSON.parse(JSON.stringify(item));
                     if (data.content || data.jsonContent || data.image) {
                         list.push(data);
+                        this.setRenderTime();
                     }
                 });
             }
-
             return list;
         },
         // isLoading 상태의 변화를 감시합니다.
@@ -646,17 +654,28 @@ export default {
     methods: {
         recordingModeChange() {
             this.recordingMode = !this.recordingMode
+            this.$globalState.methods.toggleRightZoom();
         },
         // 애니메이션 표시를 위해 system의 답변이 있더라도 표시 가능하게 하려고 만든 methods
         shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index) {
             let nonSystemMessageCount = 0;
+            var renderVariable = 0;
+            if(!this.isRender) {
+                renderVariable = -1;
+            }
             for (let i = 0; i <= index; i++) {
                 if (filteredMessages[i].role !== 'system') {
                     nonSystemMessageCount++;
                 }
             }
             const userMessagesLength = filteredMessages.filter(message => message.role === 'user').length;
-            return type === 'chats' && nonSystemMessageCount - 1 === userMessagesLength - 1 && generatedWorkList.length !== 0;
+            return type === 'chats' && nonSystemMessageCount - 1 === userMessagesLength + renderVariable - 1 && generatedWorkList.length !== 0;
+        },
+        setRenderTime() {
+                this.isRender = false
+            setTimeout(() => {
+                this.isRender = true
+            },3000)
         },
         getWorkIcon(workType) {
             return this.workIcons[workType] || this.defaultWorkIcon;
@@ -714,7 +733,8 @@ export default {
             formData.append('audio', audioBlob);
 
             try {
-                const response = await axios.post('http://localhost:8000/upload', formData);
+                var url = window.$backend == '' ? 'http://localhost:8000' : window.$backend
+                const response = await axios.post(`${url}/upload`, formData);
                 const data = response.data;
                 this.newMessage = data.transcript; 
             } catch (error) {
@@ -728,7 +748,8 @@ export default {
             formData.append('file', this.file[0]); // 'file' 키에 파일 데이터 추가
 
             try {
-                const response = await axios.post('http://localhost:8005/uploadfile/', formData, {
+                var url = window.$memento == '' ? 'http://localhost:8005' : window.$memento
+                const response = await axios.post(`${url}/uploadfile/`, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                     },
@@ -893,8 +914,9 @@ export default {
                     this.$emit('stopMessage');
                 }
                 var copyMsg = this.newMessage.replace(/(?:\r\n|\r|\n)/g, '');
-                if (copyMsg.length > 0)
+                if (copyMsg.length > 0 || this.attachedImg != null) {
                     this.send();
+                }
             }
         },
         send() {
@@ -950,10 +972,25 @@ export default {
             const imageFile = e.target.files[0];
             const reader = new FileReader();
 
-            reader.onloadend = async () => {
-                var html = `<img src=${reader.result} width='100%' />`;
-                $('#imagePreview').append(html);
-                me.attachedImg = reader.result;
+            reader.onload = (event) => {
+                const imgElement = document.createElement("img");
+                imgElement.src = event.target.result;
+                imgElement.onload = () => {
+                    const canvas = document.createElement("canvas");
+                    const max_width = 300; // 최대 너비 설정
+                    const scaleSize = max_width / imgElement.width;
+                    canvas.width = max_width;
+                    canvas.height = imgElement.height * scaleSize;
+
+                    const ctx = canvas.getContext("2d");
+                    ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+                    const srcEncoded = ctx.canvas.toDataURL(imgElement, "image/jpeg", 0.3);
+
+                    // 이미지 미리보기에 추가
+                    var html = `<img src=${srcEncoded} width='100%' />`;
+                    $('#imagePreview').append(html);
+                    me.attachedImg = srcEncoded;
+                };
             };
 
             if (imageFile) {
@@ -973,38 +1010,16 @@ export default {
 @keyframes breathe {
   0%, 100% {
     transform: scale(0.9);
-    opacity: 1;
   }
   50% {
-    transform: scale(1);
-    opacity: 0.85;
+    transform: scale(1.1);
   }
 }
 
 .find-message {
-    width: 24px;
-    height: 24px;
-    background-color: #1976D2;
-    color: white;
-    border-radius: 100%;
     animation: breathe 1.5s infinite ease-in-out;
-    margin-top: 10px;
-    margin-left: 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
+    margin: 5px 0px 0px 4px;
     cursor: pointer;
-    font-size: 12px;
-}
-
-.slide-fade-enter-active, .slide-fade-leave-active {
-    transition: all 1.5s ease;
-}
-
-.slide-fade-enter, .slide-fade-leave-to {
-    transform: translateY(67px);
-    opacity: 0; /* 이동 애니메이션 동안 투명하게 설정 */
 }
 
 

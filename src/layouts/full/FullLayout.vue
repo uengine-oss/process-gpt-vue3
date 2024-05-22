@@ -14,7 +14,7 @@ const customizer = useCustomizerStore();
 const instance = getCurrentInstance();
 const globalState = instance?.appContext.config.globalProperties.$globalState;
 const canvasReSize = computed(() => {
-  return globalState?.state.isZoomed ? 'canvas-full-layout' : '';
+  return globalState?.state.isZoomed || globalState?.state.isRightZoomed ? 'canvas-full-layout' : '';
 });
 </script>
 

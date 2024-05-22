@@ -115,6 +115,10 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.get(`/instance/${instId}/variable/${varName}`);
         return response.data;
     }
+    async getVariableWithTaskId(instId: string, taskId: string, varName: string) {
+        const response = await axiosInstance.get(`/instance/${instId}/task/${taskId}/variable/${varName}`);
+        return response.data;
+    }
 
     async setVariable(instanceId: string, varName: string, varValue: any) {
         var config = {
@@ -125,6 +129,18 @@ class UEngineBackend implements Backend {
         };
 
         const response = await axiosInstance.post(`/instance/${instanceId}/variable/${varName}`, JSON.stringify(varValue), config);
+        return response.data;
+    }
+
+    async setVariableWithTaskId(instanceId: string, taskId: string, varName: string, varValue: any) {
+        var config = {
+            headers: {
+                'Content-Type': 'text/plain'
+            },
+            responseType: 'text' as const
+        };
+
+        const response = await axiosInstance.post(`/instance/${instanceId}/task/${taskId}/variable/${varName}`, JSON.stringify(varValue), config);
         return response.data;
     }
 

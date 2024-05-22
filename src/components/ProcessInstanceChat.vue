@@ -259,16 +259,22 @@ export default {
         afterModelCreated(response) {
         },
         async afterGenerationFinished(response) {
-            let messageWriting = this.messages[this.messages.length - 1];
-            messageWriting.jsonContent = response;
+            var me = this;
+            me.$try({
+                context: me,
+                action() {
+                    let messageWriting = this.messages[this.messages.length - 1];
+                    messageWriting.jsonContent = response;
 
-            // const jsonData = JSON.parse(response);
-            const jsonData = response;
-            if (jsonData && jsonData.nextActivities && jsonData.nextActivities.length > 0) {
-                messageWriting.content = jsonData.nextActivities.map(item => item.messageToUser).join('\n\n');
-            }
+                    // const jsonData = JSON.parse(response);
+                    const jsonData = response;
+                    if (jsonData && jsonData.nextActivities && jsonData.nextActivities.length > 0) {
+                        messageWriting.content = jsonData.nextActivities.map(item => item.messageToUser).join('\n\n');
+                    }
 
-            this.checkDisableChat();
+                    me.checkDisableChat();
+                },
+            })
         },
         afterModelStopped(response) {
             let id;
