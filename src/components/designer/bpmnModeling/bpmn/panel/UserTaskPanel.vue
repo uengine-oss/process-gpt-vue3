@@ -279,9 +279,9 @@ export default {
         } else {
             me.formMapperJson = JSON.stringify(me.copyUengineProperties.mappingContext, null, 2);
         }
-        if(me.copyUengineProperties.eventSynchronization){
-            me.isEventSyncForm = true
-        }
+        // if(me.copyUengineProperties.eventSynchronization){
+        //     me.isEventSyncForm = true
+        // }
 
         me.$emit('update:uEngineProperties', me.copyUengineProperties);
         me.copyDefinition = me.definition;
