@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-switch v-model="isEventSyncForm" :label="isEventSyncForm ? 'Event Synchronization Form':'Form Mapping' "></v-switch>
+        <!-- <v-switch v-model="isEventSyncForm" :label="isEventSyncForm ? 'Event Synchronization Form':'Form Mapping' "></v-switch> -->
         
         <div v-if="isEventSyncForm">
             <EventSynchronizationForm v-model="copyUengineProperties.eventSynchronization" :roles="roles" :taskName="name"></EventSynchronizationForm>
