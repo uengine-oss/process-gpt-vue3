@@ -91,7 +91,7 @@ export default {
             if(!me.workItem.activity || !me.workItem.activity.variableForHtmlFormContext) return;
 
             let varName = me.workItem.activity.variableForHtmlFormContext.name;
-            let variable = await backend.getVariable(me.workItem.worklist.instId, varName);
+            let variable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName);
             if (variable && variable.valueMap) {
                 me.formData = variable.valueMap;
             } else {
@@ -105,7 +105,7 @@ export default {
                 action: async () => {
                     // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드
                     let varName = me.workItem.activity.variableForHtmlFormContext.name;
-                    let variable = await backend.getVariable(me.workItem.worklist.instId, varName);
+                    let variable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName);
                     if (!variable) variable = {};
                     variable._type = 'org.uengine.contexts.HtmlFormContext';
                     variable.valueMap = this.formData;
@@ -117,7 +117,7 @@ export default {
                         }
                     });
                     variable.valueMap._type = 'java.util.HashMap';
-                    await backend.setVariable(me.workItem.worklist.instId, varName, variable);
+                    await backend.setVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName, variable);
                     ///////////////////////////////////
                     await backend.putWorkItem(me.$route.params.taskId, { parameterValues: {} });
                 },
@@ -129,7 +129,7 @@ export default {
             let me = this;
 
             let varName = me.workItem.activity.variableForHtmlFormContext.name;
-            let variable = await backend.getVariable(me.workItem.worklist.instId, varName);
+            let variable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName);
             if (!variable) variable = {};
             variable._type = 'org.uengine.contexts.HtmlFormContext';
             variable.valueMap = this.formData;
@@ -141,7 +141,7 @@ export default {
                 }
             });
             variable.valueMap._type = 'java.util.HashMap';
-            await backend.setVariable(me.workItem.worklist.instId, varName, variable);
+            await backend.setVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName, variable);
 
         },
         async completeTask() {
