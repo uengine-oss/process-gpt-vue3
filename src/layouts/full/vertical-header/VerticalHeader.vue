@@ -33,6 +33,12 @@ const sidebarItems = ref<SidebarItem[]>([
         disable: false
     },
     {
+        title: 'chats.title',
+        icon: 'solar:chat-round-unread-line-duotone',
+        to: '/chats',
+        disable: false
+    },
+    {
         title: 'headerMenu.todoList',
         icon: 'pajamas:overview',
         to: '/todolist',
@@ -163,7 +169,7 @@ function navigateTo(item: SidebarItem) {
                 </div>
 
                 <!-----Mobile header------>
-                <v-menu :close-on-content-click="false" class="mobile_popup ">
+                <!-- <v-menu :close-on-content-click="false" class="mobile_popup ">
                     <template v-slot:activator="{ props }">
                         <v-btn icon class="hidden-md-and-up" flat v-bind="props" size="small">
                             <DotsIcon stroke-width="2" size="24" class="text-primary" />
@@ -174,19 +180,19 @@ function navigateTo(item: SidebarItem) {
                             <div class="mr-sm-3 mr-2">
                                 <Searchbar />
                             </div>
-                            <!-- <LanguageDD /> -->
-                            <!-- <v-btn icon variant="text" class="mr-sm-3 mr-2" to="/ecommerce/checkout"
+                            <LanguageDD />
+                            <v-btn icon variant="text" class="mr-sm-3 mr-2" to="/ecommerce/checkout"
                                 size="small">
                                 <v-badge color="primary" :content="getCart?.length" offset-x="-4" offset-y="-6">
                                     <Icon icon="solar:cart-3-line-duotone" height="24" width="24" />
                                 </v-badge>
-                            </v-btn> -->
-                            <!-- <MessagesDD /> -->
+                            </v-btn>
+                            <MessagesDD />
                             <NotificationDD />
                             <ProfileDD />
                         </div>
                     </v-sheet>
-                </v-menu>
+                </v-menu> -->
             </v-app-bar>
         </div>
     </div>

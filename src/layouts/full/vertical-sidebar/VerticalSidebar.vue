@@ -100,13 +100,6 @@ export default {
             //     to: '/calendar',
             //     disable: false
             // },
-            {
-                title: 'chats.title',
-                icon: 'solar:chat-round-unread-line-duotone',
-                BgColor: 'primary',
-                to: '/chats',
-                disable: true
-            },
         ],
         definitionItem: [],
         definitionList: null

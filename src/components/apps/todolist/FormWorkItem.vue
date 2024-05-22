@@ -1,9 +1,31 @@
 <template>
     <v-row class="ma-0 pa-0 task-btn" style="right: 40px">
         <v-spacer></v-spacer>
-        <div v-if="workItemStatus == 'NEW' || workItemStatus == 'DRAFT'">
+        <div class="from-work-item-pc" v-if="workItemStatus == 'NEW' || workItemStatus == 'DRAFT'">
             <v-btn @click="saveTask()" color="#0085DB" style="color: white" rounded>중간 저장</v-btn>
             <v-btn @click="$try(completeTask, null, {sucessMsg: '워크아이템 완료'})" variant="tex" rounded>제출 완료</v-btn>
+        </div>
+        <div class="from-work-item-mobile" v-if="workItemStatus == 'NEW' || workItemStatus == 'DRAFT'">
+            <v-tooltip text="중간 저장">
+                <template v-slot:activator="{ props }">
+                    <v-btn @click="saveTask()"
+                        icon v-bind="props"
+                        density="comfortable"
+                    >
+                        <Icon icon="mdi:content-save-plus-outline" width="32" height="32" />
+                    </v-btn>
+                </template>
+            </v-tooltip>
+            <v-tooltip text="제출 완료">
+                <template v-slot:activator="{ props }">
+                    <v-btn @click="$try(completeTask, null, {sucessMsg: '워크아이템 완료'})" variant="tex"
+                        icon v-bind="props"
+                        density="comfortable"
+                    >
+                        <Icon icon="iconoir:submit-document" width="28" height="28" />
+                    </v-btn>
+                </template>
+            </v-tooltip>
         </div>
     </v-row>
     <div class="pa-4">
@@ -69,7 +91,7 @@ export default {
             if(!me.workItem.activity || !me.workItem.activity.variableForHtmlFormContext) return;
 
             let varName = me.workItem.activity.variableForHtmlFormContext.name;
-            let variable = await backend.getVariable(me.workItem.worklist.instId, varName);
+            let variable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName);
             if (variable && variable.valueMap) {
                 me.formData = variable.valueMap;
             } else {
@@ -83,7 +105,7 @@ export default {
                 action: async () => {
                     // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드
                     let varName = me.workItem.activity.variableForHtmlFormContext.name;
-                    let variable = await backend.getVariable(me.workItem.worklist.instId, varName);
+                    let variable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName);
                     if (!variable) variable = {};
                     variable._type = 'org.uengine.contexts.HtmlFormContext';
                     variable.valueMap = this.formData;
@@ -95,7 +117,7 @@ export default {
                         }
                     });
                     variable.valueMap._type = 'java.util.HashMap';
-                    await backend.setVariable(me.workItem.worklist.instId, varName, variable);
+                    await backend.setVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName, variable);
                     ///////////////////////////////////
                     await backend.putWorkItem(me.$route.params.taskId, { parameterValues: {} });
                 },
@@ -107,7 +129,7 @@ export default {
             let me = this;
 
             let varName = me.workItem.activity.variableForHtmlFormContext.name;
-            let variable = await backend.getVariable(me.workItem.worklist.instId, varName);
+            let variable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName);
             if (!variable) variable = {};
             variable._type = 'org.uengine.contexts.HtmlFormContext';
             variable.valueMap = this.formData;
@@ -119,7 +141,7 @@ export default {
                 }
             });
             variable.valueMap._type = 'java.util.HashMap';
-            await backend.setVariable(me.workItem.worklist.instId, varName, variable);
+            await backend.setVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName, variable);
 
         },
         async completeTask() {
@@ -154,3 +176,20 @@ export default {
     }
 };
 </script>
+<style>
+.from-work-item-mobile {
+    display: none;
+}
+.from-work-item-mobile button {
+    margin-right:10px;
+}
+
+@media only screen and (max-width:700px) {
+    .from-work-item-pc {
+        display: none;
+    }
+    .from-work-item-mobile {
+        display: block;
+    }
+}
+</style>
