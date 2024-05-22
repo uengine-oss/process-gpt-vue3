@@ -615,7 +615,7 @@ export default {
 
                 const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
                 const result = await parser.parseStringPromise(xmlString);
-                const process = result['bpmn:definitions']['bpmn:process'] || {};
+                const process = result['bpmn:definitions'] && result['bpmn:definitions']['bpmn:process'] ? result['bpmn:definitions']['bpmn:process'] : {};
                 const startEvent = process['bpmn:startEvent'] || {};
                 const endEvent = process['bpmn:endEvent'] || {};
                 function ensureArray(item) {
@@ -876,33 +876,23 @@ export default {
                     //     me.processDefinition = await me.convertXMLToJSON(xml);
                     // }
 
-                    if(window.$mode != 'uEngine') {
+                    me.processDefinition.processDefinitionId = info.proc_def_id ? info.proc_def_id : prompt('please give a ID for the process definition');
 
-                        me.processDefinition.processDefinitionId = info.proc_def_id ? info.proc_def_id : prompt('please give a ID for the process definition');
+                    if (!me.processDefinition.processDefinitionName && info.name) {
+                        me.processDefinition.processDefinitionName = info.name
+                    } else if (!me.processDefinition.processDefinitionName && !info.name) {
+                        me.processDefinition.processDefinitionName = prompt('please give a name for the process definition');
+                    }
 
-                        if (!me.processDefinition.processDefinitionName && info.name) {
-                            me.processDefinition.processDefinitionName = info.name
-                        } else if (!me.processDefinition.processDefinitionName && !info.name) {
-                            me.processDefinition.processDefinitionName = prompt('please give a name for the process definition');
-                        }
+                    me.projectName = me.processDefinition.processDefinitionName;
+                    if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
+                        throw new Error('processDefinitionId or processDefinitionName is missing');
+                    }
+                    await backend.putRawDefinition(xml, info.proc_def_id, info);
+                    await this.saveToVectorStore(me.processDefinition);
 
-                        me.projectName = me.processDefinition.processDefinitionName;
-                        if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
-                            throw new Error('processDefinitionId or processDefinitionName is missing');
-                        }
-                        await backend.putRawDefinition(xml, info.proc_def_id, info);
-                        await this.saveToVectorStore(me.processDefinition);
-
-                        if (me.$route.fullPath == '/definitions/chat') {
-                            me.$router.push('/definitions/' + me.processDefinition.processDefinitionId);
-                        }
-
-                    } else {
-                        await backend.putRawDefinition(xml, info.proc_def_id, info);
-
-                        if (me.$route.fullPath == '/definitions/chat') {
-                            me.$router.push('/definitions/' + info.proc_def_id);
-                        }
+                    if (me.$route.fullPath == '/definitions/chat') {
+                        me.$router.push('/definitions/' + me.processDefinition.processDefinitionId);
                     }
                 }
             });
