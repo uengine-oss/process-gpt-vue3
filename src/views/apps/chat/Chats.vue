@@ -22,16 +22,29 @@
                         :userList="userList"
                         :currentChatRoom="currentChatRoom"
                         :type="path"
+                        :generatedWorkList="generatedWorkList"
+                        :ProcessGPTActive="ProcessGPTActive"
                         @requestDraftAgent="requestDraftAgent"
                         @requestFile="requestFile"
                         @beforeReply="beforeReply"
                         @sendMessage="beforeSendMessage"
                         @startProcess="startProcess"
                         @cancelProcess="cancelProcess"
+                        @deleteWorkList="deleteWorkList"
+                        @deleteAllWorkList="deleteAllWorkList"
                         @sendEditedMessage="sendEditedMessage"
                         @stopMessage="stopMessage"
-                        @getMoreChat="getMoreChat"
-                    ></Chat>
+                        @toggleProcessGPTActive="toggleProcessGPTActive"
+                    >
+                        <template v-slot:custom-chat>
+                            <VDataTable v-if="onLoad" :headers="headers" :items="definitions" item-value="processDefinitionId" class="overflow-x-auto">
+                                <template v-slot:item.actions="{ item }">
+                                    <v-btn color="primary" class="px-4 rounded-pill mx-auto" variant="tonal"
+                                        @click="executeProcess(item.raw.id)">Select</v-btn>
+                                </template>
+                            </VDataTable>
+                        </template>
+                    </Chat>
                 </div>
             </template>
 
@@ -50,15 +63,16 @@
 </template>
 
 <script>
-import AppBaseCard from '@/components/shared/AppBaseCard.vue';
+import ChatModule from "@/components/ChatModule.vue";
+import ChatGenerator from "@/components/ai/WorkAssistantGenerator.js";
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
+import AppBaseCard from '@/components/shared/AppBaseCard.vue';
+import Chat from "@/components/ui/Chat.vue";
+import axios from 'axios';
 import partialParse from "partial-json-parser";
 import { VectorStorage } from "vector-storage";
-import ChatGenerator from "@/components/ai/WorkAssistantGenerator.js";
-import Chat from "@/components/ui/Chat.vue";
-import ChatModule from "@/components/ChatModule.vue";
-import axios from 'axios';
+import { VDataTable } from 'vuetify/labs/VDataTable';
 
 
 export default {
@@ -68,10 +82,19 @@ export default {
         Chat,
         AppBaseCard,
         ChatListing,
-        ChatProfile
+        ChatProfile,
+        VDataTable,
+
     },
     data: () => ({
+        headers: [
+            { title: 'id', align: 'start', key: 'id' },
+            { title: 'name', align: 'start', key: 'name' },
+            { title: 'description', align: 'start', key: 'description' },
+            { title: 'actions', align: 'start', key: 'actions' },
+        ],
         definitions: [],
+        onLoad: false,
         processDefinition: null,
         path: "chats",
         organizationChart: [],
@@ -79,6 +102,7 @@ export default {
         currentChatRoom: null,
         userList: [],
         chatRenderKey: 0,
+        generatedWorkList: [],
     }),
     computed: {
         filteredChatRoomList() {
@@ -112,6 +136,9 @@ export default {
         });
     },
     methods: {
+        toggleProcessGPTActive() {
+            this.ProcessGPTActive = !this.ProcessGPTActive;
+        },
         async getCalendar(){
             let option = {
                 key: "uid"
@@ -143,7 +170,7 @@ export default {
                         me.getChatList(me.filteredChatRoomList[0].id);
                         me.setReadMessage(0);
                     } else {
-                        alert("Create a new chat room")
+                       // alert("Create a new chat room")
                     }
                 }
             });
@@ -189,18 +216,6 @@ export default {
             this.getChatList(chatRoomInfo.id);
             this.setReadMessage(this.chatRoomList.findIndex(x => x.id == chatRoomInfo.id));
         },
-        // async addTextToVectorStore(msg){
-        //     const apiToken = this.generator.getToken();
-        //     const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
-        //     try {
-        //     // 메시지 추가
-        //         await vectorStore.addText(JSON.stringify(msg), {
-        //             category: this.currentChatRoom.id
-        //         });
-        //     } catch (error) {
-        //         console.error("Error adding message to vectorStore:", error);
-        //     }
-        // },
         async putMessage(msg){
             // this.addTextToVectorStore(msg)
             let uuid
@@ -228,23 +243,7 @@ export default {
                 }
             });
             this.putObject(`chat_rooms`, this.currentChatRoom);
-            
-            // let test = await this.queryMsgFromVectorDB(msg.content)
-            // console.log(test)
         },
-        // async queryMsgFromVectorDB(content) {
-        //     const apiToken = this.generator.getToken();
-        //     const vectorStore = new VectorStorage({ openAIApiKey: apiToken });
-
-        //     const results = await vectorStore.similaritySearch({
-        //         query: content,
-        //         category: this.currentChatRoom.id
-        //     });
-
-        //     if (results.similarItems) {
-        //         return results.similarItems.map(item => item.text);
-        //     }
-        // },
         beforeReply(msg){
             if(msg){
                 this.replyUser = msg
@@ -253,50 +252,54 @@ export default {
             }
         },
         async beforeSendMessage(newMessage) {
-            if (newMessage && newMessage.text != '') {
-                this.putMessage(this.createMessageObj(newMessage.text))
+            if (newMessage && (newMessage.text != '' || newMessage.image != null)) {
+                this.putMessage(this.createMessageObj(newMessage))
                 if(!this.generator.contexts) {
-                    let contexts = await this.queryFromVectorDB(newMessage.text);
+                    let contexts = await this.storage.list(`proc_def`);
                     this.generator.setContexts(contexts);
                 }
+                
+                this.generator.setWorkList(this.generatedWorkList);
                 newMessage.callType = 'chats'
                 this.sendMessage(newMessage);
             }
         },
 
-        // async loadData(path) {
-            // var me = this
-            // const value = await this.getData(path);
+        async beforeExecuteProcess(newMessage) {
+            var me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    var url = '/process-search/invoke'
+                    var req = {
+                        input: {
+                            answer: newMessage.text || '',
+                            image: newMessage.image || ''
+                        }
+                    }
+                    let response = await axios.post(url, req);
+                    const output = JSON.parse(response.data.output)
+                    if (output && output.processDefinitionList) {
+                        me.definitions = output.processDefinitionList;
+                        me.onLoad = true;
+                    }
+                }
+            })
 
-            // if (value) {
-            //     if (value.organizationChart) {
-            //         this.organizationChart = JSON.parse(value.organizationChart);
-                    
-            //         if (!this.organizationChart) {
-            //             this.organizationChart = []
-            //         }
-            //     } else {
-            //         // if (this.$route.params && this.$route.params.id) {
-            //             // Object.keys(value).forEach(function (key){
-            //             //     me.processInstance[key] = partialParse(value[key].model);
-            //             // })
-
-            //         }
-            //     // }
-            // }
-        // },
-
-        afterModelCreated(response) {
-            // let jsonInstance = this.extractJSON(response);
-
-            // if (jsonInstance) {
-            //     try {
-            //         this.processInstance = partialParse(jsonInstance);
-            //     } catch (error) {
-            //         this.processInstance = jsonInstance;
-            //         console.log(error);
+            // if(!this.generator.contexts) {
+            //     var procDefs = await this.queryFromVectorDB(newMessage.text);
+            //     if (procDefs) {
+            //         procDefs = procDefs.map(item => JSON.parse(item));
+            //         this.definitions = procDefs;
+            //         this.onLoad = true;
             //     }
             // }
+        },
+        executeProcess(processDefinitionId) {
+            this.$router.push('/instances/chat?process=' + processDefinitionId)
+        },
+
+        afterModelCreated(response) {
         },
         deleteSystemMessage(response){
             this.storage.delete(`chats/${response.uuid}`, {key: 'uuid'});
@@ -306,19 +309,33 @@ export default {
             this.putMessage(this.createMessageObj(systemMsg, 'system'))
             this.deleteSystemMessage(response)
         },
+        deleteWorkList(index){
+            this.generatedWorkList.splice(index, 1);
+        },
+        deleteAllWorkList(){
+            this.generatedWorkList = [];
+        },
         async startProcess(response){
             var me = this
-            if(response.content && response.content.includes("{")){
-                let responseObj = partialParse(response.content)
+                let responseObj
                 let systemMsg
-                if(responseObj.work == 'StartProcessInstance'){
-                    if(this.lastSendMessage){
-                        localStorage.setItem('instancePrompt', this.lastSendMessage)
-                    } else {
-                        localStorage.setItem('instancePrompt', this.messages[this.messages.length - 2].content)
+
+                if (response.content && response.content.includes("{")) {
+                    responseObj = partialParse(response.content);
+                } else {
+                    responseObj = response
+                }
+                // process instance execute
+                if(responseObj.work == 'StartProcessInstance') {
+                    if(!this.lastSendMessage) {
+                        const userMsgs = this.messages.filter(msg => msg.role === 'user');
+                        this.lastSendMessage = userMsgs[userMsgs.length - 1];
                     }
+                    localStorage.setItem('instancePrompt', this.lastSendMessage.text)
                     systemMsg = `"${responseObj.title}" 프로세스를 시작하겠습니다.`
-                    me.$router.push('/instances/chat')
+                    // me.$router.push('/instances/chat')
+                    this.beforeExecuteProcess({ text: responseObj.title, image: this.lastSendMessage.image });
+
                 } else if(responseObj.work == 'TodoListRegistration'){
                     systemMsg = `"${responseObj.activity_id}" 할 일이 추가되었습니다.`
 
@@ -399,23 +416,32 @@ export default {
                 }
                 systemMsg = `${me.userInfo.name}님이 요청하신 ${systemMsg}`
                 me.putMessage(me.createMessageObj(systemMsg, 'system'))
-                me.deleteSystemMessage(response)
-            }
+                if(response.content){
+                    me.deleteSystemMessage(response)
+                }
         },
         afterModelStopped(response) {
             // console.log(response)
         },
         async afterGenerationFinished(response) {
-            let obj = this.createMessageObj(response, 'system')
-            if(response && response.includes("{")){
-                let responseObj = partialParse(response)
+            let responseObj = response
+            if(responseObj.work == 'SKIP'){
+                if(!this.ProcessGPTActive){
+                    this.messages.pop();
+                }
+            } else {
+                if(this.ProcessGPTActive){
+                    responseObj.expanded = false
+                    this.generatedWorkList.push(responseObj)
+                }
+                let obj = this.createMessageObj(response, 'system')
                 if(responseObj.messageForUser){
                     obj.messageForUser = responseObj.messageForUser
                 }
-
                 if(responseObj.work == 'CompanyQuery'){
                     try{
-                        let responseMemento = await axios.post('http://localhost:8005/query', { query: responseObj.content});
+                        var url = window.$memento == '' ? 'http://localhost:8005' : window.$memento
+                        let responseMemento = await axios.post(`${url}/query`, { query: responseObj.content});
                         obj.memento = {}
                         obj.memento.response = responseMemento.data.response
                         if (!responseMemento.data.metadata) return {};
@@ -428,7 +454,7 @@ export default {
                         });
                         obj.memento.sources = sources
 
-                        const responseTable = await axios.post('http://localhost:8000/process-data-query/invoke', {
+                        const responseTable = await axios.post(`${window.$backend}/process-data-query/invoke`, {
                             input: {
                                 var_name: responseObj.content
                             }
@@ -440,46 +466,16 @@ export default {
                 } else if(responseObj.work == 'ScheduleQuery'){
                     console.log(responseObj)
                 } else {
-                    obj.uuid = this.uuid()
-                    obj.systemRequest = true
-                    obj.requestUserEmail = this.userInfo.email
-                }
-            }
-            this.putMessage(obj)
-        },
-
-        async sendTodolist() {
-            let path = "";
-            const uuid = this.uuid();
-            let putObj = {};
-
-            putObj[uuid] = {
-                activityId: "",
-                activityName: "",
-                startDate: new Date().toISOString().substr(0, 10),
-                endDate: "",
-                dueDate: "",
-                processDefinitionId: "",
-                processInstanceId: "",
-                userId: this.userInfo.email
-            };
-
-            if (this.processDefinition) {
-                putObj[uuid].processDefinitionId = this.processDefinition.processDefinitionId;
-
-                this.processDefinition.activities.forEach(act => {
-                    if (act.id == this.processInstance.currentActivityId) {
-                        putObj[uuid].activityName = act.name; 
+                    if(!this.ProcessGPTActive){
+                        obj.uuid = this.uuid()
+                        obj.systemRequest = true
+                        obj.requestUserEmail = this.userInfo.email
                     }
-                });
-            }
-
-            if (this.processInstance) {
-                putObj[uuid].activityId = this.processInstance.currentActivityId;
-                putObj[uuid].processInstanceId = this.processInstance.processInstanceId;
-                path = `todolist/${this.processInstance.nextUserEmail}`;
-                
-                this.putObject(path, putObj);
+                }
+                if(!this.ProcessGPTActive){
+                    // this.messages.pop();
+                    this.putMessage(obj)
+                }
             }
         },
 

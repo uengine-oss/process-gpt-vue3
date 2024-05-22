@@ -57,7 +57,39 @@ export default defineConfig({
             '/drop-process-table': {
                 target: 'http://localhost:8000',
                 changeOrigin: true,
+            },
+            '/process-search': {
+                target: 'http://localhost:8000',
+                changeOrigin: true,
+            },
+            '/vision-process-search': {
+                target: 'http://localhost:8000',
+                changeOrigin: true,
             }
+            // '/complete': {
+            //     target: 'http://execution.process-gpt.io',
+            //     changeOrigin: true,
+            // },
+            // '/vision-complete': {
+            //     target: 'http://execution.process-gpt.io',
+            //     changeOrigin: true,
+            // },
+            // '/query': {
+            //     target: 'http://localhost:8005',
+            //     changeOrigin: true,
+            // },
+            // '/retrieve': {
+            //     target: 'http://localhost:8005',
+            //     changeOrigin: true,
+            // },
+            // '/process-db-schema': {
+            //     target: 'http://execution.process-gpt.io',
+            //     changeOrigin: true,
+            // },
+            // '/drop-process-table': {
+            //     target: 'http://execution.process-gpt.io',
+            //     changeOrigin: true,
+            // }
         }
     }
     // build: {

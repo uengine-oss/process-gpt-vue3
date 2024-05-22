@@ -9,3 +9,41 @@ spec:
     targetPort: 8080
   selector:
     app: my-app
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: process-gpt-execution-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8000
+  selector:
+    app: process-gpt-execution
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: autonomous-backend-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: process-gpt-autonomous
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 6789
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: memento-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: memento
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8005

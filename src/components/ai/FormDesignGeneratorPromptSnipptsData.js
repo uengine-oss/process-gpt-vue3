@@ -95,7 +95,9 @@ const formDesignGeneratorPromptSnipptsData = {
         {
             tag: `<code-field name='<이 코드의 고유한 이름>' alias='<이 코드의 별명>' event_type='<click|initialize|validate|watch>' watch_name='<event_type이 watch인 경우, 감시할 name 속성>'>실행시킬 Javascript 코드</code-field>`,
             purpose: `지정된 이벤트가 발생하면 코드를 실행하기 위해서`,
-            limit: `code-field 또한 반드시 'col-sm-*' 속성으로 선언된 div 안에 속해야 함. 세부 메뉴얼은 다음과 같음.\n
+            limit: `code-field 또한 반드시 'col-sm-*' 속성으로 선언된 div 안에 속해야 함.\n
+                    또한, code-field가 속한 row의 is_multidata_mode는 반드시 false여야 함.\n
+                    세부 메뉴얼은 다음과 같음.\n
                    * event_type에 따라서 코드를 실행하는 방식이 달라짐\n` +
                    `click인 경우, 버튼을 누를 경우, 주어진 코드가 실행됨\n` +
                    `initialize인 경우, 맨 처음 폼이 표시될때 주어진 코드가 실행됨\n` +
@@ -113,25 +115,40 @@ const formDesignGeneratorPromptSnipptsData = {
     // AI에게 참조할만한 예시를 안내해주기 위해서 {input: "유저 입력", output: "AI 결과"}
     examples: [
         {
-            input: "도서 정보 입력 폼을 생성해줘. 책 제목이 입력되었는지 제출시 검사하도록 만들어줘.",
+            input: "도서 정보 입력 폼을 생성해줘. 책 제목이 입력되었는지 제출시 검사하도록 만들어줘. 그리고, 책 표지 이미지를 입력받을때는 여러개를 입력받을 수 있도록 해줘.",
             output: `
             \`\`\`
             {
                 "htmlOutput": 
-                "<div class='row' name='book_info' alias='도서 정보' is_multidata_mode='false'>
-                    <div class='col-sm-12'>
-                        <text-field name='book_title' alias='책 제목'></text-field>
-                        <text-field name='book_author' alias='저자'></text-field>
-                        <text-field name='book_price' alias='가격' type='number'></text-field>
-                        <text-field name='book_publish_date' alias='발행날짜' type='date'></text-field>
-                        <select-field name='book_genre' alias='책 장르' is_dynamic_load='false' items='[{"novel": "소설"}, {"poem": "시"}, {"essay": "에세이"}]'></select-field>
-                        <file-field name='book_cover' alias='책 표지 이미지'></file-field>
-                    
-                        <code-field name="checkBookTitle" alias="책 제목 검사" event_type="validate">
-                            if(this.formValues["book_title"] === "") error = "책 제목은 반드시 입력해야 합니다."
-                        </code-field>  
+                "<section>
+                    <div class='row' name='book_info' alias='도서 정보' is_multidata_mode='false'>
+                        <div class='col-sm-12'>
+                            <text-field name='book_title' alias='책 제목'></text-field>
+                            <text-field name='book_author' alias='저자'></text-field>
+                            <text-field name='book_price' alias='가격' type='number'></text-field>
+                            <text-field name='book_publish_date' alias='발행날짜' type='date'></text-field>
+                            <select-field name='book_genre' alias='책 장르' is_dynamic_load='false' items='[{"novel": "소설"}, {"poem": "시"}, {"essay": "에세이"}, {"SF": "공상 과학"}]'></select-field>
+                                             
+                            <section>
+                                <div class='row' name='book_cover_images' alias='책 표지 이미지 목록' is_multidata_mode='true'>
+                                    <div class='col-sm-12'>
+                                        <file-field name='book_cover_image' alias='책 표지 이미지'></file-field>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
                     </div>
-                </div>"
+                </section>
+                <section>
+                    <div class='row' name='code' alias='코드' is_multidata_mode='false'>
+                        <div class='col-sm-12'>
+                            <code-field name="checkBookTitle" alias="책 제목 검사" event_type="validate">
+                            if(this.formValues["book_title"] === "") error = "책 제목은 반드시 입력해야 합니다."
+                            </code-field>  
+                        </div>
+                    </div>
+                </section>
+                "
             }
             \`\`\``
         },

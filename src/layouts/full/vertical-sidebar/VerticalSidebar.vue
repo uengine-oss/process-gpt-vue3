@@ -100,26 +100,13 @@ export default {
             //     to: '/calendar',
             //     disable: false
             // },
-            {
-                title: 'chats.title',
-                icon: 'solar:chat-round-unread-line-duotone',
-                BgColor: 'primary',
-                to: '/chats',
-                disable: true
-            },
         ],
         definitionItem: [],
         definitionList: null
     }),
     computed: {
-        useChat() {
-            const execution = localStorage.getItem('execution');
-            if (window.$mode == "ProcessGPT" && execution == "true") {
-                return true;
-            } else if (execution == "true") {
-                return true;
-            }
-            return false;
+        JMS() {
+            return window.$jms;
         }
     },
     async created() {
@@ -155,7 +142,7 @@ export default {
             this.getDefinitionList();
         }
 
-        if (this.useChat) {
+        if (!this.JMS) {
             this.sidebarItem.forEach((item) => {
                 if (item.disable) {
                     item.disable = false;

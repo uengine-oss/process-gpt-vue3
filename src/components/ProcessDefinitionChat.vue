@@ -627,15 +627,18 @@ export default {
                 const sequenceFlows = ensureArray(process['bpmn:sequenceFlow'] || []);
                 const gateways = ensureArray(process['bpmn:exclusiveGateway'] || []);
 
+                const data = process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] ? (Array.isArray(process['bpmn:extensionElements']['uengine:properties']['uengine:variable']) ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable'] : [process['bpmn:extensionElements']['uengine:properties']['uengine:variable']]).map(varData => ({
+                        name: varData.name,
+                        description: varData.name + ' description',
+                        type: varData.type
+                    })) : [];
+
+
                 const jsonData = {
                     processDefinitionName: process.id || 'Unknown',
                     processDefinitionId: process.id || 'Unknown',
                     description: "process.description",
-                    data: process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] ? (Array.isArray(process['bpmn:extensionElements']['uengine:properties']['uengine:variable']) ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable'] : [process['bpmn:extensionElements']['uengine:properties']['uengine:variable']]).map(varData => ({
-                        name: varData.name,
-                        description: varData.name + ' description',
-                        type: varData.type
-                    })) : [],
+                    data: data,
                     roles: lanes.map(lane => ({
                         name: lane.name,
                         resolutionRule: lane.name === 'applicant' ? 'initiator' : 'system'
@@ -657,26 +660,37 @@ export default {
                         }
                     ],
                     activities: [
-                        ...activities.map(activity => ({
-                            name: activity.name,
-                            id: activity.id,
-                            type: 'UserActivity',
-                            description: activity.name + ' description',
-                            instruction: activity.name + ' instruction',
-                            role: lanes.find(lane => {
-                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
-                                return flowNodeRefs.includes(activity.id);
-                            }) ? lanes.find(lane => {
-                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
-                                return flowNodeRefs.includes(activity.id);
-                            }).name : 'Unknown',
-                            inputData: activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
-                                .filter(param => param.direction === "IN")
-                                .map(param => param.variable.name) : [],
-                            outputData: activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
-                                .filter(param => param.direction === "OUT")
-                                .map(param => param.variable.name) : []
-                        })),
+                        ...activities.map(activity => {
+
+                            let task = {
+                                name: activity.name,
+                                id: activity.id,
+                                type: 'UserActivity',
+                                description: activity.name + ' description',
+                                instruction: activity.name + ' instruction',
+                                role: lanes.find(lane => {
+                                    const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                    return flowNodeRefs.includes(activity.id);
+                                }) ? lanes.find(lane => {
+                                    const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                    return flowNodeRefs.includes(activity.id);
+                                }).name : 'Unknown',
+                                inputData: activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
+                                    .filter(param => param.direction === "IN")
+                                    .map(param => param.variable.name) : [],
+                                outputData: activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
+                                    .filter(param => param.direction === "OUT")
+                                    .map(param => param.variable.name) : []
+                            }
+
+                            try{
+                                task.tool = "formHandler:" + JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).variableForHtmlFormContext.name
+                            }catch(e){}
+
+                            return task
+                        }
+                        
+                        ),
                         ...scriptTasks.map(task => ({
                             name: task.name,
                             id: task.id,
@@ -862,23 +876,33 @@ export default {
                     //     me.processDefinition = await me.convertXMLToJSON(xml);
                     // }
 
-                    me.processDefinition.processDefinitionId = info.proc_def_id ? info.proc_def_id : prompt('please give a ID for the process definition');
+                    if(window.$mode != 'uEngine') {
 
-                    if (!me.processDefinition.processDefinitionName && info.name) {
-                        me.processDefinition.processDefinitionName = info.name
-                    } else if (!me.processDefinition.processDefinitionName && !info.name) {
-                        me.processDefinition.processDefinitionName = prompt('please give a name for the process definition');
-                    }
+                        me.processDefinition.processDefinitionId = info.proc_def_id ? info.proc_def_id : prompt('please give a ID for the process definition');
 
-                    me.projectName = me.processDefinition.processDefinitionName;
-                    if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
-                        throw new Error('processDefinitionId or processDefinitionName is missing');
-                    }
-                    await backend.putRawDefinition(xml, info.proc_def_id, info);
-                    await this.saveToVectorStore(me.processDefinition);
+                        if (!me.processDefinition.processDefinitionName && info.name) {
+                            me.processDefinition.processDefinitionName = info.name
+                        } else if (!me.processDefinition.processDefinitionName && !info.name) {
+                            me.processDefinition.processDefinitionName = prompt('please give a name for the process definition');
+                        }
 
-                    if (me.$route.fullPath == '/definitions/chat') {
-                        me.$router.push('/definitions/' + me.processDefinition.processDefinitionId);
+                        me.projectName = me.processDefinition.processDefinitionName;
+                        if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
+                            throw new Error('processDefinitionId or processDefinitionName is missing');
+                        }
+                        await backend.putRawDefinition(xml, info.proc_def_id, info);
+                        await this.saveToVectorStore(me.processDefinition);
+
+                        if (me.$route.fullPath == '/definitions/chat') {
+                            me.$router.push('/definitions/' + me.processDefinition.processDefinitionId);
+                        }
+
+                    } else {
+                        await backend.putRawDefinition(xml, info.proc_def_id, info);
+
+                        if (me.$route.fullPath == '/definitions/chat') {
+                            me.$router.push('/definitions/' + info.proc_def_id);
+                        }
                     }
                 }
             });

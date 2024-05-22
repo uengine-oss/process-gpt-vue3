@@ -60,7 +60,7 @@ class ProcessGPTBackend implements Backend {
                 await storage.delete(`lock/${defId}`, { key: 'id' });
             }
             // supabase table 삭제
-            await axios.post('/drop-process-table/invoke', {
+            await axios.post(`${window.$backend}/drop-process-table/invoke`, {
                 "input": {
                     "process_definition_id": defId
                 }
@@ -116,7 +116,7 @@ class ProcessGPTBackend implements Backend {
             const list = await storage.list(defId);
             if (list.code == "42P01") {
                 try {
-                    await axios.post('/process-db-schema/invoke', {
+                    await axios.post(`${window.$backend}/process-db-schema/invoke`, {
                         "input": {
                             "process_definition_id": defId
                         }
@@ -166,7 +166,7 @@ class ProcessGPTBackend implements Backend {
             if (defId && defId != '') {
                 const list = await storage.list(defId);
                 if (list.code == "42P01") {
-                    await axios.post('/process-db-schema/invoke', {
+                    await axios.post(`${window.$backend}/process-db-schema/invoke`, {
                         "input": {
                             "process_definition_id": defId
                         }
@@ -193,9 +193,9 @@ class ProcessGPTBackend implements Backend {
             input['process_definition_id'] = defId.toLowerCase();
             
             var result: any = null;
-            var url = '/complete/invoke';
+            var url = `${window.$backend}/complete/invoke`;
             if (input.image != null) {
-                url = '/vision-complete/invoke';
+                url = `${window.$backend}/vision-complete/invoke`;
             }
             var req = {
                 input: input
@@ -255,9 +255,11 @@ class ProcessGPTBackend implements Backend {
                 }
             };
             const data = await storage.getObject(defId, options);
-            data.defId = defId;
-            data.instanceId = instanceId;
-            data.name = data.proc_inst_name;
+            if (data) {
+                data.defId = defId;
+                data.instanceId = instanceId;
+                data.name = data.proc_inst_name;
+            }
             return data;
         } catch (e) {
             //@ts-ignore
@@ -553,7 +555,7 @@ class ProcessGPTBackend implements Backend {
             const req = {
                 input: input
             };
-            let url = '/complete/invoke';
+            let url = `${window.$backend}/complete/invoke`;
             await axios.post(url, req).then(async res => {
                 if (res.data) {
                     const data = res.data;
@@ -604,16 +606,16 @@ class ProcessGPTBackend implements Backend {
 
     async getInstanceList() {
         try {
-            const instList: any[] = [];
-            const data = await storage.list('proc_inst');
+            const instanceList: any[] = [];
+            let list = await storage.list('proc_inst');
             const email = localStorage.getItem("email");
-            let list = data.filter((item: any) => item.user_ids.includes(email));
+            list = list.filter((item: any) => item.user_ids.includes(email));
             
             if (list && list.length > 0) {
                 for (const item of list) {
                     const defId = item.id.split(".")[0];
                     const instance = await this.getInstance(item.id);
-                    if (instance.current_activity_ids.length > 0) {
+                    if (instance && instance.current_activity_ids.length > 0) {
                         const instItem = {
                             instId: item.id,
                             instName: item.name,
@@ -621,13 +623,14 @@ class ProcessGPTBackend implements Backend {
                             startedDate: instance.start_date,
                             defId: defId
                         };
-                        instList.push(instItem);
+                        instanceList.push(instItem);
                     }
                 }
             }
-            return instList;
+            return instanceList;
         } catch (error) {
-            throw new Error('error in getInstanceList');
+            //@ts-ignore
+            throw new Error(error.message);
         }
     }
 
@@ -642,7 +645,7 @@ class ProcessGPTBackend implements Backend {
                 for (const item of list) {
                     const defId = item.id.split(".")[0];
                     const instance = await this.getInstance(item.id);
-                    if (instance.current_activity_ids.length == 0) {
+                    if (instance && instance.current_activity_ids.length == 0) {
                         const instItem = {
                             instId: item.id,
                             instName: item.name,
@@ -656,7 +659,8 @@ class ProcessGPTBackend implements Backend {
             }
             return instList;
         } catch (error) {
-            throw new Error('error in getCompleteInstanceList');
+            //@ts-ignore
+            throw new Error(error.message);
         }
     }
 

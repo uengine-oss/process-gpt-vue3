@@ -9,3 +9,11 @@ import logo from '@/assets/images/logos/logo-dark.svg';
         </RouterLink>
     </div>
 </template>
+
+<style>
+@media only screen and (max-width:510px) {
+    .logo {
+        display: none;
+    }
+}
+</style>

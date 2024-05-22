@@ -114,8 +114,8 @@ export default class StorageBaseSupabase {
 
     async getUserInfo() {
         try {
-            const email = window.localStorage.getItem("email");
-            var { data, error } = await window.$supabase.from('users').select().eq('email', email).maybeSingle();
+            const uid = window.localStorage.getItem("uid");
+            var { data, error } = await window.$supabase.from('users').select().eq('id', uid).maybeSingle();
 
             if (!error && data) {
                 return {
@@ -126,7 +126,7 @@ export default class StorageBaseSupabase {
                     role: data.role
                 }
             } else {
-                throw new StorageBaseError('error in getUserInfo', e, arguments);
+                throw new StorageBaseError('error in getUserInfo', error, arguments);
             }
         } catch(e) {
             throw new StorageBaseError('error in getUserInfo', e, arguments);
@@ -539,7 +539,8 @@ export default class StorageBaseSupabase {
             }
             if (value.user) {
                 window.localStorage.setItem('author', value.user.email);
-    
+                window.localStorage.setItem('uid', value.user.id);
+                
                 const count = await this.getCount('users');
                 if (count && count === 1) {
                     await this.putObject('users', {
@@ -569,6 +570,7 @@ export default class StorageBaseSupabase {
                     }
                     window.localStorage.setItem('userName', data.username);
                     window.localStorage.setItem('email', data.email);
+                    window.localStorage.setItem('uid', data.id);
                 }
             }
         } catch(e) {

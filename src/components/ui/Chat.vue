@@ -1,363 +1,480 @@
 <template>
     <div class="customHeight" style="background-color: rgba( 255, 255, 255, 1 );">
-        <div>
-            <div style="position: sticky; top:0px; z-index:1; background-color:white;">
-                <div class="align-right gap-3 pa-4 justify-space-between">
-                    <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
-                        <div>
-                            <h5 class="text-h5 mb-n1">{{ name }}</h5>
+        <Record v-if="recordingMode"
+            @close="recordingModeChange()"
+            @start="startRecording()"
+            @stop="stopRecording()"
+            :audioResponse="newMessage"
+        />
+        <div v-else>
+            <div>
+                <div>
+                    <div style="position: sticky; top:0px; z-index:1; background-color:white;">
+                        <div class="align-right gap-3 pa-4 justify-space-between">
+                            <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
+                                <div>
+                                    <h5 class="text-h5 mb-n1">{{ name }}</h5>
+                                </div>
+                            </div>
+                            <div v-else-if="chatInfo" class="d-flex gap-2 align-center">
+                                <v-avatar v-if="chatInfo.img">
+                                    <img :src="chatInfo.img" width="50" />
+                                </v-avatar>
+                                <div>
+                                    <h5 class="text-h5 mb-n1">{{ $t(chatInfo.title) }}</h5>
+                                    <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
+                                </div>
+                            </div>
+
+                            <!-- slot 추가 -->
+                            <slot name="custom-tools"></slot>
                         </div>
-                    </div>
-                    <div v-else-if="chatInfo" class="d-flex gap-2 align-center">
-                        <v-avatar v-if="chatInfo.img">
-                            <img :src="chatInfo.img" width="50" />
-                        </v-avatar>
-                        <div>
-                            <h5 class="text-h5 mb-n1">{{ $t(chatInfo.title) }}</h5>
-                            <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
-                        </div>
+                        <v-divider style="margin:0px;" v-if="name && name !== '' || chatInfo || type == 'form'" />
                     </div>
 
-                    <!-- slot 추가 -->
-                    <slot name="custom-tools"></slot>
-                </div>
-                <v-divider style="margin:0px;" v-if="name && name !== '' || chatInfo || type == 'form'" />
-            </div>
-
-            <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                <div class="d-flex w-100" style="height: calc(100vh - 307px);">
-                    <v-col>
-                        <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
-                            <template v-slot:title>
-                                <Icon style="margin-left:-6px;" icon="clarity:info-line" width="32" height="32" />
-                            </template>
-                            <small style="white-space: pre-line;">
-                                {{ filteredAlert.detail }}
-                            </small>
-                        </v-alert>
-                        <div v-for="(message, index) in filteredMessages" :key="index" class="px-1 py-1">
-                            <AgentsChat v-if="message && message._template === 'agent'" :message="message"
-                                :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="index" />
-                            <div v-else>
-                                <div v-if="message.content && !message.content.includes('아래 대화 내용에서 프로세스를 유추하여 프로세스 정의를 생성해주세요. 이때 가능한 프로세스를 일반화하여 작성:')">
-                                    <div v-if="message.email == userInfo.email && message.role != 'system'">
-                                        <v-row class="ma-0 pa-0">
-                                            <v-spacer></v-spacer>
-                                            <small class="text-medium-emphasis text-subtitle-2" v-if="message.timeStamp">
-                                                {{ formatTime(message.timeStamp) }}
-                                            </small>
-
-                                            <v-sheet v-if="message.image" class="mb-1">
-                                                <img :src="message.image" class="rounded-md" alt="pro" width="250" />
-                                            </v-sheet>
-                                        </v-row>
-
-                                        <div v-if="editIndex === index" class="bg-lightprimary"
-                                            style="border-radius:10px;"
-                                        > 
-                                            <v-textarea v-model="messages[index].content"
-                                                variant="solo" hide-details bg-color="lightprimary" class="shadow-none"
-                                                density="compact" auto-grow rows="1"
-                                                autofocus
-                                            >
-                                            </v-textarea>
-                                            <v-row class="pa-0 ma-0 mr-2 pb-2">
-                                                <v-spacer></v-spacer>
-                                                <v-btn @click="send"
-                                                    class="text-medium-emphasis"
-                                                    icon variant="text" size="x-small"  
-                                                    style="background-color:white !important; margin-right:5px;" 
-                                                >
-                                                    <SendIcon size="20" />
-                                                </v-btn>
-                                                <v-btn @click="cancel"
-                                                    class="text-medium-emphasis"
-                                                    icon variant="text" size="x-small"  
-                                                    style="background-color:white !important;"
-                                                >
-                                                    <Icon icon="solar:backspace-bold" height="20" width="20" />
-                                                </v-btn>
-                                            </v-row>
-                                        </div>
-
-                                        <div v-else class="d-flex justify-end" @mouseover="hoverIndex = index"
-                                            @mouseleave="hoverIndex = -1"
-                                        >
-                                            <v-sheet class="bg-lightprimary rounded-md px-3 py-2 mb-1">
-                                                <pre class="text-body-1"
-                                                    v-if="message.replyUserName">{{ message.replyUserName }}</pre>
-                                                <pre class="text-body-1"
-                                                    v-if="message.replyContent">{{ message.replyContent }}</pre>
-                                                <v-divider v-if="message.replyContent"></v-divider>
-
-                                                <pre class="text-body-1" v-html="linkify(message.content)"></pre>
-
-                                                <pre v-if="message.jsonContent"
-                                                    class="text-body-1">{{ message.jsonContent }}</pre>
+                    <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
+                        <div class="d-flex w-100" :style="!$globalState.state.isRightZoomed ? 'height:calc(100vh - 307px)' : 'height:100vh;'">
+                            <v-col>
+                                <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
+                                    <template v-slot:title>
+                                        <Icon style="margin-left:-6px;" icon="clarity:info-line" width="32" height="32" />
+                                    </template>
+                                    <small style="white-space: pre-line;">
+                                        {{ filteredAlert.detail }}
+                                    </small>
+                                </v-alert>
+                                
+                                <div v-for="(message, index) in filteredMessages" :key="index" class="px-1 py-1">
+                                    <AgentsChat v-if="message && message._template === 'agent'" :message="message"
+                                        :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="index"
+                                    />
+                                    <div v-else>
+                                        <div>
+                                            <div v-if="message.email == userInfo.email && message.role != 'system'">
                                                 <v-row class="ma-0 pa-0">
                                                     <v-spacer></v-spacer>
-                                                    <v-btn v-if="hoverIndex === index && !disableChat"
-                                                        @click="editMessage(index)" icon variant="text" size="x-small"
-                                                        class="float-left edit-btn"
-                                                        style="background-color:white;"
-                                                    >
-                                                        <Icon icon="solar:pen-bold" height="20" width="20" />
-                                                    </v-btn>
+                                                    <small class="text-medium-emphasis text-subtitle-2 mr-2" v-if="message.timeStamp">
+                                                        {{ formatTime(message.timeStamp) }}
+                                                    </small>
+
+                                                    <v-sheet v-if="message.image" class="mb-1">
+                                                        <img :src="message.image" class="rounded-md" alt="pro" width="250" />
+                                                    </v-sheet>
                                                 </v-row>
-                                            </v-sheet>
-                                        </div>
-                                    </div>
-                                    <div v-else :style="shouldDisplayUserInfo(message, index) ? '' : 'margin-top: -20px;'">
-                                        <div v-if="shouldDisplayUserInfo(message, index)"
-                                            class="align-items-start gap-3 mb-1 w-100"
-                                        >
-                                            <v-row class="ma-0 pa-0" style="margin-bottom:10px !important;">
-                                                <v-avatar style="margin-right:10px;">
-                                                    <img v-if="message.role == 'system'"
-                                                        src="@/assets/images/chat/chat-icon.png" max-height="48"
-                                                        max-width="48" />
-                                                    <v-img v-else :src="getProfile(message.email)" :alt="message.name"
-                                                        height="48" width="48" />
-                                                </v-avatar>
-                                                <div v-if="message.timeStamp" style="font-size:12px; padding-top:20px;">
-                                                    {{ message.role == 'system' ? 'System,' : message.name + ',' }}
-                                                    {{ formatTime(message.timeStamp) }}
-                                                </div>
-                                            </v-row>
-                                        </div>
 
-                                        <div class="w-100 pb-5">
-                                            <v-sheet v-if="message.type == 'img'" class="mb-1">
-                                                <img :src="message.content" class="rounded-md" alt="pro" width="250" />
-                                            </v-sheet>
-
-                                            <div class="progress-border" :class="{ 'animate': borderCompletedAnimated }">
-                                                <template
-                                                    v-if="message.role == 'system' && filteredMessages.length - 1 == index">
-                                                    <div class="progress-border-span"
-                                                        :class="{ 'opacity': !borderCompletedAnimated }" v-for="n in 5"
-                                                        :key="n"></div>
-                                                </template>
-                                                <v-sheet class="bg-lightsecondary rounded-md px-3 py-2"
-                                                    @mouseover="replyIndex = index" @mouseleave="replyIndex = -1">
-                                                    <pre class="text-body-1" v-if="message.replyUserName">{{ message.replyUserName }}</pre>
-                                                    <pre class="text-body-1" v-if="message.replyContent">{{ message.replyContent }}</pre>
-                                                    <v-divider v-if="message.replyContent"></v-divider>
-
-                                                    <pre class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
-                                                    <!-- <pre class="text-body-1">{{ message.content }}</pre> -->
-
-                                                    <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
-                                                        <v-btn style="margin-right: 5px" size="small"
-                                                            @click="startProcess(message)">y</v-btn>
-                                                        <v-btn size="small" @click="cancelProcess(message)">n</v-btn>
-                                                    </p>
-                                                    <v-row class="pa-0 ma-0">
+                                                <div v-if="editIndex === index" class="bg-lightprimary"
+                                                    style="border-radius:10px;"
+                                                > 
+                                                    <v-textarea v-model="messages[index].content"
+                                                        variant="solo" hide-details bg-color="lightprimary" class="shadow-none"
+                                                        density="compact" auto-grow rows="1"
+                                                        autofocus
+                                                    >
+                                                    </v-textarea>
+                                                    <v-row class="pa-0 ma-0 mr-2 pb-2">
                                                         <v-spacer></v-spacer>
-                                                        <v-btn @click="beforeReply(message)"
-                                                            v-if="replyIndex === index" 
-                                                            variant="text" size="x-small" icon
-                                                            style="background-color:white; margin-right:5px;"
+                                                        <v-btn @click="send"
+                                                            class="text-medium-emphasis"
+                                                            icon variant="text" size="x-small"  
+                                                            style="background-color:white !important; margin-right:5px;" 
                                                         >
-                                                            <Icon icon="material-symbols:reply" width="20" height="20" />
+                                                            <SendIcon size="20" />
                                                         </v-btn>
-                                                        <v-btn @click="viewJSON(index)"
-                                                            variant="text" size="x-small" icon
-                                                            style="background-color:white;"
+                                                        <v-btn @click="cancel"
+                                                            class="text-medium-emphasis"
+                                                            icon variant="text" size="x-small"  
+                                                            style="background-color:white !important;"
                                                         >
-                                                            <Icon v-if="message.jsonContent && isviewJSONStatus"
-                                                                icon="iconamoon:arrow-up-2" width="20" height="20"
-                                                            />
-                                                            <Icon v-else
-                                                                icon="iconamoon:arrow-down-2" width="20" height="20"
-                                                            />
+                                                            <Icon icon="solar:backspace-bold" height="20" width="20" />
                                                         </v-btn>
                                                     </v-row>
+                                                </div>
 
-                                                    <v-row v-if="message.tableData" class="my-5">
-                                                        <v-col cols="12">
-                                                            <v-card outlined>
-                                                                <v-card-title>{{ setTableName(message.content)
-                                                                    }}</v-card-title>
-                                                                <v-card-text>
-                                                                    <div v-html="message.tableData"
-                                                                        class="table-responsive">
+                                                <div v-else class="d-flex justify-end"
+                                                    @mouseover="hoverIndex = index"
+                                                    @mouseleave="hoverIndex = -1"
+                                                >
+                                                    <v-sheet class="bg-lightprimary rounded-md px-3 py-2 mb-1">
+                                                        <pre class="text-body-1"
+                                                            v-if="message.replyUserName">{{ message.replyUserName }}</pre>
+                                                        <pre class="text-body-1"
+                                                            v-if="message.replyContent">{{ message.replyContent }}</pre>
+                                                        <v-divider v-if="message.replyContent"></v-divider>
+
+                                                        <pre v-if="message.content" class="text-body-1" v-html="linkify(message.content)"></pre>
+
+                                                        <pre v-if="message.jsonContent"
+                                                            class="text-body-1">{{ message.jsonContent }}</pre>
+                                                        <v-row class="ma-0 pa-0">
+                                                            <v-spacer></v-spacer>
+                                                            <v-btn v-if="hoverIndex === index && !disableChat"
+                                                                @click="editMessage(index)" icon variant="text" size="x-small"
+                                                                class="float-left edit-btn"
+                                                                style="background-color:white;"
+                                                            >
+                                                                <Icon icon="solar:pen-bold" height="20" width="20" />
+                                                            </v-btn>
+                                                        </v-row>
+                                                    </v-sheet>
+                                                    <!-- <transition name="slide-fade"> -->
+                                                        <div v-if="shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)"
+                                                            :key="isRender"
+                                                        >
+                                                        <!-- <div v-if="type == 'chats' && filteredMessages.length -1 == index && generatedWorkList.length != 0"> -->
+                                                            <div @click="showGeneratedWorkList = !showGeneratedWorkList"
+                                                                class="find-message"
+                                                                :style="generatedWorkList.length ? 'opacity:1' : 'opacity0.4' "
+                                                            >
+                                                                <img src="@/assets/images/chat/chat-icon.png"
+                                                                    style="height:24px;"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    <!-- </transition> -->
+                                                </div>
+
+                                                <v-card v-if="showGeneratedWorkList && shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)" class="mt-3">
+                                                    <v-btn @click="deleteAllWorkList()"
+                                                        size="small" icon density="comfortable"
+                                                        style="position:absolute; right:5px; top:5px; z-index:1;"
+                                                    >
+                                                        <Icon icon="el:trash" />
+                                                    </v-btn>
+                                                    <v-list>
+                                                        <v-list-item-group>
+                                                            <v-list-item v-for="(work, index) in generatedWorkList" :key="index" class="d-flex align-items-center">
+                                                                <v-list-item-content v-if="work.messageForUser" class="flex-grow-1 d-flex align-items-center">
+                                                                    <div class="w-100">
+                                                                        <v-row class="ma-0 pa-3">
+                                                                            <template v-if="!workIcons[work.work]">
+                                                                                <img :src="defaultWorkIcon" alt="Default Icon"
+                                                                                    style="width:20px; height:20px;"
+                                                                                />
+                                                                            </template>
+                                                                            <template v-else>
+                                                                                <div style="padding-top:2px;">
+                                                                                    <Icon :icon="getWorkIcon(work.work)" />
+                                                                                </div>
+                                                                            </template>
+                                                                            <div style="margin-left:5px; margin-top:0px;">{{ work.messageForUser }}</div>
+                                                                            <div>
+                                                                                <v-btn @click="work.expanded = !work.expanded"
+                                                                                    class="ml-2"
+                                                                                    size="small" icon density="comfortable"
+                                                                                >
+                                                                                    <Icon :icon="work.expanded ? 'iconamoon:arrow-up-2' : 'iconamoon:arrow-down-2'" width="24" height="24"/>
+                                                                                </v-btn>
+                                                                                <v-btn  @click="startProcess(work, index)"
+                                                                                    class="ml-2"
+                                                                                    size="small" icon density="comfortable"
+                                                                                >
+                                                                                    <Icon icon="gridicons:play" width="24" height="24" />
+                                                                                </v-btn>
+                                                                            </div>
+                                                                        </v-row>
+                                                                        <v-expand-transition>
+                                                                            <div v-if="work.expanded" class="mt-2 w-100">
+                                                                                <pre>{{ work }}</pre>
+                                                                            </div>
+                                                                        </v-expand-transition>
+                                                                        <v-img
+                                                                            v-if="work.work == 'CreateProcessDefinition'"
+                                                                            :width="300"
+                                                                            aspect-ratio="16/9"
+                                                                            cover
+                                                                            src="https://github.com/jhyg/project-shop-test/assets/65217813/1b551056-0428-41b6-9b90-76dd7942affc"
+                                                                        ></v-img>
                                                                     </div>
-                                                                </v-card-text>
-                                                            </v-card>
-                                                        </v-col>
+                                                                </v-list-item-content>
+                                                                <v-divider v-if="index < generatedWorkList.length - 1"></v-divider>
+                                                            </v-list-item>
+                                                        </v-list-item-group>
+                                                    </v-list>
+                                                </v-card>
+                                            </div>
+                                            <div v-else :style="shouldDisplayUserInfo(message, index) ? '' : 'margin-top: -20px;'">
+                                                <div v-if="shouldDisplayUserInfo(message, index)"
+                                                    class="align-items-start gap-3 mb-1 w-100"
+                                                >
+                                                    <v-row class="ma-0 pa-0" style="margin-bottom:10px !important;">
+                                                        <v-avatar style="margin-right:10px;">
+                                                            <img v-if="message.role == 'system'"
+                                                                src="@/assets/images/chat/chat-icon.png" max-height="48"
+                                                                max-width="48" />
+                                                            <v-img v-else :src="getProfile(message.email)" :alt="message.name"
+                                                                height="48" width="48" />
+                                                        </v-avatar>
+                                                        <div v-if="message.timeStamp" style="font-size:12px; padding-top:20px;">
+                                                            {{ message.role == 'system' ? 'System,' : message.name + ',' }}
+                                                            {{ formatTime(message.timeStamp) }}
+                                                        </div>
                                                     </v-row>
-                                                    <v-row v-if="message.memento" class="my-5">
-                                                        <v-col cols="12">
-                                                            <v-card outlined>
-                                                                <v-card-title>Memento</v-card-title>
-                                                                <v-card-text>
-                                                                    <v-textarea hide-details
-                                                                        v-model="message.memento.response" auto-grow
-                                                                        readonly variant="solo-filled"></v-textarea>
-                                                                    <div class="chips-container" style="margin-top: 5px;">
-                                                                        <v-chip
-                                                                            v-for="(source, index) in message.memento.sources"
-                                                                            :key="index" variant="outlined" size="x-small"
-                                                                            text-color="primary"
-                                                                            style="margin-bottom: 1px;">
-                                                                            <v-icon start icon="mdi-label" x-small></v-icon>
-                                                                            {{source.file_name }}
-                                                                        </v-chip>
-                                                                    </div>
-                                                                </v-card-text>
-                                                            </v-card>
-                                                        </v-col>
-                                                    </v-row>
-                                                    <pre v-if="isViewJSON.includes(index)"
-                                                        class="text-body-1"
-                                                        >{{ message.jsonContent }}
-                                                    </pre>
-                                                </v-sheet>
-                                                <v-progress-linear
-                                                    v-if="message.role == 'system' && filteredMessages.length - 1 == index && isLoading"
-                                                    indeterminate class="my-progress-linear"></v-progress-linear>
+                                                </div>
+
+                                                <div class="w-100 pb-5">
+                                                    <v-sheet v-if="message.image" class="mb-1">
+                                                        <img :src="message.image" class="rounded-md" alt="pro" width="250" />
+                                                    </v-sheet>
+
+                                                    <div class="progress-border" :class="{ 'animate': borderCompletedAnimated }">
+                                                        <template
+                                                            v-if="message.role == 'system' && filteredMessages.length - 1 == index">
+                                                            <div class="progress-border-span"
+                                                                :class="{ 'opacity': !borderCompletedAnimated }" v-for="n in 5"
+                                                                :key="n"></div>
+                                                        </template>
+                                                        <v-sheet v-if="message.content" class="bg-lightsecondary rounded-md px-3 py-2"
+                                                            @mouseover="replyIndex = index" @mouseleave="replyIndex = -1">
+                                                            <pre class="text-body-1" v-if="message.replyUserName">{{ message.replyUserName }}</pre>
+                                                            <pre class="text-body-1" v-if="message.replyContent">{{ message.replyContent }}</pre>
+                                                            <v-divider v-if="message.replyContent"></v-divider>
+
+                                                            <pre class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
+                                                            <!-- <pre class="text-body-1">{{ message.content }}</pre> -->
+
+                                                            <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
+                                                                <v-btn style="margin-right: 5px" size="small"
+                                                                    @click="startProcess(message)">y</v-btn>
+                                                                <v-btn size="small" @click="cancelProcess(message)">n</v-btn>
+                                                            </p>
+                                                            <v-row class="pa-0 ma-0">
+                                                                <v-spacer></v-spacer>
+                                                                <div v-if="replyIndex === index" >
+                                                                    <v-btn @click="beforeReply(message)"
+                                                                        variant="text" size="x-small" icon
+                                                                        style="background-color:white; margin-right:5px;"
+                                                                    >
+                                                                        <Icon icon="material-symbols:reply" width="20" height="20" />
+                                                                    </v-btn>
+                                                                    <v-btn @click="viewJSON(index)"
+                                                                        variant="text" size="x-small" icon
+                                                                        style="background-color:white;"
+                                                                    >
+                                                                        <Icon v-if="message.jsonContent && isviewJSONStatus"
+                                                                            icon="iconamoon:arrow-up-2" width="20" height="20"
+                                                                        />
+                                                                        <Icon v-else
+                                                                            icon="iconamoon:arrow-down-2" width="20" height="20"
+                                                                        />
+                                                                    </v-btn>
+                                                                </div>
+                                                            </v-row>
+
+                                                            <v-row v-if="message.tableData" class="my-5">
+                                                                <v-col cols="12">
+                                                                    <v-card outlined>
+                                                                        <v-card-title>{{ setTableName(message.content)
+                                                                            }}</v-card-title>
+                                                                        <v-card-text>
+                                                                            <div v-html="message.tableData"
+                                                                                class="table-responsive">
+                                                                            </div>
+                                                                        </v-card-text>
+                                                                    </v-card>
+                                                                </v-col>
+                                                            </v-row>
+                                                            <v-row v-if="message.memento" class="my-5">
+                                                                <v-col cols="12">
+                                                                    <v-card outlined>
+                                                                        <v-card-title>Memento</v-card-title>
+                                                                        <v-card-text>
+                                                                            <v-textarea hide-details
+                                                                                v-model="message.memento.response" auto-grow
+                                                                                readonly variant="solo-filled"></v-textarea>
+                                                                            <div class="chips-container" style="margin-top: 5px;">
+                                                                                <v-chip
+                                                                                    v-for="(source, index) in message.memento.sources"
+                                                                                    :key="index" variant="outlined" size="x-small"
+                                                                                    text-color="primary"
+                                                                                    style="margin-bottom: 1px;">
+                                                                                    <v-icon start icon="mdi-label" x-small></v-icon>
+                                                                                    {{source.file_name }}
+                                                                                </v-chip>
+                                                                            </div>
+                                                                        </v-card-text>
+                                                                    </v-card>
+                                                                </v-col>
+                                                            </v-row>
+                                                            <pre v-if="isViewJSON.includes(index)"
+                                                                class="text-body-1"
+                                                                >{{ message.jsonContent }}
+                                                            </pre>
+                                                        </v-sheet>
+                                                        <v-progress-linear
+                                                            v-if="message.role == 'system' && filteredMessages.length - 1 == index && isLoading"
+                                                            indeterminate class="my-progress-linear"></v-progress-linear>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
+                                    <AgentsChat
+                                        v-if="type == 'instances' && agentInfo.isRunning && filteredMessages.length == 0"
+                                        class="px-5 py-1" :agentInfo="agentInfo" :totalSize="filteredMessages.length"
+                                        :currentIndex="-1" />
+
                                 </div>
-                            </div>
-                            <AgentsChat
-                                v-if="type == 'instances' && agentInfo.isRunning && filteredMessages.length == 0"
-                                class="px-5 py-1" :agentInfo="agentInfo" :totalSize="filteredMessages.length"
-                                :currentIndex="-1" />
+                                <slot name="custom-chat"></slot>
+                            </v-col>
                         </div>
-                    </v-col>
+                    </perfect-scrollbar>
+                    <div style="position:relative">
+                        <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
+                            <v-tooltip :text="'카메라'">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn icon variant="text" class="text-medium-emphasis" @click="capture" v-bind="props"
+                                        style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
+                                        <Icon icon="iconoir:camera" width="20" height="20" />
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                            <v-tooltip :text="$t('chat.addImage')">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn icon variant="text" class="text-medium-emphasis" @click="uploadImage" v-bind="props"
+                                        style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
+                                        <Icon icon="iconoir:add-media-image" width="20" height="20" />
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                            <v-tooltip text="Draft Agent">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-if="(type == 'instances' || type == 'chats') && !agentInfo.isRunning"
+                                        :disabled="!(newMessage || agentInfo.draftPrompt)" icon variant="text"
+                                        class="text-medium-emphasis" @click="requestDraftAgent" v-bind="props"
+                                        style="width:30px; height:30px; margin:1px 0px 0px 5px;">
+                                        <Icon icon="fluent:document-one-page-sparkle-16-regular" width="20" height="20" />
+                                    </v-btn>
+                                    <v-btn v-if="(type == 'instances' || type == 'chats') && agentInfo.isRunning" icon variant="text"
+                                        class="text-medium-emphasis" style="width:30px; height:30px;">
+                                        <v-progress-circular :size="20" indeterminate color="primary"></v-progress-circular>
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                            <v-form v-if="(type == 'instances' || type == 'chats') && !agentInfo.isRunning"
+                                ref="uploadForm" @submit.prevent="submitFile"
+                                style="height:30px;"
+                                class="chat-selected-file"
+                            >
+                                <v-row class="ma-0 pa-0"
+                                    :style="file && file.length > 0 ? 'margin:-13px 0px 0px 7px !important;' : ''"
+                                >
+                                <v-tooltip :text="$t('chat.fileUpLoad')">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-if="file && file.length > 0" type="submit" 
+                                            v-bind="props"
+                                            icon variant="text"
+                                            class="text-medium-emphasis"
+                                            style="width:30px;
+                                                height:30px;
+                                                margin:12.5px 0px 0px 0px;"
+                                        >
+                                            <Icon icon="material-symbols:upload" width="24" height="24" />
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
+                                <v-file-input class="chat-file-up-load"
+                                    :class="{'chat-file-up-load-display': file && file.length > 0}"
+                                    :style="file && file.length > 0 ? '' : 'padding:5px 0px 0px 8px !important; width:30px !important; height:30px !important;'"
+                                    v-model="file"
+                                    label="Choose a file"
+                                    prepend-icon="mdi-paperclip"
+                                    outlined
+                                ></v-file-input>
+                                <v-tooltip v-if="type == 'chats'" :text="ProcessGPTActive ? $t('chat.isDisableProcessGPT') : $t('chat.isEnableProcessGPT')">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="toggleProcessGPTActive" v-bind="props"
+                                            style="width:30px; height:30px; margin-left:12px;" :disabled="disableChat">
+                                            <img :style="ProcessGPTActive ? 'opacity:1' : 'opacity:0.5'"
+                                                src="@/assets/images/chat/chat-icon.png"
+                                                style="height:24px;"
+                                            />
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
+                            </v-row>
+                        </v-form>
+                    </v-row>
                 </div>
-            </perfect-scrollbar>
-            <div style="position:relative">
-                <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
-                    <v-tooltip :text="$t('chat.addImage')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn icon variant="text" class="text-medium-emphasis" @click="uploadImage" v-bind="props"
-                                style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
-                                <Icon icon="iconoir:add-media-image" width="20" height="20" />
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
-                    <v-tooltip text="Draft Agent">
-                        <template v-slot:activator="{ props }">
-                            <v-btn v-if="(type == 'instances' || type == 'chats') && !agentInfo.isRunning"
-                                :disabled="!(newMessage || agentInfo.draftPrompt)" icon variant="text"
-                                class="text-medium-emphasis" @click="requestDraftAgent" v-bind="props"
-                                style="width:30px; height:30px; margin:1px 0px 0px 5px;">
-                                <Icon icon="fluent:document-one-page-sparkle-16-regular" width="20" height="20" />
-                            </v-btn>
-                            <v-btn v-if="(type == 'instances' || type == 'chats') && agentInfo.isRunning" icon variant="text"
-                                class="text-medium-emphasis" style="width:30px; height:30px;">
-                                <v-progress-circular :size="20" indeterminate color="primary"></v-progress-circular>
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
-                    <v-form v-if="(type == 'instances' || type == 'chats') && !agentInfo.isRunning"
-                        ref="uploadForm" @submit.prevent="submitFile"
-                        style="height:30px;"
-                        class="chat-selected-file"
-                    >
-                        <v-row class="ma-0 pa-0"
-                            :style="file && file.length > 0 ? 'margin:-13px 0px 0px 7px !important;' : ''"
-                        >
-                            <v-tooltip :text="$t('chat.fileUpLoad')">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn v-if="file && file.length > 0" type="submit" 
-                                        v-bind="props"
-                                        icon variant="text"
-                                        class="text-medium-emphasis"
-                                        style="width:30px;
-                                            height:30px;
-                                            margin:12.5px 0px 0px 0px;"
-                                    >
-                                        <Icon icon="material-symbols:upload" width="24" height="24" />
-                                    </v-btn>
-                                </template>
-                            </v-tooltip>
-                            <v-file-input class="chat-file-up-load"
-                                :class="{'chat-file-up-load-display': file && file.length > 0}"
-                                :style="file && file.length > 0 ? '' : 'padding:5px 0px 0px 8px !important; width:30px !important; height:30px !important;'"
-                                v-model="file"
-                                label="Choose a file"
-                                prepend-icon="mdi-paperclip"
-                                outlined
-                            ></v-file-input>
-                            <v-tooltip v-if="type == 'chats'" :text="$t('chat.generateProcessDef')">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn icon variant="text" class="text-medium-emphasis" @click="generateProcessDef" v-bind="props"
-                                        style="width:30px; height:30px; margin-left:12px;" :disabled="disableChat">
-                                        <Icon icon="fluent-mdl2:server-processes" width="20" height="20" />
-                                    </v-btn>
-                                </template>
-                            </v-tooltip>
-                        </v-row>
-                    </v-form>
-                </v-row>
+                <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
+                    <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
+                </div> -->
             </div>
-            <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
-                <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
-            </div> -->
-        </div>
-        <v-divider />
+            <v-divider />
+
         <!-- <div v-if="showNewMessageNoti"
             style="position: absolute; z-index: 9; max-width: 1000px; left: 50%; transform: translateX(-50%); bottom: 150px;">
             <v-chip color="primary" closable @click:close="showNewMessageNoti = false" style="cursor: pointer;">
                 <div @click="clickToScroll">
                     <span>{{ lastMessage.name }}: {{ lastMessage.content }}</span>
                 </div>
-            </v-chip>
-        </div> -->
-        <div class="text-body-1" v-if="isReply" style="margin-left: 10px">
-            {{ replyUser.name }}님에게 답장
-            <v-icon @click="cancelReply()">mdi-close</v-icon>
-            <p>{{ replyUser.content }}</p>
+                <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
+                    <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
+                </div> -->
+            </div>
             <v-divider />
-        </div>
 
-        <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
-        <div id="imagePreview" style="max-width: 200px;"></div>
-        <form class="d-flex align-center pa-0">
-            <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
-                class="shadow-none message-input-box cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
-                auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
-                style="font-size:20px !important;" @input="handleTextareaInput">
-                <template v-slot:prepend-inner>
-                    <v-btn icon @click="isRecording ? stopRecording() : startRecording()">
-                        <v-icon v-if="isRecording">mdi-stop</v-icon>
-                        <v-icon v-else>mdi-microphone</v-icon>
-                    </v-btn>
-                </template>
-                <template v-slot:append-inner>
-                    <div style="height: -webkit-fill-available; margin-right: 10px; margin-top: 10px;">
-                        <v-btn v-if="!isLoading" class="cp-send" icon variant="text" type="submit" @click="beforeSend"
-                            style="width:30px; height:30px;" :disabled="!newMessage">
-                            <Icon icon="teenyicons:send-outline" width="20" height="20" />
-                        </v-btn>
-                        <v-btn v-else icon variant="text" @click="isLoading = !isLoading"
-                            style="width:30px; height:30px;">
-                            <Icon icon="ic:outline-stop-circle" width="20" height="20" />
-                        </v-btn>
-                        <!-- <v-btn icon variant="text" class="text-medium-emphasis">
-                            <PaperclipIcon size="20" />
-                        </v-btn> -->
+            <!-- <div v-if="showNewMessageNoti"
+                style="position: absolute; z-index: 9; max-width: 1000px; left: 50%; transform: translateX(-50%); bottom: 150px;">
+                <v-chip color="primary" closable @click:close="showNewMessageNoti = false" style="cursor: pointer;">
+                    <div @click="clickToScroll">
+                        <span>{{ lastMessage.name }}: {{ lastMessage.content }}</span>
                     </div>
-                </template>
-            </v-textarea>
-            <div v-if="showUserList" class="user-list"
-                style="position: absolute; bottom: 16%; left: 0; background-color: white; z-index: 100;">
-                <div v-for="user in filteredUserList" :key="user.id" @click="selectUser(user)" class="user-item"
-                    style="display: flex; align-items: center; padding: 10px; cursor: pointer;">
-                    <img :src="user.profile" alt="profile"
-                        style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px;">
-                    <div>
-                        <div>{{ user.username }}</div>
-                        <div style="font-size: 0.8em; color: #666;">{{ user.email }}</div>
+                </v-chip>
+            </div> -->
+            <div class="text-body-1" v-if="isReply" style="margin-left: 10px">
+                {{ replyUser.name }}님에게 답장
+                <v-icon @click="cancelReply()">mdi-close</v-icon>
+                <p>{{ replyUser.content }}</p>
+                <v-divider />
+            </div>
+            <!-- camera capture -->
+            <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
+            <!-- image upload -->
+            <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
+            <div id="imagePreview" style="max-width: 200px;"></div>
+            <form class="d-flex align-center pa-0">
+                <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
+                    class="shadow-none message-input-box cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
+                    auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
+                    style="font-size:20px !important;" @input="handleTextareaInput">
+                    <template v-slot:prepend-inner>
+                        <v-btn @click="recordingModeChange()"
+                            density="comfortable"
+                            icon
+                        >
+                            <Icon icon="ic:round-headset" width="24" height="24" />
+                        </v-btn>
+                    </template>
+                    <template v-slot:append-inner>
+                        <div style="height: -webkit-fill-available; margin-right: 10px; margin-top: 10px;">
+                            <v-btn v-if="!isLoading" class="cp-send" icon variant="text" type="submit" @click="beforeSend"
+                                style="width:30px; height:30px;" :disabled="disableBtn">
+                                <Icon icon="teenyicons:send-outline" width="20" height="20" />
+                            </v-btn>
+                            <v-btn v-else icon variant="text" @click="isLoading = !isLoading"
+                                style="width:30px; height:30px;">
+                                <Icon icon="ic:outline-stop-circle" width="20" height="20" />
+                            </v-btn>
+                            <!-- <v-btn icon variant="text" class="text-medium-emphasis">
+                                <PaperclipIcon size="20" />
+                            </v-btn> -->
+                        </div>
+                    </template>
+                </v-textarea>
+                <div v-if="showUserList" class="user-list"
+                    style="position: absolute; bottom: 16%; left: 0; background-color: white; z-index: 100;">
+                    <div v-for="user in filteredUserList" :key="user.id" @click="selectUser(user)" class="user-item"
+                        style="display: flex; align-items: center; padding: 10px; cursor: pointer;">
+                        <img :src="user.profile" alt="profile"
+                            style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px;">
+                        <div>
+                            <div>{{ user.username }}</div>
+                            <div style="font-size: 0.8em; color: #666;">{{ user.email }}</div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 </template>
 
@@ -370,12 +487,17 @@ import ScrollBottomHandle from '@/components/ui/ScrollBottomHandle.vue';
 import AgentsChat from './AgentsChat.vue';
 import axios from 'axios';
 import { HistoryIcon } from 'vue-tabler-icons';
+import Record from './Record.vue';
+// import Record from './Record2.vue';
+import defaultWorkIcon from '@/assets/images/chat/chat-icon.png';
+
 
 export default {
     components: {
         Icon,
         RetrievalBox,
-        AgentsChat
+        AgentsChat,
+        Record
     },
     mixins: [
         ProgressAnimated,
@@ -395,9 +517,23 @@ export default {
         currentChatRoom: Object,
         // documentQueryStr: String,
         lock: Boolean,
+        generatedWorkList: Array,
+        ProcessGPTActive: Boolean,
+        isAgentMode: Boolean
     },
     data() {
         return {
+            workIcons: {
+                "ScheduleQuery" : "solar:calendar-line-duotone", // 달력 아이콘
+                "ScheduleRegistration" : "solar:calendar-line-duotone", // 달력 아이콘
+                "TodoListRegistration" : "pajamas:overview", // TODO 리스트 아이콘
+                "StartProcessInstance" : "carbon:ibm-process-mining",
+                "CreateProcessDefinition" : "tabler:device-imac-cog"
+            },
+            recordingMode: false,
+            defaultWorkIcon: defaultWorkIcon,
+            displayGeneratedWorkList: false,  // 애니메이션 후에 표시하기 위한 상태
+            showGeneratedWorkList: false,
             mediaRecorder: null,
             audioChunks: [],
             isRecording: false,
@@ -418,6 +554,7 @@ export default {
             mentionStartIndex: null,
             mentionedUsers: [], // Mention된 유저들의 정보를 저장할 배열
             file: null,
+            isRender: false,
         };
     },
     mounted() {
@@ -473,12 +610,12 @@ export default {
             if (this.messages && this.messages.length > 0) {
                 this.messages.forEach((item) => {
                     let data = JSON.parse(JSON.stringify(item));
-                    if (data.content || data.jsonContent) {
+                    if (data.content || data.jsonContent || data.image) {
                         list.push(data);
+                        this.setRenderTime();
                     }
                 });
             }
-
             return list;
         },
         // isLoading 상태의 변화를 감시합니다.
@@ -502,8 +639,50 @@ export default {
                 }
             }
         },
+        disableBtn() {
+            if (this.disableChat) {
+                return true
+            } else {
+                if (this.newMessage !== '' || this.attachedImg !== null) {
+                    return false
+                } else {
+                    return true
+                }
+            }
+        }
     },
     methods: {
+        recordingModeChange() {
+            this.recordingMode = !this.recordingMode
+            this.$globalState.methods.toggleRightZoom();
+        },
+        // 애니메이션 표시를 위해 system의 답변이 있더라도 표시 가능하게 하려고 만든 methods
+        shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index) {
+            let nonSystemMessageCount = 0;
+            var renderVariable = 0;
+            if(!this.isRender) {
+                renderVariable = -1;
+            }
+            for (let i = 0; i <= index; i++) {
+                if (filteredMessages[i].role !== 'system') {
+                    nonSystemMessageCount++;
+                }
+            }
+            const userMessagesLength = filteredMessages.filter(message => message.role === 'user').length;
+            return type === 'chats' && nonSystemMessageCount - 1 === userMessagesLength + renderVariable - 1 && generatedWorkList.length !== 0;
+        },
+        setRenderTime() {
+                this.isRender = false
+            setTimeout(() => {
+                this.isRender = true
+            },3000)
+        },
+        getWorkIcon(workType) {
+            return this.workIcons[workType] || this.defaultWorkIcon;
+        },
+        toggleProcessGPTActive() {
+            this.$emit('toggleProcessGPTActive');
+        },
         linkify(inputText) {
             var replacedText, replacePattern1, replacePattern2, replacePattern3;
 
@@ -520,10 +699,6 @@ export default {
             replacedText = replacedText.replace(replacePattern3, '<a href="mailto:$1">$1</a>');
 
             return replacedText;
-        },
-        generateProcessDef() {
-            this.$store.dispatch('updateMessages', this.messages);
-            this.$router.push('/definitions/chat');
         },
         async startRecording() {
             this.isRecording = true;
@@ -558,7 +733,8 @@ export default {
             formData.append('audio', audioBlob);
 
             try {
-                const response = await axios.post('http://localhost:8000/upload', formData);
+                var url = window.$backend == '' ? 'http://localhost:8000' : window.$backend
+                const response = await axios.post(`${url}/upload`, formData);
                 const data = response.data;
                 this.newMessage = data.transcript; 
             } catch (error) {
@@ -572,7 +748,8 @@ export default {
             formData.append('file', this.file[0]); // 'file' 키에 파일 데이터 추가
 
             try {
-                const response = await axios.post('http://localhost:8005/uploadfile/', formData, {
+                var url = window.$memento == '' ? 'http://localhost:8005' : window.$memento
+                const response = await axios.post(`${url}/uploadfile/`, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                     },
@@ -695,11 +872,20 @@ export default {
             var timeString = dateString.split(' ')[4].substring(0, 5);
             return timeString;
         },
-        startProcess(messageObj) {
+        startProcess(messageObj, index) {
             this.$emit('startProcess', messageObj)
+            if(this.ProcessGPTActive){
+                this.$emit('deleteWorkList', index)
+            }
         },
         cancelProcess(messageObj) {
             this.$emit('cancelProcess', messageObj)
+        },
+        deleteAllWorkList() {
+            this.$emit('deleteAllWorkList')
+        },
+        deleteWorkList(index) {
+            this.$emit('deleteWorkList', index)
         },
         getMoreChat() {
             this.$emit('getMoreChat');
@@ -716,13 +902,22 @@ export default {
         },
         beforeSend($event) {
             if ($event && $event.shiftKey) return;
-            if (this.isLoading) {
-                this.isLoading = false;
-                this.$emit('stopMessage');
+
+            if(this.isAgentMode){
+                this.requestDraftAgent();
+                setTimeout(() => {
+                    this.newMessage = "";
+                }, 100);
+            } else {
+                if (this.isLoading) {
+                    this.isLoading = false;
+                    this.$emit('stopMessage');
+                }
+                var copyMsg = this.newMessage.replace(/(?:\r\n|\r|\n)/g, '');
+                if (copyMsg.length > 0 || this.attachedImg != null) {
+                    this.send();
+                }
             }
-            var copyMsg = this.newMessage.replace(/(?:\r\n|\r|\n)/g, '');
-            if (copyMsg.length > 0)
-                this.send();
         },
         send() {
             if (this.editIndex >= 0) {
@@ -768,6 +963,8 @@ export default {
             }
         },
         uploadImage() {
+            this.$refs.uploader.value = '';
+            this.attachedImg = null;
             this.$refs.uploader.click();
         },
         changeImage(e) {
@@ -775,21 +972,57 @@ export default {
             const imageFile = e.target.files[0];
             const reader = new FileReader();
 
-            reader.onloadend = async () => {
-                var html = `<img src=${reader.result} width='100%' />`;
-                $('#imagePreview').append(html);
-                me.attachedImg = reader.result;
+            reader.onload = (event) => {
+                const imgElement = document.createElement("img");
+                imgElement.src = event.target.result;
+                imgElement.onload = () => {
+                    const canvas = document.createElement("canvas");
+                    const max_width = 300; // 최대 너비 설정
+                    const scaleSize = max_width / imgElement.width;
+                    canvas.width = max_width;
+                    canvas.height = imgElement.height * scaleSize;
+
+                    const ctx = canvas.getContext("2d");
+                    ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+                    const srcEncoded = ctx.canvas.toDataURL(imgElement, "image/jpeg", 0.3);
+
+                    // 이미지 미리보기에 추가
+                    var html = `<img src=${srcEncoded} width='100%' />`;
+                    $('#imagePreview').append(html);
+                    me.attachedImg = srcEncoded;
+                };
             };
 
             if (imageFile) {
                 reader.readAsDataURL(imageFile);
             }
         },
+        capture() {
+            this.$refs.captureImg.value = '';
+            this.attachedImg = null;
+            this.$refs.captureImg.click();
+        },
     }
 };
 </script>
 
 <style lang="scss">
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(0.9);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.find-message {
+    animation: breathe 1.5s infinite ease-in-out;
+    margin: 5px 0px 0px 4px;
+    cursor: pointer;
+}
+
+
 .chat-file-up-load .v-input__control {
     display: none;
     margin-top:-20px;

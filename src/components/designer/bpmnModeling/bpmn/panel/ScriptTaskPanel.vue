@@ -1,8 +1,20 @@
 <template>
     <div>
-        <div style="margin-bottom:20px;">
+        <div style="margin-bottom: 20px">
+            <div>{{ $t('BpnmPropertyPanel.scriptType') }}</div>
+            <v-radio-group v-model="copyUengineProperties.language">
+                <v-radio
+                    id="Javascript"
+                    name="Javascript"
+                    value="0"
+                    label="Javascript"
+                    style="margin-right: 8px !important; font-size: 15px"
+                ></v-radio>
+                <v-radio id="Java" name="Java" value="1" label="Java" style="margin-right: 8px !important; font-size: 15px"></v-radio>
+            </v-radio-group>
             <div>{{ $t('BpnmPropertyPanel.script') }}</div>
             <v-textarea v-model="copyUengineProperties.script" :disabled="isViewMode" style="width:100%"></v-textarea>
+            <GenerateScriptPanel v-model="copyUengineProperties.script" :language="languageLabel"/>
         </div>
         <div v-if="inputData.length > 0" style="margin-bottom:20px;">
             <div style="margin-bottom:-8px;">{{ $t('BpnmPropertyPanel.inputData') }}</div>
@@ -37,77 +49,15 @@
             </v-row>
         </div>
         <div>
+            <div>Return 값을 저장 할 변수</div>
             <v-row class="ma-0 pa-0">
-                <div>{{ $t('BpnmPropertyPanel.checkPoints') }}</div>
-                <v-spacer></v-spacer>
-                <v-icon v-if="editCheckpoint" @click="editCheckpoint = false" style="margin-top:2px;">mdi-close</v-icon>
-            </v-row>
-            <div v-for="(checkpoint, idx) in copyUengineProperties.checkpoints" :key="idx">
-                <div>
-                    <v-checkbox-btn color="success" :disabled="isViewMode" :label="checkpoint.checkpoint" hide-details
-                        v-model="checkbox"></v-checkbox-btn>
-                </div>
-                <v-btn icon flat @click="deleteCheckPoint(checkpoint)" v-if="!isViewMode" v-bind="props">
-                    <TrashIcon stroke-width="1.5" size="20" class="text-error" />
-                </v-btn>
-            </div>
-            <v-text-field v-if="editCheckpoint" v-model="checkpointMessage.checkpoint"
-                :disabled="isViewMode"></v-text-field>
-            <v-row class="ma-0 pa-0" v-if="!isViewMode">
-                <v-spacer></v-spacer>
-                <v-btn v-if="editCheckpoint" @click="addCheckpoint" color="primary" rounded="pill" size="small">{{
-                $t('BpnmPropertyPanel.add') }}</v-btn>
-                <v-card v-else @click="editCheckpoint = !editCheckpoint" elevation="9" variant="outlined"
-                    style="padding: 5px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;">
-                    <div style="display: flex; justify-content: center; align-items: center;">
-                        <Icon icon="streamline:add-1-solid" width="20" height="20" style="color: #5EB2E8" />
-                    </div>
-                </v-card>
-            </v-row>
-        </div>
-        <div>
-            <v-row class="ma-0 pa-0">
-                <div>Extended Property</div>
-            </v-row>
-            <v-row>
-                <v-table>
-                    <thead>
-                        <tr>
-                            <th class="text-h6">Key</th>
-                            <th class="text-h6">Value</th>
-                            <th class="text-h6">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="param in copyUengineProperties.extendedProperties" :key="param.key"
-                            class="month-item">
-                            <td>
-                                {{ param.key }}
-                            </td>
-                            <td>
-                                {{ param.value }}
-                            </td>
-                            <td>
-                                <v-btn icon flat @click="deleteExtendedProperty(param)" v-bind="props">
-                                    <TrashIcon stroke-width="1.5" size="20" class="text-error" />
-                                </v-btn>
-                            </td>
-                        </tr>
-                    </tbody>
-                </v-table>
-                <v-btn v-if="!isViewMode" flat color="primary" @click="editParam = !editParam">add Key/Value</v-btn>
-
-                <v-card v-if="editParam" style="margin-top: 12px">
-                    <v-card-title>Add Parameter</v-card-title>
-                    <v-card-text>
-                        <v-text-field v-model="paramKey" label="Key"></v-text-field>
-                        <v-text-field v-model="paramValue" label="Value"></v-text-field>
-                    </v-card-text>
-                    <v-card-actions>
-                        <v-btn @click="addParameter">add</v-btn>
-                        <v-btn @click="editParam = !editParam">cancel</v-btn>
-                    </v-card-actions>
-                </v-card>
+                <v-autocomplete
+                    :items="processVariables"
+                    item-props
+                    :item-value="item"
+                    :item-title="(item) => item.name"
+                    v-model="selectedOut"
+                ></v-autocomplete>
             </v-row>
         </div>
     </div>
@@ -116,6 +66,7 @@
 import { useBpmnStore } from '@/stores/bpmn';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { Icon } from '@iconify/vue';
+import GenerateScriptPanel from './GenerateScriptPanel.vue'
 const storage = StorageBaseFactory.getStorage()
 export default {
     name: 'script-task-panel',
@@ -124,99 +75,145 @@ export default {
         processDefinitionId: String,
         isViewMode: Boolean
     },
+    components: {
+        GenerateScriptPanel
+    },
     created() {
     },
+    created() {},
     data() {
         return {
-            requiredKeyLists: {
-                "parameters": [],
-                "checkpoints": []
-            },
+            requiredKeyLists: {},
             copyUengineProperties: this.uengineProperties,
-            name: "",
+            name: '',
             checkpoints: [],
             editCheckpoint: false,
             checkpointMessage: {
-                "$type": "uengine:Checkpoint",
-                "checkpoint": ""
+                $type: 'uengine:Checkpoint',
+                checkpoint: ''
             },
-            code: "",
-            description: "",
-            selectedDefinition: "",
+            code: '',
+            description: '',
+            selectedDefinition: '',
             bpmnModeler: null,
             stroage: null,
             editParam: false,
-            paramKey: "",
-            paramValue: ""
+            paramKey: '',
+            paramValue: '',
+            copyDefinition: this.definition,
+            processVariables: [],
+            selectedOut: ''
         };
     },
     async mounted() {
-        let me = this
-
+        let me = this;
+        console.log(this.copyDefinition);
+        this.processVariables = this.copyDefinition.processVariables
+            .filter((variable) => variable.type !== 'Form')
+            .map((variable) => ({
+                name: variable.name,
+                type: variable.type,
+                defaultValue: variable.defaultValue
+            }));
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
+        // if (this.copyUengineProperties.out) {
+        //     let tmp = this.processVariables.find((element) => element['name'] === this.copyUengineProperties.out.name);
+        //     this.selectedOut = tmp.name;
+        // }
     },
     computed: {
-        inputData() {
-            let params = this.copyUengineProperties.parameters
-            let result = []
-            if (params)
-                params.forEach(element => {
-                    if (element.direction == 'IN')
-                        result.push(element)
-                });
-            return result
-        },
-        outputData() {
-            let params = this.copyUengineProperties.parameters
-            let result = []
-            if (params)
-                params.forEach(element => {
-                    if (element.direction == 'OUT')
-                        result.push(element)
-                });
-            return result
+        languageLabel() {
+            if(!this.copyUengineProperties) return "javascript"
+            switch(this.copyUengineProperties.language){
+                case "0":
+                    return "javascript"
+                case "1":
+                    return "java"
+                default:
+                    return "javascript"
+            }
         }
+        // inputData() {
+        //     let params = this.copyUengineProperties.parameters;
+        //     let result = [];
+        //     if (params)
+        //         params.forEach((element) => {
+        //             if (element.direction == 'IN') result.push(element);
+        //         });
+        //     return result;
+        // },
+        // outputData() {
+        //     let params = this.copyUengineProperties.parameters;
+        //     let result = [];
+        //     if (params)
+        //         params.forEach((element) => {
+        //             if (element.direction == 'OUT') result.push(element);
+        //         });
+        //     return result;
+        // }
     },
     watch: {
+        selectedOut(newVal) {
+            let tmp = this.processVariables.find((element) => element['name'] === newVal);
+            console.log(tmp);
+            let type = this.parseType(tmp.type);
+            let pv = {
+                name: tmp.name,
+                type: type
+            };
+            this.copyUengineProperties.out = pv;
+        }
     },
     methods: {
-        deleteInputData(inputData) {
-            const index = this.copyUengineProperties.parameters.findIndex(element => element.key === inputData.key);
-            if (index > -1) {
-                this.copyUengineProperties.parameters.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties)
+        parseType(type) {
+            switch (type) {
+                case 'Text':
+                    return 'java.lang.String';
+                case 'Number':
+                    return 'java.lang.Number';
+                case 'Date':
+                    return 'java.util.Date';
+                case 'Form':
+                    return 'org.uengine.kernel.FormActivity';
             }
         },
-        deleteOutputData(outputData) {
-            const index = this.copyUengineProperties.parameters.findIndex(element => element.key === outputData.key);
-            if (index > -1) {
-                this.copyUengineProperties.parameters.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties)
-            }
-        },
+        // deleteInputData(inputData) {
+        //     const index = this.copyUengineProperties.parameters.findIndex((element) => element.key === inputData.key);
+        //     if (index > -1) {
+        //         this.copyUengineProperties.parameters.splice(index, 1);
+        //         this.$emit('update:uEngineProperties', this.copyUengineProperties);
+        //     }
+        // },
+        // deleteOutputData(outputData) {
+        //     const index = this.copyUengineProperties.parameters.findIndex((element) => element.key === outputData.key);
+        //     if (index > -1) {
+        //         this.copyUengineProperties.parameters.splice(index, 1);
+        //         this.$emit('update:uEngineProperties', this.copyUengineProperties);
+        //     }
+        // },
         ensureKeyExists(obj, key, defaultValue) {
             if (!obj.hasOwnProperty(key)) {
                 obj[key] = defaultValue;
             }
         },
         deleteExtendedProperty(item) {
-            const index = this.copyUengineProperties.extendedProperties.findIndex(element => element.key === item.key);
+            const index = this.copyUengineProperties.extendedProperties.findIndex((element) => element.key === item.key);
             if (index > -1) {
                 this.copyUengineProperties.extendedProperties.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties)
+                this.$emit('update:uEngineProperties', this.copyUengineProperties);
             }
         },
         deleteCheckPoint(item) {
-            const index = this.copyUengineProperties.checkpoints.findIndex(element => element.checkpoint === item.checkpoint);
+            const index = this.copyUengineProperties.checkpoints.findIndex((element) => element.checkpoint === item.checkpoint);
             if (index > -1) {
                 this.copyUengineProperties.checkpoints.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties)
+                this.$emit('update:uEngineProperties', this.copyUengineProperties);
             }
         },
         addParameter() {
-            this.copyUengineProperties.extendedProperties.push({ key: this.paramKey, value: this.paramValue })
-            this.$emit('update:uEngineProperties', this.copyUengineProperties)
+            this.copyUengineProperties.extendedProperties.push({ key: this.paramKey, value: this.paramValue });
+            this.$emit('update:uEngineProperties', this.copyUengineProperties);
             // const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
             // // this.checkpoints.push(this.checkpointMessage)
             // const parameter = bpmnFactory.create('uengine:ExtendedProperty', { key: this.paramKey, value: this.paramValue });
@@ -235,9 +232,9 @@ export default {
             // return value;
         },
         addCheckpoint() {
-            this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint })
-            this.$emit('update:uEngineProperties', this.copyUengineProperties)
-        },
+            this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
+            this.$emit('update:uEngineProperties', this.copyUengineProperties);
+        }
     }
 };
 </script>

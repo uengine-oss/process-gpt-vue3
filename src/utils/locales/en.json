@@ -60,6 +60,7 @@
         "title": "Process Execution",
         "cardTitle": "Process Execution",
         "processDefinitionExplanation": "Execute the process interactively. For example, you can issue commands like: \n'I'd like to apply for a vacation:\n 1. Reason: Personal matter\n 2. Start date of leave: Today\n 3. Return date from leave: Friday'",
+        "agent": "Use the Agent feature to draft your proposal.",
         "search": "Search",
         "newChat": "New Chat",
         "recentChats": "Recent Chats",
@@ -129,7 +130,8 @@
         "import": "Import BPMN File",
         "addImage": "Add Image",
         "fileUpLoad": "File Up Load",
-        "generateProcessDef": "Generate ProcessDefinition"
+        "isEnableProcessGPT": "Enable Process-GPT",
+        "isDisableProcessGPT": "Disable Process-GPT"
     },
     "accountTab": {
         "accountSetting": "Account Settings",

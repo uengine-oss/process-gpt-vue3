@@ -1,6 +1,6 @@
 <template>
     <div style="background-color: rgba(255, 255, 255, 0)">
-        <v-dialog v-model="definitionDialog" max-width="800">
+        <!-- <v-dialog v-model="definitionDialog" max-width="800">
             <v-card>
                 <v-card-title class="text-h5">
                     프로세스 정의 목록
@@ -18,9 +18,9 @@
                     </div>
                 </v-card-text>
             </v-card>
-        </v-dialog>
+        </v-dialog> -->
         <Chat :messages="messages" :agentInfo="agentInfo" :chatInfo="chatInfo"
-            :userInfo="userInfo" :disableChat="disableChat" :type="'instances'" :name="chatName"
+            :isAgentMode="isAgentMode" :userInfo="userInfo" :disableChat="disableChat" :type="'instances'" :name="chatName"
             @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
             @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
         ></Chat>
@@ -64,7 +64,8 @@ export default {
         // WorkItem,
     },
     props:{
-        isComplete: Boolean
+        isComplete: Boolean,
+        isAgentMode: Boolean
     },
     data: () => ({
         headers: [
@@ -79,10 +80,7 @@ export default {
         processInstance: null,
         path: 'proc_inst',
         organizationChart: [],
-        chatInfo: {
-            title: 'processExecution.cardTitle',
-            text: "processExecution.processDefinitionExplanation"
-        },
+        chatInfo: null,
         // bpmn
         onLoad: false,
         bpmn: null,
@@ -105,9 +103,24 @@ export default {
             isStream: true,
             preferredLanguage: 'Korean'
         });
-        if (localStorage.getItem('instancePrompt')) {
-            this.beforeSendMessage(localStorage.getItem('instancePrompt'))
+        if (localStorage.getItem('instancePrompt') && this.$route.query.process) {
+            const newMessage = {
+                text: localStorage.getItem('instancePrompt')
+            }
+            this.processDefinition = this.$route.query.process;
+            await this.beforeSendMessage(newMessage)
             localStorage.removeItem('instancePrompt')
+        }
+        if(!this.isAgentMode){
+            this.chatInfo = {
+                title: 'processExecution.cardTitle',
+                text: "processExecution.processDefinitionExplanation"
+            }
+        } else {
+            this.chatInfo = {
+                title: 'processExecution.cardTitle',
+                text: "processExecution.agent"
+            }
         }
     },
     mounted() {
@@ -139,8 +152,9 @@ export default {
             var me = this
             me.$try({
                 context: me,
-                action(me) {
+                action() {
                     if (newVal) me.agentInfo.draftPrompt = newVal
+                    me.messages.push(me.createMessageObj(newVal))
 
                     if (!me.agentInfo.draftPrompt) return;
                     me.agentInfo.isRunning = true
@@ -195,7 +209,12 @@ export default {
                             me.checkDisableChat();
                         }
                         await me.loadProcess();
-                        await me.loadMessages(`proc_inst/${value.proc_inst_id}`, { key: 'id' });
+                        if(this.isAgentMode){
+                            await me.loadAgentMessages(`proc_inst/${value.proc_inst_id}`, { key: 'id' });
+                            me.processInstanceId = value.proc_inst_id
+                        } else {
+                            await me.loadMessages(`proc_inst/${value.proc_inst_id}`, { key: 'id' });
+                        }
                     }                    
                 }
             })
@@ -214,45 +233,14 @@ export default {
                 }
             }
         },
-        async beforeSendMessage(newMessage, definition) {
-
+        async beforeSendMessage(newMessage) {
             if (newMessage && newMessage.text != '') {
                 if (this.processInstance && this.processInstance.proc_inst_id) {
                     this.generator.beforeGenerate(newMessage, false);
-
-                    this.sendMessage(newMessage);
-                } else {
-                    this.onLoad = false;
-                    this.definitionDialog = true;
-
-                    this.generator.beforeGenerate(newMessage, true);
-
-                    var procDefs = await this.queryFromVectorDB(newMessage.text);
-                    if (procDefs) {
-                        procDefs = procDefs.map(item => JSON.parse(item));
-                        this.definitions = procDefs;
-                        this.onLoad = true;
-                    }
-                }
-            } else if (definition) {
-
-                if (definition) {
-                    this.processDefinition = definition;
-                    this.agentInfo.draftPrompt = this.processDefinition.description;
-                }
-
-                if (this.processInstance && this.processInstance.proc_inst_id) {
-                    this.generator.beforeGenerate(newMessage, false);
                 } else {
                     this.generator.beforeGenerate(newMessage, true);
                 }
-
-                this.definitionDialog = false;
-                var msgObj = {
-                    text: this.generator.input.answer,
-                    image: this.generator.input.image
-                }
-                this.sendMessage(msgObj);
+                this.sendMessage(newMessage);
             }
         },
         beforeSendEditedMessage(index) {
@@ -271,17 +259,22 @@ export default {
         afterModelCreated(response) {
         },
         async afterGenerationFinished(response) {
-            let messageWriting = this.messages[this.messages.length - 1];
-            messageWriting.jsonContent = response;
+            var me = this;
+            me.$try({
+                context: me,
+                action() {
+                    let messageWriting = this.messages[this.messages.length - 1];
+                    messageWriting.jsonContent = response;
 
-            const jsonData = JSON.parse(response);
-            if (jsonData) {
-                if (jsonData.description) {
-                    messageWriting.content = jsonData.description;
-                }
-            }
+                    // const jsonData = JSON.parse(response);
+                    const jsonData = response;
+                    if (jsonData && jsonData.nextActivities && jsonData.nextActivities.length > 0) {
+                        messageWriting.content = jsonData.nextActivities.map(item => item.messageToUser).join('\n\n');
+                    }
 
-            this.checkDisableChat();
+                    me.checkDisableChat();
+                },
+            })
         },
         afterModelStopped(response) {
             let id;

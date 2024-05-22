@@ -32,7 +32,7 @@ export interface Backend {
     getProcessDefinitionMap(): Promise<any>;
     putProcessDefinitionMap(definitionMap: any): Promise<any>;
     getPendingList(): Promise<any>;
-    getCompletedList(): Promise<any>;
+    getCompletedList(options?: any): Promise<any>;
     getInProgressList(): Promise<any>;
     putWorklist(taskId: string, workItem: any): Promise<any>;
     getEventList(instanceId: string): Promise<any>;
