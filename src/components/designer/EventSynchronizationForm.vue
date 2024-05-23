@@ -166,7 +166,6 @@ import BackendFactory from '@/components/api/BackendFactory';
 import FormMapper from '@/components/designer/mapper/FormMapper.vue';
 import { useBpmnStore } from '@/stores/bpmn';
 
-const backend = BackendFactory.createBackend()
 export default {
     props:{
         modelValue: {
