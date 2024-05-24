@@ -1,11 +1,25 @@
 <script setup>
+import { computed } from 'vue';
 import DropDown from '../DropDown/index.vue';
 // import Icon from '../Icon.vue';
 import { Icon } from '@iconify/vue';
-const props = defineProps({ item: Object, level: Number });
+const props = defineProps({
+    item: Object, 
+    level: Number, 
+    type: String,
+});
 import BackendFactory from '@/components/api/BackendFactory';
+
+const useI18n = computed(() => {
+    if (props.level > 0 && !props.type) {
+        return false;
+    }
+    return true;
+});
+
 const emit = defineEmits(['update:item']);
 const backend = BackendFactory.createBackend();
+
 const getChild = async (subitem, i) => {
     let res = await backend.listDefinition(subitem.title);
     let menu = [];
@@ -61,7 +75,9 @@ const getChild = async (subitem, i) => {
                         </div>
                     </template>
                     <!---Title  -->
-                    <v-list-item-title class="text-subtitle-1 font-weight-medium">{{ $t(item.title) }}</v-list-item-title>
+                    <v-list-item-title class="text-subtitle-1 font-weight-medium">
+                        {{ useI18n ? $t(item.title) : item.title }}
+                    </v-list-item-title>
                     <!---If Caption-->
                     <v-list-item-subtitle v-if="item.subCaption" class="text-caption mt-n1 hide-menu">
                         {{ item.subCaption }}

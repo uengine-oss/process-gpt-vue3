@@ -300,9 +300,10 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    await backend.deleteDefinition(this.fullPath);
-                    this.deleteDialog = false;
-                    this.isDeleted = true;
+                    await backend.deleteDefinition(me.fullPath);
+                    me.deleteDialog = false;
+                    me.isDeleted = true;
+                    me.EventBus.emit('definitions-updated');
                 }
             });
         },
@@ -403,14 +404,16 @@ export default {
                     me.isViewMode = true;
                     me.lock = true; // 잠금처리 ( 수정 불가 )
                     me.definitionChangeCount++;
-
+                    
                     // 신규 프로세스 이동.
-                    if (!me.$route.params.pathMatch) {
+                    if (me.fullPath == 'chat') {
                         me.$router.push(`/definitions/${info.proc_def_id}`);
+                        me.EventBus.emit('definitions-updated');
                     }
 
                     me.loading = false;
                     me.toggleVersionDialog(false);
+
                 },
                 onFail: (e) => {
                     console.log(e)

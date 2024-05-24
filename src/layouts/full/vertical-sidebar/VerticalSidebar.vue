@@ -55,7 +55,7 @@ const customizer = useCustomizerStore();
                     <!---End Single Item-->
                 </template>
                 <template v-if="definitionList">
-                    <NavCollapse class="leftPadding" :item="definitionList" @update:item="(def) => (definitionList = def)" :level="0" />
+                    <NavCollapse class="leftPadding" :item="definitionList" @update:item="(def) => (definitionList = def)" :level="0" :type="'definition-list'" />
                 </template>
                 <!-- <Moreoption/> -->
             </v-list>
@@ -78,29 +78,7 @@ export default {
         ProcessInstanceList
     },
     data: () => ({
-        sidebarItem: [
-            // {
-            //     title: 'dashboard.title',
-            //     icon: 'lucide:layout-panel-top',
-            //     BgColor: 'primary',
-            //     to: '/dashboard2',
-            //     disable: true
-            // },
-            // {
-            //     title: 'todoList.title',
-            //     icon: 'pajamas:overview',
-            //     BgColor: 'primary',
-            //     to: '/todolist',
-            //     disable: true
-            // },
-            // {
-            //     title: 'calendar.title',
-            //     icon: 'solar:calendar-line-duotone',
-            //     BgColor: 'primary',
-            //     to: '/calendar',
-            //     disable: false
-            // },
-        ],
+        sidebarItem: [],
         definitionItem: [],
         definitionList: null
     }),
@@ -143,15 +121,17 @@ export default {
         }
 
         if (!this.JMS) {
-            this.sidebarItem.forEach((item) => {
-                if (item.disable) {
-                    item.disable = false;
-                }
-            });
             this.definitionItem.forEach((item) => {
                 if (item.disable) {
                     item.disable = false;
                 }
+            });
+        }
+    },
+    async mounted() {
+        if(window.$mode === "ProcessGPT") {
+            this.EventBus.on('definitions-updated', async () => {
+                await this.getDefinitionList();
             });
         }
     },

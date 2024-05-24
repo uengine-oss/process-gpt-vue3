@@ -283,9 +283,9 @@ export default {
                 context: me,
                 action: async () => {
                     await me.backend.start({processDefinitionId: processDefinitionId});
+                    me.EventBus.emit('instances-updated');
                 }
             })
-            me.EventBus.emit('instances-updated');
         },
 
         afterModelCreated(response) {
@@ -320,12 +320,6 @@ export default {
                         const userMsgs = this.messages.filter(msg => msg.role === 'user');
                         this.lastSendMessage = userMsgs[userMsgs.length - 1];
                     }
-                    // if (this.lastSendMessage.text != '') {
-                    //     localStorage.setItem('instancePrompt', this.lastSendMessage.text)
-                    // } else {
-                    //     localStorage.setItem('instancePrompt', responseObj.title)
-                    // }
-                    // console.log(localStorage.getItem('instancePrompt'))
                     systemMsg = `"${responseObj.title}" 프로세스를 시작하겠습니다.`
                     this.beforeExecuteProcess({ text: responseObj.title, image: this.lastSendMessage.image });
 
