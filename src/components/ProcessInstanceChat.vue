@@ -1,54 +1,24 @@
 <template>
     <div style="background-color: rgba(255, 255, 255, 0)">
-        <!-- <v-dialog v-model="definitionDialog" max-width="800">
-            <v-card>
-                <v-card-title class="text-h5">
-                    프로세스 정의 목록
-                </v-card-title>
-                <v-card-text>
-                    <VDataTable v-if="onLoad" :headers="headers" :items="definitions"
-                        item-value="processDefinitionId">
-                        <template v-slot:item.actions="{ item }">
-                            <v-btn color="primary" class="px-4 rounded-pill mx-auto" variant="tonal"
-                                @click="beforeSendMessage(null, item.raw.processDefinitionId)">Select</v-btn>
-                        </template>
-                    </VDataTable>
-                    <div v-else style="height: 100%; text-align: center">
-                        <v-progress-circular style="top: 50%" indeterminate color="primary"></v-progress-circular>
-                    </div>
-                </v-card-text>
-            </v-card>
-        </v-dialog> -->
         <Chat :messages="messages" :agentInfo="agentInfo" :chatInfo="chatInfo"
             :isAgentMode="isAgentMode" :userInfo="userInfo" :disableChat="disableChat" :type="'instances'" :name="chatName"
             @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
-            @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
-        ></Chat>
-        <!-- <template v-slot:mobileLeftContent>
-            <Chat :messages="messages" :agentInfo="agentInfo" :draftAgentPrompt="draftAgentPrompt" :chatInfo="chatInfo"
-                :userInfo="userInfo" :disableChat="disableChat" :type="'instances'" :name="chatName"
-                @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
-                @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
-            ></Chat>
-        </template> -->
+            @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage">
+            <template v-slot:custom-title v-if="$route.params.instId">
+                <div></div>
+            </template>
+        </Chat>
     </div>
 </template>
 
 <script>
-import { format } from 'date-fns';
 
 import { VectorStorage } from 'vector-storage';
-import { VDataTable } from 'vuetify/labs/VDataTable';
 
 import ChatModule from '@/components/ChatModule.vue';
 import ChatGenerator from './ai/ProcessInstanceGenerator.js';
 
-import AppBaseCard from '@/components/shared/AppBaseCard.vue';
-
-import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import Chat from "@/components/ui/Chat.vue";
-import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
-// import WorkItem from './apps/todolist/WorkItem.vue';
 
 import BackendFactory from "@/components/api/BackendFactory";
 const backend = BackendFactory.createBackend();
@@ -56,26 +26,13 @@ const backend = BackendFactory.createBackend();
 export default {
     mixins: [ChatModule],
     components: {
-        AppBaseCard,
         Chat,
-        ProcessInstanceList,
-        ProcessDefinition,
-        VDataTable,
-        // WorkItem,
     },
     props:{
         isComplete: Boolean,
         isAgentMode: Boolean
     },
     data: () => ({
-        headers: [
-            { title: 'id', align: 'start', key: 'processDefinitionId' },
-            { title: 'name', align: 'start', key: 'processDefinitionName' },
-            { title: 'description', align: 'start', key: 'description' },
-            { title: 'actions', align: 'start', key: 'actions' },
-        ],
-        definitions: null,
-        definitionDialog: false,
         processDefinition: null,
         processInstance: null,
         path: 'proc_inst',
@@ -103,14 +60,7 @@ export default {
             isStream: true,
             preferredLanguage: 'Korean'
         });
-        if (localStorage.getItem('instancePrompt') && this.$route.query.process) {
-            const newMessage = {
-                text: localStorage.getItem('instancePrompt')
-            }
-            this.processDefinition = this.$route.query.process;
-            await this.beforeSendMessage(newMessage)
-            localStorage.removeItem('instancePrompt')
-        }
+
         if(!this.isAgentMode){
             this.chatInfo = {
                 title: 'processExecution.cardTitle',

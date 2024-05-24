@@ -285,33 +285,35 @@ class ProcessGPTBackend implements Backend {
             const defInfo = await this.getRawDefinition(data.proc_def_id, null);
             let activityInfo: any = null;
             let parameters: any[] = [];
-            let inputItems: any[] = [];
-            let outputItems: any[] = [];
             if (defInfo && defInfo.definition) {
                 activityInfo = defInfo.definition.activities.find((activity: any) => activity.id === data.activity_id);
-                if (activityInfo.outputData && activityInfo.outputData.length > 0) {
-                    inputItems = activityInfo.outputData.map((item: any) => {
-                        const key = item;
-                        return {
-                            direction: 'OUT',
-                            variable: {
-                                name: key,
+                if (activityInfo) {
+                    let inputItems: any[] = [];
+                    let outputItems: any[] = [];
+                    if (activityInfo.outputData && activityInfo.outputData.length > 0) {
+                        inputItems = activityInfo.outputData.map((item: any) => {
+                            const key = item;
+                            return {
+                                direction: 'OUT',
+                                variable: {
+                                    name: key,
+                                }
                             }
-                        }
-                    });
-                }
-                if (activityInfo.inputData && activityInfo.inputData.length > 0) {
-                    outputItems = activityInfo.inputData.map((item: any) => {
-                        const key = item;
-                        return {
-                            direction: 'IN',
-                            variable: {
-                                name: key,
+                        });
+                    }
+                    if (activityInfo.inputData && activityInfo.inputData.length > 0) {
+                        outputItems = activityInfo.inputData.map((item: any) => {
+                            const key = item;
+                            return {
+                                direction: 'IN',
+                                variable: {
+                                    name: key,
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
+                    parameters = [...inputItems, ...outputItems];
                 }
-                parameters = [...inputItems, ...outputItems];
             }
             const workItem = {
                 worklist: {
