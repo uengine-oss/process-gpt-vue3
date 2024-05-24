@@ -404,12 +404,6 @@ export default {
                     me.isViewMode = true;
                     me.lock = true; // 잠금처리 ( 수정 불가 )
                     me.definitionChangeCount++;
-                    
-                    // 신규 프로세스 이동.
-                    if (me.fullPath == 'chat') {
-                        me.$router.push(`/definitions/${info.proc_def_id}`);
-                        me.EventBus.emit('definitions-updated');
-                    }
 
                     me.loading = false;
                     me.toggleVersionDialog(false);
@@ -884,16 +878,11 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                
                     if(window.$mode == 'uEngine') {
-                        // GPT
-                        await backend.putRawDefinition(xml, info.proc_def_id, info);
-
-                        if (me.$route.fullPath == '/definitions/chat') {
-                            me.$router.push('/definitions/' + info.proc_def_id);
-                        }
-                    } else {
                         // uEngine
+                        await backend.putRawDefinition(xml, info.proc_def_id, info);
+                    } else {
+                        // GPT
                         if(!me.processDefinition) me.processDefinition = {}
                         if(!me.processDefinition.processDefinitionId) me.processDefinition.processDefinitionId = null
                         if(!me.processDefinition.processDefinitionName) me.processDefinition.processDefinitionName = null
@@ -912,11 +901,13 @@ export default {
                             throw new Error('processDefinitionId or processDefinitionName is missing');
                         }
                         await backend.putRawDefinition(xml, info.proc_def_id, info);
-                        await this.saveToVectorStore(me.processDefinition);
+                        // await this.saveToVectorStore(me.processDefinition);
+                    }
 
-                        if (me.$route.fullPath == '/definitions/chat') {
-                            me.$router.push('/definitions/' + me.processDefinition.processDefinitionId);
-                        }
+                    // 신규 프로세스 이동.
+                    if (me.$route.fullPath == '/definitions/chat') {
+                        me.$router.push(`/definitions/${info.proc_def_id}`);
+                        me.EventBus.emit('definitions-updated');
                     }
                 },
                 catch: (e) => {
