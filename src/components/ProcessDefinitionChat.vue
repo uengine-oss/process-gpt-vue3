@@ -300,9 +300,10 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    await backend.deleteDefinition(this.fullPath);
-                    this.deleteDialog = false;
-                    this.isDeleted = true;
+                    await backend.deleteDefinition(me.fullPath);
+                    me.deleteDialog = false;
+                    me.isDeleted = true;
+                    me.EventBus.emit('definitions-updated');
                 }
             });
         },
@@ -404,13 +405,12 @@ export default {
                     me.lock = true; // 잠금처리 ( 수정 불가 )
                     me.definitionChangeCount++;
 
-                    // 신규 프로세스 이동.
-                    if (!me.$route.params.pathMatch) {
-                        me.$router.push(`/definitions/${info.proc_def_id}`);
-                    }
-
                     me.loading = false;
                     me.toggleVersionDialog(false);
+
+                },
+                onFail: (e) => {
+                    console.log(e)
                 }
             });
         },
@@ -661,33 +661,39 @@ export default {
                     ],
                     activities: [
                         ...activities.map(activity => {
-
-                            let task = {
-                                name: activity.name,
-                                id: activity.id,
-                                type: 'UserActivity',
-                                description: activity.name + ' description',
-                                instruction: activity.name + ' instruction',
-                                role: lanes.find(lane => {
-                                    const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
-                                    return flowNodeRefs.includes(activity.id);
-                                }) ? lanes.find(lane => {
-                                    const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
-                                    return flowNodeRefs.includes(activity.id);
-                                }).name : 'Unknown',
-                                inputData: activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
-                                    .filter(param => param.direction === "IN")
-                                    .map(param => param.variable.name) : [],
-                                outputData: activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).parameters
-                                    .filter(param => param.direction === "OUT")
-                                    .map(param => param.variable.name) : []
-                            }
-
                             try{
-                                task.tool = "formHandler:" + JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).variableForHtmlFormContext.name
-                            }catch(e){}
+                                let task = {}
+                                task.name = activity.name
+                                task.id = activity.id
+                                task.type = 'UserActivity'
+                                task.description = `${activity.name} description`
+                                task.instruction = `${activity.name} instruction`
+                                task.role = lanes.find(lane => {
+                                        const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                        return flowNodeRefs.includes(activity.id);
+                                    }) ? 
+                                    lanes.find(lane => {
+                                        const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                                        return flowNodeRefs.includes(activity.id);
+                                    }).name : 'Unknown'
 
-                            return task
+                                let isProperties = activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties']
+
+                                if(isProperties){
+                                    let parseProperties = JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json'])
+                                    task.inputData = parseProperties && parseProperties.parameters ? parseProperties.parameters.filter(param => param.direction === "IN")
+                                        .map(param => param.variable.name) : []
+                                    task.outputData = parseProperties && parseProperties.parameters ? parseProperties.parameters.filter(param => param.direction === "OUT")
+                                        .map(param => param.variable.name) : []
+                                } else {
+                                    task.inputData = []
+                                    task.outputData = []
+                                }
+                                task.tool = "formHandler:" + JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).variableForHtmlFormContext.name
+                                return task
+                            }catch(e){
+
+                            }
                         }
                         
                         ),
@@ -872,28 +878,40 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    // if (!me.processDefinition && xml) {
-                    //     me.processDefinition = await me.convertXMLToJSON(xml);
-                    // }
+                    if(window.$mode == 'uEngine') {
+                        // uEngine
+                        await backend.putRawDefinition(xml, info.proc_def_id, info);
+                    } else {
+                        // GPT
+                        if(!me.processDefinition) me.processDefinition = {}
+                        if(!me.processDefinition.processDefinitionId) me.processDefinition.processDefinitionId = null
+                        if(!me.processDefinition.processDefinitionName) me.processDefinition.processDefinitionName = null
 
-                    me.processDefinition.processDefinitionId = info.proc_def_id ? info.proc_def_id : prompt('please give a ID for the process definition');
 
-                    if (!me.processDefinition.processDefinitionName && info.name) {
-                        me.processDefinition.processDefinitionName = info.name
-                    } else if (!me.processDefinition.processDefinitionName && !info.name) {
-                        me.processDefinition.processDefinitionName = prompt('please give a name for the process definition');
+                        me.processDefinition.processDefinitionId = info.proc_def_id ? info.proc_def_id : prompt('please give a ID for the process definition');
+
+                        if (!me.processDefinition.processDefinitionName && info.name) {
+                            me.processDefinition.processDefinitionName = info.name
+                        } else if (!me.processDefinition.processDefinitionName && !info.name) {
+                            me.processDefinition.processDefinitionName = prompt('please give a name for the process definition');
+                        }
+
+                        me.projectName = me.processDefinition.processDefinitionName;
+                        if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
+                            throw new Error('processDefinitionId or processDefinitionName is missing');
+                        }
+                        await backend.putRawDefinition(xml, info.proc_def_id, info);
+                        // await this.saveToVectorStore(me.processDefinition);
                     }
 
-                    me.projectName = me.processDefinition.processDefinitionName;
-                    if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
-                        throw new Error('processDefinitionId or processDefinitionName is missing');
-                    }
-                    await backend.putRawDefinition(xml, info.proc_def_id, info);
-                    await this.saveToVectorStore(me.processDefinition);
-
+                    // 신규 프로세스 이동.
                     if (me.$route.fullPath == '/definitions/chat') {
-                        me.$router.push('/definitions/' + me.processDefinition.processDefinitionId);
+                        me.$router.push(`/definitions/${info.proc_def_id}`);
+                        me.EventBus.emit('definitions-updated');
                     }
+                },
+                catch: (e) => {
+                    console.log(e)
                 }
             });
         },

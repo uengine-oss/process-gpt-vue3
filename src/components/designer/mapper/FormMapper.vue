@@ -655,21 +655,45 @@ export default {
     transform: scaleX(-1);
 }
 .form-mapper .tree-node .tree-level {
-    padding-left: 8px !important;
+    padding-left: 16px !important;
 }
 
+.form-mapper .tree-node .node-wrapper {
+    border-block-color: #eee;
+    border-block-width: 1px;
+    border-block-style: solid;
+    width:100%;
+    height: 24px;
+    font-weight: bold;
+    user-select: none;
+}
+
+.form-mapper .tree-node .tree-node .node-wrapper {
+    height: 24px;
+    font-weight: normal;
+}
+.form-mapper .tree-node .node-wrapper:hover {
+    background: #eee;
+}
 .form-mapper .form-menu {
     max-height: 300px;
     overflow-y: auto;
 }
 .form-mapper .tree-node .input-wrapper {
     align-self: center;
+    margin-left: 36px;
 }
 .form-mapper .tree-node .icon-wrapper {
     align-self: center;
-    width: 24px;
-    height: 24px;
+    width: 100%;
+    height: 23px;
     margin-left: 12px;
+    position: relative;
+    z-index: 1;
+}
+
+.form-mapper .tree-node .input-wrapper {
+    position: fixed;
 }
 .form-mapper .tree-node .icon-wrapper svg {
     width: 12px;
@@ -691,3 +715,4 @@ export default {
     width: 250px;
 }
 </style>
+
