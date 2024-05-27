@@ -1,39 +1,39 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: my-app-deployment
+  name: frontend-deployment
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: my-app
+      app: frontend
   template:
     metadata:
       labels:
-        app: my-app
+        app: frontend
     spec:
       containers:
-      - name: my-app
-        image: gcr.io/process-gpt-419207/process-gpt:v2.0.1
+      - name: frontend
+        image: gcr.io/process-gpt-419207/process-gpt:v2.0.3
         ports:
         - containerPort: 8080
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: process-gpt-execution-deployment
+  name: execution-deployment
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: process-gpt-execution
+      app: execution
   template:
     metadata:
       labels:
-        app: process-gpt-execution
+        app: execution
     spec:
       containers:
-      - name: process-gpt-execution
+      - name: execution
         image: gcr.io/process-gpt-419207/process-gpt-execution:v0.0.14
         ports:
         - containerPort: 8000
@@ -41,19 +41,19 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: autonomous-backend-deployment
+  name: autonomous-deployment
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: process-gpt-autonomous
+      app: autonomous
   template:
     metadata:
       labels:
-        app: process-gpt-autonomous
+        app: autonomous
     spec:
       containers:
-      - name: process-gpt-autonomous
+      - name: autonomous
         image: gcr.io/process-gpt-419207/process-gpt-autonomous:v0.0.4
         ports:
         - containerPort: 6789
@@ -66,14 +66,14 @@ spec:
   replicas: 3
   selector:
     matchLabels:
-      app: process-gpt-memento
+      app: memento
   template:
     metadata:
       labels:
-        app: process-gpt-memento
+        app: memento
     spec:
       containers:
-      - name: process-gpt-memento
+      - name: memento
         image: gcr.io/process-gpt-419207/process-gpt-memento:v0.0.3
         ports:
         - containerPort: 8005

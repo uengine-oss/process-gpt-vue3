@@ -267,6 +267,9 @@ export default {
     }),
     created() {
         this.init();
+        this.EventBus.on('process-definition-updated', async () => {
+            this.updatedDefKey++;
+        });
     },
     computed: {
         mode() {

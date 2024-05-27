@@ -105,12 +105,18 @@ export default {
                             if(me.useLock) {
                                 // GPT
                                  let definitionInfo = await backend.getRawDefinition(me.process.processDefinitionId);
-                                 let versionInfo = await me.storage.list(`proc_def_arcv`, {
+                                 let versionInfo = await backend.getDefinitionVersions(me.process.processDefinitionId, {
                                         sort: 'desc',
                                         orderBy: 'timeStamp',
                                         size: 1,
-                                        match: { 'proc_def_id': me.process.processDefinitionId }
-                                    })
+                                    });
+
+                                //  let versionInfo = await me.storage.list(`proc_def_arcv`, {
+                                //         sort: 'desc',
+                                //         orderBy: 'timeStamp',
+                                //         size: 1,
+                                //         match: { 'proc_def_id': me.process.processDefinitionId }
+                                //     })
                                 if (versionInfo.length > 0) {
                                     me.information = versionInfo[0]
                                     me.information.name = definitionInfo.name
@@ -156,7 +162,7 @@ export default {
 
                     me.$emit('save', {
                         arcv_id: me.process ? `${me.process.processDefinitionId}_${me.newVersion}` : `${me.information.proc_def_id}_${me.newVersion}`,
-                        version: Number(me.newVersion),
+                        version: me.newVersion,
                         name: me.information.name,
                         proc_def_id: me.process ? me.process.processDefinitionId : me.information.proc_def_id,
                         prevSnapshot: me.information.snapshot,

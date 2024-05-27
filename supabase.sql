@@ -121,6 +121,7 @@ create table
     user_ids text[] null,
     messages jsonb null,
     agent_messages jsonb null,
+    status text null,
     constraint proc_inst_pkey primary key (id)
   ) tablespace pg_default;
 
@@ -150,7 +151,7 @@ create table
   public.proc_def_arcv (
     arcv_id text not null,
     proc_def_id text not null,
-    version double precision not null,
+    version text not null,
     snapshot text null,
     "timeStamp" timestamp without time zone null default current_timestamp,
     diff text null,

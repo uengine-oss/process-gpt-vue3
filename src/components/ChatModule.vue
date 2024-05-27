@@ -552,9 +552,11 @@ export default {
                 });
             }
 
-            let jsonData = this.extractJSON(response);
-            jsonData = JSON.parse(jsonData);
-
+            let jsonData = response;
+            if (typeof response == 'string') {
+                jsonData = this.extractJSON(response);
+                jsonData = JSON.parse(jsonData);
+            }
             this.afterGenerationFinished(jsonData);
         },
 
