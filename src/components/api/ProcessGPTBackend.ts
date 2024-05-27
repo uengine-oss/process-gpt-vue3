@@ -4,6 +4,10 @@ const storage = StorageBaseFactory.getStorage();
 
 import type { Backend } from './Backend';
 
+enum ErrorCode {
+    TableNotFound = "42P01"
+}
+
 class ProcessGPTBackend implements Backend {
 
     async listDefinition(path: string) {
@@ -59,14 +63,17 @@ class ProcessGPTBackend implements Backend {
             if (isLocked) {
                 await storage.delete(`lock/${defId}`, { key: 'id' });
             }
-            // supabase table 삭제
-            await axios.post(`${window.$backend}/drop-process-table/invoke`, {
-                "input": {
-                    "process_definition_id": defId
-                }
-            }).catch(error => {
-                throw new Error(error && error.detail ? error.detail : error);
-            });
+
+            if (!window.$jms) {
+                await axios.post(`${window.$backend}/drop-process-table/invoke`, {
+                    "input": {
+                        "process_definition_id": defId
+                    }
+                }).catch(error => {
+                    throw new Error(error && error.detail ? error.detail : error);
+                });
+            }
+            
         } catch (e) {
             //@ts-ignore
             throw new Error(e.message);
@@ -113,21 +120,22 @@ class ProcessGPTBackend implements Backend {
                 throw new Error("Error when to unlock: " + (error && error.detail ? error.detail : error));
             }
 
-            const list = await storage.list(defId);
-            if (list.code == "42P01") {
-                try {
-                    await axios.post(`${window.$backend}/process-db-schema/invoke`, {
-                        "input": {
-                            "process_definition_id": defId
-                        }
-                    })
-                } catch(error) {
-                    //@ts-ignore
-                    throw new Error("Error when to creating database for the definition: " + (error && error.detail ? error.detail : error));
+            if (!window.$jms) {
+                const list = await storage.list(defId);
+                if (list.code == ErrorCode.TableNotFound) {
+                    try {
+                        await axios.post(`${window.$backend}/process-db-schema/invoke`, {
+                            "input": {
+                                "process_definition_id": defId
+                            }
+                        })
+                    } catch(error) {
+                        //@ts-ignore
+                        throw new Error("Error when to creating database for the definition: " + (error && error.detail ? error.detail : error));
+                    }
                 }
             }
 
-            
         } catch (e) {
             throw new Error('error when to save definition: ' + (e instanceof Error ? e.message : ''));
         }
@@ -164,10 +172,12 @@ class ProcessGPTBackend implements Backend {
 
     async start(input: any) {
         try {
+            if (window.$jms) return;
+
             let defId = input.process_definition_id || input.processDefinitionId;
             if (defId && defId != '') {
                 const list = await storage.list(defId);
-                if (list.code == "42P01") {
+                if (list.code == ErrorCode.TableNotFound) {
                     await axios.post(`${window.$backend}/process-db-schema/invoke`, {
                         "input": {
                             "process_definition_id": defId
@@ -277,18 +287,33 @@ class ProcessGPTBackend implements Backend {
             let parameters: any[] = [];
             if (defInfo && defInfo.definition) {
                 activityInfo = defInfo.definition.activities.find((activity: any) => activity.id === data.activity_id);
-                if (activityInfo.outputData) {
-                    parameters = activityInfo.outputData.map((item: any) => {
-                        const key = item;
-                        return {
-                            direction: 'OUT',
-                            variable: {
-                                name: key,
+                if (activityInfo) {
+                    let inputItems: any[] = [];
+                    let outputItems: any[] = [];
+                    if (activityInfo.outputData && activityInfo.outputData.length > 0) {
+                        inputItems = activityInfo.outputData.map((item: any) => {
+                            const key = item;
+                            return {
+                                direction: 'OUT',
+                                variable: {
+                                    name: key,
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
+                    if (activityInfo.inputData && activityInfo.inputData.length > 0) {
+                        outputItems = activityInfo.inputData.map((item: any) => {
+                            const key = item;
+                            return {
+                                direction: 'IN',
+                                variable: {
+                                    name: key,
+                                }
+                            }
+                        });
+                    }
+                    parameters = [...inputItems, ...outputItems];
                 }
-
             }
             const workItem = {
                 worklist: {
@@ -545,6 +570,8 @@ class ProcessGPTBackend implements Backend {
 
     async putWorkItemComplete(taskId: string, inputData: any) {
         try {
+            if (window.$jms) return;
+
             let result: any = null;
             const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
             const userInfo = await storage.getUserInfo();
@@ -616,30 +643,27 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async fetchInstanceListByStatus(status: string): Promise<any[]> {
+        let list = await storage.list('proc_inst', { match: { status: status } });
+        const email = localStorage.getItem("email");
+        list = list.filter((item: any) => item.user_ids.includes(email));
+        if (list && list.length > 0) {
+            list = list.map((item: any) => {
+                return {
+                    instId: item.id,
+                    instName: item.name,
+                    status: item.status,
+                    defId: item.id.split(".")[0]
+                }
+            });
+        }
+        return list;
+    }
+
     async getInstanceList() {
         try {
-            const instanceList: any[] = [];
-            let list = await storage.list('proc_inst');
-            const email = localStorage.getItem("email");
-            list = list.filter((item: any) => item.user_ids.includes(email));
-            
-            if (list && list.length > 0) {
-                for (const item of list) {
-                    const defId = item.id.split(".")[0];
-                    const instance = await this.getInstance(item.id);
-                    if (instance && instance.current_activity_ids.length > 0) {
-                        const instItem = {
-                            instId: item.id,
-                            instName: item.name,
-                            status: "IN_PROGRESS",
-                            startedDate: instance.start_date,
-                            defId: defId
-                        };
-                        instanceList.push(instItem);
-                    }
-                }
-            }
-            return instanceList;
+            let instList: any[] = await this.fetchInstanceListByStatus("running");
+            return instList;
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -648,27 +672,7 @@ class ProcessGPTBackend implements Backend {
 
     async getCompleteInstanceList() {
         try {
-            const instList: any[] = [];
-            let list = await storage.list('proc_inst');
-            const email = localStorage.getItem("email");
-            list = list.filter((item: any) => item.user_ids.includes(email));
-            
-            if (list && list.length > 0) {
-                for (const item of list) {
-                    const defId = item.id.split(".")[0];
-                    const instance = await this.getInstance(item.id);
-                    if (instance && instance.current_activity_ids.length == 0) {
-                        const instItem = {
-                            instId: item.id,
-                            instName: item.name,
-                            status: "COMPLETE",
-                            startedDate: instance.start_date,
-                            defId: defId
-                        };
-                        instList.push(instItem);
-                    }
-                }
-            }
+            let instList: any[] = await this.fetchInstanceListByStatus("done");
             return instList;
         } catch (error) {
             //@ts-ignore

@@ -9,28 +9,28 @@
         <div v-else>
             <div>
                 <div>
-                    <div style="position: sticky; top:0px; z-index:1; background-color:white;">
-                        <div class="align-right gap-3 pa-4 justify-space-between">
-                            <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
-                                <div>
-                                    <h5 class="text-h5 mb-n1">{{ name }}</h5>
+                    <slot name="custom-title">
+                        <div style="position: sticky; top:0px; z-index:1; background-color:white;">
+                            <div class="align-right gap-3 pa-4 justify-space-between">
+                                <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
+                                    <div>
+                                        <h5 class="text-h5 mb-n1">{{ name }}</h5>
+                                    </div>
                                 </div>
-                            </div>
-                            <div v-else-if="chatInfo" class="d-flex gap-2 align-center">
-                                <v-avatar v-if="chatInfo.img">
-                                    <img :src="chatInfo.img" width="50" />
-                                </v-avatar>
-                                <div>
-                                    <h5 class="text-h5 mb-n1">{{ $t(chatInfo.title) }}</h5>
-                                    <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
+                                <div v-else-if="chatInfo" class="d-flex gap-2 align-center">
+                                    <v-avatar v-if="chatInfo.img">
+                                        <img :src="chatInfo.img" width="50" />
+                                    </v-avatar>
+                                    <div>
+                                        <h5 class="text-h5 mb-n1">{{ $t(chatInfo.title) }}</h5>
+                                        <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
+                                    </div>
                                 </div>
+                                <slot name="custom-tools"></slot>
                             </div>
-
-                            <!-- slot 추가 -->
-                            <slot name="custom-tools"></slot>
+                            <v-divider style="margin:0px;" v-if="name && name !== '' || chatInfo || type == 'form'" />
                         </div>
-                        <v-divider style="margin:0px;" v-if="name && name !== '' || chatInfo || type == 'form'" />
-                    </div>
+                    </slot>
 
                     <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
                         <div class="d-flex w-100" :style="!$globalState.state.isRightZoomed ? 'height:calc(100vh - 307px)' : 'height:100vh;'">
