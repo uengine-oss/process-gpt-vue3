@@ -143,6 +143,14 @@ export default {
             await me.storage.list(`users`).then(function (users) {
                 if (users) {
                     users = users.filter(user => user.email !== me.userInfo.email);
+                    const systemUser = {
+                        email: "system@uengine.org",
+                        id: "system_id",
+                        username: "System",
+                        is_admin: true,
+                        notifications: null
+                    };
+                    users.unshift(systemUser);
                     me.userList = users
                 }
             });
@@ -155,13 +163,26 @@ export default {
                         if(chatRoom.participants.find(x => x.email === me.userInfo.email)){
                             me.chatRoomList.push(chatRoom)
                         }
-                    })
+                    });
                     if(me.chatRoomList.length > 0){
-                        me.currentChatRoom = me.filteredChatRoomList[0]
+                        me.currentChatRoom = me.filteredChatRoomList[0];
+                        me.chatRoomSelected(me.currentChatRoom)
                         me.getChatList(me.filteredChatRoomList[0].id);
                         me.setReadMessage(0);
                     } else {
-                       // alert("Create a new chat room")
+                        let systemChatRoom = {
+                            "name": "Process GPT",
+                            "participants": [
+                                {
+                                    email: "system@uengine.org",
+                                    id: "system_id",
+                                    username: "System",
+                                    is_admin: true,
+                                    notifications: null
+                                }
+                            ]
+                        };
+                        me.createChatRoom(systemChatRoom);
                     }
                 }
             });
@@ -204,6 +225,11 @@ export default {
         },
         chatRoomSelected(chatRoomInfo){
             this.currentChatRoom = chatRoomInfo
+            if(chatRoomInfo.participants.find(p => p.id === "system_id")){
+                this.ProcessGPTActive = true
+            } else {
+                this.ProcessGPTActive = false
+            }
             this.getChatList(chatRoomInfo.id);
             this.setReadMessage(this.chatRoomList.findIndex(x => x.id == chatRoomInfo.id));
         },

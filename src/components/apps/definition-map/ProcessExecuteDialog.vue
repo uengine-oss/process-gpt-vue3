@@ -74,18 +74,22 @@ export default {
                     me.roleMappings.forEach((roleMapping) => {
                         let endpoints = roleMapping.roleEndpoint.split(',');
                         let resourceNames = roleMapping.resourceNames.split(',');
-                        endpoints = endpoints.map((endpoint) => endpoint.trim());
+                        endpoints = endpoints.map((endpoint) => endpoint.trim()).filter(item => item !== "")
                         resourceNames = resourceNames.map((resourceName) => resourceName.trim());
-                        roleMappings.push({
-                            name: roleMapping.roleName,
-                            endpoints: endpoints,
-                            resourceNames: resourceNames
-                        });
+                        if(endpoints.length > 0 ){
+                            roleMappings.push({
+                                name: roleMapping.roleName,
+                                endpoints: endpoints,
+                                resourceNames: resourceNames
+                            });
+                        } 
                     });
                     let command = {
                         processDefinitionId: me.definitionId,
-                        roleMappings: roleMappings
                     };
+                    if(roleMappings.length > 0){
+                        command.roleMappings = roleMappings;
+                    }
                     await me.uengine.start(command);
                     me.closeDialog();
                 },
