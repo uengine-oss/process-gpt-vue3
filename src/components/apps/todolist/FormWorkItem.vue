@@ -104,27 +104,28 @@ export default {
                 context: me,
                 action: async () => {
                     // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드
-                    let varName = me.workItem.activity.variableForHtmlFormContext.name;
-                    let variable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName);
-                    if (!variable) variable = {};
-                    variable._type = 'org.uengine.contexts.HtmlFormContext';
-                    variable.valueMap = this.formData;
-                    Object.keys(variable.valueMap).forEach((key) => {
-                        if (typeof variable.valueMap[key] == 'object') {
-                            variable.valueMap[key].forEach((item) => {
-                                item._type = 'java.util.HashMap';
-                            });
-                        }
-                    });
-                    variable.valueMap._type = 'java.util.HashMap';
-                    await backend.setVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName, variable);
+                    // let varName = me.workItem.activity.variableForHtmlFormContext.name;
+                    // let variable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName);
+                    // if (!variable) variable = {};
+                    // variable._type = 'org.uengine.contexts.HtmlFormContext';
+                    // variable.valueMap = this.formData;
+                    // Object.keys(variable.valueMap).forEach((key) => {
+                    //     if (typeof variable.valueMap[key] == 'object') {
+                    //         variable.valueMap[key].forEach((item) => {
+                    //             item._type = 'java.util.HashMap';
+                    //         });
+                    //     }
+                    // });
+                    // variable.valueMap._type = 'java.util.HashMap';
+                    // await backend.setVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName, variable);
+
+                    await me.saveForm();
                     ///////////////////////////////////
                     await backend.putWorkItem(me.$route.params.taskId, { parameterValues: {} });
                 },
                 successMsg: '중간 저장 완료'
             });
         },
-
         async saveForm(){
             let me = this;
 

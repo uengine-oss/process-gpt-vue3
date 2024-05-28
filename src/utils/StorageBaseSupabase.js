@@ -126,6 +126,8 @@ export default class StorageBaseSupabase {
                     role: data.role
                 }
             } else {
+                alert('로그인이 필요합니다');
+                window.location.href = '/auth/login';
                 throw new StorageBaseError('error in getUserInfo', error, arguments);
             }
         } catch(e) {
