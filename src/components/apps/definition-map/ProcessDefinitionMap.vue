@@ -179,7 +179,7 @@ export default {
             if (this.isAdmin) {
                 this.enableEdit = false;
                 this.storage = StorageBaseFactory.getStorage();
-                const lockObj = await this.storage.getObject('lock/process-map', { key: 'id' });
+                const lockObj = await this.storage.getObject('lock', { match: { id: 'process-map' } });
                 if (lockObj && lockObj.id && lockObj.user_id) {
                     this.lock = true;
                     this.editUser = lockObj.user_id;
@@ -232,7 +232,7 @@ export default {
             };
             this.value.mega_proc_list.push(newMegaProc);
         },
-        async saveProcess() {            
+        async saveProcess() {
             await backend.putProcessDefinitionMap(this.value);
             
             this.closeAlertDialog();
@@ -252,7 +252,7 @@ export default {
             this.lock = true;
             this.enableEdit = true;
             this.closeAlertDialog();
-            if (this.useLock) {
+            if (this.useLock && this.userName && this.userName != undefined) {
                 this.editUser = this.userName;
                 let lockObj = {
                     id: 'process-map',
