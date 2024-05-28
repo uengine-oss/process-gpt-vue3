@@ -589,7 +589,7 @@ export default {
         "_type": "org.uengine.processdesigner.mapper.TransformerMapping",
         "transformer": {
           "_type": blockData.class,
-          "name": block.type,
+          "name": conn.from[0],
           "location": block.pos,
           "argumentSourceMap": {}
         },

@@ -166,7 +166,8 @@ class ProcessGPTBackend implements Backend {
             }
 
         } catch (error) {
-            throw new Error('error in getRawDefinition');
+            //@ts-ignore
+            throw new Error(error.message);
         }
     }
 
@@ -331,7 +332,7 @@ class ProcessGPTBackend implements Backend {
                 },
                 activity: {
                     name: data.activity_name,
-                    tracingTag: data.activity_id,
+                    tracingTag: data.activity_id || '',
                     parameters: parameters || []
                 }
             }
@@ -342,11 +343,16 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getWorkList() {
+    async getWorkList(options?: any) {
         try {
-            const email = localStorage.getItem("email");
-            const options = { match: { user_id: email } };
-            const list = await storage.list('todolist', options);
+            const filter = { match: {} };
+            if (options && options.instId) {
+                filter.match = { proc_inst_id: options.instId };
+            } else {
+                const email = localStorage.getItem("email");
+                filter.match = { user_id: email };
+            }
+            const list = await storage.list('todolist', filter);
             const worklist: any[] = [];
             if (list && list.length > 0) {
                 for (const item of list) {
@@ -360,7 +366,7 @@ class ProcessGPTBackend implements Backend {
                         dueDate: item.end_date,
                         status: item.status,
                         title: item.activity_name,
-                        tracingTag: item.activity_id,
+                        tracingTag: item.activity_id || "",
                         description: item.description || "",
                         tool: item.tool || ""
                     };
@@ -378,7 +384,8 @@ class ProcessGPTBackend implements Backend {
             }
             return worklist;
         } catch (error) {
-            throw new Error(`error in getWorkList`);
+            //@ts-ignore
+            throw new Error(error.message);
         }
     }
 
@@ -395,7 +402,7 @@ class ProcessGPTBackend implements Backend {
             start_date: workItem.startDate,
             end_date: workItem.dueDate,
             status: workItem.status,
-            activity_id: workItem.title,
+            activity_id: workItem.tracingTag || workItem.title,
         }
         await storage.putObject('todolist', putObj);
     }
@@ -415,22 +422,33 @@ class ProcessGPTBackend implements Backend {
     // proc_map
     async getProcessDefinitionMap() {
         try {
-            const procMap = await storage.getObject('configuration/proc_map', { key: 'key' });
+            const options = {
+                match: {
+                    key: 'proc_map'
+                }
+            };
+            const procMap = await storage.getObject('configuration', options);
             if (procMap && procMap.value) {
                 return procMap.value;
             }
             return {};
         } catch (error) {
-            throw new Error('error in getProcessDefinitionMap');
+            //@ts-ignore
+            throw new Error(error.message);
         } 
     }
 
     async putProcessDefinitionMap(definitionMap: any) {
-        const putObj = {
-            key: 'proc_map',
-            value: definitionMap
+        try {
+            const putObj = {
+                key: 'proc_map',
+                value: definitionMap
+            }
+            await storage.putObject('configuration', putObj);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
         }
-        await storage.putObject('configuration', putObj);
     }
 
     async getDefinitionVersions(defId: string, options: any) {
@@ -542,7 +560,7 @@ class ProcessGPTBackend implements Backend {
                         dueDate: item.end_date,
                         status: item.status,
                         title: item.activity_name,
-                        tracingTag: item.activity_id,
+                        tracingTag: item.activity_id || "",
                         description: item.description || "",
                         tool: item.tool || ""
                     };
@@ -560,7 +578,8 @@ class ProcessGPTBackend implements Backend {
             }
             return worklist;
         } catch (error) {
-            throw new Error(`error in getWorkList`);
+            //@ts-ignore
+            throw new Error(error.message);
         }
     }
 
@@ -695,14 +714,15 @@ class ProcessGPTBackend implements Backend {
                     status: item.status,
                     title: item.activity_name,
                     tool: item.tool || '',
-                    tracingTag: item.activity_id,
+                    tracingTag: item.activity_id || '',
                     description: item.description || '',
                     task: item
                 }
             })
             return worklist;
         } catch (e) {
-            throw new Error(`error in getWorkListByInstId`);
+            //@ts-ignore
+            throw new Error(error.message);
         }
     }
 
@@ -710,7 +730,8 @@ class ProcessGPTBackend implements Backend {
         try {
             return null;
         } catch (error) {
-            throw new Error(`error in getEventList`);
+            //@ts-ignore
+            throw new Error(error.message);
         }
     }
 }

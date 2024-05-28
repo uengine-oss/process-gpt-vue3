@@ -52,8 +52,12 @@ const filteredChats = computed(() => {
 });
 
 const getProfile = (email) => {
-    const user = props.userList.find(user => user.email === email);
-    return user && user.profile ? user.profile : '/images/defaultUser.png';
+    if(email == "system@uengine.org"){
+        return '/src/assets/images/chat/chat-icon.png';
+    } else {
+        const user = props.userList.find(user => user.email === email);
+        return user && user.profile ? user.profile : '/images/defaultUser.png';
+    }
 };
 
 // const items = ref([{ title: 'Sort by time' }, { title: 'Sort by Unread' }, { title: 'Mark all as read' }]);
@@ -137,12 +141,14 @@ const openEditDialog = (chat) => {
                     small-chips :item-avatar="'image'" :rules="participantsRules">
                     <template v-slot:chip="{ props, item }">
                         <v-chip v-if="item.raw.profile" v-bind="props" :prepend-avatar="item.raw.profile" :text="item.raw.username ? item.raw.username:item.raw.email"></v-chip>
+                        <v-chip v-else-if="item.raw.id == 'system_id'" v-bind="props" prepend-avatar="/src/assets/images/chat/chat-icon.png" text="System"></v-chip>
                         <v-chip v-else v-bind="props" prepend-icon="mdi-account-circle" :text="item.raw.username ? item.raw.username:item.raw.email"></v-chip>
                     </template>
 
                     <template v-slot:item="{ props, item }">
                         <v-list-item v-if="item.raw.profile" v-bind="props" :prepend-avatar="item.raw.profile" :title="item.raw.username ? item.raw.username:item.raw.email"
                             :subtitle="item.raw.email"></v-list-item>
+                        <v-list-item v-else-if="item.raw.id == 'system_id'" v-bind="props" prepend-avatar="/src/assets/images/chat/chat-icon.png" title="System"></v-list-item>
                         <v-list-item v-else v-bind="props" :title="item.raw.username ? item.raw.username:item.raw.email"
                             :subtitle="item.raw.email">
                             <template v-slot:prepend>
