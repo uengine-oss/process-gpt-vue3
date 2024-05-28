@@ -248,6 +248,12 @@ export default {
                 ${messagesString}.`;
                 this.$store.commit('clearMessages');
             }
+            if(this.$store.state.editMessages) {
+                const messagesString = JSON.stringify(this.$store.state.editMessages);
+                this.prompt = `아래 대화 내용을 보고 기존 프로세스에서 수정 가능한 부분을 유추하여 프로세스 정의를 수정해주세요.
+                ${messagesString}.`;
+                this.$store.commit('clearMessages');
+            }
         })
     },
     watch: {
