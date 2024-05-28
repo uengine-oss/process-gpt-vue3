@@ -66,8 +66,8 @@ declare global {
     }
 }
 
-//window.$mode = 'uEngine';
-window.$mode = 'ProcessGPT';
+window.$mode = 'uEngine';
+// window.$mode = 'ProcessGPT';
 window.$jms = false;
 window.$backend = '';
 
