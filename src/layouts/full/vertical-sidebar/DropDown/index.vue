@@ -1,5 +1,12 @@
 <script setup>
+import { computed } from 'vue';
 const props = defineProps({ item: Object, level: Number });
+const useI18n = computed(() => {
+    if (props.level > 0) {
+        return false;
+    }
+    return true;
+});
 </script>
 
 <template>
@@ -25,7 +32,7 @@ const props = defineProps({ item: Object, level: Number });
                 height="24"
             />
         </template>
-        <v-list-item-title class="ml-4 text-body-1">{{ $t(item.title) }}</v-list-item-title>
+        <v-list-item-title class="ml-4 text-body-1">{{ useI18n ? $t(item.title) : item.title }}</v-list-item-title>
         <!---If Caption-->
         <v-list-item-subtitle v-if="item.subCaption" class="text-caption mt-n1 hide-menu">
             {{ item.subCaption }}

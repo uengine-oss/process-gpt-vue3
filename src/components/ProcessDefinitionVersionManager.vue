@@ -75,10 +75,11 @@
 <script>
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import BackendFactory from '@/components/api/BackendFactory';
 import { Icon } from '@iconify/vue';
 
 // import 'vue-diff/dist/index.css';
-
+const backend = BackendFactory.createBackend();
 export default {
     name: 'ProcessDefinitionVersionManager',
     components: {
@@ -150,12 +151,17 @@ export default {
             //     context: me,
             //     action: async () => {
             me.loading = true
-            let result = await me.storage.list(`${me.basePath}`, {
+            let result = await backend.getDefinitionVersions(me.process.processDefinitionId, {
                 key: 'version',
                 sort: 'asc',
                 orderBy: 'timeStamp',
-                match: { 'proc_def_id': me.process.processDefinitionId }
-            })
+            });
+            // let result = await me.storage.list(`${me.basePath}`, {
+            //     key: 'version',
+            //     sort: 'asc',
+            //     orderBy: 'timeStamp',
+            //     match: { 'proc_def_id': me.process.processDefinitionId }
+            // })
             me.lists = result.map(item => ({ ...item, xml: null }));
             me.lists[0].xml = await me.loadXMLOfVer(me.lists[0].version)
             me.isOpen = true
@@ -193,12 +199,18 @@ export default {
             // me.$try({
             //     context: me,
             //     action: async () => {
-            let result = await me.storage.list(`${me.basePath}`, {
+            let result =  await backend.getDefinitionVersions(me.process.processDefinitionId, {
                 key: 'snapshot',
                 sort: 'asc',
                 size: 1,
-                match: { 'proc_def_id': me.process.processDefinitionId, 'version': version }
-            })
+                match: { 'version': version }
+            });
+            // let result = await me.storage.list(`${me.basePath}`, {
+            //     key: 'snapshot',
+            //     sort: 'asc',
+            //     size: 1,
+            //     match: { 'proc_def_id': me.process.processDefinitionId, 'version': version }
+            // })
             if (result[0]) {
                 return result[0].snapshot
             }

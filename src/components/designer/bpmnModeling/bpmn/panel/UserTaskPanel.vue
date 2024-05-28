@@ -1,99 +1,108 @@
 <template>
     <div>
-        <div v-if="inputData.length > 0" style="margin-bottom: 20px">
-            <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.inputData') }}</div>
-            <v-row class="ma-0 pa-0">
-                <div v-for="(input, idx) in inputData" :key="idx" class="mr-2 mt-2">
-                    <v-chip v-if="input.mandatory" color="primary" variant="outlined" class="text-body-2" @click="deleteInputData(input)">
-                        {{ input.argument.text }}
-                        <CircleXIcon class="ml-2" start size="20" />
-                    </v-chip>
-                    <v-chip v-else class="text-body-2" variant="outlined" @click="deleteInputData(inputData)">
-                        {{ input.argument.text }}
-                        <CircleXIcon class="ml-2" start size="20" />
-                    </v-chip>
-                </div>
-            </v-row>
+        <!-- <v-switch v-model="isEventSyncForm" :label="isEventSyncForm ? 'Event Synchronization Form':'Form Mapping' "></v-switch> -->
+        
+        <div v-if="isEventSyncForm">
+            <EventSynchronizationForm v-model="copyUengineProperties.eventSynchronization" :roles="roles" :taskName="name"></EventSynchronizationForm>
         </div>
-        <div v-if="outputData.length > 0" style="margin-bottom: 20px">
-            <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.outputData') }}</div>
-            <v-row class="ma-0 pa-0">
-                <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
-                    <v-chip
-                        v-if="output.mandatory"
-                        color="primary"
-                        class="text-body-2"
-                        variant="outlined"
-                        @click="deleteOutputData(output)"
-                    >
-                        {{ output.variable.name }}
-                        <CircleXIcon class="ml-2" start size="20" />
-                    </v-chip>
-                    <v-chip v-else class="text-body-2" variant="outlined" @click="deleteOutputData(output)">
-                        {{ output.variable.name }}
-                        <CircleXIcon class="ml-2" start size="20" />
-                    </v-chip>
-                </div>
-            </v-row>
-        </div>
-        <div>
-            <v-row class="ma-0 pa-0">
-                <div>Parameter Context</div>
-                <v-spacer></v-spacer>
-                <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
-            </v-row>
-        </div>
-        <v-spacer></v-spacer>
-        <v-checkbox v-model="isFormActivity" label="폼 기반 업무"></v-checkbox>
-        <div v-if="isFormActivity">
-            <div>
-                <v-row cclass="ma-0 pa-0">
-                    <!-- <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
-                        <v-label class=" font-weight-medium" for="hcpm">{{ $t('ProcessVariable.defaultValue') }}</v-label>
-                    </v-col> -->
-                    <v-col cols="12" sm="9">
-                        <!-- <v-autocomplete 
-                            v-model="selectedForm"
-                            :items="definition.processVariables
-                                        .filter(item => item.type === 'Form' && item.defaultValue && item.defaultValue.name && item.defaultValue.alias)
-                                        .map(item => item.defaultValue.name + '_' + item.defaultValue.alias)" 
-                            color="primary" 
-                            variant="outlined"
-                            hide-details>
-                        </v-autocomplete> -->
-                        <v-autocomplete
-                            v-model="selectedForm"
-                            :items="definition.processVariables.filter((item) => item.type === 'Form').map((item) => item.name)"
+        <div v-else>
+            <div v-if="inputData.length > 0" style="margin-bottom: 20px">
+                <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.inputData') }}</div>
+                <v-row class="ma-0 pa-0">
+                    <div v-for="(input, idx) in inputData" :key="idx" class="mr-2 mt-2">
+                        <v-chip v-if="input.mandatory" color="primary" variant="outlined" class="text-body-2" @click="deleteInputData(input)">
+                            {{ input.argument.text }}
+                            <CircleXIcon class="ml-2" start size="20" />
+                        </v-chip>
+                        <v-chip v-else class="text-body-2" variant="outlined" @click="deleteInputData(inputData)">
+                            {{ input.argument.text }}
+                            <CircleXIcon class="ml-2" start size="20" />
+                        </v-chip>
+                    </div>
+                </v-row>
+            </div>
+            
+            <div v-if="outputData.length > 0" style="margin-bottom: 20px">
+                <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.outputData') }}</div>
+                <v-row class="ma-0 pa-0">
+                    <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
+                        <v-chip
+                            v-if="output.mandatory"
                             color="primary"
+                            class="text-body-2"
                             variant="outlined"
-                            hide-details
+                            @click="deleteOutputData(output)"
                         >
-                        </v-autocomplete>
-                    </v-col>
+                            {{ output.variable.name }}
+                            <CircleXIcon class="ml-2" start size="20" />
+                        </v-chip>
+                        <v-chip v-else class="text-body-2" variant="outlined" @click="deleteOutputData(output)">
+                            {{ output.variable.name }}
+                            <CircleXIcon class="ml-2" start size="20" />
+                        </v-chip>
+                    </div>
                 </v-row>
             </div>
             <div>
                 <v-row class="ma-0 pa-0">
-                    <v-btn text color="primary" class="my-3" @click="openFormMapper()"> Field Mapping </v-btn>
+                    <div>Parameter Context</div>
+                    <v-spacer></v-spacer>
+                    <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
                 </v-row>
             </div>
-            <v-dialog
-                v-model="isOpenFieldMapper"
-                max-width="80%"
-                max-height="80%"
-                @afterLeave="$refs.formMapper && $refs.formMapper.saveFormMapperJson()"
-            >
-                <form-mapper
-                    ref="formMapper"
-                    :definition="copyDefinition"
-                    :name="name"
-                    :roles="roles"
-                    :formMapperJson="formMapperJson"
-                    :activities="activities"
-                    @saveFormMapperJson="saveFormMapperJson"
-                />
-            </v-dialog>
+            <v-spacer></v-spacer>
+            <v-checkbox v-model="isFormActivity" label="폼 기반 업무"></v-checkbox>
+            <div v-if="isFormActivity">
+                <div>
+                    <v-row cclass="ma-0 pa-0">
+                        <!-- <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
+                            <v-label class=" font-weight-medium" for="hcpm">{{ $t('ProcessVariable.defaultValue') }}</v-label>
+                        </v-col> -->
+                        <v-col cols="12" sm="9">
+                            <!-- <v-autocomplete 
+                                v-model="selectedForm"
+                                :items="definition.processVariables
+                                            .filter(item => item.type === 'Form' && item.defaultValue && item.defaultValue.name && item.defaultValue.alias)
+                                            .map(item => item.defaultValue.name + '_' + item.defaultValue.alias)" 
+                                color="primary" 
+                                variant="outlined"
+                                hide-details>
+                            </v-autocomplete> -->
+                            <v-autocomplete
+                                v-model="selectedForm"
+                                :items="definition.processVariables.filter((item) => item.type === 'Form').map((item) => item.name)"
+                                color="primary"
+                                variant="outlined"
+                                hide-details
+                            >
+                            </v-autocomplete>
+                        </v-col>
+                    </v-row>
+                </div>
+                <div>
+                    <v-row class="ma-0 pa-0">
+                        <v-btn text color="primary" class="my-3" @click="openFormMapper()"> Field Mapping </v-btn>
+                    </v-row>
+                </div>
+                <v-dialog
+                    v-model="isOpenFieldMapper"
+                    max-width="80%"
+                    max-height="80%"
+                    @afterLeave="$refs.formMapper && $refs.formMapper.saveFormMapperJson()"
+                >
+                    <form-mapper
+                        ref="formMapper"
+                        :definition="copyDefinition"
+                        :name="name"
+                        :roles="roles"
+                        :formMapperJson="formMapperJson"
+                        :activities="activities"
+                        @saveFormMapperJson="saveFormMapperJson"
+                    />
+                </v-dialog>
+            </div>
         </div>
+        
         <!-- <div>
             <v-row class="ma-0 pa-0">
                 <div>{{ $t('BpnmPropertyPanel.checkPoints') }}</div>
@@ -187,12 +196,14 @@ import BpmnParameterContexts from '@/components/designer/bpmnModeling/bpmn/varia
 import FormMapper from '@/components/designer/mapper/FormMapper.vue';
 import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
+import EventSynchronizationForm from '@/components/designer/EventSynchronizationForm.vue';
 
 export default {
     name: 'user-task-panel',
     components: {
         BpmnParameterContexts,
-        FormMapper
+        FormMapper,
+        EventSynchronizationForm
     },
     props: {
         uengineProperties: Object,
@@ -207,6 +218,7 @@ export default {
     created() {},
     data() {
         return {
+            isEventSyncForm: false,
             // requiredKeyLists: {
             //     "parameters": [],
             //     "checkpoints": []
@@ -247,28 +259,32 @@ export default {
         let me = this;
 
         const store = useBpmnStore();
-        this.bpmnModeler = store.getModeler;
+        me.bpmnModeler = store.getModeler;
         if (me.role?.length > 0) {
-            this.copyUengineProperties.role = { name: me.role };
+            me.copyUengineProperties.role = { name: me.role };
         }
-        if (!this.copyUengineProperties.parameters) this.copyUengineProperties.parameters = [];
+        if (!me.copyUengineProperties.parameters) me.copyUengineProperties.parameters = [];
+        if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
 
-        if (this.copyUengineProperties.variableForHtmlFormContext) {
-            this.isFormActivity = true;
-            this.selectedForm = this.copyUengineProperties.variableForHtmlFormContext.name;
+        if (me.copyUengineProperties.variableForHtmlFormContext) {
+            me.isFormActivity = true;
+            me.selectedForm = me.copyUengineProperties.variableForHtmlFormContext.name;
         }
 
         let mapperData = {};
-        if (!this.copyUengineProperties.mappingContext) {
-            if (!this.copyUengineProperties._type == 'org.uengine.kernel.FormActivity') {
-                this.copyUengineProperties.mappingContext = mapperData;
+        if (!me.copyUengineProperties.mappingContext) {
+            if (!me.copyUengineProperties._type == 'org.uengine.kernel.FormActivity') {
+                me.copyUengineProperties.mappingContext = mapperData;
             }
         } else {
-            this.formMapperJson = JSON.stringify(this.copyUengineProperties.mappingContext, null, 2);
+            me.formMapperJson = JSON.stringify(me.copyUengineProperties.mappingContext, null, 2);
         }
-        this.$emit('update:uEngineProperties', this.copyUengineProperties);
+        // if(me.copyUengineProperties.eventSynchronization){
+        //     me.isEventSyncForm = true
+        // }
 
-        this.copyDefinition = this.definition;
+        me.$emit('update:uEngineProperties', me.copyUengineProperties);
+        me.copyDefinition = me.definition;
     },
     computed: {
         inputData() {
@@ -437,70 +453,40 @@ export default {
             const parser = new DOMParser();
             const doc = parser.parseFromString(formHtml, 'text/html');
 
-            const extractFields = (element) => {
+            const extractFieldsRecursively = (element) => {
                 let fields = [];
                 if (element.hasChildNodes()) {
                     Array.from(element.children).forEach((child) => {
                         const tagName = child.tagName.toLowerCase();
-                        if (tagName.includes('field') && !tagName.includes('label')) {
-                            const type = tagName.replace('-field', '');
-                            const name = child.getAttribute('name');
-                            const alias = child.getAttribute('alias');
-                            const fieldData = {
-                                name,
-                                type,
-                                alias,
+
+                        // 입력 필드인 경우, 해당 변수명을 추가
+                        if(tagName.includes('field') && !tagName.includes('label') && !tagName.includes('code-field')) {
+                            
+                            fields.push({
+                                name: child.getAttribute('name'),
+                                alias: child.getAttribute('alias'),
+                                type: tagName.replace('-field', ''),
                                 children: []
-                            };
-                            fieldData.children = extractFields(child);
-                            fields.push(fieldData);
-                        } else {
-                            fields = fields.concat(extractFields(child));
-                        }
+                            });
+
+                        // 레이아웃인 경우 멀티 데이터 설정시에만 해당 이름을 필드로 추가하고, 하위 필드를 탐색
+                        } else if(tagName.includes('row-layout') && child.getAttribute('is_multidata_mode') === 'true') {
+
+                            fields.push({
+                                name: child.getAttribute('name'),
+                                alias: child.getAttribute('alias'),
+                                fields: extractFieldsRecursively(child)
+                            })
+
+                        // 그외의 경우에는 하위 노드들을 계속 탐색
+                        } else 
+                            fields = fields.concat(extractFieldsRecursively(child));
                     });
                 }
                 return fields;
-            };
+            }
 
-            const extractSingleFields = (element) => {
-                let fields = [];
-                if (element.hasChildNodes()) {
-                    Array.from(element.children).forEach((child) => {
-                        const tagName = child.tagName.toLowerCase();
-                        if (tagName.includes('field') && !tagName.includes('label')) {
-                            const type = tagName.replace('-field', '');
-                            const name = child.getAttribute('name');
-                            const alias = child.getAttribute('alias');
-                            const fieldData = {
-                                name,
-                                type,
-                                alias,
-                                children: []
-                            };
-                            fieldData.children = extractFields(child);
-                            fields.push(fieldData);
-                        }
-                        fields = fields.concat(extractSingleFields(child));
-                    });
-                }
-                return fields;
-            };
-
-            const rowLayouts = doc.querySelectorAll('row-layout');
-            const parsedLayouts = Array.from(rowLayouts).map((rowLayout) => {
-                const isMultiDataMode = rowLayout.getAttribute('is_multidata_mode') === 'true';
-                if (isMultiDataMode) {
-                    return {
-                        name: rowLayout.getAttribute('name'),
-                        alias: rowLayout.getAttribute('alias'),
-                        fields: extractFields(rowLayout)
-                    };
-                } else {
-                    return extractSingleFields(rowLayout);
-                }
-            });
-
-            return parsedLayouts.flat();
+            return extractFieldsRecursively(doc.body)
         },
         createForm() {
             let urlData = {}

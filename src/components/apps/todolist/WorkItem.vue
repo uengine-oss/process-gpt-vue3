@@ -6,7 +6,8 @@
                 <v-chip size="small" variant="outlined" density="comfortable" style="margin-left: 5px">{{ workItemStatus }}</v-chip>
             </v-row>
         </v-card-title>
-        <v-row class="ma-0 pa-2 mt-2">
+        <!-- pc 사이즈 -->
+        <v-row class="ma-0 pa-2 mt-2 work-item-pc">
             <!-- Left -->
             <v-col
                 class="pa-0"
@@ -117,6 +118,117 @@
                 </v-alert>
             </v-col>
         </v-row>
+        <!-- 모바일 사이즈 -->
+        <v-row class="ma-0 pa-2 mt-2 work-item-mobile">
+            <!-- Left -->
+            <v-col
+                class="pa-0"
+                cols="12"
+                style="overflow: auto"
+            >
+                <div v-if="currentComponent"
+                    class="work-itme-current-component"
+                >
+                    <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus"
+                        :isComplete="isComplete"></component>
+                    <v-tooltip :text="$t('processDefinition.zoom')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn
+                                @click="$globalState.methods.toggleZoom()"
+                                size="small"
+                                icon
+                                v-bind="props"
+                                class="processVariables-zoom task-btn"
+                            >
+                                <!-- 캔버스 확대 -->
+                                <Icon
+                                    v-if="!$globalState.state.isZoomed"
+                                    icon="material-symbols:zoom-out-map-rounded"
+                                    width="32"
+                                    height="32"
+                                />
+                                <!-- 캔버스 축소 -->
+                                <Icon v-else icon="material-symbols:zoom-in-map-rounded" width="32" height="32" />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+                </div>
+            </v-col>
+            <!-- Right -->
+            <v-col class="pa-0" cols="12">
+                <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
+                    <v-tabs v-model="selectedTab">
+                        <v-tab value="progress" v-if="checkPoints">진행 상황/체크포인트</v-tab>
+                        <v-tab value="progress" v-else>진행 상황</v-tab>
+                        <v-tab v-if="messages && messages.length > 0" value="history">워크 히스토리</v-tab>
+                        <v-tab v-if="messages" value="agent">Agent 초안 생성</v-tab>
+                    </v-tabs>
+                    <v-window v-model="selectedTab">
+                        <v-window-item value="progress">
+                            <div
+                                class="pa-2"
+                                :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 280px);'"
+                                style="color: black; overflow: auto"
+                            >
+                                <div class="pa-0 pl-2" :style="!checkPoints ? 'height:100%;' : 'height:50%;'">
+                                    <div v-if="bpmn" style="height: 100%">
+                                        <process-definition
+                                            style="height: 100%"
+                                            :currentActivities="currentActivities"
+                                            :bpmn="bpmn"
+                                            :key="updatedDefKey"
+                                            :isViewMode="true"
+                                        ></process-definition>
+                                    </div>
+                                    <div v-else>No BPMN found</div>
+                                </div>
+                                <div v-if="checkPoints" style="overflow: auto; height: 50%">
+                                    <v-card-title>CheckPoint ({{ checkedCount }}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>
+                                    <div style="margin: -15px 0px 0px 5px">
+                                        <div v-for="(checkPoint, index) in checkPoints" :key="index" style="height: 40px">
+                                            <v-checkbox
+                                                style="height: 40px !important"
+                                                v-model="checkPoint.checked"
+                                                :label="checkPoint.name"
+                                                color="primary"
+                                                hide-details
+                                            ></v-checkbox>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </v-window-item>
+                        <v-window-item value="history" class="pa-2">
+                            <v-card elevation="10" class="pa-4">
+                                <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
+                                    <div class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
+                                        <component
+                                            :is="'work-history-' + mode"
+                                            :messages="messages"
+                                            :isComplete="isComplete"
+                                            @clickMessage="navigateToWorkItemByTaskId"
+                                        />
+                                    </div>
+                                </perfect-scrollbar>
+                            </v-card>
+                        </v-window-item>
+                        <v-window-item value="agent" class="pa-2">
+                            <v-card elevation="10" class="pa-4">
+                                <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
+                                    <div class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
+                                        <component
+                                            :is="'work-history-' + mode"
+                                            :messages="[]"
+                                            :isAgentMode="true"
+                                        />
+                                    </div>
+                                </perfect-scrollbar>
+                            </v-card>
+                        </v-window-item>
+                    </v-window>
+                </v-alert>
+            </v-col>
+        </v-row>
     </v-card>
 </template>
 
@@ -151,10 +263,13 @@ export default {
         updatedDefKey: 0,
         loading: false,
         selectedTab: 'progress',
-        eventList: []
+        eventList: [],
     }),
     created() {
         this.init();
+        this.EventBus.on('process-definition-updated', async () => {
+            this.updatedDefKey++;
+        });
     },
     computed: {
         mode() {
@@ -246,5 +361,17 @@ export default {
 .work-itme-current-component .form-label {
     font-size: 20px;
     font-weight: 500;
+}
+
+.work-item-mobile {
+    display: none;
+}
+@media only screen and (max-width:700px) {
+    .work-item-mobile {
+        display: block;
+    }
+    .work-item-pc {
+        display: none;
+    }
 }
 </style>

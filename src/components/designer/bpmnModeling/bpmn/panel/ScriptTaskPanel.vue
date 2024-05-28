@@ -14,7 +14,7 @@
             </v-radio-group>
             <div>{{ $t('BpnmPropertyPanel.script') }}</div>
             <v-textarea v-model="copyUengineProperties.script" :disabled="isViewMode" style="width: 100%"></v-textarea>
-            <GenerateScriptPanel v-model="copyUengineProperties.script" :language="'python'" />
+            <GenerateScriptPanel v-model="copyUengineProperties.script" :language="languageLabel" />
         </div>
         <div>
             <div>Return 값을 저장 할 변수</div>

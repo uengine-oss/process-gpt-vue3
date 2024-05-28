@@ -126,7 +126,9 @@ export default class StorageBaseSupabase {
                     role: data.role
                 }
             } else {
-                throw new StorageBaseError('error in getUserInfo', e, arguments);
+                alert('로그인이 필요합니다');
+                window.location.href = '/auth/login';
+                throw new StorageBaseError('error in getUserInfo', error, arguments);
             }
         } catch(e) {
             throw new StorageBaseError('error in getUserInfo', e, arguments);
@@ -136,7 +138,7 @@ export default class StorageBaseSupabase {
     async resetPassword(email) {
         try {
             const result = await window.$supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: 'http://127.0.0.1:5173/auth/reset-password',
+                redirectTo: window.location.host +'/auth/reset-password',
             });
             return result;
         } catch (e) {
@@ -443,6 +445,31 @@ export default class StorageBaseSupabase {
                 .subscribe();
         } catch (error) {
             throw new StorageBaseError('error in watch_added', error, arguments);
+        }
+    }
+
+    async unwatch(path) {
+        try {
+            let obj = this.formatDataPath(path);
+            const subscription = window.$supabase
+                .channel('room1')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: obj.table
+                    },
+                    (payload) => {
+                        console.log('Change received!', payload);
+                    }
+                );
+
+            await subscription.unsubscribe();
+
+            console.log(`Unsubscribed from changes on ${obj.table}`);
+        } catch (error) {
+            throw new StorageBaseError('error in unwatch', error, arguments);
         }
     }
 

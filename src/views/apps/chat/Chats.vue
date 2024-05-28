@@ -34,18 +34,8 @@
                         @deleteAllWorkList="deleteAllWorkList"
                         @sendEditedMessage="sendEditedMessage"
                         @stopMessage="stopMessage"
-                        @getMoreChat="getMoreChat"
                         @toggleProcessGPTActive="toggleProcessGPTActive"
-                    >
-                        <template v-slot:custom-chat>
-                            <VDataTable v-if="onLoad" :headers="headers" :items="definitions" item-value="processDefinitionId">
-                                <template v-slot:item.actions="{ item }">
-                                    <v-btn color="primary" class="px-4 rounded-pill mx-auto" variant="tonal"
-                                        @click="executeProcess(item.raw.processDefinitionId)">Select</v-btn>
-                                </template>
-                            </VDataTable>
-                        </template>
-                    </Chat>
+                    ></Chat>
                 </div>
             </template>
 
@@ -64,15 +54,15 @@
 </template>
 
 <script>
-import AppBaseCard from '@/components/shared/AppBaseCard.vue';
+import ChatModule from "@/components/ChatModule.vue";
+import ChatGenerator from "@/components/ai/WorkAssistantGenerator.js";
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
+import AppBaseCard from '@/components/shared/AppBaseCard.vue';
+import Chat from "@/components/ui/Chat.vue";
+import axios from 'axios';
 import partialParse from "partial-json-parser";
 import { VectorStorage } from "vector-storage";
-import ChatGenerator from "@/components/ai/WorkAssistantGenerator.js";
-import Chat from "@/components/ui/Chat.vue";
-import ChatModule from "@/components/ChatModule.vue";
-import axios from 'axios';
 import { VDataTable } from 'vuetify/labs/VDataTable';
 
 
@@ -89,8 +79,8 @@ export default {
     },
     data: () => ({
         headers: [
-            { title: 'id', align: 'start', key: 'processDefinitionId' },
-            { title: 'name', align: 'start', key: 'processDefinitionName' },
+            { title: 'id', align: 'start', key: 'id' },
+            { title: 'name', align: 'start', key: 'name' },
             { title: 'description', align: 'start', key: 'description' },
             { title: 'actions', align: 'start', key: 'actions' },
         ],
@@ -121,7 +111,7 @@ export default {
         }
     },  
     async created() {
-        // this.init();
+        this.init();
         this.generator = new ChatGenerator(this, {
             isStream: true,
             preferredLanguage: "Korean"
@@ -153,6 +143,14 @@ export default {
             await me.storage.list(`users`).then(function (users) {
                 if (users) {
                     users = users.filter(user => user.email !== me.userInfo.email);
+                    const systemUser = {
+                        email: "system@uengine.org",
+                        id: "system_id",
+                        username: "System",
+                        is_admin: true,
+                        notifications: null
+                    };
+                    users.unshift(systemUser);
                     me.userList = users
                 }
             });
@@ -165,13 +163,26 @@ export default {
                         if(chatRoom.participants.find(x => x.email === me.userInfo.email)){
                             me.chatRoomList.push(chatRoom)
                         }
-                    })
+                    });
                     if(me.chatRoomList.length > 0){
-                        me.currentChatRoom = me.filteredChatRoomList[0]
+                        me.currentChatRoom = me.filteredChatRoomList[0];
+                        me.chatRoomSelected(me.currentChatRoom)
                         me.getChatList(me.filteredChatRoomList[0].id);
                         me.setReadMessage(0);
                     } else {
-                        alert("Create a new chat room")
+                        let systemChatRoom = {
+                            "name": "Process GPT",
+                            "participants": [
+                                {
+                                    email: "system@uengine.org",
+                                    id: "system_id",
+                                    username: "System",
+                                    is_admin: true,
+                                    notifications: null
+                                }
+                            ]
+                        };
+                        me.createChatRoom(systemChatRoom);
                     }
                 }
             });
@@ -214,6 +225,11 @@ export default {
         },
         chatRoomSelected(chatRoomInfo){
             this.currentChatRoom = chatRoomInfo
+            if(chatRoomInfo.participants.find(p => p.id === "system_id")){
+                this.ProcessGPTActive = true
+            } else {
+                this.ProcessGPTActive = false
+            }
             this.getChatList(chatRoomInfo.id);
             this.setReadMessage(this.chatRoomList.findIndex(x => x.id == chatRoomInfo.id));
         },
@@ -253,30 +269,49 @@ export default {
             }
         },
         async beforeSendMessage(newMessage) {
-            if (newMessage && newMessage.text != '') {
-                this.putMessage(this.createMessageObj(newMessage.text))
+            if (newMessage && (newMessage.text != '' || newMessage.image != null)) {
+                this.putMessage(this.createMessageObj(newMessage))
                 if(!this.generator.contexts) {
-                    let contexts = await this.queryFromVectorDB(newMessage.text);
+                    let contexts = await this.storage.list(`proc_def`);
                     this.generator.setContexts(contexts);
                 }
+                
                 this.generator.setWorkList(this.generatedWorkList);
                 newMessage.callType = 'chats'
                 this.sendMessage(newMessage);
             }
         },
 
-        async beforeExecuteProcess(newMessage){
-            if(!this.generator.contexts) {
-                var procDefs = await this.queryFromVectorDB(newMessage.text);
-                if (procDefs) {
-                    procDefs = procDefs.map(item => JSON.parse(item));
-                    this.definitions = procDefs;
-                    this.onLoad = true;
+        async beforeExecuteProcess(newMessage) {
+            var me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    var url = '/process-search/invoke'
+                    var req = {
+                        input: {
+                            answer: newMessage.text || '',
+                            image: newMessage.image || ''
+                        }
+                    }
+                    let response = await axios.post(url, req);
+                    const output = JSON.parse(response.data.output)
+                    if (output && output.processDefinitionList) {
+                        const processDefinition = output.processDefinitionList.pop();
+                        me.executeProcess(processDefinition.id);
+                    }
                 }
-            }
+            })
         },
-        executeProcess(processDefinitionId) {
-            this.$router.push('/instances/chat?process=' + processDefinitionId)
+        async executeProcess(processDefinitionId) {
+            var me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    await me.backend.start({processDefinitionId: processDefinitionId});
+                    me.EventBus.emit('instances-updated');
+                }
+            })
         },
 
         afterModelCreated(response) {
@@ -306,15 +341,13 @@ export default {
                     responseObj = response
                 }
                 // process instance execute
-                if(responseObj.work == 'StartProcessInstance'){
-                    if(this.lastSendMessage){
-                        localStorage.setItem('instancePrompt', this.lastSendMessage)
-                    } else {
-                        localStorage.setItem('instancePrompt', this.messages[this.messages.length - 2].content)
+                if(responseObj.work == 'StartProcessInstance') {
+                    if(!this.lastSendMessage) {
+                        const userMsgs = this.messages.filter(msg => msg.role === 'user');
+                        this.lastSendMessage = userMsgs[userMsgs.length - 1];
                     }
                     systemMsg = `"${responseObj.title}" 프로세스를 시작하겠습니다.`
-                    // me.$router.push('/instances/chat')
-                    this.beforeExecuteProcess({text: `${responseObj.title}`});
+                    this.beforeExecuteProcess({ text: responseObj.title, image: this.lastSendMessage.image });
 
                 } else if(responseObj.work == 'TodoListRegistration'){
                     systemMsg = `"${responseObj.activity_id}" 할 일이 추가되었습니다.`
@@ -404,56 +437,57 @@ export default {
             // console.log(response)
         },
         async afterGenerationFinished(response) {
-            if(response && response.includes("{")){
-                let responseObj = partialParse(response)
-                if(responseObj.work == 'SKIP'){
+            let responseObj = response
+            if(responseObj.work == 'SKIP'){
+                if(!this.ProcessGPTActive){
                     this.messages.pop();
+                }
+            } else {
+                if(this.ProcessGPTActive){
+                    responseObj.expanded = false
+                    this.generatedWorkList.push(responseObj)
+                }
+                let obj = this.createMessageObj(response, 'system')
+                if(responseObj.messageForUser){
+                    obj.messageForUser = responseObj.messageForUser
+                }
+                if(responseObj.work == 'CompanyQuery'){
+                    try{
+                        var url = window.$memento == '' ? 'http://localhost:8005' : window.$memento
+                        let responseMemento = await axios.post(`${url}/query`, { query: responseObj.content});
+                        obj.memento = {}
+                        obj.memento.response = responseMemento.data.response
+                        if (!responseMemento.data.metadata) return {};
+                        const unique = {};
+                        const sources = Object.values(responseMemento.data.metadata).filter(obj => {
+                            if (!unique[obj.file_path]) {
+                                unique[obj.file_path] = true;
+                                return true;
+                            }
+                        });
+                        obj.memento.sources = sources
+
+                        const responseTable = await axios.post(`${window.$backend}/process-data-query/invoke`, {
+                            input: {
+                                var_name: responseObj.content
+                            }
+                        });
+                        obj.tableData = responseTable.data.output
+                    } catch(error){
+                        alert(error);
+                    }
+                } else if(responseObj.work == 'ScheduleQuery'){
+                    console.log(responseObj)
                 } else {
-                    if(this.ProcessGPTActive){
-                        this.messages.pop();
-                        responseObj.expanded = false
-                        this.generatedWorkList.push(responseObj)
-                    }
-                    let obj = this.createMessageObj(response, 'system')
-                    if(responseObj.messageForUser){
-                        obj.messageForUser = responseObj.messageForUser
-                    }
-                    if(responseObj.work == 'CompanyQuery'){
-                        try{
-                            let responseMemento = await axios.post('http://localhost:8005/query', { query: responseObj.content});
-                            obj.memento = {}
-                            obj.memento.response = responseMemento.data.response
-                            if (!responseMemento.data.metadata) return {};
-                            const unique = {};
-                            const sources = Object.values(responseMemento.data.metadata).filter(obj => {
-                                if (!unique[obj.file_path]) {
-                                    unique[obj.file_path] = true;
-                                    return true;
-                                }
-                            });
-                            obj.memento.sources = sources
-    
-                            const responseTable = await axios.post(`${window.$backend}/process-data-query/invoke`, {
-                                input: {
-                                    var_name: responseObj.content
-                                }
-                            });
-                            obj.tableData = responseTable.data.output
-                        } catch(error){
-                            alert(error);
-                        }
-                    } else if(responseObj.work == 'ScheduleQuery'){
-                        console.log(responseObj)
-                    } else {
-                        if(!this.ProcessGPTActive){
-                            obj.uuid = this.uuid()
-                            obj.systemRequest = true
-                            obj.requestUserEmail = this.userInfo.email
-                        }
-                    }
                     if(!this.ProcessGPTActive){
-                        this.putMessage(obj)
+                        obj.uuid = this.uuid()
+                        obj.systemRequest = true
+                        obj.requestUserEmail = this.userInfo.email
                     }
+                }
+                if(!this.ProcessGPTActive){
+                    // this.messages.pop();
+                    this.putMessage(obj)
                 }
             }
         },

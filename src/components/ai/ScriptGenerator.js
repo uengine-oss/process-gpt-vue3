@@ -30,14 +30,26 @@ export default class ScriptGenerator extends AIGenerator{
                 `현재 사용자가 입력한 스크립트가 있고, 해당 스크립트를 수정해서 결과를 반환해줘. 스크립트는 다음과 같아. \n\`\`\`\n${prevScript}\n\`\`\`\n` : "")
         
         // 각각의 언어에 맞는 예시 생성
-        if(language === 'python'){
-            copiedPrevMessageFormat.content = copiedPrevMessageFormat.content
-                .replace("{{exampleInput}}", "'Hello, World'를 출력시켜줘")
-                .replace("{{exampleOutput}}", "print('Hello, World')")
-        } else {
-            copiedPrevMessageFormat.content = copiedPrevMessageFormat.content
-                .replace("{{exampleInput}}", "Hello, World를 출력시켜줘")
-                .replace("{{exampleOutput}}", "console.log('Hello, World')")
+        switch(language){
+            case 'python':
+                copiedPrevMessageFormat.content = copiedPrevMessageFormat.content
+                    .replace("{{exampleInput}}", "'Hello, World'를 출력시켜줘")
+                    .replace("{{exampleOutput}}", "print('Hello, World')")
+                break;
+            case "javascript":
+                copiedPrevMessageFormat.content = copiedPrevMessageFormat.content
+                    .replace("{{exampleInput}}", "'Hello, World'를 출력시켜줘")
+                    .replace("{{exampleOutput}}", "console.log('Hello, World')")
+                break;
+            case "java":
+                copiedPrevMessageFormat.content = copiedPrevMessageFormat.content
+                    .replace("{{exampleInput}}", "'Hello, World'를 출력시켜줘")
+                    .replace("{{exampleOutput}}", "System.out.println('Hello, World')")
+                break;
+            default:
+                copiedPrevMessageFormat.content = copiedPrevMessageFormat.content
+                    .replace("{{exampleInput}}", "Hello, World를 출력시켜줘")
+                    .replace("{{exampleOutput}}", "console.log('Hello, World')")
         }
         // #endregion
         this.previousMessages = [copiedPrevMessageFormat];
