@@ -230,7 +230,7 @@ export default {
             if(!me.modelValue) me.modelValue.eventSynchronization = {}
             if(!me.modelValue.eventType) me.modelValue.eventType = ''
             if(!me.modelValue.attributes) me.modelValue.attributes = []
-            if(!me.modelValue.mappingContext) me.modelValue.mappingContext = []
+            if(!me.modelValue.mappingContext) me.modelValue.mappingContext = {}
             me.eventSynchronization = JSON.parse(JSON.stringify(me.modelValue));
             me.eventSynchronization.attributes.map(attribute => ({ ...attribute, isEdit: false }))
 

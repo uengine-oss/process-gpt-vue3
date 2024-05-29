@@ -426,7 +426,12 @@ export default {
                     systemMsg = `프로세스 정의가 생성되었습니다.`
                     me.$store.dispatch('updateMessages', me.messages);
                     me.$router.push('/definitions/chat');
+                } else if(responseObj.work == 'ModifyProcessDefinition'){
+                    systemMsg = `프로세스 정의 수정이 시작되었습니다.`
+                    me.$store.dispatch('updateEditMessages', me.messages)
+                    me.$router.push(`/definitions/${responseObj.processId}`);
                 }
+
                 systemMsg = `${me.userInfo.name}님이 요청하신 ${systemMsg}`
                 me.putMessage(me.createMessageObj(systemMsg, 'system'))
                 if(response.content){
@@ -438,56 +443,58 @@ export default {
         },
         async afterGenerationFinished(response) {
             let responseObj = response
-            if(responseObj.work == 'SKIP'){
-                if(!this.ProcessGPTActive){
-                    this.messages.pop();
-                }
-            } else {
-                if(this.ProcessGPTActive){
-                    responseObj.expanded = false
-                    this.generatedWorkList.push(responseObj)
-                }
-                let obj = this.createMessageObj(response, 'system')
-                if(responseObj.messageForUser){
-                    obj.messageForUser = responseObj.messageForUser
-                }
-                if(responseObj.work == 'CompanyQuery'){
-                    try{
-                        var url = window.$memento == '' ? 'http://localhost:8005' : window.$memento
-                        let responseMemento = await axios.post(`${url}/query`, { query: responseObj.content});
-                        obj.memento = {}
-                        obj.memento.response = responseMemento.data.response
-                        if (!responseMemento.data.metadata) return {};
-                        const unique = {};
-                        const sources = Object.values(responseMemento.data.metadata).filter(obj => {
-                            if (!unique[obj.file_path]) {
-                                unique[obj.file_path] = true;
-                                return true;
-                            }
-                        });
-                        obj.memento.sources = sources
-
-                        const responseTable = await axios.post(`${window.$backend}/process-data-query/invoke`, {
-                            input: {
-                                var_name: responseObj.content
-                            }
-                        });
-                        obj.tableData = responseTable.data.output
-                    } catch(error){
-                        alert(error);
-                    }
-                } else if(responseObj.work == 'ScheduleQuery'){
-                    console.log(responseObj)
-                } else {
+            if(responseObj){
+                if(responseObj.work == 'SKIP'){
                     if(!this.ProcessGPTActive){
-                        obj.uuid = this.uuid()
-                        obj.systemRequest = true
-                        obj.requestUserEmail = this.userInfo.email
+                        this.messages.pop();
                     }
-                }
-                if(!this.ProcessGPTActive){
-                    // this.messages.pop();
-                    this.putMessage(obj)
+                } else {
+                    if(this.ProcessGPTActive){
+                        responseObj.expanded = false
+                        this.generatedWorkList.push(responseObj)
+                    }
+                    let obj = this.createMessageObj(response, 'system')
+                    if(responseObj.messageForUser){
+                        obj.messageForUser = responseObj.messageForUser
+                    }
+                    if(responseObj.work == 'CompanyQuery'){
+                        try{
+                            var url = window.$memento == '' ? 'http://localhost:8005' : window.$memento
+                            let responseMemento = await axios.post(`${url}/query`, { query: responseObj.content});
+                            obj.memento = {}
+                            obj.memento.response = responseMemento.data.response
+                            if (!responseMemento.data.metadata) return {};
+                            const unique = {};
+                            const sources = Object.values(responseMemento.data.metadata).filter(obj => {
+                                if (!unique[obj.file_path]) {
+                                    unique[obj.file_path] = true;
+                                    return true;
+                                }
+                            });
+                            obj.memento.sources = sources
+    
+                            const responseTable = await axios.post(`${window.$backend}/process-data-query/invoke`, {
+                                input: {
+                                    var_name: responseObj.content
+                                }
+                            });
+                            obj.tableData = responseTable.data.output
+                        } catch(error){
+                            alert(error);
+                        }
+                    } else if(responseObj.work == 'ScheduleQuery'){
+                        console.log(responseObj)
+                    } else {
+                        if(!this.ProcessGPTActive){
+                            obj.uuid = this.uuid()
+                            obj.systemRequest = true
+                            obj.requestUserEmail = this.userInfo.email
+                        }
+                    }
+                    if(!this.ProcessGPTActive){
+                        // this.messages.pop();
+                        this.putMessage(obj)
+                    }
                 }
             }
         },
