@@ -708,10 +708,15 @@ export default {
                                     task.inputData = []
                                     task.outputData = []
                                 }
-                                task.tool = "formHandler:" + JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).variableForHtmlFormContext.name
+                                const form = JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json'])
+                                if (form && isForm.variableForHtmlFormContext && form.variableForHtmlFormContext.name) {
+                                    task.tool = "formHandler:" + form.variableForHtmlFormContext.name
+                                } else {
+                                    task.tool = "";
+                                }
                                 return task
                             }catch(e){
-
+                                console.log(e)
                             }
                         }
                         
@@ -922,12 +927,11 @@ export default {
                         await backend.putRawDefinition(xml, info.proc_def_id, info);
                         // await this.saveToVectorStore(me.processDefinition);
                     }
-
                     // 신규 프로세스 이동.
                     if (me.$route.fullPath == '/definitions/chat') {
                         me.$router.push(`/definitions/${info.proc_def_id}`);
-                        me.EventBus.emit('definitions-updated');
                     }
+                    me.EventBus.emit('definitions-updated');
                 },
                 catch: (e) => {
                     console.log(e)
