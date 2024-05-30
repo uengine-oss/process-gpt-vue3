@@ -128,12 +128,10 @@ export default {
             });
         }
     },
-    async mounted() {
-        if(window.$mode === "ProcessGPT") {
-            this.EventBus.on('definitions-updated', async () => {
-                await this.getDefinitionList();
-            });
-        }
+    mounted() {
+        this.EventBus.on('definitions-updated', async () => {
+            await this.getDefinitionList();
+        });
     },
     methods: {
         async getDefinitionList() {
