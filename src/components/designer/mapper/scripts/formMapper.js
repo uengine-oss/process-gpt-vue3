@@ -563,6 +563,9 @@ export default {
         reuslt = text.replace("instance.", "[instance].");
       } else if (text.indexOf("activities.") != -1) {
         reuslt = text.replace("activities.", "[activities].");
+        this.activities.forEach(activity => {
+          reuslt = reuslt.replace(activity.name, activity.id);
+        });
       } else {
         reuslt = text.replace(rootNodeName + ".", "");
       }
@@ -577,6 +580,9 @@ export default {
         reuslt = text.replace("[instance].", "instance.");
       } else if (text.indexOf("[activities].") != -1) {
         reuslt = text.replace("[activities].", "activities.");
+        this.activities.forEach(activity => {
+          reuslt = reuslt.replace(activity.id, activity.name);
+        });
       } else {
         reuslt = rootNodeName + "." + text;
       }

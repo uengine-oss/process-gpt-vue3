@@ -118,7 +118,6 @@ import PortComponent from './PortComponent.vue';
 import FormMapper from './scripts/formMapper';
 import ContextMenu from './ContextMenu.vue';
 
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
 
 export default {
     name: 'form-mapper',
@@ -137,7 +136,7 @@ export default {
             required: true
         },
         roles: Array,
-        activities: Array
+        processElement: Array
     },
     components: {
         BlockComponent,
@@ -149,7 +148,6 @@ export default {
     },
     data() {
         return {
-            storage: null,
             renderKey: 0,
             jsonDialog: false,
             menu: false,
@@ -164,11 +162,12 @@ export default {
                 roots: ['id1', 'id2']
             },
             processVariableDescriptors: [],
-            portArray: []
+            portArray: [],
+            activities: [],
         };
     },
     async created() {
-        await this.initializeStorage();
+        await this.initActivityData();
         await this.initializeNodesAndConfig();
         await this.processNodes(this.leftNodes, 'Source');
         await this.processNodes(this.rightNodes, 'Target');
@@ -193,15 +192,31 @@ export default {
         this.renderFormMapperFromMappingElementJson(this.formMapperJson);
     },
     methods: {
-        async initializeStorage() {
-            this.storage = StorageBaseFactory.getStorage('supabase');
-        },
         async initializeNodesAndConfig() {
             this.leftNodes = {};
             this.rightNodes = {};
             this.config = {
                 roots: []
             };
+        },
+        async initActivityData () {
+            var me = this;
+            me.activities = [];
+            if (me.processElement) {
+                me.processElement.forEach((process) => {
+                    process.flowElements.forEach((ele) => {
+                        if (ele.$type.toLowerCase().indexOf('task') != -1) {
+                            me.activities.push(ele);
+                        } else if (ele.$type.toLowerCase().indexOf('subprocess') != -1) {
+                            ele.flowElements.forEach((subProcessEle) => {
+                                if (subProcessEle.$type.toLowerCase().indexOf('task') != -1) {
+                                    me.activities.push(subProcessEle);
+                                }
+                            });
+                        }
+                    });
+                });
+            }
         },
         reverseObject(obj) {
             const reversedObj = {};

@@ -96,7 +96,7 @@
                         :name="name"
                         :roles="roles"
                         :formMapperJson="formMapperJson"
-                        :activities="activities"
+                        :processElement="processElement"
                         @saveFormMapperJson="saveFormMapperJson"
                     />
                 </v-dialog>
@@ -248,8 +248,8 @@ export default {
             formMapperJson: '',
             backend: null,
             copyDefinition: null,
-            activities: [],
-            isOpenFormCreateDialog: false
+            processElement: null,
+            isOpenFormCreateDialog: false,
         };
     },
     created() {
@@ -428,24 +428,7 @@ export default {
                 });
 
                 let def = this.bpmnModeler.getDefinitions();
-                const processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
-                me.activities = [];
-                if (processElement) {
-                    processElement.forEach((process) => {
-                        process.flowElements.forEach((ele) => {
-                            if (ele.$type.toLowerCase().indexOf('task') != -1) {
-                                me.activities.push(ele);
-                            } else if (ele.$type.toLowerCase().indexOf('subprocess') != -1) {
-                                ele.flowElements.forEach((subProcessEle) => {
-                                    if (subProcessEle.$type.toLowerCase().indexOf('task') != -1) {
-                                        me.activities.push(subProcessEle);
-                                    }
-                                });
-                            }
-                        });
-                    });
-                }
-
+                me.processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
                 this.isOpenFieldMapper = true;
             }
         },
