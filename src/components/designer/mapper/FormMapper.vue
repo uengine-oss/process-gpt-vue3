@@ -204,19 +204,20 @@ export default {
             me.activities = [];
             if (me.processElement) {
                 me.processElement.forEach((process) => {
-                    process.flowElements.forEach((ele) => {
-                        if (ele.$type.toLowerCase().indexOf('task') != -1) {
-                            me.activities.push(ele);
-                        } else if (ele.$type.toLowerCase().indexOf('subprocess') != -1) {
-                            ele.flowElements.forEach((subProcessEle) => {
-                                if (subProcessEle.$type.toLowerCase().indexOf('task') != -1) {
-                                    me.activities.push(subProcessEle);
-                                }
-                            });
-                        }
-                    });
+                    me.findTasks(process.flowElements);
                 });
             }
+        },
+        findTasks(elements) {
+            var me = this;
+            elements.forEach((element) => {
+                if (element.$type.toLowerCase().indexOf('task') !== -1) {
+                    me.activities.push(element);
+                }
+                if (element.flowElements && element.flowElements.length > 0) {
+                    me.findTasks(element.flowElements);
+                }
+            });
         },
         reverseObject(obj) {
             const reversedObj = {};
