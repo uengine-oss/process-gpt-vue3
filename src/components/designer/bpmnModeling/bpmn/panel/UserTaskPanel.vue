@@ -110,7 +110,7 @@
             :name="name"
             :roles="roles"
             :formMapperJson="formMapperJson"
-            :activities="activities"
+            :processElement="processElement"
             @saveFormMapperJson="saveFormMapperJson"
         />
     </v-dialog>
@@ -378,10 +378,12 @@ export default {
         },
         async openFormMapper() {
             var me = this;
-            if(!this.selectedForm) return;
+            if(!me.selectedForm) return;
 
-            var forms = [];
+            let forms = [];
             let formDefs = await me.backend.listDefinition();
+            let def = me.bpmnModeler.getDefinitions();
+
             formDefs.forEach(async (form) => {
                 if (form.name.includes('.form')) {
                     forms.push(form.name.replace('.form', ''));
@@ -397,29 +399,8 @@ export default {
                 }
             });
 
-            let def = this.bpmnModeler.getDefinitions();
-            const processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
-            me.activities = [];
-            if (processElement) {
-                processElement.forEach((process) => {
-                    process.flowElements.forEach((ele) => {
-                        if (ele.$type.toLowerCase().indexOf('task') != -1) {
-                            me.activities.push(ele);
-                        } else if (ele.$type.toLowerCase().indexOf('subprocess') != -1) {
-                            ele.flowElements.forEach((subProcessEle) => {
-                                if (subProcessEle.$type.toLowerCase().indexOf('task') != -1) {
-                                    me.activities.push(subProcessEle);
-                                }
-                            });
-                        }
-                    });
-                });
-            }
-
-            let def = this.bpmnModeler.getDefinitions();
             me.processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
-            me.isOpenFieldMapper = true;
-            
+            me.isOpenFieldMapper = true;            
         },
         parseFormHtmlField(formHtml) {
             const parser = new DOMParser();
