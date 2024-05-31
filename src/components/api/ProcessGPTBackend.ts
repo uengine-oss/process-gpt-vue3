@@ -284,6 +284,7 @@ class ProcessGPTBackend implements Backend {
         try {
             const data = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
             const defInfo = await this.getRawDefinition(data.proc_def_id, null);
+            const inst = await this.getInstance(data.proc_inst_id);
             let activityInfo: any = null;
             let parameters: any[] = [];
             if (defInfo && defInfo.definition) {
@@ -298,6 +299,7 @@ class ProcessGPTBackend implements Backend {
                                 direction: 'OUT',
                                 variable: {
                                     name: key,
+                                    value: inst[key.toLowerCase().replace(' ', '_')] || ""
                                 }
                             }
                         });
@@ -309,6 +311,7 @@ class ProcessGPTBackend implements Backend {
                                 direction: 'IN',
                                 variable: {
                                     name: key,
+                                    value: inst[key.toLowerCase().replace(' ', '_')] || ""
                                 }
                             }
                         });
@@ -394,17 +397,35 @@ class ProcessGPTBackend implements Backend {
     }
     
     async putWorklist(taskId: string, workItem: any) {
-        const putObj = {
-            id: taskId,
-            proc_def_id: workItem.defId,
-            user_id: workItem.endpoint,
-            proc_inst_id: workItem.instId,
-            start_date: workItem.startDate,
-            end_date: workItem.dueDate,
-            status: workItem.status,
-            activity_id: workItem.tracingTag || workItem.title,
-        }
-        await storage.putObject('todolist', putObj);
+        try {
+            let result: any = null;
+            if (!workItem.instId) { // not instance workItem
+                const putObj = {
+                    id: taskId,
+                    proc_def_id: workItem.defId,
+                    user_id: workItem.endpoint,
+                    proc_inst_id: workItem.instId,
+                    start_date: workItem.startDate,
+                    end_date: workItem.dueDate,
+                    status: workItem.status,
+                    activity_id: workItem.tracingTag || workItem.title,
+                }
+                await storage.putObject('todolist', putObj);
+            } else { // instance workItem
+                result = await this.putWorkItemComplete(taskId, {});
+                // 다음 액티비티로 넘어가지 못한 경우
+                if (result.cannotProceedErrors && result.cannotProceedErrors.length > 0) {
+                    const dataNotExist = result.cannotProceedErrors.find((item: any) => item.type === 'DATA_FIELD_NOT_EXIST');
+                    if (!dataNotExist) {
+                        throw new Error(result.cannotProceedErrors.map((item: any) => item.reason).join('\n'));
+                    }
+                }
+            }
+            return result;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }        
     }
 
     async deleteWorkItem(taskId: string) {
@@ -542,11 +563,20 @@ class ProcessGPTBackend implements Backend {
         throw new Error("Method not implemented.");
     }
 
-    async getCompletedList() {
+    async getCompletedList(options?: any) {
         try {
-            const email = localStorage.getItem("email");
-            const options = { match: { user_id: email, status: "DONE" } };
-            const list = await storage.list('todolist', options);
+            const filter: any = {
+                match: {
+                    status: "DONE"
+                }
+            };
+            if (options && options.instId) {
+                filter.match.proc_inst_id = options.instId;
+            } else {
+                const email = localStorage.getItem("email");
+                filter.match.user_id = email;
+            }
+            const list = await storage.list('todolist', filter);
             const worklist: any[] = [];
             if (list && list.length > 0) {
                 for (const item of list) {
@@ -619,16 +649,20 @@ class ProcessGPTBackend implements Backend {
                     const data = res.data;
                     if (data.output) {
                         const output = JSON.parse(data.output);
-                        // update instance message
+                        result = output;
                         const newMessage = {
                             role: 'system',
                             timestamp: Date.now(),
-                            content: output.description,
+                            content: '',
                             jsonContent: data.output
+                        }
+                        if (output.cannotProceedErrors && output.cannotProceedErrors.length > 0) {
+                            newMessage.content = output.cannotProceedErrors.map((item: any) => item.reason).join('\n');
+                        } else {
+                            newMessage.content = output.description;
                         }
                         await this.updateInstanceChat(output.instanceId, newMessage);
                     }
-                    result = res.data;
                 }
             })
             .catch(error => {

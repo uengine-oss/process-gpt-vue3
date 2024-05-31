@@ -1,17 +1,15 @@
 <template>
     <v-card elevation="10">
-        <div class="pa-5 h-100">
-            <v-row class="ma-0 pa-0">
-                <v-col v-for="column in todolist" :key="column.id" cols="12" md="3" sm="6">
-                    <TodoTaskColumn :column="column" :loading="loading" @executeTask="executeTask" @scrollBottom="handleScrollBottom" />
-                </v-col>
-            </v-row>
-        </div>
+        <v-row class="ma-0 pa-2">
+            <v-col v-for="column in todolist" :key="column.id" cols="12" md="3" sm="6">
+                <TodoTaskColumn :column="column" :loading="loading" :isNotAll="true" 
+                    @executeTask="executeTask" @scrollBottom="handleScrollBottom" @updateStatus="updateStatus"  />
+            </v-col>
+        </v-row>
     </v-card>
 </template>
 
 <script>
-import TodoDialog from './TodoDialog.vue';
 import TodoTaskColumn from './TodoTaskColumn.vue';
 
 import BackendFactory from "@/components/api/BackendFactory";
@@ -20,7 +18,9 @@ const backend = BackendFactory.createBackend();
 export default {
     components: {
         TodoTaskColumn,
-        TodoDialog,
+    },
+    props: {
+        instance: Object,
     },
     data: () => ({
         todolist: [
@@ -49,7 +49,6 @@ export default {
                 tasks: []
             }
         ],
-
         loading: false,
         offset: 10,
         currentPage: 0,
@@ -75,7 +74,7 @@ export default {
                     this.loadCompletedWorkList();
                 }
             }
-        }
+        },
     },
     methods: {
         executeTask(item) {
@@ -87,7 +86,7 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    let worklist = await backend.getWorkList()
+                    let worklist = await backend.getWorkList({ instId: me.id })
                     if(!worklist) worklist = []
                     worklist.forEach((item) => {
                         if (item.instId != me.id) return
@@ -107,7 +106,7 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    let worklist = await backend.getCompletedList({page: me.currentPage, size: me.offset});
+                    let worklist = await backend.getCompletedList({page: me.currentPage, size: me.offset, instId: me.id});
                     if(!worklist) worklist = []
                     worklist.forEach(function(item) {
                         if (item.instId != me.id) return
@@ -129,6 +128,20 @@ export default {
                     me.loading = false
                 }
             })
+        },
+        updateStatus(taskId, originColumnId) {
+            let task;
+            this.todolist.forEach(column => {
+                let foundTask = column.tasks.find(task => task.taskId === taskId);
+                if (foundTask) {
+                    task = foundTask;
+                    column.tasks = column.tasks.filter(task => task.taskId !== taskId);
+                }
+            });
+            if (task) {
+                this.todolist.find(column => column.id === originColumnId).tasks.push(task);
+            }
+            this.EventBus.emit('instances-updated');
         },
     },
 }

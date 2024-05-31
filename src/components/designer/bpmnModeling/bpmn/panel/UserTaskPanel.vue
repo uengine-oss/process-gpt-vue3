@@ -186,8 +186,8 @@ export default {
             formMapperJson: '',
             backend: null,
             copyDefinition: null,
-            activities: [],
-            isOpenFormCreateDialog: false
+            processElement: null,
+            isOpenFormCreateDialog: false,
         };
     },
     created() {
@@ -416,8 +416,10 @@ export default {
                 });
             }
 
-            this.isOpenFieldMapper = true;
-
+            let def = this.bpmnModeler.getDefinitions();
+            me.processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
+            me.isOpenFieldMapper = true;
+            
         },
         parseFormHtmlField(formHtml) {
             const parser = new DOMParser();

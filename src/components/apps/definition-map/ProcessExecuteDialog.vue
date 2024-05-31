@@ -92,6 +92,7 @@ export default {
                     }
                     await me.uengine.start(command);
                     me.closeDialog();
+                    me.EventBus.emit('instances-updated');
                 },
                 successMsg: 'Process 실행 완료'
             });
