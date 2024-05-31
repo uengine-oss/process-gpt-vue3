@@ -18,8 +18,7 @@
                 <div v-if="currentComponent"
                     class="work-itme-current-component"
                 >
-                    <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus"
-                        :isComplete="isComplete"></component>
+                    <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus"></component>
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
                             <v-btn
@@ -94,7 +93,7 @@
                                         <component
                                             :is="'work-history-' + mode"
                                             :messages="messages"
-                                            :isComplete="isComplete"
+                                            :isCompleted="isCompleted"
                                             @clickMessage="navigateToWorkItemByTaskId"
                                         />
                                     </div>
@@ -129,8 +128,7 @@
                 <div v-if="currentComponent"
                     class="work-itme-current-component"
                 >
-                    <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus"
-                        :isComplete="isComplete"></component>
+                    <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus"></component>
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
                             <v-btn
@@ -205,7 +203,7 @@
                                         <component
                                             :is="'work-history-' + mode"
                                             :messages="messages"
-                                            :isComplete="isComplete"
+                                            :isCompleted="isCompleted"
                                             @clickMessage="navigateToWorkItemByTaskId"
                                         />
                                     </div>
@@ -297,7 +295,7 @@ export default {
             if (!this.workItem) return null;
             return this.workItem.worklist.status;
         },
-        isComplete(){
+        isCompleted() {
             return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
         }
     },
