@@ -5,7 +5,7 @@
                 <!-- {{$t('processDefinition.editProcessData') }} -->
                 <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important"> Form Mapper - {{ name }} </v-card-title>
                 <v-spacer></v-spacer>
-                <v-btn icon @click="saveFormMapperJson()">
+                <v-btn icon @click="closeFormMapper()">
                     <v-icon>mdi-content-save-outline</v-icon>
                 </v-btn>
                 <!-- <v-btn icon @click="openFunctionMenu()">
@@ -514,6 +514,9 @@ export default {
         saveFormMapperJson() {
             var jsonString = JSON.stringify(this.getMappingElementsJson(), null, 2);
             this.$emit('saveFormMapperJson', jsonString);
+        },
+        closeFormMapper() {
+            this.$emit('closeFormMapper');
         },
         menuItemSelected(item) {
             this.newBlock(item.title, { x: this.component_x, y: this.component_y });

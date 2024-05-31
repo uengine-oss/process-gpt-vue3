@@ -1,11 +1,20 @@
 <template>
     <div>
-        <!-- <v-switch v-model="isEventSyncForm" :label="isEventSyncForm ? 'Event Synchronization Form':'Form Mapping' "></v-switch> -->
-        
-        <div v-if="isEventSyncForm">
-            <EventSynchronizationForm v-model="copyUengineProperties.eventSynchronization" :roles="roles" :taskName="name"></EventSynchronizationForm>
-        </div>
-        <div v-else>
+        <v-radio-group v-model="selectedActivity" inline>
+            <v-radio
+                label="Default"
+                value="DefaultActivity"
+            ></v-radio>
+            <v-radio
+                label="Form"
+                value="FormActivity"
+            ></v-radio>
+            <v-radio
+                label="외부 어플리케이션"
+                value="URLActivity"
+            ></v-radio>
+        </v-radio-group>
+        <div v-if="!isLoading && selectedActivity == 'DefaultActivity'">
             <div v-if="inputData.length > 0" style="margin-bottom: 20px">
                 <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.inputData') }}</div>
                 <v-row class="ma-0 pa-0">
@@ -50,134 +59,63 @@
                     <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
                 </v-row>
             </div>
-            <v-spacer></v-spacer>
-            <v-checkbox v-model="isFormActivity" label="폼 기반 업무"></v-checkbox>
-            <div v-if="isFormActivity">
-                <div>
-                    <v-row cclass="ma-0 pa-0">
-                        <!-- <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
-                            <v-label class=" font-weight-medium" for="hcpm">{{ $t('ProcessVariable.defaultValue') }}</v-label>
-                        </v-col> -->
-                        <v-col cols="12" sm="9">
-                            <!-- <v-autocomplete 
-                                v-model="selectedForm"
-                                :items="definition.processVariables
-                                            .filter(item => item.type === 'Form' && item.defaultValue && item.defaultValue.name && item.defaultValue.alias)
-                                            .map(item => item.defaultValue.name + '_' + item.defaultValue.alias)" 
-                                color="primary" 
-                                variant="outlined"
-                                hide-details>
-                            </v-autocomplete> -->
-                            <v-autocomplete
-                                v-model="selectedForm"
-                                :items="definition.processVariables.filter((item) => item.type === 'Form').map((item) => item.name)"
-                                color="primary"
-                                variant="outlined"
-                                hide-details
-                            >
-                            </v-autocomplete>
-                        </v-col>
-                    </v-row>
-                </div>
-                <div>
-                    <v-row class="ma-0 pa-0">
-                        <v-btn text color="primary" class="my-3" @click="openFormMapper()"> Field Mapping </v-btn>
-                    </v-row>
-                </div>
-                <v-dialog
-                    v-model="isOpenFieldMapper"
-                    max-width="80%"
-                    max-height="80%"
-                    @afterLeave="$refs.formMapper && $refs.formMapper.saveFormMapperJson()"
-                >
-                    <form-mapper
-                        ref="formMapper"
-                        :definition="copyDefinition"
-                        :name="name"
-                        :roles="roles"
-                        :formMapperJson="formMapperJson"
-                        :processElement="processElement"
-                        @saveFormMapperJson="saveFormMapperJson"
-                    />
-                </v-dialog>
+        </div>
+        <div v-else-if="!isLoading && selectedActivity == 'FormActivity'">
+            <div>
+                <v-row cclass="ma-0 pa-0">
+                    <!-- <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
+                        <v-label class=" font-weight-medium" for="hcpm">{{ $t('ProcessVariable.defaultValue') }}</v-label>
+                    </v-col> -->
+                    <v-col cols="12" sm="9">
+                        <!-- <v-autocomplete 
+                            v-model="selectedForm"
+                            :items="definition.processVariables
+                                        .filter(item => item.type === 'Form' && item.defaultValue && item.defaultValue.name && item.defaultValue.alias)
+                                        .map(item => item.defaultValue.name + '_' + item.defaultValue.alias)" 
+                            color="primary" 
+                            variant="outlined"
+                            hide-details>
+                        </v-autocomplete> -->
+                        <v-autocomplete
+                            v-model="selectedForm"
+                            :items="definition.processVariables.filter((item) => item.type === 'Form').map((item) => item.name)"
+                            color="primary"
+                            variant="outlined"
+                            hide-details
+                        >
+                        </v-autocomplete>
+                    </v-col>
+                </v-row>
+            </div>
+            <div>
+                <v-row class="ma-0 pa-0">
+                    <v-btn text color="primary" class="my-3" @click="openFormMapper()"> Field Mapping </v-btn>
+                </v-row>
             </div>
         </div>
-        
-        <!-- <div>
-            <v-row class="ma-0 pa-0">
-                <div>{{ $t('BpnmPropertyPanel.checkPoints') }}</div>
-                <v-spacer></v-spacer>
-                <v-icon v-if="editCheckpoint" @click="editCheckpoint = false" style="margin-top:2px;">mdi-close</v-icon>
-            </v-row>
-            <div v-for="(checkpoint, idx) in copyUengineProperties.checkpoints" :key="idx">
-                <div>
-                    <v-checkbox-btn color="success" :disabled="isViewMode" :label="checkpoint.checkpoint" hide-details
-                        v-model="checkbox"></v-checkbox-btn>
-                </div>
-                <v-btn icon flat @click="deleteCheckPoint(checkpoint)" v-if="!isViewMode" v-bind="props">
-                    <TrashIcon stroke-width="1.5" size="20" class="text-error" />
-                </v-btn>
-            </div>
-            <v-text-field v-if="editCheckpoint" v-model="checkpointMessage.checkpoint"
-                :disabled="isViewMode"></v-text-field>
-            <v-row class="ma-0 pa-0" v-if="!isViewMode">
-                <v-spacer></v-spacer>
-                <v-btn v-if="editCheckpoint" @click="addCheckpoint" color="primary" rounded="pill" size="small">{{
-            $t('BpnmPropertyPanel.add') }}</v-btn>
-                <v-card v-else @click="editCheckpoint = !editCheckpoint" elevation="9" variant="outlined"
-                    style="padding: 5px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important;">
-                    <div style="display: flex; justify-content: center; align-items: center;">
-                        <Icon icon="streamline:add-1-solid" width="20" height="20" style="color: #5EB2E8" />
-                    </div>
-                </v-card>
-            </v-row>
-        </div> -->
-        <!-- <div>
-            <v-row class="ma-0 pa-0">
-                <div>Extended Property</div>
-            </v-row>
-            <v-row>
-                <v-table>
-                    <thead>
-                        <tr>
-                            <th class="text-h6">Key</th>
-                            <th class="text-h6">Value</th>
-                            <th class="text-h6">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="param in copyUengineProperties.extendedProperties" :key="param.key"
-                            class="month-item">
-                            <td>
-                                {{ param.key }}
-                            </td>
-                            <td>
-                                {{ param.value }}
-                            </td>
-                            <td>
-                                <v-btn icon flat @click="deleteExtendedProperty(param)" v-bind="props">
-                                    <TrashIcon stroke-width="1.5" size="20" class="text-error" />
-                                </v-btn>
-                            </td>
-                        </tr>
-                    </tbody>
-                </v-table>
-                <v-btn v-if="!isViewMode" flat color="primary" @click="editParam = !editParam">add Key/Value</v-btn>
-
-                <v-card v-if="editParam" style="margin-top: 12px">
-                    <v-card-title>Add Parameter</v-card-title>
-                    <v-card-text>
-                        <v-text-field v-model="paramKey" label="Key"></v-text-field>
-                        <v-text-field v-model="paramValue" label="Value"></v-text-field>
-                    </v-card-text>
-                    <v-card-actions>
-                        <v-btn @click="addParameter">add</v-btn>
-                        <v-btn @click="editParam = !editParam">cancel</v-btn>
-                    </v-card-actions>
-                </v-card>
-            </v-row>
-        </div> -->
+        <div v-else-if="!isLoading && selectedActivity == 'URLActivity'">
+            <EventSynchronizationForm v-model="copyUengineProperties" :roles="roles" :taskName="name"></EventSynchronizationForm>
+        </div>
     </div>
+
+    <v-dialog
+        v-model="isOpenFieldMapper"
+        max-width="80%"
+        max-height="80%"
+        @afterLeave="$refs.formMapper && $refs.formMapper.saveFormMapperJson()"
+    >
+        <form-mapper
+            ref="formMapper"
+            :definition="copyDefinition"
+            :name="name"
+            :roles="roles"
+            :formMapperJson="formMapperJson"
+            :processElement="processElement"
+            @saveFormMapperJson="saveFormMapperJson"
+            @closeFormMapper="closeFormMapper"
+        />
+    </v-dialog>
+            
     <v-dialog v-model="isOpenFormCreateDialog" max-width="500">
         <v-card>
             <v-card-text>
@@ -218,7 +156,8 @@ export default {
     created() {},
     data() {
         return {
-            isEventSyncForm: false,
+            isLoading: false,
+            selectedActivity: '',
             // requiredKeyLists: {
             //     "parameters": [],
             //     "checkpoints": []
@@ -227,7 +166,7 @@ export default {
                 role: { name: '' },
                 parameters: []
             },
-            copyUengineProperties: this.uengineProperties,
+            copyUengineProperties: JSON.parse(JSON.stringify(this.uengineProperties)),
             checkpoints: [],
             editCheckpoint: false,
             checkpointMessage: {
@@ -255,36 +194,10 @@ export default {
     created() {
         this.backend = BackendFactory.createBackend();
     },
-    async mounted() {
+    mounted() {
         let me = this;
-
-        const store = useBpmnStore();
-        me.bpmnModeler = store.getModeler;
-        if (me.role?.length > 0) {
-            me.copyUengineProperties.role = { name: me.role };
-        }
-        if (!me.copyUengineProperties.parameters) me.copyUengineProperties.parameters = [];
-        if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
-
-        if (me.copyUengineProperties.variableForHtmlFormContext) {
-            me.isFormActivity = true;
-            me.selectedForm = me.copyUengineProperties.variableForHtmlFormContext.name;
-        }
-
-        let mapperData = {};
-        if (!me.copyUengineProperties.mappingContext) {
-            if (!me.copyUengineProperties._type == 'org.uengine.kernel.FormActivity') {
-                me.copyUengineProperties.mappingContext = mapperData;
-            }
-        } else {
-            me.formMapperJson = JSON.stringify(me.copyUengineProperties.mappingContext, null, 2);
-        }
-        // if(me.copyUengineProperties.eventSynchronization){
-        //     me.isEventSyncForm = true
-        // }
-
-        me.$emit('update:uEngineProperties', me.copyUengineProperties);
-        me.copyDefinition = me.definition;
+        me.bpmnModeler = useBpmnStore().getModeler;
+        me.init();
     },
     computed: {
         inputData() {
@@ -307,51 +220,110 @@ export default {
         }
     },
     watch: {
-        selectedForm(newVal) {
-            if (newVal) {
+        "selectedActivity":function(newVal,oldVal){
+            if(!oldVal) return;
+
+            this.updateProperties();
+        },
+        "selectedForm":function(newVal, oldVal) {
+            var me = this
+            if(newVal){
                 // const [formName, formAlias] = newVal.split('_');
                 // const formItem = this.definition.processVariables.find(item => item.type === 'Form' && item.defaultValue.name === formName && item.defaultValue.alias === formAlias);
+                let formVariable = me.copyDefinition.processVariables.find((item) => item.name === newVal);
+                let variableForHtmlFormContext = formVariable ? { name: formVariable.name } : {}
+                me.copyUengineProperties.variableForHtmlFormContext = variableForHtmlFormContext;
 
-                let formVariable = this.copyDefinition.processVariables.find((item) => item.name === newVal);
-                let variableForHtmlFormContext = '';
-                if (formVariable) {
-                    variableForHtmlFormContext = { name: formVariable.name };
-                }
-
-                this.copyUengineProperties.variableForHtmlFormContext = variableForHtmlFormContext;
-                this.copyUengineProperties.mappingContext = {};
-                this.$emit('update:uEngineProperties', this.copyUengineProperties);
+                if(oldVal) me.copyUengineProperties.mappingContext = {}; // CHECK!!!
+                me.formMapperJson = JSON.stringify(me.copyUengineProperties.mappingContext, null, 2)
+            } else {
+                me.copyUengineProperties.variableForHtmlFormContext = {}
+                me.copyUengineProperties.mappingContext = {};
             }
         },
-        isFormActivity(newVal, oldVal) {
-            if (newVal) {
-                this.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
-            } else {
-                delete this.copyUengineProperties._type;
-                delete this.copyUengineProperties.variableForHtmlFormContext;
-                delete this.copyUengineProperties.mappingContext;
-            }
-
-            this.$emit('update:uEngineProperties', this.copyUengineProperties);
-
-            if(oldVal === false && newVal === true && this.selectedForm === '') {
-                this.isOpenFormCreateDialog = true
-            }
-        }
     },
     methods: {
+        init(){
+            var me = this
+            // ??
+            if (me.roles.length > 0) {
+                me.copyUengineProperties.role = { name: me.role };
+            }
+
+            me.selectedActivity = me.copyUengineProperties._type ? me.copyUengineProperties._type.split('.').pop() : 'DefaultActivity';
+            if(me.selectedActivity == 'DefaultActivity') {
+                delete me.copyUengineProperties._type;
+                if (!me.copyUengineProperties.parameters) me.copyUengineProperties.parameters = [];
+            } else if(me.selectedActivity == 'FormActivity'){
+                me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
+                if (!me.copyUengineProperties.variableForHtmlFormContext) me.copyUengineProperties.variableForHtmlFormContext = {} 
+                if (!me.copyUengineProperties.mappingContext) me.copyUengineProperties.mappingContext = {}
+
+                me.selectedForm = me.copyUengineProperties.variableForHtmlFormContext.name;
+                me.formMapperJson = JSON.stringify(me.copyUengineProperties.mappingContext, null, 2);
+                if(!me.selectedForm) me.isOpenFormCreateDialog = true
+            } else if(me.selectedActivity == 'URLActivity'){     
+                me.copyUengineProperties._type = 'org.uengine.kernel.URLActivity';
+                if (!me.copyUengineProperties.url) me.copyUengineProperties.url = '';
+                if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
+                if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
+                if (!me.copyUengineProperties.eventSynchronization.attributes) me.copyUengineProperties.eventSynchronization.attributes = [];
+                if (!me.copyUengineProperties.eventSynchronization.mappingContext) me.copyUengineProperties.eventSynchronization.mappingContext = {};
+            }
+
+            me.copyDefinition = me.definition;           
+        },
+        updateProperties(){
+            var me = this   
+            me.isLoading = true
+            if(me.selectedActivity == 'FormActivity'){
+                me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
+                if (!me.copyUengineProperties.variableForHtmlFormContext) me.copyUengineProperties.variableForHtmlFormContext = {} 
+                if (!me.copyUengineProperties.mappingContext) me.copyUengineProperties.mappingContext = {}
+
+                me.selectedForm = me.copyUengineProperties.variableForHtmlFormContext.name;
+                me.formMapperJson = JSON.stringify(me.copyUengineProperties.mappingContext, null, 2)
+
+                if(!me.selectedForm) me.isOpenFormCreateDialog = true
+            } else if(me.selectedActivity == 'URLActivity' ){
+                me.copyUengineProperties._type = 'org.uengine.kernel.URLActivity';
+                if (!me.copyUengineProperties.url) me.copyUengineProperties.url = '';
+                if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
+                if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
+                if (!me.copyUengineProperties.eventSynchronization.attributes) me.copyUengineProperties.eventSynchronization.attributes = [];
+                if (!me.copyUengineProperties.eventSynchronization.mappingContext) me.copyUengineProperties.eventSynchronization.mappingContext = {};
+            } else {
+                if (!me.copyUengineProperties.parameters) me.copyUengineProperties.parameters = [];
+            }
+            me.isLoading = false
+        },
+        beforeSave(){
+            var me = this
+            // 필수 요소만 포함, 나머지 제거.
+            if(me.selectedActivity == 'FormActivity'){
+                const { variableForHtmlFormContext, mappingContext, _type } = me.copyUengineProperties;
+                me.copyUengineProperties = { variableForHtmlFormContext, mappingContext, _type };
+            } else if(me.selectedActivity == 'URLActivity' ){
+                const { url, eventSynchronization, _type } = me.copyUengineProperties;
+                me.copyUengineProperties = { url, eventSynchronization, _type };
+            } else {
+                const { parameters } = me.copyUengineProperties;
+                me.copyUengineProperties = { parameters };
+            }
+            me.$emit('update:uengineProperties', me.copyUengineProperties);
+        },
         deleteInputData(inputData) {
             const index = this.copyUengineProperties.parameters.findIndex((element) => element.key === inputData.key);
             if (index > -1) {
                 this.copyUengineProperties.parameters.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties);
+                // this.$emit('update:uEngineProperties', this.copyUengineProperties);
             }
         },
         deleteOutputData(outputData) {
             const index = this.copyUengineProperties.parameters.findIndex((element) => element.key === outputData.key);
             if (index > -1) {
                 this.copyUengineProperties.parameters.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties);
+                // this.$emit('update:uEngineProperties', this.copyUengineProperties);
             }
         },
         ensureKeyExists(obj, key, defaultValue) {
@@ -363,19 +335,19 @@ export default {
             const index = this.copyUengineProperties.extendedProperties.findIndex((element) => element.key === item.key);
             if (index > -1) {
                 this.copyUengineProperties.extendedProperties.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties);
+                // this.$emit('update:uEngineProperties', this.copyUengineProperties);
             }
         },
         deleteCheckPoint(item) {
             const index = this.copyUengineProperties.checkpoints.findIndex((element) => element.checkpoint === item.checkpoint);
             if (index > -1) {
                 this.copyUengineProperties.checkpoints.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties);
+                // this.$emit('update:uEngineProperties', this.copyUengineProperties);
             }
         },
         addParameter() {
             this.copyUengineProperties.extendedProperties.push({ key: this.paramKey, value: this.paramValue });
-            this.$emit('update:uEngineProperties', this.copyUengineProperties);
+            // this.$emit('update:uEngineProperties', this.copyUengineProperties);
             // const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
             // // this.checkpoints.push(this.checkpointMessage)
             // const parameter = bpmnFactory.create('uengine:ExtendedProperty', { key: this.paramKey, value: this.paramValue });
@@ -395,42 +367,42 @@ export default {
         },
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
-            this.$emit('update:uEngineProperties', this.copyUengineProperties);
+            // this.$emit('update:uEngineProperties', this.copyUengineProperties);
         },
         saveFormMapperJson(jsonString) {
             this.formMapperJson = jsonString;
-            this.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
+            // this.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
             this.copyUengineProperties.mappingContext = JSON.parse(jsonString);
-            this.$emit('update:uEngineProperties', this.copyUengineProperties);
-
+            // this.$emit('update:uEngineProperties', this.copyUengineProperties);
+        },
+        closeFormMapper() {
             this.isOpenFieldMapper = false;
         },
         async openFormMapper() {
             var me = this;
+            if(!me.selectedForm) return;
 
-            if (this.selectedForm) {
-                var forms = [];
+            let forms = [];
+            let formDefs = await me.backend.listDefinition();
+            let def = me.bpmnModeler.getDefinitions();
 
-                let formDefs = await me.backend.listDefinition();
-                formDefs.forEach(async (form) => {
-                    if (form.name.includes('.form')) {
-                        forms.push(form.name.replace('.form', ''));
-                    }
-                });
+            formDefs.forEach(async (form) => {
+                if (form.name.includes('.form')) {
+                    forms.push(form.name.replace('.form', ''));
+                }
+            });
 
-                me.copyDefinition.processVariables.forEach(async (variable) => {
-                    if (forms.find((item) => item === variable.defaultValue.formDefId && variable.type === 'Form')) {
-                        let formHtml = await me.backend.getRawDefinition(variable.defaultValue.formDefId, { type: 'form' });
-                        let fields = me.parseFormHtmlField(formHtml);
+            me.copyDefinition.processVariables.forEach(async (variable) => {
+                if (forms.find((item) => item === variable.defaultValue.formDefId && variable.type === 'Form')) {
+                    let formHtml = await me.backend.getRawDefinition(variable.defaultValue.formDefId, { type: 'form' });
+                    let fields = me.parseFormHtmlField(formHtml);
 
-                        variable.fields = fields;
-                    }
-                });
+                    variable.fields = fields;
+                }
+            });
 
-                let def = this.bpmnModeler.getDefinitions();
-                me.processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
-                this.isOpenFieldMapper = true;
-            }
+            me.processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
+            me.isOpenFieldMapper = true;            
         },
         parseFormHtmlField(formHtml) {
             const parser = new DOMParser();
