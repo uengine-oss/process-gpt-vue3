@@ -126,79 +126,81 @@ if (window.location.port != '' || window.location.host.includes('localhost') || 
             }
         );
     } else {
-        let options: {
-            key: string;
-            match?: Record<string, any>;
-        } = {
-            key: "id"
-        };
-        let obj: {
-            table: string;
-            searchKey?: string;
-            searchVal?: string;
-        } = {
-            table: ''
-        };
-    
-        let path = `db://tenant_def/${subdomain}`
-        path = path.includes('://') ? path.split('://')[1] : path;
-    
-        if (path.includes('/')) {
-            obj.table = path.split('/')[0];
-            if (options && options.key) {
-                obj.searchKey = options.key;
-                obj.searchVal = path.split('/')[1];
-            }
-        } else {
-            obj.table = path;
-        }
-        if (options && options.match) {
-            const { data, error } = await window.$masterDB
-                .from(obj.table)
-                .select()
-                .match(options.match)
-                .maybeSingle()
-    
-            if (error) {
-                alert(error);
-            } else if (data) {
-                window.$tenantInfo = data;
-            }
-        } else if (obj.searchVal) {
-            const { data, error } = await window.$masterDB
-                .from(obj.table)
-                .select()
-                .eq(obj.searchKey, obj.searchVal)
-                .maybeSingle()
-    
-            if (error) {
-                alert(error);
-            } else if (data) {
-                window.$tenantInfo = data;
-            }
-        } else {
-            const { data, error } = await window.$masterDB
-                .from(obj.table)
-                .select()
-                .maybeSingle()
-            
-            if (error) {
-                alert(error);
-            } else if (data) {
-                window.$tenantInfo = data;
-            }
-        }
-        if(window.$tenantInfo.url && window.$tenantInfo.secret){
-            window.$supabase = createClient(window.$tenantInfo.url, window.$tenantInfo.secret, {
-                auth: {
-                    autoRefreshToken: false,
-                    persistSession: false
+        (async () => {
+            let options: {
+                key: string;
+                match?: Record<string, any>;
+            } = {
+                key: "id"
+            };
+            let obj: {
+                table: string;
+                searchKey?: string;
+                searchVal?: string;
+            } = {
+                table: ''
+            };
+        
+            let path = `db://tenant_def/${subdomain}`
+            path = path.includes('://') ? path.split('://')[1] : path;
+        
+            if (path.includes('/')) {
+                obj.table = path.split('/')[0];
+                if (options && options.key) {
+                    obj.searchKey = options.key;
+                    obj.searchVal = path.split('/')[1];
                 }
-            });
-        } else {
-            alert('해당 주소는 존재하지 않는 주소입니다. 가입 후 이용하세요.');
-            window.location.href = 'https://www.process-gpt.io';
-        }
+            } else {
+                obj.table = path;
+            }
+            if (options && options.match) {
+                const { data, error } = await window.$masterDB
+                    .from(obj.table)
+                    .select()
+                    .match(options.match)
+                    .maybeSingle();
+        
+                if (error) {
+                    alert(error);
+                } else if (data) {
+                    window.$tenantInfo = data;
+                }
+            } else if (obj.searchVal) {
+                const { data, error } = await window.$masterDB
+                    .from(obj.table)
+                    .select()
+                    .eq(obj.searchKey, obj.searchVal)
+                    .maybeSingle();
+        
+                if (error) {
+                    alert(error);
+                } else if (data) {
+                    window.$tenantInfo = data;
+                }
+            } else {
+                const { data, error } = await window.$masterDB
+                    .from(obj.table)
+                    .select()
+                    .maybeSingle();
+                
+                if (error) {
+                    alert(error);
+                } else if (data) {
+                    window.$tenantInfo = data;
+                }
+            }
+            if(window.$tenantInfo.url && window.$tenantInfo.secret){
+                window.$supabase = createClient(window.$tenantInfo.url, window.$tenantInfo.secret, {
+                    auth: {
+                        autoRefreshToken: false,
+                        persistSession: false
+                    }
+                });
+            } else {
+                alert('해당 주소는 존재하지 않는 주소입니다. 가입 후 이용하세요.');
+                window.location.href = 'https://www.process-gpt.io';
+            }
+        })();
     }
 }
 
