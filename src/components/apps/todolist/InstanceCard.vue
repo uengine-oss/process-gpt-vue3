@@ -76,7 +76,7 @@ export default {
         id() {
             return atob(this.$route.params.instId);
         },
-        isComplete(){
+        isCompleted() {
             return this.instance.status == "COMPLETED"
         },
     },
