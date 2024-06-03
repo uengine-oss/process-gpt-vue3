@@ -5,7 +5,7 @@
                 <!-- {{$t('processDefinition.editProcessData') }} -->
                 <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important"> Form Mapper - {{ name }} </v-card-title>
                 <v-spacer></v-spacer>
-                <v-btn icon @click="saveFormMapperJson()">
+                <v-btn icon @click="closeFormMapper()">
                     <v-icon>mdi-content-save-outline</v-icon>
                 </v-btn>
                 <!-- <v-btn icon @click="openFunctionMenu()">
@@ -118,7 +118,6 @@ import PortComponent from './PortComponent.vue';
 import FormMapper from './scripts/formMapper';
 import ContextMenu from './ContextMenu.vue';
 
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
 
 export default {
     name: 'form-mapper',
@@ -137,7 +136,7 @@ export default {
             required: true
         },
         roles: Array,
-        activities: Array
+        processElement: Array
     },
     components: {
         BlockComponent,
@@ -149,7 +148,6 @@ export default {
     },
     data() {
         return {
-            storage: null,
             renderKey: 0,
             jsonDialog: false,
             menu: false,
@@ -164,11 +162,12 @@ export default {
                 roots: ['id1', 'id2']
             },
             processVariableDescriptors: [],
-            portArray: []
+            portArray: [],
+            activities: [],
         };
     },
     async created() {
-        await this.initializeStorage();
+        await this.initActivityData();
         await this.initializeNodesAndConfig();
         await this.processNodes(this.leftNodes, 'Source');
         await this.processNodes(this.rightNodes, 'Target');
@@ -193,15 +192,32 @@ export default {
         this.renderFormMapperFromMappingElementJson(this.formMapperJson);
     },
     methods: {
-        async initializeStorage() {
-            this.storage = StorageBaseFactory.getStorage('supabase');
-        },
         async initializeNodesAndConfig() {
             this.leftNodes = {};
             this.rightNodes = {};
             this.config = {
                 roots: []
             };
+        },
+        async initActivityData () {
+            var me = this;
+            me.activities = [];
+            if (me.processElement) {
+                me.processElement.forEach((process) => {
+                    me.findTasks(process.flowElements);
+                });
+            }
+        },
+        findTasks(elements) {
+            var me = this;
+            elements.forEach((element) => {
+                if (element.$type.toLowerCase().indexOf('task') !== -1) {
+                    me.activities.push(element);
+                }
+                if (element.flowElements && element.flowElements.length > 0) {
+                    me.findTasks(element.flowElements);
+                }
+            });
         },
         reverseObject(obj) {
             const reversedObj = {};
@@ -498,6 +514,9 @@ export default {
         saveFormMapperJson() {
             var jsonString = JSON.stringify(this.getMappingElementsJson(), null, 2);
             this.$emit('saveFormMapperJson', jsonString);
+        },
+        closeFormMapper() {
+            this.$emit('closeFormMapper');
         },
         menuItemSelected(item) {
             this.newBlock(item.title, { x: this.component_x, y: this.component_y });

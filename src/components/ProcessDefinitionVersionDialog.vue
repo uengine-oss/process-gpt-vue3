@@ -13,10 +13,13 @@
                             color="primary" :disabled="isNew" hide-details></v-switch>
                         <v-text-field v-if="isNew" v-model="information.proc_def_id" label="ID"
                             :rules="[v => !!v || 'ID is required']" required></v-text-field>
-                        <v-text-field v-if="isNew" v-model="information.name" label="Name" :rules="[v => !!v || 'Name is required']"
-                            required></v-text-field>
+                        <v-text-field 
+                            v-model="information.name" 
+                            label="Name" 
+                            :rules="[v => !!v || 'Name is required']"
+                            required
+                        ></v-text-field>
                     </v-col>
-
                 </v-card-text>
                 <v-card-actions style="justify-content: right;">
                     <v-btn v-if="!loading" @click="save()"> SAVE </v-btn>

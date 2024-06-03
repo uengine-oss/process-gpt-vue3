@@ -1,8 +1,8 @@
 <template>
     <div>
         <audio ref="audioPlay"></audio>
-        <v-btn @click="stopStream()"
-        >정지</v-btn>
+        <!-- <v-btn @click="stopStream()"
+        >정지</v-btn> -->
     </div>
 </template>
 
