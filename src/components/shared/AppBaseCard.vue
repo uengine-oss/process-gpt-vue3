@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, getCurrentInstance, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, getCurrentInstance, watch, onMounted, onUnmounted, inject } from 'vue';
 import { useDisplay } from 'vuetify';
 import { useRoute } from 'vue-router';
 

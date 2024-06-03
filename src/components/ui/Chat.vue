@@ -733,6 +733,7 @@ export default {
             formData.append('audio', audioBlob);
 
             try {
+                await this.$setSupabaseEndpoint();
                 var url = window.$backend == '' ? 'http://localhost:8000' : window.$backend
                 const response = await axios.post(`${url}/upload`, formData);
                 const data = response.data;

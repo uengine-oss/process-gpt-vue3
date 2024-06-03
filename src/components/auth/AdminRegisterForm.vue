@@ -160,7 +160,7 @@ export default {
         async processAdminSignup() {
             await this.saveAccountInfo();
             await this.saveTenantInfo();
-            window.location.href = `http://${this.tenantInfo.id}.processgpt.io`;
+            window.location.href = `https://${this.tenantInfo.id}.processgpt.io`;
         },
 
         async saveAccountInfo() {

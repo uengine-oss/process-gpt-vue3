@@ -114,6 +114,7 @@ export default {
     methods: {
         async generateSql() {
             try {
+                await this.$setSupabaseEndpoint();
                 var url = window.$backend == '' ? 'http://localhost:8000' : window.$backend
                 const response = await axios.post(`${url}/process-var-sql/invoke`, {
                     input: {
@@ -128,6 +129,7 @@ export default {
         },
         async testSql() {
             try {
+                await this.$setSupabaseEndpoint();
                 var url = window.$backend == '' ? 'http://localhost:8000' : window.$backend
                 const response = await axios.post(`${url}/process-data-query/invoke`, {
                     input: {
