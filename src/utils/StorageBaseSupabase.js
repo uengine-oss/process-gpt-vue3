@@ -127,7 +127,7 @@ export default class StorageBaseSupabase {
                 }
             } else {
                 alert('로그인이 필요합니다');
-                window.location.href = '/auth/login';
+                // window.location.href = '/auth/login';
                 throw new StorageBaseError('error in getUserInfo', error, arguments);
             }
         } catch(e) {
