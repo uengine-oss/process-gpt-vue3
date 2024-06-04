@@ -28,6 +28,7 @@ export default {
         ProcessGPTActive: false,
         lastFinishedTime: 0,
         processInstanceId: null,
+        chatRoomId: '',
     }),
     computed: {
         useLock() {

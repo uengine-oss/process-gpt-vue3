@@ -24,6 +24,7 @@
                         :type="path"
                         :generatedWorkList="generatedWorkList"
                         :ProcessGPTActive="ProcessGPTActive"
+                        :chatRoomId="chatRoomId"
                         @requestDraftAgent="requestDraftAgent"
                         @requestFile="requestFile"
                         @beforeReply="beforeReply"
@@ -104,6 +105,7 @@ export default {
         currentChatRoom: {
             handler(newVal) {
                 if(this.generator){
+                    this.chatRoomId = newVal.id;
                     this.generator.setChatRoomData(newVal);
                 }
             },
@@ -125,6 +127,10 @@ export default {
         this.EventBus.on('messages-updated', () => {
             this.chatRenderKey++;
         });
+
+        if (this.currentChatRoom && this.currentChatRoom.id) {
+            this.chatRoomId = this.currentChatRoom.id;
+        }
     },
     methods: {
         toggleProcessGPTActive() {
