@@ -70,9 +70,11 @@ export default {
         notifications: [],
     }),
     async created() {
-        this.storage = StorageBaseFactory.getStorage("supabase");
-        this.userInfo = await this.storage.getUserInfo();
-        this.getNotifications();
+        if(window.$mode == "ProcessGPT"){
+            this.storage = StorageBaseFactory.getStorage("supabase");
+            this.userInfo = await this.storage.getUserInfo();
+            this.getNotifications();
+        }
     },
     computed: {
         filteredNotiList() {
