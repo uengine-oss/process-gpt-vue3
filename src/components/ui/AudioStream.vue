@@ -1,8 +1,6 @@
 <template>
     <div>
         <audio ref="audioPlay"></audio>
-        <v-btn @click="stopStream()"
-        >정지</v-btn>
     </div>
 </template>
 
@@ -11,7 +9,9 @@ export default {
     props: {
         audioResponse: String,
         isLoading: Boolean,
-        offStream: Boolean
+        offStream: Boolean,
+        stopAudioStreamStatus: Boolean,
+        chatRoomId: String,
     },
     data() {
         return {
@@ -26,6 +26,11 @@ export default {
         this.setupAudioStream();
     },
     watch: {
+        stopAudioStreamStatus(newVal) {
+            if(newVal) {
+                this.stopStream()
+            }
+        },
         audioResponse(newVal) {
             if(newVal == "" || newVal == null) return
             let result = newVal.replace(/[\n\r]/g, '');
@@ -60,7 +65,7 @@ export default {
             }
             this.$emit('audio:stop');
         },
-        playResponseData(response) {
+        async playResponseData(response) {
             var me = this;
             me.abortController = new AbortController(); // 새로운 AbortController 생성
             const signal = me.abortController.signal; // signal 추출
@@ -68,13 +73,20 @@ export default {
             if(me.sourceBuffer == null) {
                 me.sourceBuffer = me.mediaSource.addSourceBuffer('audio/mpeg');
             }
+            await this.$setSupabaseEndpoint();
             var url = window.$backend == '' ? 'http://localhost:8000' : window.$backend;
+            var input = {
+                query: response,
+                chat_room_id: me.chatRoomId,
+            }
+            const token = localStorage.getItem('accessToken');
             fetch(`${url}/audio-stream`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'text/plain'
+                    'Content-Type': 'text/plain',
+                    'Authorization': `Bearer ${token}`
                 },
-                body: '{"query": "'+ response +'"}',
+                body: JSON.stringify(input),    //'{"query": "'+ response +'"}',
                 signal: signal // fetch 요청에 signal 추가
             }).then(response => {
                 const reader = response.body.getReader();

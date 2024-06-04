@@ -12,6 +12,7 @@ import App from './App.vue';
 import vuetify from './plugins/vuetify';
 import { router } from './router';
 import store from './store';
+import axios from 'axios';
 //Mock Api data
 import Maska from 'maska';
 import VCalendar from 'v-calendar';
@@ -64,17 +65,29 @@ declare global {
       $backend: any;
       $memento: any;
       $autonomous: any;
+      $tenantInfo: any;
     }
 }
 
-window.$mode = 'uEngine';
-// window.$mode = 'ProcessGPT';
+
+// window.$mode = 'uEngine';
+window.$mode = 'ProcessGPT';
 window.$jms = false;
 window.$backend = '';
 window.$memento = '';
 window.$autonomous = '';
 
-if (window.location.host.includes('localhost') || window.location.host.includes('192.168') || window.location.host.includes('127.0.0.1') || 
+window.$tenantInfo = {
+    url: null,
+    secret: null,
+    dbname: null,
+    user: null,
+    pw: null,
+    host: null,
+    port: null
+};
+
+if (window.location.port != '' || window.location.host.includes('localhost') || window.location.host.includes('192.168') || window.location.host.includes('127.0.0.1') || 
     window.$mode == 'uEngine') {
     window.$supabase = createClient(
         'http://127.0.0.1:54321',
@@ -87,9 +100,12 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
         }
     );
 } else {
-    window.$supabase = createClient(
-        'https://hcnalfeqlkcovkxymgfx.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjbmFsZmVxbGtjb3ZreHltZ2Z4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxMjU2NTYzOSwiZXhwIjoyMDI4MTQxNjM5fQ.ycOarKbGVfzFx8K2GGQ8DuSE6tHylseUHla0qxZCKOk',
+    window.$backend = 'http://execution.process-gpt.io';
+    window.$memento = 'http://memento.process-gpt.io';
+    window.$autonomous = 'autonomous.process-gpt.io/ws';
+    window.$masterDB = createClient(
+        'https://qivmgbtrzgnjcpyynpam.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpdm1nYnRyemduamNweXlucGFtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxNTU4ODc3NSwiZXhwIjoyMDMxMTY0Nzc1fQ.z8LIo50hs1gWcerWxx1dhjri-DMoDw9z0luba_Ap4cI',
         {
             auth: {
                 autoRefreshToken: false,
@@ -97,110 +113,127 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
             }
         }
     );
-    window.$backend = 'http://execution.process-gpt.io';
-    window.$memento = 'http://memento.process-gpt.io';
-    window.$autonomous = 'autonomous.process-gpt.io/ws';
-//     window.$masterDB = createClient(
-//         'http://127.0.0.1:54321',
-//         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
-//         {
-//             auth: {
-//                 autoRefreshToken: false,
-//                 persistSession: false
-//             }
-//         }
-//     );
-//     const subdomain = window.location.host.split('.')[0];
-//     if(subdomain != 'www'){
-//         let res
-//         let options: {
-//             key: string;
-//             match?: Record<string, any>;
-//         } = {
-//             key: "id"
-//         };
-//         let obj: {
-//             table: string;
-//             searchKey?: string;
-//             searchVal?: string;
-//         } = {
-//             table: ''
-//         };
-    
-//         let path = `db://tenant_def/${subdomain}`
-//         path = path.includes('://') ? path.split('://')[1] : path;
-    
-//         if (path.includes('/')) {
-//             obj.table = path.split('/')[0];
-//             if (options && options.key) {
-//                 obj.searchKey = options.key;
-//                 obj.searchVal = path.split('/')[1];
-//             }
-//         } else {
-//             obj.table = path;
-//         }
-//         if (options && options.match) {
-//             const { data, error } = await window.$masterDB
-//                 .from(obj.table)
-//                 .select()
-//                 .match(options.match)
-//                 .maybeSingle()
-    
-//             if (error) {
-//                 res = error;
-//             } else if (data) {
-//                 res = data;
-//             }
-//         } else if (obj.searchVal) {
-//             const { data, error } = await window.$masterDB
-//                 .from(obj.table)
-//                 .select()
-//                 .eq(obj.searchKey, obj.searchVal)
-//                 .maybeSingle()
-    
-//             if (error) {
-//                 res = error;
-//             } else if (data) {
-//                 res = data;
-//             }
-//         } else {
-//             const { data, error } = await window.$masterDB
-//                 .from(obj.table)
-//                 .select()
-//                 .maybeSingle()
-            
-//             if (error) {
-//                 res = error;
-//             } else if (data) {
-//                 res = data;
-//             }
-//         }
-//         if(res){
-//             window.$supabase = createClient(res.url, res.secret, {
-//                 auth: {
-//                     autoRefreshToken: false,
-//                     persistSession: false
-//                 }
-//             });
-//         } else {
-//             alert('해당 주소는 존재하지 않는 주소입니다. 가입 후 이용하세요.');
-//             window.location.href = 'http://www.process-gpt.io';
-//         }
-//     } else {
-//         window.$supabase = createClient(
-//             'http://127.0.0.1:54321',
-//             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
-//             {
-//                 auth: {
-//                     autoRefreshToken: false,
-//                     persistSession: false
-//                 }
-//             }
-//         );
-//     }
+    const subdomain = window.location.host.split('.')[0];
+    if(subdomain == 'www'){
+        window.$supabase = createClient(
+            'https://qivmgbtrzgnjcpyynpam.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpdm1nYnRyemduamNweXlucGFtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxNTU4ODc3NSwiZXhwIjoyMDMxMTY0Nzc1fQ.z8LIo50hs1gWcerWxx1dhjri-DMoDw9z0luba_Ap4cI',
+            {
+                auth: {
+                    autoRefreshToken: false,
+                    persistSession: false
+                }
+            }
+        );
+    } else {
+        (async () => {
+            let options: {
+                key: string;
+                match?: Record<string, any>;
+            } = {
+                key: "id"
+            };
+            let obj: {
+                table: string;
+                searchKey?: string;
+                searchVal?: string;
+            } = {
+                table: ''
+            };
+        
+            let path = `db://tenant_def/${subdomain}`
+            path = path.includes('://') ? path.split('://')[1] : path;
+        
+            if (path.includes('/')) {
+                obj.table = path.split('/')[0];
+                if (options && options.key) {
+                    obj.searchKey = options.key;
+                    obj.searchVal = path.split('/')[1];
+                }
+            } else {
+                obj.table = path;
+            }
+            if (options && options.match) {
+                const { data, error } = await window.$masterDB
+                    .from(obj.table)
+                    .select()
+                    .match(options.match)
+                    .maybeSingle();
+        
+                if (error) {
+                    alert(error);
+                } else if (data) {
+                    window.$tenantInfo = data;
+                }
+            } else if (obj.searchVal) {
+                const { data, error } = await window.$masterDB
+                    .from(obj.table)
+                    .select()
+                    .eq(obj.searchKey, obj.searchVal)
+                    .maybeSingle();
+        
+                if (error) {
+                    alert(error);
+                } else if (data) {
+                    window.$tenantInfo = data;
+                }
+            } else {
+                const { data, error } = await window.$masterDB
+                    .from(obj.table)
+                    .select()
+                    .maybeSingle();
+                
+                if (error) {
+                    alert(error);
+                } else if (data) {
+                    window.$tenantInfo = data;
+                }
+            }
+            if(window.$tenantInfo.url && window.$tenantInfo.secret){
+                window.$supabase = createClient(window.$tenantInfo.url, window.$tenantInfo.secret, {
+                    auth: {
+                        autoRefreshToken: false,
+                        persistSession: false
+                    }
+                });
+            } else {
+                alert('해당 주소는 존재하지 않는 주소입니다. 가입 후 이용하세요.');
+                window.location.href = 'https://www.process-gpt.io';
+            }
+        })();
+    }
 }
 
 const app = createApp(App);
+
+async function setSupabaseEndpoint() {
+    try {
+        if (window.$tenantInfo && window.$tenantInfo.url) {
+            await axios.post(`${window.$backend}/set-db-config`, {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                data: {
+                    url: window.$tenantInfo.url,
+                    secret: window.$tenantInfo.secret,
+                    dbConfig: {
+                        dbname: window.$tenantInfo.dbname,
+                        user: window.$tenantInfo.user,
+                        password: window.$tenantInfo.pw,
+                        host: window.$tenantInfo.host,
+                        port: window.$tenantInfo.port
+                    }
+                }
+            });
+            console.log("Supabase endpoint 설정 완료");
+        }
+    } catch (error) {
+        console.error("Supabase endpoint 설정 실패:", error);
+    }
+}
+  
+app.config.globalProperties.$setSupabaseEndpoint = setSupabaseEndpoint;
+
 app.use(VueMonacoEditorPlugin, {
     paths: {
         // The recommended CDN config

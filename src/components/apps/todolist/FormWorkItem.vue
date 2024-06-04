@@ -40,7 +40,9 @@ import DynamicForm from '@/components/designer/DynamicForm.vue';
 
 const backend = BackendFactory.createBackend();
 export default {
-    props: {
+    components: {
+        DynamicForm
+    },props: {
         workItem: {
             type: Object,
             default: function () {
@@ -60,8 +62,17 @@ export default {
         html: null,
         formData: {}
     }),
-    components: {
-        DynamicForm
+    computed: {
+        isCompleted(){
+            return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
+        }
+    },
+    watch:  {
+        html() {
+            if (this.isCompleted) {
+                this.html = this.disableFormHTML(this.html);
+            }
+        }
     },
     mounted() {
         this.init();
@@ -175,6 +186,15 @@ export default {
             await backend.putWorkItemComplete(me.$route.params.taskId, workItem);
             me.$router.push('/todolist');
         
+        },
+        disableFormHTML(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const elements = doc.querySelectorAll('[disabled="false"]');
+            elements.forEach(element => {
+                element.setAttribute('disabled', 'true');
+            });
+            return doc.body.innerHTML;
         }
     }
 };

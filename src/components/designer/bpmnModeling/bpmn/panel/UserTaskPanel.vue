@@ -112,6 +112,7 @@
             :formMapperJson="formMapperJson"
             :processElement="processElement"
             @saveFormMapperJson="saveFormMapperJson"
+            @closeFormMapper="closeFormMapper"
         />
     </v-dialog>
             
@@ -373,7 +374,8 @@ export default {
             // this.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
             this.copyUengineProperties.mappingContext = JSON.parse(jsonString);
             // this.$emit('update:uEngineProperties', this.copyUengineProperties);
-
+        },
+        closeFormMapper() {
             this.isOpenFieldMapper = false;
         },
         async openFormMapper() {

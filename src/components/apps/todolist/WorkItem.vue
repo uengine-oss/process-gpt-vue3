@@ -116,7 +116,7 @@
                                         <component
                                             :is="'work-history-' + mode"
                                             :messages="messages"
-                                            :isComplete="isComplete"
+                                            :isCompleted="isCompleted"
                                             @clickMessage="navigateToWorkItemByTaskId"
                                         />
                                     </div>
@@ -153,9 +153,6 @@
                 >
                     <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus" :isComplete="isComplete" :isDryRun="isDryRun" :dryRunActivity="dryRunActivity"></component>
                     <v-tooltip :text="$t('processDefinition.zoom')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn
-                                @click="$globalState.methods.toggleZoom()"
                                 size="small"
                                 icon
                                 v-bind="props"
@@ -247,7 +244,7 @@
                                         <component
                                             :is="'work-history-' + mode"
                                             :messages="messages"
-                                            :isComplete="isComplete"
+                                            :isCompleted="isCompleted"
                                             @clickMessage="navigateToWorkItemByTaskId"
                                         />
                                     </div>
@@ -366,7 +363,7 @@ export default {
 
             return this.workItem.worklist.status;
         },
-        isComplete(){
+        isCompleted() {
             return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
         }
     },

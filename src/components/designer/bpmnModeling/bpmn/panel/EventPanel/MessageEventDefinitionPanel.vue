@@ -1,39 +1,93 @@
 <template>
-    <div>message-event-definition-panel</div>
+    <div>
+        <div style="height: 100%" v-if="element.$type === 'bpmn:IntermediateThrowEvent'">
+            <div>
+                Method Type & URL
+                <v-row class="ma-0 pa-0">
+                    <v-col cols="4">
+                        <v-autocomplete
+                            labels="Methods Type"
+                            :items="methodList"
+                            theme="light"
+                            rounded
+                            density="comfortable"
+                            variant="solo"
+                            v-model="copyUengineProperties.method"
+                        ></v-autocomplete>
+                    </v-col>
+                    <v-col cols="8">
+                        <v-text-field label="API URL" v-model="copyUengineProperties.uriTemplate"></v-text-field>
+                    </v-col>
+                </v-row>
+            </div>
+            <div style="height: 70%">
+                <v-row class="ma-0 pa-0" style="height: 100%">
+                    <vue-monaco-editor
+                        v-model:value="copyUengineProperties.inputPayloadTemplate"
+                        theme="vs-dark"
+                        language="json"
+                        :options="MONACO_EDITOR_OPTIONS"
+                        @mount="handleMount"
+                    />
+                </v-row>
+            </div>
+            <div>
+                <div>Return 값을 저장 할 변수</div>
+                <v-row class="ma-0 pa-0">
+                    <v-autocomplete
+                        :items="processVariables"
+                        item-props
+                        :item-value="item"
+                        :item-title="(item) => item.name"
+                        v-model="copyUengineProperties.selectedOut"
+                    ></v-autocomplete>
+                    <!-- <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts> -->
+                </v-row>
+            </div>
+        </div>
+        <div v-else-if="this.element.$type === 'bpmn:IntermediateCatchEvent' || this.element.$type === 'bpmn:StartEvent'">
+            <div>
+                <v-text-field label="Correlation Key" v-model="copyUengineProperties.correlationKey"></v-text-field>
+                <v-text-field label="Service Path" v-model="copyUengineProperties.servicePath"></v-text-field>
+                <v-text-field label="Operation Ref" v-model="copyUengineProperties.operationRef"></v-text-field>
+            </div>
+        </div>
+    </div>
 </template>
 <script>
+import partialParse from 'partial-json-parser';
 import { useBpmnStore } from '@/stores/bpmn';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { Icon } from '@iconify/vue';
 const storage = StorageBaseFactory.getStorage();
-// import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
+// import { setPropeties } from '@/components/designer/bpmnModelingf/bpmn/panel/CommonPanel.ts';
 
 export default {
     name: 'message-event-definition-panel',
     props: {
-        element: Object,
         uengineProperties: Object,
         processDefinitionId: String,
-        isViewMode: Boolean
+        isViewMode: Boolean,
+        element: Object,
+        definition: Object
     },
-    created() {
-        // console.log(this.element.eventDefinitions);
-        if (this.element.eventDefinitions.length > 0) {
-            this.eventType = this.element.eventDefinitions[0].$type;
-        }
+    async created() {
         this.copyUengineProperties = this.uengineProperties;
+        this.storage = StorageBaseFactory.getStorage();
+        this.openaiToken = await this.getToken();
         Object.keys(this.requiredKeyLists).forEach((key) => {
             this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
         });
     },
     data() {
         return {
-            requiredKeyLists: {
-                parameters: [],
-                checkpoints: [],
-                dataInput: { name: '' }
+            MONACO_EDITOR_OPTIONS: {
+                automaticLayout: true,
+                formatOnType: true,
+                formatOnPaste: true
             },
-            methodList: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
+            requiredKeyLists: {},
+            methodList: ['GET', 'POST', 'PUT', 'PATCH'],
             copyUengineProperties: null,
             name: '',
             checkpoints: [],
@@ -50,99 +104,62 @@ export default {
             editParam: false,
             paramKey: '',
             paramValue: '',
-            eventType: null
+            generator: null,
+            openAI: null,
+            copyDefinition: this.definition,
+            processVariables: [],
+            apiServiceURL: ''
         };
     },
     async mounted() {
         let me = this;
-
+        this.processVariables = this.copyDefinition.processVariables
+            .filter((variable) => variable.type !== 'Form')
+            .map((variable) => ({
+                name: variable.name,
+                type: variable.type,
+                defaultValue: variable.defaultValue
+            }));
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
-        // Object.keys(this.requiredKeyLists).forEach((key) => {
-        //     this.ensureKeyExists(this.uengineProperties, key, this.requiredKeyLists[key]);
-        // });
-    },
-    computed: {
-        panelName() {
-            return _.kebabCase(this.eventType.split(':')[1]) + '-panel';
-        },
-        inputData() {
-            let params = this.copyUengineProperties.parameters;
-            let result = [];
-            if (params)
-                params.forEach((element) => {
-                    if (element.direction == 'IN') result.push(element);
-                });
-            return result;
-        },
-        outputData() {
-            let params = this.copyUengineProperties.parameters;
-            let result = [];
-            if (params)
-                params.forEach((element) => {
-                    if (element.direction == 'OUT') result.push(element);
-                });
-            return result;
+        if (this.element.$type === 'bpmn:IntermediateThrowEvent') {
+            this.copyUengineProperties.headers = [
+                { name: 'Authorization', value: 'Bearer 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' },
+                { name: 'Accept', value: 'application/vnd.github+json' },
+                { name: 'X-GitHub-Api-Version', value: '2022-11-28' }
+            ];
         }
     },
+    computed: {},
     watch: {},
     methods: {
-        deleteInputData(inputData) {
-            const index = this.copyUengineProperties.parameters.findIndex((element) => element.key === inputData.key);
-            if (index > -1) {
-                this.copyUengineProperties.parameters.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties);
-            }
-        },
-        deleteOutputData(outputData) {
-            const index = this.copyUengineProperties.parameters.findIndex((element) => element.key === outputData.key);
-            if (index > -1) {
-                this.copyUengineProperties.parameters.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties);
-            }
+        async getToken() {
+            let option = {
+                key: 'key'
+            };
+            const res = await this.storage.getObject('db://configuration/openai_key', option);
+            return res?.value?.key || window.localStorage.getItem('openAIToken') || null;
         },
         ensureKeyExists(obj, key, defaultValue) {
             if (!obj.hasOwnProperty(key)) {
                 obj[key] = defaultValue;
             }
         },
-        deleteExtendedProperty(item) {
-            const index = this.copyUengineProperties.extendedProperties.findIndex((element) => element.key === item.key);
-            if (index > -1) {
-                this.copyUengineProperties.extendedProperties.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties);
+        findElement(obj, key, id) {
+            if (obj.hasOwnProperty(key) && obj[key] === id) {
+                return obj;
             }
-        },
-        deleteCheckPoint(item) {
-            const index = this.copyUengineProperties.checkpoints.findIndex((element) => element.checkpoint === item.checkpoint);
-            if (index > -1) {
-                this.copyUengineProperties.checkpoints.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties);
+
+            for (let prop in obj) {
+                if (obj[prop] instanceof Object) {
+                    let result = this.findElement(obj[prop], key, id);
+                    if (result) {
+                        return result;
+                    }
+                }
             }
-        },
-        addParameter() {
-            this.copyUengineProperties.extendedProperties.push({ key: this.paramKey, value: this.paramValue });
-            this.$emit('update:uEngineProperties', this.copyUengineProperties);
-            // const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
-            // // this.checkpoints.push(this.checkpointMessage)
-            // const parameter = bpmnFactory.create('uengine:ExtendedProperty', { key: this.paramKey, value: this.paramValue });
-            // if (!this.elementCopy.extensionElements.values[0].ExtendedProperties) this.elementCopy.extensionElements.values[0].ExtendedProperties = []
-            // this.elementCopy.extensionElements.values[0].ExtendedProperties.push(parameter)
-            // this.paramKey = ""
-            // this.paramValue = ""
-        },
-        async getData(path, options) {
-            // let value;
-            // if (path) {
-            //     value = await this.storage.getObject(`db://${path}`, options);
-            // } else {
-            //     value = await this.storage.getObject(`db://${this.path}`, options);
-            // }
-            // return value;
-        },
-        addCheckpoint() {
-            this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
-            this.$emit('update:uEngineProperties', this.copyUengineProperties);
+
+            return null;
         }
     }
 };

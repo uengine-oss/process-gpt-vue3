@@ -15,34 +15,23 @@
                     </transition-group>
             </draggable>
         </div>
+        <!-- workItem dialog -->
         <v-dialog v-model="dialog" max-width="500">
-            <v-card flat class="pa-2">
-                <v-card-title>
-                    <h6 class="text-h6 font-weight-semibold">Data</h6>
-                </v-card-title>
-                <v-card-text>
-                    <DefaultForm :inputItems="inputItems" />
-                </v-card-text>
-                <v-card-actions class="justify-center">
-                    <v-btn color="primary" variant="flat" @click="$try({action: async () => { await back.putWorkItemComplete(taskId, inputItems); dialog = false; }})">submit</v-btn>
-                    <v-btn color="error" variant="flat" @click="closeDialog(false)">cancel</v-btn>
-                </v-card-actions>
-            </v-card>
+            <WorkItemDialog :taskId="taskId" :workItem="workItem" @closeDialog="closeDialog" />
         </v-dialog>
     </v-card>
 </template>
 
 <script>
 import TodoTaskItemCard from './TodoTaskItemCard.vue';
-import DefaultForm from '@/components/designer/DefaultForm.vue';
+import WorkItemDialog from './WorkItemDialog.vue';
 
 import BackendFactory from "@/components/api/BackendFactory";
-const back = BackendFactory.createBackend();
 
 export default {
     components: {
         TodoTaskItemCard,
-        DefaultForm
+        WorkItemDialog,
     },
     props: {
         column: Object,
@@ -53,14 +42,13 @@ export default {
         },
     },
     data: () => ({
-        back: null,
         dialog: false,
         taskId: null,
+        workItem: null,
         originColumnId: null,
-        inputItems: null,
     }),
-    mounted(){
-        this.back = BackendFactory.createBackend();
+    async mounted() {
+        this.workItem = await back.getWorkItem(this.taskId);
         if(this.$refs.section) this.$refs.section.addEventListener('scroll', this.checkScrollBottom);
     },
     methods: {
@@ -92,11 +80,15 @@ export default {
 
             me.$try({
                 action: async () => {
-                    const result = await me.back.putWorklist(movedTask.taskId, movedTask);
-                    if (result.cannotProceedErrors && result.cannotProceedErrors.length > 0) {
+                    const back = BackendFactory.createBackend();
+                    const result = await back.putWorklist(movedTask.taskId, movedTask);
+                    
+                    // Process-GPT
+                    if (result && result.cannotProceedErrors && result.cannotProceedErrors.length > 0) {
                         me.taskId = movedTask.taskId;
-                        me.openDialog(movedTask.taskId)
-                    } else {
+                        me.workItem = await back.getWorkItem(me.taskId);
+                        me.dialog = true;
+                    } else if (result && result.completedActivities && result.completedActivities.length > 0) {
                         const status = result.completedActivities.find(
                             item => item.completedActivityId == movedTask.tracingTag
                         ).result;
@@ -108,24 +100,12 @@ export default {
                 }
             });
         },
-        async openDialog(taskId) {
-            var me = this;
-            me.$try({
-                action: async () => {
-                    const workItem = await me.back.getWorkItem(taskId);
-                    if (workItem.activity && workItem.activity.parameters && workItem.activity.parameters.length > 0) {
-                        me.inputItems = workItem.activity.parameters
-                            .filter((item) => item.direction.includes('OUT'))
-                            .map((item) => ({ name: item.variable.name, value: item.variable.value }));
-                        me.dialog = true;
-                    }
-                }
-            })
-        },
         closeDialog(isUpdated) {
             this.dialog = false;
             if(!isUpdated) {
                 this.$emit('updateStatus', this.taskId, this.originColumnId);
+            } else {
+                this.EventBus.emit('instances-updated');
             }
             this.taskId = null;
             this.originColumnId = null;

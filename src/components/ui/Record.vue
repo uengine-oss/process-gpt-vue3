@@ -18,15 +18,20 @@
             @audio:stop="stopAudio"
             :audioResponse="audioResponse"
             :isLoading="isLoading"
+            :stopAudioStreamStatus="stopAudioStreamStatus"
+            :chatRoomId="chatRoomId"
         />
         <div class="controls">
-            <v-btn v-if="!isRecording && !isAudioPlaying" @click="toggleRecording" icon density="comfortable">
+            <v-btn v-if="!isRecording && !isAudioPlaying && !isLoading" @click="toggleRecording()" icon density="comfortable">
                 <Icon icon='bi:mic-fill' width="24" height="24" />
             </v-btn>
-            <v-btn v-else @click="stopRecording" icon density="comfortable">
+            <v-btn v-else-if="!sendRecordingStatus" @click="sendRecording()" icon density="comfortable">
                 <Icon icon='fa-solid:stop' width="24" height="24" />
             </v-btn>
-            <div v-if="!isAudioPlaying" class="bars">
+            <v-btn v-else @click="stopAudioStream()" icon density="comfortable">
+                <Icon icon='fa-solid:stop' width="24" height="24" />정지
+            </v-btn>
+            <div v-if="!isAudioPlaying && !isLoading" class="bars">
                 <div v-for="n in 4" :key="n" class="bar" :style="{ height: boxHeight(n) + 'px' }"></div>
             </div>
         </div>
@@ -43,7 +48,8 @@ export default {
         AudioStream,
     },
     props: {
-        audioResponse: String
+        audioResponse: String,
+        chatRoomId: String
     },
     data() {
         return {
@@ -57,9 +63,15 @@ export default {
             stream: null, // 마이크 스트림
             isLoading: false,
             isAudioPlaying: false, // 오디오 재생 상태
+            stopAudioStreamStatus: false,
+            sendRecordingStatus: false
         };
     },
     methods: {
+        stopAudioStream() {
+            this.stopAudioStreamStatus = true
+            this.sendRecordingStatus = false
+        },
         async getMicrophoneInput() {
             if (!navigator.mediaDevices) {
                 alert("브라우저가 마이크 입력을 지원하지 않습니다.");
@@ -97,8 +109,10 @@ export default {
             }
             this.$emit('start');
         },
-        stopRecording() {
+        sendRecording() {
             this.isRecording = false;
+            this.stopAudioStreamStatus = false;
+            this.sendRecordingStatus = true
             if (this.audioContext) {
                 this.audioContext.close();
                 this.audioContext = null;
@@ -114,7 +128,6 @@ export default {
             this.isLoading = status;
         },
         closeRecording() {
-            this.stopRecording();
             this.$emit('close');
         },
         startAudio() {
@@ -122,6 +135,10 @@ export default {
         },
         stopAudio() {
             this.isAudioPlaying = false;
+            this.isRecording = false;
+            this.isLoading = false;
+            this.stopAudioStreamStatus = false;
+            this.sendRecordingStatus = false
         }
     },
     computed: {
