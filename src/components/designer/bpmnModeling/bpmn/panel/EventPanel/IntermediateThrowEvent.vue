@@ -2,6 +2,7 @@
     <component
         v-if="eventType"
         :is="panelName"
+        :type="'intermediate-throw'"
         :uengineProperties="uengineProperties"
         :element="element"
         :processDefinitionId="processDefinitionId"
@@ -29,9 +30,9 @@ export default {
             this.eventType = this.element.eventDefinitions[0].$type;
         }
         this.copyUengineProperties = this.uengineProperties
-        Object.keys(this.requiredKeyLists).forEach((key) => {
-            this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
-        });
+        // Object.keys(this.requiredKeyLists).forEach((key) => {
+        //     this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
+        // });
     },
     data() {
         return {

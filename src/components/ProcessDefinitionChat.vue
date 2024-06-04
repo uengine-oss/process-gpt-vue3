@@ -29,9 +29,9 @@
             </template>
             <template v-slot:rightpart>
                 <div class="no-scrollbar">
-                    <Chat :prompt="prompt" :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" :lock="lock" 
-                        :disableChat="disableChat" @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" 
-                        @stopMessage="stopMessage">
+                    <Chat :prompt="prompt" :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" 
+                        :lock="lock" :disableChat="disableChat" :chatRoomId="chatRoomId" @sendMessage="beforeSendMessage"
+                        @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage">
                         <template v-slot:custom-tools>
                             <div class="d-flex">
                                 <v-tooltip location="bottom">
@@ -114,9 +114,9 @@
             </template>
 
             <template v-slot:mobileLeftContent>
-                <Chat :prompt="prompt" :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" :lock="lock"
-                    :disableChat="disableChat" @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage"
-                    @stopMessage="stopMessage">
+                <Chat :prompt="prompt" :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" 
+                    :lock="lock" :disableChat="disableChat" :chatRoomId="chatRoomId" @sendMessage="beforeSendMessage" 
+                    @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage">
                     <template v-slot:custom-tools>
                         <div class="d-flex">
                             <v-tooltip location="bottom">
@@ -257,6 +257,10 @@ export default {
                 this.prompt = `아래 대화 내용을 보고 기존 프로세스에서 수정 가능한 부분을 유추하여 프로세스 정의를 수정해주세요.
                 ${messagesString}.`;
                 this.$store.commit('clearMessages');
+            }
+
+            if (this.fullPath && this.fullPath != '') {
+                this.chatRoomId = this.fullPath;
             }
         })
     },

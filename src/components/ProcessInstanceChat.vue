@@ -1,7 +1,7 @@
 <template>
     <div style="background-color: rgba(255, 255, 255, 0)">
         <Chat :messages="messages" :agentInfo="agentInfo" :chatInfo="chatInfo"
-            :isAgentMode="isAgentMode" :userInfo="userInfo" :disableChat="disableChat" :type="'instances'" :name="chatName"
+            :isAgentMode="isAgentMode" :userInfo="userInfo" :disableChat="disableChat" :type="'instances'" :name="chatName" :chatRoomId="chatRoomId"
             @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
             @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage">
             <template v-slot:custom-title v-if="$route.params.instId">
@@ -74,7 +74,9 @@ export default {
         }
     },
     mounted() {
-        // 
+        if (this.processInstance && this.processInstance.proc_inst_id) {
+            this.chatRoomId = this.processInstance.proc_inst_id;
+        }
     },
     beforeUnmount() {
 

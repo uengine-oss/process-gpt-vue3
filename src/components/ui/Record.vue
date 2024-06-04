@@ -19,6 +19,7 @@
             :audioResponse="audioResponse"
             :isLoading="isLoading"
             :stopAudioStreamStatus="stopAudioStreamStatus"
+            :chatRoomId="chatRoomId"
         />
         <div class="controls">
             <v-btn v-if="!isRecording && !isAudioPlaying && !isLoading" @click="toggleRecording()" icon density="comfortable">
@@ -47,7 +48,8 @@ export default {
         AudioStream,
     },
     props: {
-        audioResponse: String
+        audioResponse: String,
+        chatRoomId: String
     },
     data() {
         return {

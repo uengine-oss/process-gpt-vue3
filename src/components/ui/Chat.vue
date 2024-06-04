@@ -5,6 +5,7 @@
             @start="startRecording()"
             @stop="stopRecording()"
             :audioResponse="newMessage"
+            :chatRoomId="chatRoomId"
         />
         <div v-else>
             <div>
@@ -533,7 +534,8 @@ export default {
         lock: Boolean,
         generatedWorkList: Array,
         ProcessGPTActive: Boolean,
-        isAgentMode: Boolean
+        isAgentMode: Boolean,
+        chatRoomId: String
     },
     data() {
         return {

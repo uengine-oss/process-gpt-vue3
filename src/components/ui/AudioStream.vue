@@ -11,6 +11,7 @@ export default {
         isLoading: Boolean,
         offStream: Boolean,
         stopAudioStreamStatus: Boolean,
+        chatRoomId: String,
     },
     data() {
         return {
@@ -74,12 +75,18 @@ export default {
             }
             await this.$setSupabaseEndpoint();
             var url = window.$backend == '' ? 'http://localhost:8000' : window.$backend;
+            var input = {
+                query: response,
+                chat_room_id: me.chatRoomId,
+            }
+            const token = localStorage.getItem('accessToken');
             fetch(`${url}/audio-stream`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'text/plain'
+                    'Content-Type': 'text/plain',
+                    'Authorization': `Bearer ${token}`
                 },
-                body: '{"query": "'+ response +'"}',
+                body: JSON.stringify(input),    //'{"query": "'+ response +'"}',
                 signal: signal // fetch 요청에 signal 추가
             }).then(response => {
                 const reader = response.body.getReader();
