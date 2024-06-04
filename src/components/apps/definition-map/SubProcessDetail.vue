@@ -187,7 +187,8 @@ export default {
                             })
                         })
                     })
-                    const defInfo = await backend.getRawDefinition(defId, null);
+                    // const defInfo = await backend.getRawDefinition(defId, null);
+                    const defInfo = await backend.getRawDefinition(defId,  { type: 'bpmn' });
                     if (defInfo && !defInfo.code) {
                         this.processDefinition = defInfo;
                         this.bpmn = defInfo.bpmn

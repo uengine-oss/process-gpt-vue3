@@ -29,7 +29,7 @@ spring:
         - id: instance-servicce
           uri: http://localhost:9094
           predicates:
-            - Path=/worklist/**, /instance/**, /work-item/** , /instances/**
+            - Path=/worklist/**, /instance/**, /work-item/** , /instances/**, /dry-run/**
         - id: frontend
           uri: http://localhost:5173
           predicates:

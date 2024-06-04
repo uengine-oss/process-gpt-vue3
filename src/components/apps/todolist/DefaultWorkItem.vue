@@ -39,6 +39,8 @@ export default {
                 return null
             },
         },
+        isDryRun: Boolean,
+        dryRunActivity: Object,
         isComplete: Boolean
     },
     data: () => ({

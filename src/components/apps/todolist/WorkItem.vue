@@ -1,9 +1,9 @@
 <template>
-    <v-card elevation="10" v-if="workItem" :key="updatedKey">
+    <v-card elevation="10" v-if="currentComponent" :key="updatedKey">
         <v-card-title>
             <v-row class="ma-0 pa-0 mt-1 ml-3" style="line-height: 100%">
-                <div style="font-size: 20px; font-weight: 500">{{ workItem.activity.name }}</div>
-                <v-chip size="small" variant="outlined" density="comfortable" style="margin-left: 5px">{{ workItemStatus }}</v-chip>
+                <div style="font-size: 20px; font-weight: 500">{{ activityName }}</div>
+                <v-chip v-if="workItemStatus" size="small" variant="outlined" density="comfortable" style="margin-left: 5px">{{ workItemStatus }}</v-chip>
             </v-row>
         </v-card-title>
         <!-- pc 사이즈 -->
@@ -18,8 +18,7 @@
                 <div v-if="currentComponent"
                     class="work-itme-current-component"
                 >
-                    <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus"
-                        :isComplete="isComplete"></component>
+                    <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus" :isComplete="isComplete" :isDryRun="isDryRun" :dryRunActivity="dryRunActivity"></component>
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
                             <v-btn
@@ -59,15 +58,38 @@
                                 :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 280px);'"
                                 style="color: black; overflow: auto"
                             >
-                                <div class="pa-0 pl-2" :style="!checkPoints ? 'height:100%;' : 'height:50%;'">
+                                <div class="pa-0 pl-2" :style="!checkPoints ? 'height:100%;' : 'height:50%;'" :key="updatedDefKey">
                                     <div v-if="bpmn" style="height: 100%">
-                                        <process-definition
+
+                                        <BpmnUengine
+                                            ref="bpmnVue"
+                                            :bpmn="bpmn"
+                                            :options="options"
+                                            :isViewMode="true"
+                                            :currentActivities="currentActivities"
+                                            v-on:error="handleError"
+                                            v-on:shown="handleShown"
+                                            v-on:openDefinition="(ele) => openSubProcess(ele)"
+                                            v-on:loading="handleLoading"
+                                            v-on:openPanel="(id) => openPanel(id)"
+                                            v-on:update-xml="(val) => $emit('update-xml', val)"
+                                            v-on:definition="(def) => (definitions = def)"
+                                            v-on:add-shape="onAddShape"
+                                            v-on:done="setDefinition"
+                                            v-on:change-sequence="onChangeSequence"
+                                            v-on:remove-shape="onRemoveShape"
+                                            v-on:change-shape="onChangeShape"
+                                            style="height: 100%"
+                                        ></BpmnUengine>
+
+                                        
+                                        <!-- <process-definition
                                             style="height: 100%"
                                             :currentActivities="currentActivities"
                                             :bpmn="bpmn"
                                             :key="updatedDefKey"
                                             :isViewMode="true"
-                                        ></process-definition>
+                                        ></process-definition> -->
                                     </div>
                                     <div v-else>No BPMN found</div>
                                 </div>
@@ -129,8 +151,7 @@
                 <div v-if="currentComponent"
                     class="work-itme-current-component"
                 >
-                    <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus"
-                        :isComplete="isComplete"></component>
+                    <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus" :isComplete="isComplete" :isDryRun="isDryRun" :dryRunActivity="dryRunActivity"></component>
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
                             <v-btn
@@ -170,15 +191,36 @@
                                 :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 280px);'"
                                 style="color: black; overflow: auto"
                             >
-                                <div class="pa-0 pl-2" :style="!checkPoints ? 'height:100%;' : 'height:50%;'">
+                                <div class="pa-0 pl-2" :style="!checkPoints ? 'height:100%;' : 'height:50%;'" :key="updatedDefKey">
                                     <div v-if="bpmn" style="height: 100%">
-                                        <process-definition
+                                        <BpmnUengine
+                                            ref="bpmnVue"
+                                            :bpmn="bpmn"
+                                            :options="options"
+                                            :isViewMode="true"
+                                            :currentActivities="currentActivities"
+                                            v-on:error="handleError"
+                                            v-on:shown="handleShown"
+                                            v-on:openDefinition="(ele) => openSubProcess(ele)"
+                                            v-on:loading="handleLoading"
+                                            v-on:openPanel="(id) => openPanel(id)"
+                                            v-on:update-xml="(val) => $emit('update-xml', val)"
+                                            v-on:definition="(def) => (definitions = def)"
+                                            v-on:add-shape="onAddShape"
+                                            v-on:done="setDefinition"
+                                            v-on:change-sequence="onChangeSequence"
+                                            v-on:remove-shape="onRemoveShape"
+                                            v-on:change-shape="onChangeShape"
+                                            style="height: 100%"
+                                        ></BpmnUengine>
+
+                                        <!-- <process-definition
                                             style="height: 100%"
                                             :currentActivities="currentActivities"
                                             :bpmn="bpmn"
                                             :key="updatedDefKey"
                                             :isViewMode="true"
-                                        ></process-definition>
+                                        ></process-definition> -->
                                     </div>
                                     <div v-else>No BPMN found</div>
                                 </div>
@@ -234,34 +276,53 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
-import ProcessDefinition from '@/components/ProcessDefinition.vue';
-import DefaultWorkItem from './DefaultWorkItem.vue'; // DefaultWorkItem 컴포넌트 임포트
+// import ProcessDefinition from '@/components/ProcessDefinition.vue';
+import DefaultWorkItem from './DefaultWorkItem.vue';
 import FormWorkItem from './FormWorkItem.vue'; // FormWorkItem 컴포넌트 임포트
+import URLWorkItem from './URLWorkItem.vue';
+import BpmnUengine from '@/components/BpmnUengine.vue';
 
 import WorkItemChat from '@/components/ui/WorkItemChat.vue';
 import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
+import customBpmnModule from '@/components/customBpmn';
 
 const backend = BackendFactory.createBackend();
 export default {
+    props: {
+        isDryRun: Boolean,
+        definitionId: {
+            type: String,
+            required: true
+        },
+        dryRunActivity: Object,
+        taskId: String,
+    },
     components: {
-        ProcessDefinition,
+        // ProcessDefinition,
         DefaultWorkItem,
         FormWorkItem,
+        URLWorkItem,
         'work-history-uEngine': WorkItemChat,
-        'work-history-ProcessGPT': ProcessInstanceChat
+        'work-history-ProcessGPT': ProcessInstanceChat,
+        BpmnUengine,
     },
-    data: () => ({
-        bpmn: null,
+    data: () => ({    
         workItem: null,
         checkPoints: null,
         workListByInstId: null,
+    
+        // bpmn
+        bpmn: null,
+        options: {
+            propertiesPanel: {},
+            additionalModules: [customBpmnModule]
+        },
         currentComponent: null,
         currentActivities: [],
-
+        
         // status variables
         updatedKey: 0,
         updatedDefKey: 0,
-        loading: false,
         selectedTab: 'progress',
         eventList: [],
     }),
@@ -274,6 +335,9 @@ export default {
     computed: {
         mode() {
             return window.$mode;
+        },
+        currentTaskId() {
+            return this.taskId ? this.taskId : this.$route.params.taskId
         },
         checkedCount() {
             if (!this.checkPoints) return 0;
@@ -290,11 +354,16 @@ export default {
                 timeStamp: workItem.startDate
             }));
         },
-        id() {
-            return this.$route.params.taskId ? this.$route.params.taskId : null;
+        activityName(){
+            if(!this.workItem) return null
+            if(this.isDryRun) return this.dryRunActivity.name
+
+            return this.workItem.activity.name;
         },
         workItemStatus() {
-            if (!this.workItem) return null;
+            if(!this.workItem) return null;
+            if(this.isDryRun) return 'Running'
+
             return this.workItem.worklist.status;
         },
         isComplete(){
@@ -307,12 +376,18 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    me.workItem = await backend.getWorkItem(me.id);
-                    me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, { type: 'bpmn' });
-                    if (me.workItem.worklist.execScope) me.workItem.execScope = me.workItem.worklist.execScope;
-                    me.workListByInstId = await backend.getWorkListByInstId(me.workItem.worklist.instId);
-                    me.currentComponent = me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem';
-                    me.currentActivities = [me.workItem.activity.tracingTag];
+                    if(me.isDryRun) {
+                        me.bpmn = await backend.getRawDefinition(me.definitionId, { type: 'bpmn' });
+                        me.currentComponent = me.dryRunActivity.tool.includes('urlHandler') ? 'URLWorkItem' : (me.dryRunActivity.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
+                        me.currentActivities = [me.dryRunActivity.tracingTag]
+                    } else {
+                        me.workItem = await backend.getWorkItem(me.currentTaskId);
+                        me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, { type: 'bpmn' });
+                        if (me.workItem.worklist.execScope) me.workItem.execScope = me.workItem.worklist.execScope;
+                        me.workListByInstId = await backend.getWorkListByInstId(me.workItem.worklist.instId);
+                        me.currentComponent = me.workItem.worklist.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
+                        me.currentActivities = [me.workItem.activity.tracingTag];
+                    }
                     me.updatedDefKey++;
                 }
             });
@@ -373,5 +448,23 @@ export default {
     .work-item-pc {
         display: none;
     }
+}
+.processVariables-zoom {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    z-index: 1;
+}
+.processExecute {
+    position: absolute;
+    right: 80px;
+    top: 20px;
+    z-index: 1;
+}
+.processVariables-btn {
+    position: absolute;
+    left: 5px;
+    top: 20px;
+    z-index: 1;
 }
 </style>

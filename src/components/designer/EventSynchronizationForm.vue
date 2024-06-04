@@ -12,7 +12,7 @@
                     <v-text-field v-model="modelValue.eventSynchronization.eventType"></v-text-field>
                 </div>
 
-                <div style="font-size: medium;">Parameters</div>
+                <div style="font-size: medium;">Attributes</div>
                 <draggable v-model="attributes" :options="dragOptions" style="height: 200px;">
                     <div v-for="(attribute, idx) in attributes" :key="idx">
                         <div v-if="attribute.isEdit" style="display: flex; align-items: center; height: 10%;">
@@ -230,9 +230,10 @@ export default {
         },
         "attributes": {
             handler: function(newVal, oldVal) {
-                if(this.isLoading) return;
-                if(JSON.stringify(newVal) == JSON.stringify(oldVal)) return;
-                this.value.eventSynchronization.attributes = newVal.map(({ isEdit, ...rest }) => rest);
+                var me = this
+                if(me.isLoading) return;
+                if(JSON.stringify(newVal) == JSON.stringify(me.value.eventSynchronization.attributes)) return;
+                me.value.eventSynchronization.attributes = newVal.map(({ isEdit, ...rest }) => rest);
             },
             deep: true
         }
