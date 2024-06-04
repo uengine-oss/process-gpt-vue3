@@ -153,6 +153,9 @@
                 >
                     <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus" :isComplete="isComplete" :isDryRun="isDryRun" :dryRunActivity="dryRunActivity"></component>
                     <v-tooltip :text="$t('processDefinition.zoom')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn
+                                @click="$globalState.methods.toggleZoom()"
                                 size="small"
                                 icon
                                 v-bind="props"
