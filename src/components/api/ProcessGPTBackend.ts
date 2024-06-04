@@ -42,6 +42,30 @@ class ProcessGPTBackend implements Backend {
         throw new Error("Method not implemented.");
     }
 
+    async setSupabaseEndpoint() {
+        try {
+            await axios.post(`${window.$backend}/set-db-config`, {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                data: {
+                    url: window.$tenantInfo.url,
+                    secret: window.$tenantInfo.secret,
+                    dbConfig: {
+                        dbname: window.$tenantInfo.dbname,
+                        user: window.$tenantInfo.user,
+                        password: window.$tenantInfo.pw,
+                        host: window.$tenantInfo.host,
+                        port: window.$tenantInfo.port
+                    }
+                }
+            });
+            console.log("Supabase endpoint 설정 완료");
+        } catch (error) {
+            console.error("Supabase endpoint 설정 실패:", error);
+        }
+    }
+
     async deleteDefinition(defId: string, options: any) {
         try {
             if(options && options.type === "form") {
@@ -65,6 +89,7 @@ class ProcessGPTBackend implements Backend {
             }
 
             if (!window.$jms) {
+                await this.setSupabaseEndpoint();
                 await axios.post(`${window.$backend}/drop-process-table/invoke`, {
                     "input": {
                         "process_definition_id": defId
@@ -124,6 +149,7 @@ class ProcessGPTBackend implements Backend {
                 const list = await storage.list(defId);
                 if (list.code == ErrorCode.TableNotFound) {
                     try {
+                        await this.setSupabaseEndpoint();
                         await axios.post(`${window.$backend}/process-db-schema/invoke`, {
                             "input": {
                                 "process_definition_id": defId
@@ -180,6 +206,7 @@ class ProcessGPTBackend implements Backend {
             if (defId && defId != '') {
                 const list = await storage.list(defId);
                 if (list.code == ErrorCode.TableNotFound) {
+                    await this.setSupabaseEndpoint();
                     await axios.post(`${window.$backend}/process-db-schema/invoke`, {
                         "input": {
                             "process_definition_id": defId
@@ -214,7 +241,7 @@ class ProcessGPTBackend implements Backend {
             var req = {
                 input: input
             };
-
+            await this.setSupabaseEndpoint();
             await axios.post(url, req).then(async res => {
                 if (res.data) {
                     const data = res.data;
@@ -705,6 +732,7 @@ class ProcessGPTBackend implements Backend {
                 input: input
             };
             let url = `${window.$backend}/complete/invoke`;
+            await this.setSupabaseEndpoint();
             await axios.post(url, req).then(async res => {
                 if (res.data) {
                     const data = res.data;

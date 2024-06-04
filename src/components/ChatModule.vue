@@ -84,7 +84,7 @@ export default {
         var me = this;
         this.storage = StorageBaseFactory.getStorage();
         this.openaiToken = await this.getToken();
-
+        
         this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
     },
     methods: {
@@ -363,7 +363,7 @@ export default {
                     isLoading: true
                 });
             }
-            
+
             if(JSON.stringify(this.generator.previousMessages).length/2 > 128000){
                 const encoding = encodingForModel("gpt-4");
                 let totalTokenLength = 0;

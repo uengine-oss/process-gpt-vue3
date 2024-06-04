@@ -18,8 +18,8 @@ export default {
             this.ws.send(str);
         },
         connectAgent(url){
-            var path = window.$autonomous == '' ? 'localhost:6789' : window.$autonomous
-            if(!url) url = `ws://${path}`
+            var path = window.$autonomous == '' ? 'ws://localhost:6789' : 'wss://' + window.$autonomous
+            if(!url) url = `${path}`
             this.ws = new WebSocket(url);
         },
         releaseAgent(){

@@ -1,8 +1,8 @@
 <template>
     <div>
         <audio ref="audioPlay"></audio>
-        <v-btn @click="stopStream()"
-        >정지</v-btn>
+        <!-- <v-btn @click="stopStream()"
+        >정지</v-btn> -->
     </div>
 </template>
 
@@ -61,7 +61,7 @@ export default {
             }
             this.$emit('audio:stop');
         },
-        playResponseData(response) {
+        async playResponseData(response) {
             var me = this;
             me.abortController = new AbortController(); // 새로운 AbortController 생성
             const signal = me.abortController.signal; // signal 추출
@@ -69,6 +69,7 @@ export default {
             if(me.sourceBuffer == null) {
                 me.sourceBuffer = me.mediaSource.addSourceBuffer('audio/mpeg');
             }
+            await this.$setSupabaseEndpoint();
             var url = window.$backend == '' ? 'http://localhost:8000' : window.$backend;
             var input = {
                 query: response,

@@ -115,23 +115,24 @@
                                                             >
                                                                 <Icon icon="solar:pen-bold" height="20" width="20" />
                                                             </v-btn>
+
+                                                        <!-- <transition name="slide-fade"> -->
+                                                            <div v-if="shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)"
+                                                                :key="isRender"
+                                                            >
+                                                            <!-- <div v-if="type == 'chats' && filteredMessages.length -1 == index && generatedWorkList.length != 0"> -->
+                                                                <div @click="showGeneratedWorkList = !showGeneratedWorkList"
+                                                                    class="find-message"
+                                                                    :style="generatedWorkList.length ? 'opacity:1' : 'opacity0.4' "
+                                                                >
+                                                                    <img src="@/assets/images/chat/chat-icon.png"
+                                                                        style="height:30px;"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        <!-- </transition> -->
                                                         </v-row>
                                                     </v-sheet>
-                                                    <!-- <transition name="slide-fade"> -->
-                                                        <div v-if="shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)"
-                                                            :key="isRender"
-                                                        >
-                                                        <!-- <div v-if="type == 'chats' && filteredMessages.length -1 == index && generatedWorkList.length != 0"> -->
-                                                            <div @click="showGeneratedWorkList = !showGeneratedWorkList"
-                                                                class="find-message"
-                                                                :style="generatedWorkList.length ? 'opacity:1' : 'opacity0.4' "
-                                                            >
-                                                                <img src="@/assets/images/chat/chat-icon.png"
-                                                                    style="height:24px;"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    <!-- </transition> -->
                                                 </div>
 
                                                 <v-card v-if="showGeneratedWorkList && shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)" class="mt-3">
@@ -445,6 +446,19 @@
                         >
                             <Icon icon="ic:round-headset" width="24" height="24" />
                         </v-btn>
+                        <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
+                            density="comfortable"
+                            icon
+                        >
+                            <Icon icon="ic:sharp-mic" width="24" height="24" />
+                        </v-btn>
+                        <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
+                            density="comfortable"
+                            icon
+                        >
+                            <Icon icon="fa-solid:stop" width="20" height="20" />
+                        </v-btn>
+                        <Icon v-if="isMicRecorderLoading" icon="eos-icons:bubble-loading" width="24" height="24" />
                     </template>
                     <template v-slot:append-inner>
                         <div style="height: -webkit-fill-available; margin-right: 10px; margin-top: 10px;">
@@ -539,6 +553,10 @@ export default {
             mediaRecorder: null,
             audioChunks: [],
             isRecording: false,
+            isMicRecording: false,
+            micRecorder: null,
+            micAudioChunks: [],
+            isMicRecorderLoading: false,
             isReply: false,
             newMessage: '',
             hoverIndex: -1,
@@ -609,14 +627,17 @@ export default {
         },
         filteredMessages() {
             var list = [];
+            const myEmail = localStorage.getItem('email');
             if (this.messages && this.messages.length > 0) {
                 this.messages.forEach((item) => {
                     let data = JSON.parse(JSON.stringify(item));
                     if (data.content || data.jsonContent || data.image) {
                         list.push(data);
-                        this.setRenderTime();
                     }
                 });
+            }
+            if(list.length > 0 && list[list.length - 1].email == myEmail) {
+                this.setRenderTime();
             }
             return list;
         },
@@ -660,18 +681,21 @@ export default {
         },
         // 애니메이션 표시를 위해 system의 답변이 있더라도 표시 가능하게 하려고 만든 methods
         shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index) {
-            let nonSystemMessageCount = 0;
-            var renderVariable = 0;
-            if(!this.isRender) {
-                renderVariable = -1;
-            }
-            for (let i = 0; i <= index; i++) {
-                if (filteredMessages[i].role !== 'system') {
-                    nonSystemMessageCount++;
+            var resultIndex = 0;
+            var oldIndex = 0;
+
+            const myEmail = localStorage.getItem('email');
+            for (let i = 0; i < filteredMessages.length; i++) {
+                if(!filteredMessages[i].email) continue;
+                if (filteredMessages[i].email == myEmail) {
+                    oldIndex = resultIndex;
+                    resultIndex = i;
                 }
             }
-            const userMessagesLength = filteredMessages.filter(message => message.role === 'user').length;
-            return type === 'chats' && nonSystemMessageCount - 1 === userMessagesLength + renderVariable - 1 && generatedWorkList.length !== 0;
+            if(!this.isRender) {
+                resultIndex = oldIndex;
+            }
+            return type == 'chats' && resultIndex == index && this.ProcessGPTActive;
         },
         setRenderTime() {
                 this.isRender = false
@@ -728,19 +752,48 @@ export default {
                 };
             }
         },
+        async startVoiceRecording() {
+            this.isMicRecording = true;
+
+            if (!navigator.mediaDevices) {
+                alert('getUserMedia를 지원하지 않는 브라우저입니다.');
+                return;
+            }
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            this.micRecorder = new MediaRecorder(stream);
+            this.micAudioChunks = [];
+            this.micRecorder.ondataavailable = e => {
+                this.micAudioChunks.push(e.data);
+            };
+            this.micRecorder.start();
+        },
+        stopVoiceRecording() {
+            this.isMicRecording = false;
+            // MediaRecorder의 상태가 'recording'인 경우에만 stop 메서드를 호출
+            if (this.micRecorder && this.micRecorder.state === 'recording') {
+                this.micRecorder.stop();
+                this.micRecorder.onstop = async () => {
+                const audioBlob = new Blob(this.micAudioChunks, { type: 'audio/wav' });
+                await this.uploadAudio(audioBlob);
+                };
+            }
+        },
         async uploadAudio(audioBlob) {
-            event.preventDefault(); // 추가: 이벤트의 기본 동작 방지, form data 세팅시에 새로고침 되는 문제 해결
+            this.isMicRecorderLoading = true; // 로딩 상태 시작
 
             const formData = new FormData();
             formData.append('audio', audioBlob);
 
             try {
-                var url = window.$backend == '' ? 'http://localhost:8000' : window.$backend
+                await this.$setSupabaseEndpoint();
+                const url = window.$backend == '' ? 'http://localhost:8000' : window.$backend
                 const response = await axios.post(`${url}/upload`, formData);
                 const data = response.data;
-                this.newMessage = data.transcript; 
+                this.newMessage = data.transcript;
             } catch (error) {
                 console.error('Error:', error);
+            } finally {
+                this.isMicRecorderLoading = false; // 로딩 상태 종료
             }
         },
         async submitFile() {
@@ -1020,7 +1073,6 @@ export default {
 
 .find-message {
     animation: breathe 1.5s infinite ease-in-out;
-    margin: 5px 0px 0px 4px;
     cursor: pointer;
 }
 
