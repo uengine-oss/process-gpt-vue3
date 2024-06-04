@@ -25,6 +25,7 @@ const storage = StorageBaseFactory.getStorage();
 export default {
     name: 'participant-panel',
     props: {
+        element: Object,
         uengineProperties: Object,
         processDefinitionId: String,
         isViewMode: Boolean
@@ -67,6 +68,13 @@ export default {
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
         let def = this.bpmnModeler.getDefinitions();
+        let process = me.element.processRef;
+        
+        if (this.copyUengineProperties?.serviceURL?.length > 0) {
+            process.isExecutable = false;
+        } else {
+            process.isExecutable = true;
+        }
         const processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
         if (!processElement) {
             console.error('bpmn:Process element not found');
@@ -88,6 +96,15 @@ export default {
     },
     computed: {},
     watch: {
+        'copyUengineProperties.serviceURL': function (newVal, oldVal) {
+            let me = this;
+            let process = me.element.processRef;
+            if (newVal.length > 0) {
+                process.isExecutable = false;
+            } else {
+                process.isExecutable = true;
+            }
+        },
         type(after, before) {
             if (after == 'org.uengine.five.overriding.IAMRoleResolutionContext') {
                 if (!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {};

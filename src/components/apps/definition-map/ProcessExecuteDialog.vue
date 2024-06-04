@@ -74,27 +74,37 @@ export default {
                     me.roleMappings.forEach((roleMapping) => {
                         let endpoints = roleMapping.roleEndpoint.split(',');
                         let resourceNames = roleMapping.resourceNames.split(',');
-                        endpoints = endpoints.map((endpoint) => endpoint.trim()).filter(item => item !== "")
+                        endpoints = endpoints.map((endpoint) => endpoint.trim()).filter((item) => item !== '');
                         resourceNames = resourceNames.map((resourceName) => resourceName.trim());
-                        if(endpoints.length > 0 ){
+                        if (endpoints.length > 0) {
                             roleMappings.push({
                                 name: roleMapping.roleName,
                                 endpoints: endpoints,
                                 resourceNames: resourceNames
                             });
-                        } 
+                        }
                     });
                     let command = {
-                        processDefinitionId: me.definitionId,
+                        processDefinitionId: me.definitionId
                     };
-                    if(roleMappings.length > 0){
+                    if (roleMappings.length > 0) {
                         command.roleMappings = roleMappings;
                     }
+                    command.correlationKeyValue = this.uuid();
                     await me.uengine.start(command);
                     me.closeDialog();
                 },
                 successMsg: 'Process 실행 완료'
             });
+        },
+        uuid() {
+            function s4() {
+                return Math.floor((1 + Math.random()) * 0x10000)
+                    .toString(16)
+                    .substring(1);
+            }
+
+            return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
         }
         // addRoleMapping() {
         //     this.roleMappings.push({

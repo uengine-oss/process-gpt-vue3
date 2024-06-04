@@ -29,16 +29,13 @@ export default {
             this.eventType = this.element.eventDefinitions[0].$type;
         }
         this.copyUengineProperties = this.uengineProperties;
-        Object.keys(this.requiredKeyLists).forEach((key) => {
-            this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
-        });
+        // Object.keys(this.requiredKeyLists).forEach((key) => {
+        //     this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
+        // });
     },
     data() {
         return {
             requiredKeyLists: {
-                parameters: [],
-                checkpoints: [],
-                dataInput: { name: '' }
             },
             methodList: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
             copyUengineProperties: null,

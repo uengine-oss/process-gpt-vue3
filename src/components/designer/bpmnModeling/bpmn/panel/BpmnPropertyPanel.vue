@@ -56,7 +56,7 @@ export default {
         //     this.$emit('close');
         //     return;
         // }
-
+        console.log(this.element);
         // Extension이 없는 경우 무조건 빈 Property 생성
         if (!this.element.extensionElements) {
             this.element.extensionElements.values = [];
@@ -119,25 +119,25 @@ export default {
     computed: {
         panelName() {
             return _.kebabCase(this.element.$type.split(':')[1]) + '-panel';
-        },
-        inputData() {
-            let params = this.uengineProperties.parameters;
-            let result = [];
-            if (params)
-                params.forEach((element) => {
-                    if (element.direction == 'IN') result.push(element);
-                });
-            return result;
-        },
-        outputData() {
-            let params = this.uengineProperties.parameters;
-            let result = [];
-            if (params)
-                params.forEach((element) => {
-                    if (element.direction == 'OUT') result.push(element);
-                });
-            return result;
         }
+        // inputData() {
+        //     let params = this.uengineProperties.parameters;
+        //     let result = [];
+        //     if (params)
+        //         params.forEach((element) => {
+        //             if (element.direction == 'IN') result.push(element);
+        //         });
+        //     return result;
+        // },
+        // outputData() {
+        //     let params = this.uengineProperties.parameters;
+        //     let result = [];
+        //     if (params)
+        //         params.forEach((element) => {
+        //             if (element.direction == 'OUT') result.push(element);
+        //         });
+        //     return result;
+        // }
     },
     watch: {},
     methods: {
@@ -146,21 +146,21 @@ export default {
                 obj[key] = defaultValue;
             }
         },
-        deleteParameters(item) {
-            const index = this.uengineProperties.parameters.findIndex((element) => element.key === item.key);
-            if (index > -1) {
-                this.uengineProperties.parameters.splice(index, 1);
-            }
-        },
-        deleteCheckPoint(item) {
-            const index = this.uengineProperties.checkpoints.findIndex((element) => element.checkpoint === item.checkpoint);
-            if (index > -1) {
-                this.uengineProperties.checkpoints.splice(index, 1);
-            }
-        },
-        addParameter() {
-            this.uengineProperties.parameters.push({ key: this.paramKey, value: this.paramValue });
-        },
+        // deleteParameters(item) {
+        //     const index = this.uengineProperties.parameters.findIndex((element) => element.key === item.key);
+        //     if (index > -1) {
+        //         this.uengineProperties.parameters.splice(index, 1);
+        //     }
+        // },
+        // deleteCheckPoint(item) {
+        //     const index = this.uengineProperties.checkpoints.findIndex((element) => element.checkpoint === item.checkpoint);
+        //     if (index > -1) {
+        //         this.uengineProperties.checkpoints.splice(index, 1);
+        //     }
+        // },
+        // addParameter() {
+        //     this.uengineProperties.parameters.push({ key: this.paramKey, value: this.paramValue });
+        // },
         async getData(path, options) {
             // let value;
             // if (path) {
