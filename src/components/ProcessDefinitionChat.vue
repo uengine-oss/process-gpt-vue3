@@ -29,9 +29,9 @@
             </template>
             <template v-slot:rightpart>
                 <div class="no-scrollbar">
-                    <Chat :prompt="prompt" :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" :lock="lock" 
-                        :disableChat="disableChat" @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" 
-                        @stopMessage="stopMessage">
+                    <Chat :prompt="prompt" :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" 
+                        :lock="lock" :disableChat="disableChat" :chatRoomId="chatRoomId" @sendMessage="beforeSendMessage"
+                        @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage">
                         <template v-slot:custom-tools>
                             <div class="d-flex">
                                 <v-tooltip location="bottom">
@@ -58,7 +58,10 @@
                                                 <Icon v-else icon="f7:lock-open" width="24" height="24"></Icon>
                                             </v-btn>
                                         </template>
-                                        <span v-if="lock">{{ $t('chat.unlock') }}</span>
+                                        <span v-if="lock">{{ editUser != '' && editUser != userInfo.name ? 
+                                            `현재 ${editUser} 님께서 수정 중입니다. 체크아웃 하는 경우 ${editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크아웃 하시겠습니까?` : 
+                                            $t('chat.unlock')
+                                        }}</span>
                                         <span v-else>{{ $t('chat.lock') }}</span>
                                     </v-tooltip>
                                     
@@ -111,9 +114,9 @@
             </template>
 
             <template v-slot:mobileLeftContent>
-                <Chat :prompt="prompt" :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" :lock="lock"
-                    :disableChat="disableChat" @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage"
-                    @stopMessage="stopMessage">
+                <Chat :prompt="prompt" :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" 
+                    :lock="lock" :disableChat="disableChat" :chatRoomId="chatRoomId" @sendMessage="beforeSendMessage" 
+                    @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage">
                     <template v-slot:custom-tools>
                         <div class="d-flex">
                             <v-tooltip location="bottom">
@@ -225,6 +228,7 @@ export default {
         processDefinitionMap: null,
         modeler: null,
         lock: false,
+        editUser: '',
         disableChat: false,
         isViewMode: false,
         // version
@@ -247,6 +251,16 @@ export default {
                 this.prompt = `아래 대화 내용에서 프로세스를 유추하여 프로세스 정의를 생성해주세요. 이때 가능한 프로세스를 일반화하여 작성:
                 ${messagesString}.`;
                 this.$store.commit('clearMessages');
+            }
+            if(this.$store.state.editMessages) {
+                const messagesString = JSON.stringify(this.$store.state.editMessages);
+                this.prompt = `아래 대화 내용을 보고 기존 프로세스에서 수정 가능한 부분을 유추하여 프로세스 정의를 수정해주세요.
+                ${messagesString}.`;
+                this.$store.commit('clearMessages');
+            }
+
+            if (this.fullPath && this.fullPath != '') {
+                this.chatRoomId = this.fullPath;
             }
         })
     },
@@ -331,11 +345,19 @@ export default {
                 context: me,
                 action: async () => {
                     const lockObj = await me.getData(`lock/${defId}`, { key: 'id' });
-                    if (lockObj && lockObj.id && lockObj.user_id && lockObj.user_id == this.userInfo.email) {
-                        me.lock = false;
-                        me.disableChat = false;
-                        me.isViewMode = false;
+                    if (lockObj && lockObj.id && lockObj.user_id) {
+                        me.editUser = lockObj.user_id;
+                        if (lockObj.user_id == this.userInfo.name) {
+                            me.lock = false;
+                            me.disableChat = false;
+                            me.isViewMode = false;
+                        } else {
+                            me.lock = true;
+                            me.disableChat = true;
+                            me.isViewMode = true;
+                        }
                     } else {
+                        me.editUser = '';
                         me.lock = true;
                         me.disableChat = true;
                         me.isViewMode = true;
@@ -353,9 +375,10 @@ export default {
                         if (me.processDefinition && me.useLock) {
                             await me.storage.putObject('lock', {
                                 id: me.processDefinition.processDefinitionId,
-                                user_id: me.userInfo.email
+                                user_id: me.userInfo.name
                             });
                         }
+                        me.editUser = me.userInfo.name;
                         me.disableChat = false;
                         me.isViewMode = false;
                         me.lock = false;
@@ -689,10 +712,15 @@ export default {
                                     task.inputData = []
                                     task.outputData = []
                                 }
-                                task.tool = "formHandler:" + JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']).variableForHtmlFormContext.name
+                                const form = JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json'])
+                                if (form && isForm.variableForHtmlFormContext && form.variableForHtmlFormContext.name) {
+                                    task.tool = "formHandler:" + form.variableForHtmlFormContext.name
+                                } else {
+                                    task.tool = "";
+                                }
                                 return task
                             }catch(e){
-
+                                console.log(e)
                             }
                         }
                         
@@ -903,12 +931,11 @@ export default {
                         await backend.putRawDefinition(xml, info.proc_def_id, info);
                         // await this.saveToVectorStore(me.processDefinition);
                     }
-
                     // 신규 프로세스 이동.
                     if (me.$route.fullPath == '/definitions/chat') {
                         me.$router.push(`/definitions/${info.proc_def_id}`);
-                        me.EventBus.emit('definitions-updated');
                     }
+                    me.EventBus.emit('definitions-updated');
                 },
                 catch: (e) => {
                     console.log(e)

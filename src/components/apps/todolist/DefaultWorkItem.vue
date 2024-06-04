@@ -1,12 +1,22 @@
 <template>
     <v-row class="ma-0 pa-0 task-btn" style="right: 40px">
         <v-spacer></v-spacer>
-        <div v-if="!isComplete">
+        <div v-if="!isCompleted">
             <v-btn @click="completeTask()" color="#0085DB" style="color: white;" rounded>완료</v-btn>
         </div>
     </v-row>
     <div style="height: calc(100vh - 255px); padding: 20px">
-        <DefaultForm :inputItems="inputItems"></DefaultForm>
+        <div v-if="isCompleted">
+            <v-row v-for="item in outputItems" :key="item.name">
+                <v-col cols="5">
+                    <v-list-subheader>{{ item.name }}</v-list-subheader>
+                </v-col>
+                <v-col cols="7">
+                    <v-list-subheader>{{ item.value }}</v-list-subheader>
+                </v-col>
+            </v-row>
+        </div>
+        <DefaultForm v-else :inputItems="inputItems"></DefaultForm>
     </div>
 </template>
 
@@ -16,6 +26,9 @@ import DefaultForm from '@/components/designer/DefaultForm.vue';
 
 const backend = BackendFactory.createBackend();
 export default {
+    components: {
+        DefaultForm
+    },
     props: {
         workItem: {
             type: Object,
@@ -29,13 +42,15 @@ export default {
                 return null
             },
         },
-        isComplete: Boolean
     },
     data: () => ({
-        inputItems: null
+        inputItems: null,
+        outputItems: null
     }),
-    components: {
-        DefaultForm
+    computed: {
+        isCompleted() {
+            return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
+        }
     },
     created() {
         this.init();
@@ -44,9 +59,13 @@ export default {
         async init() {
             var me = this;
             if (!me.workItem.activity.parameters) me.workItem.activity.parameters = [];
-            me.inputItems = me.workItem.activity.parameters
-                .filter((item) => item.direction.includes('OUT'))
-                .map((item) => ({ name: item.variable.name, value: null }));
+            if (me.isComplete) {
+                me.outputItems = me.workItem.activity.parameters.filter((item) => item.direction.includes('IN'))
+                    .map((item) => ({ name: item.variable.name, value: item.variable.value }));
+            } else {
+                me.inputItems = me.workItem.activity.parameters.filter((item) => item.direction.includes('OUT'))
+                    .map((item) => ({ name: item.variable.name, value: item.variable.value }));
+            }
         },
         async completeTask() {
             var me = this;
@@ -58,8 +77,8 @@ export default {
                     if (parameterValues) workItem.parameterValues = parameterValues;
                     if (me.workItem.execScope) workItem.execScope = me.workItem.execScope;
                     await backend.putWorkItemComplete(me.$route.params.taskId, workItem);
-
-                    me.$router.push('/todolist');
+                    //
+                    me.$router.push(`/instancelist/${btoa(me.workItem.worklist.instId)}`);
                 },
                 successMsg: '해당 업무 완료'
             });

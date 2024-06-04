@@ -30,6 +30,14 @@
 
         <template v-slot:mobileLeftContent>
             <v-card flat>
+                <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
+                    <div class="d-flex w-100">
+                        <component :is="'work-history-' + mode" :messages="messages" :isComplete="isComplete"
+                            @clickMessage="navigateToWorkItemByTaskId" />
+                    </div>
+                </perfect-scrollbar>
+            </v-card>
+            <!-- <v-card flat>
                 <v-card-title>프로세스 진행상태</v-card-title>
                 <div style="overflow: auto; height: calc(100vh - 620px)">
                     <div v-if="bpmn" style="height: 100%">
@@ -43,7 +51,7 @@
                     </div>
                     <dif v-else> No BPMN found </dif>
                 </div>
-            </v-card>
+            </v-card> -->
         </template>
     </AppBaseCard>
 </template>
@@ -66,15 +74,16 @@ export default {
         'work-history-ProcessGPT': ProcessInstanceChat,
         AppBaseCard
     },
+    props: {
+        instance: Object,
+    },
     data: () => ({
         bpmn: null,
-        instance: null,
         workListByInstId: null,
         currentActivities: [],
         // status variables
         updatedKey: 0,
         updatedDefKey: 0,
-        eventList: [],
     }),
     created() {
         this.init();
@@ -111,13 +120,12 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    if (!me.id) return;
-                    me.instance = await backend.getInstance(me.id);
-                    me.bpmn = await backend.getRawDefinition(me.instance.defId, { type: 'bpmn' });
-                    me.workListByInstId = await backend.getWorkListByInstId(me.instance.instanceId);
-                    me.currentActivities = me.workListByInstId.map((item) => item.tracingTag);
-                    me.eventList = await backend.getEventList(me.instance.instanceId);
-                    me.updatedDefKey++;
+                    if (me.instance) {
+                        me.bpmn = await backend.getRawDefinition(me.instance.defId, { type: 'bpmn' });
+                        me.workListByInstId = await backend.getWorkListByInstId(me.instance.instanceId);
+                        me.currentActivities = me.workListByInstId.map((item) => item.tracingTag);
+                        me.updatedDefKey++;
+                    }
                 }
             });
         },

@@ -1,13 +1,13 @@
 <template>
-    <div v-if="inputItems.length > 0" v-for="item in inputItems" class="input-group" style="width: 100%;">
-        <v-row>
+    <div v-if="inputItems.length > 0" class="input-group" style="width: 100%;">
+        <v-row v-for="item in inputItems" :key="item.name">
             <v-col cols="4">
                 <v-list-subheader>{{item.name}}</v-list-subheader>
             </v-col>
-
             <v-col cols="8">
                 <v-text-field
                     v-model="item.value"
+                    :disabled="isComplete"
                 ></v-text-field>
             </v-col>
         </v-row>
@@ -20,15 +20,15 @@
 </template>
 
 <script>
-
 export default {
-  props:{
-      inputItems: {
-          type: Array,
-          default: function () {
-              return []
-          },
-      }   
-  }
+    props:{
+        inputItems: {
+            type: Array,
+            default: function () {
+                return []
+            },
+        },
+        isComplete: Boolean
+    }
 }
 </script>

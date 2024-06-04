@@ -21,7 +21,7 @@
                 style="height: 60%"
                 :is="panelName"
                 :isViewMode="isViewMode"
-                :uengine-properties="uengineProperties"
+                :uengineProperties="uengineProperties"
                 :name="name"
                 :roles="roles"
                 :process-variables="processVariables"
@@ -29,6 +29,7 @@
                 ref="panelComponent"
                 @update:name="(val) => (name = val)"
                 @updae:text="(val) => (text = text)"
+                @update:uengineProperties="(newProps) => (uengineProperties = newProps)"
                 :definition="definition"
                 :processDefinitionId="processDefinitionId"
                 @addUengineVariable="(val) => $emit('addUengineVariable', val)"
@@ -185,7 +186,8 @@ export default {
             if (this.elementCopy.text) this.elementCopy.text = this.text;
             modeling.updateProperties(task, this.elementCopy);
             this.$emit('close');
-        }
+        },
+       
     }
 };
 </script>

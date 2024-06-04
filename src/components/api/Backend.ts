@@ -21,7 +21,9 @@ export interface Backend {
     backToHere(instanceId: string, tracingTag: string): Promise<any>;
     getProcessVariables(instanceId: string): Promise<any>;
     getVariable(instId: string, varName: string): Promise<any>;
+    getVariableWithTaskId(instId: string, taskId: string, varName: string): Promise<any>;
     setVariable(instanceId: string, varName: string, varValue: any): Promise<any>;
+    setVariableWithTaskId(instanceId: string, taskId: string, varName: string, varValue: any): Promise<any>;
     getRoleMapping(instId: string, roleName: string): Promise<any>;
     setRoleMapping(instanceId: string, roleName: string, roleMapping: any): Promise<any>;
     signal(instanceId: string, signal: string): Promise<any>;

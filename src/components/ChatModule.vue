@@ -28,6 +28,7 @@ export default {
         ProcessGPTActive: false,
         lastFinishedTime: 0,
         processInstanceId: null,
+        chatRoomId: '',
     }),
     computed: {
         useLock() {
@@ -83,7 +84,7 @@ export default {
         var me = this;
         this.storage = StorageBaseFactory.getStorage();
         this.openaiToken = await this.getToken();
-
+        
         this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
     },
     methods: {
@@ -363,24 +364,31 @@ export default {
                 });
             }
 
-            // const encoding = encodingForModel("gpt-4");
-            // let totalTokenLength = 0;
-            // let indexToCut = this.generator.previousMessages.length;
-
-            // for (let i = 0; i < this.generator.previousMessages.length; i++) {
-            //     const message = this.generator.previousMessages[i];
-            //     const messageTokens = encoding.encode(JSON.stringify(message));
-            //     totalTokenLength += messageTokens.length;
-
-            //     if (totalTokenLength > 16000) {
-            //         indexToCut = i;
-            //         break;
-            //     }
-            // }
-
-            // if (indexToCut < this.generator.previousMessages.length) {
-            //     this.generator.previousMessages = this.generator.previousMessages.slice(0, indexToCut);
-            // }
+            if(JSON.stringify(this.generator.previousMessages).length/2 > 128000){
+                const encoding = encodingForModel("gpt-4");
+                let totalTokenLength = 0;
+                const messages = this.generator.previousMessages;
+                const essentialMessage = messages[0]; 
+                let validMessages = [];
+    
+                const firstMessageTokens = encoding.encode(JSON.stringify(essentialMessage));
+                totalTokenLength += firstMessageTokens.length;
+    
+                for (let i = messages.length - 1; i > 0; i--) {
+                    const message = messages[i];
+                    const messageTokens = encoding.encode(JSON.stringify(message));
+                    totalTokenLength += messageTokens.length;
+                    // gpt-4 8192, gpt-4o 128000
+                    if (totalTokenLength - 2000 > 128000) {
+                        break; 
+                    }
+    
+                    validMessages.push(message); 
+                }
+                
+                validMessages.reverse();
+                this.generator.previousMessages = [essentialMessage, ...validMessages];
+            }
             
             await this.generator.generate();
         },

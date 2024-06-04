@@ -24,8 +24,9 @@ export default class WorkAssistantGenerator extends AIGenerator {
 - 현재 채팅방 정보: {{ 현재 채팅방 정보 }}
 - 전체 일정 데이터: {{ 전체 일정 데이터 }}
 - 전체 작업 목록: {{ 전체 작업 목록 }}
+- 전체 프로세스 정보: {{ 전체 프로세스 정보 }}
 
-너가 생성할 수 있는 답변 유형은 다음과 같아: [스케쥴 등록, 일정 조회, 프로세스 시작, 회사 문서 또는 정보 조회, 문서 생성, 할 일 목록 등록, 프로세스 정의].
+너가 생성할 수 있는 답변 유형은 다음과 같아: [스케쥴 등록, 일정 조회, 프로세스 시작, 회사 문서 또는 정보 조회, 문서 생성, 할 일 목록 등록, 프로세스 정의, 프로세스 수정].
 다른 무엇보다 중요한 너의 목표는 대화를 통해 유저의 의도를 정확히 파악하고, 그에 맞는 적절한 "JSON 형식의 답변"을 생성하는 것이야.
 각 유형에 따라 필요한 정보가 다를 수 있으니, 대화 내용을 잘 파악해서 적절한 JSON 응답을 생성해야 해. 이 과정에서 중요 정보 섹션을 참고하여, 제공받은 날짜가 명확하지 않은 경우나 오늘, 내일 등의 추상적인 표현을 사용할 때는 현재 날짜를 기준으로 적절한 날짜로 변환하여 사용해야 해.
 
@@ -72,7 +73,6 @@ export default class WorkAssistantGenerator extends AIGenerator {
 \`\`\`
 
 3. 프로세스 시작: 프로세스 시작 요청 혹은 실행에 관련된 대화 내용이 있을 때,
-전체 프로세스 정보: {{ 전체 프로세스 정보 }}
 \`\`\`
 {
     "work": "StartProcessInstance",
@@ -122,7 +122,17 @@ export default class WorkAssistantGenerator extends AIGenerator {
     "messageForUser": "프로세스 정의 생성" // 생성하고자하는 프로세스의 요약 정보등을 포함하여 해당 프로세스가 다른 프로세스와 구분될 수 있도록 생성해야함.
 }
 \`\`\`
-8. skip: 해당하는 작업 유형이 없거나 이미 작업 목록에 존재하는 경우,
+
+8. 프로세스 정의 수정: 제공해준 전체 프로세스 정보 목록 중 현재 생성하고자 하는 프로세스와 유사한 프로세스 정의가 이미 존재한다고 판단될 때,
+\`\`\`
+{
+    "work": "ModifyProcessDefinition",
+    "messageForUser": "기존에 존재하던 프로세스명칭 + 프로세스 정의 수정", // 수정하고자하는 프로세스의 요약 정보등을 포함하여 해당 프로세스가 다른 프로세스와 구분될 수 있도록 생성해야함.
+    "processId": "수정될 프로세스 id" // 반드시 제공해준 전체 프로세스 정보 중에 존재하는 id 값으로 생성되어야함.
+}
+\`\`\`
+
+9. skip: 해당하는 작업 유형이 없거나 이미 작업 목록에 존재하는 경우,
 \`\`\`
 {
     "work": "SKIP"
@@ -137,6 +147,11 @@ export default class WorkAssistantGenerator extends AIGenerator {
         // contexts.forEach(context => {
         //     this.previousMessages[0].content += context + "\n\n";
         // });
+        contexts.forEach(context => {
+            if(context.bpmn){
+                delete context.bpmn
+            }
+        });
         this.previousMessages[0].content = this.previousMessages[0].content.replace(`{{ 전체 프로세스 정보 }}`, JSON.stringify(contexts));
     }
 

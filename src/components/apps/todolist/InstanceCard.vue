@@ -27,10 +27,10 @@
             <v-card-text class="pa-0">
                 <v-window v-model="tab">
                     <v-window-item value="progress">
-                        <InstanceProgress />
+                        <InstanceProgress :instance="instance" />
                     </v-window-item>
                     <v-window-item value="todo">
-                        <InstanceTodo />
+                        <InstanceTodo :instance="instance" />
                     </v-window-item>
                 </v-window>
             </v-card-text>
@@ -71,16 +71,12 @@ export default {
     },
     created() {
         this.init();
-        this.EventBus.on('process-definition-updated', async () => {
-            this.bpmn = await backend.getRawDefinition(this.instance.defId, { type: 'bpmn' });
-            this.updatedDefKey++;
-        });
     },
     computed: {
         id() {
             return atob(this.$route.params.instId);
         },
-        isComplete(){
+        isCompleted() {
             return this.instance.status == "COMPLETED"
         },
     },
@@ -93,6 +89,7 @@ export default {
                     if (!me.id) return;
                     me.instance = await backend.getInstance(me.id);
                     me.eventList = await backend.getEventList(me.instance.instanceId);
+                    me.tab = "progress";
                 }
             });
         },

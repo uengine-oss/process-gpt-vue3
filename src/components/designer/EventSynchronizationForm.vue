@@ -1,15 +1,20 @@
 <template>
-    <div v-if="loading">
+    <div v-if="!isLoading">
         <v-card flat>
             <v-col>
+                <div style="font-size: medium;">URL</div>
+                <div>
+                    <v-text-field v-model="modelValue.url"></v-text-field>
+                </div>
+
                 <div style="font-size: medium;">Event Type</div>
                 <div>
-                    <v-text-field v-model="modelValue.eventType"></v-text-field>
+                    <v-text-field v-model="modelValue.eventSynchronization.eventType"></v-text-field>
                 </div>
 
                 <div style="font-size: medium;">Parameters</div>
-                <draggable v-model="eventSynchronization.attributes" :options="dragOptions" style="height: 250px;">
-                    <div v-for="(attribute, idx) in eventSynchronization.attributes" :key="idx">
+                <draggable v-model="attributes" :options="dragOptions" style="height: 200px;">
+                    <div v-for="(attribute, idx) in attributes" :key="idx">
                         <div v-if="attribute.isEdit" style="display: flex; align-items: center; height: 10%;">
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
@@ -181,9 +186,10 @@ export default {
         FormMapper
     },
     data:() =>({
-        loading: false,
+        isLoading: false,
         drag: false,
-        eventSynchronization: null,
+        value: null, // temp value (copy)
+        attributes: [], // temp attributes (add edit .. for Function)
         entityTypeList: ['Integer', 'String', 'Boolean', 'Float', 'Double', 'Long', 'Date', 'BigDecimal'],
         newAttribute: {
             name: '',
@@ -212,11 +218,21 @@ export default {
         }
     },
     watch:{
-        "eventSynchronization.attributes": {
+        "value": {
             handler: function(newVal, oldVal) {
-                if(!this.loading) return;
-                this.modelValue.attributes = newVal.map(({ isEdit, ...rest }) => rest);
-                this.$emit('update:modelValue', this.modelValue);
+                var me = this
+                if(me.isLoading) return;
+                if(JSON.stringify(me.value) == JSON.stringify(me.modelValue)) return;
+              
+                this.$emit('update:modelValue', me.value);
+            },
+            deep: true
+        },
+        "attributes": {
+            handler: function(newVal, oldVal) {
+                if(this.isLoading) return;
+                if(JSON.stringify(newVal) == JSON.stringify(oldVal)) return;
+                this.value.eventSynchronization.attributes = newVal.map(({ isEdit, ...rest }) => rest);
             },
             deep: true
         }
@@ -224,18 +240,11 @@ export default {
     methods:{
         init(){
             var me = this
-            me.loading =  false;
+            me.isLoading = true;
             me.bpmnModeler = useBpmnStore().getModeler;
-
-            if(!me.modelValue) me.modelValue.eventSynchronization = {}
-            if(!me.modelValue.eventType) me.modelValue.eventType = ''
-            if(!me.modelValue.attributes) me.modelValue.attributes = []
-            if(!me.modelValue.mappingContext) me.modelValue.mappingContext = []
-            me.eventSynchronization = JSON.parse(JSON.stringify(me.modelValue));
-            me.eventSynchronization.attributes.map(attribute => ({ ...attribute, isEdit: false }))
-
-            me.$emit('update:modelValue', me.modelValue);
-            me.loading = true;
+            me.value = JSON.parse(JSON.stringify(me.modelValue));
+            me.attributes = me.value.eventSynchronization.attributes.map(attribute => ({ ...attribute, isEdit: false }))
+            me.isLoading = false;
         },
         openMapperDialog(){
             var me = this
@@ -243,8 +252,6 @@ export default {
             /*
                 Logic
             */
-            // {'processVariables': this.eventSynchronization.attributes }
-            
             const processElement = me.bpmnModeler.getDefinitions().rootElements.filter((element) => element.$type === 'bpmn:Process');
             if (processElement) {
                 if(!me.activities) me.activities = []
@@ -262,21 +269,22 @@ export default {
                     });
                 });
             }
-            me.mapper = {'processVariables': me.eventSynchronization.attributes }
-            me.formMapperJson = JSON.stringify(me.modelValue.mappingContext, null, 2);
+            me.mapper = {'processVariables': me.attributes }
+            me.formMapperJson = JSON.stringify(me.value.eventSynchronization.mappingContext, null, 2);
             me.mappingDialog = true;
         },
         saveMapper(jsonString) {
             this.formMapperJson = jsonString;
-            this.modelValue.mappingContext = JSON.parse(jsonString);
+            this.modelValue.eventSynchronization.mappingContext = JSON.parse(jsonString);
             this.$emit('update:modelValue', this.modelValue);
             this.mappingDialog = false;
         },
         addAttribute(){
+            var me = this
             // Add attribute
-            this.eventSynchronization.attributes.push(JSON.parse(JSON.stringify(this.newAttribute)));
+            me.attributes.push(JSON.parse(JSON.stringify(me.newAttribute)));
             // init attribute
-            this.newAttribute = {name: '', className: 'String', isKey: false, isCorrKey: false}
+            me.newAttribute = {name: '', className: 'String', isKey: false, isCorrKey: false}
         },
         editAttribute(attribute){
             var me = this
@@ -286,8 +294,9 @@ export default {
             if(attribute) attribute.isEdit = false
         },
         deleteAttribute(attribute){
+            var me = this
             if(!attribute) return;
-            this.eventSynchronization.attributes.splice(this.eventSynchronization.attributes.findIndex(attr => attr.name == attribute.name), 1);
+            me.attributes.splice(me.attributes.findIndex(attr => attr.name == attribute.name), 1);
         },
         setPrimaryKey(attribute){
             if(attribute){
@@ -303,12 +312,6 @@ export default {
                 this.newAttribute.isCorrKey = !this.newAttribute.isCorrKey
             }
         },
-        validation(){
-            // var me = this
-            // me.modelValue.attributes.push({name: "id",className:"Long",isKey: true, isCorrKey: true})
-            // me.modelValue.attributes.push({name: "name",className:"Long",isKey: true, isCorrKey: false})
-            return true;
-        }
     }
 }
 </script>
