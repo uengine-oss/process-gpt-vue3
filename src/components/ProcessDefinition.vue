@@ -599,6 +599,15 @@ export default {
             }
         },
         updateVariable(val) {
+            if (val.type == 'Form') {
+                let defaultValue = {
+                    _type: 'org.uengine.contexts.HtmlFormContext',
+                    formDefId: `${val.defaultValue}`,
+                    filePath: `${val.defaultValue}.form`
+                };
+                val.defaultValue = defaultValue;
+            }
+
             this.processVariables[this.editedIndex] = val;
 
             const processElement = this.definitions.rootElements.find((element) => element.$type === 'bpmn:Process');
