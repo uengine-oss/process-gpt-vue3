@@ -1,8 +1,6 @@
 <template>
     <div>
         <audio ref="audioPlay"></audio>
-        <!-- <v-btn @click="stopStream()"
-        >정지</v-btn> -->
     </div>
 </template>
 
@@ -11,7 +9,8 @@ export default {
     props: {
         audioResponse: String,
         isLoading: Boolean,
-        offStream: Boolean
+        offStream: Boolean,
+        stopAudioStreamStatus: Boolean,
     },
     data() {
         return {
@@ -26,6 +25,11 @@ export default {
         this.setupAudioStream();
     },
     watch: {
+        stopAudioStreamStatus(newVal) {
+            if(newVal) {
+                this.stopStream()
+            }
+        },
         audioResponse(newVal) {
             if(newVal == "" || newVal == null) return
             let result = newVal.replace(/[\n\r]/g, '');
