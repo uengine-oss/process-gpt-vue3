@@ -9,13 +9,14 @@
             <div class="child-circle" v-for="n in 5" :key="n"></div>
         </div>
         <div v-else-if="isAudioPlaying" class="audio-bar-box">
-            <div v-for="n in 4" :key="n" class="audio-bar" :class="'gpt-animation' + n"></div>
+            <div v-for="n in 4" :key="n" class="audio-bar" :style="{ height: AudioPlayingBarHeight(n) + 'px' }"></div>
         </div>
         <div v-else class="circle" :style="{ width: circleSize + 'px', height: circleSize + 'px' }"></div>
         <AudioStream
             @update:isLoading="updateLoadingStatus"
             @audio:start="startAudio"
             @audio:stop="stopAudio"
+            @update:audioBars="updateAudioBars"
             :audioResponse="audioResponse"
             :isLoading="isLoading"
             :stopAudioStreamStatus="stopAudioStreamStatus"
@@ -64,10 +65,22 @@ export default {
             isLoading: false,
             isAudioPlaying: false, // 오디오 재생 상태
             stopAudioStreamStatus: false,
-            sendRecordingStatus: false
+            sendRecordingStatus: false,
+            audioBars: [],
         };
     },
     methods: {
+        updateAudioBars(dataArray) {
+            this.audioBars = dataArray;
+        },
+        AudioPlayingBarHeight(index) {
+            if (this.audioBars.length === 0) return 30; // 기본 높이
+            const baseHeight = 30; // 기본 높이
+            const maxHeight = 60 + (index * 30); // 각 바의 최대 높이 설정 (60, 90, 120, 150)
+            const volume = this.audioBars[index] || 0;
+            const normalizedVolume = Math.min(volume / 255, 1); // 볼륨을 0과 1 사이로 정규화
+            return baseHeight + ((maxHeight - baseHeight) * normalizedVolume);
+        },
         stopAudioStream() {
             this.stopAudioStreamStatus = true
             this.sendRecordingStatus = false
