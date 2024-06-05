@@ -555,6 +555,12 @@ export default {
       return argumentSourceMap;
     },
     replaceFromRootName(text) {
+      if(this.replaceFromExpandableNode) {
+        var replaceText = this.replaceFromExpandableNode(text);
+        if(replaceText != null) {
+          return replaceText;
+        }
+      }
       const rootNodeName = "Variables";
       var reuslt = text;
       if (text.indexOf("roles.") != -1) {
@@ -572,6 +578,12 @@ export default {
       return reuslt;
     },
     replaceToRootName(text) {
+      if(this.replaceToExpandableNode) {
+        var replaceText = this.replaceToExpandableNode(text);
+        if(replaceText != null) {
+          return replaceText;
+        }
+      }
       const rootNodeName = "Variables";
       var reuslt = text;
       if (text.indexOf("[roles].") != -1) {

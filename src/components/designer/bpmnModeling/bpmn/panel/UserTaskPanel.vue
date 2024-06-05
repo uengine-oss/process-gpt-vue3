@@ -102,15 +102,16 @@
         v-model="isOpenFieldMapper"
         max-width="80%"
         max-height="80%"
-        @afterLeave="$refs.formMapper && $refs.formMapper.saveFormMapperJson()"
+        @afterLeave="$refs.mapper && $refs.mapper.saveFormMapperJson()"
     >
-        <form-mapper
-            ref="formMapper"
-            :definition="copyDefinition"
+        <mapper
+            ref="mapper"
             :name="name"
-            :roles="roles"
+            :definition="copyDefinition"
             :formMapperJson="formMapperJson"
-            :processElement="processElement"
+            :expandableTrees="nodes"
+            :replaceFromExpandableNode="replaceFromExpandableNode"
+            :replaceToExpandableNode="replaceToExpandableNode"
             @saveFormMapperJson="saveFormMapperJson"
             @closeFormMapper="closeFormMapper"
         />
@@ -131,7 +132,7 @@
 </template>
 <script>
 import BpmnParameterContexts from '@/components/designer/bpmnModeling/bpmn/variable/BpmnParameterContexts.vue';
-import FormMapper from '@/components/designer/mapper/FormMapper.vue';
+import Mapper from '@/components/designer/mapper/Mapper.vue';
 import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
 import EventSynchronizationForm from '@/components/designer/EventSynchronizationForm.vue';
@@ -140,7 +141,7 @@ export default {
     name: 'user-task-panel',
     components: {
         BpmnParameterContexts,
-        FormMapper,
+        Mapper,
         EventSynchronizationForm
     },
     props: {
@@ -187,8 +188,10 @@ export default {
             formMapperJson: '',
             backend: null,
             copyDefinition: null,
-            processElement: null,
             isOpenFormCreateDialog: false,
+            nodes: {},
+            expandableReplaceToNode: null,
+            expandableReplaceFromNode: null,
         };
     },
     created() {
@@ -382,66 +385,54 @@ export default {
             var me = this;
             if(!me.selectedForm) return;
 
-            let forms = [];
-            let formDefs = await me.backend.listDefinition();
-            let def = me.bpmnModeler.getDefinitions();
-
-            formDefs.forEach(async (form) => {
-                if (form.name.includes('.form')) {
-                    forms.push(form.name.replace('.form', ''));
-                }
-            });
-
-            me.copyDefinition.processVariables.forEach(async (variable) => {
-                if (forms.find((item) => item === variable.defaultValue.formDefId && variable.type === 'Form')) {
-                    let formHtml = await me.backend.getRawDefinition(variable.defaultValue.formDefId, { type: 'form' });
-                    let fields = me.parseFormHtmlField(formHtml);
-
-                    variable.fields = fields;
-                }
-            });
-
-            me.processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
-            me.isOpenFieldMapper = true;            
-        },
-        parseFormHtmlField(formHtml) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(formHtml, 'text/html');
-
-            const extractFieldsRecursively = (element) => {
-                let fields = [];
-                if (element.hasChildNodes()) {
-                    Array.from(element.children).forEach((child) => {
-                        const tagName = child.tagName.toLowerCase();
-
-                        // 입력 필드인 경우, 해당 변수명을 추가
-                        if(tagName.includes('field') && !tagName.includes('label') && !tagName.includes('code-field')) {
-                            
-                            fields.push({
-                                name: child.getAttribute('name'),
-                                alias: child.getAttribute('alias'),
-                                type: tagName.replace('-field', ''),
-                                children: []
-                            });
-
-                        // 레이아웃인 경우 멀티 데이터 설정시에만 해당 이름을 필드로 추가하고, 하위 필드를 탐색
-                        } else if(tagName.includes('row-layout') && child.getAttribute('is_multidata_mode') === 'true') {
-
-                            fields.push({
-                                name: child.getAttribute('name'),
-                                alias: child.getAttribute('alias'),
-                                fields: extractFieldsRecursively(child)
-                            })
-
-                        // 그외의 경우에는 하위 노드들을 계속 탐색
-                        } else 
-                            fields = fields.concat(extractFieldsRecursively(child));
-                    });
-                }
-                return fields;
+            // expandableTrees 예시
+            if (!this.nodes['test']) {
+                this.nodes['test'] = {
+                    text: 'test',
+                    children: [],
+                    parent: null
+                };
             }
 
-            return extractFieldsRecursively(doc.body)
+            let instanceNodes = [
+                'instanceId',
+                'name',
+                'locale',
+                'status',
+                'info',
+                'dueDate',
+                'mainProcessInstanceId',
+                'mainActivityTracingTag',
+                'rootProcessInstanceId',
+                'ext1',
+                'ext2',
+                'ext3',
+                'ext4',
+                'ext5'
+            ];
+
+            if (this.nodes['test']) {
+                this.nodes['test'].children = [];
+                instanceNodes.forEach((node) => {
+                    this.nodes['test'].children.push(node);
+                });
+            }
+
+            me.replaceFromExpandableNode = function(nodeKey) {
+                if(nodeKey.indexOf("test.") != -1) {
+                    return nodeKey.replace("test.", "[test].");
+                }
+                return null;
+            };
+
+            me.replaceToExpandableNode = function(nodeKey) {
+                if(nodeKey.indexOf("[test].") != -1) {
+                    return nodeKey.replace("[test].", "test.");
+                }
+                return null;
+            };
+
+            me.isOpenFieldMapper = true;            
         },
         createForm() {
             let urlData = {}
