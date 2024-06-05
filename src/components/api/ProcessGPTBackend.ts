@@ -149,10 +149,24 @@ class ProcessGPTBackend implements Backend {
                 const list = await storage.list(defId);
                 if (list.code == ErrorCode.TableNotFound) {
                     try {
-                        await this.setSupabaseEndpoint();
+                        // await this.setSupabaseEndpoint();
                         await axios.post(`${window.$backend}/process-db-schema/invoke`, {
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
                             "input": {
-                                "process_definition_id": defId
+                                "process_definition_id": defId,
+                                "data": {
+                                    "url": window.$tenantInfo.url,
+                                    "secret": window.$tenantInfo.secret,
+                                    "dbConfig": {
+                                        "dbname": window.$tenantInfo.dbname,
+                                        "user": window.$tenantInfo.user,
+                                        "password": window.$tenantInfo.pw,
+                                        "host": window.$tenantInfo.host,
+                                        "port": window.$tenantInfo.port
+                                    }
+                                }
                             }
                         })
                     } catch(error) {
