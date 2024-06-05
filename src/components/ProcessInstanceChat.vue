@@ -1,7 +1,7 @@
 <template>
-    <div style="background-color: rgba(255, 255, 255, 0)">
+    <div style="background-color: rgba(255, 255, 255, 0); width: 100%;">
         <Chat :messages="messages" :agentInfo="agentInfo" :chatInfo="chatInfo"
-            :isAgentMode="isAgentMode" :userInfo="userInfo" :disableChat="disableChat" :type="'instances'" :name="chatName"
+            :isAgentMode="isAgentMode" :userInfo="userInfo" :disableChat="disableChat" :type="'instances'" :name="chatName" :chatRoomId="chatRoomId"
             @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
             @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage">
             <template v-slot:custom-title v-if="$route.params.instId">
@@ -74,7 +74,9 @@ export default {
         }
     },
     mounted() {
-        // 
+        if (this.processInstance && this.processInstance.proc_inst_id) {
+            this.chatRoomId = this.processInstance.proc_inst_id;
+        }
     },
     beforeUnmount() {
 
@@ -89,6 +91,7 @@ export default {
                     }
                     await this.init();
                 } else if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
+                    this.messages = [];
                     await this.init();
                 }
             }
@@ -318,12 +321,12 @@ export default {
 @media only screen and (max-width:1279px) {
     .process-definition-resize {
         width: 100%;
-        height: calc(100vh - 192px);
+        height: calc(100vh - 192px) !important;
     }
 }
 
 :deep(.left-part) {
-    width: 80%;
+    width: 75%;
     /* Apply specific width */
 }
 </style>

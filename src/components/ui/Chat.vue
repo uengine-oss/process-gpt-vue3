@@ -5,6 +5,7 @@
             @start="startRecording()"
             @stop="stopRecording()"
             :audioResponse="newMessage"
+            :chatRoomId="chatRoomId"
         />
         <div v-else>
             <div>
@@ -33,7 +34,7 @@
                     </slot>
 
                     <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                        <div class="d-flex w-100" :style="!$globalState.state.isRightZoomed ? 'height:calc(100vh - 307px)' : 'height:100vh;'">
+                        <div class="d-flex w-100" :style="!$globalState.state.isRightZoomed ? 'height:calc(100vh - 300px)' : 'height:100vh;'">
                             <v-col>
                                 <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
                                     <template v-slot:title>
@@ -533,7 +534,8 @@ export default {
         lock: Boolean,
         generatedWorkList: Array,
         ProcessGPTActive: Boolean,
-        isAgentMode: Boolean
+        isAgentMode: Boolean,
+        chatRoomId: String
     },
     data() {
         return {

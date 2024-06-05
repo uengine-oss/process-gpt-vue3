@@ -1,8 +1,6 @@
 <template>
     <div>
         <audio ref="audioPlay"></audio>
-        <!-- <v-btn @click="stopStream()"
-        >정지</v-btn> -->
     </div>
 </template>
 
@@ -11,7 +9,9 @@ export default {
     props: {
         audioResponse: String,
         isLoading: Boolean,
-        offStream: Boolean
+        offStream: Boolean,
+        stopAudioStreamStatus: Boolean,
+        chatRoomId: String,
     },
     data() {
         return {
@@ -20,12 +20,20 @@ export default {
             sourceBuffer: null,
             mediaStream: null, // MediaStream을 추적하기 위한 변수 추가
             abortController: null, // AbortController 인스턴스 추가
+            audioContext: null,
+            analyser: null,
+            dataArray: null,
         }
     },
     mounted() {
         this.setupAudioStream();
     },
     watch: {
+        stopAudioStreamStatus(newVal) {
+            if(newVal) {
+                this.stopStream()
+            }
+        },
         audioResponse(newVal) {
             if(newVal == "" || newVal == null) return
             let result = newVal.replace(/[\n\r]/g, '');
@@ -43,6 +51,22 @@ export default {
             this.audio.autoplay = true;
             this.mediaSource = new MediaSource();
             this.audio.src = URL.createObjectURL(this.mediaSource);
+            
+            
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            this.analyser = this.audioContext.createAnalyser();
+            this.analyser.fftSize = 256;
+            this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+
+            const audioElement = this.$refs.audioPlay;
+            const source = this.audioContext.createMediaElementSource(audioElement);
+            source.connect(this.analyser);
+            this.analyser.connect(this.audioContext.destination);
+
+            this.updateAudioBars();
+        },
+        onSourceOpen() {
+            this.sourceBuffer = this.mediaSource.addSourceBuffer('audio/mpeg');
         },
         stopStream() {
             if (this.abortController) {
@@ -70,12 +94,18 @@ export default {
             }
             await this.$setSupabaseEndpoint();
             var url = window.$backend == '' ? 'http://localhost:8000' : window.$backend;
+            var input = {
+                query: response,
+                chat_room_id: me.chatRoomId,
+            }
+            const token = localStorage.getItem('accessToken');
             fetch(`${url}/audio-stream`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'text/plain'
+                    'Content-Type': 'text/plain',
+                    'Authorization': `Bearer ${token}`
                 },
-                body: '{"query": "'+ response +'"}',
+                body: JSON.stringify(input),    //'{"query": "'+ response +'"}',
                 signal: signal // fetch 요청에 signal 추가
             }).then(response => {
                 const reader = response.body.getReader();
@@ -93,6 +123,7 @@ export default {
                             me.audio.play();
                             me.$emit('update:isLoading', false);
                             me.$emit('audio:start');
+                            me.updateAudioBars();
                         }
                         me.sourceBuffer.addEventListener('updateend', push, { once: true });
                     }).catch(error => {
@@ -108,7 +139,14 @@ export default {
                     console.error('Fetch error:', error);
                 }
             });
-        }
+        },
+        updateAudioBars() {
+            if (this.analyser) {
+                this.analyser.getByteFrequencyData(this.dataArray);
+                this.$emit('update:audioBars', Array.from(this.dataArray));
+                requestAnimationFrame(this.updateAudioBars);
+            }
+        },
     }
 };
 </script>

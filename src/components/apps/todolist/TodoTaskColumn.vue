@@ -27,6 +27,7 @@ import TodoTaskItemCard from './TodoTaskItemCard.vue';
 import WorkItemDialog from './WorkItemDialog.vue';
 
 import BackendFactory from "@/components/api/BackendFactory";
+const back = BackendFactory.createBackend();
 
 export default {
     components: {
@@ -48,7 +49,6 @@ export default {
         originColumnId: null,
     }),
     async mounted() {
-        this.workItem = await back.getWorkItem(this.taskId);
         if(this.$refs.section) this.$refs.section.addEventListener('scroll', this.checkScrollBottom);
     },
     methods: {
@@ -77,26 +77,28 @@ export default {
             const movedTask = me.column.tasks.find(task => task.id === movedTaskId);
             me.originColumnId = movedTask.status;
             movedTask.status = me.column.id;
-
+            me.updateWorkItem(movedTask);
+        },
+        updateWorkItem(task) {
+            var me = this;
             me.$try({
                 action: async () => {
-                    const back = BackendFactory.createBackend();
-                    const result = await back.putWorklist(movedTask.taskId, movedTask);
+                    const result = await back.putWorklist(task.taskId, task);
                     
                     // Process-GPT
                     if (result && result.cannotProceedErrors && result.cannotProceedErrors.length > 0) {
-                        me.taskId = movedTask.taskId;
+                        me.taskId = task.taskId;
                         me.workItem = await back.getWorkItem(me.taskId);
                         me.dialog = true;
                     } else if (result && result.completedActivities && result.completedActivities.length > 0) {
                         const status = result.completedActivities.find(
-                            item => item.completedActivityId == movedTask.tracingTag
+                            item => item.completedActivityId == task.tracingTag
                         ).result;
                         this.$emit('updateStatus', this.taskId, status);
                     }
                 },
                 onFail: (e) => {
-                    me.$emit('updateStatus', movedTask.taskId, me.originColumnId);
+                    me.$emit('updateStatus', task.taskId, me.originColumnId);
                 }
             });
         },

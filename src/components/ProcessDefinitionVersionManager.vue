@@ -253,7 +253,7 @@ export default {
 @media only screen and (max-width:1279px) {
     .process-definition-resize {
         width: 100%;
-        height: calc(100vh - 192px);
+        height: calc(100vh - 192px) !important;
     }
 }
 

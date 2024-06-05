@@ -46,10 +46,12 @@ const canvasReSize = computed(() => {
 });
 // 조건에 따라 슬롯 이름을 결정하는 계산된 속성
 const slotName = computed(() => {
-    // 화면 너비 조건도 포함
-    if (route.path === '/definitions/chat' && isWidthUnder1279.value) {
+    const path = route.path;
+    // /definitions/로 시작하는 모든 경로
+    if (/^\/definitions\//.test(path) && isWidthUnder1279.value) {
         return 'leftpart';
-    } else {
+    } 
+    else {
         return 'rightpart';
     }
 });
