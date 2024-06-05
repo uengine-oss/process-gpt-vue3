@@ -175,7 +175,8 @@
             </v-card>
         </v-dialog>
 
-        <v-dialog v-model="executeDialog" max-width="1000">
+        <v-dialog v-model="executeDialog" max-width="80%">
+            <!-- <dry-run-process :definitionId="definitionPath"  @close="executeDialog = false"></dry-run-process> -->
             <process-execute-dialog :definitionId="definitionPath" :roles="roles" @close="executeDialog = false"></process-execute-dialog>
         </v-dialog>
 
@@ -194,6 +195,8 @@ import customBpmnModule from './customBpmn';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
+import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
+
 export default {
     name: 'ProcessDefinition',
     components: {
@@ -203,7 +206,8 @@ export default {
         ProcessVariable,
         Icon,
         VDataTable,
-        ProcessExecuteDialog
+        ProcessExecuteDialog,
+        DryRunProcess
     },
     props: {
         processDefinition: Object,
@@ -599,6 +603,15 @@ export default {
             }
         },
         updateVariable(val) {
+            if (val.type == 'Form') {
+                let defaultValue = {
+                    _type: 'org.uengine.contexts.HtmlFormContext',
+                    formDefId: `${val.defaultValue}`,
+                    filePath: `${val.defaultValue}.form`
+                };
+                val.defaultValue = defaultValue;
+            }
+
             this.processVariables[this.editedIndex] = val;
 
             const processElement = this.definitions.rootElements.find((element) => element.$type === 'bpmn:Process');

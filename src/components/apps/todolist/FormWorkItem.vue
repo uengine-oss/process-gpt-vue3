@@ -54,7 +54,9 @@ export default {
             default: function () {
                 return null;
             }
-        }
+        },
+        isDryRun: Boolean,
+        dryRunActivity: Object
     },
     data: () => ({
         html: null,

@@ -40,6 +40,7 @@ export interface Backend {
     getInProgressList(): Promise<any>;
     putWorklist(taskId: string, workItem: any): Promise<any>;
     getEventList(instanceId: string): Promise<any>;
+    getDryRunInstance(defPath: string): Promise<any>;
 }
 
 // export type { Backend }
