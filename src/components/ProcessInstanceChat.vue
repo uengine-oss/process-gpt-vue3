@@ -320,12 +320,12 @@ export default {
 @media only screen and (max-width:1279px) {
     .process-definition-resize {
         width: 100%;
-        height: calc(100vh - 192px);
+        height: calc(100vh - 192px) !important;
     }
 }
 
 :deep(.left-part) {
-    width: 80%;
+    width: 75%;
     /* Apply specific width */
 }
 </style>

@@ -33,13 +33,14 @@
                         :lock="lock" :disableChat="disableChat" :chatRoomId="chatRoomId" @sendMessage="beforeSendMessage"
                         @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage">
                         <template v-slot:custom-tools>
-                            <div class="d-flex">
+                            <v-row class="ma-0 pa-0 mt-3">
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
                                         <v-btn v-bind="props"
                                             icon variant="text" 
                                             type="file"
                                             class="text-medium-emphasis"
+                                            density="comfortable"
                                             @click="triggerFileInput"
                                         >
                                             <Icon icon="material-symbols:upload" width="24" height="24" />
@@ -49,11 +50,13 @@
                                 </v-tooltip>
                                 <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn" style="display: none;" />
 
-                                <div v-if="bpmn && fullPath != ''">
+                                <template v-if="bpmn && fullPath != ''">
                                     <v-tooltip location="bottom">
                                         <template v-slot:activator="{ props }">
                                             <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
-                                                @click="toggleLock">
+                                                @click="toggleLock"
+                                                density="comfortable"
+                                            >
                                                 <Icon v-if="lock" icon="f7:lock" width="24" height="24"></Icon>
                                                 <Icon v-else icon="f7:lock-open" width="24" height="24"></Icon>
                                             </v-btn>
@@ -68,35 +71,41 @@
                                     <v-tooltip location="bottom">
                                         <template v-slot:activator="{ props }">
                                             <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
-                                                @click="toggleVerMangerDialog">
+                                                @click="toggleVerMangerDialog"
+                                                density="comfortable"
+                                            >
                                                 <HistoryIcon size="24" />
                                             </v-btn>
                                         </template>
                                         <span>{{ $t('chat.history') }}</span>
                                     </v-tooltip>
-                                </div>
-                                <div v-else>
+                                </template>
+                                <template v-else>
                                     <v-tooltip location="bottom">
                                         <template v-slot:activator="{ props }">
                                             <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
-                                                @click="toggleLock">
+                                                @click="toggleLock"
+                                                density="comfortable"
+                                            >
                                                 <Icon icon="material-symbols:save" width="24" height="24" />
                                             </v-btn>
                                         </template>
                                         <span>{{ $t('chat.processDefinitionSave') }}</span>
                                     </v-tooltip>
-                                </div>
+                                </template>
                                 
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
                                         <v-btn v-if="bpmn && fullPath != ''" v-bind="props" icon variant="text" class="text-medium-emphasis"
-                                            @click="beforeDelete">
+                                            @click="beforeDelete"
+                                            density="comfortable"
+                                        >
                                             <TrashIcon size="24" />
                                         </v-btn>
                                     </template>
                                     <span>{{ $t('processDefinition.deleteProcess') }}</span>
                                 </v-tooltip>
-                            </div>
+                            </v-row>
                         </template>
                     </Chat>
                 </div>
@@ -1845,12 +1854,12 @@ export default {
 @media only screen and (max-width: 1279px) {
     .process-definition-resize {
         width: 100%;
-        height: calc(100vh - 192px);
+        height: calc(100vh - 192px) !important;
     }
 }
 
 :deep(.left-part) {
-    width: 80%;
+    width: 75%;
     /* Apply specific width */
 }
 
