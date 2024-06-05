@@ -722,7 +722,7 @@ export default {
                                     task.outputData = []
                                 }
                                 const form = JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json'])
-                                if (form && isForm.variableForHtmlFormContext && form.variableForHtmlFormContext.name) {
+                                if (form && form.variableForHtmlFormContext && form.variableForHtmlFormContext.name) {
                                     task.tool = "formHandler:" + form.variableForHtmlFormContext.name
                                 } else {
                                     task.tool = "";
