@@ -386,51 +386,51 @@ export default {
             if(!me.selectedForm) return;
 
             // expandableTrees 예시
-            if (!this.nodes['test']) {
-                this.nodes['test'] = {
-                    text: 'test',
-                    children: [],
-                    parent: null
-                };
-            }
+            // if (!this.nodes['test']) {
+            //     this.nodes['test'] = {
+            //         text: 'test',
+            //         children: [],
+            //         parent: null
+            //     };
+            // }
 
-            let instanceNodes = [
-                'instanceId',
-                'name',
-                'locale',
-                'status',
-                'info',
-                'dueDate',
-                'mainProcessInstanceId',
-                'mainActivityTracingTag',
-                'rootProcessInstanceId',
-                'ext1',
-                'ext2',
-                'ext3',
-                'ext4',
-                'ext5'
-            ];
+            // let instanceNodes = [
+            //     'instanceId',
+            //     'name',
+            //     'locale',
+            //     'status',
+            //     'info',
+            //     'dueDate',
+            //     'mainProcessInstanceId',
+            //     'mainActivityTracingTag',
+            //     'rootProcessInstanceId',
+            //     'ext1',
+            //     'ext2',
+            //     'ext3',
+            //     'ext4',
+            //     'ext5'
+            // ];
 
-            if (this.nodes['test']) {
-                this.nodes['test'].children = [];
-                instanceNodes.forEach((node) => {
-                    this.nodes['test'].children.push(node);
-                });
-            }
+            // if (this.nodes['test']) {
+            //     this.nodes['test'].children = [];
+            //     instanceNodes.forEach((node) => {
+            //         this.nodes['test'].children.push(node);
+            //     });
+            // }
 
-            me.replaceFromExpandableNode = function(nodeKey) {
-                if(nodeKey.indexOf("test.") != -1) {
-                    return nodeKey.replace("test.", "[test].");
-                }
-                return null;
-            };
+            // me.replaceFromExpandableNode = function(nodeKey) {
+            //     if(nodeKey.indexOf("test.") != -1) {
+            //         return nodeKey.replace("test.", "[test].");
+            //     }
+            //     return null;
+            // };
 
-            me.replaceToExpandableNode = function(nodeKey) {
-                if(nodeKey.indexOf("[test].") != -1) {
-                    return nodeKey.replace("[test].", "test.");
-                }
-                return null;
-            };
+            // me.replaceToExpandableNode = function(nodeKey) {
+            //     if(nodeKey.indexOf("[test].") != -1) {
+            //         return nodeKey.replace("[test].", "test.");
+            //     }
+            //     return null;
+            // };
 
             me.isOpenFieldMapper = true;            
         },
