@@ -111,7 +111,7 @@ export default {
 }
 
 :deep(.left-part) {
-    width: 80%;
+    width: 75%;
     /* Apply specific width */
 }
 </style>
