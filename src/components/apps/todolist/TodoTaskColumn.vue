@@ -3,7 +3,7 @@
         <div class="d-flex align-center justify-space-between pa-3 pb-2 pt-2">
             <h6 class="text-h6 font-weight-semibold">{{ $t(column.title) }}</h6>
         </div>
-        <div ref="section" class="pa-3" :style="{ height: isNotAll ? 'calc(100vh - 320px)' : 'calc(100vh - 300px)' }"
+        <div ref="section" class="pa-3 todo-list-card-box" :style="{ height: isNotAll ? 'calc(100vh - 320px)' : 'calc(100vh - 300px)' }"
             style="overflow:auto;">
             <draggable class="dragArea list-group cursor-move" :list="column.tasks"
                 :animation="200" ghost-class="ghost-card" group="tasks" @add="updateTask"
@@ -142,5 +142,9 @@ export default {
 <style>
     .todo-task-item-card-style:not(:first-of-type) {
         margin-top:16px;
+    }
+    .todo-list-card-box > div {
+        width:100%;
+        height:100%;
     }
 </style>
