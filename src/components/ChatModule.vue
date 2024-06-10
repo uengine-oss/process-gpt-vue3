@@ -139,6 +139,7 @@ export default {
                                 && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
                                 &&  me.messages[me.messages.length - 1].content.replace(/\s+/g, '') === data.new.messages.content.replace(/\s+/g, '')) {
                                     me.messages[me.messages.length - 1] = data.new.messages
+                                    me.EventBus.emit('instances-updated');
                                 } else {
                                     me.messages.push(data.new.messages)
                                 }
@@ -153,6 +154,17 @@ export default {
                                     const participantWithEmail = me.chatRoomList[idx].participants.find(participant => participant.email === me.userInfo.email);
                                     participantWithEmail.isExistUnReadMessage = true
                                     
+                                }
+                            }
+                        } else {
+                            if(data.eventType == "INSERT" && data.new.id == me.currentChatRoom.id) {
+                                let lastMessage = me.messages[me.messages.length - 1]
+                                if(!(lastMessage.content == data.new.messages.content &&
+                                    lastMessage.role == data.new.messages.role &&
+                                    lastMessage.name == data.new.messages.name &&
+                                    lastMessage.email == data.new.messages.email)
+                                ) {
+                                    me.messages.push(data.new.messages)
                                 }
                             }
                         }

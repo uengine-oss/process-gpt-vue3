@@ -438,6 +438,13 @@ class UEngineBackend implements Backend {
             defId: inst.defId
         }));
     }
+
+    async getDryRunInstance(defPath: String){
+        const response = await axiosInstance.get(`/dry-run/${defPath}`);
+        if (!response.data) return null;
+        return response.data;
+    }
+
 }
 
 export default UEngineBackend;

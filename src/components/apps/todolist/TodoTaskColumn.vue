@@ -3,7 +3,7 @@
         <div class="d-flex align-center justify-space-between pa-3 pb-2 pt-2">
             <h6 class="text-h6 font-weight-semibold">{{ $t(column.title) }}</h6>
         </div>
-        <div ref="section" class="pa-3" :style="{ height: isNotAll ? 'calc(100vh - 320px)' : 'calc(100vh - 300px)' }"
+        <div ref="section" class="pa-3 todo-list-card-box" :style="{ height: isNotAll ? 'calc(100vh - 320px)' : 'calc(100vh - 300px)' }"
             style="overflow:auto;">
             <draggable class="dragArea list-group cursor-move" :list="column.tasks"
                 :animation="200" ghost-class="ghost-card" group="tasks" @add="updateTask"
@@ -27,6 +27,7 @@ import TodoTaskItemCard from './TodoTaskItemCard.vue';
 import WorkItemDialog from './WorkItemDialog.vue';
 
 import BackendFactory from "@/components/api/BackendFactory";
+const back = BackendFactory.createBackend();
 
 export default {
     components: {
@@ -48,6 +49,7 @@ export default {
         originColumnId: null,
     }),
     async mounted() {
+        const back = BackendFactory.createBackend();
         this.workItem = await back.getWorkItem(this.taskId);
         if(this.$refs.section) this.$refs.section.addEventListener('scroll', this.checkScrollBottom);
     },
@@ -77,26 +79,28 @@ export default {
             const movedTask = me.column.tasks.find(task => task.id === movedTaskId);
             me.originColumnId = movedTask.status;
             movedTask.status = me.column.id;
-
+            me.updateWorkItem(movedTask);
+        },
+        updateWorkItem(task) {
+            var me = this;
             me.$try({
                 action: async () => {
-                    const back = BackendFactory.createBackend();
-                    const result = await back.putWorklist(movedTask.taskId, movedTask);
+                    const result = await back.putWorklist(task.taskId, task);
                     
                     // Process-GPT
                     if (result && result.cannotProceedErrors && result.cannotProceedErrors.length > 0) {
-                        me.taskId = movedTask.taskId;
+                        me.taskId = task.taskId;
                         me.workItem = await back.getWorkItem(me.taskId);
                         me.dialog = true;
                     } else if (result && result.completedActivities && result.completedActivities.length > 0) {
                         const status = result.completedActivities.find(
-                            item => item.completedActivityId == movedTask.tracingTag
+                            item => item.completedActivityId == task.tracingTag
                         ).result;
                         this.$emit('updateStatus', this.taskId, status);
                     }
                 },
                 onFail: (e) => {
-                    me.$emit('updateStatus', movedTask.taskId, me.originColumnId);
+                    me.$emit('updateStatus', task.taskId, me.originColumnId);
                 }
             });
         },
@@ -142,5 +146,9 @@ export default {
 <style>
     .todo-task-item-card-style:not(:first-of-type) {
         margin-top:16px;
+    }
+    .todo-list-card-box > div {
+        width:100%;
+        height:100%;
     }
 </style>

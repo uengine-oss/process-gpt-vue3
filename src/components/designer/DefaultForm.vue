@@ -28,7 +28,8 @@ export default {
                 return []
             },
         },
-        isComplete: Boolean
+        isComplete: Boolean,
+        isDryRun: Boolean,
     }
 }
 </script>

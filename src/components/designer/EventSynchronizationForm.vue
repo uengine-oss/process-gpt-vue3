@@ -12,7 +12,7 @@
                     <v-text-field v-model="modelValue.eventSynchronization.eventType"></v-text-field>
                 </div>
 
-                <div style="font-size: medium;">Parameters</div>
+                <div style="font-size: medium;">Event Attributes</div>
                 <draggable v-model="attributes" :options="dragOptions" style="height: 200px;">
                     <div v-for="(attribute, idx) in attributes" :key="idx">
                         <div v-if="attribute.isEdit" style="display: flex; align-items: center; height: 10%;">
@@ -150,16 +150,20 @@
             v-model="mappingDialog"
             max-width="80%"
             max-height="80%"
-            @afterLeave="$refs.formMapper && $refs.formMapper.saveMapper"
+            @afterLeave="$refs.formMapper && $refs.formMapper.saveFormMapperJson()"
         >
-            <form-mapper
+            <mapper
                 ref="formMapper"
-                :definition="mapper"
+                :definition="definition"
                 :activities="activities"
                 :formMapperJson="formMapperJson"
                 :name="taskName"
-                :roles="roles"
+
+                :expandableTrees="nodes"
+                :replaceFromExpandableNode="replaceFromExpandableNode"
+                :replaceToExpandableNode="replaceToExpandableNode"
                 @saveFormMapperJson="saveMapper"
+                @closeFormMapper="closeFormMapper"
             />
         </v-dialog>
     </div>
@@ -168,7 +172,8 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
-import FormMapper from '@/components/designer/mapper/FormMapper.vue';
+import Mapper from '@/components/designer/mapper/Mapper.vue';
+// import URLMapper from '@/components/designer/mapper/URLMapper.vue';
 import { useBpmnStore } from '@/stores/bpmn';
 
 export default {
@@ -180,10 +185,12 @@ export default {
             },
         },
         roles: Array,
-        taskName: String
+        taskName: String,
+        definition: Object
     },
     components:{
-        FormMapper
+        Mapper,
+        // 'url-mapper': URLMapper
     },
     data:() =>({
         isLoading: false,
@@ -200,9 +207,12 @@ export default {
         // mapper
         bpmnModeler: null,
         mappingDialog: false,
-        mapper: null,
+        // mapper: null,
         activities: null,
-        formMapperJson: null
+        formMapperJson: null,
+        nodes: null,
+        replaceFromExpandableNode: null,
+        replaceToExpandableNode: null,
     }),
     created(){
         this.init()
@@ -230,9 +240,10 @@ export default {
         },
         "attributes": {
             handler: function(newVal, oldVal) {
-                if(this.isLoading) return;
-                if(JSON.stringify(newVal) == JSON.stringify(oldVal)) return;
-                this.value.eventSynchronization.attributes = newVal.map(({ isEdit, ...rest }) => rest);
+                var me = this
+                if(me.isLoading) return;
+                if(JSON.stringify(newVal) == JSON.stringify(me.value.eventSynchronization.attributes)) return;
+                me.value.eventSynchronization.attributes = newVal.map(({ isEdit, ...rest }) => rest);
             },
             deep: true
         }
@@ -248,35 +259,49 @@ export default {
         },
         openMapperDialog(){
             var me = this
+       
             
-            /*
-                Logic
-            */
-            const processElement = me.bpmnModeler.getDefinitions().rootElements.filter((element) => element.$type === 'bpmn:Process');
-            if (processElement) {
-                if(!me.activities) me.activities = []
-                processElement.forEach((process) => {
-                    process.flowElements.forEach((ele) => {
-                        if (ele.$type.toLowerCase().indexOf('task') != -1) {
-                            me.activities.push(ele);
-                        } else if (ele.$type.toLowerCase().indexOf('subprocess') != -1) {
-                            ele.flowElements.forEach((subProcessEle) => {
-                                if (subProcessEle.$type.toLowerCase().indexOf('task') != -1) {
-                                    me.activities.push(subProcessEle);
-                                }
-                            });
-                        }
-                    });
-                });
-            }
-            me.mapper = {'processVariables': me.attributes }
+            let nodeName = me.modelValue.eventSynchronization.eventType
+            let instanceNodes = me.modelValue.eventSynchronization.attributes.map(attribute => attribute.name);
+            if(!me.nodes) me.nodes = {}
+            if(!me.nodes[nodeName]) me.nodes[nodeName] = {} 
+               
+            me.nodes[nodeName].text = nodeName
+            me.nodes[nodeName].children = [];
+            me.nodes[nodeName].parent = null;
+            
+     
+            instanceNodes.forEach((node) => {
+                me.nodes[nodeName].children.push(node);
+                if(!me.nodes[node]) me.nodes[node] = {}
+                me.nodes[node].text = node
+                // me.nodes[node].children = [];
+            });
+
+            me.replaceFromExpandableNode = function(nodeKey) {
+                if(nodeKey.indexOf(`${nodeName}.`) != -1) {
+                    return nodeKey.replace(`${nodeName}.`, `[${nodeName}].`);
+                }
+                return null;
+            };
+
+            me.replaceToExpandableNode = function(nodeKey) {
+                if(nodeKey.indexOf(`[${nodeName}].`) != -1) {
+                    return nodeKey.replace(`[${nodeName}].`, `${nodeName}.`);
+                }
+                return null;
+            };
+
+            // me.mapper = {'processVariables': me.attributes }
             me.formMapperJson = JSON.stringify(me.value.eventSynchronization.mappingContext, null, 2);
             me.mappingDialog = true;
         },
         saveMapper(jsonString) {
             this.formMapperJson = jsonString;
-            this.modelValue.eventSynchronization.mappingContext = JSON.parse(jsonString);
-            this.$emit('update:modelValue', this.modelValue);
+            this.value.eventSynchronization.mappingContext = JSON.parse(jsonString);
+            this.mappingDialog = false;
+        },
+        closeFormMapper() {
             this.mappingDialog = false;
         },
         addAttribute(){
