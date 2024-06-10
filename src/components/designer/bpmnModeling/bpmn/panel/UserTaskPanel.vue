@@ -190,8 +190,8 @@ export default {
             copyDefinition: null,
             isOpenFormCreateDialog: false,
             nodes: {},
-            expandableReplaceToNode: null,
-            expandableReplaceFromNode: null,
+            replaceFromExpandableNode: null,
+            replaceToExpandableNode: null,
         };
     },
     created() {

@@ -87,7 +87,7 @@ window.$tenantInfo = {
     port: null
 };
 
-if (window.location.port != '' || window.location.host.includes('localhost') || window.location.host.includes('192.168') || window.location.host.includes('127.0.0.1') || 
+if (window.location.host.includes('localhost') || window.location.host.includes('192.168') || window.location.host.includes('127.0.0.1') || 
     window.$mode == 'uEngine') {
     window.$supabase = createClient(
         'http://127.0.0.1:54321',
@@ -100,7 +100,7 @@ if (window.location.port != '' || window.location.host.includes('localhost') || 
         }
     );
 } else {
-    window.$backend = 'http://execution.process-gpt.io';
+    // window.$backend = 'http://execution.process-gpt.io';
     window.$memento = 'http://memento.process-gpt.io';
     window.$autonomous = 'autonomous.process-gpt.io/ws';
     window.$masterDB = createClient(
