@@ -48,6 +48,7 @@ export default {
         originColumnId: null,
     }),
     async mounted() {
+        const back = BackendFactory.createBackend();
         this.workItem = await back.getWorkItem(this.taskId);
         if(this.$refs.section) this.$refs.section.addEventListener('scroll', this.checkScrollBottom);
     },
