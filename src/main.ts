@@ -206,34 +206,6 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
 
 const app = createApp(App);
 
-async function setSupabaseEndpoint() {
-    try {
-        if (window.$tenantInfo && window.$tenantInfo.url) {
-            await axios.post(`${window.$backend}/set-db-config`, {
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                data: {
-                    url: window.$tenantInfo.url,
-                    secret: window.$tenantInfo.secret,
-                    dbConfig: {
-                        dbname: window.$tenantInfo.dbname,
-                        user: window.$tenantInfo.user,
-                        password: window.$tenantInfo.pw,
-                        host: window.$tenantInfo.host,
-                        port: window.$tenantInfo.port
-                    }
-                }
-            });
-            console.log("Supabase endpoint 설정 완료");
-        }
-    } catch (error) {
-        console.error("Supabase endpoint 설정 실패:", error);
-    }
-}
-  
-app.config.globalProperties.$setSupabaseEndpoint = setSupabaseEndpoint;
-
 app.use(VueMonacoEditorPlugin, {
     paths: {
         // The recommended CDN config
