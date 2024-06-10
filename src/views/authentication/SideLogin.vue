@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import Logo from '@/layouts/full/logo/Logo.vue';
-/* Login form */
 import LoginForm from '@/components/auth/LoginForm.vue';
+import { ref } from 'vue';
+
+const isTenantServer = ref(window.$isTenantServer);
 </script>
 
 <template>
@@ -23,7 +25,7 @@ import LoginForm from '@/components/auth/LoginForm.vue';
                                     <LoginForm />
                                     <h6 class="text-subtitle-1  text-grey100 d-flex align-center mt-6 font-weight-medium">
                                         <v-btn class="pl-0 text-primary text-body-1 opacity-1 pl-2 font-weight-medium"
-                                            height="auto" to="/auth/register" variant="plain">
+                                            height="auto" :to="isTenantServer ? '/tenant/register' : '/auth/register'" variant="plain">
                                             {{ $t('loginPage.create') }}
                                         </v-btn>
                                         <v-btn class="ml-auto pl-0 text-primary text-body-1 opacity-1 pl-2 font-weight-medium"

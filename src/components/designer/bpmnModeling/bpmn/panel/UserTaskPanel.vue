@@ -94,7 +94,7 @@
             </div>
         </div>
         <div v-else-if="!isLoading && selectedActivity == 'URLActivity'">
-            <EventSynchronizationForm v-model="copyUengineProperties" :roles="roles" :taskName="name"></EventSynchronizationForm>
+            <EventSynchronizationForm v-model="copyUengineProperties" :roles="roles" :taskName="name" :definition="copyDefinition"></EventSynchronizationForm>
         </div>
     </div>
 
