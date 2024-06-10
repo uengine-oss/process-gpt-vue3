@@ -59,11 +59,11 @@ const customizer = useCustomizerStore();
                 </template>
                 <!-- <Moreoption/> -->
             </v-list>
-
-            <div class="pa-6 px-4 userbottom bg-containerBg">
-                <ExtraBox />
-            </div>
         </perfect-scrollbar>
+
+        <div class="pa-6 px-4 bg-containerBg">
+            <ExtraBox />
+        </div>
     </v-navigation-drawer>
 </template>
 

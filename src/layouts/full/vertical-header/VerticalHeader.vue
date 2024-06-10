@@ -128,7 +128,7 @@ function navigateTo(item: SidebarItem) {
                 <!---/Search part -->
                 <v-spacer class="hidden-sm-and-down" />
 
-                <div class="hidden-md-and-up">
+                <div class="hidden-md-and-up header-logo">
                     <Logo />
                 </div>
 
@@ -197,3 +197,10 @@ function navigateTo(item: SidebarItem) {
         </div>
     </div>
 </template>
+<style scoped>
+@media only screen and (max-width:600px) {  
+    .header-logo {
+        display: none;
+    }   
+}
+</style>
