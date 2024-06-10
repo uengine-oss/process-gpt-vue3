@@ -460,7 +460,7 @@ export default {
         processActivityNodes(nodes) {
             const activities = this.activities;
             if (activities.length > 0) {
-                let activityNodes = ['startedTime', 'endTime', 'dueDate', 'duration', 'businessStatus', 'status'];
+                let activityNodes = ['startedTime', 'endTime', 'dueDate', 'duration', 'businessStatus', 'status', 'eventData'];
 
                 if (!this.config.roots.includes('activities')) {
                     this.config.roots.push('activities');
@@ -505,8 +505,8 @@ export default {
             const expandableTrees = me.expandableTrees;
             if(!expandableTrees) return;
             Object.keys(expandableTrees).forEach((key) => {
-                if (!this.config.roots.includes(key)) {
-                    this.config.roots.push(key);
+                if (!me.config.roots.includes(key) && expandableTrees[key].children) {
+                    me.config.roots.push(key);
                 }
                 const tree = expandableTrees[key];
                 nodes[key] = JSON.parse(JSON.stringify(tree));

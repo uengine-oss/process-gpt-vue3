@@ -114,12 +114,12 @@ export default {
     methods: {
         async generateSql() {
             try {
-                await this.$setSupabaseEndpoint();
                 var url = window.$backend == '' ? 'http://localhost:8000' : window.$backend
                 const response = await axios.post(`${url}/process-var-sql/invoke`, {
                     input: {
                         var_name: this.processVariable.name,
-                        resolution_rule: this.processVariable.description
+                        resolution_rule: this.processVariable.description,
+                        subdomain: window.location.hostname.split('.')[0]
                     }
                 });
                 this.processVariable.datasource.sql = response.data.output;
@@ -129,11 +129,11 @@ export default {
         },
         async testSql() {
             try {
-                await this.$setSupabaseEndpoint();
                 var url = window.$backend == '' ? 'http://localhost:8000' : window.$backend
                 const response = await axios.post(`${url}/process-data-query/invoke`, {
                     input: {
-                        var_name: this.processVariable.name
+                        var_name: this.processVariable.name,
+                        subdomain: window.location.hostname.split('.')[0]
                     }
                 });
                 this.processVariable.table = response.data.output

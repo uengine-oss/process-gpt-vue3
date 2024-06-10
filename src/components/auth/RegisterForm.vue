@@ -41,6 +41,11 @@ function validate(values: any, { setErrors }: any) {
         </div>  
     </div> -->
     <Form @submit="validate" v-slot="{ errors, isSubmitting }" class="mt-5">
+        <v-label class="text-subtitle-1 font-weight-medium pb-2">
+            {{ $t('createAccount.normalRegister') }}
+        </v-label>
+        <v-divider class="mb-4" />
+
         <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.userName') }}</v-label>
         <VTextField 
             v-model="username" 

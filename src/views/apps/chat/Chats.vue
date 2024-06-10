@@ -478,10 +478,10 @@ export default {
                                 }
                             });
                             obj.memento.sources = sources
-                            await this.$setSupabaseEndpoint();
                             const responseTable = await axios.post(`${window.$backend}/process-data-query/invoke`, {
                                 input: {
-                                    var_name: responseObj.content
+                                    var_name: responseObj.content,
+                                    subdomain: window.location.hostname.split('.')[0]
                                 }
                             });
                             obj.tableData = responseTable.data.output
