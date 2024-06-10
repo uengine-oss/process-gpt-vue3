@@ -189,8 +189,8 @@
         "email": "이메일",
         "google": "구글 로그인",
         "or": "또는 다음 계정으로 로그인",
-        "normalRegister": "일반가입",
-        "adminRegister": "어드민가입"
+        "normalRegister": "일반 가입",
+        "tenantRegister": "테넌트 가입"
     },
     "createAdminAccount": {
         "createAccountHeader": "어드민 정보",
