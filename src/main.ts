@@ -70,7 +70,7 @@ declare global {
 }
 
 
-// window.$mode = 'uEngine';
+// window.$mode = 'uEngine';   
 window.$mode = 'ProcessGPT';
 window.$jms = false;
 window.$backend = '';
@@ -239,10 +239,6 @@ app.use(VueMonacoEditorPlugin, {
     }
 });
 app.use(store);
-// registers the component globally
-// registered name: CronVuetify
-import CronVuetifyPlugin from '@vue-js-cron/vuetify';
-app.use(CronVuetifyPlugin);
 // @ts-ignore
 app.config.globalProperties.$try = app._component.methods.try;
 // @ts-ignore
@@ -312,40 +308,40 @@ document.addEventListener('keydown', function (event) {
 app.use(VueDiff, {
     componentName: 'vuediff'
 });
-let initOptions = {
-    url: `http://localhost:9090/`,
-    realm: `uengine`,
-    clientId: `uengine`,
-    onLoad: 'login-required' as KeycloakOnLoad // Explicitly cast to KeycloakOnLoad
-};
-(async () => {
-    let keycloak = new Keycloak(initOptions);
-    try {
-        const authenticated = await keycloak.init({
-            onLoad: initOptions.onLoad
-        });
-        console.log(`User is ${authenticated ? 'authenticated' : 'not authenticated'}`);
-        if (authenticated) {
-            localStorage.setItem('keycloak', `${keycloak.token}`);
-            console.log(keycloak.tokenParsed);
-            if (keycloak.token && keycloak.tokenParsed) {
-                localStorage.setItem('accessToken', `${keycloak.token}`);
-                localStorage.setItem('author', `${keycloak.tokenParsed.email}`);
-                localStorage.setItem('userName', `${keycloak.tokenParsed.preferred_username}`);
-                localStorage.setItem('email', `${keycloak.tokenParsed.email}`);
-                localStorage.setItem('uid', `${keycloak.tokenParsed.sub}`);
-                localStorage.setItem('isAdmin', 'true');
-                localStorage.setItem('picture', '');
-            }
-        }
-        // const response = await fetch('http://localhost:9090/api/users', {
-        //     headers: {
-        //         accept: 'application/json',
-        //         authorization: `Bearer ${keycloak.token}`
-        //     }
-        // });
-        // console.log(response.json());
-    } catch (error) {
-        console.error('Failed to initialize adapter:', error);
-    }
-})();
+// let initOptions = {
+//     url: `http://localhost:9090/`,
+//     realm: `uengine`,
+//     clientId: `uengine`,
+//     onLoad: 'login-required' as KeycloakOnLoad // Explicitly cast to KeycloakOnLoad
+// };
+// (async () => {
+//     let keycloak = new Keycloak(initOptions);
+//     try {
+//         const authenticated = await keycloak.init({
+//             onLoad: initOptions.onLoad
+//         });
+//         console.log(`User is ${authenticated ? 'authenticated' : 'not authenticated'}`);
+//         if (authenticated) {
+//             localStorage.setItem('keycloak', `${keycloak.token}`);
+//             console.log(keycloak.tokenParsed);
+//             if (keycloak.token && keycloak.tokenParsed) {
+//                 localStorage.setItem('accessToken', `${keycloak.token}`);
+//                 localStorage.setItem('author', `${keycloak.tokenParsed.email}`);
+//                 localStorage.setItem('userName', `${keycloak.tokenParsed.preferred_username}`);
+//                 localStorage.setItem('email', `${keycloak.tokenParsed.email}`);
+//                 localStorage.setItem('uid', `${keycloak.tokenParsed.sub}`);
+//                 localStorage.setItem('isAdmin', 'true');
+//                 localStorage.setItem('picture', '');
+//             }
+//         }
+//         // const response = await fetch('http://localhost:9090/api/users', {
+//         //     headers: {
+//         //         accept: 'application/json',
+//         //         authorization: `Bearer ${keycloak.token}`
+//         //     }
+//         // });
+//         // console.log(response.json());
+//     } catch (error) {
+//         console.error('Failed to initialize adapter:', error);
+//     }
+// })();
