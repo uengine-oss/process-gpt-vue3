@@ -10,6 +10,10 @@ enum ErrorCode {
 
 class ProcessGPTBackend implements Backend {
 
+    async checkDBConnection() {
+        return await storage.isConnection();
+    }
+
     async listDefinition(path: string) {
         try {
             // 프로세스 정보, 폼 정보를 각각 불러와서 파일명을 포함해서 가공하기 위해서
@@ -29,6 +33,7 @@ class ProcessGPTBackend implements Backend {
             return [...procDefs, ...formDefs]
 
         } catch (e) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(e.message);
         }
@@ -76,6 +81,7 @@ class ProcessGPTBackend implements Backend {
             }
             
         } catch (e) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(e.message);
         }
@@ -139,6 +145,7 @@ class ProcessGPTBackend implements Backend {
             }
 
         } catch (e) {
+            this.checkDBConnection();
             throw new Error('error when to save definition: ' + (e instanceof Error ? e.message : ''));
         }
     }
@@ -169,6 +176,7 @@ class ProcessGPTBackend implements Backend {
             }
 
         } catch (error) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -264,6 +272,7 @@ class ProcessGPTBackend implements Backend {
 
             return result;
         } catch (error) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -290,6 +299,7 @@ class ProcessGPTBackend implements Backend {
             }
             return data;
         } catch (e) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(e.message);
         }
@@ -417,6 +427,7 @@ class ProcessGPTBackend implements Backend {
             }
             return worklist;
         } catch (error) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -457,21 +468,34 @@ class ProcessGPTBackend implements Backend {
             }
             return result;
         } catch (error) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }        
     }
 
     async deleteWorkItem(taskId: string) {
-        await storage.delete(`todolist/${taskId}`, { key: 'id' });
+        try {
+            await storage.delete(`todolist/${taskId}`, { key: 'id' });
+        } catch (error) {
+            this.checkDBConnection();
+            //@ts-ignore
+            throw new Error(error.message);
+        }
     }
 
     async getFormDefinition(formName: string) {
-        const form = await storage.getString(`form_def/${formName}`, { key: 'key' });
-        if (form && form.html) {
-            return form.html;
+        try {
+            const form = await storage.getString(`form_def/${formName}`, { key: 'key' });
+            if (form && form.html) {
+                return form.html;
+            }
+            return null;
+        } catch (error) {
+            this.checkDBConnection();
+            //@ts-ignore
+            throw new Error(error.message);
         }
-        return null;
     }
 
     // proc_map
@@ -500,6 +524,7 @@ class ProcessGPTBackend implements Backend {
             }
             return {};
         } catch (error) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         } 
@@ -513,20 +538,27 @@ class ProcessGPTBackend implements Backend {
             }
             await storage.putObject('configuration', putObj);
         } catch (error) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
     }
 
     async getDefinitionVersions(defId: string, options: any) {
-        if(!options) options = {};
+        try {
+            if(!options) options = {};
 
-        defId = defId.toLowerCase();
-        if(!options.match) options.match = {}
-        options.match.proc_def_id = defId;
+            defId = defId.toLowerCase();
+            if(!options.match) options.match = {}
+            options.match.proc_def_id = defId;
+            
         
-       
-        return await storage.list('proc_def_arcv', options);
+            return await storage.list('proc_def_arcv', options);
+        } catch (error) {
+            this.checkDBConnection();
+            //@ts-ignore
+            throw new Error(error.message);
+        }
     }
     // Add stub implementations for the missing methods and properties
     async versionUp() {
@@ -613,9 +645,9 @@ class ProcessGPTBackend implements Backend {
                 proc_inst_id: instId,
                 [columnName]: varValue.valueMap ? varValue.valueMap : varValue
             }
-            console.log(putObj)
             await storage.putObject(defId, putObj);
         } catch (error) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -690,6 +722,7 @@ class ProcessGPTBackend implements Backend {
             }
             return worklist;
         } catch (error) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -762,6 +795,7 @@ class ProcessGPTBackend implements Backend {
             return result;
 
         } catch (e) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(e.message);
         }
@@ -780,6 +814,7 @@ class ProcessGPTBackend implements Backend {
             }
             await storage.putObject('proc_inst', putObj);
         } catch (e) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(e.message);
         }
@@ -807,6 +842,7 @@ class ProcessGPTBackend implements Backend {
             let instList: any[] = await this.fetchInstanceListByStatus("RUNNING");
             return instList;
         } catch (error) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -817,6 +853,7 @@ class ProcessGPTBackend implements Backend {
             let instList: any[] = await this.fetchInstanceListByStatus("COMPLETED");
             return instList;
         } catch (error) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -844,6 +881,7 @@ class ProcessGPTBackend implements Backend {
             })
             return worklist;
         } catch (e) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }

@@ -87,6 +87,7 @@
                         class="cp-check-in" variant="flat" @click="checkIn">확인</v-btn>
                     <v-btn v-else-if="alertType =='checkin' && userName && userName != editUser " color="primary"
                         class="cp-check-in" variant="flat" @click="checkOut">체크인</v-btn>
+                    <v-btn v-else-if="alertType =='download'" color="primary" variant="flat" @click="download">다운로드</v-btn>
                     <v-btn v-if="userName && userName == editUser" color="error" variant="flat"
                         @click="alertDialog=false">닫기</v-btn>
                     <v-btn v-else color="error" variant="flat" @click="alertDialog=false">취소</v-btn>
@@ -238,28 +239,50 @@ export default {
             this.closeAlertDialog();
         },
         async checkIn() {
-            this.lock = false;
-            this.enableEdit = false;
-            if (this.userName == this.editUser) {
-                await this.saveProcess();
+            const isConnected = await backend.checkDBConnection();
+            if (isConnected) {
+                this.alertDialog = true;
+                this.alertMessage = "현재 DB 연결이 끊어졌습니다. 수정된 데이터를 다운로드하여 저장하고 관리자에게 문의주세요.";
+                this.alertType = 'download';
+            } else {
+                this.lock = false;
+                this.enableEdit = false;
+                if (this.userName == this.editUser) {
+                    await this.saveProcess();
+                }
+                if (this.useLock) {
+                    await this.storage.delete('lock/process-map', { key: 'id' });
+                }
+                this.closeAlertDialog();
             }
-            if (this.useLock) {
-                await this.storage.delete('lock/process-map', { key: 'id' });
+        },
+        async checkOut() {
+            const isConnected = await backend.checkDBConnection();
+            if (!isConnected) {
+                alert('DB 연결이 끊어졌습니다. 관리자에게 문의해주세요.');
+            } else {
+                this.lock = true;
+                this.enableEdit = true;
+                if (this.useLock && this.userName && this.userName != undefined) {
+                    this.editUser = this.userName;
+                    let lockObj = {
+                        id: 'process-map',
+                        user_id: this.editUser,
+                    }
+                    await this.storage.putObject('lock', lockObj);
+                }
             }
             this.closeAlertDialog();
         },
-        async checkOut() {
-            this.lock = true;
-            this.enableEdit = true;
+        download() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.value));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "process-map.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
             this.closeAlertDialog();
-            if (this.useLock && this.userName && this.userName != undefined) {
-                this.editUser = this.userName;
-                let lockObj = {
-                    id: 'process-map',
-                    user_id: this.editUser,
-                }
-                await this.storage.putObject('lock', lockObj);
-            }
         },
         async openAlertDialog() {
             return new Promise(async (resolve) => {
