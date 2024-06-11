@@ -215,6 +215,7 @@
     "BpnmPropertyPanel": {
         "name": "이름",
         "condition": "조건",
+        "priority": "우선순위",
         "description": "설명",
         "inputData": "입력 데이터",
         "outputData": "출력 데이터",
