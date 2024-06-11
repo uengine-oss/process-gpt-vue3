@@ -75,7 +75,13 @@ export default {
 
     methods: {
         async processTenantSignup() {
-            await this.authStore.signUp(this.accountInfo.username, this.accountInfo.email, this.accountInfo.password);
+            let me = this
+            me.$try({
+                context: me,
+                action: async () => {
+                    await me.authStore.signUp(me.accountInfo.username, me.accountInfo.email, me.accountInfo.password);
+                }
+            });
         }
     },
 
