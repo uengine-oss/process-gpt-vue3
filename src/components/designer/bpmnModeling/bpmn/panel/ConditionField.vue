@@ -2,15 +2,16 @@
     <div>
         <draggable class="list-group cursor-pointer" :list="condition" :animation="0" ghost-class="ghost-card"
             group="condition">
-            <template v-for="(item, idx) in condition" :key="idx">
-                <div v-if="item._type.includes('Evaluate')" class="d-flex">
-                    <v-combobox v-model="item.expression.key" :items="varItems" variant="outlined"
+            
+            <template v-for="(item, idx) in getConditions(condition)" :key="idx">
+                <div v-if="checkCondition(item)" class="d-flex">
+                    <v-combobox v-model="item.key" :items="varItems" variant="outlined"
                         style="max-width: 100px; overflow-x: hidden;"></v-combobox>
 
-                    <v-select v-model="item.expression.comparator" :items="comparatorList" class="mx-1"
+                    <v-select v-model="item.condition" :items="conditionList" class="mx-1"
                         style="max-width: 100px; overflow-x: hidden;"></v-select>
 
-                    <v-combobox v-model="item.expression.value" :items="varItems" variant="outlined"
+                    <v-combobox v-model="item.value" :items="varItems" variant="outlined"
                         style="max-width: 100px; overflow-x: hidden;"></v-combobox>
 
                     <v-btn icon variant="text">
@@ -24,7 +25,7 @@
                         </v-menu>
                     </v-btn>
 
-                    <v-btn icon variant="text" @click="deleteCondition(condition, idx)">
+                    <v-btn icon variant="text" @click="deleteCondition(item, idx)">
                         <v-icon>mdi-delete-outline</v-icon>
                     </v-btn>
                 </div>
@@ -33,7 +34,7 @@
                         <v-chip>
                             {{ item._type }}
                         </v-chip>
-                        <v-btn icon variant="text" class="ml-auto" @click="deleteCondition(condition, idx)">
+                        <v-btn icon variant="text" class="ml-auto" @click="deleteCondition(item, idx)">
                             <v-icon>mdi-delete-outline</v-icon>
                         </v-btn>
                     </div>
@@ -50,13 +51,13 @@ import { useBpmnStore } from '@/stores/bpmn';
 export default {
     name: 'ConditionField',
     props: {
-        value: Array,
+        value: Object,
     },
     data() {
         return {
-            condition: [],
+            condition: {},
             varItems: [],
-            comparatorList: [
+            conditionList: [
                 '==',
                 '!=',
                 '>',
@@ -77,18 +78,15 @@ export default {
         },
     },
     async created() {
-        if (this.value && this.value.length > 0) {
+        if (this.value) {
             this.condition = this.value;
         } else {
-            this.condition = [{
+            this.condition = {
                 _type: 'org.uengine.kernel.Evaluate',
-                conditionsVt: [],
-                expression: {
-                    key: '',
-                    value: '',
-                    comparator: '',
-                },
-            }];
+                key: '',
+                value: '',
+                condition: '',
+            };
         }
 
         // const storage = StorageBaseFactory.getStorage();
@@ -124,51 +122,64 @@ export default {
         changeCondition(item, type) {
             const child = JSON.parse(JSON.stringify(item));
 
-            if (!item.conditionsVt) {
-                item.conditionsVt = [];
-            }
-            item.conditionsVt.push(child);
-            delete item.expression;
-
             if (type == "AND") {
+                item.conditionsVt = [];
+                item.conditionsVt.push(child);
                 item._type = 'org.uengine.kernel.AND';
                 item.conditionsVt.push({
                     _type: 'org.uengine.kernel.Evaluate',
                     conditionsVt: [],
-                    expression: {
-                        key: '',
-                        value: '',
-                        comparator: '',
-                    },
+                    key: '',
+                    value: '',
+                    condition: '',
                 });
             } else if (type == "OR") {
+                item.conditionsVt = [];
+                item.conditionsVt.push(child);
                 item._type = 'org.uengine.kernel.OR';
                 item.conditionsVt.push({
                     _type: 'org.uengine.kernel.Evaluate',
                     conditionsVt: [],
-                    expression: {
-                        key: '',
-                        value: '',
-                        comparator: '',
-                    },
+                    key: '',
+                    value: '',
+                    condition: '',
                 });
             } else if (type == "NOT") {
                 item._type = 'org.uengine.kernel.NOT';
             }
         },
-        deleteCondition(list, idx) {
-            list.splice(idx, 1);
-            if (list.length == 0) {
-                list.push({
-                    _type: 'org.uengine.kernel.Evaluate',
-                    conditionsVt: [],
-                    expression: {
+        deleteCondition(item, idx) {
+            if(Array.isArray(this.condition)){
+                this.condition.splice(idx, 1);
+                if (this.condition.length == 0) {
+                    this.condition ={
+                        _type: 'org.uengine.kernel.Evaluate',
                         key: '',
                         value: '',
-                        comparator: '',
-                    },
-                });
+                        condition: '',
+                    };
+                }
+            } else {
+                this.condition ={
+                    _type: 'org.uengine.kernel.Evaluate',
+                    key: '',
+                    value: '',
+                    condition: '',
+                };
             }
+        },
+        checkCondition(item) {
+            const condition = item._type.includes('Evaluate')
+            return condition;
+        },
+        getConditions(item) {
+            var result = [];
+            if (Array.isArray(item)) {
+                result = item;
+            }else{
+                result.push(item);
+            }
+            return result;
         },
     }
 }

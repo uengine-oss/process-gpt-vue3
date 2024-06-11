@@ -2,8 +2,7 @@
     <g :transform="'translate(' + pos.x + ',' + pos.y + ')'" class="attribute" :data-util-name="name" :data-block-name="blockName">
         <foreignObject v-if="isAppend() == true && func == 'input'" x="-10" y="-10" width="130" height="25">
             <body xmlns="http://www.w3.org/1999/xhtml">
-                <input
-                    type="text"
+                <textarea
                     id="textInput"
                     class="attribute"
                     :placeholder="name"

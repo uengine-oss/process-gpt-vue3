@@ -14,7 +14,7 @@
         </v-row>
 
         <v-row no-gutters style="margin-top: 30px;" justify="center">
-            <TenantInfoField v-model="tenantInfo" :isEdit="false"></TenantInfoField>
+            <TenantInfoField v-model="tenantInfo" :isEdit="false" ref="tenantInfoField"></TenantInfoField>
         </v-row>
 
         <v-row no-gutters justify="center">
@@ -32,14 +32,12 @@
 </template>
 
 <script>
-import Logo from '@/layouts/full/logo/Logo.vue';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import TenantInfoField from '@/components/tenant/TenantInfoField.vue';
 
 export default {
     name: 'TenantCreatePage',
     components: {
-        Logo,
         TenantInfoField
     },
 
@@ -60,27 +58,36 @@ export default {
 
     methods: {
         async createTenant() {
-            await this.storage.putObject('tenant_def', {
-                id: this.tenantInfo.id,
-                url: this.tenantInfo.url,
-                secret: this.tenantInfo.secret,
-                host: this.tenantInfo.host,
-                dbname: this.tenantInfo.databaseName,
-                port: this.tenantInfo.port,
-                user: this.tenantInfo.user,
-                pw: this.tenantInfo.password
-            });
+            let me = this
+            me.$try({
+                context: me,
+                action: async () => {
+                    await me.$refs.tenantInfoField.validCheck()
 
-            // #region 사용자 정보에 추가한 테넌트 ID 업데이트
-            const userInfo = await this.storage.getUserInfo();
-            const dbUserInfo = await this.storage.getObject(`users/${userInfo.uid}`, {key: 'id'})
-            await this.storage.putObject(`users/${userInfo.uid}`, {
-                ...dbUserInfo,
-                tenants: (dbUserInfo.tenants) ? [...dbUserInfo.tenants, this.tenantInfo.id] : [this.tenantInfo.id]
-            });
-            // #endregion
+                    await me.storage.putObject('tenant_def', {
+                        id: me.tenantInfo.id,
+                        url: me.tenantInfo.url,
+                        secret: me.tenantInfo.secret,
+                        host: me.tenantInfo.host,
+                        dbname: me.tenantInfo.databaseName,
+                        port: me.tenantInfo.port,
+                        user: me.tenantInfo.user,
+                        pw: me.tenantInfo.password
+                    });
 
-            this.$router.push('/tenant/manage');
+                    // #region 사용자 정보에 추가한 테넌트 ID 업데이트
+                    const userInfo = await me.storage.getUserInfo();
+                    const dbUserInfo = await me.storage.getObject(`users/${userInfo.uid}`, {key: 'id'})
+                    await me.storage.putObject(`users/${userInfo.uid}`, {
+                        ...dbUserInfo,
+                        tenants: (dbUserInfo.tenants) ? [...dbUserInfo.tenants, me.tenantInfo.id] : [me.tenantInfo.id]
+                    });
+                    // #endregion
+
+                    await me.$router.push('/tenant/manage');
+                },
+                successMsg: '테넌트가 정상적으로 생성되었습니다.'
+            });
         }
     },
 

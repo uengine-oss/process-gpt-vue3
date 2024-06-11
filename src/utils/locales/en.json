@@ -189,10 +189,16 @@
     },
     "BpnmPropertyPanel": {
         "name": "Name",
+        "condition": "Condition",
+        "priority": "Priority",
         "description": "Description",
         "inputData": "Input Data",
         "outputData": "Output Data",
         "checkPoints": "Checkpoints",
+        "script": "Script",
+        "generateScript": "Generate Script",
+        "scriptPrompt": "Script Prompt",
+        "scriptType": "Script Type",
         "add": "Add"
     }
 }

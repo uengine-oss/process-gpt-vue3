@@ -219,8 +219,7 @@ export default {
         },
         receiveAgent(){
             var me = this
-            var path = window.$autonomous == '' ? 'ws://localhost:6789' : 'wss://' + window.$autonomous
-            me.ws = new WebSocket(`${path}`);
+            me.ws = new WebSocket(`ws://${window.location.host}/autonomous`);
         
             me.ws.onopen = () => {
                 me.isConnection = true;

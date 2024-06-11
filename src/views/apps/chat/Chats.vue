@@ -465,8 +465,7 @@ export default {
                     }
                     if(responseObj.work == 'CompanyQuery'){
                         try{
-                            var url = window.$memento == '' ? 'http://localhost:8005' : window.$memento
-                            let responseMemento = await axios.post(`${url}/query`, { query: responseObj.content});
+                            let responseMemento = await axios.post(`/memento/query`, { query: responseObj.content});
                             obj.memento = {}
                             obj.memento.response = responseMemento.data.response
                             if (!responseMemento.data.metadata) return {};
@@ -478,10 +477,9 @@ export default {
                                 }
                             });
                             obj.memento.sources = sources
-                            const responseTable = await axios.post(`${window.$backend}/process-data-query/invoke`, {
+                            const responseTable = await axios.post(`/execution/process-data-query/invoke`, {
                                 input: {
-                                    var_name: responseObj.content,
-                                    subdomain: window.location.hostname.split('.')[0]
+                                    var_name: responseObj.content
                                 }
                             });
                             obj.tableData = responseTable.data.output

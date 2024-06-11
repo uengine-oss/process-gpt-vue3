@@ -1,5 +1,5 @@
 -- table configuration
-drop table configuration;
+drop table if exists configuration;
 create table configuration (
   key text primary key,
   value jsonb
@@ -8,7 +8,7 @@ insert into configuration (key, value) values ('proc_map', '{}');
 insert into configuration (key, value) values ('organization', '{}');
 
 -- table proc_map_history
-drop table public.proc_map_history;
+drop table if exists public.proc_map_history;
 create table public.proc_map_history (
     value jsonb not null,
     created_at timestamp with time zone not null default now(),
@@ -36,7 +36,7 @@ WHEN (OLD.key = 'proc_map' AND NEW.value IS DISTINCT FROM OLD.value)
 EXECUTE PROCEDURE public.save_previous_proc_map();
 
 -- table todolist
-drop table todolist;
+drop table if exists todolist;
 create table todolist (
     id uuid primary key,
     user_id text,
@@ -52,7 +52,7 @@ create table todolist (
 );
 
 -- table users
-drop table public.users;
+drop table if exists public.users;
 create table public.users (
     id uuid not null primary key,
     username text null,
@@ -91,7 +91,7 @@ create trigger on_public_user_deleted
 
 
 -- table proc_def
-drop table proc_def;
+drop table if exists proc_def;
 create table proc_def (
   id text primary key,
   name text,
@@ -113,7 +113,7 @@ USING (true);
 
 
 -- table proc_inst
-drop table proc_inst;
+drop table if exists proc_inst;
 create table
   public.proc_inst (
     id text not null,
