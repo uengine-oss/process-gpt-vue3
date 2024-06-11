@@ -62,10 +62,6 @@ declare global {
       $mode: any; 
       $supabase: any;
       $jms: any;
-      $backend: any;
-      $memento: any;
-      $autonomous: any;
-      $tenantInfo: any;
       $isTenantServer: boolean;
     }
 }
@@ -74,19 +70,6 @@ declare global {
 // window.$mode = 'uEngine';
 window.$mode = 'ProcessGPT';
 window.$jms = false;
-window.$backend = '';
-window.$memento = '';
-window.$autonomous = '';
-
-window.$tenantInfo = {
-    url: null,
-    secret: null,
-    dbname: null,
-    user: null,
-    pw: null,
-    host: null,
-    port: null
-};
 
 if (window.location.host.includes('localhost') || window.location.host.includes('192.168') || window.location.host.includes('127.0.0.1') || 
     window.$mode == 'uEngine') {
@@ -101,9 +84,6 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
         }
     );
 } else {
-    // window.$backend = 'http://execution.process-gpt.io';
-    window.$memento = 'http://memento.process-gpt.io';
-    window.$autonomous = 'autonomous.process-gpt.io/ws';
     window.$masterDB = createClient(
         'https://qivmgbtrzgnjcpyynpam.supabase.co',
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpdm1nYnRyemduamNweXlucGFtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxNTU4ODc3NSwiZXhwIjoyMDMxMTY0Nzc1fQ.z8LIo50hs1gWcerWxx1dhjri-DMoDw9z0luba_Ap4cI',
@@ -128,6 +108,7 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
             }
         );
     } else {
+        let res
         window.$isTenantServer = false;
         (async () => {
             let options: {
@@ -166,7 +147,7 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
                 if (error) {
                     alert(error);
                 } else if (data) {
-                    window.$tenantInfo = data;
+                    res = data;
                 }
             } else if (obj.searchVal) {
                 const { data, error } = await window.$masterDB
@@ -178,7 +159,7 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
                 if (error) {
                     alert(error);
                 } else if (data) {
-                    window.$tenantInfo = data;
+                    res = data;
                 }
             } else {
                 const { data, error } = await window.$masterDB
@@ -189,11 +170,11 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
                 if (error) {
                     alert(error);
                 } else if (data) {
-                    window.$tenantInfo = data;
+                    res = data;
                 }
             }
-            if(window.$tenantInfo.url && window.$tenantInfo.secret){
-                window.$supabase = createClient(window.$tenantInfo.url, window.$tenantInfo.secret, {
+            if(res.url && res.secret){
+                window.$supabase = createClient(res.url, res.secret, {
                     auth: {
                         autoRefreshToken: false,
                         persistSession: false

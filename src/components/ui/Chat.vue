@@ -783,11 +783,9 @@ export default {
 
             const formData = new FormData();
             formData.append('audio', audioBlob);
-            formData.append('subdomain', window.location.hostname.split('.')[0]);
 
             try {
-                const url = window.$backend == '' ? 'http://localhost:8000' : window.$backend
-                const response = await axios.post(`${url}/upload`, formData);
+                const response = await axios.post(`/execution/upload`, formData);
                 const data = response.data;
                 this.newMessage = data.transcript;
             } catch (error) {
@@ -803,8 +801,7 @@ export default {
             formData.append('file', this.file[0]); // 'file' 키에 파일 데이터 추가
 
             try {
-                var url = window.$memento == '' ? 'http://localhost:8005' : window.$memento
-                const response = await axios.post(`${url}/uploadfile/`, formData, {
+                const response = await axios.post(`/memento/uploadfile/`, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                     },

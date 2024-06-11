@@ -65,10 +65,9 @@ class ProcessGPTBackend implements Backend {
             }
 
             if (!window.$jms) {
-                await axios.post(`${window.$backend}/drop-process-table/invoke`, {
+                await axios.post(`/execution/drop-process-table/invoke`, {
                     "input": {
-                        "process_definition_id": defId,
-                        "subdomain": window.location.hostname.split('.')[0]
+                        "process_definition_id": defId
                     }
                 }).catch(error => {
                     throw new Error(error && error.detail ? error.detail : error);
@@ -125,10 +124,9 @@ class ProcessGPTBackend implements Backend {
                 const list = await storage.list(defId);
                 if (list.code == ErrorCode.TableNotFound) {
                     try {
-                        await axios.post(`${window.$backend}/process-db-schema/invoke`, {
+                        await axios.post(`/execution/process-db-schema/invoke`, {
                             "input": {
-                                "process_definition_id": defId,
-                                "subdomain": window.location.hostname.split('.')[0]
+                                "process_definition_id": defId
                             }
                         })
                     } catch(error) {
@@ -182,10 +180,9 @@ class ProcessGPTBackend implements Backend {
             if (defId && defId != '') {
                 const list = await storage.list(defId);
                 if (list.code == ErrorCode.TableNotFound) {
-                    await axios.post(`${window.$backend}/process-db-schema/invoke`, {
+                    await axios.post(`/execution/process-db-schema/invoke`, {
                         "input": {
-                            "process_definition_id": defId,
-                            "subdomain": window.location.hostname.split('.')[0]
+                            "process_definition_id": defId
                         }
                     }).catch(error => {
                         throw new Error(error && error.detail ? error.detail : error);
@@ -210,13 +207,12 @@ class ProcessGPTBackend implements Backend {
             input['process_definition_id'] = defId.toLowerCase();
             
             var result: any = null;
-            var url = `${window.$backend}/complete/invoke`;
+            var url = `/execution/complete/invoke`;
             if (input.image != null) {
-                url = `${window.$backend}/vision-complete/invoke`;
+                url = `/execution/vision-complete/invoke`;
             }
             var req = {
-                input: input,
-                subdomain: window.location.hostname.split('.')[0]
+                input: input
             };
             await axios.post(url, req).then(async res => {
                 if (res.data) {
@@ -705,10 +701,9 @@ class ProcessGPTBackend implements Backend {
                 activity_id: workItem.activity_id,
             };
             const req = {
-                input: input,
-                subdomain: window.location.hostname.split('.')[0]
+                input: input
             };
-            let url = `${window.$backend}/complete/invoke`;
+            let url = `/execution/complete/invoke`;
             await axios.post(url, req).then(async res => {
                 if (res.data) {
                     const data = res.data;

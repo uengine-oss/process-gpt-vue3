@@ -34,14 +34,6 @@ export default defineConfig({
     },
     server: {
         proxy: {
-            '/complete': {
-                target: 'http://localhost:8000',
-                changeOrigin: true,
-            },
-            '/vision-complete': {
-                target: 'http://localhost:8000',
-                changeOrigin: true,
-            },
             '/query': {
                 target: 'http://localhost:8005',
                 changeOrigin: true,
@@ -50,7 +42,11 @@ export default defineConfig({
                 target: 'http://localhost:8005',
                 changeOrigin: true,
             },
-            '/set-db-config': {
+            '/complete': {
+                target: 'http://localhost:8000',
+                changeOrigin: true,
+            },
+            '/vision-complete': {
                 target: 'http://localhost:8000',
                 changeOrigin: true,
             },
