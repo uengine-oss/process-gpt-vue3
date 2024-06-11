@@ -1,5 +1,5 @@
 <template>
-    <div class="container" :style="!$globalState.state.isRightZoomed ? 'height:calc(100vh - 155px)' : 'height:100vh;'">
+    <div class="container" :style="containerStyle">
         <v-btn class="record-close-btn" icon density="comfortable" @click="closeRecording"
             :style="!$globalState.state.isRightZoomed ? '' : 'top:10px;'"
         >
@@ -42,6 +42,8 @@
 <script>
 import { Icon } from '@iconify/vue';
 import AudioStream from './AudioStream.vue';
+import { getPrimary } from '@/utils/UpdateColors';
+
 
 export default {
     components: {
@@ -158,6 +160,12 @@ export default {
         circleSize() {
             if (this.volume < this.threshold) return 250; // 임계값 이하일 때 기본 크기
             return 250 + ((this.volume - this.threshold) / (100 - this.threshold)) * 20; // 원의 기본 크기 100px에 볼륨에 따라 크기 조정 (증가 폭을 줄임)
+        },
+        containerStyle() {
+            return {
+                backgroundColor: getPrimary.value,
+                height: !this.$globalState.state.isRightZoomed ? 'calc(100vh - 155px)' : '100vh'
+            };
         }
     }
 };
@@ -339,7 +347,6 @@ export default {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background-color: #1976D2;
 }
 
 .circle {

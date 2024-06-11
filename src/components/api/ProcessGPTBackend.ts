@@ -214,7 +214,13 @@ class ProcessGPTBackend implements Backend {
             var req = {
                 input: input
             };
-            await axios.post(url, req).then(async res => {
+            const token = localStorage.getItem('accessToken');
+            await axios.post(url, req, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            }).then(async res => {
                 if (res.data) {
                     const data = res.data;
                     if (data.output) {
@@ -474,6 +480,18 @@ class ProcessGPTBackend implements Backend {
             };
             const procMap = await storage.getObject('configuration', options);
             if (procMap && procMap.value) {
+                // const renameLabels = (obj: any) => {
+                //     if (obj instanceof Array) {
+                //         obj.forEach(item => renameLabels(item));
+                //     } else if (obj instanceof Object) {
+                //         if (obj.hasOwnProperty('label')) {
+                //             obj.name = obj.label;
+                //             delete obj.label;
+                //         }
+                //         Object.values(obj).forEach(value => renameLabels(value));
+                //     }
+                // };
+                // renameLabels(procMap.value);
                 return procMap.value;
             }
             return {};
@@ -703,8 +721,14 @@ class ProcessGPTBackend implements Backend {
             const req = {
                 input: input
             };
+            const token = localStorage.getItem('accessToken');
             let url = `/execution/complete/invoke`;
-            await axios.post(url, req).then(async res => {
+            await axios.post(url, req, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            }).then(async res => {
                 if (res.data) {
                     const data = res.data;
                     if (data.output) {

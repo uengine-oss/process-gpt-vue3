@@ -648,9 +648,11 @@ export default {
         },
         openPanel(id) {
             console.log(id);
-            this.panel = true;
             this.element = this.findElement(this.definitions, 'id', id);
-            this.$refs.bpmnVue.extendUEngineProperties(this.element);
+            if(this.element){
+                this.panel = true;
+                this.$refs.bpmnVue.extendUEngineProperties(this.element);
+            }
         },
         closePanel() {
             this.element = null;

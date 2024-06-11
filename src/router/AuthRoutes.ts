@@ -87,7 +87,12 @@ const AuthRoutes = {
             name: 'Tenant Edit',
             path: '/tenant/edit/:tenantId',
             component: () => import('@/components/tenant/TenantEditPage.vue')
-        }
+        },
+        {
+            name: 'Tenant Help',
+            path: '/tenant/help',
+            component: () => import('@/components/tenant/TenantHelpPage.vue')
+        },
     ]
 };
 

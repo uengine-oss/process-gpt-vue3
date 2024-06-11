@@ -126,14 +126,21 @@ export default {
         },
 
         async deleteTenant(tenantId) {
-            await this.storage.delete(`tenant_def/${tenantId}`, { key: 'id' });
-            const dbUserInfo = await this.storage.getObject(`users/${this.userInfo.uid}`, {key: 'id'})
-            await this.storage.putObject(`users/${this.userInfo.uid}`, {
-                ...dbUserInfo,
-                tenants: dbUserInfo.tenants.filter(tenant => tenant !== tenantId)
-            });
+            let me = this
+            me.$try({
+                context: me,
+                action: async () => {
+                    await me.storage.delete(`tenant_def/${tenantId}`, { key: 'id' });
+                    const dbUserInfo = await me.storage.getObject(`users/${me.userInfo.uid}`, {key: 'id'})
+                    await me.storage.putObject(`users/${me.userInfo.uid}`, {
+                        ...dbUserInfo,
+                        tenants: dbUserInfo.tenants.filter(tenant => tenant !== tenantId)
+                    });
 
-            this.tenantInfos = this.tenantInfos.filter(tenantInfo => tenantInfo.id !== tenantId)
+                    me.tenantInfos = me.tenantInfos.filter(tenantInfo => tenantInfo.id !== tenantId)
+                },
+                successMsg: '테넌트가 정상적으로 삭제되었습니다.'
+            });
         },
         
         toSelectedTenantPage(tenantId) {
@@ -145,15 +152,22 @@ export default {
     },
 
     async created() {
-        this.storage = StorageBaseFactory.getStorage()
-        this.userInfo = await this.storage.getUserInfo();
+        let me = this
+        me.$try({
+            context: me,
+            action: async () => {
+                me.storage = StorageBaseFactory.getStorage()
+                me.userInfo = await me.storage.getUserInfo();
 
-        const tenants = (await this.storage.getObject(`users/${this.userInfo.uid}`, {key: 'id'})).tenants
-        if(tenants)
-            for (const tenant of tenants) {
-                const tenantInfo = await this.storage.getObject(`tenant_def/${tenant}`, {key: 'id'})
-                if(tenantInfo) this.tenantInfos.push(tenantInfo)
+                const tenants = (await me.storage.getObject(`users/${me.userInfo.uid}`, {key: 'id'})).tenants
+                if(tenants) {
+                    for (const tenant of tenants) {
+                        const tenantInfo = await me.storage.getObject(`tenant_def/${tenant}`, {key: 'id'})
+                        if(tenantInfo) me.tenantInfos.push(tenantInfo)
+                    }
+                }
             }
+        });
     },
 };
 </script>
