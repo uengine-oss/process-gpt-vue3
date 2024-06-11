@@ -46,7 +46,7 @@ export const useAuthStore = defineStore({
                         alert(result.errorMsg);
                     } else {
                         await storage?.writeUserData(result);
-                        router.push('/dashboard2');
+                        router.push(window.$isTenantServer ? '/tenant/manage' : '/dashboard2')
                     }
                 }
             } catch (e) {
@@ -67,7 +67,7 @@ export const useAuthStore = defineStore({
                         alert(result.errorMsg);
                     } else {
                         await storage?.writeUserData(result);
-                        router.push('/dashboard2');
+                        router.push(window.$isTenantServer ? '/tenant/manage' : '/dashboard2');
                     }
                 }
             } catch (e) {

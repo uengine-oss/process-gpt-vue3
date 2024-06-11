@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import Logo from '@/layouts/full/logo/Logo.vue';
-/* Register form */
+import TenantRegisterForm from '@/components/tenant/TenantRegisterForm.vue';
 import RegisterForm from '@/components/auth/RegisterForm.vue';
-import AdminRegisterForm from '@/components/auth/AdminRegisterForm.vue';
-import { ref } from 'vue';
+import { defineProps, ref } from 'vue';
 
-const currentTabName = ref('normalRegister');
+const { isTenantRegister } = defineProps<{ isTenantRegister: boolean }>();
 </script>
 
 <template>
@@ -27,18 +26,14 @@ const currentTabName = ref('normalRegister');
                 <div class="mt-xl-0 mt-5 mw-100" >
                     <h2 class="text-h3 font-weight-semibold mb-4">{{ $t('createAccount.title') }}</h2>
 
-                    <v-tabs v-model="currentTabName" style="position: fixed; z-index: 999" class="text-black" fixed-tabs>
-                        <v-tab value="normalRegister">{{ $t('createAccount.normalRegister') }}</v-tab>
-                        <v-tab value="adminRegister">{{ $t('createAccount.adminRegister') }}</v-tab>
-                    </v-tabs>
-                    <v-window v-model="currentTabName">
-                        <v-window-item value="normalRegister" class="mt-15">
-                            <RegisterForm key="normalRegister"/>
-                        </v-window-item>
-                        <v-window-item value="adminRegister" class="mt-15" style="overflow-y: auto; overflow-x: hidden; height: 65vh;">
-                            <AdminRegisterForm key="adminRegister"/>
-                        </v-window-item>
-                    </v-window>
+                    <!-- #region 마스터 DB 여부에 따라서 서로 다른 회원가입 폼 표시 -->
+                    <div v-if="isTenantRegister">
+                        <TenantRegisterForm/>
+                    </div>
+                    <div v-else>
+                        <RegisterForm/>
+                    </div>
+                    <!-- #endregion -->
 
                     <h6 class="text-subtitle-1  text-grey100 d-flex align-center mt-6">
                         {{ $t('createAccount.already') }}

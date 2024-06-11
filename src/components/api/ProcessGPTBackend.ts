@@ -42,32 +42,6 @@ class ProcessGPTBackend implements Backend {
         throw new Error("Method not implemented.");
     }
 
-    async setSupabaseEndpoint() {
-        try {
-            if (window.$tenantInfo && window.$tenantInfo.url) {
-                await axios.post(`${window.$backend}/set-db-config`, {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    data: {
-                        url: window.$tenantInfo.url,
-                        secret: window.$tenantInfo.secret,
-                        dbConfig: {
-                            dbname: window.$tenantInfo.dbname,
-                            user: window.$tenantInfo.user,
-                            password: window.$tenantInfo.pw,
-                            host: window.$tenantInfo.host,
-                            port: window.$tenantInfo.port
-                        }
-                    }
-                });
-                console.log("Supabase endpoint 설정 완료");
-            }
-        } catch (error) {
-            console.error("Supabase endpoint 설정 실패:", error);
-        }
-    }
-
     async deleteDefinition(defId: string, options: any) {
         try {
             if(options && options.type === "form") {
@@ -91,10 +65,10 @@ class ProcessGPTBackend implements Backend {
             }
 
             if (!window.$jms) {
-                await this.setSupabaseEndpoint();
                 await axios.post(`${window.$backend}/drop-process-table/invoke`, {
                     "input": {
-                        "process_definition_id": defId
+                        "process_definition_id": defId,
+                        "subdomain": window.location.hostname.split('.')[0]
                     }
                 }).catch(error => {
                     throw new Error(error && error.detail ? error.detail : error);
@@ -151,24 +125,10 @@ class ProcessGPTBackend implements Backend {
                 const list = await storage.list(defId);
                 if (list.code == ErrorCode.TableNotFound) {
                     try {
-                        // await this.setSupabaseEndpoint();
                         await axios.post(`${window.$backend}/process-db-schema/invoke`, {
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
                             "input": {
                                 "process_definition_id": defId,
-                                "data": {
-                                    "url": window.$tenantInfo.url,
-                                    "secret": window.$tenantInfo.secret,
-                                    "dbConfig": {
-                                        "dbname": window.$tenantInfo.dbname,
-                                        "user": window.$tenantInfo.user,
-                                        "password": window.$tenantInfo.pw,
-                                        "host": window.$tenantInfo.host,
-                                        "port": window.$tenantInfo.port
-                                    }
-                                }
+                                "subdomain": window.location.hostname.split('.')[0]
                             }
                         })
                     } catch(error) {
@@ -222,10 +182,10 @@ class ProcessGPTBackend implements Backend {
             if (defId && defId != '') {
                 const list = await storage.list(defId);
                 if (list.code == ErrorCode.TableNotFound) {
-                    await this.setSupabaseEndpoint();
                     await axios.post(`${window.$backend}/process-db-schema/invoke`, {
                         "input": {
-                            "process_definition_id": defId
+                            "process_definition_id": defId,
+                            "subdomain": window.location.hostname.split('.')[0]
                         }
                     }).catch(error => {
                         throw new Error(error && error.detail ? error.detail : error);
@@ -250,15 +210,21 @@ class ProcessGPTBackend implements Backend {
             input['process_definition_id'] = defId.toLowerCase();
             
             var result: any = null;
-            var url = `${window.$backend}/complete/invoke`;
+            var url = `${window.$backend}/complete`;
             if (input.image != null) {
-                url = `${window.$backend}/vision-complete/invoke`;
+                url = `${window.$backend}/vision-complete`;
             }
             var req = {
-                input: input
+                input: input,
+                subdomain: window.location.hostname.split('.')[0]
             };
-            await this.setSupabaseEndpoint();
-            await axios.post(url, req).then(async res => {
+            const token = localStorage.getItem('accessToken');
+            await axios.post(url, req, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            }).then(async res => {
                 if (res.data) {
                     const data = res.data;
                     if (data.output) {
@@ -518,6 +484,18 @@ class ProcessGPTBackend implements Backend {
             };
             const procMap = await storage.getObject('configuration', options);
             if (procMap && procMap.value) {
+                // const renameLabels = (obj: any) => {
+                //     if (obj instanceof Array) {
+                //         obj.forEach(item => renameLabels(item));
+                //     } else if (obj instanceof Object) {
+                //         if (obj.hasOwnProperty('label')) {
+                //             obj.name = obj.label;
+                //             delete obj.label;
+                //         }
+                //         Object.values(obj).forEach(value => renameLabels(value));
+                //     }
+                // };
+                // renameLabels(procMap.value);
                 return procMap.value;
             }
             return {};
@@ -745,11 +723,17 @@ class ProcessGPTBackend implements Backend {
                 activity_id: workItem.activity_id,
             };
             const req = {
-                input: input
+                input: input,
+                subdomain: window.location.hostname.split('.')[0]
             };
-            let url = `${window.$backend}/complete/invoke`;
-            await this.setSupabaseEndpoint();
-            await axios.post(url, req).then(async res => {
+            const token = localStorage.getItem('accessToken');
+            let url = `${window.$backend}/complete`;
+            await axios.post(url, req, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            }).then(async res => {
                 if (res.data) {
                     const data = res.data;
                     if (data.output) {
