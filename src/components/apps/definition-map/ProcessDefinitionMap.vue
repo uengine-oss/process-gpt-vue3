@@ -240,7 +240,7 @@ export default {
         },
         async checkIn() {
             const isConnected = await backend.checkDBConnection();
-            if (isConnected) {
+            if (!isConnected) {
                 this.alertDialog = true;
                 this.alertMessage = "현재 DB 연결이 끊어졌습니다. 수정된 데이터를 다운로드하여 저장하고 관리자에게 문의주세요.";
                 this.alertType = 'download';
