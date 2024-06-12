@@ -10,6 +10,10 @@ enum ErrorCode {
 
 class ProcessGPTBackend implements Backend {
 
+    async checkDBConnection() {
+        return await storage.isConnection();
+    }
+
     async listDefinition(path: string) {
         try {
             // 프로세스 정보, 폼 정보를 각각 불러와서 파일명을 포함해서 가공하기 위해서
@@ -29,6 +33,7 @@ class ProcessGPTBackend implements Backend {
             return [...procDefs, ...formDefs]
 
         } catch (e) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(e.message);
         }
@@ -65,10 +70,9 @@ class ProcessGPTBackend implements Backend {
             }
 
             if (!window.$jms) {
-                await axios.post(`${window.$backend}/drop-process-table/invoke`, {
+                await axios.post(`/execution/drop-process-table/invoke`, {
                     "input": {
-                        "process_definition_id": defId,
-                        "subdomain": window.location.hostname.split('.')[0]
+                        "process_definition_id": defId
                     }
                 }).catch(error => {
                     throw new Error(error && error.detail ? error.detail : error);
@@ -76,6 +80,7 @@ class ProcessGPTBackend implements Backend {
             }
             
         } catch (e) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(e.message);
         }
@@ -125,10 +130,9 @@ class ProcessGPTBackend implements Backend {
                 const list = await storage.list(defId);
                 if (list.code == ErrorCode.TableNotFound) {
                     try {
-                        await axios.post(`${window.$backend}/process-db-schema/invoke`, {
+                        await axios.post(`/execution/process-db-schema/invoke`, {
                             "input": {
-                                "process_definition_id": defId,
-                                "subdomain": window.location.hostname.split('.')[0]
+                                "process_definition_id": defId
                             }
                         })
                     } catch(error) {
@@ -139,6 +143,7 @@ class ProcessGPTBackend implements Backend {
             }
 
         } catch (e) {
+            this.checkDBConnection();
             throw new Error('error when to save definition: ' + (e instanceof Error ? e.message : ''));
         }
     }
@@ -169,6 +174,7 @@ class ProcessGPTBackend implements Backend {
             }
 
         } catch (error) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -182,10 +188,9 @@ class ProcessGPTBackend implements Backend {
             if (defId && defId != '') {
                 const list = await storage.list(defId);
                 if (list.code == ErrorCode.TableNotFound) {
-                    await axios.post(`${window.$backend}/process-db-schema/invoke`, {
+                    await axios.post(`/execution/process-db-schema/invoke`, {
                         "input": {
-                            "process_definition_id": defId,
-                            "subdomain": window.location.hostname.split('.')[0]
+                            "process_definition_id": defId
                         }
                     }).catch(error => {
                         throw new Error(error && error.detail ? error.detail : error);
@@ -210,13 +215,12 @@ class ProcessGPTBackend implements Backend {
             input['process_definition_id'] = defId.toLowerCase();
             
             var result: any = null;
-            var url = `${window.$backend}/complete`;
+            var url = `/execution/complete/invoke`;
             if (input.image != null) {
-                url = `${window.$backend}/vision-complete`;
+                url = `/execution/vision-complete/invoke`;
             }
             var req = {
-                input: input,
-                subdomain: window.location.hostname.split('.')[0]
+                input: input
             };
             const token = localStorage.getItem('accessToken');
             await axios.post(url, req, {
@@ -264,6 +268,7 @@ class ProcessGPTBackend implements Backend {
 
             return result;
         } catch (error) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -290,6 +295,7 @@ class ProcessGPTBackend implements Backend {
             }
             return data;
         } catch (e) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(e.message);
         }
@@ -417,6 +423,7 @@ class ProcessGPTBackend implements Backend {
             }
             return worklist;
         } catch (error) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -457,21 +464,34 @@ class ProcessGPTBackend implements Backend {
             }
             return result;
         } catch (error) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }        
     }
 
     async deleteWorkItem(taskId: string) {
-        await storage.delete(`todolist/${taskId}`, { key: 'id' });
+        try {
+            await storage.delete(`todolist/${taskId}`, { key: 'id' });
+        } catch (error) {
+            this.checkDBConnection();
+            //@ts-ignore
+            throw new Error(error.message);
+        }
     }
 
     async getFormDefinition(formName: string) {
-        const form = await storage.getString(`form_def/${formName}`, { key: 'key' });
-        if (form && form.html) {
-            return form.html;
+        try {
+            const form = await storage.getString(`form_def/${formName}`, { key: 'key' });
+            if (form && form.html) {
+                return form.html;
+            }
+            return null;
+        } catch (error) {
+            this.checkDBConnection();
+            //@ts-ignore
+            throw new Error(error.message);
         }
-        return null;
     }
 
     // proc_map
@@ -500,6 +520,7 @@ class ProcessGPTBackend implements Backend {
             }
             return {};
         } catch (error) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         } 
@@ -513,20 +534,27 @@ class ProcessGPTBackend implements Backend {
             }
             await storage.putObject('configuration', putObj);
         } catch (error) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
     }
 
     async getDefinitionVersions(defId: string, options: any) {
-        if(!options) options = {};
+        try {
+            if(!options) options = {};
 
-        defId = defId.toLowerCase();
-        if(!options.match) options.match = {}
-        options.match.proc_def_id = defId;
+            defId = defId.toLowerCase();
+            if(!options.match) options.match = {}
+            options.match.proc_def_id = defId;
+            
         
-       
-        return await storage.list('proc_def_arcv', options);
+            return await storage.list('proc_def_arcv', options);
+        } catch (error) {
+            this.checkDBConnection();
+            //@ts-ignore
+            throw new Error(error.message);
+        }
     }
     // Add stub implementations for the missing methods and properties
     async versionUp() {
@@ -613,9 +641,9 @@ class ProcessGPTBackend implements Backend {
                 proc_inst_id: instId,
                 [columnName]: varValue.valueMap ? varValue.valueMap : varValue
             }
-            console.log(putObj)
             await storage.putObject(defId, putObj);
         } catch (error) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -690,6 +718,7 @@ class ProcessGPTBackend implements Backend {
             }
             return worklist;
         } catch (error) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -723,11 +752,10 @@ class ProcessGPTBackend implements Backend {
                 activity_id: workItem.activity_id,
             };
             const req = {
-                input: input,
-                subdomain: window.location.hostname.split('.')[0]
+                input: input
             };
             const token = localStorage.getItem('accessToken');
-            let url = `${window.$backend}/complete`;
+            let url = `/execution/complete/invoke`;
             await axios.post(url, req, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -762,6 +790,7 @@ class ProcessGPTBackend implements Backend {
             return result;
 
         } catch (e) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(e.message);
         }
@@ -780,6 +809,7 @@ class ProcessGPTBackend implements Backend {
             }
             await storage.putObject('proc_inst', putObj);
         } catch (e) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(e.message);
         }
@@ -807,6 +837,7 @@ class ProcessGPTBackend implements Backend {
             let instList: any[] = await this.fetchInstanceListByStatus("RUNNING");
             return instList;
         } catch (error) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -817,6 +848,7 @@ class ProcessGPTBackend implements Backend {
             let instList: any[] = await this.fetchInstanceListByStatus("COMPLETED");
             return instList;
         } catch (error) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -844,6 +876,7 @@ class ProcessGPTBackend implements Backend {
             })
             return worklist;
         } catch (e) {
+            this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
