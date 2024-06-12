@@ -449,12 +449,6 @@ export default {
         display: none;
     }
 }
-.processVariables-zoom {
-    position: absolute;
-    right: 20px;
-    top: 20px;
-    z-index: 1;
-}
 .processExecute {
     position: absolute;
     right: 80px;

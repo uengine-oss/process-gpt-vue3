@@ -18,8 +18,7 @@ export default {
             this.ws.send(str);
         },
         connectAgent(url){
-            var path = window.$autonomous == '' ? 'ws://localhost:6789' : 'wss://' + window.$autonomous
-            if(!url) url = `${path}`
+            if(!url) url = `ws://${window.location.host}/autonomous`
             this.ws = new WebSocket(url);
         },
         releaseAgent(){

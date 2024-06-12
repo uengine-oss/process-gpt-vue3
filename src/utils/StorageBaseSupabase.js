@@ -11,6 +11,23 @@ class StorageBaseError extends Error {
 export default class StorageBaseSupabase {
     //extends StorageBase{
 
+    async isConnection() {
+        try {
+            const { data, error } = await window.$supabase.from('users').select().limit(1);
+            if (error) {
+                console.error('Supabase connection error:', error);
+                return false;
+            }
+            if (data) {
+                console.log('Supabase is connected.');
+                return true;
+            }
+        } catch (error) {
+            console.error('Error checking Supabase connection:', error);
+            return false;
+        }
+    }
+
     async signIn(userInfo) {
         try {
             const result = await window.$supabase.auth.signInWithPassword({
@@ -126,8 +143,11 @@ export default class StorageBaseSupabase {
                     role: data.role
                 }
             } else {
-                alert('로그인이 필요합니다');
-                // window.location.href = '/auth/login';
+                const isConnected = this.isConnection();
+                if (isConnected) {  // DB 연결된 경우
+                    alert('로그인이 필요합니다');
+                    // window.location.href = '/auth/login';
+                }
                 throw new StorageBaseError('error in getUserInfo', error, arguments);
             }
         } catch(e) {
