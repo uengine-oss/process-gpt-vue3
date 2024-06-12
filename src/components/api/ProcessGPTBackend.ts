@@ -215,9 +215,9 @@ class ProcessGPTBackend implements Backend {
             input['process_definition_id'] = defId.toLowerCase();
             
             var result: any = null;
-            var url = `/execution/complete/invoke`;
+            var url = `/execution/complete`;
             if (input.image != null) {
-                url = `/execution/vision-complete/invoke`;
+                url = `/execution/vision-complete`;
             }
             var req = {
                 input: input
@@ -755,7 +755,7 @@ class ProcessGPTBackend implements Backend {
                 input: input
             };
             const token = localStorage.getItem('accessToken');
-            let url = `/execution/complete/invoke`;
+            let url = `/execution/complete`;
             await axios.post(url, req, {
                 headers: {
                     'Content-Type': 'application/json',
