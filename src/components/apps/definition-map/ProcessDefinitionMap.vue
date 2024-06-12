@@ -49,7 +49,7 @@
                     <!-- 프로세스 정의 체계도 캔버스 확대 축소 버튼 및 아이콘 -->
                     <v-tooltip v-if="componentName != 'SubProcessDetail'" :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" class="ml-3 processVariables-zoom"
+                            <v-btn v-bind="props" class="ml-3"
                                 @click="$globalState.methods.toggleZoom()" icon variant="text" :size="24">
                                 <!-- 캔버스 확대 -->
                                 <Icon v-if="!$globalState.state.isZoomed" icon="material-symbols:zoom-out-map-rounded"

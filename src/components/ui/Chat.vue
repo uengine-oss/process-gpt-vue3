@@ -195,8 +195,8 @@
                                                 </v-card>
                                             </div>
                                             <div v-else :style="shouldDisplayUserInfo(message, index) ? '' : 'margin-top: -20px;'">
-                                                <div v-if="shouldDisplayUserInfo(message, index)"
-                                                    class="align-items-start gap-3 mb-1 w-100"
+                                                <v-row v-if="shouldDisplayUserInfo(message, index)"
+                                                    class="ma-0 pa-0"
                                                 >
                                                     <v-row class="ma-0 pa-0" style="margin-bottom:10px !important;">
                                                         <v-avatar style="margin-right:10px;">
@@ -211,21 +211,26 @@
                                                             {{ formatTime(message.timeStamp) }}
                                                         </div>
                                                     </v-row>
-                                                </div>
+                                                </v-row>
 
-                                                <div class="w-100 pb-5">
+                                                <div class="w-100 pb-5"
+                                                     :style="message.role == 'user' ? 'max-width:70% !important;' : ''"
+                                                >
                                                     <v-sheet v-if="message.image" class="mb-1">
                                                         <img :src="message.image" class="rounded-md" alt="pro" width="250" />
                                                     </v-sheet>
 
-                                                    <div class="progress-border" :class="{ 'animate': borderCompletedAnimated }">
+                                                    <div class="progress-border" :class="{ 'animate': borderCompletedAnimated }" 
+                                                        :style="getUserMessageStyle(message)"
+                                                    >
                                                         <template
                                                             v-if="message.role == 'system' && filteredMessages.length - 1 == index">
                                                             <div class="progress-border-span"
                                                                 :class="{ 'opacity': !borderCompletedAnimated }" v-for="n in 5"
                                                                 :key="n"></div>
                                                         </template>
-                                                        <v-sheet v-if="message.content" class="bg-lightsecondary rounded-md px-3 py-2"
+                                                        <v-sheet v-if="message.content" class="rounded-md px-3 py-2"
+                                                            :style="getOtherUserMessageColor(message)"
                                                             @mouseover="replyIndex = index" @mouseleave="replyIndex = -1">
                                                             <pre class="text-body-1" v-if="message.replyUserName">{{ message.replyUserName }}</pre>
                                                             <pre class="text-body-1" v-if="message.replyContent">{{ message.replyContent }}</pre>
@@ -675,6 +680,27 @@ export default {
         }
     },
     methods: {
+        getOtherUserMessageColor(message) {
+            if (message.role === 'user') {
+                return {
+                    backgroundColor: '#fff9c4'
+                };
+            } else {
+                return {
+                    backgroundColor: '#eeeeee'
+                };
+            }
+        },
+        getUserMessageStyle(message) {
+            if (message.role === 'user') {
+                return {
+                    display: 'flex',
+                    justifyContent: 'flex-start'
+                };
+            } else {
+                return {};
+            }
+        },
         recordingModeChange() {
             this.recordingMode = !this.recordingMode
             this.$globalState.methods.toggleRightZoom();
