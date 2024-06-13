@@ -3,7 +3,7 @@
         <v-card-item>
             <div class="align-center justify-space-between">
                 <div>
-                    <v-row class="ma-0 pa-0">
+                    <v-row class="ma-0 pa-0 pt-2">
                         <h5 class="text-h5 mb-1 font-weight-semibold">직원별 프로세스 실행실적</h5>
                         <v-spacer></v-spacer>
                         <v-text-field

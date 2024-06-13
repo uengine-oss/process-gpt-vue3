@@ -1,5 +1,5 @@
 <template>
-    <v-card elevation="10" style="background-color: rgba(255, 255, 255, 0)">
+    <v-card elevation="10">
         <AppBaseCard>
             <template v-slot:leftpart>
                 <div class="no-scrollbar">

@@ -61,8 +61,8 @@ body.highlighted-container-content .keditor-container-content:before {
 #keditor-sidebar {
   position: fixed;
   z-index: 100;
-  top: 14%;
-  height: 85%;
+  top: 123px;
+  height:calc(100vh - 155px);
   right: -255px;
   bottom: 0;
   background: #f0f0f0;
