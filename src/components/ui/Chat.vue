@@ -1029,14 +1029,14 @@ export default {
                 imgElement.src = event.target.result;
                 imgElement.onload = () => {
                     const canvas = document.createElement("canvas");
-                    const max_width = 300; // 최대 너비 설정
+                    const max_width = 200; // 최대 너비 설정
                     const scaleSize = max_width / imgElement.width;
                     canvas.width = max_width;
                     canvas.height = imgElement.height * scaleSize;
 
                     const ctx = canvas.getContext("2d");
                     ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
-                    const srcEncoded = ctx.canvas.toDataURL(imgElement, "image/jpeg", 0.3);
+                    const srcEncoded = ctx.canvas.toDataURL(imgElement, "image/jpeg", 0.2);
 
                     // 이미지 미리보기에 추가
                     var html = `<img src=${srcEncoded} width='100%' />`;
