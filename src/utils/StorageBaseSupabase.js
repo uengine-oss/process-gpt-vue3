@@ -699,4 +699,98 @@ export default class StorageBaseSupabase {
             return error;
         }
     }
+
+    async search(keyword) {
+        let results = [];
+        if (window.localStorage.getItem('isAdmin') === 'true') {
+            results = await Promise.all([
+                this.searchProcInst(keyword),
+                this.searchProcDef(keyword),
+                this.searchFormDef(keyword)
+            ]);
+            results = results.filter(item => item !== null);
+        } else {
+            results = await this.searchProcInst(keyword);
+        }
+        return results;
+    }
+
+    async searchProcInst(keyword) {
+        try {
+            const email = window.localStorage.getItem('email');
+            const { data, error } = await window.$supabase.from('proc_inst')
+                .select()
+                .or(`id.ilike.%${keyword}%,name.ilike.%${keyword}%`);
+            if (error) throw new StorageBaseError('error in searchProcInst', error, arguments);
+            
+            const filteredData = data.filter((item) => item.user_ids.includes(email));
+            if (filteredData && filteredData.length > 0) {
+                const list = filteredData.map((item) => ({
+                    title: item.name,
+                    href: `/instancelist/${btoa(item.id)}`
+                }));
+                const result = {
+                    type: 'instance',
+                    header: '프로세스 인스턴스',
+                    list: list
+                }
+                return result;
+            }
+            return null;
+        } catch (error) {
+            throw new StorageBaseError('error in searchProcInst', error, arguments);
+        }
+    }
+    
+    async searchProcDef(keyword) {
+        try {
+            const { data, error } = await window.$supabase.from('proc_def')
+                .select()
+                .or(`id.ilike.%${keyword}%,name.ilike.%${keyword}%`);
+            
+            if (error) throw new StorageBaseError('error in searchProcDef', error, arguments);
+            
+            if (data && data.length > 0) {
+                const list = data.map((item) => ({
+                    title: item.name,
+                    href: `/definitions/${item.id}`
+                }));
+                const result = {
+                    type: 'definition',
+                    header: '프로세스 정의',
+                    list: list
+                }
+                return result;
+            }
+            return null;
+        } catch (error) {
+            throw new StorageBaseError('error in searchProcDef', error, arguments);
+        }
+    }
+    
+    async searchFormDef(keyword) {
+        try {
+            const { data, error } = await window.$supabase.from('form_def')
+                .select()
+                .ilike('id', `%${keyword}%`);
+            
+            if (error) throw new StorageBaseError('error in searchFormDef', error, arguments);
+            
+            if (data && data.length > 0) {
+                const list = data.map((item) => ({
+                    title: item.id,
+                    href: `/ui-definitions/${item.id}`
+                }))
+                const result = {
+                    type: 'form',
+                    header: '화면 정의',
+                    list: list
+                }
+                return result;                
+            }
+            return null;
+        } catch (error) {
+            throw new StorageBaseError('error in searchFormDef', error, arguments);
+        }
+    }
 }
