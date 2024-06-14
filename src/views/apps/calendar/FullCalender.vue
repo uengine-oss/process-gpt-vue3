@@ -158,12 +158,19 @@ export default defineComponent({
       this.currentEvents = events;
     },
     async saveCalendar(option) {
+      const startDate = new Date(this.selectedEvent.start);
+      const endDate = new Date(this.selectedEvent.end);
+
+      if (option == 'update' && startDate > endDate) {
+        alert('종료일은 시작일 이후여야 합니다.');
+        return;
+      }
+
       this.updateModalShow = false;
       this.editMode = false;
 
-      const date = new Date(this.selectedEvent.start);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = startDate.getFullYear();
+      const month = String(startDate.getMonth() + 1).padStart(2, '0');
 
       if(option == 'update'){
         if(!this.calendarData){
@@ -179,13 +186,11 @@ export default defineComponent({
 
       let uid = localStorage.getItem('uid');
       if (!uid) {
-        // this.calendarData의 첫 번째 이벤트 객체의 id를 가져옵니다.
         const firstMonthKey = Object.keys(this.calendarData)[0];
         if (firstMonthKey && this.calendarData[firstMonthKey]) {
           const firstEventKey = Object.keys(this.calendarData[firstMonthKey])[0];
           if (firstEventKey && this.calendarData[firstMonthKey][firstEventKey]) {
             uid = this.calendarData[firstMonthKey][firstEventKey].id;
-            // 로컬 스토리지에 uid를 저장합니다.
             localStorage.setItem('uid', uid);
           }
         }

@@ -14,29 +14,60 @@ import { Icon } from '@iconify/vue';
                 <div class="hidden-md-and-down">
                     <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5 ">
                         <Icon icon="solar:magnifer-linear" height="22" width="22" />
-                        <v-text-field variant="plain" density="compact"
+                        <v-text-field v-model="searchKeyword" variant="plain" density="compact"
                             class="position-relative pt-0 ml-3 custom-placeholer-color" placeholder="검색"
-                            single-line hide-details>
-                        </v-text-field>
+                            single-line hide-details
+                        ></v-text-field>
                     </div>
                 </div>
                 <v-btn icon variant="text" class="custom-hover-primary ml-sm-3 search hidden-md-and-up" size="small">
                     <Icon icon="solar:magnifer-linear" height="22" width="22" />
                 </v-btn>
             </div>
-
         </template>
-        <v-sheet width="360" elevation="10" rounded="md">
-            <h5 class="text-h5 mt-4 px-5 pb-4">Quick Page Links</h5>
+
+        <!-- Search Result -->
+        <v-sheet v-if="searchResult.length > 0" width="360" elevation="10" rounded="md">
+            <h5 class="text-h5 mt-3 px-5 pb-3">검색 결과</h5>
             <perfect-scrollbar style="height: 380px">
                 <v-list class="pt-0 pb-5" lines="two">
-                    <v-list-item :value="item" v-for="(item, index) in searchSugg" :key="index" :to="item.href"
-                        color="primary" class="px-5 py-2">
-                        <h6 class="text-subtitle-1 font-weight-medium mb-1">{{ item.title }}</h6>
-                        <p class="text-subtitle-2 text-medium-emphasis">{{ item.href }}</p>
-                    </v-list-item>
+                    <div v-for="(item, index) in searchResult" :key="index" class="py-1">
+                        <v-divider inset></v-divider>
+                        <v-list-subheader class="text-caption">{{ item.header }}</v-list-subheader>
+                        <v-list-item :value="item" v-for="(item, index) in item.list" :key="index" :to="item.href"
+                            color="primary" class="px-5 py-2">
+                            <h6 class="text-subtitle-1 font-weight-medium mb-1">{{ item.title }}</h6>
+                            <p class="text-subtitle-2 text-medium-emphasis">{{ item.href }}</p>
+                        </v-list-item>
+                    </div>
                 </v-list>
             </perfect-scrollbar>
         </v-sheet>
     </v-menu>
 </template>
+
+<script>
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
+const storage = StorageBaseFactory.getStorage();
+
+export default {
+    data: () => ({
+        searchKeyword: "",
+        searchResult: []
+    }),
+    watch: {
+        async searchKeyword(newVal) {
+            this.searchResult = []
+            if (newVal.length > 0) {
+                await this.search(newVal)
+            }
+        }
+    },
+    methods: {
+        async search(keyword) {
+            this.searchResult = await storage.search(keyword)
+        }
+    },
+}
+</script>
+

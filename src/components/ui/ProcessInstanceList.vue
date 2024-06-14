@@ -1,8 +1,12 @@
 <template>
     <div>
         <NavItem class="leftPadding" :item="definitionMap" />
-        <NavCollapse v-if="!JMS" class="leftPadding" :item="runningInstances" :level="0" :type="'running-instances'" />
-        <NavCollapse v-if="!JMS" class="leftPadding" :item="completeInstances" :level="0" :type="'complete-instances'" />
+        <NavGroup v-if="!JMS" :item="runningInstances" :key="runningInstances.header" />
+        <template v-for="item in instanceList" :key="item.title">
+            <NavItem class="leftPadding" :item="item" />
+        </template>
+        <!-- <NavCollapse v-if="!JMS" class="leftPadding" :item="runningInstances" :level="0" :type="'running-instances'" /> -->
+        <!-- <NavCollapse v-if="!JMS" class="leftPadding" :item="completeInstances" :level="0" :type="'complete-instances'" /> -->
     </div>
 </template>
 
@@ -27,18 +31,22 @@ export default {
             BgColor: 'primary',
             to: "/definition-map",
         },
+        // runningInstances: {
+        //     title: 'runningInstance.title',
+        //     icon: 'solar:list-bold',
+        //     BgColor: 'primary',
+        //     children: [],
+        // },
+        // completeInstances: {
+        //     title: 'completeInstance.title',
+        //     icon: 'solar:list-bold',
+        //     BgColor: 'primary',
+        //     children: [],
+        // }
         runningInstances: {
-            title: 'runningInstance.title',
-            icon: 'solar:list-bold',
-            BgColor: 'primary',
-            children: [],
+            header: 'runningInstance.title',
         },
-        completeInstances: {
-            title: 'completeInstance.title',
-            icon: 'solar:list-bold',
-            BgColor: 'primary',
-            children: [],
-        }
+        instanceList: [],
     }),
     async created() {
         await this.loadInstances();
@@ -57,22 +65,22 @@ export default {
         async loadInstances() {
             let result = await backend.getInstanceList();
             if (!result) result = [];
-            this.runningInstances.children = result.map((item) => {
+            this.instanceList = result.map((item) => {
                 item = {
                     title: item.instName,
                     to: `/instancelist/${btoa(item.instId)}`
                 };
                 return item;
             });
-            let complatedResult = await backend.getCompleteInstanceList();
-            if (!complatedResult) complatedResult = [];
-            this.completeInstances.children = complatedResult.map((item) => {
-                item = {
-                    title: item.instName,
-                    to: `/instancelist/${btoa(item.instId)}`
-                };
-                return item;
-            });
+            // let complatedResult = await backend.getCompleteInstanceList();
+            // if (!complatedResult) complatedResult = [];
+            // this.completeInstances.children = complatedResult.map((item) => {
+            //     item = {
+            //         title: item.instName,
+            //         to: `/instancelist/${btoa(item.instId)}`
+            //     };
+            //     return item;
+            // });
         }
     }
 };
