@@ -30,6 +30,7 @@ export default {
         DefaultForm
     },
     props: {
+        definitionId: String,
         workItem: {
             type: Object,
             default: function () {
@@ -43,8 +44,7 @@ export default {
             },
         },
         isDryRun: Boolean,
-        dryRunActivity: Object,
-        isComplete: Boolean
+        dryRunWorkItem: Object,
     },
     data: () => ({
         inputItems: null,
@@ -61,27 +61,49 @@ export default {
     methods: {
         async init() {
             var me = this;
-            if (!me.workItem.activity.parameters) me.workItem.activity.parameters = [];
-            if (me.isComplete) {
-                me.outputItems = me.workItem.activity.parameters.filter((item) => item.direction.includes('IN'))
-                    .map((item) => ({ name: item.variable.name, value: item.variable.value }));
+            if(me.isDryRun){
+                let workitem = me.dryRunWorkItem
+                let activitiy = workitem.activity
+                me.inputItems = activitiy.parameters.filter((item) => item.direction.includes('OUT'))
+                        .map((item) => ({ name: item.variable.name, value: item.variable.value }));
             } else {
-                me.inputItems = me.workItem.activity.parameters.filter((item) => item.direction.includes('OUT'))
-                    .map((item) => ({ name: item.variable.name, value: item.variable.value }));
+                if (!me.workItem.activity.parameters) me.workItem.activity.parameters = [];
+                if (me.isCompleted) {
+                    me.outputItems = me.workItem.activity.parameters.filter((item) => item.direction.includes('IN'))
+                        .map((item) => ({ name: item.variable.name, value: me.workItem.parameterValues[item.variable.name]}));
+                } else {
+                    me.inputItems = me.workItem.activity.parameters.filter((item) => item.direction.includes('OUT'))
+                        .map((item) => ({ name: item.variable.name, value: item.variable.value }));
+                }
             }
         },
-        async completeTask() {
+    async completeTask() {
             var me = this;
             me.$try({
                 context: me,
                 action: async () => {
-                    let workItem = { parameterValues: {} };
-                    let parameterValues = this.inputItems.reduce((acc, item) => ({ ...acc, [item.name]: item.value }), {});
-                    if (parameterValues) workItem.parameterValues = parameterValues;
-                    if (me.workItem.execScope) workItem.execScope = me.workItem.execScope;
-                    await backend.putWorkItemComplete(me.$route.params.taskId, workItem);
-                    //
-                    me.$router.push(`/instancelist/${btoa(me.workItem.worklist.instId)}`);
+                    let value = { parameterValues: {} };
+                    let parameterValues = me.inputItems.reduce((acc, item) => ({ ...acc, [item.name]: item.value }), {});
+                    if (parameterValues) value.parameterValues = parameterValues;
+                   
+                    if(me.isDryRun) {
+                        let workItem = me.dryRunWorkItem
+                        if (workItem.execScope) value.execScope = workItem.execScope;
+
+                        let processExecutionCommand = {
+                            processDefinitionId: me.definitionId
+                        }
+                        
+                        await backend.startDryRun({
+                            processExecutionCommand: processExecutionCommand,
+                            workItem: value   
+                        });
+                        me.$emit('close')
+                    } else {
+                        if (me.workItem.execScope) value.execScope = me.workItem.execScope;
+                        await backend.putWorkItemComplete(me.$route.params.taskId, value);
+                        me.$router.push(`/instancelist/${btoa(me.workItem.worklist.instId)}`);  
+                    }
                 },
                 successMsg: '해당 업무 완료'
             });

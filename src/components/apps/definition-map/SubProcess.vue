@@ -5,7 +5,7 @@
         <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-2 font-weight-semibold">
             <v-row class="ma-0 pa-0">
                 <v-col :cols="enableEdit ? '6' : '12'" class="ma-0 pa-0 text-left align-center">
-                    <div>{{ value.label }}</div>
+                    <div>{{ value.name }}</div>
                 </v-col>
                 <v-col :cols="enableEdit ? '6' : ''" class="ma-0 pa-0">
                 <div class="ml-auto add-sub-process">
@@ -68,7 +68,7 @@ export default {
             if (this.definition && this.definition.id) {
                 url = `/definitions/${this.definition.id}`;
             } else {
-                url = `/definitions/chat?id=${this.value.id}&name=${this.value.label}`;
+                url = `/definitions/chat?id=${this.value.id}&name=${this.value.name}`;
             }
             window.open(url, '_blank'); // '_blank'는 새 탭에서 열기
         },

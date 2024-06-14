@@ -248,6 +248,9 @@ export default {
 
             businessObject.extensionElements = extensionElements;
 
+            if(businessObject.businessObject) {
+                businessObject.businessObject.processRef.isExecutable = true
+            }
 
             //TODO: 불필요
             // 요소 업데이트를 위해 모델링 컴포넌트 사용

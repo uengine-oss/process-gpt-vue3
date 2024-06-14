@@ -87,7 +87,8 @@
         "unlock": "Please press the lock to unlock it in order to check out (edit).",
         "addMega": "Mega Process",
         "addMajor": "Major Process",
-        "addSub": "Sub Process"
+        "addSub": "Sub Process",
+        "save" : "Save"
     },
     "processDefinition": {
         "title": "Process Definition",
