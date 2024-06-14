@@ -1,6 +1,6 @@
 <template>
     <div style="height: calc(100vh - 255px); padding: 20px" >
-        <URLForm :url="url" :isCompleted="isComplete"></URLForm>
+        <URLForm :url="url"></URLForm>
     </div>
 </template>
 
@@ -22,14 +22,12 @@ export default  {
             }
         },
         isDryRun: Boolean,
-        dryRunActivity: {
+        dryRunWorkItem: {
             type: Object,
             default: function () {
                 return {}
             }
         },
-
-        isComplete: Boolean
     },
     components: {
         URLForm
@@ -38,7 +36,7 @@ export default  {
         url(){
             var me = this
             if(me.isDryRun){
-                return me.dryRunActivity.url
+                return me.dryRunWorkItem.activity.tool.replace('urlHandler:','')
             } else {
                 return me.workItem.worklist.tool.replace('urlHandler:','')
             }

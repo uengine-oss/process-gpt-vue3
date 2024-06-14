@@ -19,15 +19,24 @@
                         hide-details></v-autocomplete>
                 </v-col>
             </v-row>
-            <v-row class="align-center" v-if="forms.length>0">
+            <v-row class="align-center" v-if="processVariable.type && processVariable.type == 'Form'">
                 <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
                     <v-label class=" font-weight-medium" >{{ $t('ProcessVariable.defaultValue') }}</v-label>
                 </v-col>
                 <v-col cols="12" sm="9">
-                    <v-autocomplete v-model="processVariable.defaultValue" 
+                    <ProcessDefinitionDisplay 
+                        v-model="processVariable.defaultValue"
+                        :file-extensions="['.form']"
+                        :options="{
+                            itemTitle: 'name',
+                            itemValue: 'id',
+                            hideDetails: true
+                        }"
+                    ></ProcessDefinitionDisplay>
+                    <!-- <v-autocomplete v-model="processVariable.defaultValue" 
                         :items="forms"
                         color="primary" variant="outlined"
-                        hide-details></v-autocomplete>
+                        hide-details></v-autocomplete> -->
                 </v-col>
             </v-row>
             <v-row class="align-center">
@@ -81,9 +90,13 @@
 <script>
 import axios from 'axios';
 import BackendFactory from '@/components/api/BackendFactory';
+import ProcessDefinitionDisplay from '@/components/designer/ProcessDefinitionDisplay.vue'
 
 export default {
     name: 'ProcessVariable',
+    components: {
+        ProcessDefinitionDisplay
+    },
     props: {
         mode: {
             type: String,

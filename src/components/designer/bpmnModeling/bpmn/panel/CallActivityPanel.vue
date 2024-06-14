@@ -2,16 +2,12 @@
     <div>
         <div class="included" style="margin-bottom: 22px">
             <div style="margin-bottom: 8px">Select Definition</div>
-            <v-autocomplete
-                v-model="copyUengineProperties.definitionId"
-                :items="definitions"
+            <ProcessDefinitionDisplay 
+                v-model="copyUengineProperties.definitionId" 
                 :disabled="isViewMode"
-                item-title="name"
-                color="primary"
-                label="Definition"
-                variant="outlined"
-                hide-details
-            ></v-autocomplete>
+                :file-extensions="['.bpmn']"
+                :options="{ hideDetails: true, itemTitle: 'name', itemValue: 'path' }"
+            ></ProcessDefinitionDisplay>
         </div>
         <div :key="definitionCnt" v-if="copyUengineProperties.definitionId">
             <div>
@@ -52,8 +48,13 @@ import { useBpmnStore } from '@/stores/bpmn';
 // import StorageBaseFactory from '@/utils/StorageBaseFactory';
 // const storage = StorageBaseFactory.getStorage()
 import BackendFactory from '@/components/api/BackendFactory';
+import ProcessDefinitionDisplay from '@/components/designer/ProcessDefinitionDisplay.vue';
+
 export default {
     name: 'call-activity-panel',
+    components: {
+        ProcessDefinitionDisplay
+    },
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
@@ -100,9 +101,9 @@ export default {
         let me = this;
         const backend = BackendFactory.createBackend();
         const store = useBpmnStore();
-        this.bpmnModeler = store.getModeler;
-        let def = this.bpmnModeler.getDefinitions();
-        if (!this.copyUengineProperties.variableBindings) this.copyUengineProperties.variableBindings = [];
+        me.bpmnModeler = store.getModeler;
+        let def = me.bpmnModeler.getDefinitions();
+        if (!me.copyUengineProperties.variableBindings) me.copyUengineProperties.variableBindings = [];
         const processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
         if (!processElement) {
             console.error('bpmn:Process element not found');
@@ -120,9 +121,9 @@ export default {
         // const value = await storage.list('proc_def');
         const value = await backend.listDefinition();
         if (value) {
-            this.definitions = value;
+            me.definitions = value;
         }
-        if (this.copyUengineProperties.definitionId) this.setDefinitionInfo(this.copyUengineProperties.definitionId);
+        if (me.copyUengineProperties.definitionId) me.setDefinitionInfo(me.copyUengineProperties.definitionId);
     },
     computed: {
         inputData() {
@@ -151,10 +152,11 @@ export default {
     },
     methods: {
         async setDefinitionInfo(definitionId) {
+            if(!definitionId) return;
             // definition 정보 호출
             const backend = BackendFactory.createBackend();
-            if (definitionId.includes('.')) {
-                definitionId = definitionId.split('.')[0];
+            if (definitionId.includes('.bpmn')) {
+                definitionId = definitionId.split('.bpmn')[0];
             }
             const def = await backend.getRawDefinition(definitionId, { type: 'bpmn' });
             // XML에서 role 정보 추출

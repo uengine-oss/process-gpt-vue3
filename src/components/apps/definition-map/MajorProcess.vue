@@ -1,11 +1,11 @@
 <template>
     <div class="mb-3" @mouseover="hover = true" @mouseleave="hover = false">
         <v-card class="align-center bg-lightsecondary pa-2 pr-3 pl-3" elevation="10"
-            style="border-radius: 10px !important; margin-bottom:5px;" @click="goProcess(parent.label, 'mega')">
+            style="border-radius: 10px !important; margin-bottom:5px;" @click="goProcess(parent.name, 'mega')">
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-1 font-weight-semibold">
                 <v-row class="ma-0 pa-0">
                     <v-col :cols="enableEdit ? '8' : '12'" class="ma-0 pa-0 text-left">
-                        <div>{{ value.label }}</div>
+                        <div>{{ value.name }}</div>
                     </v-col>
                     <v-col :cols="enableEdit ? '4' : ''" class="ma-0 pa-0">
                         <div class="ml-auto add-major-process">
@@ -104,14 +104,14 @@ export default {
     methods: {
         async addProcess(newProcess) {
             if (!newProcess.id) {
-                newProcess.id = `${this.parent.label}_${newProcess.label}`;
+                newProcess.id = `${this.parent.name}_${newProcess.name}`;
             }
             newProcess.id = newProcess.id.replace(/[/.]/g, '_');
-            var newSubProc = {
+           
+            this.value.sub_proc_list.push({
                 id: newProcess.id,
-                label: newProcess.name ? newProcess.name : newProcess.label,
-            };
-            this.value.sub_proc_list.push(newSubProc);
+                name: newProcess.name
+            });
         },
         openSubProcessDialog(processType) {
             this.processType = processType;

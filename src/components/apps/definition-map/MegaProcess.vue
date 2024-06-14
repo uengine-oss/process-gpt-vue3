@@ -1,11 +1,11 @@
 <template>
     <div class="w-100" @mouseover="hover = true" @mouseleave="hover = false">
         <v-card class="align-center pa-3 mb-3 bg-lightwarning" elevation="10" style="border-radius: 10px !important;"
-            @click="goProcess(value.label, 'mega')">
+            @click="goProcess(value.name, 'mega')">
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-h6 font-weight-semibold">
                 <v-row class="ma-0 pa-0">
                     <v-col :cols="enableEdit ? '8' : '12'" class="ma-0 pa-0 text-left">
-                        <div>{{ value.label }}</div>
+                        <div>{{ value.name }}</div>
                     </v-col>
                     <v-col :cols="enableEdit ? '4' : ''" class="ma-0 pa-0">
                         <div class="ml-auto add-major-process">
@@ -108,12 +108,11 @@ export default {
             if(this.value.major_proc_list.length != 0) {
                 id = this.value.major_proc_list[this.value.major_proc_list.length - 1].id +1
             }
-            var newMajorProc = {
+            this.value.major_proc_list.push({
                 id: id,
-                label: newProcess.label,
+                name: newProcess.name,
                 sub_proc_list: [],
-            };
-            this.value.major_proc_list.push(newMajorProc);
+            });
         },
         deleteProcess() {
             this.parent.mega_proc_list = this.parent.mega_proc_list.filter(item => item.id != this.value.id);
