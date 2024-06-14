@@ -31,13 +31,13 @@ import { Icon } from '@iconify/vue';
             <h5 class="text-h5 mt-3 px-5 pb-3">검색 결과</h5>
             <perfect-scrollbar style="height: 380px">
                 <v-list class="pt-0 pb-5" lines="two">
-                    <div v-for="(item, index) in searchResult" :key="index" class="py-1">
+                    <div v-for="item in searchResult" :key="item.type" class="py-1">
                         <v-divider inset></v-divider>
                         <v-list-subheader class="text-caption">{{ item.header }}</v-list-subheader>
                         <v-list-item :value="item" v-for="(item, index) in item.list" :key="index" :to="item.href"
                             color="primary" class="px-5 py-2">
                             <h6 class="text-subtitle-1 font-weight-medium mb-1">{{ item.title }}</h6>
-                            <p class="text-subtitle-2 text-medium-emphasis">{{ item.href }}</p>
+                            <p class="text-subtitle-2 text-medium-emphasis">{{ summarize(item.matches[0]) }}</p>
                         </v-list-item>
                     </div>
                 </v-list>
@@ -66,6 +66,14 @@ export default {
     methods: {
         async search(keyword) {
             this.searchResult = await storage.search(keyword)
+        },
+        summarize(text) {
+            const startIndex = text.indexOf(this.searchKeyword);
+            if (startIndex !== -1) {
+                const endIndex = Math.min(startIndex + 20, text.length);
+                return text.substring(startIndex, endIndex) + (endIndex < text.length ? '...' : '');
+            }
+            return text.length > 20 ? text.substring(0, 20) + '...' : text;
         }
     },
 }
