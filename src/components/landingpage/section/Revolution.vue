@@ -1,3 +1,8 @@
+<script setup lang="ts">
+import { ref } from 'vue';
+
+const isTenantServer = ref(window.$isTenantServer);
+</script>
 <template>
     <div class="revotion bg-bglight py-14">
         <v-container class="maxWidth ">
@@ -14,7 +19,7 @@
                     <div class="mt-6 d-sm-flex gap-3 justify-center" data-aos="fade-up" data-aos-delay="800"
                         data-aos-duration="1000">
 
-                        <v-btn to="/dashboard2" color="primary" rounded="pill"
+                        <v-btn :to="isTenantServer ? '/tenant/manage' : '/dashboard2'" color="primary" rounded="pill"
                             class="mt-sm-0 mt-4 lp-btn-shadow m-btn-full btn-custom-lg mb-sm-0 mb-4 cp-start" size="large"
                         >{{ $t('mainPage.start') }}
                         </v-btn>

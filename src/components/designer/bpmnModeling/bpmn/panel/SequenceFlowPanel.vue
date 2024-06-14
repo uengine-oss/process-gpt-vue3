@@ -7,6 +7,16 @@
             />
             <!-- {{ copyUengineProperties.condition }} -->
         </div>
+        <br>
+        <div>{{ $t('BpnmPropertyPanel.priority') }}</div>
+        <div>
+            <v-text-field 
+                v-model="copyUengineProperties.priority" 
+                :disabled="isViewMode" 
+                ref="cursor"
+                @input="updatePriority($event.target.value)"
+            ></v-text-field>
+        </div>
         <!-- <v-text-field v-model="condition.key" />
         <v-text-field v-model="condition.value" /> -->
         <!-- <v-btn @click="addCondition">조건 추가</v-btn> -->
@@ -92,18 +102,26 @@ export default {
             this.copyUengineProperties.condition = condition;
             this.$emit('update:uengineProperties', this.copyUengineProperties)
         },
+        updatePriority(priority) {
+            if(priority && priority.length > 0) {
+                this.copyUengineProperties.priority = priority;
+                this.$emit('update:uengineProperties', this.copyUengineProperties)
+            }else {
+                delete this.copyUengineProperties.priority;
+            }
+        },
         beforeSave() {
             if (!this.name || this.name == '') {
-                if (this.copyUengineProperties.condition.length > 0) {
-                    var expression;
-                    if (this.copyUengineProperties.condition[0].expression) {
-                        expression = this.copyUengineProperties.condition[0].expression;
-                    } else {
-                        expression = this.copyUengineProperties.condition[0].conditionsVt[0].expression;
+                var expression;
+                if (Array.isArray(this.copyUengineProperties.condition)) {
+                    if (this.copyUengineProperties.condition.length > 0) {
+                        expression = this.copyUengineProperties.condition[0].conditionsVt[0];
                     }
-                    const name = expression.key + " " + expression.comparator + " " + expression.value;
-                    this.$emit('update:name', name);
+                }else{
+                    expression = this.copyUengineProperties.condition
                 }
+                const name = expression.key + " " + expression.condition + " " + expression.value;
+                this.$emit('update:name', name);
             }
         }
     }

@@ -92,14 +92,12 @@ export default {
             if(me.sourceBuffer == null) {
                 me.sourceBuffer = me.mediaSource.addSourceBuffer('audio/mpeg');
             }
-            await this.$setSupabaseEndpoint();
-            var url = window.$backend == '' ? 'http://localhost:8000' : window.$backend;
             var input = {
                 query: response,
-                chat_room_id: me.chatRoomId,
+                chat_room_id: me.chatRoomId
             }
             const token = localStorage.getItem('accessToken');
-            fetch(`${url}/audio-stream`, {
+            fetch(`/execution/audio-stream`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'text/plain',
