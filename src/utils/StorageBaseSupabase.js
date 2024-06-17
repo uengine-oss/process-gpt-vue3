@@ -142,12 +142,12 @@ export default class StorageBaseSupabase {
                     uid: data.id,
                     role: data.role
                 }
-            } else {
-                const isConnected = this.isConnection();
-                if (isConnected) {  // DB 연결된 경우
-                    alert('로그인이 필요합니다');
-                    // window.location.href = '/auth/login';
-                }
+            } else if (error) {
+                // const isConnected = this.isConnection();
+                // if (isConnected) {  // DB 연결된 경우
+                //     alert('로그인이 필요합니다');
+                //     // window.location.href = '/auth/login';
+                // }
                 throw new StorageBaseError('error in getUserInfo', error, arguments);
             }
         } catch(e) {
@@ -697,6 +697,171 @@ export default class StorageBaseSupabase {
         } catch (error) {
             console.error('Error in callProcedure:', error);
             return error;
+        }
+    }
+
+    async search(keyword) {
+        let results = [];
+        const isAdmin = window.localStorage.getItem('isAdmin') === 'true';
+        if (isAdmin) {
+            results = await Promise.all([
+                this.searchProcInst(keyword),
+                this.searchProcDef(keyword),
+                this.searchFormDef(keyword),
+                this.searchChat(keyword)
+            ]);
+            results = results.filter(item => item !== null);
+        } else {
+            const procInst = await this.searchProcInst(keyword);
+            if (procInst) {
+                results.push(procInst);
+            }
+        }
+        return results;
+    }
+
+    async searchProcInst(keyword) {
+        try {
+            const email = window.localStorage.getItem('email');
+            const { data, error } = await window.$supabase.from('proc_inst')
+                .select()
+                .or(`id.ilike.%${keyword}%,name.ilike.%${keyword}%,variables_data.ilike.%${keyword}%`);
+            if (error) throw new StorageBaseError('error in searchProcInst', error, arguments);
+            
+            const filteredData = data.filter((item) => item.user_ids.includes(email));
+            if (filteredData && filteredData.length > 0) {
+                const list = filteredData.map((item) => {
+                    const matchingColumns = [];
+                    if (item.id && item.id.toLowerCase().includes(keyword.toLowerCase())) {
+                        matchingColumns.push(item.id);
+                    }
+                    if (item.name && item.name.toLowerCase().includes(keyword.toLowerCase())) {
+                        matchingColumns.push(item.name);
+                    }
+                    if (item.variables_data && item.variables_data.toLowerCase().includes(keyword.toLowerCase())) {
+                        matchingColumns.push(item.variables_data);
+                    }
+                    return {
+                        title: item.name,
+                        href: `/instancelist/${btoa(item.id)}`,
+                        matches: matchingColumns
+                    };
+                });
+                const result = {
+                    type: 'instance',
+                    header: '프로세스 인스턴스',
+                    list: list
+                }
+                return result;
+            }
+            return null;
+        } catch (error) {
+            return null;
+        }
+    }
+    
+    async searchProcDef(keyword) {
+        try {
+            const { data, error } = await window.$supabase.from('proc_def')
+                .select()
+                .or(`id.ilike.%${keyword}%,name.ilike.%${keyword}%,bpmn.ilike.%${keyword}%`);
+            
+            if (error) throw new StorageBaseError('error in searchProcDef', error, arguments);
+            
+            if (data && data.length > 0) {
+                const list = data.map((item) => {
+                    const matchingColumns = [];
+                    if (item.id && item.id.toLowerCase().includes(keyword.toLowerCase())) {
+                        matchingColumns.push(item.id);
+                    }
+                    if (item.name && item.name.toLowerCase().includes(keyword.toLowerCase())) {
+                        matchingColumns.push(item.name);
+                    }
+                    if (item.bpmn && item.bpmn.toLowerCase().includes(keyword.toLowerCase())) {
+                        matchingColumns.push(item.bpmn);
+                    }
+                    return {
+                        title: item.name,
+                        href: `/definitions/${item.id}`,
+                        matches: matchingColumns
+                    };
+                });
+                const result = {
+                    type: 'definition',
+                    header: '프로세스 정의',
+                    list: list
+                }
+                return result;
+            }
+            return null;
+        } catch (error) {
+            return null;
+        }
+    }
+    
+    async searchFormDef(keyword) {
+        try {
+            const { data, error } = await window.$supabase.from('form_def')
+                .select()
+                .ilike('id', `%${keyword}%`);
+            
+            if (error) throw new StorageBaseError('error in searchFormDef', error, arguments);
+            
+            if (data && data.length > 0) {
+                const list = data.map((item) => {
+                    const matchingColumns = [];
+                    if (item.id && item.id.toLowerCase().includes(keyword.toLowerCase())) {
+                        matchingColumns.push(item.id);
+                    }
+                    return {
+                        title: item.id,
+                        href: `/ui-definitions/${item.id}`,
+                        matches: matchingColumns
+                    };
+                });
+                const result = {
+                    type: 'form',
+                    header: '화면 정의',
+                    list: list
+                }
+                return result;                
+            }
+            return null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    async searchChat(keyword) {
+        try {
+            const { data, error } = await window.$supabase.from('chat_rooms')
+                .select()
+                .or(`name.ilike.%${keyword}%`);
+            
+            if (error) throw new StorageBaseError('error in searchChat', error, arguments);
+
+            if (data && data.length > 0) {
+                const list = data.map((item) => {
+                    const matchingColumns = [];
+                    if (item.name && item.name.toLowerCase().includes(keyword.toLowerCase())) {
+                        matchingColumns.push(item.name);
+                    }
+                    return {
+                        title: item.name,
+                        href: `/chats`,
+                        matches: matchingColumns
+                    };
+                });
+                const result = {
+                    type: 'chat',
+                    header: '채팅',
+                    list: list
+                }
+                return result;                
+            }
+            return null;
+        } catch (error) {
+            return null;
         }
     }
 }

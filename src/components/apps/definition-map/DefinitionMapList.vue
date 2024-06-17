@@ -71,7 +71,7 @@ export default {
             }
             var newMegaProc = {
                 id: id,
-                label: newProcess.label,
+                name: newProcess.name,
                 major_proc_list: [],
             };
             this.value.mega_proc_list.push(newMegaProc);

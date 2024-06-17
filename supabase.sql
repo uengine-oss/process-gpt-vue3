@@ -122,6 +122,7 @@ create table
     messages jsonb null,
     agent_messages jsonb null,
     status text null,
+    variables_data text null,
     constraint proc_inst_pkey primary key (id)
   ) tablespace pg_default;
 

@@ -445,6 +445,10 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
+    async startDryRun(command: object){
+        const response = await axiosInstance.post(`/dry-run`,command);
+        return response.data;
+    }
 }
 
 export default UEngineBackend;

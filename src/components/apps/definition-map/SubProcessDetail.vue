@@ -5,12 +5,12 @@
         <div class="pa-2 d-flex align-center">
             <div v-if="selectedProc.mega" class="d-flex align-center cursor-pointer"
                 @click="goProcess()">
-                <h6 class="text-h6 font-weight-semibold">{{ selectedProc.mega.label }}</h6>
+                <h6 class="text-h6 font-weight-semibold">{{ selectedProc.mega.name }}</h6>
                 <v-icon>mdi-chevron-right</v-icon>
             </div>
             <div v-if="selectedProc.major" class="d-flex align-center cursor-pointer"
-                @click="goProcess(selectedProc.mega.label, 'mega')">
-                <h6 class="text-h6 font-weight-semibold">{{ selectedProc.major.label }}</h6>
+                @click="goProcess(selectedProc.mega.name, 'mega')">
+                <h6 class="text-h6 font-weight-semibold">{{ selectedProc.major.name }}</h6>
                 <div>
                     <v-icon class="cursor-pointer">mdi-chevron-right</v-icon>
                     <v-menu activator="parent">
@@ -18,7 +18,7 @@
                             <v-list-item v-for="sub in selectedProc.major.sub_proc_list" :key="sub.id"
                                 @click="goProcess(sub.id, 'sub')">
                                 <v-list-item-title>
-                                    {{ sub.label }}
+                                    {{ sub.name }}
                                 </v-list-item-title>
                             </v-list-item>
                         </v-list>
@@ -28,7 +28,7 @@
             <div v-if="processDefinition" class="d-flex align-center"
                 @click="updateBpmn(processDefinition.bpmn); subProcessBreadCrumb = []">
                 <h6 class="text-h6 font-weight-semibold">
-                    {{ processDefinition && processDefinition.name ? processDefinition.name : processDefinition.label }}
+                    {{ processDefinition ? processDefinition.name : "" }}
                 </h6>
             </div>
             <div v-for="(subProcess, idx) in subProcessBreadCrumb" :key="idx">
@@ -85,7 +85,8 @@
             <div v-else></div>
         </v-card-text>
         <v-dialog v-model="executeDialog">
-            <ProcessExecuteDialog :definitionId="processDefinition.id" @close="executeDialog = false"></ProcessExecuteDialog>
+            <!-- <ProcessExecuteDialog :definitionId="processDefinition.id" @close="executeDialog = false"></ProcessExecuteDialog> -->
+            <dry-run-process :definitionId="processDefinition.id"  @close="executeDialog = false"></dry-run-process>
         </v-dialog>
     </v-card>
 </template>
@@ -93,6 +94,7 @@
 <script>
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import ProcessExecuteDialog from '@/components/apps/definition-map/ProcessExecuteDialog.vue';
+import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
 import BaseProcess from './BaseProcess.vue'
 
 import BackendFactory from '@/components/api/BackendFactory';
@@ -100,7 +102,8 @@ import BackendFactory from '@/components/api/BackendFactory';
 export default {
     components: {
         ProcessDefinition,
-        ProcessExecuteDialog
+        ProcessExecuteDialog,
+        'dry-run-process': DryRunProcess
     },
     mixins: [BaseProcess],
     props: {
@@ -167,9 +170,10 @@ export default {
             var me = this;
             me.$try({
                action: async () => {
+                    const backend = BackendFactory.createBackend();  
+
                     me.onLoad = false;
-                    const defId = obj.id;
-                    const backend = BackendFactory.createBackend();
+                    if(!obj.name) obj.name = obj.id;
                     let processMap;
                     if (me.value && me.value.mega_proc_list && me.value.mega_proc_list.length > 0) {
                         processMap = me.value;
@@ -179,7 +183,7 @@ export default {
                     processMap.mega_proc_list.forEach(mega => {
                         mega.major_proc_list.forEach(major => {
                             major.sub_proc_list.forEach(sub => {
-                                if (sub.id == defId) {
+                                if (sub.id == obj.id) {
                                     obj = sub;
                                     this.selectedProc.mega = mega;
                                     this.selectedProc.major = major;
@@ -187,22 +191,22 @@ export default {
                             })
                         })
                     })
+                    // defObj.id.replace(/_/g, '/');
                     // const defInfo = await backend.getRawDefinition(defId, null);
-                    const defInfo = await backend.getRawDefinition(defId,  { type: 'bpmn' });
-                    if (defInfo && !defInfo.code) {
-                        this.processDefinition = defInfo;
-                        this.bpmn = defInfo.bpmn
+                    if(obj.id){
+                        let path = obj.id.replace(/_/g, '/');
+                        me.bpmn = await backend.getRawDefinition(path, { type: 'bpmn' });
                     } else {
-                        this.processDefinition = obj;
-                        this.bpmn = null;
+                        me.bpmn = null;
                     }
+                    me.processDefinition = obj
                     me.onLoad = true;
                 }
             });
         },
         editProcessModel() {
             if (this.processDefinition && this.processDefinition.id) {
-                this.$router.push(`/definitions/chat?id=${this.processDefinition.id}&name=${this.processDefinition.label}`);
+                this.$router.push(`/definitions/chat?id=${this.processDefinition.id}&name=${this.processDefinition.name}`);
             }
         },
         capture() {

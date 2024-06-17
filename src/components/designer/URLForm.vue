@@ -17,11 +17,7 @@ export default {
             default: function () {
                 return null
             },
-        },
-        isCompleted: {
-            type: Boolean,
-            default: false
-        }   
+        }
     },
 }
 </script>

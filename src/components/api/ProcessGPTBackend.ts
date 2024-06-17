@@ -215,9 +215,9 @@ class ProcessGPTBackend implements Backend {
             input['process_definition_id'] = defId.toLowerCase();
             
             var result: any = null;
-            var url = `/execution/complete/invoke`;
+            var url = `/execution/complete`;
             if (input.image != null) {
-                url = `/execution/vision-complete/invoke`;
+                url = `/execution/vision-complete`;
             }
             var req = {
                 input: input
@@ -303,6 +303,7 @@ class ProcessGPTBackend implements Backend {
 
     async getWorkItem(taskId: string) {
         try {
+            if (!taskId) return
             const data = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
             const defInfo = await this.getRawDefinition(data.proc_def_id, null);
             const inst = await this.getInstance(data.proc_inst_id);
@@ -755,7 +756,7 @@ class ProcessGPTBackend implements Backend {
                 input: input
             };
             const token = localStorage.getItem('accessToken');
-            let url = `/execution/complete/invoke`;
+            let url = `/execution/complete`;
             await axios.post(url, req, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -816,11 +817,12 @@ class ProcessGPTBackend implements Backend {
     }
 
     async fetchInstanceListByStatus(status: string): Promise<any[]> {
-        let list = await storage.list('proc_inst', { match: { status: status } });
-        const email = localStorage.getItem("email");
-        list = list.filter((item: any) => item.user_ids.includes(email));
-        if (list && list.length > 0) {
-            list = list.map((item: any) => {
+        const list = await storage.list('proc_inst', { match: { status: status } });
+        const email = window.localStorage.getItem("email");
+        const filteredData = list.filter((item: any) => item.user_ids.includes(email));
+
+        if (filteredData && filteredData.length > 0) {
+            const result = filteredData.map((item: any) => {
                 return {
                     instId: item.id,
                     instName: item.name,
@@ -828,8 +830,9 @@ class ProcessGPTBackend implements Backend {
                     defId: item.id.split(".")[0]
                 }
             });
+            return result;
         }
-        return list;
+        return [];
     }
 
     async getInstanceList() {
@@ -892,6 +895,15 @@ class ProcessGPTBackend implements Backend {
     }
 
     async getDryRunInstance(defPath: string) {
+        try {
+            return null;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async startDryRun(command: object) {
         try {
             return null;
         } catch (error) {

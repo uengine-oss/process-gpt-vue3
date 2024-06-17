@@ -11,7 +11,7 @@
                 
                 <!-- buttons -->
                 <div class="ml-auto d-flex">
-                    <v-tooltip location="bottom" v-if="!lock && isAdmin" >
+                    <v-tooltip location="bottom" v-if="useLock && !lock && isAdmin" >
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" icon variant="text" size="24" class="ml-3 cp-unlock" @click="openAlertDialog">
                                 <LockIcon width="24" height="24" />
@@ -20,7 +20,7 @@
                         <span>{{ $t('processDefinitionMap.unlock') }}</span>
                     </v-tooltip>
 
-                    <v-tooltip location="bottom" v-if="lock && isAdmin && userName == editUser">
+                    <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName == editUser">
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" icon variant="text" size="24" class="cp-lock" @click="openAlertDialog">
                                 <LockOpenIcon width="24" height="24" />
@@ -29,7 +29,7 @@
                         <span>{{ $t('processDefinitionMap.lock') }}</span>
                     </v-tooltip>
 
-                    <v-tooltip location="bottom" v-if="lock && isAdmin && userName != editUser">
+                    <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName != editUser">
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" icon variant="text" size="24" class="cp-lock" @click="openAlertDialog">
                                 <LockIcon width="24" height="24" />
@@ -38,7 +38,16 @@
                         <span>{{ $t('processDefinitionMap.lock') }}</span>
                     </v-tooltip>
 
-                    <span v-if="lock && userName && userName != editUser" class="ml-1">
+                    <v-tooltip location="bottom" v-if="!useLock">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" icon variant="text" size="24" class="cp-lock" @click="saveProcess()">
+                                <Icon icon="material-symbols:save-outline" width="24" height="24" />
+                            </v-btn>
+                        </template>
+                        <span>{{ $t('processDefinitionMap.save') }}</span>
+                    </v-tooltip>
+
+                    <span v-if="useLock && lock && userName && userName != editUser" class="ml-1">
                         {{ editUser }} 님이 수정 중 입니다.
                     </span>
 
@@ -139,11 +148,7 @@ export default {
     }),
     computed: {
         useLock() {
-            if (window.$mode == "ProcessGPT") {
-                return true;
-            } else {
-                return false;
-            }
+            return window.$mode == "ProcessGPT"
         }
     },
     async created() {
@@ -158,6 +163,10 @@ export default {
                 await me.getProcessMap();
                 if (me.useLock) {
                     await me.checkedLock();
+                } else {
+                    // uEngine
+                    me.editUser = me.userName;
+                    me.enableEdit = true;
                 }
             },
         });
@@ -226,12 +235,11 @@ export default {
             }
         },
         addProcess(newProcess) {
-            var newMegaProc = {
+            this.value.mega_proc_list.push({
                 id: newProcess.id,
-                label: newProcess.label,
+                name: newProcess.name,
                 major_proc_list: [],
-            };
-            this.value.mega_proc_list.push(newMegaProc);
+            });
         },
         async saveProcess() {
             await backend.putProcessDefinitionMap(this.value);
@@ -285,43 +293,54 @@ export default {
             this.closeAlertDialog();
         },
         async openAlertDialog() {
-            return new Promise(async (resolve) => {
-                if (this.isAdmin) {
-                    this.storage = StorageBaseFactory.getStorage();
-                    const lockObj = await this.storage.getObject('lock/process-map', { key: 'id' });
-                    if (lockObj && lockObj.id && lockObj.user_id) {
-                        this.lock = true;
-                        this.editUser = lockObj.user_id;
-                        if (this.editUser == this.userName) {
-                            this.alertDialog = true;
-                            this.alertMessage = '수정된 내용을 저장 및 체크인 하시겠습니까?';
+            var me = this
+            me.$try({
+                context: me,
+                action: async () => {
+                    if (this.isAdmin) {
+
+                        if(me.useLock){
+                            // GPT 모드인 경우
+                            me.storage = StorageBaseFactory.getStorage();
+                            const lockObj = await me.storage.getObject('lock/process-map', { key: 'id' });
+                            if (lockObj && lockObj.id && lockObj.user_id) {
+                                me.lock = true;
+                                me.editUser = lockObj.user_id;
+                                if (me.editUser == me.userName) {
+                                    me.alertDialog = true;
+                                    me.alertMessage = '수정된 내용을 저장 및 체크인 하시겠습니까?';
+                                } else {
+                                    me.alertDialog = true;
+                                    me.alertMessage = `현재 ${me.editUser} 님께서 수정 중입니다. 체크인 하는 경우 ${me.editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크인 하시겠습니까?`;
+                                    me.enableEdit = false;
+                                }
+                                me.alertType = 'checkin';
+                                // 사용자의 응답을 기다림
+                                me.$nextTick(() => {
+                                    // 다이얼로그가 활성화된 후, 사용자의 응답을 처리
+                                    const confirmButton = document.getElementById('confirmButton'); // 확인 버튼의 ID
+                                    const cancelButton = document.getElementById('cancelButton'); // 취소 버튼의 ID
+                                    confirmButton.onclick = () => resolve(true);
+                                    cancelButton.onclick = () => resolve(false);
+                                });
+                            } else {
+                                me.lock = false;
+                                me.enableEdit = false;
+                                me.alertDialog = true;
+                                me.alertMessage = `프로세스 정의 체계도를 수정하시겠습니까?`;
+                                me.alertType = 'checkout';
+                                // 사용자의 응답을 기다림
+                                me.$nextTick(() => {
+                                    const confirmButton = document.getElementById('confirmButton');
+                                    const cancelButton = document.getElementById('cancelButton');
+                                    confirmButton.onclick = () => resolve(true);
+                                    cancelButton.onclick = () => resolve(false);
+                                });
+                            }
                         } else {
-                            this.alertDialog = true;
-                            this.alertMessage = `현재 ${this.editUser} 님께서 수정 중입니다. 체크인 하는 경우 ${this.editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크인 하시겠습니까?`;
-                            this.enableEdit = false;
-                        }
-                        this.alertType = 'checkin';
-                        // 사용자의 응답을 기다림
-                        this.$nextTick(() => {
-                            // 다이얼로그가 활성화된 후, 사용자의 응답을 처리
-                            const confirmButton = document.getElementById('confirmButton'); // 확인 버튼의 ID
-                            const cancelButton = document.getElementById('cancelButton'); // 취소 버튼의 ID
-                            confirmButton.onclick = () => resolve(true);
-                            cancelButton.onclick = () => resolve(false);
-                        });
-                    } else {
-                        this.lock = false;
-                        this.enableEdit = false;
-                        this.alertDialog = true;
-                        this.alertMessage = `프로세스 정의 체계도를 수정하시겠습니까?`;
-                        this.alertType = 'checkout';
-                        // 사용자의 응답을 기다림
-                        this.$nextTick(() => {
-                            const confirmButton = document.getElementById('confirmButton');
-                            const cancelButton = document.getElementById('cancelButton');
-                            confirmButton.onclick = () => resolve(true);
-                            cancelButton.onclick = () => resolve(false);
-                        });
+                            // Uegnine 모드인 경우
+                            me.lock = false;
+                        }                        
                     }
                 }
             });

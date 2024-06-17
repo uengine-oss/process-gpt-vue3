@@ -2,7 +2,7 @@
     <v-row class="ma-0 pa-0 task-btn" style="right: 40px">
         <v-spacer></v-spacer>
         <div class="from-work-item-pc" v-if="workItemStatus == 'NEW' || workItemStatus == 'DRAFT'">
-            <v-btn @click="saveTask()" color="#0085DB" style="color: white" rounded>중간 저장</v-btn>
+            <v-btn v-if="!isDryRun" @click="saveTask()" color="#0085DB" style="color: white" rounded>중간 저장</v-btn>
             <v-btn @click="$try(completeTask, null, {sucessMsg: '워크아이템 완료'})" variant="tex" rounded>제출 완료</v-btn>
         </div>
         <div class="from-work-item-mobile" v-if="workItemStatus == 'NEW' || workItemStatus == 'DRAFT'">
@@ -42,7 +42,9 @@ const backend = BackendFactory.createBackend();
 export default {
     components: {
         DynamicForm
-    },props: {
+    },
+    props: {
+        definitionId: String,
         workItem: {
             type: Object,
             default: function () {
@@ -56,10 +58,11 @@ export default {
             }
         },
         isDryRun: Boolean,
-        dryRunActivity: Object
+        dryRunWorkItem: Object
     },
     data: () => ({
         html: null,
+        formDefId: null,
         formData: {}
     }),
     computed: {
@@ -80,23 +83,17 @@ export default {
     methods: {
         async init() {
             var me = this;
-            let formName = me.workItem.worklist.tool.split(':')[1];
-            // let processVariables = await backend.getProcessVariables(me.workItem.worklist.instId);
-            me.html = await backend.getRawDefinition(formName, { type: 'form' });
-            // if (me.workItemStatus == 'COMPLETED' || me.workItemStatus == 'DONE') {
-            this.loadForm()
-            // }
-
-            // if (me.workItem.activity.previousActivities.length > 0) {
-            //     let previousActivity = me.workItem.activity.previousActivities[0];
-            //     let previousVariableForHtmlFormContext = previousActivity.variableForHtmlFormContext;
-            //     if (previousVariableForHtmlFormContext) {
-            //         let mappingValueMap = processVariables[`:${previousVariableForHtmlFormContext.name}`].valueMap;
-            //         Object.entries(mappingValueMap).forEach(([key, value]) => {
-            //             this.formData[key] = value;
-            //         });
-            //     }
-            // }
+            let formName = null;
+            if(me.isDryRun) {
+                me.formDefId = me.dryRunWorkItem.activity.tool.split(':')[1];
+            } else {
+                me.formDefId = me.workItem.worklist.tool.split(':')[1];
+            }
+            if(!me.formDefId) return;
+            me.html = await backend.getRawDefinition(me.formDefId, { type: 'form' });
+            if(!me.isDryRun) {
+                me.loadForm()
+            }
         },
         async loadForm(){
             var me = this;
@@ -107,8 +104,6 @@ export default {
             let variable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName);
             if (variable && variable.valueMap) {
                 me.formData = variable.valueMap;
-            } else {
-                me.formData = {};
             }
         },
         async saveTask() {
@@ -139,14 +134,17 @@ export default {
                 successMsg: '중간 저장 완료'
             });
         },
-        async saveForm(){
+        async saveForm(variables){
             let me = this;
 
             let varName = me.workItem.activity.variableForHtmlFormContext.name;
-            let variable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName);
-            if (!variable) variable = {};
+            let variable = {};
+            if(!me.isDryRun){
+                variable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName);
+            } 
+
             variable._type = 'org.uengine.contexts.HtmlFormContext';
-            variable.valueMap = this.formData;
+            variable.valueMap = me.formData;
             Object.keys(variable.valueMap).forEach((key) => {
                 if (typeof variable.valueMap[key] == 'object') {
                     variable.valueMap[key].forEach((item) => {
@@ -155,22 +153,28 @@ export default {
                 }
             });
             variable.valueMap._type = 'java.util.HashMap';
-            await backend.setVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName, variable);
 
+            if(me.isDryRun) {
+                if(!variables) variables = {}
+                variable.formDefId = me.formDefId
+                variable.filePath = `${me.formDefId}.form`
+                variables[varName] = JSON.stringify(variable);
+            } else {
+                await backend.setVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName, variable);
+            }
         },
         async completeTask() {
             let me = this
             // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드
             let workItem = { parameterValues: {} };
+            let variables = {}
 
             if($mode=="uEngine")
-                await me.saveForm()
+                await me.saveForm(variables)
             
             if($mode=="ProcessGPT"){
                 workItem.parameterValues = me.formData
             }
-
-            if (me.workItem.execScope) workItem.execScope = me.workItem.execScope;
 
             ///////////////////////////////////
 
@@ -183,9 +187,23 @@ export default {
             }
             //#endregion
 
-            await backend.putWorkItemComplete(me.$route.params.taskId, workItem);
-            me.$router.push('/todolist');
-        
+            if (me.workItem.execScope) workItem.execScope = me.workItem.execScope;
+
+            if(me.isDryRun){
+                let processExecutionCommand = {
+                    processDefinitionId: me.definitionId
+                }
+                        
+                await backend.startDryRun({
+                    processExecutionCommand: processExecutionCommand,
+                    workItem: workItem,
+                    variables: variables
+                });
+                me.$emit('close')
+            } else {  
+                await backend.putWorkItemComplete(me.$route.params.taskId, workItem);
+                me.$router.push('/todolist');
+            }
         },
         disableFormHTML(html) {
             const parser = new DOMParser();
