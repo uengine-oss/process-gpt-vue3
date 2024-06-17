@@ -49,40 +49,8 @@ export default {
         }
     },
     mounted() {
-        var container = this.$refs.container;
-
-        var self = this;
-        this.bpmnStore = useBpmnStore();
-        var _options = Object.assign(
-            {
-                container: container,
-                keyboard: {
-                    bindTo: window
-                },
-                moddleExtensions: {
-                    uengine: uEngineModdleDescriptor
-                }
-            },
-            this.options
-        );
-
-        if (self.isViewMode) {
-            var viewerOptions = {
-                ..._options,
-                additionalModules: [
-                    ...(Array.isArray(_options.additionalModules) ? _options.additionalModules : []),
-                    ZoomScroll,
-                    MoveCanvas
-                ]
-            };
-
-            self.bpmnViewer = new BpmnViewer(viewerOptions);
-            self.bpmnStore.setModeler(self.bpmnViewer);
-        } else {
-            self.bpmnViewer = new BpmnModeler(_options);
-            self.bpmnStore.setModeler(self.bpmnViewer);
-        }
-
+        this.initializeViewer();
+        var self = this
         var eventBus = this.bpmnViewer.get('eventBus');
         // eventBus.on('import.render.start', function (e) {
         //     // self.openPanel = true;
@@ -190,6 +158,10 @@ export default {
         this.bpmnViewer.destroy();
     },
     watch: {
+        isViewMode(val) {
+            this.bpmnViewer.destroy();
+            this.initializeViewer();
+        },
         url(val) {
             this.$emit('loading');
             this.fetchDiagram(val);
@@ -215,6 +187,41 @@ export default {
         }
     },
     methods: {
+        initializeViewer() {
+            var container = this.$refs.container;
+            var self = this;
+            self.bpmnStore = useBpmnStore();
+            var _options = Object.assign(
+                {
+                    container: container,
+                    keyboard: {
+                        bindTo: window
+                    },
+                    moddleExtensions: {
+                        uengine: uEngineModdleDescriptor
+                    }
+                },
+                self.options
+            );
+
+            if (self.isViewMode) {
+                var viewerOptions = {
+                    ..._options,
+                    additionalModules: [
+                        ...(Array.isArray(_options.additionalModules) ? _options.additionalModules : []),
+                        ZoomScroll,
+                        MoveCanvas
+                    ]
+                };
+
+                self.bpmnViewer = new BpmnViewer(viewerOptions);
+                self.bpmnStore.setModeler(self.bpmnViewer);
+            } else {
+                self.bpmnViewer = new BpmnModeler(_options);
+                self.bpmnStore.setModeler(self.bpmnViewer);
+            }
+            self.bpmnViewer.importXML(self.diagramXML);
+        },
         extendUEngineProperties(businessObject) {
             let self = this
             //let businessObject = element.businessObject
@@ -241,6 +248,9 @@ export default {
 
             businessObject.extensionElements = extensionElements;
 
+            if(businessObject.businessObject) {
+                businessObject.businessObject.processRef.isExecutable = true
+            }
 
             //TODO: 불필요
             // 요소 업데이트를 위해 모델링 컴포넌트 사용

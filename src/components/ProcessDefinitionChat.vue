@@ -1184,7 +1184,8 @@ export default {
 
             let lastXPos = 140;
             let positionMapping = {};
-            // Sequences 생성
+            let rolePos = {};
+            // Sequences(bpm 모델으 바깥쪽 box 크기) 생성
             if (jsonModel.sequences)
                 jsonModel.sequences.forEach((sequence, idx) => {
                     if (!positionMapping[sequence.source]) {
@@ -1449,11 +1450,10 @@ export default {
             //         <bpmndi:BPMNShape id="Participant_0r9od0v_di" bpmnElement="Participant_0r9od0v" isHorizontal="true">
             //     <dc:Bounds x="156" y="62" width="600" height="250" />
             //   </bpmndi:BPMNShape>
-            let rolePos = {};
             let activityPos = {};
 
             // Lane 및 Activity에 대한 시각적 표현 추가
-            if (jsonModel.roles)
+            if (jsonModel.roles) {
                 jsonModel.roles.forEach((role, roleIndex) => {
                     const laneShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
                     laneShape.setAttribute('id', `BPMNShape_${roleIndex}`);
@@ -1472,69 +1472,82 @@ export default {
                         y: dcBoundsLane.getAttribute('y')
                     };
                 });
+            }
 
-                if (jsonModel.activities) {
-                    jsonModel.activities.forEach((activity, activityIndex) => {
-                        if (!activity.role) {
-                            return false;
-                        }
+            if (jsonModel.activities || jsonModel.gateways) {
+                const elements = [...(jsonModel.activities || []), ...(jsonModel.gateways || [])];
+                let lastXPos = 140; // 초기 X 좌표 설정
+                let lastGatewayX = 0; // 마지막 게이트웨이의 X 좌표를 저장할 변수
 
-                        // 기본 activityX 설정
-                        let activityX = positionMapping[activity.id] ? positionMapping[activity.id] - 20 : lastXPos + 120;
-                        let activityY = parseInt(rolePos[activity.role].y);
+                // 요소들을 순서대로 처리하기 위해 sequences를 기반으로 정렬
+                const sortedElements = [];
+                jsonModel.sequences.forEach((sequence) => {
+                    const sourceElement = elements.find(el => el.id === sequence.source);
+                    const targetElement = elements.find(el => el.id === sequence.target);
+                    if (sourceElement && !sortedElements.includes(sourceElement)) {
+                        sortedElements.push(sourceElement);
+                    }
+                    if (targetElement && !sortedElements.includes(targetElement)) {
+                        sortedElements.push(targetElement);
+                    }
+                });
 
-                        // 레인을 넘어가는 활동(task)에 대해서만 위치를 더 오른쪽으로 이동
-                        if (activityIndex > 0 && jsonModel.activities[activityIndex - 1].role !== activity.role) {
-                            activityX = lastXPos + 40; // 원하는 만큼 오른쪽으로 이동
-                        }
+                sortedElements.forEach((element, elementIndex) => {
+                    if (!element.role) {
+                        return false;
+                    }
 
-                        const activityShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
-                        activityShape.setAttribute('id', `BPMNShape_${activity.id}`);
-                        activityShape.setAttribute('bpmnElement', activity.id);
+                    // 기본 X 좌표 설정
+                    let elementX = positionMapping[element.id] ? positionMapping[element.id] - 20 : lastXPos + 120;
+                    let elementY = parseInt(rolePos[element.role].y);
 
-                        const dcBoundsActivity = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
-                        dcBoundsActivity.setAttribute('x', activityX);
-                        dcBoundsActivity.setAttribute('y', activityY + 10);
-                        dcBoundsActivity.setAttribute('width', 100);
-                        dcBoundsActivity.setAttribute('height', 80);
-                        activityPos[activity.id] = {
-                            x: activityX,
-                            y: activityY + 10,
-                            width: 100,
-                            height: 80
-                        };
+                    // 레인을 넘어가는 요소에 대해서 위치를 더 오른쪽으로 이동
+                    if (elementIndex > 0 && sortedElements[elementIndex - 1].role !== element.role) {
+                        elementX = lastXPos + 40; // 원하는 만큼 오른쪽으로 이동
+                    }
 
-                        activityShape.appendChild(dcBoundsActivity);
-                        bpmnPlane.appendChild(activityShape);
+                    // 게이트웨이의 X 좌표 조정
+                    if (element.type === 'ExclusiveGateway') {
+                        elementX += 70;
+                        elementY += 15;
+                        lastGatewayX = elementX; // 마지막 게이트웨이의 X 좌표 저장
+                    }
 
-                        // 활동의 X 좌표를 업데이트
-                        rolePos[activity.role].x = activityX + 120;
-                        lastXPos = activityX + 120;
-                    });
-                }
-            //gateway 스티커
-            if (jsonModel.gateways){
-                jsonModel.gateways.forEach((gateway) => {
-                    let gatewayX = positionMapping[gateway.id] ? positionMapping[gateway.id] : rolePos[gateway.role].x + 120;
-                    let gatewayY = parseInt(rolePos[gateway.role].y);
-                    const gatewayShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
-                    gatewayShape.setAttribute('id', `Shape_${gateway.id}`);
-                    gatewayShape.setAttribute('bpmnElement', gateway.id);
-                    const dcBounds = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
-                    dcBounds.setAttribute('x', gatewayX); 
-                    dcBounds.setAttribute('y', gatewayY + 25); 
-                    dcBounds.setAttribute('width', '50');
-                    dcBounds.setAttribute('height', '50');
-                    gatewayShape.appendChild(dcBounds);
-                    bpmnPlane.appendChild(gatewayShape);
+                    // 게이트웨이 이후의 task의 X 좌표 조정
+                    if (elementIndex > 0 && sortedElements[elementIndex - 1].type === 'ExclusiveGateway') {
+                        elementX = lastGatewayX + 100; // 게이트웨이 이후의 task의 X 좌표 조정
+                    }
 
-                    activityPos[gateway.id] = {
-                        x: gatewayX,
-                        y: gatewayY + 25,
-                        width: 50,
-                        height: 50
+                    const elementShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
+                    elementShape.setAttribute('id', `BPMNShape_${element.id}`);
+                    elementShape.setAttribute('bpmnElement', element.id);
+
+                    const dcBoundsElement = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
+                    dcBoundsElement.setAttribute('x', elementX);
+                    dcBoundsElement.setAttribute('y', elementY + 10);
+
+                    // 활동과 게이트웨이의 width와 height 설정
+                    if (element.type === 'ExclusiveGateway') {
+                        dcBoundsElement.setAttribute('width', 50);
+                        dcBoundsElement.setAttribute('height', 50);
+                    } else {
+                        dcBoundsElement.setAttribute('width', 100);
+                        dcBoundsElement.setAttribute('height', 80);
+                    }
+
+                    elementShape.appendChild(dcBoundsElement);
+                    bpmnPlane.appendChild(elementShape);
+
+                    activityPos[element.id] = {
+                        x: elementX,
+                        y: elementY + 10,
+                        width: parseInt(dcBoundsElement.getAttribute('width')),
+                        height: parseInt(dcBoundsElement.getAttribute('height'))
                     };
-                    rolePos[gateway.role].x += 120;
+
+                    // 요소의 X 좌표를 업데이트
+                    rolePos[element.role].x = elementX;
+                    lastXPos = elementX + 120;
                 });
             }
             // start, end event(동그라미 스티커)
@@ -1584,11 +1597,13 @@ export default {
                 });
             }
 
+            // 서로간의 선위치를 설정하는 부분
             if (jsonModel.sequences) {
                 jsonModel.sequences.forEach((sequence) => {
                     if (!activityPos[sequence.source] || !activityPos[sequence.target]) {
                         return false;
                     }
+
                     const bpmnEdge = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNEdge');
                     bpmnEdge.setAttribute('id', `BPMNEdge_${sequence.source}_${sequence.target}`);
                     bpmnEdge.setAttribute('bpmnElement', 'SequenceFlow_' + sequence.source + '_' + sequence.target);
@@ -1599,6 +1614,12 @@ export default {
 
                     endX = parseInt(activityPos[sequence.target].x);
                     endY = parseInt(activityPos[sequence.target].y) + parseInt(activityPos[sequence.target].height) / 2;
+
+                    // 게이트웨이에서 리턴되는 선의 끝점 좌표 조정
+                    if (sequence.source.includes('gateway') && sequence.target.includes('leave')) {
+                        endX = parseInt(activityPos[sequence.target].x) + parseInt(activityPos[sequence.target].width) / 2;
+                        endY = parseInt(activityPos[sequence.target].y) - 20; // task의 상단 중앙을 가리키도록 조정
+                    }
 
                     // 첫 번째 waypoint (시작점)
                     const waypoint1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
@@ -1638,6 +1659,14 @@ export default {
                         waypoint2.setAttribute('x', endX);
                         waypoint2.setAttribute('y', endY);
                         bpmnEdge.appendChild(waypoint2);
+                    }
+
+                    // 게이트웨이에서 리턴되는 선의 경우 마지막 변곡점 추가
+                    if (sequence.source.includes('gateway') && sequence.target.includes('leave')) {
+                        const extraWaypoint = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                        extraWaypoint.setAttribute('x', endX);
+                        extraWaypoint.setAttribute('y', endY + 20); // 원하는 위치로 조정
+                        bpmnEdge.appendChild(extraWaypoint);
                     }
 
                     bpmnPlane.appendChild(bpmnEdge);

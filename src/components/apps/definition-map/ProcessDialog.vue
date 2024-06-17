@@ -7,15 +7,16 @@
                 </v-card-title>
 
                 <v-card-text>
-                    <v-autocomplete
-                        v-if="addType == 'sub' && !isNewDef && definitions"
+                    <ProcessDefinitionDisplay
+                        v-if="addType == 'sub' && !isNewDef && definitions" 
                         v-model="newProcess"
-                        :items="definitions"
-                        label="프로세스 정의"
-                        item-title="name"
-                        return-object
-                    ></v-autocomplete>
-
+                        :file-extensions="['.bpmn']"
+                        :options="{
+                            label: '프로세스 정의',
+                            returnObject: true
+                        }"
+                    ></ProcessDefinitionDisplay>
+                   
                     <v-checkbox
                         v-if="addType == 'sub'"
                         v-model="isNewDef"
@@ -27,7 +28,7 @@
                     
                     <v-text-field
                         v-if="addType != 'sub' || isNewDef"
-                        v-model="newProcess.label"
+                        v-model="newProcess.name"
                         class="cp-process-name"
                         label="프로세스명"
                     ></v-text-field>
@@ -37,8 +38,8 @@
                     <v-btn color="primary" 
                         variant="flat"
                         class="cp-process-save"
-                        :disabled="newProcess.id == '' && newProcess.label == ''"
-                        @click="addProcess"
+                        :disabled="isNewDef ? newProcess.id == '' && newProcess.name == '' : false"
+                        @click="addProcess()"
                     >저장</v-btn>
                     <v-btn color="error" 
                         variant="flat" 
@@ -81,10 +82,10 @@
                 <v-col cols="12" class="ma-0 pa-0">
                     <v-text-field
                         class="cp-process-id"
-                        v-model="newProcess.label"
+                        v-model="newProcess.name"
                         :label="`${addType.toUpperCase()} 프로세스 추가`"
                         autofocus
-                        @keypress.enter="addProcess"
+                        @keypress.enter="addProcess()"
                         @click.stop
                     ></v-text-field>
                 </v-col>
@@ -107,7 +108,7 @@
                 <div max-width="500">
                     <v-text-field
                         class="edit-process-text-field"
-                        v-model="newProcess.label"
+                        v-model="newProcess.name"
                         autofocus
                         label="프로세스 수정"
                         @keypress.enter="updateProcess"
@@ -121,8 +122,12 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+import ProcessDefinitionDisplay from '@/components/designer/ProcessDefinitionDisplay.vue'
 
 export default {
+    components: {
+        ProcessDefinitionDisplay
+    },
     props: {
         process: Object,
         enableEdit: Boolean,
@@ -133,7 +138,8 @@ export default {
     },
     data: () => ({
         newProcess: {
-            label: ""
+            id: '',
+            name: '',
         },
         isNewDef: false,
         definitions: null,
@@ -141,15 +147,9 @@ export default {
     }),
     mounted() {
             if(!this.processDialogStatus) return;
-            if (this.processType == 'add') {
-                // this.newProcess = {
-                //     id: "",
-                //     label: "",
-                //     name: ""
-                // };
-            } else if(this.processType == 'update') {
+            if(this.processType == 'update') {
                 this.newProcess.id = this.process.id;
-                this.newProcess.label = this.process.label;
+                this.newProcess.name = this.process.name;
             }
     },
     computed: {
@@ -188,7 +188,7 @@ export default {
                 // };
             } else if(this.processType == 'update') {
                 this.newProcess.id = this.process.id;
-                this.newProcess.label = this.process.label;
+                this.newProcess.name = this.process.name;
             }
         }
     },
@@ -201,7 +201,10 @@ export default {
             if (this.addType == 'sub') {
                 const list = await backend.listDefinition();
                 if (list && list.length > 0) {
-                    this.definitions = list;
+                    this.definitions = list.map(item => ({
+                        ...item,
+                        id: item.id ? item.id : item.path.split('.')[0],
+                    }));
                 } else {
                     this.definitions = null;
                 }
@@ -216,7 +219,7 @@ export default {
             this.$emit('closeProcessDialog');
         },
         addProcess() {
-            if (this.newProcess.label != '') {
+            if (this.newProcess.name != '') {
                 this.$emit("add", this.newProcess);
                 if(this.addType === 'sub') {
                     this.closeDialog();

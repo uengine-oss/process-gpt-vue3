@@ -18,7 +18,15 @@
                 <div v-if="currentComponent"
                     class="work-itme-current-component"
                 >
-                    <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus" :isComplete="isComplete" :isDryRun="isDryRun" :dryRunActivity="dryRunActivity"></component>
+                    <component 
+                        :is="currentComponent" 
+                        :definitionId="definitionId"
+                        :work-item="workItem" 
+                        :workItemStatus="workItemStatus" 
+                        :isDryRun="isDryRun" 
+                        :dryRunWorkItem="dryRunWorkItem"
+                        @close="close"
+                    ></component>
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
                             <v-btn
@@ -151,7 +159,15 @@
                 <div v-if="currentComponent"
                     class="work-itme-current-component"
                 >
-                    <component :is="currentComponent" :work-item="workItem" :workItemStatus="workItemStatus" :isComplete="isComplete" :isDryRun="isDryRun" :dryRunActivity="dryRunActivity"></component>
+                    <component 
+                        :is="currentComponent" 
+                        :definitionId="definitionId"
+                        :work-item="workItem" 
+                        :workItemStatus="workItemStatus" 
+                        :isDryRun="isDryRun" 
+                        :dryRunWorkItem="dryRunWorkItem"
+                        @close="close"
+                    ></component>
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
                             <v-btn
@@ -289,13 +305,13 @@ import customBpmnModule from '@/components/customBpmn';
 const backend = BackendFactory.createBackend();
 export default {
     props: {
-        isDryRun: Boolean,
         definitionId: {
             type: String,
             required: true
         },
-        dryRunActivity: Object,
         taskId: String,
+        isDryRun: Boolean,
+        dryRunWorkItem: Object
     },
     components: {
         // ProcessDefinition,
@@ -356,13 +372,11 @@ export default {
         },
         activityName(){
             if(!this.workItem) return null
-            if(this.isDryRun) return this.dryRunActivity.name
-
             return this.workItem.activity.name;
         },
         workItemStatus() {
             if(!this.workItem) return null;
-            if(this.isDryRun) return 'Running'
+            if(this.isDryRun) return 'NEW'
 
             return this.workItem.worklist.status;
         },
@@ -378,19 +392,24 @@ export default {
                 action: async () => {
                     if(me.isDryRun) {
                         me.bpmn = await backend.getRawDefinition(me.definitionId, { type: 'bpmn' });
-                        me.currentComponent = me.dryRunActivity.tool.includes('urlHandler') ? 'URLWorkItem' : (me.dryRunActivity.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
-                        me.currentActivities = [me.dryRunActivity.tracingTag]
+                        me.workItem = me.dryRunWorkItem
+                       
+                        me.currentComponent = me.workItem.activity.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.activity.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
                     } else {
                         me.workItem = await backend.getWorkItem(me.currentTaskId);
                         me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, { type: 'bpmn' });
                         if (me.workItem.worklist.execScope) me.workItem.execScope = me.workItem.worklist.execScope;
                         me.workListByInstId = await backend.getWorkListByInstId(me.workItem.worklist.instId);
                         me.currentComponent = me.workItem.worklist.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
-                        me.currentActivities = [me.workItem.activity.tracingTag];
                     }
+
+                    me.currentActivities = [me.workItem.activity.tracingTag];
                     me.updatedDefKey++;
                 }
             });
+        },
+        close(){
+            this.$emit('close')
         },
         navigateToWorkItemByTaskId(obj) {
             var me = this;
@@ -448,12 +467,6 @@ export default {
     .work-item-pc {
         display: none;
     }
-}
-.processVariables-zoom {
-    position: absolute;
-    right: 20px;
-    top: 20px;
-    z-index: 1;
 }
 .processExecute {
     position: absolute;

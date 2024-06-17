@@ -90,7 +90,8 @@
         "unlock": "체크아웃(편집)하려면 자물쇠를 눌러 자물쇠를 여십시오",
         "addMega": "Mega 프로세스",
         "addMajor": "Major 프로세스",
-        "addSub": "Sub 프로세스"
+        "addSub": "Sub 프로세스",
+        "save" : "저장"
     },
     "uiDefinition": {
         "title": "화면 정의",

@@ -41,6 +41,7 @@ export interface Backend {
     putWorklist(taskId: string, workItem: any): Promise<any>;
     getEventList(instanceId: string): Promise<any>;
     getDryRunInstance(defPath: string): Promise<any>;
+    startDryRun(command: object) : Promise<any>;
 }
 
 // export type { Backend }

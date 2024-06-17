@@ -20,7 +20,7 @@
                 elevation="10"
                 style="border-radius: 10px !important;"
             >
-                <h6 class="text-h6 font-weight-semibold text-center">{{ filteredProcess.label }}</h6>
+                <h6 class="text-h6 font-weight-semibold text-center">{{ filteredProcess.name }}</h6>
                 <!-- <div class="ml-auto">
                     <ProcessMenu
                         :size="20"
@@ -57,7 +57,7 @@
                     style="border-radius: 10px !important;"
                 >
                     <div class="d-flex flex-column justify-content-center align-items-center">
-                        <h6 class="text-h6 font-weight-semibold text-center">{{ majorProc.label }}</h6>
+                        <h6 class="text-h6 font-weight-semibold text-center">{{ majorProc.name }}</h6>
                     </div>
                     <!-- <div class="ml-auto">
                         <ProcessMenu
@@ -100,7 +100,7 @@
                             @click="viewProcess(subProc)"
                         >
                             <div class="d-flex flex-column justify-content-center align-items-center">
-                                <h6 class="text-h6 font-weight-semibold text-center">{{ subProc.label }}</h6>
+                                <h6 class="text-h6 font-weight-semibold text-center">{{ subProc.name }}</h6>
                             </div>
                             <!-- <div class="ml-auto">
                                 <ProcessMenu
@@ -138,7 +138,7 @@ export default {
             processPath: null, // 라우트 파라미터에서 받아온 process ID
             filteredProcess: {
                 id: '',
-                label: '',
+                name: '',
                 major_proc_list: []
             },
             onLoad: false,
@@ -150,7 +150,7 @@ export default {
     watch: {
         value(newVal) {
             if (newVal && newVal.mega_proc_list && newVal.mega_proc_list.length > 0) {
-                const process = newVal.mega_proc_list.find(process => process.label === this.processPath);
+                const process = newVal.mega_proc_list.find(process => process.name === this.processPath);
                 if (process) {
                     this.filteredProcess = process;
                 }
@@ -171,7 +171,7 @@ export default {
                         const backend = BackendFactory.createBackend();
                         processMap = await backend.getProcessDefinitionMap();
                     }
-                    const process = processMap.mega_proc_list.find(process => process.label === me.processPath);
+                    const process = processMap.mega_proc_list.find(process => process.name === me.processPath);
                     if (process) {
                         me.filteredProcess = process;
                     }
@@ -187,20 +187,20 @@ export default {
                 }
                 this.filteredProcess.major_proc_list.push({
                     id: newProcess.id,
-                    label: newProcess.label,
+                    name: newProcess.name,
                     sub_proc_list: [] // 새로운 'major' 프로세스에는 초기화된 'sub_proc_list' 포함
                 });
             } else if (type === 'major') {
                 // 'major' 프로세스에 'sub' 프로세스 추가
                 // selectedProcessId를 사용하여 현재 선택된 'major' 프로세스를 찾습니다.
-                const majorProc = this.filteredProcess.major_proc_list.find(major => major.label === selectedProcessId);
+                const majorProc = this.filteredProcess.major_proc_list.find(major => major.name === selectedProcessId);
                 if (majorProc) {
                     if (!majorProc.sub_proc_list) {
                         majorProc.sub_proc_list = [];
                     }
                     majorProc.sub_proc_list.push({
                         id: newProcess.id,
-                        label: newProcess.label
+                        label: newProcess.name
                     });
                 } else {
                     console.error('Major process not found for the given selectedProcessId');
@@ -214,8 +214,8 @@ export default {
                 if (targetMega) {
                     // 찾은 객체를 process 객체의 값으로 업데이트합니다.
                     targetMega.id = process.id;
-                    targetMega.label = process.label;
-                    this.processPath = process.label;
+                    targetMega.name = process.name;
+                    this.processPath = process.name;
                 }
             } else if (type === 'major') {
                 // Major Process 수정 로직
@@ -223,7 +223,7 @@ export default {
                     let targetMajor = megaProc.major_proc_list.find(major => major.id === selectedProcessId);
                     if (targetMajor) {
                         targetMajor.id = process.id;
-                        targetMajor.label = process.label;
+                        targetMajor.name = process.name;
                     }
                 });
             } else if (type === 'sub') {
@@ -233,7 +233,7 @@ export default {
                         let targetSub = majorProc.sub_proc_list.find(sub => sub.id === selectedProcessId);
                         if (targetSub) {
                             targetSub.id = process.id;
-                            targetSub.label = process.label;
+                            targetSub.name = process.name;
                         }
                     });
                 });

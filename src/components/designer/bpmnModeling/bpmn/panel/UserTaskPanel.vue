@@ -54,7 +54,7 @@
             </div>
             <div>
                 <v-row class="ma-0 pa-0">
-                    <div>Parameter Context</div>
+                    <div style="margin-bottom:10px; font-size: 13px; font-weight: 500;">Parameter Context</div>
                     <v-spacer></v-spacer>
                     <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
                 </v-row>

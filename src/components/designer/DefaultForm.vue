@@ -29,7 +29,7 @@ export default {
             },
         },
         isComplete: Boolean,
-        isDryRun: Boolean,
-    }
+    },
 }
 </script>
+
