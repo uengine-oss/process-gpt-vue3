@@ -157,16 +157,16 @@ export default {
                                 }
                             }
                         } else {
-                            if(data.eventType == "INSERT" && data.new.id == me.currentChatRoom.id) {
-                                let lastMessage = me.messages[me.messages.length - 1]
-                                if(!(lastMessage.content == data.new.messages.content &&
-                                    lastMessage.role == data.new.messages.role &&
-                                    lastMessage.name == data.new.messages.name &&
-                                    lastMessage.email == data.new.messages.email)
-                                ) {
-                                    me.messages.push(data.new.messages)
-                                }
-                            }
+                            // if(data.eventType == "INSERT" && data.new.id == me.currentChatRoom.id) {
+                            //     let lastMessage = me.messages[me.messages.length - 1]
+                            //     if(!(lastMessage.content == data.new.messages.content &&
+                            //         lastMessage.role == data.new.messages.role &&
+                            //         lastMessage.name == data.new.messages.name &&
+                            //         lastMessage.email == data.new.messages.email)
+                            //     ) {
+                            //         me.messages.push(data.new.messages)
+                            //     }
+                            // }
                         }
                     }
                 }
@@ -282,7 +282,7 @@ export default {
                     email: role ? role + '@uengine.org' : this.userInfo.email,
                     role: role ? role : 'user',
                     timeStamp: Date.now(),
-                    content: role ? JSON.stringify(message) : message.text,
+                    content: role ? (typeof message == 'string' ? message : JSON.stringify(message)) : message.text,
                     image: message.image || ""
                 };
             }
@@ -577,7 +577,11 @@ export default {
                 jsonData = this.extractJSON(response);
                 jsonData = JSON.parse(jsonData);
             }
-            this.afterGenerationFinished(jsonData);
+            if(jsonData != null) {
+                this.afterGenerationFinished(jsonData);
+            } else {
+                this.afterGenerationFinished(response);
+            }
         },
 
         onModelStopped(response) {
