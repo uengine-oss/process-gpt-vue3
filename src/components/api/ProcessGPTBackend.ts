@@ -162,13 +162,12 @@ class ProcessGPTBackend implements Backend {
                     }
                     return data;
                 } else if(options.type === "bpmn") {
+                    if (defId.includes('/')) defId = defId.replace(/\//g, "_")
                     const data = await storage.getString(`proc_def/${defId}`, { key: 'id', column: 'bpmn' });
-                    // if(!data) {
-                    //     throw new Error('no such bpmn definition');
-                    // }
                     return data;
                 }
             } else {
+                if (defId.includes('/')) defId = defId.replace(/\//g, "_")
                 const data = await storage.getObject(`proc_def/${defId}`, { key: 'id' });
                 return data;
             }
@@ -505,18 +504,18 @@ class ProcessGPTBackend implements Backend {
             };
             const procMap = await storage.getObject('configuration', options);
             if (procMap && procMap.value) {
-                // const renameLabels = (obj: any) => {
-                //     if (obj instanceof Array) {
-                //         obj.forEach(item => renameLabels(item));
-                //     } else if (obj instanceof Object) {
-                //         if (obj.hasOwnProperty('label')) {
-                //             obj.name = obj.label;
-                //             delete obj.label;
-                //         }
-                //         Object.values(obj).forEach(value => renameLabels(value));
-                //     }
-                // };
-                // renameLabels(procMap.value);
+                const renameLabels = (obj: any) => {
+                    if (obj instanceof Array) {
+                        obj.forEach(item => renameLabels(item));
+                    } else if (obj instanceof Object) {
+                        if (obj.hasOwnProperty('label')) {
+                            obj.name = obj.label;
+                            delete obj.label;
+                        }
+                        Object.values(obj).forEach(value => renameLabels(value));
+                    }
+                };
+                renameLabels(procMap.value);
                 return procMap.value;
             }
             return {};

@@ -708,15 +708,17 @@ export default class StorageBaseSupabase {
                 this.searchProcInst(keyword),
                 this.searchProcDef(keyword),
                 this.searchFormDef(keyword),
+                this.searchChatRoom(keyword),
                 this.searchChat(keyword)
             ]);
-            results = results.filter(item => item !== null);
         } else {
-            const procInst = await this.searchProcInst(keyword);
-            if (procInst) {
-                results.push(procInst);
-            }
+            results = await Promise.all([
+                this.searchProcInst(keyword),
+                this.searchChatRoom(keyword),
+                this.searchChat(keyword)
+            ]);
         }
+        results = results.filter(item => item !== null);
         return results;
     }
 
@@ -725,12 +727,13 @@ export default class StorageBaseSupabase {
             const email = window.localStorage.getItem('email');
             const { data, error } = await window.$supabase.from('proc_inst')
                 .select()
-                .or(`id.ilike.%${keyword}%,name.ilike.%${keyword}%,variables_data.ilike.%${keyword}%`);
-            if (error) throw new StorageBaseError('error in searchProcInst', error, arguments);
+                .or(`id.ilike.%${keyword}%,name.ilike.%${keyword}%,variables_data.ilike.%${keyword}%`)
+                .contains('user_ids', [email]);
             
-            const filteredData = data.filter((item) => item.user_ids.includes(email));
-            if (filteredData && filteredData.length > 0) {
-                const list = filteredData.map((item) => {
+            if (error) throw new StorageBaseError('error in searchProcInst', error, arguments);
+
+            if (data && data.length > 0) {
+                const list = data.map((item) => {
                     const matchingColumns = [];
                     if (item.id && item.id.toLowerCase().includes(keyword.toLowerCase())) {
                         matchingColumns.push(item.id);
@@ -832,29 +835,61 @@ export default class StorageBaseSupabase {
         }
     }
 
-    async searchChat(keyword) {
+    async searchChatRoom(keyword) {
         try {
+            const email = window.localStorage.getItem('email');
             const { data, error } = await window.$supabase.from('chat_rooms')
                 .select()
-                .or(`name.ilike.%${keyword}%`);
+                .or(`name.ilike.%${keyword}%`)
             
             if (error) throw new StorageBaseError('error in searchChat', error, arguments);
 
             if (data && data.length > 0) {
                 const list = data.map((item) => {
-                    const matchingColumns = [];
-                    if (item.name && item.name.toLowerCase().includes(keyword.toLowerCase())) {
-                        matchingColumns.push(item.name);
-                    }
+                    const matchingColumns = [item.participants.map(user => user.username).join(', ')]
                     return {
                         title: item.name,
-                        href: `/chats`,
+                        href: `/chats?id=${item.id}`,
                         matches: matchingColumns
                     };
                 });
                 const result = {
+                    type: 'chat-room',
+                    header: '채팅방',
+                    list: list
+                }
+                return result;                
+            }
+            return null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    async searchChat(keyword) {
+        try {
+            const { data, error } = await window.$supabase.from('chats')
+                .select()
+                .or(`messages->>content.ilike.%${keyword}%,messages->>name.ilike.%${keyword}%,messages->>email.ilike.%${keyword}%`);
+            
+            if (error) throw new StorageBaseError('error in searchChat', error, arguments);
+
+            if (data && data.length > 0) {
+                const list = await Promise.all(data.map(async (item) => {
+                    const chatRoom = await this.getString('chat_rooms', {
+                        match: { id: item.id },
+                        column: 'name'
+                    });
+                    const matchingColumns = [ `${item.messages.name}: ${item.messages.content}` ];
+                    return {
+                        title: chatRoom,
+                        href: `/chats?id=${item.id}`,
+                        matches: matchingColumns
+                    };
+                }));
+                const result = {
                     type: 'chat',
-                    header: '채팅',
+                    header: '채팅 메세지',
                     list: list
                 }
                 return result;                

@@ -70,10 +70,10 @@ export default {
         summarize(text) {
             const startIndex = text.indexOf(this.searchKeyword);
             if (startIndex !== -1) {
-                const endIndex = Math.min(startIndex + 20, text.length);
+                const endIndex = Math.min(startIndex + 40, text.length);
                 return text.substring(startIndex, endIndex) + (endIndex < text.length ? '...' : '');
             }
-            return text.length > 20 ? text.substring(0, 20) + '...' : text;
+            return text.length > 40 ? text.substring(0, 40) + '...' : text;
         }
     },
 }
