@@ -45,6 +45,8 @@ import 'vue-diff/dist/index.css';
 VueDiff.hljs.registerLanguage('xml', xml);
 
 import VueScrollTo from 'vue-scrollto';
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
+
 const i18n = createI18n({
     locale: 'ko',
     fallbackLocale: 'en',
@@ -180,6 +182,17 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
                         persistSession: false
                     }
                 });
+
+                const storage = StorageBaseFactory.getStorage();
+                await storage.list(`users`).then(async function (response) {
+                    if (response && response.code == "42P01" && response.message.includes('does not exist')) {
+                        await axios.post(`/execution/create_default_tables`)
+                        .catch(error => {
+                            throw new Error(error && error.detail ? error.detail : error);
+                        });
+                    }
+                });
+
             } else {
                 alert('해당 주소는 존재하지 않는 주소입니다. 가입 후 이용하세요.');
                 window.location.href = 'https://www.process-gpt.io';
