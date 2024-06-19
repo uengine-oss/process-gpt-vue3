@@ -404,7 +404,7 @@ class ProcessGPTBackend implements Backend {
                         startDate: item.start_date,
                         dueDate: item.end_date,
                         status: item.status,
-                        title: item.activity_name,
+                        title: item.activity_name || "",
                         tracingTag: item.activity_id || "",
                         description: item.description || "",
                         tool: item.tool || ""
@@ -450,6 +450,7 @@ class ProcessGPTBackend implements Backend {
                     end_date: workItem.dueDate,
                     status: workItem.status,
                     activity_id: workItem.tracingTag || workItem.title,
+                    activity_name: workItem.title,
                 }
                 await storage.putObject('todolist', putObj);
             } else { // instance workItem
