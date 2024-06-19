@@ -1,5 +1,4 @@
--- table configuration
-drop table if exists configuration;
+drop table if exists configuration CASCADE;
 create table configuration (
   key text primary key,
   value jsonb
@@ -7,19 +6,16 @@ create table configuration (
 insert into configuration (key, value) values ('proc_map', '{}');
 insert into configuration (key, value) values ('organization', '{}');
 
--- table proc_map_history
-drop table if exists public.proc_map_history;
+drop table if exists public.proc_map_history CASCADE;
 create table public.proc_map_history (
     value jsonb not null,
     created_at timestamp with time zone not null default now(),
     constraint proc_map_history_pkey primary key (created_at)
 ) tablespace pg_default;
 
--- 트리거 함수 생성
-CREATE OR REPLACE FUNCTION public.save_previous_proc_map()
+create or replace function public.save_previous_proc_map()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- 'proc_map' 키의 이전 value 값을 proc_map_history 테이블에 저장
     IF OLD.key = 'proc_map' THEN
         INSERT INTO public.proc_map_history(value, created_at)
         VALUES (OLD.value, now());
@@ -28,15 +24,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 트리거 생성
-CREATE TRIGGER trigger_save_previous_proc_map
+create or replace trigger trigger_save_previous_proc_map
 BEFORE UPDATE ON configuration
 FOR EACH ROW
 WHEN (OLD.key = 'proc_map' AND NEW.value IS DISTINCT FROM OLD.value)
 EXECUTE PROCEDURE public.save_previous_proc_map();
 
--- table todolist
-drop table if exists todolist;
+drop table if exists todolist CASCADE;
 create table todolist (
     id uuid primary key,
     user_id text,
@@ -51,8 +45,7 @@ create table todolist (
     tool text
 );
 
--- table users
-drop table if exists public.users;
+drop table if exists public.users CASCADE;
 create table public.users (
     id uuid not null primary key,
     username text null,
@@ -62,7 +55,7 @@ create table public.users (
     notifications jsonb null,
     role text null
 );
--- trigger the function every time a auts.users is created
+
 create or replace function public.handle_new_user() 
 returns trigger as $$
 begin
@@ -72,11 +65,10 @@ begin
 end;
 $$ language plpgsql security definer;
 
-create trigger on_auth_user_created
+create or replace trigger on_auth_user_created
     after insert on auth.users
     for each row execute procedure public.handle_new_user();
 
--- trigger the function every time a public.users is deleted
 create or replace function public.handle_delete_user() 
 returns trigger as $$
 begin
@@ -85,13 +77,11 @@ begin
 end;
 $$ language plpgsql security definer;
 
-create trigger on_public_user_deleted
+create or replace trigger on_public_user_deleted
     after delete on public.users
     for each row execute procedure public.handle_delete_user();
 
-
--- table proc_def
-drop table if exists proc_def;
+drop table if exists proc_def CASCADE;
 create table proc_def (
   id text primary key,
   name text,
@@ -111,9 +101,7 @@ AS PERMISSIVE FOR SELECT
 TO public
 USING (true);
 
-
--- table proc_inst
-drop table if exists proc_inst;
+drop table if exists proc_inst CASCADE;
 create table
   public.proc_inst (
     id text not null,
@@ -126,7 +114,7 @@ create table
     constraint proc_inst_pkey primary key (id)
   ) tablespace pg_default;
 
-
+drop table if exists public.chats CASCADE;
 create table public.chats (
     uuid text not null,
     id text not null,
@@ -134,12 +122,14 @@ create table public.chats (
     constraint chats_pkey primary key (uuid)
 ) tablespace pg_default;
 
+drop table if exists public.calendar CASCADE;
 create table public.calendar (
   uid text not null,
   data jsonb null,
   constraint calendar_pkey primary key (uid)
 ) tablespace pg_default;
 
+drop table if exists public.chat_rooms CASCADE;
 create table public.chat_rooms (
   id text not null,
   participants jsonb not null,
@@ -148,6 +138,7 @@ create table public.chat_rooms (
   constraint chat_rooms_pkey primary key (id)
 ) tablespace pg_default;
 
+drop table if exists public.proc_def_arcv CASCADE;
 create table
   public.proc_def_arcv (
     arcv_id text not null,
@@ -159,6 +150,7 @@ create table
     constraint proc_def_arcv_pkey primary key (arcv_id)
   ) tablespace pg_default;
 
+drop table if exists public.lock CASCADE;
 create table
   public.lock (
     id text not null,
@@ -166,9 +158,7 @@ create table
     constraint lock_pkey primary key (id)
   ) tablespace pg_default;
 
-
--- 폼 UI 정보 저장을 위해서 사용되는 테이블
-drop table if exists form_def;
+drop table if exists form_def CASCADE;
 create table form_def (
   id text primary key,
   html text not null
