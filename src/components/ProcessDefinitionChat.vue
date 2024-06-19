@@ -438,8 +438,12 @@ export default {
                     me.definitionChangeCount++;
 
                     me.loading = false;
-                    me.toggleVersionDialog(false);
+                    await me.toggleVersionDialog(false);
 
+                    // 새 탭으로 열린 프로세스 편집창
+                    if (me.$route.query && me.$route.query.id) {
+                        window.close();
+                    }
                 },
                 onFail: (e) => {
                     console.log(e)
