@@ -13,11 +13,11 @@
             </p>
         </v-row>
 
-        <v-row no-gutters style="margin-top: 30px;" justify="center">
+        <v-row no-gutters style="margin-top: 50px;" justify="center">
             <TenantInfoField v-model="tenantInfo" :isEdit="false" ref="tenantInfoField"></TenantInfoField>
         </v-row>
 
-        <v-row no-gutters justify="center">
+        <v-row no-gutters style="margin-top: 30px; margin-bottom: 100px;" justify="center">
             <v-btn 
                 size="large" 
                 class="mt-2" 
@@ -64,6 +64,8 @@ export default {
                 action: async () => {
                     await me.$refs.tenantInfoField.validCheck()
 
+                    const userInfo = await me.storage.getUserInfo();
+
                     await me.storage.putObject('tenant_def', {
                         id: me.tenantInfo.id,
                         url: me.tenantInfo.url,
@@ -72,18 +74,18 @@ export default {
                         dbname: me.tenantInfo.databaseName,
                         port: me.tenantInfo.port,
                         user: me.tenantInfo.user,
-                        pw: me.tenantInfo.password
+                        pw: me.tenantInfo.password,
+                        owner: userInfo.email
                     });
 
                     // #region 사용자 정보에 추가한 테넌트 ID 업데이트
-                    const userInfo = await me.storage.getUserInfo();
                     const dbUserInfo = await me.storage.getObject(`users/${userInfo.uid}`, {key: 'id'})
                     await me.storage.putObject(`users/${userInfo.uid}`, {
                         ...dbUserInfo,
                         tenants: (dbUserInfo.tenants) ? [...dbUserInfo.tenants, me.tenantInfo.id] : [me.tenantInfo.id]
                     });
                     // #endregion
-
+                    alert("생성된 테넌트에 접속시 현재 로그인된 계정을 이메일 인증 이후 사용하실 수 있습니다.")
                     await me.$router.push('/tenant/manage');
                 },
                 successMsg: '테넌트가 정상적으로 생성되었습니다.'

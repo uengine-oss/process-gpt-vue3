@@ -36,6 +36,9 @@ export default class StorageBaseSupabase {
             });
             if (!result.error) {
                 return result.data;
+            } else if(result.error && result.error.message.includes("Email not confirmed")){
+                result.errorMsg = "계정 인증이 완료되지 않았습니다. 이메일 확인 후 다시 로그인하세요."
+                return result;
             } else {
                 const users = await this.list('users');
                 if (users && users.length > 0) {
@@ -579,7 +582,7 @@ export default class StorageBaseSupabase {
         }
     }
 
-    async writeUserData(value) {
+    async writeUserData(value, userInfo) {
         try {
             if (value.session) {
                 window.localStorage.setItem('accessToken', value.session.access_token);
@@ -588,19 +591,29 @@ export default class StorageBaseSupabase {
                 window.localStorage.setItem('author', value.user.email);
                 window.localStorage.setItem('uid', value.user.id);
                 
-                const count = await this.getCount('users');
-                if (count && count === 1) {
+                if(window.$isTenantServer && userInfo && userInfo.password){
                     await this.putObject('users', {
                         id: value.user.id,
                         username: value.user.user_metadata.name,
                         role: 'superAdmin',
-                        is_admin: true
+                        is_admin: true,
+                        pw: userInfo.password
                     });
                 } else {
-                    await this.putObject('users', {
-                        id: value.user.id,
-                        username: value.user.user_metadata.name
-                    });
+                    const count = await this.getCount('users');
+                    if (count && count === 1) {
+                        await this.putObject('users', {
+                            id: value.user.id,
+                            username: value.user.user_metadata.name,
+                            role: 'superAdmin',
+                            is_admin: true
+                        });
+                    } else {
+                        await this.putObject('users', {
+                            id: value.user.id,
+                            username: value.user.user_metadata.name
+                        });
+                    }
                 }
 
                 const { data, error } = await window.$supabase

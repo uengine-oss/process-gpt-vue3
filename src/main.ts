@@ -110,7 +110,7 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
             }
         );
     } else {
-        let res
+        let res: any;
         window.$isTenantServer = false;
         (async () => {
             let options: {
@@ -182,11 +182,39 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
                         persistSession: false
                     }
                 });
-
+                
                 const storage = StorageBaseFactory.getStorage();
                 await storage.list(`users`).then(async function (response) {
                     if (response && response.code == "42P01" && response.message.includes('does not exist')) {
                         await axios.post(`/execution/create_default_tables`)
+                        .then(async val => {
+                            if(res && res.owner){
+                                const { data, error } = await window.$masterDB
+                                    .from('users')
+                                    .select('*')
+                                    .eq('email', res.owner)
+                                    .maybeSingle(); 
+    
+                                if (error) {
+                                    console.error('Error fetching user:', error);
+                                } else {
+                                    if(data.pw){
+                                        let userInfo = {
+                                            username: data.username,
+                                            email: data.email,
+                                            password: data.pw,
+                                        }
+                                        const result = await storage.createUser(userInfo);
+                                        let dbUserInfo = {
+                                            id: result.user.id,
+                                            username: data.username,
+                                            email: data.email,
+                                        }
+                                        await storage.putObject('users', dbUserInfo);
+                                    }
+                                }
+                            }
+                        })
                         .catch(error => {
                             throw new Error(error && error.detail ? error.detail : error);
                         });
