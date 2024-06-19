@@ -750,12 +750,13 @@ export default class StorageBaseSupabase {
                         matches: matchingColumns
                     };
                 });
-                const result = {
-                    type: 'instance',
-                    header: '프로세스 인스턴스',
-                    list: list
+                if (list.length > 0) {
+                    return {
+                        type: 'instance',
+                        header: '프로세스 인스턴스',
+                        list: list
+                    };
                 }
-                return result;
             }
             return null;
         } catch (error) {
@@ -789,12 +790,13 @@ export default class StorageBaseSupabase {
                         matches: matchingColumns
                     };
                 });
-                const result = {
-                    type: 'definition',
-                    header: '프로세스 정의',
-                    list: list
+                if (list.length > 0) {
+                    return {
+                        type: 'definition',
+                        header: '프로세스 정의',
+                        list: list
+                    };
                 }
-                return result;
             }
             return null;
         } catch (error) {
@@ -822,12 +824,13 @@ export default class StorageBaseSupabase {
                         matches: matchingColumns
                     };
                 });
-                const result = {
-                    type: 'form',
-                    header: '화면 정의',
-                    list: list
+                if (list.length > 0) {
+                    return {
+                        type: 'form',
+                        header: '화면 정의',
+                        list: list
+                    };
                 }
-                return result;                
             }
             return null;
         } catch (error) {
@@ -844,8 +847,9 @@ export default class StorageBaseSupabase {
             
             if (error) throw new StorageBaseError('error in searchChat', error, arguments);
 
-            if (data && data.length > 0) {
-                const list = data.map((item) => {
+            const filteredData = data.filter(item => item.participants.some(participant => participant.email === email));
+            if (filteredData && filteredData.length > 0) {
+                const list = filteredData.map((item) => {
                     const matchingColumns = [item.participants.map(user => user.username).join(', ')]
                     return {
                         title: item.name,
@@ -853,12 +857,13 @@ export default class StorageBaseSupabase {
                         matches: matchingColumns
                     };
                 });
-                const result = {
-                    type: 'chat-room',
-                    header: '채팅방',
-                    list: list
+                if (list.length > 0) {
+                    return {
+                        type: 'chat-room',
+                        header: '채팅방',
+                        list: list
+                    };
                 }
-                return result;                
             }
             return null;
         } catch (error) {
@@ -868,31 +873,34 @@ export default class StorageBaseSupabase {
 
     async searchChat(keyword) {
         try {
-            const { data, error } = await window.$supabase.from('chats')
+            const { data, error } = await window.$supabase.from('chat_room_chats')
                 .select()
                 .or(`messages->>content.ilike.%${keyword}%,messages->>name.ilike.%${keyword}%,messages->>email.ilike.%${keyword}%`);
             
             if (error) throw new StorageBaseError('error in searchChat', error, arguments);
-
+            
             if (data && data.length > 0) {
-                const list = await Promise.all(data.map(async (item) => {
-                    const chatRoom = await this.getString('chat_rooms', {
-                        match: { id: item.id },
-                        column: 'name'
-                    });
-                    const matchingColumns = [ `${item.messages.name}: ${item.messages.content}` ];
+                let list = data.map((item) => {
+                    const email = window.localStorage.getItem('email');
+                    if (item.participants && item.participants.some(participant => participant.email === email)) {
+                        const matchingColumns = [ `${item.messages.name}: ${item.messages.content}` ];
+                        return {
+                            title: item.name,
+                            href: `/chats?id=${item.id}`,
+                            matches: matchingColumns
+                        };
+                    } else {
+                        return null
+                    }
+                });
+                list = list.filter(item => item !== null);
+                if (list.length > 0) {
                     return {
-                        title: chatRoom,
-                        href: `/chats?id=${item.id}`,
-                        matches: matchingColumns
+                        type: 'chat',
+                        header: '채팅 메세지',
+                        list: list
                     };
-                }));
-                const result = {
-                    type: 'chat',
-                    header: '채팅 메세지',
-                    list: list
                 }
-                return result;                
             }
             return null;
         } catch (error) {
