@@ -49,7 +49,6 @@ export default {
         originColumnId: null,
     }),
     async mounted() {
-        const back = BackendFactory.createBackend();
         this.workItem = await back.getWorkItem(this.taskId);
         if(this.$refs.section) this.$refs.section.addEventListener('scroll', this.checkScrollBottom);
     },
@@ -120,7 +119,7 @@ export default {
          * TODO:: UEngineBackend.ts 에서 workitem 삭제 사용시 Backend.ts 로 삭제 함수 공통화
          */
         async deleteTask(task) {
-            await this.back.deleteWorkItem(task.taskId);
+            await back.deleteWorkItem(task.taskId);
             this.column.tasks = this.column.tasks.filter((item) => item.taskId !== task.taskId);
         },
         executeTask(task) {
