@@ -221,7 +221,7 @@ export default {
             {
                 image: help_image_8,
                 title: 'STEP 3. Supabase 연결 정보 입력하기',
-                description: '1. Project URL 섹션의 Reveal 버튼을 클릭하여 Secret 키 값을 확인할 수 있습니다. <br> 2. Secret 키를 복사하여 아래의 Secret 입력창에 붙혀넣습니다.'
+                description: '1. Project API keys 섹션의 Reveal 버튼을 클릭하여 Secret 키 값을 확인할 수 있습니다. <br> 2. Secret 키를 복사하여 아래의 Secret 입력창에 붙혀넣습니다.'
             },
             {
                 image: help_image_9,

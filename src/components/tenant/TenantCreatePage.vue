@@ -25,7 +25,8 @@
                 rounded="pill"
                 type="submit"
                 style="width: 500px;"
-                @click="createTenant"
+                :loading="isLoading"
+                @click="beforeCreateTenant"
             >생성하기</v-btn>
         </v-row>
     </v-container>
@@ -52,11 +53,15 @@ export default {
             user: '',
             password: '',
         },
-
+        isLoading: false,
         storage: null
     }),
 
     methods: {
+        beforeCreateTenant(){
+            this.isLoading = true;
+            this.createTenant();
+        },
         async createTenant() {
             let me = this
             me.$try({
@@ -85,10 +90,9 @@ export default {
                         tenants: (dbUserInfo.tenants) ? [...dbUserInfo.tenants, me.tenantInfo.id] : [me.tenantInfo.id]
                     });
                     // #endregion
-                    alert("생성된 테넌트에 접속시 현재 로그인된 계정을 이메일 인증 이후 사용하실 수 있습니다.")
                     await me.$router.push('/tenant/manage');
                 },
-                successMsg: '테넌트가 정상적으로 생성되었습니다.'
+                successMsg: '테넌트가 정상적으로 생성되었습니다. 생성된 테넌트에 접속시 현재 로그인된 계정을 이메일 인증 이후 사용하실 수 있습니다.'
             });
         }
     },
