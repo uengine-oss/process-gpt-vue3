@@ -34,6 +34,7 @@
                     :node="organizationChart"
                     :key="organizationChart.id"
                     :userList="userList"
+                    @updateNode="updateNode"
             ></OrganizationChart>
         </template>
 
@@ -89,7 +90,7 @@ export default {
         OrganizationChart,
     },
     data: () => ({
-        organizationChart: [],
+        organizationChart: {},
         userList: [],
         chatInfo: {
             title: "organizationChartDefinition.cardTitle",
@@ -105,6 +106,18 @@ export default {
             isStream: true,
             preferredLanguage: "Korean"
         });
+
+        if (this.organizationChart && !this.organizationChart.id) {
+            this.organizationChart = {
+                id: "root",
+                data: {
+                    id: "root",
+                    img: "/src/assets/images/chat/chat-icon.png",
+                    name: "Process-GPT",
+                },
+                children: []
+            };
+        }
     },
     methods: {
         async loadData(path) {
@@ -161,7 +174,9 @@ export default {
 
         async afterGenerationFinished(response) {
             let messageWriting = this.messages[this.messages.length - 1];
-
+            if (messageWriting.isLoading) {
+                messageWriting.isLoading = false
+            }
             if (messageWriting.jsonContent) {
                 let unknown;
                 try {
@@ -172,7 +187,6 @@ export default {
                 }
 
                 if (unknown && unknown.modifications) {
-                    console.log(unknown.modifications)
                     unknown.modifications.forEach(modification => {
                         if (modification.action == "replace") {
                             this.jsonPathReplace(this, modification.targetJsonPath, modification.value)
@@ -257,7 +271,17 @@ export default {
                 });
                 this.userList = await this.storage.list("users");
             }
-        }
+        },
+
+        async updateNode() {
+            const putObj =  {
+                key: 'organization',
+                value: {
+                    chart: this.organizationChart,
+                }
+            };
+            await this.putObject(storageKey, putObj);
+        },
     }
 }
 </script>
