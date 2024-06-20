@@ -204,7 +204,7 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
                                             email: data.email,
                                             password: data.pw,
                                         }
-                                        const result = await storage.createUser(userInfo);
+                                        const result = await storage.signUp(userInfo);
                                         let dbUserInfo = {
                                             id: result.user.id,
                                             username: data.username,

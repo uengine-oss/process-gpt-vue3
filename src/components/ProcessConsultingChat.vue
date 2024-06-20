@@ -57,6 +57,7 @@
 <script>
 import ChatModule from "@/components/ChatModule.vue";
 import ConsultingGenerator from "@/components/ai/ProcessConsultingGenerator.js";
+import ConsultingMentoGenerator from "@/components/ai/ProcessConsultingMentoGenerator.js";
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
@@ -95,6 +96,7 @@ export default {
         userList: [],
         chatRenderKey: 0,
         generatedWorkList: [],
+        isMentoMode: false,
     }),
     computed: {
         filteredChatRoomList() {
@@ -130,6 +132,39 @@ export default {
         if (this.currentChatRoom && this.currentChatRoom.id) {
             this.chatRoomId = this.currentChatRoom.id;
         }
+        this.EventBus.on('messages-updated', () => {
+            if(!this.isMentoMode){
+                this.generator = new ConsultingMentoGenerator(this, {
+                    isStream: true,
+                    preferredLanguage: "Korean"
+                });
+                this.isMentoMode = true
+
+                let chatMsgs = [];
+                if (this.messages && this.messages.length > 0) {
+                    this.messages.forEach((msg) => {
+                        if (msg.content) {
+                            chatMsgs.push({
+                                role: msg.role,
+                                content: msg.content
+                            });
+                        }
+                    });
+                }
+
+                let chatObj = {
+                    role: 'system'
+                };
+                if(this.generator){
+                    this.generator.model = "gpt-4o";
+                }
+                
+                chatObj.content= response;
+                chatMsgs.push(chatObj);
+                this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs];
+                this.startGenerate();
+            }
+        });
     },
     methods: {
         async getUserList(){
@@ -266,7 +301,13 @@ export default {
         async afterGenerationFinished(response) {
             let obj = this.createMessageObj(response, 'system')
             this.putMessage(obj)
-
+            if(this.isMentoMode){
+                this.generator = new ConsultingGenerator(this, {
+                    isStream: true,
+                    preferredLanguage: "Korean"
+                });
+                this.isMentoMode = false
+            }
         },
 
     }
