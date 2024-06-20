@@ -7,7 +7,7 @@ const name = localStorage.getItem("userName")
       <h5 class="text-h5 mb-1 font-weight-semibold">
         Welcome {{ name }}
       </h5>
-      <div class="text-subtitle-1 text-grey100 pb-1">Check all the statastics</div>
+      <div class="text-subtitle-1 text-grey100 pb-1">Check all the statistics</div>
       <v-btn color="primary" class="mt-4 mb-2 px-7" rounded="pill" size="large"> visit now </v-btn>
     </v-card-text>
     <img
