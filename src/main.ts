@@ -184,41 +184,53 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
                 });
                 
                 const storage = StorageBaseFactory.getStorage();
-                await storage.list(`users`).then(async function (response) {
-                    if (response && response.code == "42P01" && response.message.includes('does not exist')) {
-                        await axios.post(`/execution/create_default_tables`)
-                        .then(async val => {
-                            if(res && res.owner){
-                                const { data, error } = await window.$masterDB
-                                    .from('users')
-                                    .select('*')
-                                    .eq('email', res.owner)
-                                    .maybeSingle(); 
-    
-                                if (error) {
-                                    console.error('Error fetching user:', error);
-                                } else {
-                                    if(data.pw){
+
+                async function tryExecute(maxRetries = 2) {
+                    let attempts = 0;
+                    while (attempts <= maxRetries) {
+                        try {
+                            const response = await storage.list(`users`);
+                            if (response && response.code == "42P01" && response.message.includes('does not exist')) {
+                                await axios.post(`/execution/create_default_tables`);
+                                if (res && res.owner) {
+                                    const { data, error } = await window.$masterDB
+                                        .from('users')
+                                        .select('*')
+                                        .eq('email', res.owner)
+                                        .maybeSingle();
+                
+                                    if (error) {
+                                        console.error('Error fetching user:', error);
+                                        throw error;
+                                    } else if (data && data.pw) {
                                         let userInfo = {
                                             username: data.username,
                                             email: data.email,
                                             password: data.pw,
-                                        }
-                                        const result = await storage.createUser(userInfo);
+                                        };
+                                        const result = await storage.signUp(userInfo);
                                         let dbUserInfo = {
                                             id: result.user.id,
                                             username: data.username,
                                             email: data.email,
-                                        }
+                                        };
                                         await storage.putObject('users', dbUserInfo);
                                     }
                                 }
+                                return;
                             }
-                        })
-                        .catch(error => {
-                            throw new Error(error && error.detail ? error.detail : error);
-                        });
+                        } catch (error) {
+                            console.error('Attempt failed:', error);
+                            attempts++;
+                            if (attempts > maxRetries) {
+                                throw new Error('Maximum retry attempts exceeded, last error: ' + error);
+                            }
+                        }
                     }
+                }
+                
+                tryExecute().catch(error => {
+                    console.error('Failed after retries:', error);
                 });
 
             } else {

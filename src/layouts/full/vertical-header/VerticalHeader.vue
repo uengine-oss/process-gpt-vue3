@@ -50,6 +50,7 @@ const sidebarItems = ref<SidebarItem[]>([
         to: '/calendar',
         disable: false
     }
+    // ,
     // {
     //     title: 'chats.title',
     //     icon: 'solar:chat-round-unread-line-duotone',
