@@ -70,7 +70,7 @@ class ProcessGPTBackend implements Backend {
             }
 
             if (!window.$jms) {
-                await axios.post(`/drop-process-table/invoke`, {
+                await axios.post(`/execution/drop-process-table/invoke`, {
                     "input": {
                         "process_definition_id": defId
                     }
@@ -130,7 +130,7 @@ class ProcessGPTBackend implements Backend {
                 const list = await storage.list(defId);
                 if (list.code == ErrorCode.TableNotFound) {
                     try {
-                        await axios.post(`/process-db-schema/invoke`, {
+                        await axios.post(`/execution/process-db-schema/invoke`, {
                             "input": {
                                 "process_definition_id": defId
                             }
@@ -187,7 +187,7 @@ class ProcessGPTBackend implements Backend {
             if (defId && defId != '') {
                 const list = await storage.list(defId);
                 if (list.code == ErrorCode.TableNotFound) {
-                    await axios.post(`/process-db-schema/invoke`, {
+                    await axios.post(`/execution/process-db-schema/invoke`, {
                         "input": {
                             "process_definition_id": defId
                         }
@@ -214,9 +214,9 @@ class ProcessGPTBackend implements Backend {
             input['process_definition_id'] = defId.toLowerCase();
             
             var result: any = null;
-            var url = `/complete`;
+            var url = `/execution/complete`;
             if (input.image != null) {
-                url = `/vision-complete`;
+                url = `/execution/vision-complete`;
             }
             var req = {
                 input: input
@@ -756,7 +756,7 @@ class ProcessGPTBackend implements Backend {
                 input: input
             };
             const token = localStorage.getItem('accessToken');
-            let url = `/complete`;
+            let url = `/execution/complete`;
             await axios.post(url, req, {
                 headers: {
                     'Content-Type': 'application/json',
