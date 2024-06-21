@@ -33,7 +33,11 @@
                             </v-btn>
                         </template>
                     </v-tooltip>
-                    <div v-if="isXmlMode" style="height:calc(100% - 50px); overflow: auto;">
+                    <div v-if="isXmlMode"
+                        style="height: calc(100% - 70px);
+                        margin-top: 70px; overflow: auto;
+                        padding:10px;"
+                    >
                         <XmlViewer :xml="bpmn" />
                     </div>
                     <bpmnu-engine
