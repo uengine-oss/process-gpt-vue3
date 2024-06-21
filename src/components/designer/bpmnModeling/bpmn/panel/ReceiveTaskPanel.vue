@@ -76,10 +76,12 @@
                         dense
                     ></v-textarea>
                 </v-row>
-
-                <v-row class="ma-0 pa-0">
+                <!-- <v-row class="ma-0 pa-0">
                     <div>{{ $t('BpnmPropertyPanel.checkPoints') }}</div>
                     <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
+                </v-row> -->
+                <v-row class="ma-0 pa-0">
+                    <v-btn text color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper"> Field Mapping </v-btn>
                 </v-row>
                 <v-row class="ma-0 pa-0">
                     <v-checkbox
@@ -88,90 +90,6 @@
                     ></v-checkbox>
                 </v-row>
             </div>
-
-            <!-- <div>
-            <v-row class="ma-0 pa-0">
-                <div>{{ $t('BpnmPropertyPanel.checkPoints') }}</div>
-                <v-spacer></v-spacer>
-                <v-icon v-if="editCheckpoint" @click="editCheckpoint = false" style="margin-top: 2px">mdi-close</v-icon>
-            </v-row>
-            <div v-for="(checkpoint, idx) in copyUengineProperties.checkpoints" :key="idx">
-                <div>
-                    <v-checkbox-btn
-                        color="success"
-                        :disabled="isViewMode"
-                        :label="checkpoint.checkpoint"
-                        hide-details
-                        v-model="checkbox"
-                    ></v-checkbox-btn>
-                </div>
-                <v-btn icon flat @click="deleteCheckPoint(checkpoint)" v-if="!isViewMode" v-bind="props">
-                    <TrashIcon stroke-width="1.5" size="20" class="text-error" />
-                </v-btn>
-            </div>
-            <v-text-field v-if="editCheckpoint" v-model="checkpointMessage.checkpoint" :disabled="isViewMode"></v-text-field>
-            <v-row class="ma-0 pa-0" v-if="!isViewMode">
-                <v-spacer></v-spacer>
-                <v-btn v-if="editCheckpoint" @click="addCheckpoint" color="primary" rounded="pill" size="small">{{
-                    $t('BpnmPropertyPanel.add')
-                }}</v-btn>
-                <v-card
-                    v-else
-                    @click="editCheckpoint = !editCheckpoint"
-                    elevation="9"
-                    variant="outlined"
-                    style="padding: 5px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important"
-                >
-                    <div style="display: flex; justify-content: center; align-items: center">
-                        <Icon icon="streamline:add-1-solid" width="20" height="20" style="color: #5eb2e8" />
-                    </div>
-                </v-card>
-            </v-row>
-        </div>
-        <div>
-            <v-row class="ma-0 pa-0">
-                <div>Extended Property</div>
-            </v-row>
-            <v-row class="ma-0 pa-0">
-                <v-table>
-                    <thead>
-                        <tr>
-                            <th class="text-h6">Key</th>
-                            <th class="text-h6">Value</th>
-                            <th class="text-h6">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="param in copyUengineProperties.extendedProperties" :key="param.key" class="month-item">
-                            <td>
-                                {{ param.key }}
-                            </td>
-                            <td>
-                                {{ param.value }}
-                            </td>
-                            <td>
-                                <v-btn icon flat @click="deleteExtendedProperty(param)" v-bind="props">
-                                    <TrashIcon stroke-width="1.5" size="20" class="text-error" />
-                                </v-btn>
-                            </td>
-                        </tr>
-                    </tbody>
-                </v-table>
-                <v-btn v-if="!isViewMode" flat color="primary" @click="editParam = !editParam">add Key/Value</v-btn>
-
-                <v-card v-if="editParam" style="margin-top: 12px">
-                    <v-card-title>Add Parameter</v-card-title>
-                    <v-card-text>
-                        <v-text-field v-model="paramKey" label="Key"></v-text-field>
-                        <v-text-field v-model="paramValue" label="Value"></v-text-field>
-                    </v-card-text>
-                    <v-card-actions>
-                        <v-btn @click="addParameter">add</v-btn>
-                        <v-btn @click="editParam = !editParam">cancel</v-btn>
-                    </v-card-actions>
-                </v-card>
-            </v-row>
-        </div> -->
         </div>
         <div v-else>
             <div>title</div>
@@ -190,28 +108,54 @@
             <v-row class="ma-0 pa-0">
                 <v-text-field v-model="copyUengineProperties.from" label="Key"></v-text-field>
             </v-row>
+            <v-row class="ma-0 pa-0">
+                <v-btn text color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper"> Field Mapping </v-btn>
+            </v-row>
         </div>
+
+        <v-dialog
+            v-model="isOpenFieldMapper"
+            max-width="80%"
+            max-height="80%"
+            @afterLeave="$refs.mapper && $refs.mapper.saveFormMapperJson()"
+        >
+            <mapper
+                ref="mapper"
+                :name="name"
+                :definition="copyDefinition"
+                :formMapperJson="formMapperJson"
+                :expandableTrees="nodes"
+                :replaceFromExpandableNode="replaceFromExpandableNode"
+                :replaceToExpandableNode="replaceToExpandableNode"
+                @saveFormMapperJson="saveMapperJson"
+                @closeFormMapper="isOpenFieldMapper = !isOpenFieldMapper"
+            />
+        </v-dialog>
     </div>
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { Icon } from '@iconify/vue';
+import Mapper from '@/components/designer/mapper/Mapper.vue';
 const storage = StorageBaseFactory.getStorage();
+import yaml from 'yamljs';
 export default {
     name: 'receive-task-panel',
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
-        isViewMode: Boolean
+        isViewMode: Boolean,
+        definition: Object,
+        element: Object
+    },
+    components: {
+        Mapper
     },
     created() {},
     data() {
         return {
-            requiredKeyLists: {
-                parameters: [],
-                checkpoints: []
-            },
+            formMapperJson: '',
             methodList: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
             copyUengineProperties: this.uengineProperties,
             name: '',
@@ -222,6 +166,7 @@ export default {
                 checkpoint: ''
             },
             isEmailActivity: false,
+            copyDefinition: null,
             code: '',
             description: '',
             selectedDefinition: '',
@@ -230,7 +175,12 @@ export default {
             editParam: false,
             paramKey: '',
             paramValue: '',
-            links: ['/* 기존 eureka 서비스 목록 */']
+            links: ['/* 기존 eureka 서비스 목록 */'],
+            isOpenFieldMapper: false,
+            replaceFromExpandableNode: null,
+            replaceToExpandableNode: null,
+            nodes: {},
+            openAPI: ''
         };
     },
     async mounted() {
@@ -238,6 +188,88 @@ export default {
 
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
+        me.copyDefinition = me.definition;
+        this.nodes['test'] = {
+            text: 'test',
+            children: [],
+            parent: null
+        };
+        let instanceNodes = [
+            'instanceId',
+            'name',
+            'locale',
+            'status',
+            'info',
+            'dueDate',
+            'mainProcessInstanceId',
+            'mainActivityTracingTag',
+            'rootProcessInstanceId',
+            'ext1',
+            'ext2',
+            'ext3',
+            'ext4',
+            'ext5'
+        ];
+
+        if (this.nodes['test']) {
+            this.nodes['test'].children = [];
+            instanceNodes.forEach((node) => {
+                this.nodes['test'].children.push(node);
+            });
+        }
+        let def = this.bpmnModeler.getDefinitions();
+        let target = null;
+        def.rootElements.forEach((element) => {
+            if (element.$type == 'bpmn:Collaboration') {
+                element.messageFlows.forEach((messageFlow) => {
+                    if (messageFlow.sourceRef.id == this.element.id) {
+                        target = messageFlow.targetRef.id;
+                    }
+                });
+            }
+        });
+
+        if (target) {
+            let targetElement = this.findElement(def, 'id', target);
+            let openAPIInfo = JSON.parse(targetElement.extensionElements.values[0].json);
+            this.openAPI = openAPIInfo.openAPI;
+            let nativeObject = yaml.parse(this.openAPI);
+            console.log(nativeObject);
+            let schemas = nativeObject.components.schemas;
+            console.log(schemas);
+
+            Object.keys(schemas).forEach((key) => {
+                this.nodes[key] = {
+                    text: key,
+                    children: [],
+                    parent: null
+                };
+                Object.keys(schemas[key].properties).forEach((propertyKey) => {
+                    this.nodes[key].children.push(propertyKey);
+                    this.nodes[propertyKey] = {
+                        text: propertyKey
+                    };
+                });
+
+                me.replaceFromExpandableNode = function (nodeKey) {
+                    if (nodeKey.indexOf(`${key}.`) != -1) {
+                        return nodeKey.replace(`${key}.`, `[${key}].`);
+                    }
+                    
+                    return null;
+                };
+
+                me.replaceToExpandableNode = function (nodeKey) {
+                    if (nodeKey.indexOf(`[${key}].`) != -1) {
+                        return nodeKey.replace(`[${key}].`, `${key}.`);
+                    }
+
+                    return null;
+                };
+            });
+
+            me.formMapperJson = JSON.stringify(me.copyUengineProperties.mapperIn, null, 2);
+        }
     },
     computed: {
         inputData() {
@@ -259,6 +291,7 @@ export default {
             return result;
         }
     },
+
     watch: {
         isEmailActivity(newVal) {
             if (newVal) {
@@ -267,6 +300,22 @@ export default {
         }
     },
     methods: {
+        findElement(obj, key, id) {
+            if (obj.hasOwnProperty(key) && obj[key] === id) {
+                return obj;
+            }
+
+            for (let prop in obj) {
+                if (obj[prop] instanceof Object) {
+                    let result = this.findElement(obj[prop], key, id);
+                    if (result) {
+                        return result;
+                    }
+                }
+            }
+
+            return null;
+        },
         deleteInputData(inputData) {
             const index = this.copyUengineProperties.parameters.findIndex((element) => element.key === inputData.key);
             if (index > -1) {
@@ -292,6 +341,12 @@ export default {
                 this.copyUengineProperties.extendedProperties.splice(index, 1);
                 this.$emit('update:uEngineProperties', this.copyUengineProperties);
             }
+        },
+        saveMapperJson(jsonString) {
+            this.formMapperJson = jsonString;
+            // this.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
+            this.copyUengineProperties.mapperIn = JSON.parse(jsonString);
+            // this.$emit('update:uEngineProperties', this.copyUengineProperties);
         },
         deleteCheckPoint(item) {
             const index = this.copyUengineProperties.checkpoints.findIndex((element) => element.checkpoint === item.checkpoint);

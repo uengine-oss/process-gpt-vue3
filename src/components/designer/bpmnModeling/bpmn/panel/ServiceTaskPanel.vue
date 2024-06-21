@@ -19,7 +19,7 @@
                 </v-col>
             </v-row>
         </div>
-        <div style="height: 70%">
+        <div style="height: 40%" v-if="copyUengineProperties.httpMethods != 'GET'">
             <v-row class="ma-0 pa-0" style="height: 100%">
                 <vue-monaco-editor
                     v-model:value="copyUengineProperties.payload"
@@ -38,9 +38,12 @@
                 생성
             </v-btn>
         </div>
+        <v-row class="ma-0 pa-0">
+                    <v-btn text color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper"> Field Mapping </v-btn>
+                </v-row>
         <div>
-            <div>Return 값을 저장 할 변수</div>
-            <v-row class="ma-0 pa-0">
+            <!-- <div>Return 값을 저장 할 변수</div> -->
+            <!-- <v-row class="ma-0 pa-0">
                 <v-autocomplete
                     :items="processVariables"
                     item-props
@@ -48,9 +51,27 @@
                     :item-title="(item) => item.name"
                     v-model="copyUengineProperties.selectedOut"
                 ></v-autocomplete>
-                <!-- <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts> -->
-            </v-row>
+                <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
+            </v-row> -->
         </div>
+        <v-dialog
+            v-model="isOpenFieldMapper"
+            max-width="80%"
+            max-height="80%"
+            @afterLeave="$refs.mapper && $refs.mapper.saveFormMapperJson()"
+        >
+            <mapper
+                ref="mapper"
+                :name="name"
+                :definition="copyDefinition"
+                :formMapperJson="formMapperJson"
+                :expandableTrees="nodes"
+                :replaceFromExpandableNode="replaceFromExpandableNode"
+                :replaceToExpandableNode="replaceToExpandableNode"
+                @saveFormMapperJson="saveMapperJson"
+                @closeFormMapper="isOpenFieldMapper = !isOpenFieldMapper"
+            />
+        </v-dialog>
     </div>
 </template>
 <script>
@@ -60,10 +81,15 @@ import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { Icon } from '@iconify/vue';
 const storage = StorageBaseFactory.getStorage();
 import BPMNAPIGenerator from '@/components/ai/BPMNAPIGenerator.js';
+import Mapper from '@/components/designer/mapper/Mapper.vue';
+import yaml from 'yamljs';
 // import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
 
 export default {
     name: 'service-task-panel',
+    components: {
+        Mapper
+    },
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
@@ -109,7 +135,13 @@ export default {
             httpMethods: null,
             copyDefinition: this.definition,
             processVariables: [],
-            apiServiceURL: ''
+            apiServiceURL: '',
+            formMapperJson: '',
+            replaceFromExpandableNode: null,
+            replaceToExpandableNode: null,
+            nodes: {},
+            openAPI: '',
+            isOpenFieldMapper: false
         };
     },
     async mounted() {
@@ -123,10 +155,70 @@ export default {
             }));
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
+        
+        let def = this.bpmnModeler.getDefinitions();
+        let target = null;
+        def.rootElements.forEach((element) => {
+            if (element.$type == 'bpmn:Collaboration') {
+                element.messageFlows.forEach((messageFlow) => {
+                    if (messageFlow.sourceRef.id == this.element.id) {
+                        target = messageFlow.targetRef.id;
+                    }
+                });
+            }
+        });
+
+        if (target) {
+            let targetElement = this.findElement(def, 'id', target);
+            let openAPIInfo = JSON.parse(targetElement.extensionElements.values[0].json);
+            this.openAPI = openAPIInfo.openAPI;
+            let nativeObject = yaml.parse(this.openAPI);
+            console.log(nativeObject);
+            let schemas = nativeObject.components.schemas;
+            console.log(schemas);
+
+            Object.keys(schemas).forEach((key) => {
+                this.nodes[key] = {
+                    text: key,
+                    children: [],
+                    parent: null
+                };
+                Object.keys(schemas[key].properties).forEach((propertyKey) => {
+                    this.nodes[key].children.push(propertyKey);
+                    this.nodes[propertyKey] = {
+                        text: propertyKey
+                    };
+                });
+
+                me.replaceFromExpandableNode = function (nodeKey) {
+                    if (nodeKey.indexOf(`${key}.`) != -1) {
+                        return nodeKey.replace(`${key}.`, `[${key}].`);
+                    }
+
+                    return null;
+                };
+
+                me.replaceToExpandableNode = function (nodeKey) {
+                    if (nodeKey.indexOf(`[${key}].`) != -1) {
+                        return nodeKey.replace(`[${key}].`, `${key}.`);
+                    }
+
+                    return null;
+                };
+            });
+
+            me.formMapperJson = JSON.stringify(me.copyUengineProperties.selectedOut, null, 2);
+        }
     },
     computed: {},
     watch: {},
     methods: {
+        saveMapperJson(jsonString) {
+            this.formMapperJson = jsonString;
+            // this.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
+            this.copyUengineProperties.mapperIn = JSON.parse(jsonString);
+            // this.$emit('update:uEngineProperties', this.copyUengineProperties);
+        },
         async getToken() {
             let option = {
                 key: 'key'
