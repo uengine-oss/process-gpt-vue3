@@ -176,7 +176,7 @@
         </v-dialog>
 
         <v-dialog v-model="executeDialog" max-width="80%">
-            <dry-run-process v-if="mode == 'BPMN'" :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
+            <dry-run-process v-if="mode == 'uEngine'" :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
             <process-execute-dialog v-else :definitionId="definitionPath" :roles="roles" @close="executeDialog = false"></process-execute-dialog>
         </v-dialog>
 
