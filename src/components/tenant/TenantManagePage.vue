@@ -144,10 +144,10 @@ export default {
         },
         
         toSelectedTenantPage(tenantId) {
-            if(location.port === '5173')
-                location.href = `http://${tenantId}.process-gpt.io:${location.port}/`
+            if(!location.port || location.port == '')
+                location.href = `https://${tenantId}.process-gpt.io`
             else
-                location.href = `https://${tenantId}.process-gpt.io/`
+                location.href = `http://${tenantId}.process-gpt.io:${location.port}`
         }
     },
 

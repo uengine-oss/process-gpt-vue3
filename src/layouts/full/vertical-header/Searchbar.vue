@@ -27,7 +27,7 @@ import { Icon } from '@iconify/vue';
         </template>
 
         <!-- Search Result -->
-        <v-sheet v-if="searchResult.length > 0" width="360" elevation="10" rounded="md">
+        <v-sheet width="360" elevation="10" rounded="md">
             <h5 class="text-h5 mt-3 px-5 pb-3">검색 결과</h5>
             <perfect-scrollbar style="height: 380px">
                 <v-list class="pt-0 pb-5" lines="two">
@@ -70,10 +70,10 @@ export default {
         summarize(text) {
             const startIndex = text.indexOf(this.searchKeyword);
             if (startIndex !== -1) {
-                const endIndex = Math.min(startIndex + 20, text.length);
+                const endIndex = Math.min(startIndex + 40, text.length);
                 return text.substring(startIndex, endIndex) + (endIndex < text.length ? '...' : '');
             }
-            return text.length > 20 ? text.substring(0, 20) + '...' : text;
+            return text.length > 40 ? text.substring(0, 40) + '...' : text;
         }
     },
 }

@@ -33,7 +33,15 @@
                             </v-btn>
                         </template>
                     </v-tooltip>
+                    <div v-if="isXmlMode"
+                        style="height: calc(100% - 70px);
+                        margin-top: 70px; overflow: auto;
+                        padding:10px;"
+                    >
+                        <XmlViewer :xml="bpmn" />
+                    </div>
                     <bpmnu-engine
+                        v-else
                         ref="bpmnVue"
                         :bpmn="bpmn"
                         :options="options"
@@ -176,8 +184,8 @@
         </v-dialog>
 
         <v-dialog v-model="executeDialog" max-width="80%">
-            <dry-run-process :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
-            <!-- <process-execute-dialog :definitionId="definitionPath" :roles="roles" @close="executeDialog = false"></process-execute-dialog> -->
+            <dry-run-process v-if="mode == 'uEngine'" :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
+            <process-execute-dialog v-else :definitionId="definitionPath" :roles="roles" @close="executeDialog = false"></process-execute-dialog>
         </v-dialog>
 
         <!-- <v-navigation-drawer permanent location="right" :width="400"> {{ panelId }} </v-navigation-drawer> -->
@@ -196,6 +204,7 @@ import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
+import XmlViewer from 'vue3-xml-viewer'
 
 export default {
     name: 'ProcessDefinition',
@@ -207,7 +216,8 @@ export default {
         Icon,
         VDataTable,
         ProcessExecuteDialog,
-        DryRunProcess
+        DryRunProcess,
+        XmlViewer
     },
     props: {
         processDefinition: Object,
@@ -215,7 +225,8 @@ export default {
         isViewMode: Boolean,
         currentActivities: Array,
         definitionChat: Object,
-        definitionPath: String
+        definitionPath: String,
+        isXmlMode: Boolean
     },
     data: () => ({
         panel: false,

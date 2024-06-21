@@ -1,8 +1,8 @@
 <template>
     <div v-if="inputItems.length > 0" class="input-group" style="width: 100%;">
-        <v-row v-for="item in inputItems" :key="item.name">
+        <v-row v-for="item in inputItems" :key="item.key">
             <v-col cols="4">
-                <v-list-subheader>{{item.name}}</v-list-subheader>
+                <v-list-subheader>{{item.key}}</v-list-subheader>
             </v-col>
             <v-col cols="8">
                 <v-text-field

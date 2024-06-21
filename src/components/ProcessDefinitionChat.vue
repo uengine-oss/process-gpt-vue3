@@ -8,6 +8,7 @@
                     :processDefinition="processDefinition"
                     :key="definitionChangeCount"
                     :isViewMode="isViewMode"
+                    :isXmlMode="isXmlMode"
                     :definitionPath="fullPath"
                     :definitionChat="this"
                     @update="updateDefinition"
@@ -105,6 +106,20 @@
                                     </template>
                                     <span>{{ $t('processDefinition.deleteProcess') }}</span>
                                 </v-tooltip>
+
+                                <v-tooltip location="bottom">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-if="bpmn && fullPath != ''" v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                            @click="showXmlMode()"
+                                            density="comfortable"
+                                        >
+                                            <Icon v-if="isXmlMode" icon="fluent-mdl2:modeling-view" width="24" height="24" />   
+                                            <Icon v-else icon="lucide:code-xml" width="24" height="24" />
+                                        </v-btn>
+                                    </template>
+                                    <span>{{ isXmlMode ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>
+                                </v-tooltip>
+
                             </v-row>
                         </template>
                     </Chat>
@@ -171,6 +186,16 @@
                                 </template>
                                 <span>{{ $t('processDefinition.deleteProcess') }}</span>
                             </v-tooltip>
+
+                            <v-tooltip location="bottom">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-if="bpmn && fullPath != ''" v-bind="props" icon variant="text" class="text-medium-emphasis" @click="showXmlMode()">
+                                        <Icon v-if="isXmlMode" icon="fluent-mdl2:modeling-view" width="24" height="24" />   
+                                        <Icon v-else icon="lucide:code-xml" width="24" height="24" />
+                                    </v-btn>
+                                </template>
+                                <span>{{ isXmlMode ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>
+                            </v-tooltip>
                         </div>
                     </template>
                 </Chat>
@@ -222,6 +247,7 @@ export default {
         ProcessDefinitionVersionManager
     },
     data: () => ({
+        isXmlMode: false,
         prompt: "",
         processDefinition: null,
         bpmn: null,
@@ -313,6 +339,9 @@ export default {
         }
     },
     methods: {
+        showXmlMode(){
+            this.isXmlMode = !this.isXmlMode;
+        },
         beforeDelete() {
             if (this.bpmn) {
                 this.deleteDialog = true;
@@ -438,8 +467,12 @@ export default {
                     me.definitionChangeCount++;
 
                     me.loading = false;
-                    me.toggleVersionDialog(false);
+                    await me.toggleVersionDialog(false);
 
+                    // 새 탭으로 열린 프로세스 편집창
+                    if (me.$route.query && me.$route.query.id) {
+                        window.close();
+                    }
                 },
                 onFail: (e) => {
                     console.log(e)

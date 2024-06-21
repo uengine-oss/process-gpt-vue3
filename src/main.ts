@@ -45,6 +45,8 @@ import 'vue-diff/dist/index.css';
 VueDiff.hljs.registerLanguage('xml', xml);
 
 import VueScrollTo from 'vue-scrollto';
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
+
 const i18n = createI18n({
     locale: 'ko',
     fallbackLocale: 'en',
@@ -108,7 +110,7 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
             }
         );
     } else {
-        let res
+        let res: any;
         window.$isTenantServer = false;
         (async () => {
             let options: {
@@ -180,6 +182,57 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
                         persistSession: false
                     }
                 });
+                
+                const storage = StorageBaseFactory.getStorage();
+
+                async function tryExecute(maxRetries = 2) {
+                    let attempts = 0;
+                    while (attempts <= maxRetries) {
+                        try {
+                            const response = await storage.list(`users`);
+                            if (response && response.code == "42P01" && response.message.includes('does not exist')) {
+                                await axios.post(`/execution/create_default_tables`);
+                                if (res && res.owner) {
+                                    const { data, error } = await window.$masterDB
+                                        .from('users')
+                                        .select('*')
+                                        .eq('email', res.owner)
+                                        .maybeSingle();
+                
+                                    if (error) {
+                                        console.error('Error fetching user:', error);
+                                        throw error;
+                                    } else if (data && data.pw) {
+                                        let userInfo = {
+                                            username: data.username,
+                                            email: data.email,
+                                            password: data.pw,
+                                        };
+                                        const result = await storage.signUp(userInfo);
+                                        let dbUserInfo = {
+                                            id: result.user.id,
+                                            username: data.username,
+                                            email: data.email,
+                                        };
+                                        await storage.putObject('users', dbUserInfo);
+                                    }
+                                }
+                                return;
+                            }
+                        } catch (error) {
+                            console.error('Attempt failed:', error);
+                            attempts++;
+                            if (attempts > maxRetries) {
+                                throw new Error('Maximum retry attempts exceeded, last error: ' + error);
+                            }
+                        }
+                    }
+                }
+                
+                tryExecute().catch(error => {
+                    console.error('Failed after retries:', error);
+                });
+
             } else {
                 alert('해당 주소는 존재하지 않는 주소입니다. 가입 후 이용하세요.');
                 window.location.href = 'https://www.process-gpt.io';

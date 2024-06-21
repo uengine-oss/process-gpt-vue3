@@ -13,27 +13,17 @@
             </p>
         </v-row>
         
-        <v-row style="height: 80%;">
-            <div>
-                <v-carousel v-model="slideNumber" style="height: 100%; width: 100%;">
-                    <v-carousel-item
-                        v-for="(slide, i) in guideSlides"
-                        :key="i"
-                        :value="i"
-                    >
-                        <v-sheet
-                        :color="color"
-                            height="100%"
-                            tile
-                        >
-                        <div class="d-flex fill-height justify-center align-center flex-column">
+        <v-row>
+            <div class="guide-content">
+                <div v-for="(slide, i) in guideSlides" :key="i">
+                    <v-sheet class="mb-5" :color="color" tile>
+                        <div class="d-flex flex-column align-center">
                             <h2 class="text-grey200">{{ slide.title }}</h2>
-                            <img :src="slide.image" style="width: 60%; margin-top: 0px;"/>
-                            <div class="text-grey100" style="margin-top: 1px; text-align: center;" :innerHTML="slide.description"></div>
+                            <img :src="slide.image" style="width: 60%; margin-top: 20px;"/>
+                            <div class="text-grey100" style="margin-top: 20px; text-align: center;" v-html="slide.description"></div>
                         </div>
-                        </v-sheet>
-                    </v-carousel-item>
-                </v-carousel>
+                    </v-sheet>
+                </div>
             </div>
         </v-row>
     </v-container>
