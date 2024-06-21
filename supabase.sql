@@ -138,6 +138,18 @@ create table public.chat_rooms (
   constraint chat_rooms_pkey primary key (id)
 ) tablespace pg_default;
 
+create view
+  public.chat_room_chats as
+select
+  cr.id,
+  cr.name,
+  cr.participants,
+  c.uuid,
+  c.messages
+from
+  chat_rooms cr
+  join chats c on cr.id = c.id;
+
 drop table if exists public.proc_def_arcv CASCADE;
 create table
   public.proc_def_arcv (

@@ -10,14 +10,7 @@
                 팀 추가
             </v-btn>
             <div v-else class="d-flex">
-                <v-btn v-if="editUser.data.isTeam" color="primary" variant="flat" density="comfortable"
-                    @click="openDialog('addUser')">
-                    <template v-slot:prepend>
-                        <Icon icon="tabler:user-plus" width="20" height="20" />
-                    </template>
-                    팀원 추가
-                </v-btn>
-                <v-btn color="info" class="ml-2" variant="flat" density="comfortable" @click="openDialog('edit')">
+                <v-btn color="primary" class="ml-2" variant="flat" density="comfortable" @click="openDialog('edit')">
                     <template v-slot:prepend>
                         <Icon icon="tabler:user-edit" width="20" height="20" />
                     </template>
@@ -38,65 +31,64 @@
             <v-card v-if="dialogType == 'addTeam'">
                 <v-card-title>팀 추가</v-card-title>
                 <v-card-text class="text-center">
-                    <v-avatar color="grey" rounded="0" size="100" class="mb-5">
-                        <v-img src=""></v-img>
-                    </v-avatar>
-                    <v-text-field label="팀 ID"></v-text-field>
-                    <v-text-field label="팀명"></v-text-field>
+                    <v-text-field v-model="newTeam.id" label="팀 ID"></v-text-field>
+                    <v-text-field v-model="newTeam.name" label="팀명"></v-text-field>
                 </v-card-text>
                 <v-card-actions class="pt-0">
                     <v-spacer></v-spacer>
-                    <v-btn color="primary" @click="dialog = false">추가</v-btn>
-                    <v-btn color="error" @click="dialog = false">취소</v-btn>
-                </v-card-actions>
-            </v-card>
-
-            <v-card v-if="dialogType == 'addUser'">
-                <v-card-title>팀원 추가</v-card-title>
-                <v-card-text class="text-center">
-                    <v-select v-model="editUser.children" :items="allUsers" label="팀원" multiple item-title="data.name">
-                        <template v-slot:selection="{ item, index }">
-                            <v-chip v-if="index < 4">
-                                <span>{{ item.raw.data.name }}</span>
-                            </v-chip>
-                            <span v-if="index === 4" class="text-grey text-caption align-self-center">
-                                (+{{ editUser.children.length - 4 }} others)
-                            </span>
-                        </template>
-                    </v-select>
-                </v-card-text>
-                <v-card-actions class="pt-0">
-                    <v-spacer></v-spacer>
-                    <v-btn color="primary" @click="dialog = false">추가</v-btn>
+                    <v-btn color="primary" @click="updateNode">추가</v-btn>
                     <v-btn color="error" @click="dialog = false">취소</v-btn>
                 </v-card-actions>
             </v-card>
 
             <v-card v-if="dialogType == 'edit'">
+                <v-card-title class="">수정</v-card-title>
                 <v-card-text class="text-center">
-                    <v-avatar color="grey" rounded="0" size="100" class="mb-5">
+                    <v-avatar v-if="!editUser.data.isTeam" color="grey" rounded="0" size="100" class="mb-5">
                         <v-img v-if="editUser.data.img" :src="editUser.data.img"></v-img>
                     </v-avatar>
+
                     <v-select v-if="!editUser.data.isTeam" v-model="editUser.data.pid" :items="allTeams" item-title="name"
                         item-value="id" label="팀"></v-select>
+                    
                     <v-text-field v-model="editUser.data.name" label="이름"></v-text-field>
+                    
                     <v-text-field v-if="editUser.data.role" v-model="editUser.data.role" label="역할"></v-text-field>
+                    
+                    <v-autocomplete v-if="editUser.data.isTeam" v-model="editUser.children" :items="allUsers" chips 
+                        closable-chips color="blue-grey-lighten-2" item-title="data.name" :item-value="item => item" 
+                        multiple label="팀원 선택" small-chips>
+                        <template v-slot:chip="{ props, item }">
+                            <v-chip v-if="item.raw.data.img" v-bind="props" :prepend-avatar="item.raw.data.img" :text="item.raw.data.name"></v-chip>
+                            <v-chip v-else v-bind="props" prepend-icon="mdi-account-circle" :text="item.raw.data.name"></v-chip>
+                        </template>
+                        <template v-slot:item="{ props, item }">
+                            <v-list-item v-if="item.raw.data.img" v-bind="props" :prepend-avatar="item.raw.data.img" 
+                                :title="item.raw.data.name" :subtitle="item.raw.data.email"></v-list-item>
+                            <v-list-item v-else v-bind="props" :title="item.raw.data.name" :subtitle="item.raw.data.email">
+                                <template v-slot:prepend>
+                                    <v-icon style="position: relative; margin-right: 10px; margin-left: -3px;" size="48">mdi-account-circle</v-icon>
+                                </template>
+                            </v-list-item>
+                        </template>
+                    </v-autocomplete>
                 </v-card-text>
                 <v-card-actions class="pt-0">
                     <v-spacer></v-spacer>
-                    <v-btn color="primary" @click="dialog = false">수정</v-btn>
+                    <v-btn color="primary" @click="updateNode">수정</v-btn>
                     <v-btn color="error" @click="dialog = false">취소</v-btn>
                 </v-card-actions>
             </v-card>
 
             <v-card v-if="dialogType == 'delete'">
+                <v-card-title>{{ editUser.data.isTeam ? '팀' : '팀원' }} 삭제</v-card-title>
                 <v-card-text>
                     <div v-if="editUser.data.isTeam">'{{ editUser.data.name }}' 을/를 삭제하시겠습니까?</div>
                     <div v-else>'{{ currentTeam.name }}' 에서 '{{ editUser.data.name }}' 님을 삭제하시겠습니까?</div>
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
-                    <v-btn color="primary" @click="dialog = false">삭제</v-btn>
+                    <v-btn color="primary" @click="updateNode">삭제</v-btn>
                     <v-btn color="error" @click="dialog = false">취소</v-btn>
                 </v-card-actions>
             </v-card>
@@ -126,6 +118,12 @@ export default {
         dialogType: '',
         allTeams: [],
         allUsers: [],
+        newTeam: {
+            id: '',
+            name: '',
+            isTeam: true,
+            img: '/src/assets/images/chat/chat-icon.png',
+        },
     }),
     computed: {
         isRoot() {
@@ -239,7 +237,47 @@ export default {
         openDialog(type) {
             this.dialog = true;
             this.dialogType = type;
+            if (type == 'addTeam') {
+                this.newTeam = {
+                    id: '',
+                    name: '',
+                    isTeam: true,
+                    img: '/src/assets/images/chat/chat-icon.png',
+                }
+            }
         },
+        async updateNode() {
+            if (this.dialogType == 'addTeam') {
+                this.node.children.push({
+                    id: this.newTeam.id,
+                    data: this.newTeam,
+                    children: []
+                })
+            } else if (this.dialogType == 'delete') {
+                this.node.children = await this.deleteNode(this.editUser, this.node.children);
+            } else if (this.dialogType == 'edit') {
+                if (this.editUser.data.isTeam) {
+                    this.editUser.children.forEach(user => {
+                        user.data.pid = this.editUser.id;
+                    })
+                }
+            }
+            await this.drawTree();
+            
+            this.$emit('updateNode');
+            this.dialog = false;
+            this.dialogType = '';
+        },
+        deleteNode(obj, children) {
+            if (children && children.some(item => item.id == obj.id)) {
+                children = children.filter(item => item.id != obj.id);
+            } else {
+                children.forEach(async (item) => {
+                    item.children = await this.deleteNode(obj, item.children);
+                })
+            }
+            return children;
+        }
     },
 }
 </script>

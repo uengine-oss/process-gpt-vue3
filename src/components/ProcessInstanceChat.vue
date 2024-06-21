@@ -221,11 +221,15 @@ export default {
 
                     // const jsonData = JSON.parse(response);
                     const jsonData = response;
-                    if (jsonData && jsonData.nextActivities && jsonData.nextActivities.length > 0) {
-                        messageWriting.content = jsonData.nextActivities.map(item => item.messageToUser).join('\n\n');
+                    if (jsonData) {
+                        if (jsonData.instanceId) {
+                            me.processInstance = await backend.getInstance(jsonData.instanceId);
+                        }
+                        if (jsonData.nextActivities && jsonData.nextActivities.length > 0) {
+                            messageWriting.content = jsonData.nextActivities.map(item => item.messageToUser).join('\n\n');
+                        }
                     }
 
-                    me.processInstance = await backend.getInstance(jsonData.instanceId);
                     me.checkDisableChat();
                     me.EventBus.emit('instances-updated');
                     me.EventBus.emit('process-definition-updated');

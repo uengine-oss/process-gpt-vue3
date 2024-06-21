@@ -66,7 +66,7 @@ export const useAuthStore = defineStore({
                     if (result.error) {
                         alert(result.errorMsg);
                     } else {
-                        await storage?.writeUserData(result);
+                        await storage?.writeUserData(result, userInfo);
                         router.push(window.$isTenantServer ? '/tenant/manage' : '/dashboard2');
                     }
                 }

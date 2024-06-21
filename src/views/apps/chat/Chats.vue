@@ -128,6 +128,9 @@ export default {
             this.chatRenderKey++;
         });
 
+        if (this.$route.query.id) {
+            this.chatRoomSelected(this.chatRoomList.find(room => room.id === this.$route.query.id));
+        }
         if (this.currentChatRoom && this.currentChatRoom.id) {
             this.chatRoomId = this.currentChatRoom.id;
         }

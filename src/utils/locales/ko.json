@@ -195,8 +195,7 @@
     },
     "createAdminAccount": {
         "createAccountHeader": "어드민 정보",
-        "createTenantHeader": "테넌트 정보",
-        "tenantID": "테넌트 ID",
+        "tenantID": "테넌트 ID *",
         "supabaseConnectionInfo": "Supabase 연결 정보"
     },
     "forgotPassword": {

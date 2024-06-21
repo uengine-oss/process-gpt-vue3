@@ -99,7 +99,7 @@
                                             :isViewMode="true"
                                         ></process-definition> -->
                                     </div>
-                                    <div v-else>No BPMN found</div>
+                                    <div v-else class="no-bpmn-found-text">No BPMN found</div>
                                 </div>
                                 <div v-if="checkPoints" style="overflow: auto; height: 50%">
                                     <v-card-title>CheckPoint ({{ checkedCount }}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>
@@ -238,7 +238,7 @@
                                             :isViewMode="true"
                                         ></process-definition> -->
                                     </div>
-                                    <div v-else>No BPMN found</div>
+                                    <div v-else class="no-bpmn-found-text">No BPMN found</div>
                                 </div>
                                 <div v-if="checkPoints" style="overflow: auto; height: 50%">
                                     <v-card-title>CheckPoint ({{ checkedCount }}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>

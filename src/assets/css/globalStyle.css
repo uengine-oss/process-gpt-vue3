@@ -6,6 +6,9 @@ hr {
     opacity: 1 !important;
 }
 
+.no-bpmn-found-text {
+    margin-left:18px;
+}
 
 .processVariables-zoom {
     position: absolute;

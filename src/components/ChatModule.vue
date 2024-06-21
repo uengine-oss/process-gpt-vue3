@@ -140,6 +140,7 @@ export default {
                                 &&  me.messages[me.messages.length - 1].content.replace(/\s+/g, '') === data.new.messages.content.replace(/\s+/g, '')) {
                                     me.messages[me.messages.length - 1] = data.new.messages
                                     me.EventBus.emit('instances-updated');
+                                    me.EventBus.emit('messages-updated');
                                 } else {
                                     me.messages.push(data.new.messages)
                                 }
