@@ -33,7 +33,11 @@
                             </v-btn>
                         </template>
                     </v-tooltip>
+                    <div v-if="isXmlMode" style="height: 99%">
+                        <XmlViewer :xml="bpmn" />
+                    </div>
                     <bpmnu-engine
+                        v-else
                         ref="bpmnVue"
                         :bpmn="bpmn"
                         :options="options"
@@ -196,6 +200,7 @@ import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
+import XmlViewer from 'vue3-xml-viewer'
 
 export default {
     name: 'ProcessDefinition',
@@ -207,7 +212,8 @@ export default {
         Icon,
         VDataTable,
         ProcessExecuteDialog,
-        DryRunProcess
+        DryRunProcess,
+        XmlViewer
     },
     props: {
         processDefinition: Object,
@@ -215,7 +221,8 @@ export default {
         isViewMode: Boolean,
         currentActivities: Array,
         definitionChat: Object,
-        definitionPath: String
+        definitionPath: String,
+        isXmlMode: Boolean
     },
     data: () => ({
         panel: false,
