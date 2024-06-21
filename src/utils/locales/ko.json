@@ -79,6 +79,9 @@
     "definitionManagement": {
         "title": "정의 관리"
     },
+    "systemDefinition": {
+        "title": "시스템 정의"
+    },
     "organizationChartDefinition": {
         "title": "조직도 정의",
         "cardTitle": "조직도 관리",
