@@ -65,25 +65,25 @@ export default {
                 let workitem = me.dryRunWorkItem
                 let activitiy = workitem.activity
                 me.inputItems = activitiy.parameters.filter((item) => item.direction.includes('OUT'))
-                        .map((item) => ({ name: item.variable.name, value: item.variable.value }));
+                        .map((item) => ({ name: item.variable.name, key: item.argument.text, value: item.variable.defaultValue }));
             } else {
                 if (!me.workItem.activity.parameters) me.workItem.activity.parameters = [];
                 if (me.isCompleted) {
                     me.outputItems = me.workItem.activity.parameters.filter((item) => item.direction.includes('IN'))
-                        .map((item) => ({ name: item.variable.name, value: me.workItem.parameterValues[item.variable.name]}));
+                        .map((item) => ({ name: item.variable.name, key: item.argument.text, value: me.workItem.parameterValues[item.argument.text]}));
                 } else {
                     me.inputItems = me.workItem.activity.parameters.filter((item) => item.direction.includes('OUT'))
-                        .map((item) => ({ name: item.variable.name, value: item.variable.value }));
+                        .map((item) => ({ name: item.variable.name, key: item.argument.text, value: item.variable.defaultValue }));
                 }
             }
         },
-    async completeTask() {
+        async completeTask() {
             var me = this;
             me.$try({
                 context: me,
                 action: async () => {
                     let value = { parameterValues: {} };
-                    let parameterValues = me.inputItems.reduce((acc, item) => ({ ...acc, [item.name]: item.value }), {});
+                    let parameterValues = me.inputItems.reduce((acc, item) => ({ ...acc, [item.key]: item.value }), {});
                     if (parameterValues) value.parameterValues = parameterValues;
                    
                     if(me.isDryRun) {
@@ -98,7 +98,7 @@ export default {
                             processExecutionCommand: processExecutionCommand,
                             workItem: value   
                         });
-                        me.$emit('close')
+                        me.close();
                     } else {
                         if (me.workItem.execScope) value.execScope = me.workItem.execScope;
                         await backend.putWorkItemComplete(me.$route.params.taskId, value);
@@ -107,7 +107,10 @@ export default {
                 },
                 successMsg: '해당 업무 완료'
             });
-        }
+        },
+        close(){
+            this.$emit('close')
+        },
     }
 };
 </script>

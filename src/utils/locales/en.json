@@ -108,6 +108,8 @@
         "zoom": "Canvas Zoom in/Zoom out",
         "execution": "Start Process",
         "deleteProcess": "Delete Process",
+        "showXML": "Show XML",
+        "showModeling": "Show Modeling",
         "deleteProcessMessage": "Are you sure you want to delete this process?",
         "cancel": "Cancel"
     },
