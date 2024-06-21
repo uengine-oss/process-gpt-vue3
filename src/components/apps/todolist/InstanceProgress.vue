@@ -13,7 +13,7 @@
                             :isViewMode="true"
                         ></process-definition>
                     </div>
-                    <dif v-else> No BPMN found </dif>
+                    <dif v-else class="no-bpmn-found-text"> No BPMN found </dif>
                 </div>
             </v-card>
         </template>
