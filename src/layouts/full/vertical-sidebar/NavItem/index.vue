@@ -1,7 +1,14 @@
 <script setup>
 // import Icond from '../Icon.vue';
 import { Icon } from '@iconify/vue';
-const props = defineProps({ item: Object, level: Number });
+const props = defineProps({
+    item: Object,
+    level: Number, 
+    useI18n: {
+        type: Boolean,
+        default: true
+    }
+});
 </script>
 
 <template>
@@ -18,7 +25,8 @@ const props = defineProps({ item: Object, level: Number });
                     </span>
                 </div>
             </template>
-            <v-list-item-title class="text-subtitle-1 font-weight-medium cp-menu" :color="item.BgColor">{{ $t(item.title) }}</v-list-item-title>
+            <v-list-item-title v-if="useI18n" class="text-subtitle-1 font-weight-medium cp-menu" :color="item.BgColor">{{ $t(item.title) }}</v-list-item-title>
+            <v-list-item-title v-else class="text-subtitle-1 font-weight-medium cp-menu" :color="item.BgColor">{{ item.title }}</v-list-item-title>
             <!---If Caption-->
             <v-list-item-subtitle v-if="item.subCaption" class="text-caption mt-n1 hide-menu">
                 {{ item.subCaption }}
