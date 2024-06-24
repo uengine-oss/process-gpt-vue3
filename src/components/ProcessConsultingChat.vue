@@ -97,6 +97,7 @@ export default {
         chatRenderKey: 0,
         generatedWorkList: [],
         isMentoMode: false,
+        waitForCustomer: false,
     }),
     computed: {
         filteredChatRoomList() {
@@ -132,14 +133,21 @@ export default {
         if (this.currentChatRoom && this.currentChatRoom.id) {
             this.chatRoomId = this.currentChatRoom.id;
         }
-        this.EventBus.on('messages-updated', () => {
-            if(!this.isMentoMode){
-                this.generator = new ConsultingMentoGenerator(this, {
-                    isStream: true,
-                    preferredLanguage: "Korean"
-                });
-                this.isMentoMode = true
-
+        this.EventBus.on('new-message-watched', () => {
+            if(!this.waitForCustomer){
+                if(this.isMentoMode){
+                    this.generator = new ConsultingGenerator(this, {
+                        isStream: true,
+                        preferredLanguage: "Korean"
+                    });
+                    this.isMentoMode = false
+                } else {
+                    this.generator = new ConsultingMentoGenerator(this, {
+                        isStream: true,
+                        preferredLanguage: "Korean"
+                    });
+                    this.isMentoMode = true
+                }
                 let chatMsgs = [];
                 if (this.messages && this.messages.length > 0) {
                     this.messages.forEach((msg) => {
@@ -151,17 +159,21 @@ export default {
                         }
                     });
                 }
-
-                let chatObj = {
-                    role: 'system'
-                };
+    
                 if(this.generator){
                     this.generator.model = "gpt-4o";
                 }
                 
-                chatObj.content= response;
-                chatMsgs.push(chatObj);
                 this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs];
+                
+                const lastMessage = this.generator.previousMessages[this.generator.previousMessages.length - 1];
+                lastMessage.content = `${lastMessage.content}. 
+                답변을 형식에 어긋난 답변을 해서 오류를 야기하는 상황이 자주 발생하기때문에 항상 답변 형식에 따라 반드시 아래의 JSON 형식으로 답변해야해. 어떠한 경우에도 "queryFor" 를 포함한 JSON 형식으로 답변해야해.
+                {
+                    "content": "답변 내용",
+                    "queryFor": "system" || "customer" 
+                }`;
+
                 this.startGenerate();
             }
         });
@@ -299,15 +311,18 @@ export default {
         afterModelCreated(response) {},
         afterModelStopped(response) {},
         async afterGenerationFinished(response) {
-            let obj = this.createMessageObj(response, 'system')
-            this.putMessage(obj)
+            let content
             if(this.isMentoMode){
-                this.generator = new ConsultingGenerator(this, {
-                    isStream: true,
-                    preferredLanguage: "Korean"
-                });
-                this.isMentoMode = false
+                content = response
+            } else {
+                if(response.queryFor == 'customer'){
+                    this.waitForCustomer = true
+                }
+                content = response.content
             }
+            
+            let obj = this.createMessageObj(content, 'system')
+            this.putMessage(obj)
         },
 
     }
