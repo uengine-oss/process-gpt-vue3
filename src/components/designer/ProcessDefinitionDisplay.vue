@@ -76,6 +76,9 @@ export default {
                 hideDetails: this.options.hideDetails ? this.options.hideDetails : false,
                 returnObject: this.options.returnObject ? this.options.returnObject : false
             }
+        },
+        mode() {
+            return window.$mode;
         }
     },
     data() {
@@ -106,7 +109,7 @@ export default {
                   
                     lists = lists.filter(item => !item.directory)
 
-                    if(me.fileExtensions.length > 0){
+                    if(me.fileExtensions.length > 0 && me.mode !== 'ProcessGPT') {
                         lists = lists.filter(item => me.fileExtensions.some(extension => item.name.endsWith(extension)));
                     }
 

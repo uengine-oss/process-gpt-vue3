@@ -143,9 +143,9 @@
                                                         <Icon icon="el:trash" />
                                                     </v-btn>
                                                     <v-list>
-                                                        <v-list-item-group>
+                                                        <div>
                                                             <v-list-item v-for="(work, index) in generatedWorkList" :key="index" class="d-flex align-items-center">
-                                                                <v-list-item-content v-if="work.messageForUser" class="flex-grow-1 d-flex align-items-center">
+                                                                <div v-if="work.messageForUser" class="flex-grow-1 d-flex align-items-center">
                                                                     <div class="w-100">
                                                                         <v-row class="ma-0 pa-3">
                                                                             <template v-if="!workIcons[work.work]">
@@ -187,10 +187,10 @@
                                                                             src="https://github.com/jhyg/project-shop-test/assets/65217813/1b551056-0428-41b6-9b90-76dd7942affc"
                                                                         ></v-img>
                                                                     </div>
-                                                                </v-list-item-content>
+                                                                </div>
                                                                 <v-divider v-if="index < generatedWorkList.length - 1"></v-divider>
                                                             </v-list-item>
-                                                        </v-list-item-group>
+                                                        </div>
                                                     </v-list>
                                                 </v-card>
                                             </div>

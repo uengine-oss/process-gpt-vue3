@@ -52,7 +52,6 @@ export default {
 
                     message['_template'] = 'agent'
                     me.messages.push(message)
-                    // me.saveMessages(me.messages)
                 }
 
                 if (callback.isFinished) {

@@ -449,6 +449,21 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.post(`/dry-run`,command);
         return response.data;
     }
+
+    async putSystem(system: any) {
+        const response = await axiosInstance.put(`/definition/system/${system.name}`, system);
+        return response.data;
+    }
+
+    async getSystemList() {
+        const response = await axiosInstance.get(`/definition/system`);
+        return response.data._embedded.definitions;
+    }
+
+    async getSystem(systemId: String) {
+        const response = await axiosInstance.get(`/definition/system/${systemId}`);
+        return response.data;
+    }
 }
 
 export default UEngineBackend;

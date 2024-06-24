@@ -69,8 +69,8 @@ declare global {
 }
 
 
-// window.$mode = 'uEngine';
-window.$mode = 'ProcessGPT';
+window.$mode = 'uEngine';   
+// window.$mode = 'ProcessGPT';
 window.$jms = false;
 
 if (window.location.host.includes('localhost') || window.location.host.includes('192.168') || window.location.host.includes('127.0.0.1') || 
@@ -250,10 +250,6 @@ app.use(VueMonacoEditorPlugin, {
     }
 });
 app.use(store);
-// registers the component globally
-// registered name: CronVuetify
-import CronVuetifyPlugin from '@vue-js-cron/vuetify';
-app.use(CronVuetifyPlugin);
 // @ts-ignore
 app.config.globalProperties.$try = app._component.methods.try;
 // @ts-ignore

@@ -121,7 +121,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 
 
 export default {
-    name: 'form-mapper',
+    name: 'mapper',
     mixins: [FormMapper],
     props: {
         definition: {
@@ -503,6 +503,7 @@ export default {
         processExpandableNodes(nodes){
             var me = this;
             const expandableTrees = me.expandableTrees;
+            
             if(!expandableTrees) return;
             Object.keys(expandableTrees).forEach((key) => {
                 if (!me.config.roots.includes(key) && expandableTrees[key].children) {

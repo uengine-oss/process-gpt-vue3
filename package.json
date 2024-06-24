@@ -8,6 +8,16 @@
         "typecheck": "vue-tsc --noEmit",
         "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
     },
+    "bin": "server.js",
+    "pkg": {
+        "scripts": "server.js",
+        "targets": [
+            "node14-linux-x64"
+        ],
+        "assets": [
+            "dist/**/*"
+        ]
+    },
     "dependencies": {
         "@balkangraph/orgchart.js": "^8.13.20",
         "@bpmn-io/properties-panel": "^3.16.0",
@@ -30,7 +40,6 @@
         "@tiptap/starter-kit": "2.0.0-beta.220",
         "@tiptap/vue-3": "2.0.0-beta.220",
         "@types/aos": "^3.0.4",
-        "@vue-js-cron/vuetify": "^5.0.2",
         "@vueuse/core": "^8.9.4",
         "aos": "^2.3.4",
         "apexcharts": "3.40.0",
@@ -52,6 +61,7 @@
         "dotenv": "^16.4.5",
         "eslint-import-resolver-alias": "^1.1.2",
         "events": "^3.3.0",
+        "express": "^4.19.2",
         "file-saver": "^2.0.5",
         "firebase": "^8.0.0",
         "gsap": "^3.12.5",
@@ -101,10 +111,12 @@
         "vue3-perfect-scrollbar": "^1.6.1",
         "vue3-print-nb": "^0.1.4",
         "vue3-recaptcha-v2": "1.0.1",
+        "vue3-xml-viewer": "^0.0.14",
         "vuetify": "3.3.3",
         "vuex": "^4.1.0",
         "webfontloader": "^1.6.28",
         "xml2js": "^0.6.2",
+        "yamljs": "^0.3.0",
         "yup": "^0.32.11"
     },
     "devDependencies": {
