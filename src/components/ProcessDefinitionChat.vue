@@ -305,7 +305,7 @@ export default {
             handler(newVal, oldVal) {
                 if (newVal.path !== oldVal.path) {
                     if (!(newVal.path.startsWith('/definitions') || newVal.path.startsWith('/forms'))) return;
-
+                    this.messages = [];
                     if (newVal.params.pathMatch) {
                         this.init();
                     }
@@ -746,10 +746,8 @@ export default {
 
                                 if(isProperties){
                                     let parseProperties = JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json'])
-                                    task.inputData = parseProperties && parseProperties.parameters ? parseProperties.parameters.filter(param => param.direction === "IN")
-                                        .map(param => param.variable.name) : []
-                                    task.outputData = parseProperties && parseProperties.parameters ? parseProperties.parameters.filter(param => param.direction === "OUT")
-                                        .map(param => param.variable.name) : []
+                                    task.inputData = parseProperties && parseProperties.parameters ? parseProperties.parameters.filter(param => param.direction === "IN") : []
+                                    task.outputData = parseProperties && parseProperties.parameters ? parseProperties.parameters.filter(param => param.direction === "OUT") : []
                                 } else {
                                     task.inputData = []
                                     task.outputData = []

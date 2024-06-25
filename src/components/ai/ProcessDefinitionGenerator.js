@@ -137,7 +137,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
             - BPM시스템: 이 시스템은 Business Process Management 기능을 수행하는 바로 너가 해야 할 일이야.
             
             
-            알았으면 OK 라고만 답해.
+            사용자의 명령이 없을 때 알았으면 OK 라고만 답해.
             
 
 `
