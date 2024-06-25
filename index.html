@@ -1,51 +1,67 @@
 <!DOCTYPE html>
-<html lang="en" >
-  <head>
+<html lang="en">
+<head>
     <meta charset="UTF-8" />
-    <link rel="icon" href="/favicon.png" />
+    <link rel="icon" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/static/lib/css2.css" />
     <link
-    rel="stylesheet"
-    href="/static/lib/css2.css"
-  />
-
-    <!-- <link rel="stylesheet" type="text/css" data-type="keditor-style" href="/css/keditor.css" /> -->
-    <!-- <link rel="stylesheet" type="text/css" data-type="keditor-style" href="/css/keditor-component-text.css" /> -->
-    <link rel="stylesheet" type="text/css" data-type="keditor-style" href="/plugins/font-awesome-4.5.0/css/font-awesome.min.css" />
-  <title>
-  Process-GPT
-  </title>
+      rel="stylesheet"
+      type="text/css"
+      data-type="keditor-style"
+      href="/plugins/font-awesome-4.5.0/css/font-awesome.min.css"
+    />
     <script
-        defer
-        type="text/javascript"
-        src="/static/lib/opengraph/OpenGraph-0.1.3-SNAPSHOT.js"
+      defer
+      type="text/javascript"
+      src="/static/lib/opengraph/OpenGraph-0.1.3-SNAPSHOT.js"
     ></script>
     <script src="/static/lib/jquery.min.js"></script>
     <script src="/static/lib/lodash.min.js"></script>
-    <script
-        type="text/javascript"
-        src="/static/lib/jquery-ui.min.js"
-    ></script>
+    <script type="text/javascript" src="/static/lib/jquery-ui.min.js"></script>
     <link href="/static/lib/materialdesignicons.min.css" rel="stylesheet">
     <link href="/static/bpmn/css/bpmn.css" rel="stylesheet" type="text/css" />
     <script
-        type="javascript"
-        src="/static/lib/jqueryXML2JSON/jquery.xml2json.js"
+      type="javascript"
+      src="/static/lib/jqueryXML2JSON/jquery.xml2json.js"
     ></script>
     <script
-        type="javascript"
-        src="/static/slimscroll/jquery.slimscroll.min.js"
+      type="javascript"
+      src="/static/slimscroll/jquery.slimscroll.min.js"
     ></script>
     <script src="/plugins/ckeditor-4.5.6/ckeditor.js"></script>
     <script src="/plugins/ckeditor-4.5.6/adapters/jquery.js"></script>
     <script src="/plugins/bootstrap-3.3.6/js/bootstrap.min.js"></script>
     <script src="/plugins/keditor/keditor.js"></script>
-
- 
-  </head>
-  <body>
+</head>
+<body>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
     <script src="/static/config.js"></script>
-  </body>
+    <script>
+      // 조건에 따라 제목 및 파비콘 변경
+      document.addEventListener("DOMContentLoaded", function () {
+        // 전역 변수 $mode의 값을 확인
+        var mode = window.$mode || 'ProcessGPT'; // 기본값을 'ProcessGPT'로 설정
+
+        if (mode === 'uEngine') {
+          // 제목 변경
+          document.title = "uEngine6-bpm";
+          // 파비콘 변경
+          var link = document.querySelector("link[rel~='icon']");
+          if (link) {
+            link.href = "/public/uengine6-bpm-favicon.png";
+          }
+        } else {
+          // 제목 변경
+          document.title = "Process-GPT";
+          // 파비콘 변경
+          var link = document.querySelector("link[rel~='icon']");
+          if (link) {
+            link.href = "/public/process-gpt-favicon.png";
+          }
+        }
+      });
+    </script>
+</body>
 </html>
