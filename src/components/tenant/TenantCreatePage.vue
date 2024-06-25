@@ -14,7 +14,7 @@
         </v-row>
 
         <v-row no-gutters style="margin-top: 50px;" justify="center">
-            <TenantInfoField v-model="tenantInfo" :isEdit="false" ref="tenantInfoField"></TenantInfoField>
+            <TenantInfoField v-model="tenantInfo" :isEdit="false" ref="tenantInfoField" @stopLoading="stopLoading"></TenantInfoField>
         </v-row>
 
         <v-row no-gutters style="margin-top: 30px; margin-bottom: 100px;" justify="center">
@@ -58,6 +58,9 @@ export default {
     }),
 
     methods: {
+        stopLoading(){
+            this.isLoading = false;
+        },
         beforeCreateTenant(){
             this.isLoading = true;
             this.createTenant();

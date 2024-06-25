@@ -42,6 +42,9 @@ export interface Backend {
     getEventList(instanceId: string): Promise<any>;
     getDryRunInstance(defPath: string): Promise<any>;
     startDryRun(command: object) : Promise<any>;
+    getSystemList(): Promise<any>;
+    putSystem(system: any): Promise<any>;
+    getSystem(systemId: String): Promise<any>;
 }
 
 // export type { Backend }

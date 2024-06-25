@@ -1,49 +1,14 @@
 <template>
-    <div>
-        <v-row class="pa-0 ma-0">
-            <v-spacer></v-spacer>
-            <v-btn @click="save">
-                <Icon icon="mdi:close" width="24" height="24" class="cursor-pointer" />
-            </v-btn>
-
-            <!-- <Icon icon="mdi:close" width="24" height="24" @click="$emit('close')" class="cursor-pointer" /> -->
-        </v-row>
-        <v-card-text style="overflow: auto; height: calc(-155px + 100vh); width: 700px">
-            <div style="float: right">Role: {{ role.name }}</div>
-            <div>{{ $t('BpnmPropertyPanel.name') }}</div>
-            <v-text-field v-model="name" :disabled="isViewMode" ref="cursor"></v-text-field>
-            <!-- <div>
-                <div>{{ $t('BpnmPropertyPanel.description') }}</div>
-                <v-textarea v-if="!elementCopy.$type.includes('Event')" :disabled="isViewMode"
-                    v-model="uengineProperties.description"></v-textarea>
-            </div> -->
-            <component
-                style="height: 100%"
-                :is="panelName"
-                :isViewMode="isViewMode"
-                :uengineProperties="uengineProperties"
-                :name="name"
-                :roles="roles"
-                :process-variables="processVariables"
-                :element="element"
-                ref="panelComponent"
-                @update:name="(val) => (name = val)"
-                @updae:text="(val) => (text = text)"
-                @update:uengineProperties="(newProps) => (uengineProperties = newProps)"
-                :definition="definition"
-                :processDefinitionId="processDefinitionId"
-                @addUengineVariable="(val) => $emit('addUengineVariable', val)"
-            ></component>
-        </v-card-text>
-    </div>
+    <div></div>
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { Icon } from '@iconify/vue';
+import yaml from 'yamljs';
 const storage = StorageBaseFactory.getStorage();
 export default {
-    name: 'bpmn-property-panel',
+    name: 'collaboration-api-panel',
     props: {
         element: Object,
         processDefinitionId: String,
@@ -53,40 +18,42 @@ export default {
         processVariables: Array
     },
     created() {
-        // if (!this.element.extensionElements.values[0].json) {
-        //     this.$emit('close');
-        //     return;
-        // }
-        console.log(this.element);
-        // Extension이 없는 경우 무조건 빈 Property 생성
-        if (!this.element.extensionElements) {
-            this.element.extensionElements.values = [];
-            this.element.extensionElements.values[0] = {
-                json: {}
-            };
-        }
+        let def = this.bpmnModeler.getDefinitions();
+        let target = null;
+        def.rootElements.forEach((element) => {
+            if (element.$type == 'bpmn:Collaboration') {
+                element.messageFlows.forEach((messageFlow) => {
+                    if (messageFlow.sourceRef.id == this.element.id) {
+                        target = messageFlow.targetRef.id;
+                    }
+                });
+            }
+        });
 
-        this.uengineProperties = JSON.parse(this.element.extensionElements.values[0].json);
-        if (this.element.lanes?.length > 0) {
-            this.role = this.element.lanes[0];
+        if (target) {
+            let targetElement = this.findElement(def, 'id', target);
+            let targetProcessId = targetElement.$parent.id;
+
+            def.rootElements.forEach((element) => {
+                if (element.$type == 'bpmn:Collaboration') {
+                    element.participants.forEach((participant) => {
+                        if (participant.processRef.id == targetProcessId) {
+                            let openAPIInfo = JSON.parse(participant.extensionElements.values[0].json);
+                            this.openAPI = openAPIInfo.API;
+                            this.apiServiceURL = openAPIInfo.serviceURL;
+                        }
+                    });
+                }
+            });
+
+            console.log(this.openAPI);
         }
-        // 필수 uEngine Properties의 key가 없다면 작업.
-        // Object.keys(this.requiredKeyLists).forEach(key => {
-        //     this.ensureKeyExists(this.uengineProperties, key, this.requiredKeyLists[key])
-        // })
     },
     components: {},
     data() {
         return {
-            // requiredKeyLists: {
-            //     "description": "",
-            //     "role": { "name": "" },
-            //     "parameters": []
-            // },
-            // requiredKeyLists: {
-
-            //     "parameters": []
-            // },
+            openAPI: {},
+            apiServiceURL: '',
             definitions: [],
             elementCopy: this.element,
             uengineProperties: {},
@@ -140,8 +107,7 @@ export default {
         //     return result;
         // }
     },
-    watch: {
-    },
+    watch: {},
     methods: {
         ensureKeyExists(obj, key, defaultValue) {
             if (!obj.hasOwnProperty(key)) {

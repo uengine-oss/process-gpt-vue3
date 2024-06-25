@@ -229,9 +229,9 @@ class ProcessGPTBackend implements Backend {
                 }
             }).then(async res => {
                 if (res.data) {
-                    const data = res.data;
-                    if (data.output) {
-                        result = JSON.parse(data.output);
+                    const data = JSON.parse(res.data);
+                    if (data) {
+                        result = data;
                         if (input.answer === "" && result.instanceId) {
                             newMessage = {
                                 role: 'system',
@@ -241,14 +241,6 @@ class ProcessGPTBackend implements Backend {
                             }
                             await this.updateInstanceChat(result.instanceId, newMessage);
                         } else {
-                            newMessage = {
-                                role: 'user',
-                                name: input.userInfo.name,
-                                email: input.userInfo.email,
-                                timestamp: Date.now(),
-                                content: input.answer,
-                            }
-                            await this.updateInstanceChat(result.instanceId, newMessage);
                             newMessage = {
                                 role: 'system',
                                 timestamp: Date.now(),
@@ -260,9 +252,15 @@ class ProcessGPTBackend implements Backend {
                     }
                 }
             })
-            .catch(error => {
+            .catch(async error => {
                 result = error
-                throw new Error(error && error.detail ? error.detail : error);
+                newMessage = {
+                    role: 'system',
+                    timestamp: Date.now(),
+                    content: error.detail || error,
+                }
+                await this.updateInstanceChat(input.process_instance_id, newMessage)
+                // throw new Error(error && error.detail ? error.detail : error);
             });
 
             return result;
@@ -320,12 +318,14 @@ class ProcessGPTBackend implements Backend {
                     let outputItems: any[] = [];
                     if (activityInfo.outputData && activityInfo.outputData.length > 0) {
                         inputItems = activityInfo.outputData.map((item: any) => {
-                            const key = item;
                             return {
-                                direction: 'OUT',
+                                direction: "IN",
+                                argument: {
+                                    text: item.argument.text || "",
+                                },
                                 variable: {
-                                    name: key,
-                                    value: inst[key.toLowerCase().replace(/ /g, '_')] || ""
+                                    name: item.variable.name.toLowerCase().replace(/ /g, '_') || "",
+                                    defaultValue: inst[item.variable.name.toLowerCase().replace(/ /g, '_')] || ""
                                 }
                             }
                         });
@@ -341,18 +341,28 @@ class ProcessGPTBackend implements Backend {
                     }
                     if (activityInfo.inputData && activityInfo.inputData.length > 0) {
                         outputItems = activityInfo.inputData.map((item: any) => {
-                            const key = item;
+                            const direction = data.status === 'DONE' ? 'IN' : 'OUT';
                             return {
-                                direction: 'IN',
+                                // direction: "OUT",
+                                direction: direction,
+                                argument: {
+                                    text: item.argument.text || "",
+                                },
                                 variable: {
-                                    name: key,
-                                    value: inst[key.toLowerCase().replace(/ /g, '_')] || ""
+                                    name: item.variable.name.toLowerCase().replace(/ /g, '_') || "",
+                                    defaultValue: inst[item.variable.name.toLowerCase().replace(/ /g, '_')] || ""
                                 }
                             }
                         });
                     }
                     parameters = [...inputItems, ...outputItems];
                 }
+            }
+            const parameterValues: any = {}
+            if (parameters.length > 0) {
+                parameters.forEach((item) => {
+                    parameterValues[item.argument.text] = item.variable.defaultValue
+                })
             }
             const workItem = {
                 worklist: {
@@ -373,7 +383,8 @@ class ProcessGPTBackend implements Backend {
                     tracingTag: data.activity_id || '',
                     parameters: parameters || [],
                     variableForHtmlFormContext: variableForHtmlFormContext || {},
-                }
+                },
+                parameterValues: parameterValues || {}
             }
             return workItem;
         } catch (e) {
@@ -764,28 +775,33 @@ class ProcessGPTBackend implements Backend {
                 }
             }).then(async res => {
                 if (res.data) {
-                    const data = res.data;
-                    if (data.output) {
-                        const output = JSON.parse(data.output);
-                        result = output;
+                    const data = JSON.parse(res.data);
+                    if (data) {
+                        result = data;
                         const newMessage = {
                             role: 'system',
                             timestamp: Date.now(),
                             content: '',
-                            jsonContent: data.output
+                            jsonContent: data
                         }
-                        if (output.cannotProceedErrors && output.cannotProceedErrors.length > 0) {
-                            newMessage.content = output.cannotProceedErrors.map((item: any) => item.reason).join('\n');
+                        if (data.cannotProceedErrors && data.cannotProceedErrors.length > 0) {
+                            newMessage.content = data.cannotProceedErrors.map((item: any) => item.reason).join('\n');
                         } else {
-                            newMessage.content = output.description;
+                            newMessage.content = data.description;
                         }
-                        await this.updateInstanceChat(output.instanceId, newMessage);
+                        await this.updateInstanceChat(data.instanceId, newMessage);
                     }
                 }
             })
-            .catch(error => {
+            .catch(async error => {
                 result = error
-                throw new Error(error && error.detail ? error.detail : error);
+                const newMessage = {
+                    role: 'system',
+                    timestamp: Date.now(),
+                    content: error.detail || error,
+                }
+                await this.updateInstanceChat(workItem.proc_inst_id, newMessage)
+                // throw new Error(error && error.detail ? error.detail : error);
             });
     
             return result;
@@ -799,16 +815,21 @@ class ProcessGPTBackend implements Backend {
 
     async updateInstanceChat(instanceId: string, newMessage: any) {
         try {
-            const data = await storage.getObject(`proc_inst/${instanceId}`, { key: 'id' });
-            const messages = data && data.messages ? data.messages : [];
-            if (newMessage) {
-                messages.push(newMessage);
+            function uuid() {
+                function s4() {
+                    return Math.floor((1 + Math.random()) * 0x10000)
+                        .toString(16)
+                        .substring(1);
+                }
+    
+                return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
             }
             const putObj = {
                 id: instanceId,
-                messages: messages
+                uuid: uuid(),
+                messages: newMessage
             }
-            await storage.putObject('proc_inst', putObj);
+            await storage.putObject('chats', putObj);
         } catch (e) {
             this.checkDBConnection();
             //@ts-ignore
@@ -904,6 +925,33 @@ class ProcessGPTBackend implements Backend {
     }
 
     async startDryRun(command: object) {
+        try {
+            return null;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async putSystem(system: any) {
+        try {
+            return null;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getSystemList() {
+        try {
+            return null;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getSystem(systemId: String) {
         try {
             return null;
         } catch (error) {

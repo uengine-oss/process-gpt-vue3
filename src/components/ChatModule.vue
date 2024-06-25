@@ -52,7 +52,6 @@ export default {
 
                     message['_template'] = 'agent'
                     me.messages.push(message)
-                    // me.saveMessages(me.messages)
                 }
 
                 if (callback.isFinished) {
@@ -137,10 +136,11 @@ export default {
                             if(data.new.id == me.currentChatRoom.id){
                                 if ((me.messages && me.messages.length > 0) 
                                 && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
-                                &&  me.messages[me.messages.length - 1].content.replace(/\s+/g, '') === data.new.messages.content.replace(/\s+/g, '')) {
+                                // &&  me.messages[me.messages.length - 1].content.replace(/\s+/g, '') === data.new.messages.content.replace(/\s+/g, '')) {
+                                &&  me.messages[me.messages.length - 1].content.replace(/\s+/g, '').includes(data.new.messages.content.replace(/\s+/g, ''))) {
                                     me.messages[me.messages.length - 1] = data.new.messages
                                     me.EventBus.emit('instances-updated');
-                                    me.EventBus.emit('messages-updated');
+                                    me.EventBus.emit('new-message-watched');
                                 } else {
                                     me.messages.push(data.new.messages)
                                 }
@@ -284,7 +284,7 @@ export default {
                     role: role ? role : 'user',
                     timeStamp: Date.now(),
                     content: role ? (typeof message == 'string' ? message : JSON.stringify(message)) : message.text,
-                    image: message.image || ""
+                    image: typeof message == 'string' ? "" : message.image
                 };
             }
 

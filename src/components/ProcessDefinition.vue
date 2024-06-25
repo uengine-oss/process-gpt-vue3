@@ -26,7 +26,7 @@
                         </template>
                     </v-tooltip>
                     <!-- 실행 버튼  -->
-                    <v-tooltip v-if="!isViewMode && $route.path !== '/definitions/chat'" :text="$t('processDefinition.execution')">
+                    <v-tooltip v-if="executable" :text="$t('processDefinition.execution')">
                         <template v-slot:activator="{ props }">
                             <v-btn icon v-bind="props" class="processExecute" @click="executeProcess">
                                 <Icon icon="gridicons:play" width="32" height="32" />
@@ -184,7 +184,7 @@
         </v-dialog>
 
         <v-dialog v-model="executeDialog" max-width="80%">
-            <dry-run-process v-if="mode == 'BPMN'" :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
+            <dry-run-process v-if="mode == 'uEngine'" :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
             <process-execute-dialog v-else :definitionId="definitionPath" :roles="roles" @close="executeDialog = false"></process-execute-dialog>
         </v-dialog>
 
@@ -263,6 +263,16 @@ export default {
             return {
                 processVariables: this.processVariables
             };
+        },
+        executable() {
+            if (!this.isViewMode && this.$route.path !== '/definitions/chat') {
+                return true
+            } else if (this.isViewMode && this.$route.path.includes('/definitions/') && 
+                this.$route.path !== '/definitions/chat') {
+                return true
+            } else {
+                return false
+            }
         }
     },
     watch: {

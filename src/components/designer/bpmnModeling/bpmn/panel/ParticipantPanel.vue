@@ -1,12 +1,13 @@
 <template>
     <div>
         <div class="included" style="margin-bottom: 22px; height: 100%">
+            <v-autocomplete v-model="copyUengineProperties.selectedSystem" :items="systemList" @input="$evt => selectSystem($evt)" />
             <div style="margin-bottom: 8px">API URL</div>
             <v-row class="ma-0 pa-0">
                 <v-text-field v-model="copyUengineProperties.serviceURL"></v-text-field>
             </v-row>
             <div style="margin-bottom: 8px">Open API 스펙</div>
-            <v-row class="ma-0 pa-0" style="height: 100%">
+            <v-row class="ma-0 pa-0" style="height: 50vh">
                 <vue-monaco-editor
                     v-model:value="copyUengineProperties.openAPI"
                     theme="vs-dark"
@@ -22,6 +23,7 @@
 import { useBpmnStore } from '@/stores/bpmn';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
+import BackendFactory from '@/components/api/BackendFactory';
 export default {
     name: 'participant-panel',
     props: {
@@ -59,7 +61,10 @@ export default {
             paramValue: '',
             definitionCnt: 0,
             type: 'None',
-            editorRef: {}
+            editorRef: {},
+            systemList: [],
+            selectedSystem: '',
+            backend: null
         };
     },
     async mounted() {
@@ -93,9 +98,22 @@ export default {
         if (value) {
             this.definitions = value;
         }
+        this.backend = BackendFactory.createBackend();
+        const systemList = await this.backend.getSystemList();
+        systemList.forEach(system => {
+            this.systemList.push(system.name.replace(".json",""));
+        })
     },
     computed: {},
     watch: {
+        'copyUengineProperties.selectedSystem'(newVal) {
+            this.backend.getSystem(newVal).then(result => {
+                console.log(result)
+                this.copyUengineProperties.selectedSystem = newVal;
+                this.copyUengineProperties.serviceURL = result.url;
+                this.copyUengineProperties.openAPI = result.spec;
+            })
+        },
         'copyUengineProperties.serviceURL': function (newVal, oldVal) {
             let me = this;
             let process = me.element.processRef;
