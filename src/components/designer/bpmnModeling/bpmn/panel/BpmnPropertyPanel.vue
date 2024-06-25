@@ -9,6 +9,9 @@
             <!-- <Icon icon="mdi:close" width="24" height="24" @click="$emit('close')" class="cursor-pointer" /> -->
         </v-row>
         <v-card-text style="overflow: auto; height: calc(-155px + 100vh); width: 700px">
+ 			<div v-if="checkValidation()" style="color: red">
+                <pre>* {{ checkValidation() }}</pre>
+            </div>
             <div style="float: right">Role: {{ role.name }}</div>
             <div>{{ $t('BpnmPropertyPanel.name') }}</div>
             <v-text-field v-model="name" :disabled="isViewMode" ref="cursor"></v-text-field>
@@ -50,7 +53,8 @@ export default {
         isViewMode: Boolean,
         definition: Object,
         roles: Array,
-        processVariables: Array
+        processVariables: Array,
+        validationList: Object
     },
     created() {
         // if (!this.element.extensionElements.values[0].json) {
@@ -187,6 +191,13 @@ export default {
             if (this.elementCopy.text) this.elementCopy.text = this.text;
             modeling.updateProperties(task, this.elementCopy);
             this.$emit('close');
+        },
+        checkValidation(){
+            let key = Object.keys(this.validationList).filter(item => item === this.element.id);
+            if(key.length > 0) {
+                return this.validationList[key];
+            }
+            return null;
         }
     }
 };

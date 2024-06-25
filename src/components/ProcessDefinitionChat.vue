@@ -11,7 +11,9 @@
                     :isXmlMode="isXmlMode"
                     :definitionPath="fullPath"
                     :definitionChat="this"
+                    :validationList="validationList"
                     @update="updateDefinition"
+                    @change="changeElement"
                 ></process-definition>
                 <process-definition-version-dialog
                     :process="processDefinition"
@@ -273,6 +275,7 @@ export default {
         // delete
         deleteDialog: false,
         isDeleted: false,
+        validationList: {}
     }),
     async created() {
         $try(async ()=>{
@@ -496,6 +499,14 @@ export default {
                     me.definitionChangeCount++;
                     me.toggleVerMangerDialog(false);
                 }
+            });
+        },
+        async changeElement() {
+            this.$nextTick(async () => {
+                const store = useBpmnStore();
+                const modeler = store.getModeler;
+                const xmlObj = await modeler.saveXML({ format: true, preamble: true });
+                this.validationList = await backend.validate(xmlObj.xml);
             });
         },
         loadBPMN(bpmn) {
@@ -1937,3 +1948,4 @@ export default {
     z-index: 10;
 }
 </style>
+

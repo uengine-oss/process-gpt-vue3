@@ -111,14 +111,19 @@ export default {
             }
         },
         beforeSave() {
+            var expression = this.copyUengineProperties.condition;
+            if(expression.key == '' && expression.value == '' && expression.condition == '') {
+                delete this.copyUengineProperties.condition;
+                this.$emit('update:uengineProperties', this.copyUengineProperties)
+                return;
+            }
             if (!this.name || this.name == '') {
-                var expression;
                 if (Array.isArray(this.copyUengineProperties.condition)) {
                     if (this.copyUengineProperties.condition.length > 0) {
                         expression = this.copyUengineProperties.condition[0].conditionsVt[0];
                     }
-                }else{
-                    expression = this.copyUengineProperties.condition
+                } else {
+                    expression = this.copyUengineProperties.condition;
                 }
                 const name = expression.key + " " + expression.condition + " " + expression.value;
                 this.$emit('update:name', name);
