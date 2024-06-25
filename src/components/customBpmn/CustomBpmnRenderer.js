@@ -25,13 +25,13 @@ export default class CustomRenderer extends BaseRenderer {
     this.canvas = canvas; // canvas를 직접 저장합니다.
     this.elementRegistry = elementRegistry;
     this.graphicsFactory = graphicsFactory;
-    
+
     this.invalidationList = options.propertiesPanel?.invalidationList || {};
     // 'canvas.init' 이벤트에 리스너를 등록합니다.
     eventBus.on('canvas.init', () => {
       this.addTitleToDiagram(this.canvas); // canvas를 addTitleToDiagram에 전달합니다.
     });
-    
+
 
     eventBus.on('config.changed', (event) => {
       this.updateConfig(event.config);
@@ -55,7 +55,7 @@ export default class CustomRenderer extends BaseRenderer {
           const gfx = this.elementRegistry.getGraphics(element);
           this.graphicsFactory.update('shape', element, gfx);
         } catch (error) {
-          
+
         }
       }
     });
@@ -112,8 +112,8 @@ export default class CustomRenderer extends BaseRenderer {
       this.drawCustomLabel(parentNode, shape, element);
     } else if (is(element, 'bpmn:Gateway')) {
       this.drawCustomGateway(parentNode, shape, element);
-    } else if(is(element, 'bpmn:SequenceFlow')) {
-      this.drawConnection(parentNode, element);
+    } else if (is(element, 'bpmn:SequenceFlow')) {
+      this.drawCustomConnection(parentNode, element);
     }
     return shape;
   }
@@ -176,20 +176,22 @@ export default class CustomRenderer extends BaseRenderer {
   }
 
   // 이벤트끼리의 연결선과 화살표 관련
-  drawConnection(parentNode, element) {
-    const connection = this.bpmnRenderer.drawConnection(parentNode, element);
+  drawCustomConnection(parentNode, element) {
 
     if (is(element, 'bpmn:SequenceFlow')) {
       const strokColor = this.hasInvalidationId(element.id) ? '#ff0000' : '#68369a';
       const customMarkerUrl = createCustomMarker(parentNode, strokColor); // 화살표 색상 설정
-      svgAttr(connection, {
+      const options = {
         stroke: strokColor, // 연결선 색상 변경
         strokeWidth: '2',
         markerEnd: customMarkerUrl // 사용자 정의 마커 적용
-      });
+      }
+
+      var connection = this.bpmnRenderer.drawConnection(parentNode, element, options);
+      return connection;
     }
 
-    return connection;
+    return this.bpmnRenderer.drawConnection(parentNode, element);
   }
   // bpmn:Gateway 관련
   drawCustomGateway(parentNode, shape, element) {
@@ -225,7 +227,7 @@ export default class CustomRenderer extends BaseRenderer {
   }
 
   hasInvalidationId(key) {
-    if(Object.keys(this.invalidationList).length > 0) {
+    if (Object.keys(this.invalidationList).length > 0) {
       return Object.keys(this.invalidationList).includes(key);
     }
     return false;
