@@ -102,6 +102,9 @@ export default {
     async created() {
         await this.init();
 
+        const defaultName = window.$mode == 'uEngine' ? 'uEngine6' : 'Process-GPT'
+        const defaultImage = window.$mode == 'uEngine' ? '/src/assets/images/chat/uengine6-bpm-favicon.png' : '/src/assets/images/chat/chat-icon.png'
+
         this.generator = new ChatGenerator(this, {
             isStream: true,
             preferredLanguage: "Korean"
@@ -112,8 +115,8 @@ export default {
                 id: "root",
                 data: {
                     id: "root",
-                    img: "/src/assets/images/chat/chat-icon.png",
-                    name: "Process-GPT",
+                    img: defaultImage,
+                    name: defaultName,
                 },
                 children: []
             };
