@@ -28,11 +28,6 @@ const MainRoutes = {
             component: () => import('@/views/apps/chat/Chats.vue')
         },
         {
-            name: 'Consulting',
-            path: '/consulting',
-            component: () => import('@/components/ProcessConsultingChat.vue')
-        },
-        {
             name: 'Proposals',
             path: '/proposals',
             component: () => import('@/views/apps/proposal/Proposals.vue')

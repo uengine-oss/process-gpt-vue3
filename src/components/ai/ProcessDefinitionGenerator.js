@@ -124,22 +124,14 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
               }
             \`\`\`
 
-
-
             - 프로세스 설명: 전체적인 프로세스를 설명해주면돼. 예를들어 휴가신청 프로세스의 각 단계와 담당자가 누군지 등을 설명해주면 돼
             설명의 결과도 위의 프로세스 정의의 json format 을 따라 리턴해줘
-            
             
             사용자들의 역할은 다음과 같아:
             
             - 직원: 업무를 지시 받고 처리하는 사람
             - 프로세스 관리자: 프로세스 정의의 변경 권한을 갖고 있는 사람.
             - BPM시스템: 이 시스템은 Business Process Management 기능을 수행하는 바로 너가 해야 할 일이야.
-            
-            
-            사용자의 명령이 없을 때 알았으면 OK 라고만 답해.
-            
-
 `
             }];
     }
