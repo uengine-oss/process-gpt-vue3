@@ -63,12 +63,13 @@ export default {
         },
         async editProcessModel() {
             const backend = BackendFactory.createBackend();
-            this.definition = await backend.getRawDefinition(this.value.id);
+            const id = this.value.id.replace(/ /g, '_')
+            this.definition = await backend.getRawDefinition(id);
             let url;
             if (this.definition && this.definition.id) {
                 url = `/definitions/${this.definition.id}`;
             } else {
-                url = `/definitions/chat?id=${this.value.id}&name=${this.value.name}`;
+                url = `/definitions/chat?id=${id}&name=${this.value.name}`;
             }
             window.open(url, '_blank'); // '_blank'는 새 탭에서 열기
         },

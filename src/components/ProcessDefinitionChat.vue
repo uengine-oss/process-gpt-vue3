@@ -471,11 +471,6 @@ export default {
 
                     me.loading = false;
                     await me.toggleVersionDialog(false);
-
-                    // 새 탭으로 열린 프로세스 편집창
-                    if (me.$route.query && me.$route.query.id) {
-                        window.close();
-                    }
                 },
                 onFail: (e) => {
                     console.log(e)
@@ -987,6 +982,14 @@ export default {
                         me.$router.push(`/definitions/${info.proc_def_id}`);
                     }
                     me.EventBus.emit('definitions-updated');
+
+                    // 새 탭으로 열린 프로세스 편집창
+                    if (me.$route.query && me.$route.query.id) {
+                        const definition = await backend.getRawDefinition(me.$route.query.id, { type: 'bpmn' });
+                        if (definition) {
+                            window.close();
+                        }
+                    }
                 },
                 catch: (e) => {
                     console.log(e)
