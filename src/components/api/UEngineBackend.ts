@@ -464,6 +464,13 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.get(`/definition/system/${systemId}`);
         return response.data;
     }
+    
+    async validate(xml: string){
+        const response = await axiosInstance.post(`/validation`, xml);
+        if (!response.data) return null;
+        return response.data;
+    }
 }
 
 export default UEngineBackend;
+

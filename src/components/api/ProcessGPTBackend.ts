@@ -164,6 +164,9 @@ class ProcessGPTBackend implements Backend {
                 } else if(options.type === "bpmn") {
                     if (defId.includes('/')) defId = defId.replace(/\//g, "_")
                     const data = await storage.getString(`proc_def/${defId}`, { key: 'id', column: 'bpmn' });
+                    if(!data) {
+                        return null;
+                    }
                     return data;
                 }
             } else {
@@ -318,16 +321,14 @@ class ProcessGPTBackend implements Backend {
                     let outputItems: any[] = [];
                     if (activityInfo.outputData && activityInfo.outputData.length > 0) {
                         inputItems = activityInfo.outputData.map((item: any) => {
-                            const key = item;
-                            const direction = data.status === 'DONE' ? 'IN' : 'OUT';
                             return {
-                                direction: direction,
+                                direction: "IN",
                                 argument: {
-                                    text: key.toLowerCase().replace(/ /g, '_') || "",
+                                    text: item.argument.text || "",
                                 },
                                 variable: {
-                                    name: key.toLowerCase().replace(/ /g, '_') || "",
-                                    defaultValue: inst[key.toLowerCase().replace(/ /g, '_')] || ""
+                                    name: item.variable.name.toLowerCase().replace(/ /g, '_') || "",
+                                    defaultValue: inst[item.variable.name.toLowerCase().replace(/ /g, '_')] || ""
                                 }
                             }
                         });
@@ -343,15 +344,16 @@ class ProcessGPTBackend implements Backend {
                     }
                     if (activityInfo.inputData && activityInfo.inputData.length > 0) {
                         outputItems = activityInfo.inputData.map((item: any) => {
-                            const key = item;
+                            const direction = data.status === 'DONE' ? 'IN' : 'OUT';
                             return {
-                                direction: 'IN',
+                                // direction: "OUT",
+                                direction: direction,
                                 argument: {
-                                    text: key.toLowerCase().replace(/ /g, '_') || "",
+                                    text: item.argument.text || "",
                                 },
                                 variable: {
-                                    name: key.toLowerCase().replace(/ /g, '_') || "",
-                                    defaultValue: inst[key.toLowerCase().replace(/ /g, '_')] || ""
+                                    name: item.variable.name.toLowerCase().replace(/ /g, '_') || "",
+                                    defaultValue: inst[item.variable.name.toLowerCase().replace(/ /g, '_')] || ""
                                 }
                             }
                         });
@@ -362,7 +364,7 @@ class ProcessGPTBackend implements Backend {
             const parameterValues: any = {}
             if (parameters.length > 0) {
                 parameters.forEach((item) => {
-                    parameterValues[item.variable.name] = item.variable.defaultValue
+                    parameterValues[item.argument.text] = item.variable.defaultValue
                 })
             }
             const workItem = {
@@ -955,6 +957,15 @@ class ProcessGPTBackend implements Backend {
     async getSystem(systemId: String) {
         try {
             return null;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+    
+    async validate(xml: string){
+        try {
+            return {};
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);

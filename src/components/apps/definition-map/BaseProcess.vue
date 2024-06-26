@@ -14,9 +14,10 @@ export default {
         hover: false,
     }),
     methods: {
-        async editProcess(process) {
+        editProcess(process) {
             this.value.id = process.id;
             this.value.label = process.label
+            this.value.name = process.name
         },
         editProcessdialog(processType) {
             this.processType = processType;
@@ -30,6 +31,9 @@ export default {
             this.processDialogStatus = false;
         },
         goProcess(path, type) {
+            if (this.enableEdit) {
+                return;
+            }
             if (!path && !type) {
                 this.$router.push(`/definition-map`);
             } else {
