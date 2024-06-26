@@ -160,8 +160,14 @@ export default class StorageBaseSupabase {
 
     async resetPassword(email) {
         try {
+            let url;
+            if (window.location.host.includes('localhost')) {
+                url = window.location.host + '/auth/reset-password';
+            } else {
+                url = '/auth/reset-password';
+            }
             const result = await window.$supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: window.location.host +'/auth/reset-password',
+                redirectTo: url,
             });
             return result;
         } catch (e) {
