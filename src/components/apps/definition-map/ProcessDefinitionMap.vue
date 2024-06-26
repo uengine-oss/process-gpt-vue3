@@ -83,7 +83,12 @@
                     <DefinitionMapList :value="value" :enableEdit="enableEdit" />
                 </div>
             </div>
+
+            <v-btn @click="openConsultingDialog = true">open Consulting Dialog</v-btn>
         </v-card>
+        <v-dialog style="width: 1000px;" v-model="openConsultingDialog" persistent>
+            <ProcessConsultingChat @closeConsultingDialog="closeConsultingDialog" />
+        </v-dialog>
         <v-dialog v-model="alertDialog" max-width="500" persistent>
             <v-card>
                 <v-card-text class="mt-2">
@@ -113,6 +118,7 @@ import DefinitionMapList from './DefinitionMapList.vue';
 import ProcessMenu from './ProcessMenu.vue';
 import SubProcessDetail from './SubProcessDetail.vue';
 import ViewProcessDetails from './ViewProcessDetails.vue';
+import ProcessConsultingChat from '@/components/ProcessConsultingChat.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -122,7 +128,8 @@ export default {
         ProcessMenu,
         ViewProcessDetails,
         SubProcessDetail,
-        DefinitionMapList
+        DefinitionMapList,
+        ProcessConsultingChat
     },
     props: {
         componentName: {
@@ -145,6 +152,7 @@ export default {
         alertMessage: '',
         isAdmin: false,
         versionHistory: [],
+        openConsultingDialog: false,
     }),
     computed: {
         useLock() {
@@ -185,6 +193,9 @@ export default {
         }
     },
     methods: {
+        closeConsultingDialog(){
+            this.openConsultingDialog = false
+        },
         async checkedLock() {
             if (this.isAdmin) {
                 this.enableEdit = false;

@@ -137,10 +137,10 @@ export default {
                                 if ((me.messages && me.messages.length > 0) 
                                 && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
                                 // &&  me.messages[me.messages.length - 1].content.replace(/\s+/g, '') === data.new.messages.content.replace(/\s+/g, '')) {
-                                &&  me.messages[me.messages.length - 1].content.replace(/\s+/g, '').includes(data.new.messages.content.replace(/\s+/g, ''))) {
+                                && me.messages[me.messages.length - 1].content.replace(/\s+/g, '').includes(data.new.messages.content.replace(/\s+/g, ''))
+                                ) {
                                     me.messages[me.messages.length - 1] = data.new.messages
                                     me.EventBus.emit('instances-updated');
-                                    me.EventBus.emit('new-message-watched');
                                 } else {
                                     me.messages.push(data.new.messages)
                                 }
@@ -334,6 +334,8 @@ export default {
                 chatMsgs.push(chatObj);
                 this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs];
 
+                this.setPrompt(message.callType)
+
                 chatObj = this.createMessageObj(message);
                 if (message.image && message.image != '') {
                     chatObj['image'] = message.image;
@@ -366,6 +368,20 @@ export default {
                 }
                 
                 this.replyUser = null;
+            }
+        },
+        setPrompt(callType){
+            if(callType == 'consulting'){
+                const lastMessage = this.generator.previousMessages[this.generator.previousMessages.length - 1];
+                lastMessage.content = `${lastMessage.content}. 
+                답변을 형식에 어긋난 답변을 해서 오류를 야기하는 상황이 자주 발생하기때문에 항상 답변 형식에 따라 반드시 아래의 JSON 형식으로 답변해야해. 어떠한 경우에도 "queryFor" 를 포함한 JSON 형식으로 답변해야해.
+                {
+                    "content": "답변 내용",
+                    "queryFor": "mento" || "customer", // 무조건 둘 중 하나여야함.
+                }
+                
+                만약 일반 대화형 답변이 아닌 프로세스 정의를 생성하는 경우 처음에 지정해둔 프로세스 정의 답변 형식에 맞게 "megaProcessId": "",... 를 포함한 답변을 해야해.
+                `
             }
         },
         async startGenerate() {
@@ -576,7 +592,11 @@ export default {
             let jsonData = response;
             if (typeof response == 'string') {
                 jsonData = this.extractJSON(response);
-                jsonData = JSON.parse(jsonData);
+                if(jsonData && jsonData.includes('{')){
+                    jsonData = JSON.parse(jsonData);
+                } else {
+                    jsonData = null
+                }
             }
             if(jsonData != null) {
                 this.afterGenerationFinished(jsonData);
@@ -595,16 +615,21 @@ export default {
 
         onError(error) {
             if (error.code === 'invalid_api_key') {
-                var apiKey = prompt('API Key 를 입력하세요.');
-                let token = {
-                    "key": 'openai_key',
-                    "value": {
-                        "key": apiKey
+                if (confirm('openAI API Key 입력이 필요합니다.\n\ngpt-4o 모델을 사용가능한 API key 를 입력해야합니다.\n\n확인을 클릭하시면 API key 를 확인할 수 있는 openAI 공식 홈페이지가 열립니다.')) {
+                    window.open('https://platform.openai.com/settings/profile?tab=api-keys', '_blank');
+                } 
+                var apiKey = prompt('openAI API Key 를 입력하세요.\n\ngpt-4o 모델을 사용가능한 API key를 입력해야합니다.');
+                if(apiKey != ''){
+                    let token = {
+                        "key": 'openai_key',
+                        "value": {
+                            "key": apiKey
+                        }
                     }
+                    this.putObject('configuration', token);
+                    this.openaiToken = apiKey;
+                    this.startGenerate();
                 }
-                this.putObject('configuration', token);
-                this.openaiToken = apiKey;
-                this.startGenerate();
             } else {
                 let messageWriting = this.messages[this.messages.length - 1];
                 if (messageWriting.role == 'system' && messageWriting.isLoading) {
