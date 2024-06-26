@@ -148,8 +148,8 @@ export default class CustomRenderer extends BaseRenderer {
     const existingHeight = shape.height.baseVal.value
 
     // 기존 크기를 사용하여 새로운 사각형을 그립니다.
-    //#ff0000
-    const strokColor = this.hasInvalidationId(element.id) ? '#ff0000' : 'none';
+    //#e53935
+    const strokColor = this.hasInvalidationId(element.id) ? '#e53935' : 'none';
     const rect = drawRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, strokColor, '#fdf2d0');
     prependTo(rect, parentNode);
     svgRemove(shape);
@@ -159,7 +159,7 @@ export default class CustomRenderer extends BaseRenderer {
   drawCustomStartEvent(parentNode, shape, element) {
     const size = 34;
     const radius = 100;
-    const strokColor = this.hasInvalidationId(element.id) ? '#ff0000' : 'none';
+    const strokColor = this.hasInvalidationId(element.id) ? '#e53935' : 'none';
     const rect = drawRect(parentNode, size, size, radius, strokColor, '#f6c745');
     prependTo(rect, parentNode);
     svgRemove(shape);
@@ -169,7 +169,7 @@ export default class CustomRenderer extends BaseRenderer {
   drawCustomEndEvent(parentNode, shape, element) {
     const size = 34;
     const radius = 100;
-    const strokColor = this.hasInvalidationId(element.id) ? '#ff0000' : 'none';
+    const strokColor = this.hasInvalidationId(element.id) ? '#e53935' : 'none';
     const rect = drawRect(parentNode, size, size, radius, strokColor, '#f6c745');
     prependTo(rect, parentNode);
     svgRemove(shape);
@@ -179,7 +179,7 @@ export default class CustomRenderer extends BaseRenderer {
   drawCustomConnection(parentNode, element) {
 
     if (is(element, 'bpmn:SequenceFlow')) {
-      const strokColor = this.hasInvalidationId(element.id) ? '#ff0000' : '#68369a';
+      const strokColor = this.hasInvalidationId(element.id) ? '#e53935' : '#68369a';
       const customMarkerUrl = createCustomMarker(parentNode, strokColor); // 화살표 색상 설정
       const options = {
         stroke: strokColor, // 연결선 색상 변경
@@ -208,7 +208,7 @@ export default class CustomRenderer extends BaseRenderer {
     const diamond = drawPolygon(parentNode, points);
 
     copyAttributes(shape, diamond);
-    const strokColor = this.hasInvalidationId(element.id) ? '#ff0000' : '#000000';
+    const strokColor = this.hasInvalidationId(element.id) ? '#e53935' : '#000000';
     diamond.style.stroke = strokColor;
 
 

@@ -965,7 +965,7 @@ class ProcessGPTBackend implements Backend {
     
     async validate(xml: string){
         try {
-            return null;
+            return {};
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
