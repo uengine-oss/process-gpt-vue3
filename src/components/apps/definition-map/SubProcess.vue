@@ -67,9 +67,9 @@ export default {
             this.definition = await backend.getRawDefinition(id);
             let url;
             if (this.definition && this.definition.id) {
-                url = `/definitions/${this.definition.id}`;
+                url = `/definitions/${this.definition.id}?redirect=true`;
             } else {
-                url = `/definitions/chat?id=${id}&name=${this.value.name}`;
+                url = `/definitions/chat?id=${id}&name=${this.value.name}&redirect=true`;
             }
             window.open(url, '_blank'); // '_blank'는 새 탭에서 열기
         },

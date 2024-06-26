@@ -984,9 +984,14 @@ export default {
                     me.EventBus.emit('definitions-updated');
 
                     // 새 탭으로 열린 프로세스 편집창
-                    if (me.$route.query && me.$route.query.id) {
-                        const definition = await backend.getRawDefinition(me.$route.query.id, { type: 'bpmn' });
-                        if (definition) {
+                    if (me.$route.query && me.$route.query.redirect) {
+                        let bpmn;
+                        if (me.$route.query.id) {
+                            bpmn = await backend.getRawDefinition(me.$route.query.id, { type: 'bpmn' });
+                        } else {
+                            bpmn = await backend.getRawDefinition(info.proc_def_id, { type: 'bpmn' });
+                        }
+                        if (bpmn) {
                             window.close();
                         }
                     }
