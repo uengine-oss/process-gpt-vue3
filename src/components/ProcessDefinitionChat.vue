@@ -753,6 +753,7 @@ export default {
         afterModelStopped(response) {},
         async convertXMLToJSON(xmlString) {
             try {
+                if(!xmlString) return {};
                 xmlString = xmlString.replace(/\$type/g, '_type'); //sanitizing for $type
 
                 const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
@@ -837,13 +838,18 @@ export default {
                     })),
                     events: [
                         ...event.map((event) => {
+                            let isProperties =
+                            event['bpmn:extensionElements'] && event['bpmn:extensionElements']['uengine:properties'];
+                            let definitionType = Object.keys(event).filter(key => key.includes('Definition'));
                             return {
                                 name: event.name,
                                 id: event.id,
                                 type: event.type,
                                 description: 'start event',
                                 role: lanes[0] ? lanes[0].name : 'Unknown',
-                                process: event.process
+                                process: event.process,
+                                definitionType: definitionType ? definitionType[0] : null,
+                                properties: isProperties ? event['bpmn:extensionElements']['uengine:properties']['uengine:json'] : '{}'
                             }
                         })
                     ],

@@ -127,7 +127,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   {
                     "action": "replace" | "add" | "delete",
                     "targetJsonPath": "$.activities[?(@.id=='request_vacation')]", // action 이 add 인 경우 "$.activities" 만 리턴. e.g. "$.sequences", action 이 add 가 아닌 경우 "$.activities[?(@.id=='request_vacation')]" 와 같이 수정, 삭제될 Path 의 상위 목록("activities", "sequences" 등...)을 참고하여 "$.activities" 뒤에 수정, 삭제될 값을 찾을 수 있는 필터("[?(@.id=='request_vacation')]") 를 반드시 포함하여 리턴.  // e.g. "$.sequences[?(@.source=='leave_request_activity' && @.target=='leave_approval_activity')].condition"
-                    "value": {...} //delete 인 경우는 불필요, replace의 경우 기존 value에서 변경된 부분을 수정하여 생략 하지 않고 value로 리턴
+                    "value": {...}, //delete 인 경우는 불필요, replace의 경우 기존 value에서 변경된 부분을 수정하여 생략 하지 않고 value로 리턴
+                    "beforeActivity": "" // 변경 되는 Activity의 이전 Activity의 id
                   }   
                   
                 ]
