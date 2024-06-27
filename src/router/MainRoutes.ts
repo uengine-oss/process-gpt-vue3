@@ -18,6 +18,12 @@ const MainRoutes = {
             component: () => import('@/components/apps/todolist/WorkItem.vue'),
         },
         {
+            name: 'System',
+            path: '/system',
+            // component: () => import('@/components/ProcessInstance.vue')
+            component: () => import('@/components/ui/SystemList.vue'),
+        },
+        {
             name: 'InstanceCard',
             path: '/instancelist/:instId',
             component: () => import('@/components/apps/todolist/InstanceCard.vue'),
@@ -26,11 +32,6 @@ const MainRoutes = {
             name: 'Chats',
             path: '/chats',
             component: () => import('@/views/apps/chat/Chats.vue')
-        },
-        {
-            name: 'Consulting',
-            path: '/consulting',
-            component: () => import('@/components/ProcessConsultingChat.vue')
         },
         {
             name: 'Proposals',

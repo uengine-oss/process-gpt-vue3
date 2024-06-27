@@ -32,15 +32,27 @@
             </template>
             <template v-slot:rightpart>
                 <div class="no-scrollbar">
-                    <Chat :prompt="prompt" :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" 
-                        :lock="lock" :disableChat="disableChat" :chatRoomId="chatRoomId" @sendMessage="beforeSendMessage"
-                        @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage">
+                    <Chat
+                        :prompt="prompt"
+                        :name="projectName"
+                        :messages="messages"
+                        :chatInfo="chatInfo"
+                        :userInfo="userInfo"
+                        :lock="lock"
+                        :disableChat="disableChat"
+                        :chatRoomId="chatRoomId"
+                        @sendMessage="beforeSendMessage"
+                        @sendEditedMessage="sendEditedMessage"
+                        @stopMessage="stopMessage"
+                    >
                         <template v-slot:custom-tools>
                             <v-row class="ma-0 pa-0 mt-3">
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn v-bind="props"
-                                            icon variant="text" 
+                                        <v-btn
+                                            v-bind="props"
+                                            icon
+                                            variant="text"
                                             type="file"
                                             class="text-medium-emphasis"
                                             density="comfortable"
@@ -51,12 +63,16 @@
                                     </template>
                                     <span>{{ $t('chat.import') }}</span>
                                 </v-tooltip>
-                                <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn" style="display: none;" />
+                                <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn" style="display: none" />
 
                                 <template v-if="bpmn && fullPath != ''">
                                     <v-tooltip location="bottom">
                                         <template v-slot:activator="{ props }">
-                                            <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                            <v-btn
+                                                v-bind="props"
+                                                icon
+                                                variant="text"
+                                                class="text-medium-emphasis"
                                                 @click="toggleLock"
                                                 density="comfortable"
                                             >
@@ -64,16 +80,21 @@
                                                 <Icon v-else icon="f7:lock-open" width="24" height="24"></Icon>
                                             </v-btn>
                                         </template>
-                                        <span v-if="lock">{{ editUser != '' && editUser != userInfo.name ? 
-                                            `현재 ${editUser} 님께서 수정 중입니다. 체크아웃 하는 경우 ${editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크아웃 하시겠습니까?` : 
-                                            $t('chat.unlock')
+                                        <span v-if="lock">{{
+                                            editUser != '' && editUser != userInfo.name
+                                                ? `현재 ${editUser} 님께서 수정 중입니다. 체크아웃 하는 경우 ${editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크아웃 하시겠습니까?`
+                                                : $t('chat.unlock')
                                         }}</span>
                                         <span v-else>{{ $t('chat.lock') }}</span>
                                     </v-tooltip>
-                                    
+
                                     <v-tooltip location="bottom">
                                         <template v-slot:activator="{ props }">
-                                            <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                            <v-btn
+                                                v-bind="props"
+                                                icon
+                                                variant="text"
+                                                class="text-medium-emphasis"
                                                 @click="toggleVerMangerDialog"
                                                 density="comfortable"
                                             >
@@ -86,7 +107,11 @@
                                 <template v-else>
                                     <v-tooltip location="bottom">
                                         <template v-slot:activator="{ props }">
-                                            <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                            <v-btn
+                                                v-bind="props"
+                                                icon
+                                                variant="text"
+                                                class="text-medium-emphasis"
                                                 @click="toggleLock"
                                                 density="comfortable"
                                             >
@@ -96,10 +121,15 @@
                                         <span>{{ $t('chat.processDefinitionSave') }}</span>
                                     </v-tooltip>
                                 </template>
-                                
+
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn v-if="bpmn && fullPath != ''" v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                        <v-btn
+                                            v-if="bpmn && fullPath != ''"
+                                            v-bind="props"
+                                            icon
+                                            variant="text"
+                                            class="text-medium-emphasis"
                                             @click="beforeDelete"
                                             density="comfortable"
                                         >
@@ -111,17 +141,21 @@
 
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn v-if="bpmn && fullPath != ''" v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                        <v-btn
+                                            v-if="bpmn && fullPath != ''"
+                                            v-bind="props"
+                                            icon
+                                            variant="text"
+                                            class="text-medium-emphasis"
                                             @click="showXmlMode()"
                                             density="comfortable"
                                         >
-                                            <Icon v-if="isXmlMode" icon="fluent-mdl2:modeling-view" width="24" height="24" />   
+                                            <Icon v-if="isXmlMode" icon="fluent-mdl2:modeling-view" width="24" height="24" />
                                             <Icon v-else icon="lucide:code-xml" width="24" height="24" />
                                         </v-btn>
                                     </template>
                                     <span>{{ isXmlMode ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>
                                 </v-tooltip>
-
                             </v-row>
                         </template>
                     </Chat>
@@ -140,15 +174,27 @@
             </template>
 
             <template v-slot:mobileLeftContent>
-                <Chat :prompt="prompt" :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" 
-                    :lock="lock" :disableChat="disableChat" :chatRoomId="chatRoomId" @sendMessage="beforeSendMessage" 
-                    @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage">
+                <Chat
+                    :prompt="prompt"
+                    :name="projectName"
+                    :messages="messages"
+                    :chatInfo="chatInfo"
+                    :userInfo="userInfo"
+                    :lock="lock"
+                    :disableChat="disableChat"
+                    :chatRoomId="chatRoomId"
+                    @sendMessage="beforeSendMessage"
+                    @sendEditedMessage="sendEditedMessage"
+                    @stopMessage="stopMessage"
+                >
                     <template v-slot:custom-tools>
                         <div class="d-flex">
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props"
-                                        icon variant="text" 
+                                    <v-btn
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
                                         type="file"
                                         class="text-medium-emphasis"
                                         @click="triggerFileInput"
@@ -158,7 +204,7 @@
                                 </template>
                                 <span>{{ $t('chat.import') }}</span>
                             </v-tooltip>
-                            <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn" style="display: none;" />
+                            <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn" style="display: none" />
 
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
@@ -170,7 +216,7 @@
                                 <span v-if="lock">{{ $t('chat.unlock') }}</span>
                                 <span v-else>{{ $t('chat.lock') }}</span>
                             </v-tooltip>
-                            
+
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis" @click="toggleVerMangerDialog">
@@ -179,10 +225,17 @@
                                 </template>
                                 <span>{{ $t('chat.history') }}</span>
                             </v-tooltip>
-                            
+
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-if="bpmn && fullPath != ''" v-bind="props" icon variant="text" class="text-medium-emphasis" @click="beforeDelete">
+                                    <v-btn
+                                        v-if="bpmn && fullPath != ''"
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
+                                        @click="beforeDelete"
+                                    >
                                         <TrashIcon size="24" />
                                     </v-btn>
                                 </template>
@@ -191,8 +244,15 @@
 
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-if="bpmn && fullPath != ''" v-bind="props" icon variant="text" class="text-medium-emphasis" @click="showXmlMode()">
-                                        <Icon v-if="isXmlMode" icon="fluent-mdl2:modeling-view" width="24" height="24" />   
+                                    <v-btn
+                                        v-if="bpmn && fullPath != ''"
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
+                                        @click="showXmlMode()"
+                                    >
+                                        <Icon v-if="isXmlMode" icon="fluent-mdl2:modeling-view" width="24" height="24" />
                                         <Icon v-else icon="lucide:code-xml" width="24" height="24" />
                                     </v-btn>
                                 </template>
@@ -250,7 +310,7 @@ export default {
     },
     data: () => ({
         isXmlMode: false,
-        prompt: "",
+        prompt: '',
         processDefinition: null,
         bpmn: null,
         changedXML: '',
@@ -275,22 +335,24 @@ export default {
         // delete
         deleteDialog: false,
         isDeleted: false,
+        externalSystems: [],
         validationList: {}
     }),
     async created() {
-        $try(async ()=>{
+        $try(async () => {
+            // Issue: init Methods가 종료되기전에, ChatGenerator를 생성하면서 this로 넘겨주는 Client 정보가 누락되는 현상 발생.
             await this.init();
             this.generator = new ChatGenerator(this, {
                 isStream: true,
                 preferredLanguage: 'Korean'
             });
-            if(this.$store.state.messages) {
+            if (this.$store.state.messages) {
                 const messagesString = JSON.stringify(this.$store.state.messages);
                 this.prompt = `아래 대화 내용에서 프로세스를 유추하여 프로세스 정의를 생성해주세요. 이때 가능한 프로세스를 일반화하여 작성:
                 ${messagesString}.`;
                 this.$store.commit('clearMessages');
             }
-            if(this.$store.state.editMessages) {
+            if (this.$store.state.editMessages) {
                 const messagesString = JSON.stringify(this.$store.state.editMessages);
                 this.prompt = `아래 대화 내용을 보고 기존 프로세스에서 수정 가능한 부분을 유추하여 프로세스 정의를 수정해주세요.
                 ${messagesString}.`;
@@ -300,7 +362,7 @@ export default {
             if (this.fullPath && this.fullPath != '') {
                 this.chatRoomId = this.fullPath;
             }
-        })
+        });
     },
     watch: {
         $route: {
@@ -342,7 +404,7 @@ export default {
         }
     },
     methods: {
-        showXmlMode(){
+        showXmlMode() {
             this.isXmlMode = !this.isXmlMode;
         },
         beforeDelete() {
@@ -473,7 +535,7 @@ export default {
                     await me.toggleVersionDialog(false);
                 },
                 onFail: (e) => {
-                    console.log(e)
+                    console.log(e);
                 }
             });
         },
@@ -540,57 +602,62 @@ export default {
         },
         async loadData(path) {
             const me = this;
-            me.$try({
-                context: me,
-                action: async () => {
-                    me.isDeleted = false;
-                    let fullPath = me.$route.params.pathMatch.join('/');
-                    if (fullPath.startsWith('/')) {
-                        fullPath = fullPath.substring(1);
-                    }
-                    let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
-                    if (fullPath && lastPath != 'chat') {
-                        let definition = await backend.getRawDefinition(fullPath, { type: 'bpmn' });
-                        if (definition) {
-                            me.bpmn = definition;
-                            me.definitionChangeCount++;
-                        }
-                        if (me.useLock) {
-                            const value = await backend.getRawDefinition(fullPath);
-                            if (value) {
-                                me.processDefinition = value.definition;
-                                me.projectName = me.processDefinition.processDefinitionName;
-                            }
-                            me.checkedLock(lastPath);
-                        } else {
-                            me.processDefinition = {
-                                processDefinitionId: lastPath,
-                                processDefinitionName: lastPath
-                            }
-                        }
-                    } else if (lastPath == 'chat') {
-                        me.processDefinition = null;
-                        me.projectName = null;
-                        me.bpmn = null;
-
-                        if (me.$route.query && me.$route.query.id) {
-                            me.processDefinition = {
-                                processDefinitionId: me.$route.query.id
-                            };
-                            if (me.$route.query.name) {
-                                me.projectName = me.$route.query.name;
-                                me.processDefinition.processDefinitionName = me.projectName;
-                            }
-                        }
-                        
-                        me.lock = false;
-                        me.disableChat = false;
-                        me.isViewMode = false;
+            try {
+                const externalSystems = await backend.getSystemList();
+                externalSystems.forEach(async (externalSystem) => {
+                    const system = await backend.getSystem(externalSystem.name.replace('.json', ''));
+                    me.externalSystems.push(system);
+                });
+                me.isDeleted = false;
+                let fullPath = me.$route.params.pathMatch.join('/');
+                if (fullPath.startsWith('/')) {
+                    fullPath = fullPath.substring(1);
+                }
+                let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
+                if (fullPath && lastPath != 'chat') {
+                    let definition = await backend.getRawDefinition(fullPath, { type: 'bpmn' });
+                    if (definition) {
+                        me.bpmn = definition;
                         me.definitionChangeCount++;
                     }
-                    me.processDefinitionMap = await backend.getProcessDefinitionMap();
+                    if (me.useLock) {
+                        const value = await backend.getRawDefinition(fullPath);
+                        if (value) {
+                            me.processDefinition = value.definition;
+                            me.projectName = me.processDefinition.processDefinitionName;
+                        }
+                        me.checkedLock(lastPath);
+                    } else {
+                        me.processDefinition = {
+                            processDefinitionId: lastPath,
+                            processDefinitionName: lastPath
+                        };
+                    }
+                } else if (lastPath == 'chat') {
+                    me.processDefinition = null;
+                    me.projectName = null;
+                    me.bpmn = null;
+
+                    if (me.$route.query && me.$route.query.id) {
+                        me.processDefinition = {
+                            processDefinitionId: me.$route.query.id
+                        };
+                        if (me.$route.query.name) {
+                            me.projectName = me.$route.query.name;
+                            me.processDefinition.processDefinitionName = me.projectName;
+                        }
+                    }
+
+                    me.lock = false;
+                    me.disableChat = false;
+                    me.isViewMode = false;
+                    me.definitionChangeCount++;
                 }
-            });
+                me.processDefinition = await me.convertXMLToJSON(me.bpmn);
+                me.processDefinitionMap = await backend.getProcessDefinitionMap();
+            } catch (e) {
+                alert(e);
+            }
         },
 
         beforeSendMessage(newMessage) {
@@ -653,10 +720,15 @@ export default {
         },
 
         afterGenerationFinished(response) {
-            let jsonProcess = this.extractJSON(response);
+            let jsonProcess = null;
+            if (typeof response === 'string') {
+                jsonProcess = JSON.parse(response);
+            } else {
+                jsonProcess = response;
+            }
 
             if (jsonProcess) {
-                let unknown = JSON.parse(jsonProcess);
+                let unknown = jsonProcess;
                 if (unknown.modifications) {
                     unknown.modifications.forEach((modification) => {
                         if (modification.action == 'replace') {
@@ -678,138 +750,206 @@ export default {
 
             this.isChanged = true;
         },
-        afterModelStopped(response) {
-        },
+        afterModelStopped(response) {},
         async convertXMLToJSON(xmlString) {
             try {
-                xmlString = xmlString.replace(/\$type/g, '_type');//sanitizing for $type
+                xmlString = xmlString.replace(/\$type/g, '_type'); //sanitizing for $type
 
                 const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
                 const result = await parser.parseStringPromise(xmlString);
-                const process = result['bpmn:definitions'] && result['bpmn:definitions']['bpmn:process'] ? result['bpmn:definitions']['bpmn:process'] : {};
-                const startEvent = process['bpmn:startEvent'] || {};
-                const endEvent = process['bpmn:endEvent'] || {};
                 function ensureArray(item) {
-                    return Array.isArray(item) ? item : (item ? [item] : []);
+                    return Array.isArray(item) ? item : item ? [item] : [];
                 }
-                const lanes = ensureArray(process['bpmn:laneSet'] ? process['bpmn:laneSet']['bpmn:lane'] : []);
-                const activities = ensureArray(process['bpmn:userTask'] || []);
-                const scriptTasks = ensureArray(process['bpmn:scriptTask'] || []);
-                const sequenceFlows = ensureArray(process['bpmn:sequenceFlow'] || []);
-                const gateways = ensureArray(process['bpmn:exclusiveGateway'] || []);
+                const processes =
+                    result['bpmn:definitions'] && result['bpmn:definitions']['bpmn:process']
+                        ? result['bpmn:definitions']['bpmn:process']
+                        : {};
+                let resultJsonData = null;
 
-                const data = process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] ? (Array.isArray(process['bpmn:extensionElements']['uengine:properties']['uengine:variable']) ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable'] : [process['bpmn:extensionElements']['uengine:properties']['uengine:variable']]).map(varData => ({
-                        name: varData.name,
-                        description: varData.name + ' description',
-                        type: varData.type
-                    })) : [];
+                let event = [];
+                let lanes = [];
+                let activities = [];
+                let sequenceFlows = [];
+                let gateways = [];
 
+                const participants =
+                    result['bpmn:definitions'] && result['bpmn:definitions']['bpmn:collaboration']['bpmn:participant']
+                        ? result['bpmn:definitions']['bpmn:collaboration']['bpmn:participant']
+                        : {};
+                let data = [];
+                for (let process of processes) {
+                    Object.keys(process).forEach((key) => {
+                        if (key.includes('Event')) {
+                            let eventTmp = process[key];
+                            if(eventTmp instanceof Array) {
+                                eventTmp = eventTmp.map(obj => ({ ...obj, type: key.replace("bpmn:", ""), process: process.id }));
+                            } else {
+                                eventTmp = { ...eventTmp, type: key.replace("bpmn:", ""), process: process.id };
+                            }
+                            event = event.concat(eventTmp);
+                        } else if (key.includes('Task')) {
+                            let activityTmp = process[key];
+                            if(activityTmp instanceof Array) {
+                                activityTmp = activityTmp.map(obj => ({ ...obj, type: key.replace("bpmn:", ""), process: process.id }));
+                            } else {
+                                activityTmp = { ...activityTmp, type: key.replace("bpmn:", ""), process: process.id };
+                            }
+                            activities = activities.concat(activityTmp);
+                        } else if (key.includes('Gateway')) {
+                            let gatewayTmp = process[key];
+                            if(gatewayTmp instanceof Array) {
+                                gatewayTmp = gatewayTmp.map(obj => ({ ...obj, type: key.replace("bpmn:", ""), process: process.id }));
+                            } else {
+                                gatewayTmp = { ...gatewayTmp, type: key.replace("bpmn:", ""), process: process.id };
+                            }
+                            gateways = gateways.concat(gatewayTmp);
+                        }
+                    });
+
+                    let lanesTmp = ensureArray(process['bpmn:laneSet'] ? process['bpmn:laneSet']['bpmn:lane'] : []);
+                    lanesTmp = lanesTmp.map(obj => ({ ...obj, process: process.id }));
+                    lanes = lanes.concat(lanesTmp);
+                    let sequenceFlowsTmp = ensureArray(process['bpmn:sequenceFlow'] || []);
+                    sequenceFlows = sequenceFlows.concat(sequenceFlowsTmp);
+                    let dataTmp =
+                        process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties']
+                            ? (Array.isArray(process['bpmn:extensionElements']['uengine:properties']['uengine:variable'])
+                                  ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable']
+                                  : [process['bpmn:extensionElements']['uengine:properties']['uengine:variable']]
+                              ).map((varData) => ({
+                                  name: varData.name,
+                                  description: varData.name + ' description',
+                                  type: varData.type
+                              }))
+                            : [];
+                    data = data.concat(dataTmp);
+                }
 
                 const jsonData = {
-                    processDefinitionName: process.id || 'Unknown',
-                    processDefinitionId: process.id || 'Unknown',
-                    description: "process.description",
+                    processDefinitionName: 'Unknown',
+                    processDefinitionId: 'Unknown',
+                    description: 'process.description',
                     data: data,
-                    roles: lanes.map(lane => ({
+                    roles: lanes.map((lane) => ({
                         name: lane.name,
-                        resolutionRule: lane.name === 'applicant' ? 'initiator' : 'system'
+                        resolutionRule: lane.name === 'applicant' ? 'initiator' : 'system',
+                        process: lane.process
                     })),
                     events: [
-                        {
-                            name: startEvent.id || 'StartEvent',
-                            id: startEvent.id || 'StartEvent',
-                            type: 'StartEvent',
-                            description: 'start event',
-                            role: lanes[0] ? lanes[0].name : 'Unknown'
-                        },
-                        {
-                            name: endEvent.id || 'EndEvent',
-                            id: endEvent.id || 'EndEvent',
-                            type: 'EndEvent',
-                            description: 'end event',
-                            role: lanes.length > 0 ? lanes[lanes.length - 1].name : 'Unknown'
-                        }
+                        ...event.map((event) => {
+                            return {
+                                name: event.name,
+                                id: event.id,
+                                type: event.type,
+                                description: 'start event',
+                                role: lanes[0] ? lanes[0].name : 'Unknown',
+                                process: event.process
+                            }
+                        })
                     ],
                     activities: [
-                        ...activities.map(activity => {
-                            try{
-                                let task = {}
-                                task.name = activity.name
-                                task.id = activity.id
-                                task.type = 'UserActivity'
-                                task.description = `${activity.name} description`
-                                task.instruction = `${activity.name} instruction`
-                                task.role = lanes.find(lane => {
-                                        const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
-                                        return flowNodeRefs.includes(activity.id);
-                                    }) ? 
-                                    lanes.find(lane => {
-                                        const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
-                                        return flowNodeRefs.includes(activity.id);
-                                    }).name : 'Unknown'
+                        ...activities.map((activity) => {
+                            try {
+                                let task = {};
+                                task.name = activity.name;
+                                task.id = activity.id;
+                                task.type = activity.type;
+                                task.description = `${activity.name} description`;
+                                task.instruction = `${activity.name} instruction`;
+                                task.process = activity.process;
+                                task.role = lanes.find((lane) => {
+                                    const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef'])
+                                        ? lane['bpmn:flowNodeRef']
+                                        : [lane['bpmn:flowNodeRef']];
+                                    return flowNodeRefs.includes(activity.id);
+                                })
+                                    ? lanes.find((lane) => {
+                                          const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef'])
+                                              ? lane['bpmn:flowNodeRef']
+                                              : [lane['bpmn:flowNodeRef']];
+                                          return flowNodeRefs.includes(activity.id);
+                                      }).name
+                                    : 'Unknown';
 
-                                let isProperties = activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties']
+                                let isProperties =
+                                    activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties'];
 
-                                if(isProperties){
-                                    let parseProperties = JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json'])
-                                    task.inputData = parseProperties && parseProperties.parameters ? parseProperties.parameters.filter(param => param.direction === "IN") : []
-                                    task.outputData = parseProperties && parseProperties.parameters ? parseProperties.parameters.filter(param => param.direction === "OUT") : []
+                                if (isProperties) {
+                                    let parseProperties = JSON.parse(
+                                        activity['bpmn:extensionElements']['uengine:properties']['uengine:json']
+                                    );
+                                    task.inputData =
+                                        parseProperties && parseProperties.parameters
+                                            ? parseProperties.parameters
+                                                  .filter((param) => param.direction === 'IN')
+                                                  .map((param) => param.variable.name)
+                                            : [];
+                                    task.outputData =
+                                        parseProperties && parseProperties.parameters
+                                            ? parseProperties.parameters
+                                                  .filter((param) => param.direction === 'OUT')
+                                                  .map((param) => param.variable.name)
+                                            : [];
+                                    task.properties = activity['bpmn:extensionElements']['uengine:properties']['uengine:json'];
                                 } else {
-                                    task.inputData = []
-                                    task.outputData = []
+                                    task.inputData = [];
+                                    task.outputData = [];
                                 }
-                                const form = JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json'])
+                                const form = JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']);
                                 if (form && form.variableForHtmlFormContext && form.variableForHtmlFormContext.name) {
-                                    task.tool = "formHandler:" + form.variableForHtmlFormContext.name
+                                    task.tool = 'formHandler:' + form.variableForHtmlFormContext.name;
                                 } else {
-                                    task.tool = "";
+                                    task.tool = '';
                                 }
-                                return task
-                            }catch(e){
-                                console.log(e)
+                                return task;
+                            } catch (e) {
+                                console.log(e);
                             }
-                        }
-                        
-                        ),
-                        ...scriptTasks.map(task => ({
-                            name: task.name,
-                            id: task.id,
-                            type: 'ScriptActivity',
-                            description: task.name + ' description',
-                            instruction: task.name + ' instruction',
-                            role: lanes.find(lane => {
-                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
-                                return flowNodeRefs.includes(task.id);
-                            }) ? lanes.find(lane => {
-                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
-                                return flowNodeRefs.includes(task.id);
-                            }).name : 'Unknown',
-                            pythonCode: task['bpmn:extensionElements'] && task['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(task['bpmn:extensionElements']['uengine:properties']['uengine:json']).script : ''
-                        }))
+                        })
                     ],
                     gateways: [
-                        ...gateways.map(gateway => ({
+                        ...gateways.map((gateway) => ({
                             id: gateway.id || 'Gateway',
                             name: gateway.name || 'Gateway',
-                            type: "ExclusiveGateway",
+                            type: gateway.type,
                             description: gateway.name + ' description',
-                            role: lanes.find(lane => {
-                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
+                            process: gateway.process,
+                            role: lanes.find((lane) => {
+                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef'])
+                                    ? lane['bpmn:flowNodeRef']
+                                    : [lane['bpmn:flowNodeRef']];
                                 return flowNodeRefs.includes(gateway.id);
-                            }) ? lanes.find(lane => {
-                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef']) ? lane['bpmn:flowNodeRef'] : [lane['bpmn:flowNodeRef']];
-                                return flowNodeRefs.includes(gateway.id);
-                            }).name : 'Unknown',
-                            condition: gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(gateway["bpmn:extensionElements"]["uengine:properties"]["uengine:json"]).condition || '' : ''
+                            })
+                                ? lanes.find((lane) => {
+                                      const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef'])
+                                          ? lane['bpmn:flowNodeRef']
+                                          : [lane['bpmn:flowNodeRef']];
+                                      return flowNodeRefs.includes(gateway.id);
+                                  }).name
+                                : 'Unknown',
+                            condition:
+                                gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties']
+                                    ? JSON.parse(gateway['bpmn:extensionElements']['uengine:properties']['uengine:json']).condition || ''
+                                    : '',
+                            properties: gateway['bpmn:extensionElements']['uengine:properties']['uengine:json']
                         }))
                     ],
-                    sequences: sequenceFlows.map(flow => ({
+                    sequences: sequenceFlows.map((flow) => ({
                         source: flow.sourceRef,
                         target: flow.targetRef,
-                        condition: flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties'] ? JSON.parse(flow["bpmn:extensionElements"]["uengine:properties"]["uengine:json"]).condition || '' : ''
-                    }))
+                        condition:
+                            flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties']
+                                ? JSON.parse(flow['bpmn:extensionElements']['uengine:properties']['uengine:json']).condition || ''
+                                : '',
+                        properties:
+                            flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties']
+                                ? flow['bpmn:extensionElements']['uengine:properties']['uengine:json'] || '{}'
+                                : '{}'
+                    })),
+                    participants: participants
                 };
-                return jsonData;
+                resultJsonData = jsonData;
+                return resultJsonData;
             } catch (error) {
                 console.error('Error parsing XML:', error);
                 throw error;
@@ -952,20 +1092,21 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    if(window.$mode == 'uEngine') {
+                    if (window.$mode == 'uEngine') {
                         // uEngine
                         await backend.putRawDefinition(xml, info.proc_def_id, info);
                     } else {
                         // GPT
-                        if(!me.processDefinition) me.processDefinition = {}
-                        if(!me.processDefinition.processDefinitionId) me.processDefinition.processDefinitionId = null
-                        if(!me.processDefinition.processDefinitionName) me.processDefinition.processDefinitionName = null
+                        if (!me.processDefinition) me.processDefinition = {};
+                        if (!me.processDefinition.processDefinitionId) me.processDefinition.processDefinitionId = null;
+                        if (!me.processDefinition.processDefinitionName) me.processDefinition.processDefinitionName = null;
 
-
-                        me.processDefinition.processDefinitionId = info.proc_def_id ? info.proc_def_id : prompt('please give a ID for the process definition');
+                        me.processDefinition.processDefinitionId = info.proc_def_id
+                            ? info.proc_def_id
+                            : prompt('please give a ID for the process definition');
 
                         if (!me.processDefinition.processDefinitionName && info.name) {
-                            me.processDefinition.processDefinitionName = info.name
+                            me.processDefinition.processDefinitionName = info.name;
                         } else if (!me.processDefinition.processDefinitionName && !info.name) {
                             me.processDefinition.processDefinitionName = prompt('please give a name for the process definition');
                         }
@@ -997,7 +1138,7 @@ export default {
                     }
                 },
                 catch: (e) => {
-                    console.log(e)
+                    console.log(e);
                 }
             });
         },
@@ -1240,11 +1381,11 @@ export default {
                 jsonModel.sequences.forEach((sequence, idx) => {
                     if (!positionMapping[sequence.source]) {
                         positionMapping[sequence.source] = lastXPos;
-                        lastXPos += 120; 
+                        lastXPos += 120;
                     }
-                    if(idx === jsonModel.sequences.length - 1){
-                        positionMapping[sequence.target] = lastXPos += 130
-                    }   
+                    if (idx === jsonModel.sequences.length - 1) {
+                        positionMapping[sequence.target] = lastXPos += 130;
+                    }
                     const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:sequenceFlow');
                     sequenceFlow.setAttribute('id', 'SequenceFlow_' + sequence.source + '_' + sequence.target);
                     sequenceFlow.setAttribute('name', sequence.name ? sequence.name : '');
@@ -1441,36 +1582,36 @@ export default {
                     // }
                     process.appendChild(userTask);
                 });
-                if (jsonModel.gateways) {
-                    jsonModel.gateways.forEach((gateway) => {
-                        const bpmnGateway = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:' + gateway.type);
-                        bpmnGateway.setAttribute('id', gateway.id);
-                        bpmnGateway.setAttribute('name', gateway.name);
-                        let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
-                        let root = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
-                        let params = xmlDoc.createElementNS('http://uengine', 'uengine:json');
-                        params.setAttribute('key', 'condition');
-                        params.textContent = JSON.stringify({
-                            condition: gateway.condition ? gateway.condition : ''
-                        });
-                        root.appendChild(params);
-                        extensionElements.appendChild(root);
-                        bpmnGateway.appendChild(extensionElements);
-
-                        if (outGoing[gateway.id]) {
-                            let outGoingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:outgoing');
-                            outGoingSeq.textContent = outGoing[gateway.id];
-                            bpmnGateway.appendChild(outGoingSeq);
-                        }
-                        if (inComing[gateway.id]) {
-                            let inComingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:incoming');
-                            inComingSeq.textContent = inComing[gateway.id];
-                            bpmnGateway.appendChild(inComingSeq);
-                        }
-
-                        process.appendChild(bpmnGateway);
+            if (jsonModel.gateways) {
+                jsonModel.gateways.forEach((gateway) => {
+                    const bpmnGateway = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:' + gateway.type);
+                    bpmnGateway.setAttribute('id', gateway.id);
+                    bpmnGateway.setAttribute('name', gateway.name);
+                    let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
+                    let root = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
+                    let params = xmlDoc.createElementNS('http://uengine', 'uengine:json');
+                    params.setAttribute('key', 'condition');
+                    params.textContent = JSON.stringify({
+                        condition: gateway.condition ? gateway.condition : ''
                     });
-                }
+                    root.appendChild(params);
+                    extensionElements.appendChild(root);
+                    bpmnGateway.appendChild(extensionElements);
+
+                    if (outGoing[gateway.id]) {
+                        let outGoingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:outgoing');
+                        outGoingSeq.textContent = outGoing[gateway.id];
+                        bpmnGateway.appendChild(outGoingSeq);
+                    }
+                    if (inComing[gateway.id]) {
+                        let inComingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:incoming');
+                        inComingSeq.textContent = inComing[gateway.id];
+                        bpmnGateway.appendChild(inComingSeq);
+                    }
+
+                    process.appendChild(bpmnGateway);
+                });
+            }
 
             // BPMN Diagram Draw
             const bpmnDiagram = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNDiagram');
@@ -1532,8 +1673,8 @@ export default {
                 // 요소들을 순서대로 처리하기 위해 sequences를 기반으로 정렬
                 const sortedElements = [];
                 jsonModel.sequences.forEach((sequence) => {
-                    const sourceElement = elements.find(el => el.id === sequence.source);
-                    const targetElement = elements.find(el => el.id === sequence.target);
+                    const sourceElement = elements.find((el) => el.id === sequence.source);
+                    const targetElement = elements.find((el) => el.id === sequence.target);
                     if (sourceElement && !sortedElements.includes(sourceElement)) {
                         sortedElements.push(sourceElement);
                     }
@@ -1722,7 +1863,7 @@ export default {
                     bpmnPlane.appendChild(bpmnEdge);
                 });
             }
-            
+
             // XML 문자열로 변환 및 반환
             const serializer = new XMLSerializer();
             const bpmnXml = serializer.serializeToString(xmlDoc);
@@ -1946,7 +2087,7 @@ export default {
     position: relative;
 }
 .is-deleted::after {
-    content: "";
+    content: '';
     position: absolute;
     top: 0;
     left: 0;

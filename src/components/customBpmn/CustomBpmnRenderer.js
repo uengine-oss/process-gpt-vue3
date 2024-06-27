@@ -15,7 +15,8 @@ import { is } from 'bpmn-js/lib/util/ModelUtil';
 import { isAny } from 'bpmn-js/lib/features/modeling/util/ModelingUtil';
 
 const HIGH_PRIORITY = 1500,
-  TASK_BORDER_RADIUS = 10;
+  TASK_BORDER_RADIUS = 10,
+  ERROR_COLOR = '#e53935';
 
 
 export default class CustomRenderer extends BaseRenderer {
@@ -84,7 +85,7 @@ export default class CustomRenderer extends BaseRenderer {
 
   canRender(element) {
     // only render tasks and events (ignore labels)
-    return isAny(element, ['bpmn:Task', "bpmn:Lane", "bpmn:Participant", "bpmn:SequenceFlow", "bpmn:StartEvent", "bpmn:EndEvent", "bpmn2:outgoing", "label", "bpmn:Gateway"]) && !element.labelTarget;
+    return isAny(element, ['bpmn:Task', "bpmn:Lane", "bpmn:Participant", "bpmn:SequenceFlow", "bpmn:StartEvent", "bpmn:EndEvent", "bpmn2:outgoing", "label", "bpmn:Gateway", "bpmn:SubProcess"]) && !element.labelTarget;
   }
 
 
@@ -114,6 +115,8 @@ export default class CustomRenderer extends BaseRenderer {
       this.drawCustomGateway(parentNode, shape, element);
     } else if (is(element, 'bpmn:SequenceFlow')) {
       this.drawCustomConnection(parentNode, element);
+    } else if (is(element, 'bpmn:SubProcess')) {
+      this.drawCustomSubProcess(parentNode, shape, element);
     }
     return shape;
   }
@@ -149,7 +152,7 @@ export default class CustomRenderer extends BaseRenderer {
 
     // 기존 크기를 사용하여 새로운 사각형을 그립니다.
     //#e53935
-    const strokColor = this.hasInvalidationId(element.id) ? '#e53935' : 'none';
+    const strokColor = this.hasInvalidationId(element.id) ? ERROR_COLOR : 'none';
     const rect = drawRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, strokColor, '#fdf2d0');
     prependTo(rect, parentNode);
     svgRemove(shape);
@@ -159,7 +162,7 @@ export default class CustomRenderer extends BaseRenderer {
   drawCustomStartEvent(parentNode, shape, element) {
     const size = 34;
     const radius = 100;
-    const strokColor = this.hasInvalidationId(element.id) ? '#e53935' : 'none';
+    const strokColor = this.hasInvalidationId(element.id) ? ERROR_COLOR : 'none';
     const rect = drawRect(parentNode, size, size, radius, strokColor, '#f6c745');
     prependTo(rect, parentNode);
     svgRemove(shape);
@@ -169,7 +172,7 @@ export default class CustomRenderer extends BaseRenderer {
   drawCustomEndEvent(parentNode, shape, element) {
     const size = 34;
     const radius = 100;
-    const strokColor = this.hasInvalidationId(element.id) ? '#e53935' : 'none';
+    const strokColor = this.hasInvalidationId(element.id) ? ERROR_COLOR : 'none';
     const rect = drawRect(parentNode, size, size, radius, strokColor, '#f6c745');
     prependTo(rect, parentNode);
     svgRemove(shape);
@@ -179,7 +182,7 @@ export default class CustomRenderer extends BaseRenderer {
   drawCustomConnection(parentNode, element) {
 
     if (is(element, 'bpmn:SequenceFlow')) {
-      const strokColor = this.hasInvalidationId(element.id) ? '#e53935' : '#68369a';
+      const strokColor = this.hasInvalidationId(element.id) ? ERROR_COLOR : '#68369a';
       const customMarkerUrl = createCustomMarker(parentNode, strokColor); // 화살표 색상 설정
       const options = {
         stroke: strokColor, // 연결선 색상 변경
@@ -208,12 +211,23 @@ export default class CustomRenderer extends BaseRenderer {
     const diamond = drawPolygon(parentNode, points);
 
     copyAttributes(shape, diamond);
-    const strokColor = this.hasInvalidationId(element.id) ? '#e53935' : '#000000';
+    const strokColor = this.hasInvalidationId(element.id) ? ERROR_COLOR : '#000000';
     diamond.style.stroke = strokColor;
 
 
     prependTo(diamond, parentNode);
 
+    svgRemove(shape);
+  }
+
+  // bpmn:SubProcess 관련
+  drawCustomSubProcess(parentNode, shape, element) {
+    const existingWidth = shape.width.baseVal.value;
+    const existingHeight = shape.height.baseVal.value
+
+    const strokColor = this.hasInvalidationId(element.id) ? ERROR_COLOR : '#000000';
+    const rect = drawRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, strokColor, '#ffffff');
+    prependTo(rect, parentNode);
     svgRemove(shape);
   }
 

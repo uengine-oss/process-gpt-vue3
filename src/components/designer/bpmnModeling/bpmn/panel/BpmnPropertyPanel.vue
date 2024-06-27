@@ -9,9 +9,7 @@
             <!-- <Icon icon="mdi:close" width="24" height="24" @click="$emit('close')" class="cursor-pointer" /> -->
         </v-row>
         <v-card-text style="overflow: auto; height: calc(-155px + 100vh); width: 700px">
- 			<div v-if="checkValidation()" style="color: red">
-                <pre>* {{ checkValidation() }}</pre>
-            </div>
+            <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
             <div style="float: right">Role: {{ role.name }}</div>
             <div>{{ $t('BpnmPropertyPanel.name') }}</div>
             <v-text-field v-model="name" :disabled="isViewMode" ref="cursor"></v-text-field>
@@ -43,6 +41,7 @@
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import ValidationField from '@/components/designer/bpmnModeling/bpmn/panel/ValidationField.vue'
 import { Icon } from '@iconify/vue';
 const storage = StorageBaseFactory.getStorage();
 export default {
@@ -79,7 +78,9 @@ export default {
         //     this.ensureKeyExists(this.uengineProperties, key, this.requiredKeyLists[key])
         // })
     },
-    components: {},
+    components: {
+        ValidationField
+    },
     data() {
         return {
             // requiredKeyLists: {
