@@ -201,8 +201,8 @@
                                                     <v-row class="ma-0 pa-0" style="margin-bottom:10px !important;">
                                                         <v-avatar style="margin-right:10px;">
                                                             <img v-if="message.role == 'system'"
-                                                                src="@/assets/images/chat/chat-icon.png" max-height="48"
-                                                                max-width="48" />
+                                                                src="@/assets/images/chat/chat-icon.png" height="48"
+                                                                width="48" />
                                                             <v-img v-else :src="getProfile(message.email)" :alt="message.name"
                                                                 height="48" width="48" />
                                                         </v-avatar>
