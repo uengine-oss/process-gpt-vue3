@@ -240,11 +240,6 @@
                                                             <pre v-else class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
                                                             <!-- <pre class="text-body-1">{{ message.content }}</pre> -->
 
-                                                            <p style="margin-top: 5px" v-if="message.bpmn">
-                                                                <v-btn style="margin-right: 5px" size="small"
-                                                                    @click="showBPMN()">BPMN 모델 보기</v-btn>
-                                                            </p>
-
                                                             <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
                                                                 <v-btn style="margin-right: 5px" size="small"
                                                                     @click="startProcess(message)">y</v-btn>
@@ -689,9 +684,6 @@ export default {
         }
     },
     methods: {
-        showBPMN(){
-            this.$emit('showBPMN')
-        },
         getOtherUserMessageColor(message) {
             if (message.role === 'user') {
                 return {
