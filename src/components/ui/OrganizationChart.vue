@@ -171,7 +171,7 @@ export default {
                 enableExpandCollapse: true,
                 nodeTemplate: (content) =>`
                 <div class='node-content' id='${content.id}' style='display: flex; padding: 10px; flex-direction: row;justify-content: space-between; align-items: center; height: 100%;'>
-                    <img style='width: 45px; height: 45px; border-radius: 50%;' src='${content.img}' />
+                    ${content.img ? `<img style='width: 45px; height: 45px; border-radius: 50%;' src='${content.img}' />` : ''}
                     <div style='margin-left: 10px'>
                         <div style="font-weight: bold; font-family: Arial; font-size: 14px;">${content.name}</div>
                         ${content.email ? `<div style="font-family: Arial; font-size: 12px">${content.email}</div>` : ''}

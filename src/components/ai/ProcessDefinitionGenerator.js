@@ -173,8 +173,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
             - 직원: 업무를 지시 받고 처리하는 사람
             - 프로세스 관리자: 프로세스 정의의 변경 권한을 갖고 있는 사람.
             - BPM시스템: 이 시스템은 Business Process Management 기능을 수행하는 바로 너가 해야 할 일이야.
-            
-            알았으면 OK 라고만 답해.`
+`
             }];
     }
 

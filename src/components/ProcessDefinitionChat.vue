@@ -11,7 +11,9 @@
                     :isXmlMode="isXmlMode"
                     :definitionPath="fullPath"
                     :definitionChat="this"
+                    :validationList="validationList"
                     @update="updateDefinition"
+                    @change="changeElement"
                 ></process-definition>
                 <process-definition-version-dialog
                     :process="processDefinition"
@@ -334,6 +336,7 @@ export default {
         deleteDialog: false,
         isDeleted: false,
         externalSystems: []
+        validationList: {}
     }),
     async created() {
         $try(async () => {
@@ -367,7 +370,7 @@ export default {
             handler(newVal, oldVal) {
                 if (newVal.path !== oldVal.path) {
                     if (!(newVal.path.startsWith('/definitions') || newVal.path.startsWith('/forms'))) return;
-
+                    this.messages = [];
                     if (newVal.params.pathMatch) {
                         this.init();
                     }
@@ -530,11 +533,6 @@ export default {
 
                     me.loading = false;
                     await me.toggleVersionDialog(false);
-
-                    // 새 탭으로 열린 프로세스 편집창
-                    if (me.$route.query && me.$route.query.id) {
-                        window.close();
-                    }
                 },
                 onFail: (e) => {
                     console.log(e);
@@ -558,6 +556,14 @@ export default {
                     me.definitionChangeCount++;
                     me.toggleVerMangerDialog(false);
                 }
+            });
+        },
+        async changeElement() {
+            this.$nextTick(async () => {
+                const store = useBpmnStore();
+                const modeler = store.getModeler;
+                const xmlObj = await modeler.saveXML({ format: true, preamble: true });
+                this.validationList = await backend.validate(xmlObj.xml);
             });
         },
         loadBPMN(bpmn) {
@@ -1117,6 +1123,19 @@ export default {
                         me.$router.push(`/definitions/${info.proc_def_id}`);
                     }
                     me.EventBus.emit('definitions-updated');
+
+                    // 새 탭으로 열린 프로세스 편집창
+                    if (me.$route.query && me.$route.query.redirect) {
+                        let bpmn;
+                        if (me.$route.query.id) {
+                            bpmn = await backend.getRawDefinition(me.$route.query.id, { type: 'bpmn' });
+                        } else {
+                            bpmn = await backend.getRawDefinition(info.proc_def_id, { type: 'bpmn' });
+                        }
+                        if (bpmn) {
+                            window.close();
+                        }
+                    }
                 },
                 catch: (e) => {
                     console.log(e);
@@ -2078,3 +2097,4 @@ export default {
     z-index: 10;
 }
 </style>
+

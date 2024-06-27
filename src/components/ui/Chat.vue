@@ -34,7 +34,7 @@
                     </slot>
 
                     <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                        <div class="d-flex w-100" :style="!$globalState.state.isRightZoomed ? 'height:calc(100vh - 300px)' : 'height:100vh;'">
+                        <div class="d-flex w-100" :style="!$globalState.state.isRightZoomed ? chatHeight : 'height:100vh;'">
                             <v-col>
                                 <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
                                     <template v-slot:title>
@@ -143,9 +143,9 @@
                                                         <Icon icon="el:trash" />
                                                     </v-btn>
                                                     <v-list>
-                                                        <v-list-item-group>
+                                                        <div>
                                                             <v-list-item v-for="(work, index) in generatedWorkList" :key="index" class="d-flex align-items-center">
-                                                                <v-list-item-content v-if="work.messageForUser" class="flex-grow-1 d-flex align-items-center">
+                                                                <div v-if="work.messageForUser" class="flex-grow-1 d-flex align-items-center">
                                                                     <div class="w-100">
                                                                         <v-row class="ma-0 pa-3">
                                                                             <template v-if="!workIcons[work.work]">
@@ -187,14 +187,14 @@
                                                                             src="https://github.com/jhyg/project-shop-test/assets/65217813/1b551056-0428-41b6-9b90-76dd7942affc"
                                                                         ></v-img>
                                                                     </div>
-                                                                </v-list-item-content>
+                                                                </div>
                                                                 <v-divider v-if="index < generatedWorkList.length - 1"></v-divider>
                                                             </v-list-item>
-                                                        </v-list-item-group>
+                                                        </div>
                                                     </v-list>
                                                 </v-card>
                                             </div>
-                                            <div v-else :style="shouldDisplayUserInfo(message, index) ? '' : 'margin-top: -20px;'">
+                                            <div v-else-if="!message.disableMsg || message.isLoading" :style="shouldDisplayUserInfo(message, index) ? '' : 'margin-top: -20px;'">
                                                 <v-row v-if="shouldDisplayUserInfo(message, index)"
                                                     class="ma-0 pa-0"
                                                 >
@@ -236,8 +236,14 @@
                                                             <pre class="text-body-1" v-if="message.replyContent">{{ message.replyContent }}</pre>
                                                             <v-divider v-if="message.replyContent"></v-divider>
 
-                                                            <pre class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
+                                                            <pre v-if="message.disableMsg" class="text-body-1">{{ "..." }}</pre>
+                                                            <pre v-else class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
                                                             <!-- <pre class="text-body-1">{{ message.content }}</pre> -->
+
+                                                            <p style="margin-top: 5px" v-if="message.bpmn">
+                                                                <v-btn style="margin-right: 5px" size="small"
+                                                                    @click="showBPMN()">BPMN 모델 보기</v-btn>
+                                                            </p>
 
                                                             <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
                                                                 <v-btn style="margin-right: 5px" size="small"
@@ -443,7 +449,7 @@
                 <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                     class="shadow-none message-input-box cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
                     auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
-                    style="font-size:20px !important;" @input="handleTextareaInput">
+                    style="font-size:20px !important; height: 80px;" @input="handleTextareaInput">
                     <template v-slot:prepend-inner>
                         <v-btn @click="recordingModeChange()"
                             density="comfortable"
@@ -510,7 +516,6 @@ import { HistoryIcon } from 'vue-tabler-icons';
 import Record from './Record.vue';
 // import Record from './Record2.vue';
 import defaultWorkIcon from '@/assets/images/chat/chat-icon.png';
-
 
 export default {
     components: {
@@ -580,6 +585,7 @@ export default {
             mentionedUsers: [], // Mention된 유저들의 정보를 저장할 배열
             file: null,
             isRender: false,
+            chatHeight: 'height:calc(100vh - 300px)',
         };
     },
     mounted() {
@@ -590,6 +596,9 @@ export default {
                 me.$emit("requestFile", event.target.getAttribute('data-filename'));
             }
         });
+        if(window.location.pathname && window.location.pathname.includes('/definitions/')){
+            this.chatHeight = 'height:calc(100vh - 337px)'
+        }
     },
     watch: {
         prompt(newVal, oldVal) {
@@ -680,6 +689,9 @@ export default {
         }
     },
     methods: {
+        showBPMN(){
+            this.$emit('showBPMN')
+        },
         getOtherUserMessageColor(message) {
             if (message.role === 'user') {
                 return {
@@ -917,11 +929,13 @@ export default {
         },
         shouldDisplayUserInfo() {
             return (message, index) => {
-                if (index === 0) return true;
-                const prevMessage = this.filteredMessages[index - 1];
-                if (message.email !== prevMessage.email) return true;
-                const timeDiff = new Date(message.timeStamp) - new Date(prevMessage.timeStamp);
-                if (timeDiff > 60000) return true;
+                if(!message.disableMsg){
+                    if (index === 0) return true;
+                    const prevMessage = this.filteredMessages[index - 1];
+                    if (message.email !== prevMessage.email) return true;
+                    const timeDiff = new Date(message.timeStamp) - new Date(prevMessage.timeStamp);
+                    if (timeDiff > 60000) return true;
+                }
                 return false;
             };
         },
