@@ -7,7 +7,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
 
         const processDefinitionMap = JSON.stringify(client.processDefinitionMap);
         const processDefinition = JSON.stringify(client.processDefinition);
-        
+        const externalSystems = JSON.stringify(client.externalSystems);
         this.previousMessages = [{
             role: 'system', 
             content: `
@@ -97,6 +97,16 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                     "condition": "기존 프로세스 정보중 "data" 내에 존재하는 값만을 사용하여 condition 을 생성해야한다. "data" 목록을 보고 condition 생성에 필요한 "data" 의 "name" 만으로 생성해야함." // 기존 프로세스 정보가 존재하는 경우에만 생성해야하며, 생성시 기존 프로세스 정보를 참고하여 컨디션을 생성해야한다.
                 }
               ],
+              "participants": [
+                {
+                    "name": "participant name",
+                    "type": "Participant" | "ParticipantGroup",
+                    "system": "system name",
+                    "url": "api url",
+                    "spec": ""
+
+                }
+              ]
             }
              
             \`\`\`
@@ -124,11 +134,39 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
               }
             \`\`\`
 
+            - 외부 시스템 호출: 시스템 기능 목록 중에서 어떤 API를 연동해서 사용해야 하는지 찾아서 프로세스에 추가해줘. 각 시스템 별 API 목록은 아래와 같아.
+            
+            외부 시스템 목록:
+            \`\`\`
+            ${externalSystems}
+            \`\`\`
 
+            
+
+            외부 시스템과 연결 되는 Element는 MessageIntermediateThrowEvent 로 설정해줘.
+            MessageIntermediateThrowEvent의 구조는 아래와 같아.
+
+            \`\`\`
+            {
+                "id": "event_id",
+                "name": "event name",
+                "type": "MessageIntermediateThrowEvent",
+                "description": "프로세스의 시작, 종료 또는 중간 이벤트 설명",
+                "trigger": "이벤트 트리거 조건 (if applicable)",
+                "participants": "연결 될 Participant 의 이름",
+                "spec": {
+                    "systemName": "사용 할 시스템"
+                    "methodsType": "사용 될 실제 Methods Type",
+                    "requestBody": {
+                        "key": "value"
+                    },
+                    "path": "호출 할 API Path"
+                }
+            }
+            \`\`\`
 
             - 프로세스 설명: 전체적인 프로세스를 설명해주면돼. 예를들어 휴가신청 프로세스의 각 단계와 담당자가 누군지 등을 설명해주면 돼
             설명의 결과도 위의 프로세스 정의의 json format 을 따라 리턴해줘
-            
             
             사용자들의 역할은 다음과 같아:
             
@@ -136,11 +174,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
             - 프로세스 관리자: 프로세스 정의의 변경 권한을 갖고 있는 사람.
             - BPM시스템: 이 시스템은 Business Process Management 기능을 수행하는 바로 너가 해야 할 일이야.
             
-            
-            알았으면 OK 라고만 답해.
-            
-
-`
+            알았으면 OK 라고만 답해.`
             }];
     }
 
