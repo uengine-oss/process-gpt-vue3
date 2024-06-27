@@ -70,7 +70,7 @@ const customizer = useCustomizerStore();
                     </v-row>
                     <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
 
-                    
+
                     <!-- 하단 목록으로 뿌려주던 리스트 형식 메뉴 -->
                     <!-- <NavItem v-else-if="!item.disable && !item.header" class="leftPadding" :item="item" /> -->
                 </template>
@@ -144,6 +144,7 @@ export default {
                     disable: false
                 }
             ]
+            this.getDefinitionList();
         }
 
         if (!this.JMS) {

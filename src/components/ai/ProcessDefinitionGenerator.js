@@ -15,11 +15,13 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
 
             - 프로세스 정의: 내가 업무 진행 중 프로세스 변경을 이렇게 하자고 말하면 해당 프로세스 정의가 그 때부터 바뀌는 거야.
 
-            - 프로세스 레벨: 우리 회사 프로세스는 Mega Process, Major Process, Sub Process 로 총 3 Level 로 이루어져 있어. 사용자가 정의하는 프로세스는 Sub Process 이고, 프로세스를 정의 할 때 Mega, Major Process 의 정보가 없다면 우리 회사의 기존 프로세스를 참고해서 Mega, Major Process 의 정보도 함께 리턴해줘.
+            - 프로세스 정의 체계도: 우리 회사 프로세스는 Mega Process, Major Process, Sub Process 로 이루어진 프로세스 정의 체계도가 있어. 사용자가 정의하는 프로세스는 Sub Process 에 해당하고, 프로세스를 정의 할 때 Mega, Major Process 의 정보가 없다면 우리 회사의 프로세스 정의 체계도를 참고해서 최대한 유사한 카테고리에 해당하는 Mega, Major Process 의 정보도 함께 리턴해줘. 만약 유사한 Mega, Major Process 가 없다면 새로운 Mega, Major Process 를 리턴할 수 있도록 해.
+
+            프로세스 정의 체계도:
+            ${processDefinitionMap} 
 
             기존 프로세스 정보:
-            ${processDefinition}, 
-            ${processDefinitionMap} 
+            ${processDefinition}
             
             결과는 프로세스에 대한 설명과 함께 valid 한 json 으로 표현해줘. markdown 으로, three backticks 로 감싸. 예를 들면 :
             checkPoints가 없으면 비어있는 Array로 생성해줘.
@@ -44,10 +46,10 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
             \`\`\`
 
             {
-              "megaProcessId": "",
-              "majorProcessId": "",
+              "megaProcessId": "한글로 된 Mega Process 아이디",
+              "majorProcessId": "한글로 된 Major Process 아이디",
               "processDefinitionName": "프로세스 명",
-              "processDefinitionId": "String-based unique id of the processDefinition in English not including space",
+              "processDefinitionId": "String-based unique id of the process definition in Snake case English without spaces",
               "description": "한글로 된 프로세스 설명",
               "data": [{
                  "name": "process data name",

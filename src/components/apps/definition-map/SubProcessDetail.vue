@@ -213,7 +213,29 @@ export default {
             this.$emit('capture')
         },
         executeProcess() {
-            this.executeDialog = true
+            if (window.$mode === 'ProcessGPT') {
+                this.startProcess();
+            } else {
+                this.executeDialog = true
+            }
+        },
+        startProcess() {
+            var me = this;
+            me.$try({
+                action: async () => {
+                    const backend = BackendFactory.createBackend();
+                    const input = {
+                        process_instance_id: "new",
+                        process_definition_id: me.processDefinition.id,
+                    }
+                    const data = await backend.start(input);
+                    if (data.instanceId) {
+                        me.$router.push(`/instancelist/${btoa(data.instanceId)}`);
+                    }
+                    me.EventBus.emit('instances-updated');
+                },
+                successMsg: 'Process 실행 완료'
+            })
         },
     },
 }

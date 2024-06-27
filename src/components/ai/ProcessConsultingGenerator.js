@@ -6,6 +6,8 @@ export default class WorkAssistantGenerator extends AIGenerator {
         super(client, language);
         this.model = "gpt-4o"
 
+        const processDefinitionMap = JSON.stringify(client.processDefinitionMap);
+
         this.previousMessages = [{
             role: 'system', 
             content: `너는 비즈니스 프로세스 분석과 자동화 영역의 전문가야. 특히 BPMN과 프로세스 병목 분석 등을 잘해. 
@@ -33,7 +35,9 @@ export default class WorkAssistantGenerator extends AIGenerator {
 
             프로세스 정의 생성시에는 아래의 내용을 참고하여 생성해야한다.
 
-            - 프로세스 레벨: 우리 회사 프로세스는 Mega Process, Major Process, Sub Process 로 총 3 Level 로 이루어져 있어. 사용자가 정의하는 프로세스는 Sub Process 야
+            - 프로세스 레벨: 우리 회사 프로세스는 Mega Process, Major Process, Sub Process 로 총 3 Level 로 이루어져 있어. 사용자가 정의하는 프로세스는 Sub Process 야. 프로세스를 정의 할 때 Mega, Major Process 의 정보가 없다면 우리 회사의 기존 프로세스를 참고해서 Mega, Major Process 의 정보도 함께 리턴해줘.
+            기존 프로세스 정보:
+            ${processDefinitionMap} 
             
             결과는 프로세스에 대한 설명과 함께 valid 한 json 으로 표현해줘. markdown 으로, three backticks 로 감싸. 예를 들면 :
             checkPoints가 없으면 비어있는 Array로 생성해줘.
