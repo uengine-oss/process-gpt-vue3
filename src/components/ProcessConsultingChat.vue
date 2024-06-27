@@ -50,7 +50,7 @@ import ConsultingMentoGenerator from "@/components/ai/ProcessConsultingMentoGene
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import Chat from "@/components/ui/Chat.vue";
 import axios from 'axios';
-import partialParse from "partial-json-parser";
+// import partialParse from "partial-json-parser";
 import { VectorStorage } from "vector-storage";
 import ProcessDefinitionModule from './ProcessDefinitionModule.vue';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
@@ -108,19 +108,6 @@ export default {
 
         this.processDefinitionMap = await backend.getProcessDefinitionMap();
 
-        // let res = JSON.parse('{"megaProcessId":"MEGA_1","majorProcessId":"Major_1.1","processDefinitionName":"주문 처리 자동화 프로세스","processDefinitionId":"OrderProcessingAutomation","description":"주문 확인부터 발송까지 자동화된 주문 처리 프로세스","data":[{"name":"orderDetails","description":"주문 세부 사항","type":"Document"},{"name":"inventoryStatus","description":"재고 상태","type":"Boolean"},{"name":"customerEmail","description":"고객 이메일","type":"Text"}],"roles":[{"name":"system","resolutionRule":"자동화 시스템 역할"}],"events":[{"id":"startEvent","name":"주문 시작 이벤트","type":"StartEvent","description":"주문이 들어오면 시작 이벤트 발생"},{"id":"endEvent","name":"주문 완료 이벤트","type":"EndEvent","description":"주문 처리 완료"}],"activities":[{"id":"sendEmail","name":"이메일 알림 발송","type":"UserActivity","description":"고객에게 주문 확인 이메일 발송","instruction":"고객에게 주문 확인 이메일을 발송하세요","role":"system","inputData":["orderDetails","customerEmail"],"outputData":["customerEmail"],"checkpoints":[]},{"id":"checkInventory","name":"재고 확인","type":"UserActivity","description":"주문 상품 재고를 확인","instruction":"주문 상품의 재고를 확인하세요","role":"system","inputData":["orderDetails"],"outputData":["inventoryStatus"],"checkpoints":[]},{"id":"orderCancelNotification","name":"주문 취소 알림","type":"UserActivity","description":"재고가 없을 시 고객에게 주문 취소 이메일 발송","instruction":"재고가 없을 경우 고객에게 주문 취소 이메일을 발송하세요","role":"system","inputData":["customerEmail"],"outputData":[],"checkpoints":[]},{"id":"requestShipment","name":"자동 발송 신청","type":"UserActivity","description":"택배회사로 자동 발송 신청","instruction":"택배회사로 자동 발송 신청을 진행","role":"system","inputData":["orderDetails"],"outputData":[],"checkpoints":[]},{"id":"shipmentNotification","name":"택배 발송 알림","type":"UserActivity","description":"고객에게 택배 발송 알림 이메일 발송","instruction":"고객에게 택배 발송 알림 이메일을 발송","role":"system","inputData":["customerEmail"],"outputData":[],"checkpoints":[]}],"gateways":[{"id":"inventoryCheckGateway","name":"재고 확인 게이트웨이","type":"ExclusiveGateway","description":"재고 상태에 따라 프로세스를 분기","condition":"inventoryStatus","role":"system"}],"sequences":[{"source":"startEvent","target":"sendEmail","condition":""},{"source":"sendEmail","target":"checkInventory","condition":""},{"source":"checkInventory","target":"inventoryCheckGateway","condition":""},{"source":"inventoryCheckGateway","target":"orderCancelNotification","condition":"inventoryStatus == false"},{"source":"inventoryCheckGateway","target":"requestShipment","condition":"inventoryStatus == true"},{"source":"requestShipment","target":"shipmentNotification","condition":""},{"source":"shipmentNotification","target":"endEvent","condition":""},{"source":"orderCancelNotification","target":"endEvent","condition":""}]}')
-        // this.bpmn = this.createBpmnXml(res); 
-        // this.saveDefinition({
-        //     "arcv_id": `${res.processDefinitionId}_0.1`,
-        //     "name": res.processDefinitionName,
-        //     "prevDiff": null,
-        //     "prevSnapshot": null,
-        //     "proc_def_id": res.processDefinitionId,
-        //     "type": "bpmn",
-        //     "version": "0.1"
-        // }); 
-        // this.$emit("createdBPMN", res)
-
         this.messages.push({
             "role": "system",
             "content": `안녕하세요! ${this.userInfo.name}님의 프로세스에 어떤 문제 또는 어떤 부분을 자동화하고 싶으신지 말씀해주시면 도와드리겠습니다!`,
@@ -165,10 +152,13 @@ export default {
                 this.messages[this.messages.length - 1].disableMsg = true
             } else {
                 if(response.includes('"queryFor"')){
-                    let paringRes = partialParse(response)
-                    if(paringRes.queryFor != 'customer'){
-                        this.messages[this.messages.length - 1].disableMsg = true
-                    }
+                    let jsonData = this.extractJSON(response);
+                    if(jsonData && jsonData.includes('{')){
+                        jsonData = JSON.parse(jsonData);
+                        if(jsonData.queryFor != 'customer'){
+                            this.messages[this.messages.length - 1].disableMsg = true
+                        }
+                    } 
                 }
             }
         },
