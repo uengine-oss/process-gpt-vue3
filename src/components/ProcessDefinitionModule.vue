@@ -973,8 +973,8 @@ export default {
                     }
                     const processes =
                         result['bpmn:definitions'] && result['bpmn:definitions']['bpmn:process']
-                            ? ensureArray(result['bpmn:definitions']['bpmn:process'])
-                            : [];
+                            ? result['bpmn:definitions']['bpmn:process']
+                            : {};
                     let resultJsonData = null;
     
                     let event = [];
