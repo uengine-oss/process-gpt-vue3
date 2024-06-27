@@ -123,7 +123,8 @@
                                                             <!-- <div v-if="type == 'chats' && filteredMessages.length -1 == index && generatedWorkList.length != 0"> -->
                                                                 <div @click="showGeneratedWorkList = !showGeneratedWorkList"
                                                                     class="find-message"
-                                                                    :style="generatedWorkList.length ? 'opacity:1' : 'opacity0.4' "
+                                                                    :key="generatedWorkList"
+                                                                    :class="generatedWorkList.length > 0 ? 'find-message-on' : 'find-message-off'"
                                                                 >
                                                                     <img src="@/assets/images/chat/chat-icon.png"
                                                                         style="height:30px;"
@@ -135,7 +136,7 @@
                                                     </v-sheet>
                                                 </div>
 
-                                                <v-card v-if="showGeneratedWorkList && shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)" class="mt-3">
+                                                <v-card v-if="showGeneratedWorkList && shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index) && generatedWorkList.length > 0" class="mt-3">
                                                     <v-btn @click="deleteAllWorkList()"
                                                         size="small" icon density="comfortable"
                                                         style="position:absolute; right:5px; top:5px; z-index:1;"
@@ -201,8 +202,8 @@
                                                     <v-row class="ma-0 pa-0" style="margin-bottom:10px !important;">
                                                         <v-avatar style="margin-right:10px;">
                                                             <img v-if="message.role == 'system'"
-                                                                src="@/assets/images/chat/chat-icon.png" max-height="48"
-                                                                max-width="48" />
+                                                                src="@/assets/images/chat/chat-icon.png" height="48"
+                                                                width="48" />
                                                             <v-img v-else :src="getProfile(message.email)" :alt="message.name"
                                                                 height="48" width="48" />
                                                         </v-avatar>
@@ -239,11 +240,6 @@
                                                             <pre v-if="message.disableMsg" class="text-body-1">{{ "..." }}</pre>
                                                             <pre v-else class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
                                                             <!-- <pre class="text-body-1">{{ message.content }}</pre> -->
-
-                                                            <p style="margin-top: 5px" v-if="message.bpmn">
-                                                                <v-btn style="margin-right: 5px" size="small"
-                                                                    @click="showBPMN()">BPMN 모델 보기</v-btn>
-                                                            </p>
 
                                                             <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
                                                                 <v-btn style="margin-right: 5px" size="small"
@@ -689,9 +685,6 @@ export default {
         }
     },
     methods: {
-        showBPMN(){
-            this.$emit('showBPMN')
-        },
         getOtherUserMessageColor(message) {
             if (message.role === 'user') {
                 return {
@@ -1110,7 +1103,14 @@ export default {
 
 .find-message {
     animation: breathe 1.5s infinite ease-in-out;
+}
+
+.find-message-on {
+    opacity: 1;
     cursor: pointer;
+}
+.find-message-off {
+    opacity: 0.4;
 }
 
 

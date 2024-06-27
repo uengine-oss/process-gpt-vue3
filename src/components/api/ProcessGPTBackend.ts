@@ -128,7 +128,7 @@ class ProcessGPTBackend implements Backend {
 
             if (!window.$jms) {
                 const list = await storage.list(defId);
-                if (list.code == ErrorCode.TableNotFound) {
+                if (list.code == "42P01") {
                     try {
                         await axios.post(`/execution/process-db-schema/invoke`, {
                             "input": {
@@ -189,7 +189,7 @@ class ProcessGPTBackend implements Backend {
             let defId = input.process_definition_id || input.processDefinitionId;
             if (defId && defId != '') {
                 const list = await storage.list(defId);
-                if (list.code == ErrorCode.TableNotFound) {
+                if (list.code == "42P01") {
                     await axios.post(`/execution/process-db-schema/invoke`, {
                         "input": {
                             "process_definition_id": defId

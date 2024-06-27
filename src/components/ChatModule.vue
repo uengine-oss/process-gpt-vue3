@@ -6,6 +6,7 @@ import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { encodingForModel } from "js-tiktoken";
 import _ from 'lodash';
 import GeneratorAgent from "./GeneratorAgent.vue";
+
 export default {
     mixins: [GeneratorAgent],
     data: () => ({
