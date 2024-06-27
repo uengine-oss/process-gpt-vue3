@@ -50,7 +50,7 @@ export default {
             } else if (me.workItem.activity && me.workItem.activity.parameters && me.workItem.activity.parameters.length > 0 ) {
                 me.isDefaultForm = true;
                 me.inputItems = me.workItem.activity.parameters.filter((item) => item.direction.includes('OUT'))
-                    .map((item) => ({ name: item.variable.name, value: item.variable.value }));
+                    .map((item) => ({ name: item.variable.name, key: item.argument.text, value: item.variable.defaultValue }));
             }
         },
         async loadForm() {

@@ -445,7 +445,7 @@
                 <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                     class="shadow-none message-input-box cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
                     auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
-                    style="font-size:20px !important; height: 80px;" @input="handleTextareaInput">
+                    style="font-size:20px !important; height: 77px;" @input="handleTextareaInput">
                     <template v-slot:prepend-inner>
                         <v-btn @click="recordingModeChange()"
                             density="comfortable"
