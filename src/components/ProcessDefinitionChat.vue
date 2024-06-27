@@ -490,10 +490,6 @@ export default {
             // Version Manager Dialog
             this.verMangerDialog = open;
         },
-        toggleVersionDialog(open) {
-            // Version Dialog
-            this.versionDialog = open;
-        },
         changeXML(info) {
             var me = this;
             me.$try({

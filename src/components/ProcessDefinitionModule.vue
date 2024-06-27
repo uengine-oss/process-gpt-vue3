@@ -30,6 +30,10 @@ export default {
         
     },
     methods: {
+        toggleVersionDialog(open) {
+            // Version Dialog
+            this.versionDialog = open;
+        },
         // createBpmnXml(jsonModel) {
         //     const bpmnDefinitions = {
         //         "$type": "bpmn:Definitions",
@@ -969,8 +973,8 @@ export default {
                     }
                     const processes =
                         result['bpmn:definitions'] && result['bpmn:definitions']['bpmn:process']
-                            ? result['bpmn:definitions']['bpmn:process']
-                            : {};
+                            ? ensureArray(result['bpmn:definitions']['bpmn:process'])
+                            : [];
                     let resultJsonData = null;
     
                     let event = [];
@@ -980,7 +984,7 @@ export default {
                     let gateways = [];
     
                     const participants =
-                        result['bpmn:definitions'] && result['bpmn:definitions']['bpmn:collaboration']['bpmn:participant']
+                        result['bpmn:definitions'] && result['bpmn:definitions']['bpmn:collaboration'] && result['bpmn:definitions']['bpmn:collaboration']['bpmn:participant']
                             ? result['bpmn:definitions']['bpmn:collaboration']['bpmn:participant']
                             : {};
                     let data = [];
@@ -1013,7 +1017,7 @@ export default {
                             }
                         });
     
-                        let lanesTmp = ensureArray(process['bpmn:laneSet'] ? process['bpmn:laneSet']['bpmn:lane'] : []);
+                        let lanesTmp = ensureArray(process['bpmn:laneSet'] && process['bpmn:laneSet']['bpmn:lane'] ? process['bpmn:laneSet']['bpmn:lane'] : []);
                         lanesTmp = lanesTmp.map(obj => ({ ...obj, process: process.id }));
                         lanes = lanes.concat(lanesTmp);
                         let sequenceFlowsTmp = ensureArray(process['bpmn:sequenceFlow'] || []);
@@ -1135,7 +1139,7 @@ export default {
                                       }).name
                                     : 'Unknown',
                                 condition:
-                                    gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties']
+                                    gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties'] && gateway['bpmn:extensionElements']['uengine:properties']['uengine:json']
                                         ? JSON.parse(gateway['bpmn:extensionElements']['uengine:properties']['uengine:json']).condition || ''
                                         : '',
                                 properties: gateway['bpmn:extensionElements']['uengine:properties']['uengine:json']
@@ -1145,11 +1149,11 @@ export default {
                             source: flow.sourceRef,
                             target: flow.targetRef,
                             condition:
-                                flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties']
+                                flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties'] && flow['bpmn:extensionElements']['uengine:properties']['uengine:json']
                                     ? JSON.parse(flow['bpmn:extensionElements']['uengine:properties']['uengine:json']).condition || ''
                                     : '',
                             properties:
-                                flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties']
+                                flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties'] && flow['bpmn:extensionElements']['uengine:properties']['uengine:json']
                                     ? flow['bpmn:extensionElements']['uengine:properties']['uengine:json'] || '{}'
                                     : '{}'
                         })),
