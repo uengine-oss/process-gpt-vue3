@@ -585,14 +585,13 @@ export default {
                             processDefinitionId: lastPath,
                             processDefinitionName: lastPath
                         };
+                        me.processDefinition = await me.convertXMLToJSON(me.bpmn);
                     }
-                    
-                    me.processDefinition = await me.convertXMLToJSON(me.bpmn);
-
                 } else if (lastPath == 'chat') {
-                    me.processDefinition = null;
+                    // me.processDefinition = null;
                     me.projectName = null;
                     me.bpmn = null;
+                    me.processDefinition = await me.convertXMLToJSON(me.bpmn);
 
                     if (me.$route.query && me.$route.query.id) {
                         me.processDefinition = {
@@ -703,18 +702,29 @@ export default {
                     }
                     if (unknown.majorProcessId) {
                         this.processDefinitionMap.mega_proc_list.forEach(megaProcess => {
-                            if (megaProcess.name == unknown.megaProcess && !megaProcess.major_proc_list.some(majorProcess => majorProcess.name == unknown.majorProcessId)) {
-                                megaProcess.major_proc_list.push({
-                                    name: unknown.majorProcessId,
-                                    id: unknown.majorProcessId,
-                                    sub_proc_list: [{
-                                        id: unknown.processDefinitionId,
-                                        name: unknown.processDefinitionName
-                                    }]
-                                })
+                            if (megaProcess.name == unknown.megaProcess) {
+                                if (megaProcess.major_proc_list.some(majorProcess => majorProcess.name == unknown.majorProcessId)) {
+                                    const idx = megaProcess.major_proc_list.findIndex(majorProcess => majorProcess.name == unknown.majorProcessId);
+                                    if (!megaProcess.major_proc_list[idx].sub_proc_list.some(subProcess => subProcess.id == unknown.processDefinitionId)) {
+                                        megaProcess.major_proc_list[idx].sub_proc_list.push({
+                                            id: unknown.processDefinitionId,
+                                            name: unknown.processDefinitionName
+                                        })
+                                    }
+                                } else {
+                                    megaProcess.major_proc_list.push({
+                                        name: unknown.majorProcessId,
+                                        id: unknown.majorProcessId,
+                                        sub_proc_list: [{
+                                            id: unknown.processDefinitionId,
+                                            name: unknown.processDefinitionName
+                                        }]
+                                    })
+                                }
                             }
                         })
                     }
+                    console.log(this.processDefinitionMap)
                 }
                 
                 if (unknown.modifications) {

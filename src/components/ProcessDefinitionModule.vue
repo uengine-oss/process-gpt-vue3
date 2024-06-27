@@ -1342,6 +1342,8 @@ export default {
                     }
                     me.EventBus.emit('definitions-updated');
 
+                    await backend.putProcessDefinitionMap(me.processDefinitionMap);
+
                     // 새 탭으로 열린 프로세스 편집창
                     if (me.$route.query && me.$route.query.redirect) {
                         let bpmn;
