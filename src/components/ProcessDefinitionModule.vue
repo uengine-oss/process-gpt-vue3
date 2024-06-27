@@ -930,13 +930,27 @@ export default {
                     me.loading = true;
 
                     const store = useBpmnStore();
-                    const modeler = store.getModeler;
-                    const xmlObj = await modeler.saveXML({ format: true, preamble: true });
+                    let modeler = store.getModeler;
+                    let xmlObj = await modeler.saveXML({ format: true, preamble: true });
 
                     // if (me.processDefinition) {
                     //     info.definition = me.processDefinition;
                     // }
                     if (xmlObj && xmlObj.xml && window.$mode != 'uEngine') {
+                        let retryCount = 0;
+                        while (retryCount < 10) {
+                            modeler = store.getModeler;
+                            xmlObj = await modeler.saveXML({ format: true, preamble: true });
+                            me.processDefinition = await me.convertXMLToJSON(xmlObj.xml);
+                            if (me.processDefinition.roles && me.processDefinition.roles.length > 0) {
+                                break;
+                            }
+                            retryCount++;
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                        }
+                        if (me.processDefinition.roles && me.processDefinition.roles.length == 0) {
+                            throw new Error('Model does not exist');
+                        }
                         me.processDefinition = await me.convertXMLToJSON(xmlObj.xml);
                         if (info.name && info.name != '') {
                             me.processDefinition.processDefinitionName = info.name;
@@ -986,7 +1000,7 @@ export default {
                 let gateways = [];
 
                 const participants =
-                    result['bpmn:definitions'] && result['bpmn:definitions']['bpmn:collaboration']['bpmn:participant']
+                    result['bpmn:definitions'] && result['bpmn:definitions']['bpmn:collaboration'] && result['bpmn:definitions']['bpmn:collaboration']['bpmn:participant']
                         ? result['bpmn:definitions']['bpmn:collaboration']['bpmn:participant']
                         : {};
                 let data = [];
@@ -1149,7 +1163,7 @@ export default {
                                 gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties']
                                     ? JSON.parse(gateway['bpmn:extensionElements']['uengine:properties']['uengine:json']).condition || ''
                                     : '',
-                            properties: gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties'] ? gateway['bpmn:extensionElements']['uengine:properties']['uengine:json'] : '{}'
+                            properties: gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties'] && gateway['bpmn:extensionElements']['uengine:properties']['uengine:json'] ? gateway['bpmn:extensionElements']['uengine:properties']['uengine:json'] : '{}'
                         }))
                     ],
                     sequences: sequenceFlows.map((flow) => ({

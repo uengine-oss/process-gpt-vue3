@@ -174,6 +174,7 @@ export default {
                 }
                 if(response.processDefinitionId){
                     this.bpmn = this.createBpmnXml(response); 
+                    this.definitionChangeCount++;
                     this.saveDefinition({
                         "arcv_id": `${response.processDefinitionId}_0.1`,
                         "name": response.processDefinitionName,
