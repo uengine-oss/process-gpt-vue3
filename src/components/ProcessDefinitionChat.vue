@@ -633,6 +633,9 @@ export default {
                             processDefinitionName: lastPath
                         };
                     }
+                    
+                    me.processDefinition = await me.convertXMLToJSON(me.bpmn);
+
                 } else if (lastPath == 'chat') {
                     me.processDefinition = null;
                     me.projectName = null;
@@ -653,7 +656,6 @@ export default {
                     me.isViewMode = false;
                     me.definitionChangeCount++;
                 }
-                me.processDefinition = await me.convertXMLToJSON(me.bpmn);
                 me.processDefinitionMap = await backend.getProcessDefinitionMap();
             } catch (e) {
                 alert(e);
@@ -729,6 +731,38 @@ export default {
 
             if (jsonProcess) {
                 let unknown = jsonProcess;
+
+                if (unknown.megaProcessId && this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
+                    if (!this.processDefinitionMap.mega_proc_list.some(megaProcess => megaProcess.name == unknown.megaProcessId)) {
+                        this.processDefinitionMap.mega_proc_list.push({
+                            name: unknown.megaProcessId,
+                            id: unknown.megaProcessId,
+                            major_proc_list: [{
+                                name: unknown.majorProcessId,
+                                id: unknown.majorProcessId,
+                                sub_proc_list: [{
+                                    id: unknown.processDefinitionId,
+                                    name: unknown.processDefinitionName
+                                }]
+                            }]
+                        })
+                    }
+                    if (unknown.majorProcessId) {
+                        this.processDefinitionMap.mega_proc_list.forEach(megaProcess => {
+                            if (megaProcess.name == unknown.megaProcess && !megaProcess.major_proc_list.some(majorProcess => majorProcess.name == unknown.majorProcessId)) {
+                                megaProcess.major_proc_list.push({
+                                    name: unknown.majorProcessId,
+                                    id: unknown.majorProcessId,
+                                    sub_proc_list: [{
+                                        id: unknown.processDefinitionId,
+                                        name: unknown.processDefinitionName
+                                    }]
+                                })
+                            }
+                        })
+                    }
+                }
+                
                 if (unknown.modifications) {
                     unknown.modifications.forEach((modification) => {
                         if (modification.action == 'replace') {
@@ -765,7 +799,7 @@ export default {
                         ? result['bpmn:definitions']['bpmn:process']
                         : {};
                 let resultJsonData = null;
-
+                
                 let event = [];
                 let lanes = [];
                 let activities = [];
@@ -1123,6 +1157,8 @@ export default {
                         me.$router.push(`/definitions/${info.proc_def_id}`);
                     }
                     me.EventBus.emit('definitions-updated');
+
+                    await backend.putProcessDefinitionMap(me.processDefinitionMap);
 
                     // 새 탭으로 열린 프로세스 편집창
                     if (me.$route.query && me.$route.query.redirect) {
