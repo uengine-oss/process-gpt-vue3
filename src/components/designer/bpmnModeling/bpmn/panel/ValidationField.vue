@@ -94,14 +94,14 @@
     justify-content: space-between;
     margin: 0px 0;
     font-size: 20px;
-    color: #1E88E5;
+    color: #263238;
     padding-left: 0px;
   }
   
   .validate .validation-item-content {
     display: flex;
     align-items: center;
-    color: #1E88E5;
+    color: #263238;
   }
   
   .validate .v-icon {

@@ -32,15 +32,27 @@
             </template>
             <template v-slot:rightpart>
                 <div class="no-scrollbar">
-                    <Chat :prompt="prompt" :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" 
-                        :lock="lock" :disableChat="disableChat" :chatRoomId="chatRoomId" @sendMessage="beforeSendMessage"
-                        @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage">
+                    <Chat
+                        :prompt="prompt"
+                        :name="projectName"
+                        :messages="messages"
+                        :chatInfo="chatInfo"
+                        :userInfo="userInfo"
+                        :lock="lock"
+                        :disableChat="disableChat"
+                        :chatRoomId="chatRoomId"
+                        @sendMessage="beforeSendMessage"
+                        @sendEditedMessage="sendEditedMessage"
+                        @stopMessage="stopMessage"
+                    >
                         <template v-slot:custom-tools>
                             <v-row class="ma-0 pa-0 mt-3">
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn v-bind="props"
-                                            icon variant="text" 
+                                        <v-btn
+                                            v-bind="props"
+                                            icon
+                                            variant="text"
                                             type="file"
                                             class="text-medium-emphasis"
                                             density="comfortable"
@@ -51,12 +63,16 @@
                                     </template>
                                     <span>{{ $t('chat.import') }}</span>
                                 </v-tooltip>
-                                <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn" style="display: none;" />
+                                <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn" style="display: none" />
 
                                 <template v-if="bpmn && fullPath != ''">
                                     <v-tooltip location="bottom">
                                         <template v-slot:activator="{ props }">
-                                            <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                            <v-btn
+                                                v-bind="props"
+                                                icon
+                                                variant="text"
+                                                class="text-medium-emphasis"
                                                 @click="toggleLock"
                                                 density="comfortable"
                                             >
@@ -64,16 +80,21 @@
                                                 <Icon v-else icon="f7:lock-open" width="24" height="24"></Icon>
                                             </v-btn>
                                         </template>
-                                        <span v-if="lock">{{ editUser != '' && editUser != userInfo.name ? 
-                                            `현재 ${editUser} 님께서 수정 중입니다. 체크아웃 하는 경우 ${editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크아웃 하시겠습니까?` : 
-                                            $t('chat.unlock')
+                                        <span v-if="lock">{{
+                                            editUser != '' && editUser != userInfo.name
+                                                ? `현재 ${editUser} 님께서 수정 중입니다. 체크아웃 하는 경우 ${editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크아웃 하시겠습니까?`
+                                                : $t('chat.unlock')
                                         }}</span>
                                         <span v-else>{{ $t('chat.lock') }}</span>
                                     </v-tooltip>
-                                    
+
                                     <v-tooltip location="bottom">
                                         <template v-slot:activator="{ props }">
-                                            <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                            <v-btn
+                                                v-bind="props"
+                                                icon
+                                                variant="text"
+                                                class="text-medium-emphasis"
                                                 @click="toggleVerMangerDialog"
                                                 density="comfortable"
                                             >
@@ -86,7 +107,11 @@
                                 <template v-else>
                                     <v-tooltip location="bottom">
                                         <template v-slot:activator="{ props }">
-                                            <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                            <v-btn
+                                                v-bind="props"
+                                                icon
+                                                variant="text"
+                                                class="text-medium-emphasis"
                                                 @click="toggleLock"
                                                 density="comfortable"
                                             >
@@ -96,10 +121,15 @@
                                         <span>{{ $t('chat.processDefinitionSave') }}</span>
                                     </v-tooltip>
                                 </template>
-                                
+
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn v-if="bpmn && fullPath != ''" v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                        <v-btn
+                                            v-if="bpmn && fullPath != ''"
+                                            v-bind="props"
+                                            icon
+                                            variant="text"
+                                            class="text-medium-emphasis"
                                             @click="beforeDelete"
                                             density="comfortable"
                                         >
@@ -111,17 +141,21 @@
 
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn v-if="bpmn && fullPath != ''" v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                        <v-btn
+                                            v-if="bpmn && fullPath != ''"
+                                            v-bind="props"
+                                            icon
+                                            variant="text"
+                                            class="text-medium-emphasis"
                                             @click="showXmlMode()"
                                             density="comfortable"
                                         >
-                                            <Icon v-if="isXmlMode" icon="fluent-mdl2:modeling-view" width="24" height="24" />   
+                                            <Icon v-if="isXmlMode" icon="fluent-mdl2:modeling-view" width="24" height="24" />
                                             <Icon v-else icon="lucide:code-xml" width="24" height="24" />
                                         </v-btn>
                                     </template>
                                     <span>{{ isXmlMode ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>
                                 </v-tooltip>
-
                             </v-row>
                         </template>
                     </Chat>
@@ -140,15 +174,27 @@
             </template>
 
             <template v-slot:mobileLeftContent>
-                <Chat :prompt="prompt" :name="projectName" :messages="messages" :chatInfo="chatInfo" :userInfo="userInfo" 
-                    :lock="lock" :disableChat="disableChat" :chatRoomId="chatRoomId" @sendMessage="beforeSendMessage" 
-                    @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage">
+                <Chat
+                    :prompt="prompt"
+                    :name="projectName"
+                    :messages="messages"
+                    :chatInfo="chatInfo"
+                    :userInfo="userInfo"
+                    :lock="lock"
+                    :disableChat="disableChat"
+                    :chatRoomId="chatRoomId"
+                    @sendMessage="beforeSendMessage"
+                    @sendEditedMessage="sendEditedMessage"
+                    @stopMessage="stopMessage"
+                >
                     <template v-slot:custom-tools>
                         <div class="d-flex">
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props"
-                                        icon variant="text" 
+                                    <v-btn
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
                                         type="file"
                                         class="text-medium-emphasis"
                                         @click="triggerFileInput"
@@ -158,7 +204,7 @@
                                 </template>
                                 <span>{{ $t('chat.import') }}</span>
                             </v-tooltip>
-                            <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn" style="display: none;" />
+                            <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn" style="display: none" />
 
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
@@ -170,7 +216,7 @@
                                 <span v-if="lock">{{ $t('chat.unlock') }}</span>
                                 <span v-else>{{ $t('chat.lock') }}</span>
                             </v-tooltip>
-                            
+
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis" @click="toggleVerMangerDialog">
@@ -179,10 +225,17 @@
                                 </template>
                                 <span>{{ $t('chat.history') }}</span>
                             </v-tooltip>
-                            
+
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-if="bpmn && fullPath != ''" v-bind="props" icon variant="text" class="text-medium-emphasis" @click="beforeDelete">
+                                    <v-btn
+                                        v-if="bpmn && fullPath != ''"
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
+                                        @click="beforeDelete"
+                                    >
                                         <TrashIcon size="24" />
                                     </v-btn>
                                 </template>
@@ -191,8 +244,15 @@
 
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-if="bpmn && fullPath != ''" v-bind="props" icon variant="text" class="text-medium-emphasis" @click="showXmlMode()">
-                                        <Icon v-if="isXmlMode" icon="fluent-mdl2:modeling-view" width="24" height="24" />   
+                                    <v-btn
+                                        v-if="bpmn && fullPath != ''"
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
+                                        @click="showXmlMode()"
+                                    >
+                                        <Icon v-if="isXmlMode" icon="fluent-mdl2:modeling-view" width="24" height="24" />
                                         <Icon v-else icon="lucide:code-xml" width="24" height="24" />
                                     </v-btn>
                                 </template>
@@ -268,22 +328,24 @@ export default {
         // delete
         deleteDialog: false,
         isDeleted: false,
+        externalSystems: [],
         validationList: {}
     }),
     async created() {
-        $try(async ()=>{
+        $try(async () => {
+            // Issue: init Methods가 종료되기전에, ChatGenerator를 생성하면서 this로 넘겨주는 Client 정보가 누락되는 현상 발생.
             await this.init();
             this.generator = new ChatGenerator(this, {
                 isStream: true,
                 preferredLanguage: 'Korean'
             });
-            if(this.$store.state.messages) {
+            if (this.$store.state.messages) {
                 const messagesString = JSON.stringify(this.$store.state.messages);
                 this.prompt = `아래 대화 내용에서 프로세스를 유추하여 프로세스 정의를 생성해주세요. 이때 가능한 프로세스를 일반화하여 작성:
                 ${messagesString}.`;
                 this.$store.commit('clearMessages');
             }
-            if(this.$store.state.editMessages) {
+            if (this.$store.state.editMessages) {
                 const messagesString = JSON.stringify(this.$store.state.editMessages);
                 this.prompt = `아래 대화 내용을 보고 기존 프로세스에서 수정 가능한 부분을 유추하여 프로세스 정의를 수정해주세요.
                 ${messagesString}.`;
@@ -293,7 +355,7 @@ export default {
             if (this.fullPath && this.fullPath != '') {
                 this.chatRoomId = this.fullPath;
             }
-        })
+        });
     },
     watch: {
         $route: {
@@ -335,7 +397,7 @@ export default {
         }
     },
     methods: {
-        showXmlMode(){
+        showXmlMode() {
             this.isXmlMode = !this.isXmlMode;
         },
         beforeDelete() {
@@ -495,57 +557,62 @@ export default {
         },
         async loadData(path) {
             const me = this;
-            me.$try({
-                context: me,
-                action: async () => {
-                    me.isDeleted = false;
-                    let fullPath = me.$route.params.pathMatch.join('/');
-                    if (fullPath.startsWith('/')) {
-                        fullPath = fullPath.substring(1);
-                    }
-                    let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
-                    if (fullPath && lastPath != 'chat') {
-                        let definition = await backend.getRawDefinition(fullPath, { type: 'bpmn' });
-                        if (definition) {
-                            me.bpmn = definition;
-                            me.definitionChangeCount++;
-                        }
-                        if (me.useLock) {
-                            const value = await backend.getRawDefinition(fullPath);
-                            if (value) {
-                                me.processDefinition = value.definition;
-                                me.projectName = me.processDefinition.processDefinitionName;
-                            }
-                            me.checkedLock(lastPath);
-                        } else {
-                            me.processDefinition = {
-                                processDefinitionId: lastPath,
-                                processDefinitionName: lastPath
-                            }
-                        }
-                    } else if (lastPath == 'chat') {
-                        me.processDefinition = null;
-                        me.projectName = null;
-                        me.bpmn = null;
-
-                        if (me.$route.query && me.$route.query.id) {
-                            me.processDefinition = {
-                                processDefinitionId: me.$route.query.id
-                            };
-                            if (me.$route.query.name) {
-                                me.projectName = me.$route.query.name;
-                                me.processDefinition.processDefinitionName = me.projectName;
-                            }
-                        }
-                        
-                        me.lock = false;
-                        me.disableChat = false;
-                        me.isViewMode = false;
+            try {
+                const externalSystems = await backend.getSystemList();
+                externalSystems.forEach(async (externalSystem) => {
+                    const system = await backend.getSystem(externalSystem.name.replace('.json', ''));
+                    me.externalSystems.push(system);
+                });
+                me.isDeleted = false;
+                let fullPath = me.$route.params.pathMatch.join('/');
+                if (fullPath.startsWith('/')) {
+                    fullPath = fullPath.substring(1);
+                }
+                let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
+                if (fullPath && lastPath != 'chat') {
+                    let definition = await backend.getRawDefinition(fullPath, { type: 'bpmn' });
+                    if (definition) {
+                        me.bpmn = definition;
                         me.definitionChangeCount++;
                     }
-                    me.processDefinitionMap = await backend.getProcessDefinitionMap();
+                    if (me.useLock) {
+                        const value = await backend.getRawDefinition(fullPath);
+                        if (value) {
+                            me.processDefinition = value.definition;
+                            me.projectName = me.processDefinition.processDefinitionName;
+                        }
+                        me.checkedLock(lastPath);
+                    } else {
+                        me.processDefinition = {
+                            processDefinitionId: lastPath,
+                            processDefinitionName: lastPath
+                        };
+                    }
+                } else if (lastPath == 'chat') {
+                    me.processDefinition = null;
+                    me.projectName = null;
+                    me.bpmn = null;
+
+                    if (me.$route.query && me.$route.query.id) {
+                        me.processDefinition = {
+                            processDefinitionId: me.$route.query.id
+                        };
+                        if (me.$route.query.name) {
+                            me.projectName = me.$route.query.name;
+                            me.processDefinition.processDefinitionName = me.projectName;
+                        }
+                    }
+
+                    me.lock = false;
+                    me.disableChat = false;
+                    me.isViewMode = false;
+                    me.definitionChangeCount++;
                 }
-            });
+                me.processDefinition = await me.convertXMLToJSON(me.bpmn);
+                me.processDefinitionMap = await backend.getProcessDefinitionMap();
+            } catch (e) {
+                alert(e);
+            }
         },
 
         beforeSendMessage(newMessage) {
@@ -608,10 +675,15 @@ export default {
         },
 
         afterGenerationFinished(response) {
-            let jsonProcess = this.extractJSON(response);
+            let jsonProcess = null;
+            if (typeof response === 'string') {
+                jsonProcess = JSON.parse(response);
+            } else {
+                jsonProcess = response;
+            }
 
             if (jsonProcess) {
-                let unknown = JSON.parse(jsonProcess);
+                let unknown = jsonProcess;
                 if (unknown.modifications) {
                     unknown.modifications.forEach((modification) => {
                         if (modification.action == 'replace') {
@@ -633,8 +705,7 @@ export default {
 
             this.isChanged = true;
         },
-        afterModelStopped(response) {
-        },
+        afterModelStopped(response) {},
         async saveToVectorStore(definition) {
             // Create an instance of VectorStorage
             // const apiToken = this.generator.getToken();
@@ -692,7 +763,7 @@ export default {
     position: relative;
 }
 .is-deleted::after {
-    content: "";
+    content: '';
     position: absolute;
     top: 0;
     left: 0;

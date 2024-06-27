@@ -7,7 +7,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
 
         const processDefinitionMap = JSON.stringify(client.processDefinitionMap);
         const processDefinition = JSON.stringify(client.processDefinition);
-        
+        const externalSystems = JSON.stringify(client.externalSystems);
         this.previousMessages = [{
             role: 'system', 
             content: `
@@ -15,11 +15,13 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
 
             - 프로세스 정의: 내가 업무 진행 중 프로세스 변경을 이렇게 하자고 말하면 해당 프로세스 정의가 그 때부터 바뀌는 거야.
 
-            - 프로세스 레벨: 우리 회사 프로세스는 Mega Process, Major Process, Sub Process 로 총 3 Level 로 이루어져 있어. 사용자가 정의하는 프로세스는 Sub Process 이고, 프로세스를 정의 할 때 Mega, Major Process 의 정보가 없다면 우리 회사의 기존 프로세스를 참고해서 Mega, Major Process 의 정보도 함께 리턴해줘.
+            - 프로세스 정의 체계도: 우리 회사 프로세스는 Mega Process, Major Process, Sub Process 로 이루어진 프로세스 정의 체계도가 있어. 사용자가 정의하는 프로세스는 Sub Process 에 해당하고, 프로세스를 정의 할 때 Mega, Major Process 의 정보가 없다면 우리 회사의 프로세스 정의 체계도를 참고해서 최대한 유사한 카테고리에 해당하는 Mega, Major Process 의 정보도 함께 리턴해줘. 만약 유사한 Mega, Major Process 가 없다면 새로운 Mega, Major Process 를 리턴할 수 있도록 해.
+
+            프로세스 정의 체계도:
+            ${processDefinitionMap} 
 
             기존 프로세스 정보:
-            ${processDefinition}, 
-            ${processDefinitionMap} 
+            ${processDefinition}
             
             결과는 프로세스에 대한 설명과 함께 valid 한 json 으로 표현해줘. markdown 으로, three backticks 로 감싸. 예를 들면 :
             checkPoints가 없으면 비어있는 Array로 생성해줘.
@@ -44,10 +46,10 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
             \`\`\`
 
             {
-              "megaProcessId": "",
-              "majorProcessId": "",
+              "megaProcessId": "한글로 된 Mega Process 아이디",
+              "majorProcessId": "한글로 된 Major Process 아이디",
               "processDefinitionName": "프로세스 명",
-              "processDefinitionId": "String-based unique id of the processDefinition in English not including space",
+              "processDefinitionId": "String-based unique id of the process definition in Snake case English without spaces",
               "description": "한글로 된 프로세스 설명",
               "data": [{
                  "name": "process data name",
@@ -97,6 +99,16 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                     "condition": "기존 프로세스 정보중 "data" 내에 존재하는 값만을 사용하여 condition 을 생성해야한다. "data" 목록을 보고 condition 생성에 필요한 "data" 의 "name" 만으로 생성해야함." // 기존 프로세스 정보가 존재하는 경우에만 생성해야하며, 생성시 기존 프로세스 정보를 참고하여 컨디션을 생성해야한다.
                 }
               ],
+              "participants": [
+                {
+                    "name": "participant name",
+                    "type": "Participant" | "ParticipantGroup",
+                    "system": "system name",
+                    "url": "api url",
+                    "spec": ""
+
+                }
+              ]
             }
              
             \`\`\`
@@ -122,6 +134,37 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   
                 ]
               }
+            \`\`\`
+
+            - 외부 시스템 호출: 시스템 기능 목록 중에서 어떤 API를 연동해서 사용해야 하는지 찾아서 프로세스에 추가해줘. 각 시스템 별 API 목록은 아래와 같아.
+            
+            외부 시스템 목록:
+            \`\`\`
+            ${externalSystems}
+            \`\`\`
+
+            
+
+            외부 시스템과 연결 되는 Element는 MessageIntermediateThrowEvent 로 설정해줘.
+            MessageIntermediateThrowEvent의 구조는 아래와 같아.
+
+            \`\`\`
+            {
+                "id": "event_id",
+                "name": "event name",
+                "type": "MessageIntermediateThrowEvent",
+                "description": "프로세스의 시작, 종료 또는 중간 이벤트 설명",
+                "trigger": "이벤트 트리거 조건 (if applicable)",
+                "participants": "연결 될 Participant 의 이름",
+                "spec": {
+                    "systemName": "사용 할 시스템"
+                    "methodsType": "사용 될 실제 Methods Type",
+                    "requestBody": {
+                        "key": "value"
+                    },
+                    "path": "호출 할 API Path"
+                }
+            }
             \`\`\`
 
             - 프로세스 설명: 전체적인 프로세스를 설명해주면돼. 예를들어 휴가신청 프로세스의 각 단계와 담당자가 누군지 등을 설명해주면 돼

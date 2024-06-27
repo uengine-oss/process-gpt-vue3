@@ -101,35 +101,38 @@ function navigateTo(item: SidebarItem) {
     <div class="container">
         <div class="maxWidth">
             <v-app-bar elevation="0" :priority="priority" height="75"  id="top" :class="stickyHeader ? 'sticky' : ''">
-                <v-tooltip :text="$t('headerMenu.sidebar')">
-                    <template v-slot:activator="{ props }">
-                        <v-btn v-bind="props" class="hidden-md-and-down" icon variant="text" size="small"
-                            @click.stop="customizer.SET_MINI_SIDEBAR(!customizer.mini_sidebar)">
-                            <Icon icon="solar:list-bold-duotone" height="24" width="24" />
-                        </v-btn>
-                    </template>
-                </v-tooltip>
-                <template v-for="item in sidebarItems" :key="item.title">
-                    <v-tooltip :text="$t(item.title)">
+                <v-row class="ma-0 pa-0">
+                    <v-btn class="hidden-lg-and-up" icon
+                        @click.stop="customizer.SET_SIDEBAR_DRAWER"
+                    >
+                        <Icon class="cp-menu-open" icon="solar:list-bold-duotone" height="24" width="24" />
+                    </v-btn>
+                    <v-tooltip :text="$t('headerMenu.sidebar')">
                         <template v-slot:activator="{ props }">
-                            <v-btn icon v-bind="props" @click="navigateTo(item)">
-                                <Icon :icon="item.icon" height="24" width="24" />
+                            <v-btn v-bind="props" class="hidden-md-and-down" icon
+                                @click.stop="customizer.SET_MINI_SIDEBAR(!customizer.mini_sidebar)">
+                                <Icon icon="solar:list-bold-duotone" height="24" width="24" />
                             </v-btn>
                         </template>
                     </v-tooltip>
-                </template>
-                <v-tooltip :text="$t('headerMenu.layoutSetting')">
-                    <template v-slot:activator="{ props }">
-                        <v-btn v-bind="props" class="customizer-btn" size="small" icon variant="flat"
-                            @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
-                            <SettingsIcon />
-                        </v-btn>
+                    <template v-for="item in sidebarItems" :key="item.title">
+                        <v-tooltip :text="$t(item.title)">
+                            <template v-slot:activator="{ props }">
+                                <v-btn icon v-bind="props" @click="navigateTo(item)">
+                                    <Icon :icon="item.icon" height="24" width="24" />
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
                     </template>
-                </v-tooltip>
-                <v-btn class="hidden-lg-and-up" icon variant="text"
-                    @click.stop="customizer.SET_SIDEBAR_DRAWER" size="small">
-                    <Icon class="cp-menu-open" icon="solar:list-bold-duotone" height="24" width="24" />
-                </v-btn>
+                    <v-tooltip :text="$t('headerMenu.layoutSetting')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" class="customizer-btn" icon
+                                @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
+                                <SettingsIcon />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+                </v-row>
 
                 <!-- ---------------------------------------------- -->
                 <!-- Search part --> <!-- ---------------------------------------------- -->

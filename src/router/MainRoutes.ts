@@ -18,6 +18,12 @@ const MainRoutes = {
             component: () => import('@/components/apps/todolist/WorkItem.vue'),
         },
         {
+            name: 'System',
+            path: '/system',
+            // component: () => import('@/components/ProcessInstance.vue')
+            component: () => import('@/components/ui/SystemList.vue'),
+        },
+        {
             name: 'InstanceCard',
             path: '/instancelist/:instId',
             component: () => import('@/components/apps/todolist/InstanceCard.vue'),
