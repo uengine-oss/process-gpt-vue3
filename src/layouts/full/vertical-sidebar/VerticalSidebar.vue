@@ -103,6 +103,13 @@ export default {
                     disable: true
                 },
                 {
+                    title: 'systemDefinition.title',
+                    icon: 'solar:server-line-duotone',
+                    BgColor: 'primary',
+                    to: '/system',
+                    disable: true
+                },
+                {
                     title: 'uiDefinition.title',
                     icon: 'icon-park-outline:layout-five',
                     BgColor: 'primary',
