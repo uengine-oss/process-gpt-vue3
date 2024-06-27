@@ -123,7 +123,8 @@
                                                             <!-- <div v-if="type == 'chats' && filteredMessages.length -1 == index && generatedWorkList.length != 0"> -->
                                                                 <div @click="showGeneratedWorkList = !showGeneratedWorkList"
                                                                     class="find-message"
-                                                                    :style="generatedWorkList.length ? 'opacity:1' : 'opacity0.4' "
+                                                                    :key="generatedWorkList"
+                                                                    :class="generatedWorkList.length > 0 ? 'find-message-on' : 'find-message-off'"
                                                                 >
                                                                     <img src="@/assets/images/chat/chat-icon.png"
                                                                         style="height:30px;"
@@ -135,7 +136,7 @@
                                                     </v-sheet>
                                                 </div>
 
-                                                <v-card v-if="showGeneratedWorkList && shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)" class="mt-3">
+                                                <v-card v-if="showGeneratedWorkList && shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index) && generatedWorkList.length > 0" class="mt-3">
                                                     <v-btn @click="deleteAllWorkList()"
                                                         size="small" icon density="comfortable"
                                                         style="position:absolute; right:5px; top:5px; z-index:1;"
@@ -1102,7 +1103,14 @@ export default {
 
 .find-message {
     animation: breathe 1.5s infinite ease-in-out;
+}
+
+.find-message-on {
+    opacity: 1;
     cursor: pointer;
+}
+.find-message-off {
+    opacity: 0.4;
 }
 
 
