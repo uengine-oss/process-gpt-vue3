@@ -559,10 +559,12 @@ export default {
             const me = this;
             try {
                 const externalSystems = await backend.getSystemList();
-                externalSystems.forEach(async (externalSystem) => {
-                    const system = await backend.getSystem(externalSystem.name.replace('.json', ''));
-                    me.externalSystems.push(system);
-                });
+                if(externalSystems) {
+                    externalSystems.forEach(async (externalSystem) => {
+                        const system = await backend.getSystem(externalSystem.name.replace('.json', ''));
+                        me.externalSystems.push(system);
+                    });
+                }
                 me.isDeleted = false;
                 let fullPath = me.$route.params.pathMatch.join('/');
                 if (fullPath.startsWith('/')) {
@@ -611,6 +613,7 @@ export default {
                 me.processDefinition = await me.convertXMLToJSON(me.bpmn);
                 me.processDefinitionMap = await backend.getProcessDefinitionMap();
             } catch (e) {
+                console.log(e)
                 alert(e);
             }
         },
