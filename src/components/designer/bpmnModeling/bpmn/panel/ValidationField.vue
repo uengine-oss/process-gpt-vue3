@@ -113,6 +113,9 @@
   .validate .v-list-item-title{
     font-size: 14px;
     font-weight: bold;
+    white-space: normal;
+    word-wrap: break-word; 
+    overflow: visible; 
   }
 
   .validate .validation-group .v-list-item-title{

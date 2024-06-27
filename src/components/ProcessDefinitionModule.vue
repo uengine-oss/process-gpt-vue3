@@ -961,210 +961,216 @@ export default {
             });
         },
         async convertXMLToJSON(xmlString) {
-            if(xmlString){
-                try {
+            try {
+                if(!xmlString) return {};
+                xmlString = xmlString.replace(/\$type/g, '_type'); //sanitizing for $type
 
-                    xmlString = xmlString.replace(/\$type/g, '_type'); //sanitizing for $type
-    
-                    const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
-                    const result = await parser.parseStringPromise(xmlString);
-                    function ensureArray(item) {
-                        return Array.isArray(item) ? item : item ? [item] : [];
-                    }
-                    const processes =
-                        result['bpmn:definitions'] && result['bpmn:definitions']['bpmn:process']
-                            ? ensureArray(result['bpmn:definitions']['bpmn:process'])
-                            : [];
-                    let resultJsonData = null;
-    
-                    let event = [];
-                    let lanes = [];
-                    let activities = [];
-                    let sequenceFlows = [];
-                    let gateways = [];
-    
-                    const participants =
-                        result['bpmn:definitions'] && result['bpmn:definitions']['bpmn:collaboration'] && result['bpmn:definitions']['bpmn:collaboration']['bpmn:participant']
-                            ? result['bpmn:definitions']['bpmn:collaboration']['bpmn:participant']
-                            : {};
-                    let data = [];
-                    for (let process of processes) {
-                        Object.keys(process).forEach((key) => {
-                            if (key.includes('Event')) {
-                                let eventTmp = process[key];
-                                if(eventTmp instanceof Array) {
-                                    eventTmp = eventTmp.map(obj => ({ ...obj, type: key.replace("bpmn:", ""), process: process.id }));
-                                } else {
-                                    eventTmp = { ...eventTmp, type: key.replace("bpmn:", ""), process: process.id };
-                                }
-                                event = event.concat(eventTmp);
-                            } else if (key.includes('Task')) {
-                                let activityTmp = process[key];
-                                if(activityTmp instanceof Array) {
-                                    activityTmp = activityTmp.map(obj => ({ ...obj, type: key.replace("bpmn:", ""), process: process.id }));
-                                } else {
-                                    activityTmp = { ...activityTmp, type: key.replace("bpmn:", ""), process: process.id };
-                                }
-                                activities = activities.concat(activityTmp);
-                            } else if (key.includes('Gateway')) {
-                                let gatewayTmp = process[key];
-                                if(gatewayTmp instanceof Array) {
-                                    gatewayTmp = gatewayTmp.map(obj => ({ ...obj, type: key.replace("bpmn:", ""), process: process.id }));
-                                } else {
-                                    gatewayTmp = { ...gatewayTmp, type: key.replace("bpmn:", ""), process: process.id };
-                                }
-                                gateways = gateways.concat(gatewayTmp);
+                const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
+                const result = await parser.parseStringPromise(xmlString);
+                function ensureArray(item) {
+                    return Array.isArray(item) ? item : item ? [item] : [];
+                }
+                let processes =
+                    result['bpmn:definitions'] && result['bpmn:definitions']['bpmn:process']
+                        ? result['bpmn:definitions']['bpmn:process']
+                        : {};
+                if(!(processes instanceof Array)) {
+                    processes = [processes];
+                }
+                let resultJsonData = null;
+
+                let event = [];
+                let lanes = [];
+                let activities = [];
+                let sequenceFlows = [];
+                let gateways = [];
+
+                const participants =
+                    result['bpmn:definitions'] && result['bpmn:definitions']['bpmn:collaboration']['bpmn:participant']
+                        ? result['bpmn:definitions']['bpmn:collaboration']['bpmn:participant']
+                        : {};
+                let data = [];
+                for (let process of processes) {
+                    Object.keys(process).forEach((key) => {
+                        if (key.includes('Event')) {
+                            let eventTmp = process[key];
+                            if(eventTmp instanceof Array) {
+                                eventTmp = eventTmp.map(obj => ({ ...obj, type: key.replace("bpmn:", ""), process: process.id }));
+                            } else {
+                                eventTmp = { ...eventTmp, type: key.replace("bpmn:", ""), process: process.id };
                             }
-                        });
-    
-                        let lanesTmp = ensureArray(process['bpmn:laneSet'] && process['bpmn:laneSet']['bpmn:lane'] ? process['bpmn:laneSet']['bpmn:lane'] : []);
-                        lanesTmp = lanesTmp.map(obj => ({ ...obj, process: process.id }));
-                        lanes = lanes.concat(lanesTmp);
-                        let sequenceFlowsTmp = ensureArray(process['bpmn:sequenceFlow'] || []);
-                        sequenceFlows = sequenceFlows.concat(sequenceFlowsTmp);
-                        let dataTmp =
-                            process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties']
-                                ? (Array.isArray(process['bpmn:extensionElements']['uengine:properties']['uengine:variable'])
-                                      ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable']
-                                      : [process['bpmn:extensionElements']['uengine:properties']['uengine:variable']]
-                                  ).map((varData) => ({
-                                      name: varData.name,
-                                      description: varData.name + ' description',
-                                      type: varData.type
-                                  }))
-                                : [];
-                        data = data.concat(dataTmp);
-                    }
-    
-                    const jsonData = {
-                        processDefinitionName: 'Unknown',
-                        processDefinitionId: 'Unknown',
-                        description: 'process.description',
-                        data: data,
-                        roles: lanes.map((lane) => ({
-                            name: lane.name,
-                            resolutionRule: lane.name === 'applicant' ? 'initiator' : 'system',
-                            process: lane.process
-                        })),
-                        events: [
-                            ...event.map((event) => {
-                                return {
-                                    name: event.name,
-                                    id: event.id,
-                                    type: event.type,
-                                    description: 'start event',
-                                    role: lanes[0] ? lanes[0].name : 'Unknown',
-                                    process: event.process
-                                }
-                            })
-                        ],
-                        activities: [
-                            ...activities.map((activity) => {
-                                try {
-                                    let task = {};
-                                    task.name = activity.name;
-                                    task.id = activity.id;
-                                    task.type = activity.type;
-                                    task.description = `${activity.name} description`;
-                                    task.instruction = `${activity.name} instruction`;
-                                    task.process = activity.process;
-                                    task.role = lanes.find((lane) => {
-                                        const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef'])
-                                            ? lane['bpmn:flowNodeRef']
-                                            : [lane['bpmn:flowNodeRef']];
-                                        return flowNodeRefs.includes(activity.id);
-                                    })
-                                        ? lanes.find((lane) => {
-                                              const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef'])
-                                                  ? lane['bpmn:flowNodeRef']
-                                                  : [lane['bpmn:flowNodeRef']];
-                                              return flowNodeRefs.includes(activity.id);
-                                          }).name
-                                        : 'Unknown';
-    
-                                    let isProperties =
-                                        activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties'];
-    
-                                    if (isProperties) {
-                                        let parseProperties = JSON.parse(
-                                            activity['bpmn:extensionElements']['uengine:properties']['uengine:json']
-                                        );
-                                        task.inputData =
-                                            parseProperties && parseProperties.parameters
-                                                ? parseProperties.parameters
-                                                      .filter((param) => param.direction === 'IN')
-                                                      .map((param) => param.variable.name)
-                                                : [];
-                                        task.outputData =
-                                            parseProperties && parseProperties.parameters
-                                                ? parseProperties.parameters
-                                                      .filter((param) => param.direction === 'OUT')
-                                                      .map((param) => param.variable.name)
-                                                : [];
-                                        task.properties = activity['bpmn:extensionElements']['uengine:properties']['uengine:json'];
-                                    } else {
-                                        task.inputData = [];
-                                        task.outputData = [];
-                                    }
-                                    const form = JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']);
-                                    if (form && form.variableForHtmlFormContext && form.variableForHtmlFormContext.name) {
-                                        task.tool = 'formHandler:' + form.variableForHtmlFormContext.name;
-                                    } else {
-                                        task.tool = '';
-                                    }
-                                    return task;
-                                } catch (e) {
-                                    console.log(e);
-                                }
-                            })
-                        ],
-                        gateways: [
-                            ...gateways.map((gateway) => ({
-                                id: gateway.id || 'Gateway',
-                                name: gateway.name || 'Gateway',
-                                type: gateway.type,
-                                description: gateway.name + ' description',
-                                process: gateway.process,
-                                role: lanes.find((lane) => {
+                            event = event.concat(eventTmp);
+                        } else if (key.includes('Task')) {
+                            let activityTmp = process[key];
+                            if(activityTmp instanceof Array) {
+                                activityTmp = activityTmp.map(obj => ({ ...obj, type: key.replace("bpmn:", ""), process: process.id }));
+                            } else {
+                                activityTmp = { ...activityTmp, type: key.replace("bpmn:", ""), process: process.id };
+                            }
+                            activities = activities.concat(activityTmp);
+                        } else if (key.includes('Gateway')) {
+                            let gatewayTmp = process[key];
+                            if(gatewayTmp instanceof Array) {
+                                gatewayTmp = gatewayTmp.map(obj => ({ ...obj, type: key.replace("bpmn:", ""), process: process.id }));
+                            } else {
+                                gatewayTmp = { ...gatewayTmp, type: key.replace("bpmn:", ""), process: process.id };
+                            }
+                            gateways = gateways.concat(gatewayTmp);
+                        }
+                    });
+
+                    let lanesTmp = ensureArray(process['bpmn:laneSet'] ? process['bpmn:laneSet']['bpmn:lane'] : []);
+                    lanesTmp = lanesTmp.map(obj => ({ ...obj, process: process.id }));
+                    lanes = lanes.concat(lanesTmp);
+                    let sequenceFlowsTmp = ensureArray(process['bpmn:sequenceFlow'] || []);
+                    sequenceFlows = sequenceFlows.concat(sequenceFlowsTmp);
+                    let dataTmp =
+                        process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties']
+                            ? (Array.isArray(process['bpmn:extensionElements']['uengine:properties']['uengine:variable'])
+                                  ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable']
+                                  : [process['bpmn:extensionElements']['uengine:properties']['uengine:variable']]
+                              ).map((varData) => ({
+                                  name: varData.name,
+                                  description: varData.name + ' description',
+                                  type: varData.type
+                              }))
+                            : [];
+                    data = data.concat(dataTmp);
+                }
+
+                const jsonData = {
+                    processDefinitionName: 'Unknown',
+                    processDefinitionId: 'Unknown',
+                    description: 'process.description',
+                    data: data,
+                    roles: lanes.map((lane) => ({
+                        name: lane.name,
+                        resolutionRule: lane.name === 'applicant' ? 'initiator' : 'system',
+                        process: lane.process
+                    })),
+                    events: [
+                        ...event.map((event) => {
+                            let isProperties =
+                            event['bpmn:extensionElements'] && event['bpmn:extensionElements']['uengine:properties'];
+                            let definitionType = Object.keys(event).filter(key => key.includes('Definition'));
+                            return {
+                                name: event.name,
+                                id: event.id,
+                                type: event.type,
+                                description: 'start event',
+                                role: lanes[0] ? lanes[0].name : 'Unknown',
+                                process: event.process,
+                                definitionType: definitionType ? definitionType[0] : null,
+                                properties: isProperties ? event['bpmn:extensionElements']['uengine:properties']['uengine:json'] : '{}'
+                            }
+                        })
+                    ],
+                    activities: [
+                        ...activities.map((activity) => {
+                            try {
+                                let task = {};
+                                task.name = activity.name;
+                                task.id = activity.id;
+                                task.type = activity.type;
+                                task.description = `${activity.name} description`;
+                                task.instruction = `${activity.name} instruction`;
+                                task.process = activity.process;
+                                task.role = lanes.find((lane) => {
                                     const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef'])
                                         ? lane['bpmn:flowNodeRef']
                                         : [lane['bpmn:flowNodeRef']];
-                                    return flowNodeRefs.includes(gateway.id);
+                                    return flowNodeRefs.includes(activity.id);
                                 })
                                     ? lanes.find((lane) => {
                                           const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef'])
                                               ? lane['bpmn:flowNodeRef']
                                               : [lane['bpmn:flowNodeRef']];
-                                          return flowNodeRefs.includes(gateway.id);
+                                          return flowNodeRefs.includes(activity.id);
                                       }).name
-                                    : 'Unknown',
-                                condition:
-                                    gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties'] && gateway['bpmn:extensionElements']['uengine:properties']['uengine:json']
-                                        ? JSON.parse(gateway['bpmn:extensionElements']['uengine:properties']['uengine:json']).condition || ''
-                                        : '',
-                                properties: gateway['bpmn:extensionElements']['uengine:properties']['uengine:json']
-                            }))
-                        ],
-                        sequences: sequenceFlows.map((flow) => ({
-                            source: flow.sourceRef,
-                            target: flow.targetRef,
+                                    : 'Unknown';
+
+                                let isProperties =
+                                    activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties'];
+
+                                if (isProperties) {
+                                    let parseProperties = JSON.parse(
+                                        activity['bpmn:extensionElements']['uengine:properties']['uengine:json']
+                                    );
+                                    task.inputData =
+                                        parseProperties && parseProperties.parameters
+                                            ? parseProperties.parameters
+                                                  .filter((param) => param.direction === 'IN')
+                                                  .map((param) => param.variable.name)
+                                            : [];
+                                    task.outputData =
+                                        parseProperties && parseProperties.parameters
+                                            ? parseProperties.parameters
+                                                  .filter((param) => param.direction === 'OUT')
+                                                  .map((param) => param.variable.name)
+                                            : [];
+                                    task.properties = activity['bpmn:extensionElements']['uengine:properties']['uengine:json'];
+                                } else {
+                                    task.inputData = [];
+                                    task.outputData = [];
+                                }
+                                const form = JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']);
+                                if (form && form.variableForHtmlFormContext && form.variableForHtmlFormContext.name) {
+                                    task.tool = 'formHandler:' + form.variableForHtmlFormContext.name;
+                                } else {
+                                    task.tool = '';
+                                }
+                                return task;
+                            } catch (e) {
+                                console.log(e);
+                            }
+                        })
+                    ],
+                    gateways: [
+                        ...gateways.map((gateway) => ({
+                            id: gateway.id || 'Gateway',
+                            name: gateway.name || 'Gateway',
+                            type: gateway.type,
+                            description: gateway.name + ' description',
+                            process: gateway.process,
+                            role: lanes.find((lane) => {
+                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef'])
+                                    ? lane['bpmn:flowNodeRef']
+                                    : [lane['bpmn:flowNodeRef']];
+                                return flowNodeRefs.includes(gateway.id);
+                            })
+                                ? lanes.find((lane) => {
+                                      const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef'])
+                                          ? lane['bpmn:flowNodeRef']
+                                          : [lane['bpmn:flowNodeRef']];
+                                      return flowNodeRefs.includes(gateway.id);
+                                  }).name
+                                : 'Unknown',
                             condition:
-                                flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties'] && flow['bpmn:extensionElements']['uengine:properties']['uengine:json']
-                                    ? JSON.parse(flow['bpmn:extensionElements']['uengine:properties']['uengine:json']).condition || ''
+                                gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties']
+                                    ? JSON.parse(gateway['bpmn:extensionElements']['uengine:properties']['uengine:json']).condition || ''
                                     : '',
-                            properties:
-                                flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties'] && flow['bpmn:extensionElements']['uengine:properties']['uengine:json']
-                                    ? flow['bpmn:extensionElements']['uengine:properties']['uengine:json'] || '{}'
-                                    : '{}'
-                        })),
-                        participants: participants
-                    };
-                    resultJsonData = jsonData;
-                    return resultJsonData;
-                } catch (error) {
-                    console.error('Error parsing XML:', error);
-                    throw error;
-                }
+                            properties: gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties'] ? gateway['bpmn:extensionElements']['uengine:properties']['uengine:json'] : '{}'
+                        }))
+                    ],
+                    sequences: sequenceFlows.map((flow) => ({
+                        source: flow.sourceRef,
+                        target: flow.targetRef,
+                        condition:
+                            flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties']
+                                ? JSON.parse(flow['bpmn:extensionElements']['uengine:properties']['uengine:json']).condition || ''
+                                : '',
+                        properties:
+                            flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties']
+                                ? flow['bpmn:extensionElements']['uengine:properties']['uengine:json'] || '{}'
+                                : '{}'
+                    })),
+                    participants: participants
+                };
+                resultJsonData = jsonData;
+                return resultJsonData;
+            } catch (error) {
+                console.error('Error parsing XML:', error);
+                throw error;
             }
         },
         // convertXMLToJSON(xmlString) {
