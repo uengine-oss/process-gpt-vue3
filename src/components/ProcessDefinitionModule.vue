@@ -1149,7 +1149,7 @@ export default {
                                 gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties']
                                     ? JSON.parse(gateway['bpmn:extensionElements']['uengine:properties']['uengine:json']).condition || ''
                                     : '',
-                            properties: gateway['bpmn:extensionElements']['uengine:properties']['uengine:json']
+                            properties: gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties'] ? gateway['bpmn:extensionElements']['uengine:properties']['uengine:json'] : '{}'
                         }))
                     ],
                     sequences: sequenceFlows.map((flow) => ({
