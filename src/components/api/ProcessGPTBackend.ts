@@ -482,7 +482,7 @@ class ProcessGPTBackend implements Backend {
             this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
-        }        
+        }
     }
 
     async deleteWorkItem(taskId: string) {
@@ -947,7 +947,7 @@ class ProcessGPTBackend implements Backend {
 
     async getSystemList() {
         try {
-            return null;
+            return [];
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -956,7 +956,7 @@ class ProcessGPTBackend implements Backend {
 
     async getSystem(systemId: String) {
         try {
-            return null;
+            return {};
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
