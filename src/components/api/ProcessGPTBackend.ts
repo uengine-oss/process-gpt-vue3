@@ -164,6 +164,9 @@ class ProcessGPTBackend implements Backend {
                 } else if(options.type === "bpmn") {
                     if (defId.includes('/')) defId = defId.replace(/\//g, "_")
                     const data = await storage.getString(`proc_def/${defId}`, { key: 'id', column: 'bpmn' });
+                    if(!data) {
+                        return null;
+                    }
                     return data;
                 }
             } else {
@@ -954,6 +957,15 @@ class ProcessGPTBackend implements Backend {
     async getSystem(systemId: String) {
         try {
             return null;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+    
+    async validate(xml: string){
+        try {
+            return {};
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);

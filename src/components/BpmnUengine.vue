@@ -86,6 +86,7 @@ export default {
                     })
                 }
             }
+
             console.log(eventBus)
             eventBus.on('shape.added', async function (event) {
                 const element = event.element;
@@ -97,9 +98,15 @@ export default {
                     return;
                 }
 
-                let xml = await self.getXML
-                console.log(xml)
-                self.extendUEngineProperties(element)
+                try {
+                    let xml = await self.getXML
+                    console.log(xml)
+                    self.extendUEngineProperties(element)
+                } catch (error) {
+                    
+                }
+
+                
 
                 // const bpmnFactory = self.bpmnViewer.get('bpmnFactory');
                 // console.log(bpmnFactory)
@@ -139,6 +146,24 @@ export default {
                 });
             }
 
+            eventBus.on('drag.end', function (e) {
+                self.$emit('change')
+            })
+
+            eventBus.on('shape.removed', function (e) {
+                self.$emit('change')
+            })
+
+            eventBus.on('connection.removed', function (e) {
+                self.$emit('change')
+            })
+
+            eventBus.on('connection.added', function (e) {
+                self.$emit('change')
+            })
+
+
+            self.$emit('change')
 
             // var events = ['element.hover', 'element.out', 'element.click', 'element.dblclick', 'element.mousedown', 'element.mouseup'];
             // events.forEach(function (event) {
@@ -184,6 +209,33 @@ export default {
             console.log(val)
             // let obj = '<?xml version="1.0" encoding="UTF-8"?><bpmn2:definitions xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_vacationProcess" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Custom BPMN Modeler" exporterVersion="1.0"><bpmn2:collaboration id="Collaboration_1"><bpmn2:participant id="Participant" name="Participant" processRef="vacationProcess"/></bpmn2:collaboration><bpmn2:process id="vacationProcess" isExecutable="true"><bpmn2:laneSet id="LaneSet_1"><bpmn2:lane id="Lane_worker" name="직원"><bpmn2:flowNodeRef>requestVacation</bpmn2:flowNodeRef><bpmn2:flowNodeRef>returnVacation</bpmn2:flowNodeRef></bpmn2:lane><bpmn2:lane id="Lane_process_manager" name="프로세스 관리자"><bpmn2:flowNodeRef>approveVacation</bpmn2:flowNodeRef></bpmn2:lane></bpmn2:laneSet><bpmn2:userTask id="requestVacation" name="휴가 신청"/><bpmn2:userTask id="approveVacation" name="휴가 승인"/><bpmn2:userTask id="returnVacation" name="휴가 복귀"/><bpmn2:sequenceFlow id="SequenceFlow_requestVacation_approveVacation" sourceRef="requestVacation" targetRef="approveVacation"/><bpmn2:sequenceFlow id="SequenceFlow_approveVacation_returnVacation" sourceRef="approveVacation" targetRef="returnVacation"/></bpmn2:process><bpmndi:BPMNDiagram id="BPMNDiagram_1"><bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1"><bpmndi:BPMNShape id="BPMNShape_Worker" bpmnElement="Lane_worker" isHorizontal="true"><dc:Bounds x="100" y="100" width="600" height="100"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="BPMNShape_Process_Manager" bpmnElement="Lane_process_manager" isHorizontal="true"><dc:Bounds x="100" y="220" width="600" height="100"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="BPMNShape_requestVacation" bpmnElement="requestVacation"><dc:Bounds x="150" y="150" width="80" height="60"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="BPMNShape_approveVacation" bpmnElement="approveVacation"><dc:Bounds x="150" y="230" width="80" height="60"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="BPMNShape_returnVacation" bpmnElement="returnVacation"><dc:Bounds x="150" y="310" width="80" height="60"/></bpmndi:BPMNShape><bpmndi:BPMNEdge id="BPMNEdge_requestVacation_approveVacation" bpmnElement="SequenceFlow_requestVacation_approveVacation"><di:waypoint x="180" y="180"/><di:waypoint x="280" y="180"/></bpmndi:BPMNEdge><bpmndi:BPMNEdge id="BPMNEdge_approveVacation_returnVacation" bpmnElement="SequenceFlow_approveVacation_returnVacation"><di:waypoint x="180" y="180"/><di:waypoint x="280" y="180"/></bpmndi:BPMNEdge></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn2:definitions>'
             this.bpmnViewer.importXML(val);
+        },
+        options: {
+            handler(val) {
+                
+                var eventBus = this.bpmnViewer.get('eventBus');
+                var container = this.$refs.container;
+                var self = this;
+                
+                var _options = Object.assign(
+                    {
+                        container: container,
+                        keyboard: {
+                            bindTo: window
+                        },
+                        moddleExtensions: {
+                            uengine: uEngineModdleDescriptor
+                        }
+                    },
+                    self.options
+                );
+
+                eventBus.fire('config.changed', {
+                    config: _options
+                });
+                
+            },
+            deep: true
         }
     },
     methods: {
@@ -220,7 +272,9 @@ export default {
                 self.bpmnViewer = new BpmnModeler(_options);
                 self.bpmnStore.setModeler(self.bpmnViewer);
             }
-            self.bpmnViewer.importXML(self.diagramXML);
+            if(self.diagramXML) {
+                self.bpmnViewer.importXML(self.diagramXML);
+            }
         },
         extendUEngineProperties(businessObject) {
             let self = this

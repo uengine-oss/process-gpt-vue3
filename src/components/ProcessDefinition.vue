@@ -59,6 +59,7 @@
                         v-on:change-sequence="onChangeSequence"
                         v-on:remove-shape="onRemoveShape"
                         v-on:change-shape="onChangeShape"
+                        @change="changeElement"
                         style="height: 100%"
                     ></bpmnu-engine>
                     <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
@@ -82,6 +83,7 @@
                         v-on:updateElement="(val) => updateElement(val)"
                         :definition="thisDefinition"
                         :processDefinitionId="definitionPath"
+                        :validationList="validationList"
                     ></bpmn-property-panel>
                     <!-- {{ definition }} -->
                 </v-card>
@@ -226,14 +228,19 @@ export default {
         currentActivities: Array,
         definitionChat: Object,
         definitionPath: String,
-        isXmlMode: Boolean
+        isXmlMode: Boolean,
+        validationList: Object
     },
     data: () => ({
         panel: false,
         panelId: null,
         options: {
-            propertiesPanel: {},
-            additionalModules: [customBpmnModule]
+            propertiesPanel: {
+                invalidationList: {}
+            },
+            additionalModules: [
+                customBpmnModule
+            ]
         },
         roles: [],
         element: null,
@@ -309,6 +316,11 @@ export default {
                 };
                 let str = JSON.stringify(newVal, replacer);
                 this.$emit('valueToStr', str);
+            }
+        },
+        validationList: {
+            handler(newVal) {
+                this.options.propertiesPanel.invalidationList = newVal;
             }
         },
         panel: {
@@ -426,6 +438,9 @@ export default {
                 }
                 self.processVariables.push(obj);
             });
+        },
+        changeElement() {
+            this.$emit('change');
         },
         executeProcess() {
             console.log(this.executeDialog);
@@ -678,6 +693,7 @@ export default {
         closePanel() {
             this.element = null;
             this.panel = false;
+            this.$emit('change');
         },
         handleError() {
             console.error('failed to show diagram', err);
