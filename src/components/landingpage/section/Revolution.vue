@@ -58,5 +58,14 @@ const computedLink = computed(() => {
                 </div>
             </div>
         </div>
+        <v-row class="ma-0 pa-0 mt-12 d-flex justify-center align-center">
+            <img class="partne-logo" src="@/assets/images/landingpage/slider/trust-logo.png" />
+        </v-row>
     </div>
 </template>
+
+<style scoped>
+.partne-logo {
+    height:100px;
+}
+</style>
