@@ -128,7 +128,7 @@ class ProcessGPTBackend implements Backend {
 
             if (!window.$jms) {
                 const list = await storage.list(defId);
-                if (list.code == "42P01") {
+                if (list.code == ErrorCode.TableNotFound) {
                     try {
                         await axios.post(`/execution/process-db-schema/invoke`, {
                             "input": {
@@ -189,7 +189,7 @@ class ProcessGPTBackend implements Backend {
             let defId = input.process_definition_id || input.processDefinitionId;
             if (defId && defId != '') {
                 const list = await storage.list(defId);
-                if (list.code == "42P01") {
+                if (list.code == ErrorCode.TableNotFound) {
                     await axios.post(`/execution/process-db-schema/invoke`, {
                         "input": {
                             "process_definition_id": defId
@@ -316,49 +316,31 @@ class ProcessGPTBackend implements Backend {
                 const formData: any = defInfo.definition.data.filter((variable: any) => variable.type === 'Form') || [];
                 // parameters
                 const activityInfo: any = defInfo.definition.activities.find((activity: any) => activity.id === data.activity_id);
+                
                 if (activityInfo) {
-                    let inputItems: any[] = [];
-                    let outputItems: any[] = [];
-                    if (activityInfo.outputData && activityInfo.outputData.length > 0) {
-                        inputItems = activityInfo.outputData.map((item: any) => {
-                            return {
-                                direction: "IN",
-                                argument: {
-                                    text: item.argument.text || "",
-                                },
-                                variable: {
-                                    name: item.variable.name.toLowerCase().replace(/ /g, '_') || "",
-                                    defaultValue: inst[item.variable.name.toLowerCase().replace(/ /g, '_')] || ""
-                                }
-                            }
-                        });
-                        if (formData.length > 0) {
-                            formData.forEach((item: any) => {
-                                if(activityInfo.outputData.includes(item.name)) {
-                                    variableForHtmlFormContext = {
-                                        name: item.name
-                                    }
-                                }
-                            });
-                        }
-                    }
-                    if (activityInfo.inputData && activityInfo.inputData.length > 0) {
-                        outputItems = activityInfo.inputData.map((item: any) => {
-                            const direction = data.status === 'DONE' ? 'IN' : 'OUT';
-                            return {
-                                // direction: "OUT",
-                                direction: direction,
-                                argument: {
-                                    text: item.argument.text || "",
-                                },
-                                variable: {
-                                    name: item.variable.name.toLowerCase().replace(/ /g, '_') || "",
-                                    defaultValue: inst[item.variable.name.toLowerCase().replace(/ /g, '_')] || ""
+                    if (formData.length > 0) {
+                        formData.forEach((item: any) => {
+                            if(activityInfo.outputData.includes(item.name)) {
+                                variableForHtmlFormContext = {
+                                    name: item.name
                                 }
                             }
                         });
                     }
-                    parameters = [...inputItems, ...outputItems];
+
+                    if (activityInfo.properties) {
+                        parameters = JSON.parse(activityInfo.properties).parameters;
+                        parameters.forEach((item: any) => {
+                            if (data.status != 'DONE' && item.direction == 'OUT') {
+                                item.direction = 'IN';
+                            } else if (data.status != 'DONE' && item.direction == 'IN') {
+                                item.direction = 'OUT';
+                            }
+                            item.variable.defaultValue = inst[item.variable.name.toLowerCase().replace(/ /g, '_')] || "";
+                        })
+                    } else {
+                        parameters = [];
+                    }
                 }
             }
             const parameterValues: any = {}
@@ -468,7 +450,7 @@ class ProcessGPTBackend implements Backend {
                 }
                 await storage.putObject('todolist', putObj);
             } else { // instance workItem
-                result = await this.putWorkItemComplete(taskId, {});
+                result = await this.putWorkItemComplete(taskId, {"status_to_change": workItem.status});
                 // 다음 액티비티로 넘어가지 못한 경우
                 if (result.cannotProceedErrors && result.cannotProceedErrors.length > 0) {
                     const dataNotExist = result.cannotProceedErrors.find((item: any) => item.type === 'DATA_FIELD_NOT_EXIST');

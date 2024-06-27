@@ -85,17 +85,18 @@ export default {
             me.$try({
                 action: async () => {
                     const result = await back.putWorklist(task.taskId, task);
-                    
                     // Process-GPT
-                    if (result && result.cannotProceedErrors && result.cannotProceedErrors.length > 0) {
-                        me.taskId = task.taskId;
-                        me.workItem = await back.getWorkItem(me.taskId);
-                        me.dialog = true;
-                    } else if (result && result.completedActivities && result.completedActivities.length > 0) {
-                        const status = result.completedActivities.find(
-                            item => item.completedActivityId == task.tracingTag
-                        ).result;
-                        this.$emit('updateStatus', this.taskId, status);
+                    if (window.$mode == 'ProcessGPT') {
+                        if (result && result.cannotProceedErrors && result.cannotProceedErrors.length > 0) {
+                            me.taskId = task.taskId;
+                            me.workItem = await back.getWorkItem(me.taskId);
+                            me.dialog = true;
+                        } else if (result && result.completedActivities && result.completedActivities.length > 0) {
+                            const status = result.completedActivities.find(
+                                item => item.completedActivityId == task.tracingTag
+                            ).result;
+                            this.$emit('updateStatus', this.taskId, status);
+                        }
                     }
                 },
                 onFail: (e) => {
