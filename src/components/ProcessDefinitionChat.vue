@@ -335,7 +335,7 @@ export default {
         // delete
         deleteDialog: false,
         isDeleted: false,
-        externalSystems: []
+        externalSystems: [],
         validationList: {}
     }),
     async created() {
