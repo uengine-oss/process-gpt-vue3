@@ -21,7 +21,7 @@ const customizer = useCustomizerStore();
         elevation="10"
         :rail="customizer.mini_sidebar"
         expand-on-hover
-        width="270"
+        width="275"
     >
         <div class="pa-5 pl-4">
             <Logo />
@@ -60,7 +60,6 @@ const customizer = useCustomizerStore();
                                         icon variant="text" 
                                         class="text-medium-emphasis"
                                         density="comfortable"
-                                        style="margin-right:2px;"
                                     >
                                         <Icon :icon="subItem.icon" width="20" height="20" />    
                                     </v-btn>
