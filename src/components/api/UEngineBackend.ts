@@ -464,6 +464,11 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.get(`/definition/system/${systemId}`);
         return response.data;
     }
+
+    async getCurrentWorkItemByCorrKey(corrKey: number) {
+        const response = await axiosInstance.get(`/work-item?corrKey=${corrKey}`);
+        return response.data;
+    }
 }
 
 export default UEngineBackend;

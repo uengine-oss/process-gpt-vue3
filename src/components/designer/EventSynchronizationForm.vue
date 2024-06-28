@@ -4,12 +4,12 @@
             <v-col>
                 <div style="font-size: medium;">URL</div>
                 <div>
-                    <v-text-field v-model="modelValue.url"></v-text-field>
+                    <v-text-field v-model="value.url"></v-text-field>
                 </div>
 
                 <div style="font-size: medium;">Event Type</div>
                 <div>
-                    <v-text-field v-model="modelValue.eventSynchronization.eventType"></v-text-field>
+                    <v-text-field v-model="value.eventSynchronization.eventType"></v-text-field>
                 </div>
 
                 <div style="font-size: medium;">Event Attributes</div>
@@ -233,8 +233,8 @@ export default {
                 var me = this
                 if(me.isLoading) return;
                 if(JSON.stringify(me.value) == JSON.stringify(me.modelValue)) return;
-              
-                this.$emit('update:modelValue', me.value);
+
+                me.$emit('update:modelValue', JSON.parse(JSON.stringify(me.value)));
             },
             deep: true
         },
@@ -255,14 +255,17 @@ export default {
             me.bpmnModeler = useBpmnStore().getModeler;
             me.value = JSON.parse(JSON.stringify(me.modelValue));
             me.attributes = me.value.eventSynchronization.attributes.map(attribute => ({ ...attribute, isEdit: false }))
+            if(me.attributes && me.attributes.length == 0){
+                me.attributes.push({name: 'id', className: 'Long', isKey: false, isCorrKey: true}) //init value.
+            }
             me.isLoading = false;
         },
         openMapperDialog(){
             var me = this
        
             
-            let nodeName = me.modelValue.eventSynchronization.eventType
-            let instanceNodes = me.modelValue.eventSynchronization.attributes.map(attribute => attribute.name);
+            let nodeName = me.value.eventSynchronization.eventType
+            let instanceNodes = me.value.eventSynchronization.attributes.map(attribute => attribute.name);
             if(!me.nodes) me.nodes = {}
             if(!me.nodes[nodeName]) me.nodes[nodeName] = {} 
                
