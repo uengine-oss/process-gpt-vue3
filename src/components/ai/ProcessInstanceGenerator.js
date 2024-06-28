@@ -12,7 +12,7 @@ export default class ProcessInstanceGenerator extends AIGenerator {
             answer: "",
             process_instance_id: "",
             process_definition_id: "",
-            userInfo: client.userInfo,
+            // userInfo: client.userInfo,
             image: null,
         };
     }

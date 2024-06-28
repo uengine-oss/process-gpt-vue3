@@ -467,8 +467,13 @@ class UEngineBackend implements Backend {
 
     async getCurrentWorkItemByCorrKey(corrKey: number) {
         const response = await axiosInstance.get(`/work-item?corrKey=${corrKey}`);
+    
+    async validate(xml: string){
+        const response = await axiosInstance.post(`/validation`, xml);
+        if (!response.data) return {};
         return response.data;
     }
 }
 
 export default UEngineBackend;
+

@@ -83,7 +83,12 @@
                     <DefinitionMapList :value="value" :enableEdit="enableEdit" />
                 </div>
             </div>
+
+            <v-btn style="margin-left: 20px;" color="primary" @click="openConsultingDialog = true"><v-icon small style="margin-right: 10px;">mdi-auto-fix</v-icon>프로세스 컨설팅 시작하기</v-btn>
         </v-card>
+        <v-dialog style="width: 1000px;" v-model="openConsultingDialog" persistent>
+            <ProcessConsultingChat @closeConsultingDialog="closeConsultingDialog" @createdBPMN="createdBPMN" />
+        </v-dialog>
         <v-dialog v-model="alertDialog" max-width="500" persistent>
             <v-card>
                 <v-card-text class="mt-2">
@@ -113,6 +118,7 @@ import DefinitionMapList from './DefinitionMapList.vue';
 import ProcessMenu from './ProcessMenu.vue';
 import SubProcessDetail from './SubProcessDetail.vue';
 import ViewProcessDetails from './ViewProcessDetails.vue';
+import ProcessConsultingChat from '@/components/ProcessConsultingChat.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -122,7 +128,8 @@ export default {
         ProcessMenu,
         ViewProcessDetails,
         SubProcessDetail,
-        DefinitionMapList
+        DefinitionMapList,
+        ProcessConsultingChat
     },
     props: {
         componentName: {
@@ -145,6 +152,7 @@ export default {
         alertMessage: '',
         isAdmin: false,
         versionHistory: [],
+        openConsultingDialog: false,
     }),
     computed: {
         useLock() {
@@ -185,6 +193,70 @@ export default {
         }
     },
     methods: {
+        createdBPMN(res){
+            const generateUniqueMegaProcessId = () => {
+                function s4() {
+                    return Math.floor((1 + Math.random()) * 0x10000)
+                        .toString(16)
+                        .substring(1);
+                }
+
+                return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+            };
+
+            const addSubProcess = (majorProc) => {
+                majorProc.sub_proc_list.push({
+                    id: res.processDefinitionId,
+                    name: res.processDefinitionName
+                });
+
+                this.saveProcess();
+            };
+
+            if (res.megaProcessId === "") {
+                let uncategorizedMegaProc = this.value.mega_proc_list.find(megaProc => megaProc.name === '미분류');
+                if (!uncategorizedMegaProc) {
+                    uncategorizedMegaProc = {
+                        id: generateUniqueMegaProcessId(),
+                        name: '미분류',
+                        major_proc_list: [{
+                            id: "0",
+                            name: "미분류",
+                            sub_proc_list: []
+                        }]
+                    };
+                    this.value.mega_proc_list.push(uncategorizedMegaProc);
+                }
+
+                addSubProcess(uncategorizedMegaProc.major_proc_list[0]);
+                return;
+            }
+
+            let megaProc = this.value.mega_proc_list.find(megaProc => megaProc.id === res.megaProcessId);
+            if (!megaProc) {
+                megaProc = {
+                    id: res.megaProcessId,
+                    name: '미분류',
+                    major_proc_list: []
+                };
+                this.value.mega_proc_list.push(megaProc);
+            }
+
+            let majorProc = megaProc.major_proc_list.find(majorProc => majorProc.id === res.majorProcessId);
+            if (!majorProc) {
+                majorProc = {
+                    id: res.majorProcessId,
+                    name: '미분류',
+                    sub_proc_list: []
+                };
+                megaProc.major_proc_list.push(majorProc);
+            }
+
+            addSubProcess(majorProc);
+        },
+        closeConsultingDialog(){
+            this.openConsultingDialog = false
+        },
         async checkedLock() {
             if (this.isAdmin) {
                 this.enableEdit = false;

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, watch, computed,onBeforeMount  } from 'vue';
+import { ref, watch, computed, onBeforeMount } from 'vue';
 import { useCustomizerStore } from '../../../stores/customizer';
 import { useEcomStore } from '@/stores/apps/eCommerce';
-import { ShoppingCartIcon, AlignLeftIcon, DotsIcon } from 'vue-tabler-icons';
+import { useRouter } from 'vue-router';
+import { Icon } from '@iconify/vue';
 import LanguageDD from './LanguageDD.vue';
 import NotificationDD from './NotificationDD.vue';
 import MessagesDD from './MessagesDD.vue';
@@ -10,14 +11,13 @@ import ProfileDD from './ProfileDD.vue';
 import Searchbar from './Searchbar.vue';
 import RightMobileSidebar from './RightMobileSidebar.vue';
 import Logo from '../logo/Logo.vue';
-import { useRouter } from 'vue-router';
-import { Icon } from '@iconify/vue';
 
 const customizer = useCustomizerStore();
 const showSearch = ref(false);
 const appsdrawer = ref(false);
 const priority = ref(customizer.setHorizontalLayout ? 0 : 0);
 const router = useRouter();
+const stickyHeader = ref(false);
 
 interface SidebarItem {
     title: string;
@@ -25,6 +25,7 @@ interface SidebarItem {
     to: string;
     disable: boolean;
 }
+
 const sidebarItems = ref<SidebarItem[]>([
     {
         title: 'headerMenu.dashboard',
@@ -50,42 +51,44 @@ const sidebarItems = ref<SidebarItem[]>([
         to: '/calendar',
         disable: false
     }
-    // ,
-    // {
-    //     title: 'chats.title',
-    //     icon: 'solar:chat-round-unread-line-duotone',
-    //     to: '/consulting',
-    //     disable: false
-    // }
 ]);
 
-function searchbox() {
-    showSearch.value = !showSearch.value;
-}
+// 생명주기 훅 사용
+onBeforeMount(() => {
+    // window.mode 값에 따라 sidebarItems 수정
+    if (window.$mode === 'ProcessGPT') {
+        sidebarItems.value = sidebarItems.value.filter(item => item.to !== '/dashboard2' && item.to !== '/calendar');
+    }
+    window.addEventListener('scroll', handleScroll);
+});
 
+
+// 우선 순위 변경 감시
 watch(priority, (newPriority) => {
     priority.value = newPriority;
 });
 
+// 스토어에서 장바구니 데이터 가져오기
 const store = useEcomStore();
 const getCart = computed(() => {
     return store.cart;
 });
 
-onBeforeMount(() => {
-  window.addEventListener('scroll', handleScroll)
-});
-
-const stickyHeader = ref(false);
-
+// 스크롤 핸들러
 function handleScroll() {
-  if (window.pageYOffset) {
-    stickyHeader.value = true;
-  } else {
-    stickyHeader.value = false;
-  }
+    if (window.pageYOffset) {
+        stickyHeader.value = true;
+    } else {
+        stickyHeader.value = false;
+    }
 }
 
+// 검색 상자 토글
+function searchbox() {
+    showSearch.value = !showSearch.value;
+}
+
+// 네비게이션 함수
 function navigateTo(item: SidebarItem) {
     if (!item.disable) {
         router.push(item.to);
@@ -93,39 +96,43 @@ function navigateTo(item: SidebarItem) {
 }
 </script>
 
+
 <template>
     <div class="container">
         <div class="maxWidth">
             <v-app-bar elevation="0" :priority="priority" height="75"  id="top" :class="stickyHeader ? 'sticky' : ''">
-                <v-tooltip :text="$t('headerMenu.sidebar')">
-                    <template v-slot:activator="{ props }">
-                        <v-btn v-bind="props" class="hidden-md-and-down" icon variant="text" size="small"
-                            @click.stop="customizer.SET_MINI_SIDEBAR(!customizer.mini_sidebar)">
-                            <Icon icon="solar:list-bold-duotone" height="24" width="24" />
-                        </v-btn>
-                    </template>
-                </v-tooltip>
-                <template v-for="item in sidebarItems" :key="item.title">
-                    <v-tooltip :text="$t(item.title)">
+                <v-row class="ma-0 pa-0">
+                    <v-btn class="hidden-lg-and-up" icon
+                        @click.stop="customizer.SET_SIDEBAR_DRAWER"
+                    >
+                        <Icon class="cp-menu-open" icon="solar:list-bold-duotone" height="24" width="24" />
+                    </v-btn>
+                    <v-tooltip :text="$t('headerMenu.sidebar')">
                         <template v-slot:activator="{ props }">
-                            <v-btn icon v-bind="props" @click="navigateTo(item)">
-                                <Icon :icon="item.icon" height="24" width="24" />
+                            <v-btn v-bind="props" class="hidden-md-and-down" icon
+                                @click.stop="customizer.SET_MINI_SIDEBAR(!customizer.mini_sidebar)">
+                                <Icon icon="solar:list-bold-duotone" height="24" width="24" />
                             </v-btn>
                         </template>
                     </v-tooltip>
-                </template>
-                <v-tooltip :text="$t('headerMenu.layoutSetting')">
-                    <template v-slot:activator="{ props }">
-                        <v-btn v-bind="props" class="customizer-btn" size="small" icon variant="flat"
-                            @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
-                            <SettingsIcon />
-                        </v-btn>
+                    <template v-for="item in sidebarItems" :key="item.title">
+                        <v-tooltip :text="$t(item.title)">
+                            <template v-slot:activator="{ props }">
+                                <v-btn icon v-bind="props" @click="navigateTo(item)">
+                                    <Icon :icon="item.icon" height="24" width="24" />
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
                     </template>
-                </v-tooltip>
-                <v-btn class="hidden-lg-and-up" icon variant="text"
-                    @click.stop="customizer.SET_SIDEBAR_DRAWER" size="small">
-                    <Icon class="cp-menu-open" icon="solar:list-bold-duotone" height="24" width="24" />
-                </v-btn>
+                    <v-tooltip :text="$t('headerMenu.layoutSetting')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" class="customizer-btn" icon
+                                @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
+                                <SettingsIcon />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+                </v-row>
 
                 <!-- ---------------------------------------------- -->
                 <!-- Search part --> <!-- ---------------------------------------------- -->

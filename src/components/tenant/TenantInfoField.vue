@@ -251,64 +251,68 @@ export default {
         },
 
         async validCheck() {
-            // #region 빈 값 여부 검사
-            if(!this.value.id || this.value.id === '') {
-                this.$refs.tenantId.focus()
-                throw new Error("테넌트 ID를 입력해주세요.")
+            if(!this.value.password || this.value.password === '') {
+                this.$refs.password.focus()
+                this.$emit('stopLoading');
+                throw new Error("Password를 입력해주세요.")
             }
-
+            
             if(!this.value.url || this.value.url === '') {
                 this.$refs.url.focus()
+                this.$emit('stopLoading');
                 throw new Error("URL을 입력해주세요.")
             }
 
             if(!this.value.secret || this.value.secret === '') {
                 this.$refs.secret.focus()
+                this.$emit('stopLoading');
                 throw new Error("Secret을 입력해주세요.")
             }
 
             if(!this.value.host || this.value.host === '') {
                 this.$refs.host.focus()
+                this.$emit('stopLoading');
                 throw new Error("Host를 입력해주세요.")
             }
 
             if(!this.value.databaseName || this.value.databaseName === '') {
                 this.$refs.databaseName.focus()
+                this.$emit('stopLoading');
                 throw new Error("Database Name을 입력해주세요.")
             }
 
             if(!this.value.port || this.value.port === '') {
                 this.$refs.port.focus()
+                this.$emit('stopLoading');
                 throw new Error("Port를 입력해주세요.")
+            }
+
+            if(this.value.port.match(/^[0-9]+$/) === null) {
+                this.$refs.port.focus()
+                this.$emit('stopLoading');
+                throw new Error("Port는 숫자만 입력해주세요.")
             }
 
             if(!this.value.user || this.value.user === '') {
                 this.$refs.user.focus()
+                this.$emit('stopLoading');
                 throw new Error("User를 입력해주세요.")
             }
 
-            if(!this.value.password || this.value.password === '') {
-                this.$refs.password.focus()
-                throw new Error("Password를 입력해주세요.")
+            if(!this.value.id || this.value.id === '') {
+                this.$refs.tenantId.focus()
+                this.$emit('stopLoading');
+                throw new Error("테넌트 ID를 입력해주세요.")
             }
-            // #endregion
 
-            // #region 데이터 타입 유효성 검사
-            if(this.value.port.match(/^[0-9]+$/) === null) {
-                this.$refs.port.focus()
-                throw new Error("Port는 숫자만 입력해주세요.")
-            }
-            // #endregion
-
-            // #region 테넌트 ID 중복 여부 검사
             if(this.isEdit === false) {
                 const dbTenantInfo = await this.storage.getObject(`tenant_def/${this.value.id}`, {key: 'id'})
                 if(dbTenantInfo !== undefined) {
                     this.$refs.tenantId.focus()
+                    this.$emit('stopLoading');
                     throw new Error(`'${this.value.id}'는 이미 존재하는 테넌트 ID입니다. 다른 ID를 사용해주세요.`)
                 }
             }
-            // #endregion
         }
     }
 };

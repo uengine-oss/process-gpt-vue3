@@ -9,7 +9,7 @@
         <div v-if="isCompleted">
             <v-row v-for="item in outputItems" :key="item.name">
                 <v-col cols="5">
-                    <v-list-subheader>{{ item.name }}</v-list-subheader>
+                    <v-list-subheader>{{ item.key }}</v-list-subheader>
                 </v-col>
                 <v-col cols="7">
                     <v-list-subheader>{{ item.value }}</v-list-subheader>

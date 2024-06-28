@@ -26,7 +26,7 @@
                         </template>
                     </v-tooltip>
                     <!-- 실행 버튼  -->
-                    <v-tooltip v-if="!isViewMode && $route.path !== '/definitions/chat'" :text="$t('processDefinition.execution')">
+                    <v-tooltip v-if="executable" :text="$t('processDefinition.execution')">
                         <template v-slot:activator="{ props }">
                             <v-btn icon v-bind="props" class="processExecute" @click="executeProcess">
                                 <Icon icon="gridicons:play" width="32" height="32" />
@@ -59,6 +59,7 @@
                         v-on:change-sequence="onChangeSequence"
                         v-on:remove-shape="onRemoveShape"
                         v-on:change-shape="onChangeShape"
+                        @change="changeElement"
                         style="height: 100%"
                     ></bpmnu-engine>
                     <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
@@ -82,6 +83,7 @@
                         v-on:updateElement="(val) => updateElement(val)"
                         :definition="thisDefinition"
                         :processDefinitionId="definitionPath"
+                        :validationList="validationList"
                     ></bpmn-property-panel>
                     <!-- {{ definition }} -->
                 </v-card>
@@ -202,8 +204,8 @@
         </v-dialog>
 
         <v-dialog v-model="executeDialog" max-width="80%">
-            <dry-run-process v-if="mode == 'uEngine'" :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
-            <process-execute-dialog v-else :definitionId="definitionPath" :roles="roles" @close="executeDialog = false"></process-execute-dialog>
+            <dry-run-process :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
+            <!-- <process-execute-dialog :definitionId="definitionPath" :roles="roles" @close="executeDialog = false"></process-execute-dialog> -->
         </v-dialog>
 
         <!-- <v-navigation-drawer permanent location="right" :width="400"> {{ panelId }} </v-navigation-drawer> -->
@@ -224,6 +226,7 @@ import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
 import XmlViewer from 'vue3-xml-viewer'
 import InstanceNamePatternForm from '@/components/designer/InstanceNamePatternForm.vue'
+import BackendFactory from "@/components/api/BackendFactory";
 
 export default {
     name: 'ProcessDefinition',
@@ -246,14 +249,19 @@ export default {
         currentActivities: Array,
         definitionChat: Object,
         definitionPath: String,
-        isXmlMode: Boolean
+        isXmlMode: Boolean,
+        validationList: Object
     },
     data: () => ({
         panel: false,
         panelId: null,
         options: {
-            propertiesPanel: {},
-            additionalModules: [customBpmnModule]
+            propertiesPanel: {
+                invalidationList: {}
+            },
+            additionalModules: [
+                customBpmnModule
+            ]
         },
         roles: [],
         element: null,
@@ -285,6 +293,16 @@ export default {
             return {
                 processVariables: this.processVariables
             };
+        },
+        executable() {
+            if (!this.isViewMode && this.$route.path !== '/definitions/chat') {
+                return true
+            } else if (this.isViewMode && this.$route.path.includes('/definitions/') && 
+                this.$route.path !== '/definitions/chat') {
+                return true
+            } else {
+                return false
+            }
         }
     },
     watch: {
@@ -321,6 +339,11 @@ export default {
                 };
                 let str = JSON.stringify(newVal, replacer);
                 this.$emit('valueToStr', str);
+            }
+        },
+        validationList: {
+            handler(newVal) {
+                this.options.propertiesPanel.invalidationList = newVal;
             }
         },
         panel: {
@@ -444,6 +467,7 @@ export default {
                 self.processVariables.push(obj);
             });
         },
+
         updateInstanceNamePattern(val){
             let def = this.bpmnModeler.getDefinitions();
             const processElement = def.rootElements.find((element) => element.$type === 'bpmn:Process');
@@ -471,10 +495,34 @@ export default {
 
             processJson.instanceNamePattern = val
             uengineProperties.json = JSON.stringify(processJson)
+
+        changeElement() {
+            this.$emit('change');
         },
         executeProcess() {
-            console.log(this.executeDialog);
-            this.executeDialog = !this.executeDialog;
+            if (window.$mode === 'ProcessGPT') {
+                this.startProcess();
+            } else {
+                this.executeDialog = !this.executeDialog;
+            }
+        },
+        startProcess() {
+            var me = this;
+            me.$try({
+                action: async () => {
+                    const backend = BackendFactory.createBackend();
+                    const input = {
+                        process_instance_id: "new",
+                        process_definition_id: me.processDefinition.processDefinitionId,
+                    }
+                    const data = await backend.start(input);
+                    if (data.instanceId) {
+                        me.$router.push(`/instancelist/${btoa(data.instanceId)}`);
+                    }
+                    me.EventBus.emit('instances-updated');
+                },
+                successMsg: 'Process 실행 완료'
+            })
         },
         addUengineVariable(val) {
             if (val.type == 'Form') {
@@ -723,6 +771,7 @@ export default {
         closePanel() {
             this.element = null;
             this.panel = false;
+            this.$emit('change');
         },
         handleError() {
             console.error('failed to show diagram', err);

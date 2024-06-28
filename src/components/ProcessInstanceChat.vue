@@ -53,6 +53,14 @@ export default {
             }
             return '';
         },
+        instanceId () {
+            if (this.processInstance && this.processInstance.proc_inst_id) {
+                return this.processInstance.proc_inst_id;
+            } else if (this.$route.params.instId) {
+                return atob(this.$route.params.instId);
+            }
+            return '';
+        }
     },
     async created() {
         await this.init();
@@ -98,9 +106,6 @@ export default {
         },
     },
     methods: {
-        async viewProcess() {
-            
-        },
         requestDraftAgent(newVal) {
             var me = this
             me.$try({
@@ -140,37 +145,33 @@ export default {
         },
         async loadData(path) {
             const me = this;
-            me.$try({
-                context: me,
-                action: async () => {
-                    me.processInstance = null;
-                    me.bpmn = null;
-                    let id;
-                    if (me.$route.params.taskId) {
-                        const taskId = me.$route.params.taskId;
-                        const workitem = await backend.getWorkItem(taskId);     
-                        if (workitem) {
-                            id = workitem.worklist.instId;
-                        }
-                    } else if (me.$route.params.instId) {
-                        id = atob(me.$route.params.instId);
-                    }
-                    if (id) {
-                        const value = await backend.getInstance(id);
-                        if (value) {
-                            me.processInstance = value;
-                            me.checkDisableChat();
-                        }
-                        await me.loadProcess();
-                        if(this.isAgentMode){
-                            await me.loadAgentMessages(`proc_inst/${value.proc_inst_id}`, { key: 'id' });
-                            me.processInstanceId = value.proc_inst_id
-                        } else {
-                            await me.loadMessages(`proc_inst/${value.proc_inst_id}`, { key: 'id' });
-                        }
-                    }                    
+            me.processInstance = null;
+            me.bpmn = null;
+            let id;
+            if (me.$route.params.taskId) {
+                const taskId = me.$route.params.taskId;
+                const workitem = await backend.getWorkItem(taskId);     
+                if (workitem) {
+                    id = workitem.worklist.instId;
                 }
-            })
+            } else if (me.$route.params.instId) {
+                id = atob(me.$route.params.instId);
+            }
+            if (id) {
+                const value = await backend.getInstance(id);
+                if (value) {
+                    me.processInstance = value;
+                    me.checkDisableChat();
+                }
+                await me.loadProcess();
+                if(this.isAgentMode){
+                    await me.loadAgentMessages(`proc_inst/${value.proc_inst_id}`, { key: 'id' });
+                    me.processInstanceId = value.proc_inst_id
+                } else {
+                    await me.getChatList(id)
+                    // await me.loadMessages(`proc_inst/${value.proc_inst_id}`, { key: 'id' });
+                }
+            } 
         },
         checkDisableChat() {
             if (this.isComplete) {
@@ -188,7 +189,8 @@ export default {
         },
         async beforeSendMessage(newMessage) {
             if (newMessage && newMessage.text != '') {
-                if (this.processInstance && this.processInstance.proc_inst_id) {
+                if (this.instanceId) {
+                    this.putMessage(this.createMessageObj(newMessage));
                     this.generator.beforeGenerate(newMessage, false);
                 } else {
                     this.generator.beforeGenerate(newMessage, true);
@@ -202,39 +204,36 @@ export default {
                 this.sendEditedMessage(index);
             }
         },
-        async saveMessages(messages) {
-            if (this.processInstance) {
-                var instObj = await this.getData(`${this.path}/${this.processInstance.proc_inst_id}`, { key: 'id' });
-                instObj.messages = messages;
-                await this.putObject(this.path, instObj);
+        async putMessage(msg) {
+            const uuid = this.uuid();
+            const message = {
+                "messages": msg,
+                "id": this.instanceId,
+                "uuid": uuid,
             }
+            this.putObject(`chats/${uuid}`, message);
         },
         afterModelCreated(response) {
         },
-        afterGenerationFinished(response) {
+        async afterGenerationFinished(response) {
             var me = this;
-            me.$try({
-                context: me,
-                async action() {
-                    let messageWriting = me.messages[me.messages.length - 1];
-                    messageWriting.jsonContent = response;
+            let messageWriting = me.messages[me.messages.length - 1];
+            messageWriting.jsonContent = response;
 
-                    // const jsonData = JSON.parse(response);
-                    const jsonData = response;
-                    if (jsonData) {
-                        if (jsonData.instanceId) {
-                            me.processInstance = await backend.getInstance(jsonData.instanceId);
-                        }
-                        if (jsonData.nextActivities && jsonData.nextActivities.length > 0) {
-                            messageWriting.content = jsonData.nextActivities.map(item => item.messageToUser).join('\n\n');
-                        }
-                    }
+            // const jsonData = JSON.parse(response);
+            const jsonData = response;
+            if (jsonData) {
+                if (jsonData.instanceId) {
+                    me.processInstance = await backend.getInstance(jsonData.instanceId);
+                }
+                if (jsonData.nextActivities && jsonData.nextActivities.length > 0) {
+                    messageWriting.content = jsonData.nextActivities.map(item => item.messageToUser).join('\n\n');
+                }
+            }
 
-                    me.checkDisableChat();
-                    me.EventBus.emit('instances-updated');
-                    me.EventBus.emit('process-definition-updated');
-                },
-            })
+            me.checkDisableChat();
+            me.EventBus.emit('instances-updated');
+            me.EventBus.emit('process-definition-updated');
         },
         afterModelStopped(response) {
             let id;
