@@ -5,8 +5,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
     constructor(client, language){
         super(client, language);
 
-        const processDefinitionMap = JSON.stringify(client.processDefinitionMap);
-        const processDefinition = JSON.stringify(client.processDefinition);
+        // const processDefinitionMap = JSON.stringify(client.processDefinitionMap);
+        // const processDefinition = JSON.stringify(client.processDefinition);
         const externalSystems = JSON.stringify(client.externalSystems);
         this.previousMessages = [{
             role: 'system', 
@@ -18,10 +18,10 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
             - 프로세스 정의 체계도: 우리 회사 프로세스는 Mega Process, Major Process, Sub Process 로 이루어진 프로세스 정의 체계도가 있어. 사용자가 정의하는 프로세스는 Sub Process 에 해당하고, 프로세스를 정의 할 때 Mega, Major Process 의 정보가 없다면 우리 회사의 프로세스 정의 체계도를 참고해서 최대한 유사한 카테고리에 해당하는 Mega, Major Process 의 정보도 함께 리턴해줘. 만약 유사한 Mega, Major Process 가 없다면 새로운 Mega, Major Process 를 리턴할 수 있도록 해.
 
             프로세스 정의 체계도:
-            ${processDefinitionMap} 
-
+            {{ 프로세스 정의 체계도 정보 }}
+            
             기존 프로세스 정보:
-            ${processDefinition}
+            {{ 기존 프로세스 정보 }}
             
             결과는 프로세스에 대한 설명과 함께 valid 한 json 으로 표현해줘. markdown 으로, three backticks 로 감싸. 예를 들면 :
             checkPoints가 없으면 비어있는 Array로 생성해줘.
@@ -182,6 +182,14 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
 
     createPrompt(){
        return this.client.newMessage
+    }
+
+    setProcessDefinitionMap(processDefinitionMap) {
+        this.previousMessages[0].content = this.previousMessages[0].content.replace(`{{ 프로세스 정의 체계도 정보 }}`, JSON.stringify(processDefinitionMap));
+    }
+
+    setProcessDefinition(processDefinition) {
+        this.previousMessages[0].content = this.previousMessages[0].content.replace('{{ 기존 프로세스 정보 }}', JSON.stringify(processDefinition));
     }
 
 }

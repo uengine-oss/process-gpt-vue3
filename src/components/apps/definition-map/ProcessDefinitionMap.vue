@@ -207,7 +207,8 @@ export default {
             const addSubProcess = (majorProc) => {
                 majorProc.sub_proc_list.push({
                     id: res.processDefinitionId,
-                    name: res.processDefinitionName
+                    name: res.processDefinitionName,
+                    new: true
                 });
 
                 this.saveProcess();
@@ -299,6 +300,19 @@ export default {
         async getProcessMap() {
             let map = await backend.getProcessDefinitionMap();
             if (map.mega_proc_list) {
+                map.mega_proc_list.forEach(megaProc => {
+                    if(megaProc.major_proc_list){
+                        megaProc.major_proc_list.forEach(majorProc => {
+                            if(majorProc.sub_proc_list){
+                                majorProc.sub_proc_list.forEach(subProc => {
+                                    if (subProc.new) {
+                                        subProc.new = false;
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
                 this.value = map;
             } else {
                 this.value = {

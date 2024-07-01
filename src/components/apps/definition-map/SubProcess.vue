@@ -5,7 +5,10 @@
         <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-2 font-weight-semibold">
             <v-row class="ma-0 pa-0">
                 <v-col :cols="enableEdit ? '6' : '12'" class="ma-0 pa-0 text-left align-center">
-                    <div>{{ value.name }}</div>
+                    <div>
+                        {{ value.name }}
+                        <v-chip v-if="value.new" style="margin-left: 5px; margin-top: -4px; background-color: red; color: white;" size="x-small">New</v-chip>
+                    </div>
                 </v-col>
                 <v-col :cols="enableEdit ? '6' : ''" class="ma-0 pa-0">
                 <div class="ml-auto add-sub-process">
