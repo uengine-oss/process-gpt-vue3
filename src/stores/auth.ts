@@ -25,7 +25,7 @@ export const useAuthStore = defineStore({
                     var result: any = await storage?.signInWithKeycloak();
 
                     if (!result.error) {
-                        router.push('/dashboard2');
+                        router.push('/definition-map');
                     } else {
                         alert(result.errorMsg);
                     }
@@ -46,7 +46,7 @@ export const useAuthStore = defineStore({
                         alert(result.errorMsg);
                     } else {
                         await storage?.writeUserData(result);
-                        router.push(window.$isTenantServer ? '/tenant/manage' : '/dashboard2')
+                        router.push(window.$isTenantServer ? '/tenant/manage' : '/definition-map')
                     }
                 }
             } catch (e) {
@@ -67,7 +67,7 @@ export const useAuthStore = defineStore({
                         alert(result.errorMsg);
                     } else {
                         await storage?.writeUserData(result, userInfo);
-                        router.push(window.$isTenantServer ? '/tenant/manage' : '/dashboard2');
+                        router.push(window.$isTenantServer ? '/tenant/manage' : '/definition-map');
                     }
                 }
             } catch (e) {

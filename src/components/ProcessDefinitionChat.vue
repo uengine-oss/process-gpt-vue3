@@ -1,7 +1,8 @@
 <template>
-    <v-card elevation="10" style="background-color: rgba(255, 255, 255, 0)" :class="{ 'is-deleted': isDeleted }">
+    <v-card elevation="10" style="background-color: rgba(255, 255, 255, 0)" :class="{ 'is-deleted': isDeleted, 'user-left-part': !isAdmin }">
         <AppBaseCard>
             <template v-slot:leftpart>
+                <h5 v-if="!isAdmin" class="text-h5 font-weight-semibold pa-3">{{ projectName }}</h5>
                 <process-definition
                     class="process-definition-resize"
                     :bpmn="bpmn"
@@ -12,6 +13,7 @@
                     :definitionPath="fullPath"
                     :definitionChat="this"
                     :validationList="validationList"
+                    :isAdmin="isAdmin"
                     @update="updateDefinition"
                     @change="changeElement"
                 ></process-definition>
@@ -31,7 +33,7 @@
                 ></ProcessDefinitionVersionManager>
             </template>
             <template v-slot:rightpart>
-                <div class="no-scrollbar">
+                <div v-if="isAdmin" class="no-scrollbar">
                     <Chat
                         :prompt="prompt"
                         :name="projectName"
@@ -175,6 +177,7 @@
 
             <template v-slot:mobileLeftContent>
                 <Chat
+                    v-if="isAdmin"
                     :prompt="prompt"
                     :name="projectName"
                     :messages="messages"
@@ -378,6 +381,10 @@ export default {
                 path = fullPath.substring(1);
             }
             return path;
+        },
+        isAdmin() {
+            const isAdmin = localStorage.getItem("isAdmin") === "true";
+            return isAdmin;
         }
     },
     async beforeRouteLeave(to, from, next) {
@@ -806,6 +813,11 @@ export default {
 :deep(.left-part) {
     width: 75%;
     /* Apply specific width */
+}
+
+.user-left-part :deep(.left-part) {
+    width: 100%;
+    /* Apply specific width for admin */
 }
 
 .is-deleted {
