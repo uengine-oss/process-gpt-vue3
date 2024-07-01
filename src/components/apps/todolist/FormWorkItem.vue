@@ -58,7 +58,13 @@ export default {
             }
         },
         isDryRun: Boolean,
-        dryRunWorkItem: Object
+        dryRunWorkItem: Object,
+        currentActivities: {
+            type: Array,
+            default: function () {
+                return []
+            }
+        },
     },
     data: () => ({
         html: null,
@@ -199,7 +205,7 @@ export default {
                     workItem: workItem,
                     variables: variables
                 });
-                me.$emit('close')
+                me.close()
             } else {  
                 await backend.putWorkItemComplete(me.$route.params.taskId, workItem);
                 me.$router.push('/todolist');
@@ -213,7 +219,14 @@ export default {
                 element.setAttribute('disabled', 'true');
             });
             return doc.body.innerHTML;
-        }
+        },
+        close(){
+            this.$emit('close')
+        },
+        fail(msg){
+            this.$emit('fail', msg)
+        },
+       
     }
 };
 </script>

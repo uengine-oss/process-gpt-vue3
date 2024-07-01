@@ -42,7 +42,7 @@
 
             <div class="ml-auto d-flex">
                 <div v-if="onLoad && bpmn">
-                    <v-btn icon variant="text" class="ml-3" :size="24" @click="executeProcess">
+                    <v-btn v-if="!JMS" icon variant="text" class="ml-3" :size="24" @click="executeProcess">
                         <Icon icon="carbon:play-outline" width="24" height="24" />
                     </v-btn>
                     <v-btn icon variant="text" class="ml-3" :size="24" @click="capture">
@@ -124,6 +124,11 @@ export default {
         isViewMode: true,
         executeDialog: false
     }),
+    computed: {
+        JMS() {
+            return window.$jms;
+        }
+    },
     watch: {
         '$route.params': {
             handler(newVal, oldVal) {

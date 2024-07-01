@@ -91,97 +91,115 @@
         </v-row>
         <v-dialog v-model="isViewProcessVariables" max-width="1000">
             <v-card>
-                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important">{{
-                    $t('processDefinition.editProcessData')
-                }}</v-card-title>
-                <v-btn icon style="position: absolute; right: 5px; top: 5px" @click="isViewProcessVariables = false">
+                <v-tabs v-model="processVariableTab" bg-color="transparent" height="50" color="primary">
+                    <v-tab value="variable">
+                       {{ $t('processDefinition.editProcessData') }} 
+                    </v-tab>
+                    <v-tab value="pattern">
+                        {{ $t('processDefinition.instanceNamePattern') }} 
+                    </v-tab>
+                </v-tabs>
+
+                <v-btn icon 
+                    style="position: absolute; right: 5px; top: 5px" 
+                    @click="isViewProcessVariables = false">
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
-                <v-card-text style="height: 1000px; width: 1000px">
-                    <VDataTable class="border rounded-md" :items-per-page="5" :items-per-page-text="$t('processDefinition.itemsPerPage')">
-                        <thead>
-                            <tr>
-                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.name') }}</th>
-                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.type') }}</th>
-                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.form') }}</th>
-                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.description') }}</th>
-                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.dataSource') }}</th>
-                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.query') }}</th>
-                                <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.actions') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="item in processVariables" :key="item.name">
-                                <td class="text-subtitle-1">{{ item.name }}</td>
-                                <td>
-                                    {{ item.type }}
-                                </td>
-                                <td v-if="item.defaultValue" class="text-subtitle-1">{{ item.defaultValue.formDefId }}</td>
-                                <td v-else class="text-subtitle-1"></td>
-                                <td class="text-subtitle-1">{{ item.description }}</td>
-                                <td class="text-subtitle-1">{{ item.datasource ? item.datasource.type : 'None' }}</td>
-                                <td>
-                                    {{ item.datasource ? item.datasource.query : 'None' }}
-                                </td>
-                                <td>
-                                    <div class="d-flex align-center">
-                                        <v-tooltip :text="$t('processDefinition.edit')">
-                                            <template v-slot:activator="{ props }">
-                                                <v-btn icon flat @click="editItem(item)" v-bind="props">
-                                                    <PencilIcon stroke-width="1.5" size="20" class="text-primary" />
-                                                </v-btn>
-                                            </template>
-                                        </v-tooltip>
-                                        <v-tooltip :text="$t('processDefinition.delete')">
-                                            <template v-slot:activator="{ props }">
-                                                <v-btn icon flat @click="deleteItem(item)" v-bind="props">
-                                                    <TrashIcon stroke-width="1.5" size="20" class="text-error" />
-                                                </v-btn>
-                                            </template>
-                                        </v-tooltip>
+
+                <v-window v-model="processVariableTab">
+                    <v-window-item value="variable">
+                        <v-card-text style="height: 1000px; width: 1000px;">
+                            <VDataTable class="border rounded-md" :items-per-page="5" :items-per-page-text="$t('processDefinition.itemsPerPage')">
+                                <thead>
+                                    <tr>
+                                        <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.name') }}</th>
+                                        <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.type') }}</th>
+                                        <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.form') }}</th>
+                                        <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.description') }}</th>
+                                        <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.dataSource') }}</th>
+                                        <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.query') }}</th>
+                                        <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.actions') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="item in processVariables" :key="item.name">
+                                        <td class="text-subtitle-1">{{ item.name }}</td>
+                                        <td>
+                                            {{ item.type }}
+                                        </td>
+                                        <td v-if="item.defaultValue" class="text-subtitle-1">{{ item.defaultValue.formDefId }}</td>
+                                        <td v-else class="text-subtitle-1"></td>
+                                        <td class="text-subtitle-1">{{ item.description }}</td>
+                                        <td class="text-subtitle-1">{{ item.datasource ? item.datasource.type : 'None' }}</td>
+                                        <td>
+                                            {{ item.datasource ? item.datasource.query : 'None' }}
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-center">
+                                                <v-tooltip :text="$t('processDefinition.edit')">
+                                                    <template v-slot:activator="{ props }">
+                                                        <v-btn icon flat @click="editItem(item)" v-bind="props">
+                                                            <PencilIcon stroke-width="1.5" size="20" class="text-primary" />
+                                                        </v-btn>
+                                                    </template>
+                                                </v-tooltip>
+                                                <v-tooltip :text="$t('processDefinition.delete')">
+                                                    <template v-slot:activator="{ props }">
+                                                        <v-btn icon flat @click="deleteItem(item)" v-bind="props">
+                                                            <TrashIcon stroke-width="1.5" size="20" class="text-error" />
+                                                        </v-btn>
+                                                    </template>
+                                                </v-tooltip>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </VDataTable>
+                            <v-row class="ma-0" style="margin: 10px 0px 10px 0px !important">
+                                <v-card
+                                    @click="addProcessVariables"
+                                    elevation="9"
+                                    variant="outlined"
+                                    style="
+                                        padding: 10px;
+                                        display: flex;
+                                        justify-content: center;
+                                        align-items: center;
+                                        border-radius: 10px !important;
+                                    "
+                                >
+                                    <div style="display: flex; justify-content: center; align-items: center">
+                                        <Icon icon="streamline:add-1-solid" width="24" height="24" style="color: #5eb2e8" />
                                     </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </VDataTable>
-                    <v-row class="ma-0" style="margin: 10px 0px 10px 0px !important">
-                        <v-card
-                            @click="addProcessVariables"
-                            elevation="9"
-                            variant="outlined"
-                            style="
-                                padding: 10px;
-                                display: flex;
-                                justify-content: center;
-                                align-items: center;
-                                border-radius: 10px !important;
-                            "
-                        >
-                            <div style="display: flex; justify-content: center; align-items: center">
-                                <Icon icon="streamline:add-1-solid" width="24" height="24" style="color: #5eb2e8" />
+                                </v-card>
+                            </v-row>
+                            <div v-if="processVariablesWindow">
+                                <v-card variant="outlined">
+                                    <v-card-text class="ma-0 pa-0">
+                                        <process-variable mode="add" @add-variables="(val) => addUengineVariable(val)"></process-variable>
+                                    </v-card-text>
+                                </v-card>
                             </div>
-                        </v-card>
-                    </v-row>
-                    <div v-if="processVariablesWindow">
-                        <v-card variant="outlined">
-                            <v-card-text class="ma-0 pa-0">
-                                <process-variable mode="add" @add-variables="(val) => addUengineVariable(val)"></process-variable>
-                            </v-card-text>
-                        </v-card>
-                    </div>
-                    <div v-if="editDialog">
-                        <v-card variant="outlined">
-                            <v-card-text class="ma-0 pa-0">
-                                <process-variable
-                                    :key="editComponentKey"
-                                    :variable="editedItem"
-                                    mode="edit"
-                                    @update-variables="(val) => updateVariable(val)"
-                                ></process-variable>
-                            </v-card-text>
-                        </v-card>
-                    </div>
-                </v-card-text>
+                            <div v-if="editDialog">
+                                <v-card variant="outlined">
+                                    <v-card-text class="ma-0 pa-0">
+                                        <process-variable
+                                            :key="editComponentKey"
+                                            :variable="editedItem"
+                                            mode="edit"
+                                            @update-variables="(val) => updateVariable(val)"
+                                        ></process-variable>
+                                    </v-card-text>
+                                </v-card>
+                            </div>
+                        </v-card-text>
+                    </v-window-item>
+                    <v-window-item value="pattern">
+                        <v-card-text style="height: 1000px; width: 1000px;">
+                            <InstanceNamePatternForm :pattern="instanceNamePattern" @update="updateInstanceNamePattern"></InstanceNamePatternForm>
+                        </v-card-text>
+                    </v-window-item>
+                </v-window>
             </v-card>
         </v-dialog>
 
@@ -207,6 +225,7 @@ import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPa
 import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
 import XmlViewer from 'vue3-xml-viewer'
+import InstanceNamePatternForm from '@/components/designer/InstanceNamePatternForm.vue'
 import BackendFactory from "@/components/api/BackendFactory";
 
 export default {
@@ -220,7 +239,8 @@ export default {
         VDataTable,
         ProcessExecuteDialog,
         DryRunProcess,
-        XmlViewer
+        XmlViewer,
+        InstanceNamePatternForm
     },
     props: {
         processDefinition: Object,
@@ -247,6 +267,7 @@ export default {
         element: null,
         definitions: null,
         isViewProcessVariables: false,
+        processVariableTab:'variable',
         copyProcessDefinition: null,
         processVariablesWindow: false,
         editDialog: false,
@@ -256,7 +277,8 @@ export default {
         editComponentKey: 0,
         bpmnModeler: null,
         processVariables: [],
-        executeDialog: false
+        instanceNamePattern: null,
+        executeDialog: false,
         // definitionPath: null
     }),
     computed: {
@@ -273,7 +295,9 @@ export default {
             };
         },
         executable() {
-            if (!this.isViewMode && this.$route.path !== '/definitions/chat') {
+            if (window.$jms) {
+                return false;
+            } else if (!this.isViewMode && this.$route.path !== '/definitions/chat') {
                 return true
             } else if (this.isViewMode && this.$route.path.includes('/definitions/') && 
                 this.$route.path !== '/definitions/chat') {
@@ -429,6 +453,11 @@ export default {
                 extensionElements.get('values').push(uengineProperties);
             }
 
+            if(uengineProperties.json){
+                let processJson = JSON.parse(uengineProperties.json)
+                self.instanceNamePattern = processJson.instanceNamePattern ? processJson.instanceNamePattern : ''
+            }
+
             uengineProperties?.variables?.forEach(function (variable) {
                 let obj = {
                     name: variable.$attrs.name,
@@ -439,6 +468,35 @@ export default {
                 }
                 self.processVariables.push(obj);
             });
+        },
+
+        updateInstanceNamePattern(val){
+            let def = this.bpmnModeler.getDefinitions();
+            const processElement = def.rootElements.find((element) => element.$type === 'bpmn:Process');
+            if (!processElement) {
+                console.error('bpmn:Process element not found');
+                return;
+            }
+
+            // // bpmn2:process 요소 내의 bpmn2:extensionElements 요소를 찾거나 새로 생성합니다.
+            let extensionElements = processElement.extensionElements;
+            if (!extensionElements) {
+                extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
+            }
+
+            // // uengine:properties 요소를 찾거나 새로 생성합니다.
+            let uengineProperties;
+            if (extensionElements.values) {
+                uengineProperties = extensionElements.values.find((val) => val.$type === 'uengine:Properties');
+            }
+
+            let processJson = {}
+            if(uengineProperties.json){
+                processJson = JSON.parse(uengineProperties.json)  
+            } 
+
+            processJson.instanceNamePattern = val
+            uengineProperties.json = JSON.stringify(processJson)
         },
         changeElement() {
             this.$emit('change');

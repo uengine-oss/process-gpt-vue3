@@ -62,20 +62,20 @@
     methods: {
       getIconClass(errorLevel) {
         switch (errorLevel) {
-          case "error":
-            return "mdi-close-circle-outline";
-          case "warning":
+          case 0:
             return "mdi-alert-outline";
+          case 1:
+            return "mdi-close-circle-outline";
           default:
             return "mdi-information";
         }
       },
       getIconColor(errorLevel) {
         switch (errorLevel) {
-          case "error":
-            return "red";
-          case "warning":
+          case 0:
             return "orange";
+          case 1:
+            return "red";
           default:
             return "blue";
         }

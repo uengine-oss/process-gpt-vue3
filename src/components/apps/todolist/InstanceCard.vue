@@ -67,6 +67,11 @@ export default {
                     await this.init();
                 }
             }
+        },
+        async tab(newVal, oldVal) {
+            if (newVal !== oldVal) {
+                await this.init();
+            }
         }
     },
     created() {
@@ -89,7 +94,6 @@ export default {
                     if (!me.id) return;
                     me.instance = await backend.getInstance(me.id);
                     me.eventList = await backend.getEventList(me.instance.instanceId);
-                    me.tab = "progress";
                 }
             });
         },
