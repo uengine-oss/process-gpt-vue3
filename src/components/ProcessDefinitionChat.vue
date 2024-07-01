@@ -568,15 +568,17 @@ export default {
                 }
                 let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
                 if (fullPath && lastPath != 'chat') {
-                    let definition = await backend.getRawDefinition(fullPath, { type: 'bpmn' });
-                    if (definition) {
-                        me.bpmn = definition;
+                    let bpmn = await backend.getRawDefinition(fullPath, { type: 'bpmn' });
+                    if (bpmn) {
+                        me.bpmn = bpmn;
                         me.definitionChangeCount++;
                     }
                     if (me.useLock) {
                         const value = await backend.getRawDefinition(fullPath);
                         if (value) {
                             me.processDefinition = value.definition;
+                            me.processDefinition.processDefinitionId = value.id;
+                            me.processDefinition.processDefinitionName = value.name;
                             me.projectName = me.processDefinition.processDefinitionName;
                         }
                         me.checkedLock(lastPath);
@@ -607,6 +609,11 @@ export default {
                     me.disableChat = false;
                     me.isViewMode = false;
                     me.definitionChangeCount++;
+                }
+
+                // 프로세스 정의 체계도에서 넘어온 쿼리 파라미터 처리
+                if (me.$route.query && me.$route.query.modeling) {
+                    document.title = me.projectName;
                 }
                 me.processDefinitionMap = await backend.getProcessDefinitionMap();
             } catch (e) {
@@ -724,7 +731,6 @@ export default {
                             }
                         })
                     }
-                    console.log(this.processDefinitionMap)
                 }
                 
                 if (unknown.modifications) {

@@ -3,7 +3,7 @@
         <NavItem class="leftPadding" :item="definitionMap" />
         <NavGroup v-if="!JMS" :item="runningInstances" :key="runningInstances.header" />
         <template v-for="item in instanceList" :key="item.title">
-            <NavItem class="leftPadding" :item="item" :use-i18n="false" />
+            <NavItem v-if="!JMS" class="leftPadding" :item="item" :use-i18n="false" />
         </template>
         <!-- <NavCollapse v-if="!JMS" class="leftPadding" :item="runningInstances" :level="0" :type="'running-instances'" /> -->
         <!-- <NavCollapse v-if="!JMS" class="leftPadding" :item="completeInstances" :level="0" :type="'complete-instances'" /> -->

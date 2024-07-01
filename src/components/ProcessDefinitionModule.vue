@@ -1359,7 +1359,7 @@ export default {
                     await backend.putProcessDefinitionMap(me.processDefinitionMap);
 
                     // 새 탭으로 열린 프로세스 편집창
-                    if (me.$route.query && me.$route.query.redirect) {
+                    if (me.$route.query && me.$route.query.modeling) {
                         let bpmn;
                         if (me.$route.query.id) {
                             bpmn = await backend.getRawDefinition(me.$route.query.id, { type: 'bpmn' });
