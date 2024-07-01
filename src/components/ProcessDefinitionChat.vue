@@ -617,6 +617,12 @@ export default {
         },
 
         beforeSendMessage(newMessage) {
+            if(this.processDefinitionMap){
+                this.generator.setProcessDefinitionMap(this.processDefinitionMap);
+            }
+            if(this.processDefinition){
+                this.generator.setProcessDefinition(this.processDefinition);
+            }
             this.sendMessage(newMessage);
         },
         extractPropertyNameAndIndex(jsonPath) {
