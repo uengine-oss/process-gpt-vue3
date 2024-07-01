@@ -495,7 +495,7 @@ export default {
 
             processJson.instanceNamePattern = val
             uengineProperties.json = JSON.stringify(processJson)
-
+        },
         changeElement() {
             this.$emit('change');
         },
