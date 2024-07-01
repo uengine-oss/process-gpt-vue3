@@ -295,7 +295,9 @@ export default {
             };
         },
         executable() {
-            if (!this.isViewMode && this.$route.path !== '/definitions/chat') {
+            if (window.$jms) {
+                return false;
+            } else if (!this.isViewMode && this.$route.path !== '/definitions/chat') {
                 return true
             } else if (this.isViewMode && this.$route.path.includes('/definitions/') && 
                 this.$route.path !== '/definitions/chat') {
