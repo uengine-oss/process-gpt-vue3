@@ -936,20 +936,22 @@ export default {
                     // if (me.processDefinition) {
                     //     info.definition = me.processDefinition;
                     // }
-                    if (xmlObj && xmlObj.xml && window.$mode != 'uEngine') {
-                        let retryCount = 0;
-                        while (retryCount < 10) {
-                            modeler = store.getModeler;
-                            xmlObj = await modeler.saveXML({ format: true, preamble: true });
-                            me.processDefinition = await me.convertXMLToJSON(xmlObj.xml);
-                            if (me.processDefinition.roles && me.processDefinition.roles.length > 0) {
-                                break;
+                    if (xmlObj && xmlObj.xml && window.$mode == 'ProcessGPT') {
+                        if (!window.$jms) {
+                            let retryCount = 0;
+                            while (retryCount < 10) {
+                                modeler = store.getModeler;
+                                xmlObj = await modeler.saveXML({ format: true, preamble: true });
+                                me.processDefinition = await me.convertXMLToJSON(xmlObj.xml);
+                                if (me.processDefinition.roles && me.processDefinition.roles.length > 0) {
+                                    break;
+                                }
+                                retryCount++;
+                                await new Promise(resolve => setTimeout(resolve, 500));
                             }
-                            retryCount++;
-                            await new Promise(resolve => setTimeout(resolve, 500));
-                        }
-                        if (me.processDefinition.roles && me.processDefinition.roles.length == 0) {
-                            throw new Error('Model does not exist');
+                            if (me.processDefinition.roles && me.processDefinition.roles.length == 0) {
+                                throw new Error('Model does not exist');
+                            }
                         }
                         me.processDefinition = await me.convertXMLToJSON(xmlObj.xml);
                         if (info.name && info.name != '') {

@@ -11,8 +11,12 @@
                         <v-switch v-model="isMajor"
                             :label="this.isMajor ? `Major Update: ${newVersion}` : `Minor Update: ${newVersion}`"
                             color="primary" :disabled="isNew" hide-details></v-switch>
-                        <v-text-field v-if="isNew" v-model="information.proc_def_id" label="ID"
-                            :rules="[v => !!v || 'ID is required']" required></v-text-field>
+                        <v-text-field v-if="isNew" 
+                            v-model="information.proc_def_id" 
+                            label="ID"
+                            :rules="[v => !!v || 'ID is required']" 
+                            required
+                        ></v-text-field>
                         <v-text-field 
                             v-model="information.name" 
                             label="Name" 
@@ -167,7 +171,7 @@ export default {
                         arcv_id: me.process ? `${me.process.processDefinitionId}_${me.newVersion}` : `${me.information.proc_def_id}_${me.newVersion}`,
                         version: me.newVersion,
                         name: me.information.name,
-                        proc_def_id: me.process ? me.process.processDefinitionId : me.information.proc_def_id,
+                        proc_def_id: me.information.proc_def_id,
                         prevSnapshot: me.information.snapshot,
                         prevDiff: me.information.diff,
                         type: 'bpmn'
