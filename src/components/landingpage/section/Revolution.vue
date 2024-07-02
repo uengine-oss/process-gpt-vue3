@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 
-const isTenantServer = ref(window.$isTenantServer);
+// const isTenantServer = ref(window.$isTenantServer);
 
 const computedLink = computed(() => {
   if (window.$mode === 'ProcessGPT') {
     return '/definition-map';
   } else {
-    return isTenantServer ? '/tenant/manage' : '/dashboard2';
+    return window.$isTenantServer ? '/tenant/manage' : '/dashboard2';
   }
 });
 </script>
