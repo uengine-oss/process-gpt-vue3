@@ -214,7 +214,7 @@
 
 <script>
 import { Icon } from '@iconify/vue';
-import { VDataTable } from 'vuetify/labs/VDataTable';
+import { VDataTable } from 'vuetify/components/VDataTable';
 // import VueBpmn from './Bpmn-LLM.vue';
 import { useBpmnStore } from '@/stores/bpmn';
 import BpmnLLM from './BpmnLLM.vue';

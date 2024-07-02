@@ -64,7 +64,7 @@ import Chat from "@/components/ui/Chat.vue";
 import axios from 'axios';
 import partialParse from "partial-json-parser";
 import { VectorStorage } from "vector-storage";
-import { VDataTable } from 'vuetify/labs/VDataTable';
+import { VDataTable } from 'vuetify/components/VDataTable';
 
 
 export default {

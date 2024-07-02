@@ -69,7 +69,7 @@ declare global {
 }
 
 
-// window.$mode = 'uEngine';   
+// window.$mode = 'uEngine';
 window.$mode = 'ProcessGPT';
 window.$jms = false;
 
