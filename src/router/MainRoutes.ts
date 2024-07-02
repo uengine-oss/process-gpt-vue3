@@ -76,6 +76,16 @@ const MainRoutes = {
             props: { componentName: 'DefinitionMapList' }
         },
         {
+            name: 'Admin',
+            path: '/admin',
+            component: () => import('@/components/ui/Admin.vue'),
+        },
+        {
+            name: 'Admin Detail',
+            path: '/admin/:id',
+            component: () => import('@/components/ui/AdminDetail.vue'),
+        },
+        {
             name: 'Mega Process Detail',
             path: '/definition-map/mega/:id',
             component: () => import('@/components/apps/definition-map/ProcessDefinitionMap.vue'),

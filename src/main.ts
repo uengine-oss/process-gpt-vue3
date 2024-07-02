@@ -69,8 +69,13 @@ declare global {
 }
 
 
+<<<<<<< HEAD
 window.$mode = 'uEngine';   
 // window.$mode = 'ProcessGPT';
+=======
+// window.$mode = 'uEngine';
+window.$mode = 'ProcessGPT';
+>>>>>>> 8866260d6361d58e2e66b0976350c1b55dda2c47
 window.$jms = false;
 
 if (window.location.host.includes('localhost') || window.location.host.includes('192.168') || window.location.host.includes('127.0.0.1') || 

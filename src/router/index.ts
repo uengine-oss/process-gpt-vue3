@@ -20,9 +20,6 @@ router.beforeEach(async (to, from, next) => {
     const authRequired = !publicPages.includes(to.path);
     const isLogin = localStorage.getItem("accessToken") ? true : false;
 
-    const isAdmin = localStorage.getItem("isAdmin") === "true";
-    const adminPaths = ['/organization', '/ui-definitions/', '/definitions/'];
-
     if (to.matched.some((record) => record.meta.requiresAuth)) {
         if (authRequired && !isLogin) {
             if(window.location.pathname == '/auth/register'){
@@ -31,9 +28,6 @@ router.beforeEach(async (to, from, next) => {
                 alert("로그인이 필요합니다.")
             }
             return next('/auth/login');
-        } else if (adminPaths.some((path) => to.path.includes(path)) && !isAdmin) {
-            alert("관리자 권한이 필요합니다.");
-            return next('/dashboard2');
         } else {
             next();
         }

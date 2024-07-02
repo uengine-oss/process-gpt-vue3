@@ -1,6 +1,6 @@
 <template>
     <div class="w-100" @mouseover="hover = true" @mouseleave="hover = false">
-        <v-card class="align-center pa-3 mb-3 bg-lightwarning" elevation="10" style="border-radius: 10px !important;"
+        <v-card class="align-center pa-3 mb-3" color="primary" elevation="10" style="border-radius: 10px !important;"
             @click="goProcess(value.name, 'mega')">
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-h6 font-weight-semibold">
                 <v-row class="ma-0 pa-0">
@@ -104,10 +104,7 @@ export default {
     },
     methods:{
         addProcess(newProcess) {
-            let id = 0;
-            if(this.value.major_proc_list.length != 0) {
-                id = this.value.major_proc_list[this.value.major_proc_list.length - 1].id +1
-            }
+            const id = newProcess.name.toLowerCase().replace(/[/.]/g, "_");
             this.value.major_proc_list.push({
                 id: id,
                 name: newProcess.name,

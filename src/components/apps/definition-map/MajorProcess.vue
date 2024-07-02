@@ -50,10 +50,10 @@
                 <SubProcess :value="item" :parent="value" :enableEdit="enableEdit" />
             </div>
         </div>
-        <v-card v-if="!processDialogStatus && enableEdit && hover" @click="openSubProcessDialog('add')"
+        <v-card v-if="!processDialogStatus && enableEdit && hover" 
+            @click="openSubProcessDialog('add')"
             class="add-process-card-hover cp-add-mega"
             elevation="9" variant="outlined"
-            v-bind="props"
             style="display: flex;
                 justify-content: center;
                 align-items: center;

@@ -20,10 +20,16 @@ export default {
             this.value.name = process.name
         },
         editProcessdialog(processType) {
+            if (this.processDialogStatus) {
+                this.processDialogStatus = false;
+            }
             this.processType = processType;
             this.processDialogStatus = true;
         },
         openProcessDialog(processType) {
+            if (this.processDialogStatus) {
+                this.processDialogStatus = false;
+            }
             this.processType = processType;
             this.processDialogStatus = true;
         },

@@ -1,7 +1,8 @@
 <template>
-    <v-card elevation="10" style="background-color: rgba(255, 255, 255, 0)" :class="{ 'is-deleted': isDeleted }">
+    <v-card elevation="10" style="background-color: rgba(255, 255, 255, 0)" :class="{ 'is-deleted': isDeleted, 'user-left-part': !isAdmin }">
         <AppBaseCard>
             <template v-slot:leftpart>
+                <h5 v-if="!isAdmin" class="text-h5 font-weight-semibold pa-3">{{ projectName }}</h5>
                 <process-definition
                     class="process-definition-resize"
                     :bpmn="bpmn"
@@ -12,6 +13,7 @@
                     :definitionPath="fullPath"
                     :definitionChat="this"
                     :validationList="validationList"
+                    :isAdmin="isAdmin"
                     @update="updateDefinition"
                     @change="changeElement"
                 ></process-definition>
@@ -31,7 +33,7 @@
                 ></ProcessDefinitionVersionManager>
             </template>
             <template v-slot:rightpart>
-                <div class="no-scrollbar">
+                <div v-if="isAdmin" class="no-scrollbar">
                     <Chat
                         :prompt="prompt"
                         :name="projectName"
@@ -175,6 +177,7 @@
 
             <template v-slot:mobileLeftContent>
                 <Chat
+                    v-if="isAdmin"
                     :prompt="prompt"
                     :name="projectName"
                     :messages="messages"
@@ -378,6 +381,10 @@ export default {
                 path = fullPath.substring(1);
             }
             return path;
+        },
+        isAdmin() {
+            const isAdmin = localStorage.getItem("isAdmin") === "true";
+            return isAdmin;
         }
     },
     async beforeRouteLeave(to, from, next) {
@@ -568,15 +575,17 @@ export default {
                 }
                 let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
                 if (fullPath && lastPath != 'chat') {
-                    let definition = await backend.getRawDefinition(fullPath, { type: 'bpmn' });
-                    if (definition) {
-                        me.bpmn = definition;
+                    let bpmn = await backend.getRawDefinition(fullPath, { type: 'bpmn' });
+                    if (bpmn) {
+                        me.bpmn = bpmn;
                         me.definitionChangeCount++;
                     }
                     if (me.useLock) {
                         const value = await backend.getRawDefinition(fullPath);
                         if (value) {
                             me.processDefinition = value.definition;
+                            me.processDefinition.processDefinitionId = value.id;
+                            me.processDefinition.processDefinitionName = value.name;
                             me.projectName = me.processDefinition.processDefinitionName;
                         }
                         me.checkedLock(lastPath);
@@ -608,6 +617,11 @@ export default {
                     me.isViewMode = false;
                     me.definitionChangeCount++;
                 }
+
+                // 프로세스 정의 체계도에서 넘어온 쿼리 파라미터 처리
+                if (me.$route.query && me.$route.query.modeling) {
+                    document.title = me.projectName;
+                }
                 me.processDefinitionMap = await backend.getProcessDefinitionMap();
             } catch (e) {
                 console.log(e)
@@ -616,6 +630,12 @@ export default {
         },
 
         beforeSendMessage(newMessage) {
+            if(this.processDefinitionMap){
+                this.generator.setProcessDefinitionMap(this.processDefinitionMap);
+            }
+            if(this.processDefinition){
+                this.generator.setProcessDefinition(this.processDefinition);
+            }
             this.sendMessage(newMessage);
         },
         extractPropertyNameAndIndex(jsonPath) {
@@ -724,7 +744,6 @@ export default {
                             }
                         })
                     }
-                    console.log(this.processDefinitionMap)
                 }
                 
                 if (unknown.modifications) {
@@ -735,7 +754,9 @@ export default {
                             this.bpmn = this.createBpmnXml(this.processDefinition);
                         } else if (modification.action == 'add') {
                             this.modificationAdd(modification);
-                            this.bpmn = this.createBpmnXml(this.processDefinition);
+                            this.modificationElement(modification)
+                            // console.log(modification)
+                            // this.bpmn = this.createBpmnXml(this.processDefinition);
                         } else if (modification.action == 'delete') {
                             this.modificationRemove(modification);
                             this.bpmn = this.createBpmnXml(this.processDefinition);
@@ -747,6 +768,22 @@ export default {
             }
 
             this.isChanged = true;
+        },
+        modificationElement(modification) {
+            console.log(modification)
+            let result = {element: null, di: null}
+            const parser = new DOMParser();
+            let elementXML = '<bpmn:userTask id="" name="" role=""></bpmn:userTask>'
+            let element = parser.parseFromString(elementXML, 'application/xml');
+            // const userTask = parser.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'userTask');
+            element.documentElement.setAttribute('id', modification.value.id);
+            element.documentElement.setAttribute('name', modification.value.name);
+            element.documentElement.setAttribute('role', modification.value.role);
+
+            let diXML = '<bpmndi:BPMNShape id="" bpmnElement=""><dc:Bounds x="790" y="140" width="100" height="80" /><bpmndi:BPMNLabel /></bpmndi:BPMNShape>'
+            result.element = tmp;
+            result.diagram = tmp.di;
+            return result;
         },
         afterModelStopped(response) {},
         async saveToVectorStore(definition) {
@@ -800,6 +837,11 @@ export default {
 :deep(.left-part) {
     width: 75%;
     /* Apply specific width */
+}
+
+.user-left-part :deep(.left-part) {
+    width: 100%;
+    /* Apply specific width for admin */
 }
 
 .is-deleted {

@@ -1,22 +1,20 @@
 <template>
-    <v-container class="bg-surface" style="height: 100%">
-        <v-row no-gutters>
-            <v-icon @click="$router.push('/tenant/manage')" size="24">mdi-arrow-left</v-icon>
-        </v-row>
+    <div style="height: 100%; width:100%; background-color:white;">
+        <v-icon @click="$router.push('/tenant/manage')" size="24"
+            class="tenant-back-btn"
+        >mdi-arrow-left
+        </v-icon>
 
-        <v-row no-gutters justify="center" style="margin-top: 50.5px;">
-            <h1 class="text-grey200" style="font-size: 40px;">테넌트 편집</h1>
-        </v-row>
         <v-row no-gutters justify="center">
+            <h1 class="text-grey200">테넌트 편집</h1>
+        </v-row>
+        <!-- <v-row no-gutters justify="center">
             <p class="font-weight-semibold text-grey100 text-h5">
                 선택한 테넌트의 내용을 편집합니다.
             </p>
-        </v-row>
+        </v-row> -->
 
-        <v-row no-gutters style="margin-top: 30px;" justify="center">
-            <TenantInfoField v-model="tenantInfo" :isEdit="true" ref="tenantInfoField"></TenantInfoField>
-        </v-row>
-
+        <TenantInfoField v-model="tenantInfo" :isEdit="true" ref="tenantInfoField"></TenantInfoField>
         <v-row no-gutters justify="center">
             <v-btn 
                 size="large" 
@@ -28,7 +26,7 @@
                 @click="editTenant"
             >수정하기</v-btn>
         </v-row>
-    </v-container>
+    </div>
 </template>
 
 <script>

@@ -98,7 +98,8 @@ class ProcessGPTBackend implements Backend {
             }
 
             defId = defId.toLowerCase();
-            
+            defId = defId.replace(/[/.]/g, "_");
+
             const procDef: any = {
                 id: defId,
                 name: options.name,
@@ -953,6 +954,16 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
+    async getCurrentWorkItemByCorrKey(corrKey: number) {
+        try {
+            return null;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
 }
 
 export default ProcessGPTBackend;
