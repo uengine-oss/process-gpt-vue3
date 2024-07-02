@@ -410,6 +410,11 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
+    async getAllInstanceList() {
+        const response = await axiosInstance.get(`/instances/search/findAll`);
+        return response.data._embedded.instances;
+    }
+
     // Running Instance API
     async getInstanceList() {
         // return [];

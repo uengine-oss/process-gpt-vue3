@@ -691,7 +691,9 @@ export default {
                             this.bpmn = this.createBpmnXml(this.processDefinition);
                         } else if (modification.action == 'add') {
                             this.modificationAdd(modification);
-                            this.bpmn = this.createBpmnXml(this.processDefinition);
+                            this.modificationElement(modification)
+                            // console.log(modification)
+                            // this.bpmn = this.createBpmnXml(this.processDefinition);
                         } else if (modification.action == 'delete') {
                             this.modificationRemove(modification);
                             this.bpmn = this.createBpmnXml(this.processDefinition);
@@ -703,6 +705,22 @@ export default {
             }
 
             this.isChanged = true;
+        },
+        modificationElement(modification) {
+            console.log(modification)
+            let result = {element: null, di: null}
+            const parser = new DOMParser();
+            let elementXML = '<bpmn:userTask id="" name="" role=""></bpmn:userTask>'
+            let element = parser.parseFromString(elementXML, 'application/xml');
+            // const userTask = parser.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'userTask');
+            element.documentElement.setAttribute('id', modification.value.id);
+            element.documentElement.setAttribute('name', modification.value.name);
+            element.documentElement.setAttribute('role', modification.value.role);
+
+            let diXML = '<bpmndi:BPMNShape id="" bpmnElement=""><dc:Bounds x="790" y="140" width="100" height="80" /><bpmndi:BPMNLabel /></bpmndi:BPMNShape>'
+            result.element = tmp;
+            result.diagram = tmp.di;
+            return result;
         },
         afterModelStopped(response) {},
         async saveToVectorStore(definition) {

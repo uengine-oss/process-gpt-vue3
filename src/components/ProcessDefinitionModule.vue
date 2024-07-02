@@ -14,21 +14,12 @@ export default {
         disableChat: false,
         isViewMode: false,
         lock: false,
-        loading: false,
-        
+        loading: false
     }),
-    computed: {
-        
-    },
-    mounted() {
-        
-    },
-    beforeUnmount() {
-
-    },
-    async created() {
-        
-    },
+    computed: {},
+    mounted() {},
+    beforeUnmount() {},
+    async created() {},
     methods: {
         toggleVersionDialog(open) {
             // Version Dialog
@@ -533,16 +524,17 @@ export default {
 
                 // 요소들을 순서대로 처리하기 위해 sequences를 기반으로 정렬
                 const sortedElements = [];
-                jsonModel.sequences.forEach((sequence) => {
-                    const sourceElement = elements.find((el) => el.id === sequence.source);
-                    const targetElement = elements.find((el) => el.id === sequence.target);
-                    if (sourceElement && !sortedElements.includes(sourceElement)) {
-                        sortedElements.push(sourceElement);
-                    }
-                    if (targetElement && !sortedElements.includes(targetElement)) {
-                        sortedElements.push(targetElement);
-                    }
-                });
+                if (jsonModel.sequences)
+                    jsonModel.sequences.forEach((sequence) => {
+                        const sourceElement = elements.find((el) => el.id === sequence.source);
+                        const targetElement = elements.find((el) => el.id === sequence.target);
+                        if (sourceElement && !sortedElements.includes(sourceElement)) {
+                            sortedElements.push(sourceElement);
+                        }
+                        if (targetElement && !sortedElements.includes(targetElement)) {
+                            sortedElements.push(targetElement);
+                        }
+                    });
 
                 sortedElements.forEach((element, elementIndex) => {
                     if (!element.role) {
@@ -962,7 +954,7 @@ export default {
         },
         async convertXMLToJSON(xmlString) {
             try {
-                if(!xmlString) return {};
+                if (!xmlString) return {};
                 xmlString = xmlString.replace(/\$type/g, '_type'); //sanitizing for $type
 
                 const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
@@ -974,7 +966,7 @@ export default {
                     result['bpmn:definitions'] && result['bpmn:definitions']['bpmn:process']
                         ? result['bpmn:definitions']['bpmn:process']
                         : {};
-                if(!(processes instanceof Array)) {
+                if (!(processes instanceof Array)) {
                     processes = [processes];
                 }
                 let resultJsonData = null;
@@ -994,33 +986,33 @@ export default {
                     Object.keys(process).forEach((key) => {
                         if (key.includes('Event')) {
                             let eventTmp = process[key];
-                            if(eventTmp instanceof Array) {
-                                eventTmp = eventTmp.map(obj => ({ ...obj, type: key.replace("bpmn:", ""), process: process.id }));
+                            if (eventTmp instanceof Array) {
+                                eventTmp = eventTmp.map((obj) => ({ ...obj, type: key.replace('bpmn:', ''), process: process.id }));
                             } else {
-                                eventTmp = { ...eventTmp, type: key.replace("bpmn:", ""), process: process.id };
+                                eventTmp = { ...eventTmp, type: key.replace('bpmn:', ''), process: process.id };
                             }
                             event = event.concat(eventTmp);
                         } else if (key.includes('Task')) {
                             let activityTmp = process[key];
-                            if(activityTmp instanceof Array) {
-                                activityTmp = activityTmp.map(obj => ({ ...obj, type: key.replace("bpmn:", ""), process: process.id }));
+                            if (activityTmp instanceof Array) {
+                                activityTmp = activityTmp.map((obj) => ({ ...obj, type: key.replace('bpmn:', ''), process: process.id }));
                             } else {
-                                activityTmp = { ...activityTmp, type: key.replace("bpmn:", ""), process: process.id };
+                                activityTmp = { ...activityTmp, type: key.replace('bpmn:', ''), process: process.id };
                             }
                             activities = activities.concat(activityTmp);
                         } else if (key.includes('Gateway')) {
                             let gatewayTmp = process[key];
-                            if(gatewayTmp instanceof Array) {
-                                gatewayTmp = gatewayTmp.map(obj => ({ ...obj, type: key.replace("bpmn:", ""), process: process.id }));
+                            if (gatewayTmp instanceof Array) {
+                                gatewayTmp = gatewayTmp.map((obj) => ({ ...obj, type: key.replace('bpmn:', ''), process: process.id }));
                             } else {
-                                gatewayTmp = { ...gatewayTmp, type: key.replace("bpmn:", ""), process: process.id };
+                                gatewayTmp = { ...gatewayTmp, type: key.replace('bpmn:', ''), process: process.id };
                             }
                             gateways = gateways.concat(gatewayTmp);
                         }
                     });
 
                     let lanesTmp = ensureArray(process['bpmn:laneSet'] ? process['bpmn:laneSet']['bpmn:lane'] : []);
-                    lanesTmp = lanesTmp.map(obj => ({ ...obj, process: process.id }));
+                    lanesTmp = lanesTmp.map((obj) => ({ ...obj, process: process.id }));
                     lanes = lanes.concat(lanesTmp);
                     let sequenceFlowsTmp = ensureArray(process['bpmn:sequenceFlow'] || []);
                     sequenceFlows = sequenceFlows.concat(sequenceFlowsTmp);
@@ -1050,9 +1042,8 @@ export default {
                     })),
                     events: [
                         ...event.map((event) => {
-                            let isProperties =
-                            event['bpmn:extensionElements'] && event['bpmn:extensionElements']['uengine:properties'];
-                            let definitionType = Object.keys(event).filter(key => key.includes('Definition'));
+                            let isProperties = event['bpmn:extensionElements'] && event['bpmn:extensionElements']['uengine:properties'];
+                            let definitionType = Object.keys(event).filter((key) => key.includes('Definition'));
                             return {
                                 name: event.name,
                                 id: event.id,
@@ -1062,7 +1053,7 @@ export default {
                                 process: event.process,
                                 definitionType: definitionType ? definitionType[0] : null,
                                 properties: isProperties ? event['bpmn:extensionElements']['uengine:properties']['uengine:json'] : '{}'
-                            }
+                            };
                         })
                     ],
                     activities: [
@@ -1149,7 +1140,10 @@ export default {
                                 gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties']
                                     ? JSON.parse(gateway['bpmn:extensionElements']['uengine:properties']['uengine:json']).condition || ''
                                     : '',
-                            properties: gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties'] ? gateway['bpmn:extensionElements']['uengine:properties']['uengine:json'] : '{}'
+                            properties:
+                                gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties']
+                                    ? gateway['bpmn:extensionElements']['uengine:properties']['uengine:json']
+                                    : '{}'
                         }))
                     ],
                     sequences: sequenceFlows.map((flow) => ({
@@ -1359,7 +1353,7 @@ export default {
                     console.log(e);
                 }
             });
-        },
+        }
     }
 };
 </script>
