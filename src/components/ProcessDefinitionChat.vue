@@ -1,7 +1,8 @@
 <template>
-    <v-card elevation="10" style="background-color: rgba(255, 255, 255, 0)" :class="{ 'is-deleted': isDeleted }">
+    <v-card elevation="10" style="background-color: rgba(255, 255, 255, 0)" :class="{ 'is-deleted': isDeleted, 'user-left-part': !isAdmin }">
         <AppBaseCard>
             <template v-slot:leftpart>
+                <h5 v-if="!isAdmin" class="text-h5 font-weight-semibold pa-3">{{ projectName }}</h5>
                 <process-definition
                     class="process-definition-resize"
                     :bpmn="bpmn"
@@ -12,6 +13,7 @@
                     :definitionPath="fullPath"
                     :definitionChat="this"
                     :validationList="validationList"
+                    :isAdmin="isAdmin"
                     @update="updateDefinition"
                     @change="changeElement"
                 ></process-definition>
@@ -31,7 +33,7 @@
                 ></ProcessDefinitionVersionManager>
             </template>
             <template v-slot:rightpart>
-                <div class="no-scrollbar">
+                <div v-if="isAdmin" class="no-scrollbar">
                     <Chat
                         :prompt="prompt"
                         :name="projectName"
@@ -175,6 +177,7 @@
 
             <template v-slot:mobileLeftContent>
                 <Chat
+                    v-if="isAdmin"
                     :prompt="prompt"
                     :name="projectName"
                     :messages="messages"
@@ -378,6 +381,10 @@ export default {
                 path = fullPath.substring(1);
             }
             return path;
+        },
+        isAdmin() {
+            const isAdmin = localStorage.getItem("isAdmin") === "true";
+            return isAdmin;
         }
     },
     async beforeRouteLeave(to, from, next) {
@@ -568,15 +575,17 @@ export default {
                 }
                 let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
                 if (fullPath && lastPath != 'chat') {
-                    let definition = await backend.getRawDefinition(fullPath, { type: 'bpmn' });
-                    if (definition) {
-                        me.bpmn = definition;
+                    let bpmn = await backend.getRawDefinition(fullPath, { type: 'bpmn' });
+                    if (bpmn) {
+                        me.bpmn = bpmn;
                         me.definitionChangeCount++;
                     }
                     if (me.useLock) {
                         const value = await backend.getRawDefinition(fullPath);
                         if (value) {
                             me.processDefinition = value.definition;
+                            me.processDefinition.processDefinitionId = value.id;
+                            me.processDefinition.processDefinitionName = value.name;
                             me.projectName = me.processDefinition.processDefinitionName;
                         }
                         me.checkedLock(lastPath);
@@ -585,11 +594,13 @@ export default {
                             processDefinitionId: lastPath,
                             processDefinitionName: lastPath
                         };
+                        me.processDefinition = await me.convertXMLToJSON(me.bpmn);
                     }
                 } else if (lastPath == 'chat') {
-                    me.processDefinition = null;
+                    // me.processDefinition = null;
                     me.projectName = null;
                     me.bpmn = null;
+                    me.processDefinition = await me.convertXMLToJSON(me.bpmn);
 
                     if (me.$route.query && me.$route.query.id) {
                         me.processDefinition = {
@@ -606,7 +617,11 @@ export default {
                     me.isViewMode = false;
                     me.definitionChangeCount++;
                 }
-                me.processDefinition = await me.convertXMLToJSON(me.bpmn);
+
+                // 프로세스 정의 체계도에서 넘어온 쿼리 파라미터 처리
+                if (me.$route.query && me.$route.query.modeling) {
+                    document.title = me.projectName;
+                }
                 me.processDefinitionMap = await backend.getProcessDefinitionMap();
             } catch (e) {
                 console.log(e)
@@ -615,6 +630,12 @@ export default {
         },
 
         beforeSendMessage(newMessage) {
+            if(this.processDefinitionMap){
+                this.generator.setProcessDefinitionMap(this.processDefinitionMap);
+            }
+            if(this.processDefinition){
+                this.generator.setProcessDefinition(this.processDefinition);
+            }
             this.sendMessage(newMessage);
         },
         extractPropertyNameAndIndex(jsonPath) {
@@ -683,6 +704,48 @@ export default {
 
             if (jsonProcess) {
                 let unknown = jsonProcess;
+
+                if (unknown.megaProcessId && this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
+                    if (!this.processDefinitionMap.mega_proc_list.some(megaProcess => megaProcess.name == unknown.megaProcessId)) {
+                        this.processDefinitionMap.mega_proc_list.push({
+                            name: unknown.megaProcessId,
+                            id: unknown.megaProcessId,
+                            major_proc_list: [{
+                                name: unknown.majorProcessId,
+                                id: unknown.majorProcessId,
+                                sub_proc_list: [{
+                                    id: unknown.processDefinitionId,
+                                    name: unknown.processDefinitionName
+                                }]
+                            }]
+                        })
+                    }
+                    if (unknown.majorProcessId) {
+                        this.processDefinitionMap.mega_proc_list.forEach(megaProcess => {
+                            if (megaProcess.name == unknown.megaProcess) {
+                                if (megaProcess.major_proc_list.some(majorProcess => majorProcess.name == unknown.majorProcessId)) {
+                                    const idx = megaProcess.major_proc_list.findIndex(majorProcess => majorProcess.name == unknown.majorProcessId);
+                                    if (!megaProcess.major_proc_list[idx].sub_proc_list.some(subProcess => subProcess.id == unknown.processDefinitionId)) {
+                                        megaProcess.major_proc_list[idx].sub_proc_list.push({
+                                            id: unknown.processDefinitionId,
+                                            name: unknown.processDefinitionName
+                                        })
+                                    }
+                                } else {
+                                    megaProcess.major_proc_list.push({
+                                        name: unknown.majorProcessId,
+                                        id: unknown.majorProcessId,
+                                        sub_proc_list: [{
+                                            id: unknown.processDefinitionId,
+                                            name: unknown.processDefinitionName
+                                        }]
+                                    })
+                                }
+                            }
+                        })
+                    }
+                }
+                
                 if (unknown.modifications) {
                     unknown.modifications.forEach((modification) => {
                         if (modification.action == 'replace') {
@@ -774,6 +837,11 @@ export default {
 :deep(.left-part) {
     width: 75%;
     /* Apply specific width */
+}
+
+.user-left-part :deep(.left-part) {
+    width: 100%;
+    /* Apply specific width for admin */
 }
 
 .is-deleted {

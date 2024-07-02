@@ -21,7 +21,7 @@ const customizer = useCustomizerStore();
         elevation="10"
         :rail="customizer.mini_sidebar"
         expand-on-hover
-        width="270"
+        width="275"
     >
         <div class="pa-5 pl-4">
             <Logo />
@@ -60,7 +60,6 @@ const customizer = useCustomizerStore();
                                         icon variant="text" 
                                         class="text-medium-emphasis"
                                         density="comfortable"
-                                        style="margin-right:2px;"
                                     >
                                         <Icon :icon="subItem.icon" width="20" height="20" />    
                                     </v-btn>
@@ -69,7 +68,6 @@ const customizer = useCustomizerStore();
                         </template>
                     </v-row>
                     <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
-
 
                     <!-- 하단 목록으로 뿌려주던 리스트 형식 메뉴 -->
                     <!-- <NavItem v-else-if="!item.disable && !item.header" class="leftPadding" :item="item" /> -->
@@ -134,7 +132,7 @@ export default {
                     icon: 'icon-park-outline:layout-five',
                     BgColor: 'primary',
                     to: '/ui-definitions/chat',
-                    disable: false
+                    disable: true
                 },
                 {
                     title: 'processDefinition.title',

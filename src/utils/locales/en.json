@@ -103,6 +103,7 @@
         "itemsPerPage": "Items per page",
         "processVariables": "Process Variables",
         "editProcessData": "Edit Process Data",
+        "instanceNamePattern": "Instance Name Pattern",
         "edit": "Edit",
         "delete": "Delete",
         "zoom": "Canvas Zoom in/Zoom out",

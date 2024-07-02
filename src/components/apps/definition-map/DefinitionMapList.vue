@@ -27,7 +27,6 @@
                     <ProcessDialog v-if="processDialogStatus"
                         :enableEdit="enableEdit"
                         :process="value"
-                        :definitions="definitions"
                         :processType="processType"
                         :type="'map'"
                         @add="addProcess"
@@ -65,10 +64,7 @@ export default {
     }),
     methods: {
         addProcess(newProcess) {
-            let id = 0;
-            if(this.value.mega_proc_list.length != 0) {
-                id = this.value.mega_proc_list[this.value.mega_proc_list.length - 1].id +1
-            }
+            const id = newProcess.name.toLowerCase().replace(/[/.]/g, "_");
             var newMegaProc = {
                 id: id,
                 name: newProcess.name,

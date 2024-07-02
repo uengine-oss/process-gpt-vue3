@@ -45,6 +45,12 @@ export default {
         },
         isDryRun: Boolean,
         dryRunWorkItem: Object,
+        currentActivities: {
+            type: Array,
+            default: function () {
+                return []
+            }
+        },
     },
     data: () => ({
         inputItems: null,

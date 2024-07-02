@@ -25,6 +25,8 @@
                         :workItemStatus="workItemStatus" 
                         :isDryRun="isDryRun" 
                         :dryRunWorkItem="dryRunWorkItem"
+                        :currentActivities="currentActivities"
+                        @updateCurrentActivities="updateCurrentActivities"
                         @close="close"
                     ></component>
                     <v-tooltip :text="$t('processDefinition.zoom')">
@@ -166,6 +168,8 @@
                         :workItemStatus="workItemStatus" 
                         :isDryRun="isDryRun" 
                         :dryRunWorkItem="dryRunWorkItem"
+                        :currentActivities="currentActivities"
+                        @updateCurrentActivities="updateCurrentActivities"
                         @close="close"
                     ></component>
                     <v-tooltip :text="$t('processDefinition.zoom')">
@@ -407,6 +411,12 @@ export default {
                     me.updatedDefKey++;
                 }
             });
+        },
+        updateCurrentActivities(currentActivities){
+            if(!currentActivities) currentActivities = []
+
+            this.currentActivities = currentActivities
+            this.updatedDefKey++;
         },
         close(){
             this.$emit('close')

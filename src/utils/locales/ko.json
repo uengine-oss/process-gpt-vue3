@@ -122,6 +122,7 @@
         "itemsPerPage": "페이지당 항목 수",
         "processVariables": "프로세스 변수",
         "editProcessData": "프로세스 데이터 수정",
+        "instanceNamePattern": "인스턴스명 패턴",
         "edit": "수정",
         "delete": "삭제",
         "zoom": "캔버스 확대/축소",

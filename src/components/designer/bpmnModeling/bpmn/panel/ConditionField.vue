@@ -125,25 +125,29 @@ export default {
             if (type == "AND") {
                 item.conditionsVt = [];
                 item.conditionsVt.push(child);
-                item._type = 'org.uengine.kernel.AND';
+                item._type = 'org.uengine.kernel.And';
                 item.conditionsVt.push({
                     _type: 'org.uengine.kernel.Evaluate',
-                    conditionsVt: [],
                     key: '',
                     value: '',
                     condition: '',
                 });
+                delete item.key;
+                delete item.value;
+                delete item.condition;
             } else if (type == "OR") {
                 item.conditionsVt = [];
                 item.conditionsVt.push(child);
-                item._type = 'org.uengine.kernel.OR';
+                item._type = 'org.uengine.kernel.Or';
                 item.conditionsVt.push({
                     _type: 'org.uengine.kernel.Evaluate',
-                    conditionsVt: [],
                     key: '',
                     value: '',
                     condition: '',
                 });
+                delete item.key;
+                delete item.value;
+                delete item.condition;
             } else if (type == "NOT") {
                 item._type = 'org.uengine.kernel.NOT';
             }

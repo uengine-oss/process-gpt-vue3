@@ -46,6 +46,7 @@ export interface Backend {
     getSystemList(): Promise<any>;
     putSystem(system: any): Promise<any>;
     getSystem(systemId: String): Promise<any>;
+    getCurrentWorkItemByCorrKey(corrKey: number): Promise<any>;
 }
 
 // export type { Backend }
