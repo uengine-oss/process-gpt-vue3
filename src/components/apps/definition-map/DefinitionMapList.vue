@@ -27,7 +27,6 @@
                     <ProcessDialog v-if="processDialogStatus"
                         :enableEdit="enableEdit"
                         :process="value"
-                        :definitions="definitions"
                         :processType="processType"
                         :type="'map'"
                         @add="addProcess"
