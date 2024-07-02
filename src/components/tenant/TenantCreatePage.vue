@@ -15,7 +15,7 @@
         </v-row> -->
         <TenantInfoField v-model="tenantInfo" :isEdit="false" ref="tenantInfoField" @stopLoading="stopLoading"></TenantInfoField>
 
-        <!-- <v-row no-gutters style="margin-top: 30px; margin-bottom: 100px;" justify="center">
+        <v-row no-gutters style="margin-top: 30px; margin-bottom: 100px;" justify="center">
             <v-btn 
                 size="large" 
                 class="mt-2" 
@@ -26,7 +26,7 @@
                 :loading="isLoading"
                 @click="beforeCreateTenant"
             >생성하기</v-btn>
-        </v-row> -->
+        </v-row>
     </div>
 </template>
 
