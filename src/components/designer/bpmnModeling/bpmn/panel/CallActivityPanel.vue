@@ -185,6 +185,7 @@ export default {
         },
         extractLanesFromBpmnXml(bpmnXml) {
             const parser = new DOMParser();
+            bpmnXml = bpmnXml.replace(/\$type/g, '_type'); //sanitizing for $type
             const xmlDoc = parser.parseFromString(bpmnXml, 'application/xml');
             const lanes = xmlDoc.getElementsByTagName('bpmn:lane');
             const laneInfo = Array.from(lanes)

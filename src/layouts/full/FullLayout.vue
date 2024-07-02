@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router';
+import { RouterView, useRoute } from 'vue-router';
 import VerticalSidebarVue from './vertical-sidebar/VerticalSidebar.vue';
 import VerticalHeaderVue from './vertical-header/VerticalHeader.vue';
 import HorizontalHeader from './horizontal-header/HorizontalHeader.vue';
@@ -16,6 +16,11 @@ const globalState = instance?.appContext.config.globalProperties.$globalState;
 const canvasReSize = computed(() => {
   return globalState?.state.isZoomed || globalState?.state.isRightZoomed ? 'canvas-full-layout' : '';
 });
+
+const route = useRoute();
+const isModelingTab = computed(() => {
+    return route.query && route.query.modeling ? true : false;
+});
 </script>
 
 <template>
@@ -31,10 +36,10 @@ const canvasReSize = computed(() => {
             <v-navigation-drawer app temporary elevation="10" location="left" v-model="customizer.Customizer_drawer" width="320" class="left-customizer">
                 <Customizer />
             </v-navigation-drawer>
-            <VerticalSidebarVue v-if="!customizer.setHorizontalLayout" />
-            <div :class="customizer.boxed ? 'maxWidth' : 'full-header'"><VerticalHeaderVue v-if="!customizer.setHorizontalLayout" /></div>
-            <div :class="customizer.boxed ? 'maxWidth' : 'full-header'"><HorizontalHeader v-if="customizer.setHorizontalLayout" /></div>
-            <HorizontalSidebar v-if="customizer.setHorizontalLayout" />
+            <VerticalSidebarVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
+            <div :class="customizer.boxed ? 'maxWidth' : 'full-header'"><VerticalHeaderVue v-if="!customizer.setHorizontalLayout && !isModelingTab" /></div>
+            <div :class="customizer.boxed ? 'maxWidth' : 'full-header'"><HorizontalHeader v-if="customizer.setHorizontalLayout && !isModelingTab" /></div>
+            <HorizontalSidebar v-if="customizer.setHorizontalLayout && !isModelingTab" />
 
             <v-main>
                 <div class="rtl-lyt  mb-3 hr-layout">
@@ -66,10 +71,10 @@ const canvasReSize = computed(() => {
             <v-navigation-drawer app temporary elevation="10" location="right" v-model="customizer.Customizer_drawer" width="320">
                 <Customizer />
             </v-navigation-drawer>
-            <VerticalSidebarVue v-if="!customizer.setHorizontalLayout" />
-            <div :class="customizer.boxed ? 'maxWidth' : 'full-header'"><VerticalHeaderVue v-if="!customizer.setHorizontalLayout" /></div>
-            <div :class="customizer.boxed ? 'maxWidth' : 'full-header'"><HorizontalHeader v-if="customizer.setHorizontalLayout" /></div>
-            <HorizontalSidebar v-if="customizer.setHorizontalLayout" />
+            <VerticalSidebarVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
+            <div :class="customizer.boxed ? 'maxWidth' : 'full-header'"><VerticalHeaderVue v-if="!customizer.setHorizontalLayout && !isModelingTab" /></div>
+            <div :class="customizer.boxed ? 'maxWidth' : 'full-header'"><HorizontalHeader v-if="customizer.setHorizontalLayout && !isModelingTab" /></div>
+            <HorizontalSidebar v-if="customizer.setHorizontalLayout && !isModelingTab" />
 
             <v-main>
                 <div class=" mb-3 hr-layout">
@@ -88,4 +93,3 @@ const canvasReSize = computed(() => {
         </v-app>
     </v-locale-provider>
 </template>
-

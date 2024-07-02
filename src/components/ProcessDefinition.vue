@@ -1,5 +1,5 @@
 <template>
-    <div style="height: 100%">
+    <div :style="containerStyle">
         <v-row style="height: 100%" class="ma-0">
             <v-col class="d-flex ma-0 pa-0" style="height: 100%">
                 <v-card style="border-radius: 0px !important; border: none; height: 100%" flat>
@@ -250,7 +250,8 @@ export default {
         definitionChat: Object,
         definitionPath: String,
         isXmlMode: Boolean,
-        validationList: Object
+        validationList: Object,
+        isAdmin: Boolean
     },
     data: () => ({
         panel: false,
@@ -295,7 +296,9 @@ export default {
             };
         },
         executable() {
-            if (!this.isViewMode && this.$route.path !== '/definitions/chat') {
+            if (window.$jms) {
+                return false;
+            } else if (!this.isViewMode && this.$route.path !== '/definitions/chat') {
                 return true
             } else if (this.isViewMode && this.$route.path.includes('/definitions/') && 
                 this.$route.path !== '/definitions/chat') {
@@ -303,6 +306,11 @@ export default {
             } else {
                 return false
             }
+        },
+        containerStyle() {
+            return {
+                height: this.isAdmin ? '100%' : 'calc(100% - 50px)'
+            };
         }
     },
     watch: {

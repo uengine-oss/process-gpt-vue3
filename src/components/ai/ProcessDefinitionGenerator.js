@@ -5,8 +5,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
     constructor(client, language){
         super(client, language);
 
-        const processDefinitionMap = JSON.stringify(client.processDefinitionMap);
-        const processDefinition = JSON.stringify(client.processDefinition);
+        // const processDefinitionMap = JSON.stringify(client.processDefinitionMap);
+        // const processDefinition = JSON.stringify(client.processDefinition);
         const externalSystems = JSON.stringify(client.externalSystems);
         this.previousMessages = [{
             role: 'system', 
@@ -18,10 +18,10 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
             - 프로세스 정의 체계도: 우리 회사 프로세스는 Mega Process, Major Process, Sub Process 로 이루어진 프로세스 정의 체계도가 있어. 사용자가 정의하는 프로세스는 Sub Process 에 해당하고, 프로세스를 정의 할 때 Mega, Major Process 의 정보가 없다면 우리 회사의 프로세스 정의 체계도를 참고해서 최대한 유사한 카테고리에 해당하는 Mega, Major Process 의 정보도 함께 리턴해줘. 만약 유사한 Mega, Major Process 가 없다면 새로운 Mega, Major Process 를 리턴할 수 있도록 해.
 
             프로세스 정의 체계도:
-            ${processDefinitionMap} 
-
+            {{ 프로세스 정의 체계도 정보 }}
+            
             기존 프로세스 정보:
-            ${processDefinition}
+            {{ 기존 프로세스 정보 }}
             
             결과는 프로세스에 대한 설명과 함께 valid 한 json 으로 표현해줘. markdown 으로, three backticks 로 감싸. 예를 들면 :
             checkPoints가 없으면 비어있는 Array로 생성해줘.
@@ -120,7 +120,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                2.  액티비티, 게이트웨이, 이벤트 추가인 경우는 시퀀스도 꼭 연결해줘.
                3.  액티비티, 게이트웨이, 이벤트가 삭제되는 경우는 나와 연결된 앞뒤 액티비티 간의 시퀀스도 삭제하되, 삭제된 액티비티의 이전 단계와 다음단계의 액티비티를 시퀀스로 다시 연결해줘.
                4.  생성될 모든 값들은 기존 프로세스의 정보를 참고하여 생성해야한다.
-               5.  추가될 액티비티, 게이트웨이의 "role" 은 기존에 존재하는 "roles" 에 존재하는 role 중 하나를 사용해야한다. "roles" 에 존재하지 않는 role 을 사용할 수는 없다.
+               5.  추가되는 액티비티의 이전 단계 액티비티의 id도 beforeActivity에 반드시 넣어줘.
+               6.  추가될 액티비티, 게이트웨이의 "role" 은 기존에 존재하는 "roles" 에 존재하는 role 중 하나를 사용해야한다. "roles" 에 존재하지 않는 role 을 사용할 수는 없다.
             
             \`\`\`
               { 
@@ -130,9 +131,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                     "action": "replace" | "add" | "delete",
                     "targetJsonPath": "$.activities[?(@.id=='request_vacation')]", // action 이 add 인 경우 "$.activities" 만 리턴. e.g. "$.sequences", action 이 add 가 아닌 경우 "$.activities[?(@.id=='request_vacation')]" 와 같이 수정, 삭제될 Path 의 상위 목록("activities", "sequences" 등...)을 참고하여 "$.activities" 뒤에 수정, 삭제될 값을 찾을 수 있는 필터("[?(@.id=='request_vacation')]") 를 반드시 포함하여 리턴.  // e.g. "$.sequences[?(@.source=='leave_request_activity' && @.target=='leave_approval_activity')].condition"
                     "value": {...}, //delete 인 경우는 불필요, replace의 경우 기존 value에서 변경된 부분을 수정하여 생략 하지 않고 value로 리턴
-                    "beforeActivity": "" // 변경 되는 Activity의 이전 Activity의 id
+                    "beforeActivity": "" // 추가 되거나 변경 되는 Activity의 이전 단계 Activity의 id
                   }   
-                  
                 ]
               }
             \`\`\`
@@ -182,6 +182,14 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
 
     createPrompt(){
        return this.client.newMessage
+    }
+
+    setProcessDefinitionMap(processDefinitionMap) {
+        this.previousMessages[0].content = this.previousMessages[0].content.replace(`{{ 프로세스 정의 체계도 정보 }}`, JSON.stringify(processDefinitionMap));
+    }
+
+    setProcessDefinition(processDefinition) {
+        this.previousMessages[0].content = this.previousMessages[0].content.replace('{{ 기존 프로세스 정보 }}', JSON.stringify(processDefinition));
     }
 
 }

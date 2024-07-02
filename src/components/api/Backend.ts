@@ -18,6 +18,7 @@ export interface Backend {
     suspend(instanceId: string): Promise<any>;
     resume(instanceId: string): Promise<any>;
     getInstance(instanceId: string): Promise<any>;
+    getAllInstanceList(): Promise<any>;
     backToHere(instanceId: string, tracingTag: string): Promise<any>;
     getProcessVariables(instanceId: string): Promise<any>;
     getVariable(instId: string, varName: string): Promise<any>;
