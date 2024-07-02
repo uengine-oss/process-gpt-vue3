@@ -11,8 +11,9 @@
                 <v-col class="cursor-pointer" cols="12" md="2" sm="3">
                     <v-card v-if="!processDialogStatus"
                         @click="openProcessDialog('add')"
-                        class="add-process-card-hover bg-lightwarning cp-add-mega"
+                        class="add-process-card-hover cp-add-mega"
                         elevation="9" variant="outlined"
+                        color="primary"
                         style="padding: 10px;
                             display: flex;
                             justify-content: center;
