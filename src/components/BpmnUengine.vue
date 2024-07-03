@@ -29,6 +29,10 @@ export default {
         isViewMode: {
             type: Boolean
         },
+        adminMode: {
+            type: Boolean,
+            default: false
+        },
         currentActivities: {
             type: Array
         }
@@ -50,17 +54,17 @@ export default {
     },
     mounted() {
         this.initializeViewer();
-        var self = this
+        var self = this;
         var eventBus = this.bpmnViewer.get('eventBus');
         // eventBus.on('import.render.start', function (e) {
         //     // self.openPanel = true;
         //     console.log("render  complete")
         //     self.$emit('openPanel', e.element.id);
         // });
-        eventBus.on('import.done', async function(evt) {
-            console.log("import.done")
-            self.$emit('done')
-        })
+        eventBus.on('import.done', async function (evt) {
+            console.log('import.done');
+            self.$emit('done');
+        });
         eventBus.on('import.render.complete', async function (event) {
             var error = event.error;
             var warnings = event.warnings;
@@ -73,7 +77,7 @@ export default {
                 self.$emit('shown', warnings);
             }
 
-            console.log(def)
+            console.log(def);
             // self.bpmnViewer.get('canvas').zoom('fit-viewport');
             var canvas = self.bpmnViewer.get('canvas');
             canvas.zoom('fit-viewport');
@@ -81,32 +85,57 @@ export default {
             if (self.isViewMode) {
                 // add marker to current activity elements
                 if (self.currentActivities && self.currentActivities.length > 0) {
-                    self.currentActivities.forEach(actId => {
-                        if (actId) canvas.addMarker(actId, 'highlight')
-                    })
+                    self.currentActivities.forEach((actId) => {
+                        if (actId) canvas.addMarker(actId, 'highlight');
+                    });
                 }
             }
 
-            console.log(eventBus)
+            if (self.adminMode) {
+                var overlays = self.bpmnViewer.get('overlays');
+                // add marker to current activity elements
+                
+                if (self.currentActivities && self.currentActivities.length > 0) {
+                    
+                    self.currentActivities.forEach((actId) => {
+                        var overlayHtml = $(`<img src="/assets/images/icon/tdesign-rollback.svg" style="width: 20px; height: 20px;" alt="rollback">`);
+
+                        overlayHtml.click(function (e) {
+                            // alert('someone clicked ' + actId);
+                            self.$emit('rollback', actId);
+                        });
+                        console.log(actId)
+                        if (actId)
+                            overlays.add(actId, 'note', {
+                                position: {
+                                    bottom: 10,
+                                    right: 0
+                                },
+                                html: overlayHtml
+                            });
+                    });
+                }
+            }
+
+            console.log(eventBus);
             eventBus.on('shape.added', async function (event) {
                 const element = event.element;
                 const businessObject = element.businessObject;
-                console.log(element)
-                console.log(businessObject)
-                // 이미 extensionElements가 있는 경우, 추가 작업을 수행하지 않음
-                if (businessObject.extensionElements) {
-                    return;
-                }
+                console.log(element);
+                console.log(businessObject);
+                // 이미 extensionElements가 있는 경우, 초기화 하도록 처리
+                // if (businessObject.extensionElements) {
+                //     businessObject.extensionElements.values?.[0].json = '{}'
+                //     return;
+                // }
 
                 try {
-                    let xml = await self.getXML
-                    console.log(xml)
-                    self.extendUEngineProperties(element)
+                    let xml = await self.getXML;
+                    console.log(xml);
+                    self.extendUEngineProperties(element);
                 } catch (error) {
-                    
+                    alert(error);
                 }
-
-                
 
                 // const bpmnFactory = self.bpmnViewer.get('bpmnFactory');
                 // console.log(bpmnFactory)
@@ -117,11 +146,13 @@ export default {
                 // });
                 // let definitions = self.bpmnViewer.getDefinitions();
                 // definitions.get('rootElements').push(processVariable);
-
-
+            });
+            eventBus.on('shape.changed', function (e) {
+                self.$emit('changeShape', e.element)
             })
-            // eventBus.on('shape.changed', function (e) {
-            //     self.$emit('changeShape', e.element)
+            // eventBus.on('element.changed', function (e) {
+            //     // self.$emit('changeShape', e.element)
+            //     console.log(e)
             // })
             // eventBus.on('connection.changed', function (e) {
             //     self.$emit('changeSequence', e.element)
@@ -133,8 +164,8 @@ export default {
             if (self.isViewMode) {
                 eventBus.on('element.dblclick', function (e) {
                     // self.openPanel = true;
-                    if (e.element.type.includes("CallActivity")) {
-                        self.$emit('openDefinition', e.element.businessObject)
+                    if (e.element.type.includes('CallActivity')) {
+                        self.$emit('openDefinition', e.element.businessObject);
                     } else {
                         self.$emit('openPanel', e.element.id);
                     }
@@ -147,36 +178,35 @@ export default {
             }
 
             eventBus.on('drag.end', function (e) {
-                self.$emit('change')
-            })
+                self.$emit('change');
+            });
 
             eventBus.on('shape.removed', function (e) {
-                self.$emit('change')
-            })
+                self.$emit('change');
+            });
 
             eventBus.on('connection.removed', function (e) {
-                self.$emit('change')
-            })
+                self.$emit('change');
+            });
 
             eventBus.on('connection.added', function (e) {
-                self.$emit('change')
-            })
+                self.$emit('change');
+            });
 
-
-            self.$emit('change')
+            self.$emit('change');
 
             // var events = ['element.hover', 'element.out', 'element.click', 'element.dblclick', 'element.mousedown', 'element.mouseup'];
             // events.forEach(function (event) {
 
             // });
-
         });
         if (this.url) {
             this.fetchDiagram(this.url);
         } else if (this.bpmn) {
             this.diagramXML = this.bpmn;
         } else {
-            this.diagramXML = '<?xml version="1.0" encoding="UTF-8"?> <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_0bfky9r" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0"> <bpmn:process id="Process_1oscmbn" isExecutable="false"> <bpmn:extensionElements> <uengine:properties> </uengine:properties> </bpmn:extensionElements> </bpmn:process> <bpmndi:BPMNDiagram id="BPMNDiagram_1"> <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1oscmbn" /> </bpmndi:BPMNDiagram> </bpmn:definitions>'
+            this.diagramXML =
+                '<?xml version="1.0" encoding="UTF-8"?> <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_0bfky9r" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0"> <bpmn:process id="Process_1oscmbn" isExecutable="false"> <bpmn:extensionElements> <uengine:properties> </uengine:properties> </bpmn:extensionElements> </bpmn:process> <bpmndi:BPMNDiagram id="BPMNDiagram_1"> <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1oscmbn" /> </bpmndi:BPMNDiagram> </bpmn:definitions>';
         }
     },
     beforeDestroy() {
@@ -206,17 +236,16 @@ export default {
             });
         },
         diagramXML(val) {
-            console.log(val)
+            console.log(val);
             // let obj = '<?xml version="1.0" encoding="UTF-8"?><bpmn2:definitions xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_vacationProcess" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Custom BPMN Modeler" exporterVersion="1.0"><bpmn2:collaboration id="Collaboration_1"><bpmn2:participant id="Participant" name="Participant" processRef="vacationProcess"/></bpmn2:collaboration><bpmn2:process id="vacationProcess" isExecutable="true"><bpmn2:laneSet id="LaneSet_1"><bpmn2:lane id="Lane_worker" name="직원"><bpmn2:flowNodeRef>requestVacation</bpmn2:flowNodeRef><bpmn2:flowNodeRef>returnVacation</bpmn2:flowNodeRef></bpmn2:lane><bpmn2:lane id="Lane_process_manager" name="프로세스 관리자"><bpmn2:flowNodeRef>approveVacation</bpmn2:flowNodeRef></bpmn2:lane></bpmn2:laneSet><bpmn2:userTask id="requestVacation" name="휴가 신청"/><bpmn2:userTask id="approveVacation" name="휴가 승인"/><bpmn2:userTask id="returnVacation" name="휴가 복귀"/><bpmn2:sequenceFlow id="SequenceFlow_requestVacation_approveVacation" sourceRef="requestVacation" targetRef="approveVacation"/><bpmn2:sequenceFlow id="SequenceFlow_approveVacation_returnVacation" sourceRef="approveVacation" targetRef="returnVacation"/></bpmn2:process><bpmndi:BPMNDiagram id="BPMNDiagram_1"><bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1"><bpmndi:BPMNShape id="BPMNShape_Worker" bpmnElement="Lane_worker" isHorizontal="true"><dc:Bounds x="100" y="100" width="600" height="100"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="BPMNShape_Process_Manager" bpmnElement="Lane_process_manager" isHorizontal="true"><dc:Bounds x="100" y="220" width="600" height="100"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="BPMNShape_requestVacation" bpmnElement="requestVacation"><dc:Bounds x="150" y="150" width="80" height="60"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="BPMNShape_approveVacation" bpmnElement="approveVacation"><dc:Bounds x="150" y="230" width="80" height="60"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="BPMNShape_returnVacation" bpmnElement="returnVacation"><dc:Bounds x="150" y="310" width="80" height="60"/></bpmndi:BPMNShape><bpmndi:BPMNEdge id="BPMNEdge_requestVacation_approveVacation" bpmnElement="SequenceFlow_requestVacation_approveVacation"><di:waypoint x="180" y="180"/><di:waypoint x="280" y="180"/></bpmndi:BPMNEdge><bpmndi:BPMNEdge id="BPMNEdge_approveVacation_returnVacation" bpmnElement="SequenceFlow_approveVacation_returnVacation"><di:waypoint x="180" y="180"/><di:waypoint x="280" y="180"/></bpmndi:BPMNEdge></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn2:definitions>'
             this.bpmnViewer.importXML(val);
         },
         options: {
             handler(val) {
-                
                 var eventBus = this.bpmnViewer.get('eventBus');
                 var container = this.$refs.container;
                 var self = this;
-                
+
                 var _options = Object.assign(
                     {
                         container: container,
@@ -233,7 +262,6 @@ export default {
                 eventBus.fire('config.changed', {
                     config: _options
                 });
-                
             },
             deep: true
         }
@@ -272,12 +300,12 @@ export default {
                 self.bpmnViewer = new BpmnModeler(_options);
                 self.bpmnStore.setModeler(self.bpmnViewer);
             }
-            if(self.diagramXML) {
+            if (self.diagramXML) {
                 self.bpmnViewer.importXML(self.diagramXML);
             }
         },
         extendUEngineProperties(businessObject) {
-            let self = this
+            let self = this;
             //let businessObject = element.businessObject
 
             if (businessObject.extensionElements?.values) {
@@ -287,10 +315,10 @@ export default {
             const bpmnFactory = self.bpmnViewer.get('bpmnFactory');
 
             const uengineParams = bpmnFactory.create('uengine:Properties', {
-                json: ""
+                json: ''
             });
 
-            uengineParams.json = "{}";
+            uengineParams.json = '{}';
             // uengineParams.instanceData = [];
             // uengineParams에 checkpoints와 parameters 추가
             // const parameter = bpmnFactory.create('uengine:Parameter', { key: 'param1', category: 'input' });
@@ -300,10 +328,10 @@ export default {
             const extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
             extensionElements.get('values').push(uengineParams);
 
-            businessObject.extensionElements = extensionElements;
+            businessObject.businessObject.extensionElements = extensionElements;
 
-            if(businessObject.businessObject) {
-                businessObject.businessObject.processRef.isExecutable = true
+            if (businessObject.businessObject) {
+                if (businessObject.businessObject.$type == 'bpmn:Participant') businessObject.businessObject.processRef.isExecutable = true;
             }
 
             //TODO: 불필요
@@ -314,14 +342,13 @@ export default {
             //     let xml = await self.bpmnViewer.saveXML({ format: true, preamble: true });
             //     console.log(xml)
             // }, 0);
-
         },
         updateElement(element, extensionElements) {
             const modeling = this.bpmnViewer.get('modeling');
             modeling.updateProperties(element, { extensionElements: extensionElements });
         },
         openProcess(e) {
-            alert(e)
+            alert(e);
         },
         diagramObject(obj) {
             // let obj = this.parseJsonToModdle(val);
@@ -391,8 +418,8 @@ export default {
                 // diagram.plane.planeElement = sortArray
             });
 
-            obj.diagrams[0].plane.planeElement = this.sortByIdWithParticipantFirst(obj.diagrams[0].plane.planeElement)
-            console.log(obj)
+            obj.diagrams[0].plane.planeElement = this.sortByIdWithParticipantFirst(obj.diagrams[0].plane.planeElement);
+            console.log(obj);
             this.bpmnViewer.importDefinitions(obj);
         },
         sortByIdWithParticipantFirst(array) {
@@ -485,6 +512,4 @@ export default {
 };
 </script>
 
-<style>
-
-</style>
+<style></style>
