@@ -217,6 +217,20 @@ export default {
         isOpenDeleteDialog: false
     }),
     async created() {
+        const reloadOnConnectionFailure = async () => {
+            if(!(await this.storage.isConnection()))
+            {
+                const reloadOnConnectionSuccess = async () => {
+                    if(await this.storage.isConnection())
+                        this.$router.go(0);
+                    else
+                        setTimeout(reloadOnConnectionSuccess, 500);
+                }
+                setTimeout(reloadOnConnectionSuccess, 500);
+            }
+        }
+        reloadOnConnectionFailure()
+
         this.generator = new ChatGenerator(this, {
             isStream: true,
             preferredLanguage: 'Korean'
@@ -773,6 +787,16 @@ export default {
          * @param {*} htmlTextToLoad KEditor에 적합하게 변환시킬 로드된 HTML 코드
          */
         loadHTMLToKEditorContent(htmlTextToLoad) {
+            const getUUID = () => {
+                const s4 = () => {
+                    return Math.floor((1 + Math.random()) * 0x10000)
+                        .toString(16)
+                    .substring(1);
+                }
+
+                return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4()
+            }
+
             console.log('### 로드시킬 HTML 텍스트 ###');
             console.log(htmlTextToLoad);
 
@@ -856,7 +880,7 @@ export default {
                 node.setAttribute('data-type', 'container-content');
             });
 
-            // 컴포넌트인 경우, `vuemount_${crypto.randomUUID()}`를 id를 가지는 div로 감싸도록 만들기
+            // 컴포넌트인 경우, `vuemount_${getUUID()}`를 id를 가지는 div로 감싸도록 만들기
             // 해당 div마다 추후에 createApp으로 렌더링의 대상이되고, ref를 통해서 접근할 수 있도록 함
             const components = Array.from(dom.querySelectorAll('*')).filter((el) => el.tagName.toLowerCase().endsWith('-field'));
             components.forEach((component) => {
@@ -908,7 +932,7 @@ export default {
                 }
 
                 const parent = document.createElement('div');
-                parent.setAttribute('id', `vuemount_${crypto.randomUUID()}`);
+                parent.setAttribute('id', `vuemount_${getUUID()}`);
 
                 if (this.generator.avaliableComponentTagNames.includes(component.tagName.toLowerCase())) {
                     component.parentNode.insertBefore(parent, component);
@@ -1057,6 +1081,9 @@ export default {
     },
 
     async beforeRouteLeave(to, from, next) {
+        // 에러로 인해서 로드가 되지 않을 경우, 별도의 검사를 수행하지 않음
+        if(!(this.$refs.mashup)) return next();
+
         if(this.isAIUpdated || (this.$refs.mashup.getKEditorContentHtml() != this.kEditorContentBeforeSave)) {
             const answer = window.confirm('You have unsaved changes. Are you sure you want to leave?');
             if (answer) {
