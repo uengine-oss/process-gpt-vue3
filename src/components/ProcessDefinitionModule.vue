@@ -976,8 +976,8 @@ export default {
                 const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
                 const result = await parser.parseStringPromise(xmlString);
                 var processDefinitionId = 'Unknown';
-                if(this.processDefinition.processDefinitionId) {
-                    processDefinitionId = this.processDefinition.processDefinitionId;
+                if(this.fullPath) {
+                    processDefinitionId = this.fullPath;
                 }
 
                 function ensureArray(item) {
