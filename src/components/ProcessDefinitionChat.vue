@@ -595,8 +595,8 @@ export default {
                         me.checkedLock(lastPath);
                     } else {
                         me.processDefinition = await me.convertXMLToJSON(me.bpmn);
-                        me.processDefinition.processDefinitionId = lastPath;
-                        me.processDefinition.processDefinitionName = lastPath;
+                        me.processDefinition.processDefinitionId = fullPath;
+                        me.processDefinition.processDefinitionName = fullPath;
                     }
                 } else if (lastPath == 'chat') {
                     // me.processDefinition = null;

@@ -445,7 +445,10 @@ class UEngineBackend implements Backend {
     }
 
     async getDryRunInstance(defPath: String){
-        const response = await axiosInstance.get(`/dry-run/${defPath}`);
+        // const response = await axiosInstance.get(`/dry-run/${defPath}`);
+        // const response = await axiosInstance.get(encodeURI(`/dry-run/${defPath}`));
+        const response = await axiosInstance.get(encodeURI(`/dry-run/${encodeURIComponent(defPath.toString())}`));
+        
         if (!response.data) return null;
         return response.data;
     }
