@@ -147,9 +147,9 @@ export default {
                 // let definitions = self.bpmnViewer.getDefinitions();
                 // definitions.get('rootElements').push(processVariable);
             });
-            eventBus.on('shape.changed', function (e) {
-                self.$emit('changeShape', e.element)
-            })
+            // eventBus.on('shape.changed', function (e) {
+            //     self.$emit('changeShape', e.element)
+            // })
             // eventBus.on('element.changed', function (e) {
             //     // self.$emit('changeShape', e.element)
             //     console.log(e)
@@ -307,7 +307,9 @@ export default {
         extendUEngineProperties(businessObject) {
             let self = this;
             //let businessObject = element.businessObject
-
+            if(businessObject?.businessObject?.extensionElements?.values) {
+                return;
+            }
             if (businessObject.extensionElements?.values) {
                 return;
             }

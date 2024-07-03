@@ -664,18 +664,20 @@ export default {
             this.processDefinition[obj.propertyName][obj.index] = modification.value;
             // this.processDefinition[obj.propertyName].splice(obj.index, 0, modification.value)
         },
-        modificationRemove(modification) {
-            let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath);
-            this.processDefinition[obj.propertyName].splice(obj.index, 1);
-            // {
-            //     action: "replace",
-            //     index: 2,
-            //     targetJsonPath: "$.sequences[2]",
-            //     value: {
-            //         "source": "AcceptLeader",
-            //         "target": "ReturnFromLeave"
-            //     }
-            // }
+        modificationRemove(modification, modeler) {
+            if (modification.value) {
+                const modeling = modeler.get('modeling');
+                const elementRegistry = modeler.get('elementRegistry');
+                console.log('********');
+                console.log(modification);
+                console.log('********');
+                // elementRegistry.get()
+                // let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath);
+                var sequence = elementRegistry.get(modification.value.id);
+                modeling.removeElements([sequence]);
+            }
+
+            
         },
         async afterModelCreated(response) {
             let jsonProcess;
@@ -696,7 +698,7 @@ export default {
             }
         },
 
-        afterGenerationFinished(response) {
+        async afterGenerationFinished(response) {
             let jsonProcess = null;
             if (typeof response === 'string') {
                 jsonProcess = JSON.parse(response);
@@ -759,23 +761,28 @@ export default {
                         });
                     }
                 }
-
+                const store = useBpmnStore();
+                const modeler = store.getModeler;
                 if (unknown.modifications) {
-                    unknown.modifications.forEach((modification) => {
+                    // unknown.modifications.forEach(async (modification) => {
+                    for (let modification of unknown.modifications) {
                         if (modification.action == 'replace') {
                             this.jsonPathReplace(this.processDefinition, modification.targetJsonPath, modification.value);
                             console.log(this.processDefinition);
                             this.bpmn = this.createBpmnXml(this.processDefinition);
                         } else if (modification.action == 'add') {
                             this.modificationAdd(modification);
-                            this.modificationElement(modification);
-                            // console.log(modification)
-                            // this.bpmn = this.createBpmnXml(this.processDefinition);
+                            this.modificationElement(modification, modeler);
+                            let xml = await modeler.saveXML({ format: true, preamble: true });
+                            this.bpmn = xml.xml;
+                            console.log('done');
                         } else if (modification.action == 'delete') {
-                            this.modificationRemove(modification);
-                            this.bpmn = this.createBpmnXml(this.processDefinition);
+                            this.modificationRemove(modification, modeler);
+                            let xml = await modeler.saveXML({ format: true, preamble: true });
+                            this.bpmn = xml.xml;
+                            // this.bpmn = this.createBpmnXml(this.processDefinition);
                         }
-                    });
+                    }
 
                     this.definitionChangeCount++;
                 }
@@ -783,22 +790,84 @@ export default {
 
             this.isChanged = true;
         },
-        modificationElement(modification) {
+        modificationElement(modification, modeler) {
             console.log(modification);
-            let result = { element: null, di: null };
-            const parser = new DOMParser();
-            let elementXML = '<bpmn:userTask id="" name="" role=""></bpmn:userTask>';
-            let element = parser.parseFromString(elementXML, 'application/xml');
-            // const userTask = parser.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'userTask');
-            element.documentElement.setAttribute('id', modification.value.id);
-            element.documentElement.setAttribute('name', modification.value.name);
-            element.documentElement.setAttribute('role', modification.value.role);
+            const moddle = modeler.get('bpmnFactory');
+            const elementFactory = modeler.get('elementFactory');
+            const canvas = modeler.get('canvas');
+            const modeling = modeler.get('modeling');
+            const elementRegistry = modeler.get('elementRegistry');
+            if (modification.targetJsonPath.includes('components')) {
+                // var newElementDi = moddle.create(`bpmn:${modification.value.componentType}`, { text: modification.value.name })
+                // var newElementShape = moddle.create(`bpmndi:BPMNShape`, { text: '' })
+                // newElementShape.bpmnElement = newElementDi
+                // newElementShape.dc = moddle.create(`dc:Bounds`, { x: 0, y: 0, width: 100, height: 100 })
+                // elementFactory
+                var rootElement = canvas.getRootElement();
+                var newElement = elementFactory.createShape({
+                    type: `bpmn:${modification.value.componentType}`,
+                    id: modification.value.id,
+                    x: 0,
+                    y: 0
+                });
+                newElement.businessObject.set('name', modification.value.name);
+                newElement.businessObject.set('id', modification.value.id);
+                modeling.createShape(
+                    newElement,
+                    {
+                        id: modification.value.id,
+                        x: modification.value.x ? modification.value.x : 0,
+                        y: modification.value.y ? modification.value.y : 0
+                    },
+                    rootElement.children[0]
+                );
 
-            let diXML =
-                '<bpmndi:BPMNShape id="" bpmnElement=""><dc:Bounds x="790" y="140" width="100" height="80" /><bpmndi:BPMNLabel /></bpmndi:BPMNShape>';
-            result.element = tmp;
-            result.diagram = tmp.di;
-            return result;
+                this.extendUEngineProperties(newElement.businessObject, modification, modeler);
+            }
+            if (modification.targetJsonPath.includes('sequences')) {
+                var sourceElement = elementRegistry.get(modification.value.source);
+                var targetElement = elementRegistry.get(modification.value.target);
+                var sequenceFlow = elementFactory.createConnection({
+                    type: 'bpmn:SequenceFlow',
+                    source: sourceElement,
+                    target: targetElement
+                });
+                modeling.connect(sourceElement, targetElement);
+            }
+
+            // let result = { element: null, di: null };
+            // const parser = new DOMParser();
+            // let elementXML = '<bpmn:userTask id="" name="" role=""></bpmn:userTask>';
+            // let element = parser.parseFromString(elementXML, 'application/xml');
+            // // const userTask = parser.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'userTask');
+            // element.documentElement.setAttribute('id', modification.value.id);
+            // element.documentElement.setAttribute('name', modification.value.name);
+            // element.documentElement.setAttribute('role', modification.value.role);
+
+            // let diXML =
+            //     '<bpmndi:BPMNShape id="" bpmnElement=""><dc:Bounds x="790" y="140" width="100" height="80" /><bpmndi:BPMNLabel /></bpmndi:BPMNShape>';
+            // result.element = tmp;
+            // result.diagram = tmp.di;
+            // return result;
+        },
+        extendUEngineProperties(businessObject, modification, modeler) {
+            //let businessObject = element.businessObject
+
+            if (businessObject.extensionElements?.values) {
+                return;
+            }
+
+            const bpmnFactory = modeler.get('bpmnFactory');
+
+            const uengineParams = bpmnFactory.create('uengine:Properties', {
+                json: ''
+            });
+
+            uengineParams.json = JSON.stringify(modification.value.spec);
+            const extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
+            extensionElements.get('values').push(uengineParams);
+
+            businessObject.set('extensionElements', extensionElements);
         },
         afterModelStopped(response) {},
         async saveToVectorStore(definition) {

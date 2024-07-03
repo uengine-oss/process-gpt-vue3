@@ -1467,7 +1467,7 @@ export default {
 
                 let event = [];
                 let lanes = [];
-                let activities = [];
+                let components = [];
                 let sequenceFlows = [];
                 let gateways = [];
 
@@ -1493,7 +1493,7 @@ export default {
                             } else {
                                 activityTmp = { ...activityTmp, type: key.replace('bpmn:', ''), process: process.id };
                             }
-                            activities = activities.concat(activityTmp);
+                            components = components.concat(activityTmp);
                         } else if (key.includes('Gateway')) {
                             let gatewayTmp = process[key];
                             if (gatewayTmp instanceof Array) {
@@ -1550,8 +1550,8 @@ export default {
                             };
                         })
                     ],
-                    activities: [
-                        ...activities.map((activity) => {
+                    components: [
+                        ...components.map((activity) => {
                             try {
                                 let task = {};
                                 task.name = activity.name;
@@ -1638,6 +1638,7 @@ export default {
                         }))
                     ],
                     sequences: sequenceFlows.map((flow) => ({
+                        id: flow.id,
                         source: flow.sourceRef,
                         target: flow.targetRef,
                         condition:

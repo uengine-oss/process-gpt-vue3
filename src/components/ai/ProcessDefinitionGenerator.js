@@ -26,7 +26,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
             결과는 프로세스에 대한 설명과 함께 valid 한 json 으로 표현해줘. markdown 으로, three backticks 로 감싸. 예를 들면 :
             checkPoints가 없으면 비어있는 Array로 생성해줘.
             activity에 있는 role이 roles에 없으면 추가적으로 생성해줘.
-            
+            절대로 결과로 나오는 JSON 내부에 주석이 있으면 안돼.
+
             프로세스에 대한 설명:
             "sequences" and "events" are items that must be created no matter what.
             In "events", "Start Event" and "End Event" must be created.
@@ -92,7 +93,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                  "type": "Text" | "Number" | "Date" | "Boolean" | "Location" | "Document" | "Picture",
               }],
               "components" :
-              [ {
+              [{
                   "componentType" :"Gateway",
                   "id": "gateway_id",
                   "name": "gateway name",
@@ -168,9 +169,14 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                2.  액티비티, 게이트웨이, 이벤트 추가인 경우는 시퀀스도 꼭 연결해줘.
                3.  액티비티, 게이트웨이, 이벤트가 삭제되는 경우는 나와 연결된 앞뒤 액티비티 간의 시퀀스도 삭제하되, 삭제된 액티비티의 이전 단계와 다음단계의 액티비티를 시퀀스로 다시 연결해줘.
                4.  생성될 모든 값들은 기존 프로세스의 정보를 참고하여 생성해야한다.
-               5.  추가되는 액티비티의 이전 단계 액티비티의 id도 beforeActivity에 반드시 넣어줘.
+               5.  추가되는 액티비티의 이전 단계 액티비티의 id도 beforeActivity에 반드시 넣어.
                6.  추가될 액티비티, 게이트웨이의 "role" 은 기존에 존재하는 "roles" 에 존재하는 role 중 하나를 사용해야한다. "roles" 에 존재하지 않는 role 을 사용할 수는 없다.
-               7.  이름이 들어가는것은 반드시 전부 한글로 할 것
+               7.  기존 액티비티들의 위치정보는 바뀌면 안돼.
+               8.  추가될 액티비티, 게이트웨이의 위치는 프로세스의 위치와 크기에 대한 설명을 참고하여 기존 액티비티의 위치를 참고하여 생성해줘.
+               9.  이름이 들어가는것은 반드시 전부 한글로 할 것
+               10. 절대로 JSON 내부에 주석이 있으면 안돼.
+               11. 중간에 액티비티가 추가된다면, 추가된 액티비티의 앞뒤 액티비티 간의 Sequence도 반드시 삭제해.
+               12. Sequence는 replace가 없어. add 혹은 delete 해야해.
             \`\`\`
               { 
                 "modifications": [
@@ -178,7 +184,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   {
                     "action": "replace" | "add" | "delete",
                     "targetJsonPath": "$.activities[?(@.id=='request_vacation')]", // action 이 add 인 경우 "$.activities" 만 리턴. e.g. "$.sequences", action 이 add 가 아닌 경우 "$.activities[?(@.id=='request_vacation')]" 와 같이 수정, 삭제될 Path 의 상위 목록("activities", "sequences" 등...)을 참고하여 "$.activities" 뒤에 수정, 삭제될 값을 찾을 수 있는 필터("[?(@.id=='request_vacation')]") 를 반드시 포함하여 리턴.  // e.g. "$.sequences[?(@.source=='leave_request_activity' && @.target=='leave_approval_activity')].condition"
-                    "value": {...}, //delete 인 경우는 불필요, replace의 경우 기존 value에서 변경된 부분을 수정하여 생략 하지 않고 value로 리턴
+                    "value": {...}, //delete 인 경우에는 삭제 될 Sequence의 id를 {"id": "삭제 될 Sequence의 id"} 형식으로 리턴, replace의 경우 기존 value에서 변경된 부분을 수정하여 생략 하지 않고 value로 리턴
                     "beforeActivity": "" // 추가 되거나 변경 되는 Activity의 이전 단계 Activity의 id
                   }   
                 ]
@@ -192,26 +198,24 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
             ${externalSystems}
             \`\`\`
 
-            
-
-            외부 시스템과 연결 되는 Element는 MessageIntermediateThrowEvent 로 설정해줘.
-            MessageIntermediateThrowEvent의 구조는 아래와 같아.
+            외부 시스템과 연결 되는 Element는 ServiceTask 로 설정해줘.
+            ServiceTask 구조는 아래와 같아.
 
             \`\`\`
             {
                 "id": "event_id",
                 "name": "event name",
-                "type": "MessageIntermediateThrowEvent",
+                "componentType": "ServiceTask",
                 "description": "프로세스의 시작, 종료 또는 중간 이벤트 설명",
                 "trigger": "이벤트 트리거 조건 (if applicable)",
                 "participants": "연결 될 Participant 의 이름",
                 "spec": {
-                    "systemName": "사용 할 시스템"
-                    "methodsType": "사용 될 실제 Methods Type",
-                    "requestBody": {
+                    "systemName": "사용 할 시스템",
+                    "method": "사용 될 실제 Methods Type을 무조건 대문자로 작성해줘.",
+                    "inputPayloadTemplate": {
                         "key": "value"
                     },
-                    "path": "호출 할 API Path"
+                    "uriTemplate": "호출 할 API 전체 경로"
                 }
             }
             \`\`\`
