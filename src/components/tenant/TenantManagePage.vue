@@ -5,11 +5,11 @@
         </v-row>
 
         <v-row no-gutters justify="center" class="mt-7">
-            <h1 class="text-grey200" style="font-size: 40px;">테넌트 관리</h1>
+            <h1 class="text-grey200" style="font-size: 40px;">회사 관리</h1>
         </v-row>
         <v-row no-gutters justify="center">
             <p class="font-weight-semibold text-grey100 text-h5">
-                테넌트를 관리하거나 선택한 테넌트로 이동합니다.
+                새로운 회사를 생성하거나 선택한 회사가 관리하는 페이지로 이동합니다.
             </p>
         </v-row>
 
@@ -29,7 +29,7 @@
                         <v-icon style="color: green;" size="24">mdi-plus</v-icon>
                     </v-col>
                     <v-col cols="11">
-                        새로운 테넌트 생성
+                        새로운 회사 생성
                     </v-col>
                 </v-row>
             </v-card>
@@ -87,7 +87,7 @@
     <v-dialog v-model="deleteDialog" max-width="500">
         <v-card>
             <v-card-text>
-                테넌트를 삭제하시겠습니까?
+                회사를 삭제하시겠습니까?
             </v-card-text>
             <v-card-actions class="justify-center pt-0">
                 <v-btn color="primary" variant="flat" @click="deleteTenant(tenantIdToDelete); deleteDialog = false">삭제</v-btn>
@@ -139,7 +139,7 @@ export default {
 
                     me.tenantInfos = me.tenantInfos.filter(tenantInfo => tenantInfo.id !== tenantId)
                 },
-                successMsg: '테넌트가 정상적으로 삭제되었습니다.'
+                successMsg: '회사가 정상적으로 삭제되었습니다.'
             });
         },
         

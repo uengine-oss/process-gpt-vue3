@@ -6,7 +6,7 @@
         </v-icon>
 
         <v-row no-gutters justify="center">
-            <h1 class="text-grey200">테넌트 편집</h1>
+            <h1 class="text-grey200">회사 편집</h1>
         </v-row>
         <!-- <v-row no-gutters justify="center">
             <p class="font-weight-semibold text-grey100 text-h5">
@@ -75,7 +75,7 @@ export default {
 
                     await me.$router.push('/tenant/manage');
                 },
-                successMsg: '테넌트가 정상적으로 수정되었습니다.'
+                successMsg: '회사가 정상적으로 수정되었습니다.'
             });
         }
     },
