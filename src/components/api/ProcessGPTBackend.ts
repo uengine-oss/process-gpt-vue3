@@ -205,7 +205,6 @@ class ProcessGPTBackend implements Backend {
                 }
             }
 
-            let newMessage;
             if (!input.answer) {
                 input.answer = "";
             }
@@ -231,39 +230,16 @@ class ProcessGPTBackend implements Backend {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 }
-            }).then(async res => {
+            }).then(res => {
                 if (res.data) {
                     const data = JSON.parse(res.data);
                     if (data) {
                         result = data;
-                        if (input.answer === "" && result.instanceId) {
-                            newMessage = {
-                                role: 'system',
-                                timestamp: Date.now(),
-                                content: `프로세스 '${defId}' 이/가 실행되었습니다.\n\n${result.description}`,
-                                jsonContent: result
-                            }
-                            await this.updateInstanceChat(result.instanceId, newMessage);
-                        } else {
-                            newMessage = {
-                                role: 'system',
-                                timestamp: Date.now(),
-                                content: result.description || "",
-                                jsonContent: result
-                            }
-                            await this.updateInstanceChat(result.instanceId, newMessage);
-                        }
                     }
                 }
             })
-            .catch(async error => {
+            .catch(error => {
                 result = error
-                newMessage = {
-                    role: 'system',
-                    timestamp: Date.now(),
-                    content: error.detail || error,
-                }
-                await this.updateInstanceChat(input.process_instance_id, newMessage)
                 // throw new Error(error && error.detail ? error.detail : error);
             });
 
@@ -297,6 +273,16 @@ class ProcessGPTBackend implements Backend {
             return data;
         } catch (e) {
             this.checkDBConnection();
+            //@ts-ignore
+            throw new Error(e.message);
+        }
+    }
+
+    async getAllInstanceList() {
+        try {
+            const list = await storage.list('proc_inst');
+            return list;
+        } catch (e) {
             //@ts-ignore
             throw new Error(e.message);
         }
@@ -451,9 +437,14 @@ class ProcessGPTBackend implements Backend {
                 }
                 await storage.putObject('todolist', putObj);
             } else { // instance workItem
-                result = await this.putWorkItemComplete(taskId, {"status_to_change": workItem.status});
+                const answer = {
+                    "activity_id": workItem.tracingTag || workItem.title,
+                    "status_to_change": workItem.status,
+                }
+                result = await this.putWorkItemComplete(taskId, answer);
                 // 다음 액티비티로 넘어가지 못한 경우
                 if (result.cannotProceedErrors && result.cannotProceedErrors.length > 0) {
+                    result.errors = result.cannotProceedErrors;
                     const dataNotExist = result.cannotProceedErrors.find((item: any) => item.type === 'DATA_FIELD_NOT_EXIST');
                     if (!dataNotExist) {
                         throw new Error(result.cannotProceedErrors.map((item: any) => item.reason).join('\n'));
@@ -734,14 +725,6 @@ class ProcessGPTBackend implements Backend {
             const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
             const userInfo = await storage.getUserInfo();
             
-            const newMessage = {
-                role: 'system',
-                timestamp: Date.now(),
-                content: `액티비티 '${workItem.activity_id}' 을/를 실행합니다.`,
-                jsonContent: inputData
-            }
-            await this.updateInstanceChat(workItem.proc_inst_id, newMessage);
-    
             const input = {
                 answer: JSON.stringify(inputData),
                 process_instance_id: workItem.proc_inst_id,
@@ -759,35 +742,16 @@ class ProcessGPTBackend implements Backend {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 }
-            }).then(async res => {
+            }).then(res => {
                 if (res.data) {
                     const data = JSON.parse(res.data);
                     if (data) {
                         result = data;
-                        const newMessage = {
-                            role: 'system',
-                            timestamp: Date.now(),
-                            content: '',
-                            jsonContent: data
-                        }
-                        if (data.cannotProceedErrors && data.cannotProceedErrors.length > 0) {
-                            newMessage.content = data.cannotProceedErrors.map((item: any) => item.reason).join('\n');
-                        } else {
-                            newMessage.content = data.description;
-                        }
-                        await this.updateInstanceChat(data.instanceId, newMessage);
                     }
                 }
             })
-            .catch(async error => {
-                result = error
-                const newMessage = {
-                    role: 'system',
-                    timestamp: Date.now(),
-                    content: error.detail || error,
-                }
-                await this.updateInstanceChat(workItem.proc_inst_id, newMessage)
-                // throw new Error(error && error.detail ? error.detail : error);
+            .catch(error => {
+                result = error;
             });
     
             return result;
