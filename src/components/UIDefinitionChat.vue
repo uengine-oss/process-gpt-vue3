@@ -761,6 +761,11 @@ export default {
                             }
                         }
                     }
+
+                    // AI가 ">\"와 같은 이상한 응답을 하는 경우, 이를 제거하기 위해서
+                    fragmentToParse = fragmentToParse.replace(/>\\n\\/g, '>');
+                    fragmentToParse = fragmentToParse.replace(/>\\n/g, '>');
+                    fragmentToParse = fragmentToParse.replace(/>\\/g, '>');
                 } catch (error) {
                     console.log('### 유효 문자열을 JSON에 적합한 문자열로 변환시키는 과정에서 오류 발생! ###');
                     console.log(error);

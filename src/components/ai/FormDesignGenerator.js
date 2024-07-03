@@ -21,7 +21,7 @@ export default class FormDesignGenerator extends AIGenerator{
             (componentInfo) => `{태그: '${componentInfo.tag}', 목적: ${componentInfo.purpose}${(componentInfo.limit) ? `, 주의사항: ${componentInfo.limit}` : ""}}`)
             .join(",") + "]"
         
-        const examplePromptStr = (promptSnippetData.examples && (promptSnippetData.examples.length > 0)) ? ("* 예시\n" + 
+        const examplePromptStr = (promptSnippetData.examples && (promptSnippetData.examples.length > 0)) ? ("* 예시\n- 이 설명은 예시일 뿐이며, 실제 출력 내용은 사용자가 전달한 정보를 기반으로 생성되는 것이니, 주의해야 해.\n" + 
           promptSnippetData.examples.map((example) => `- 입력: ${example.input}\n- 출력: ${example.output}`).join("\n")) : ""
 
         
