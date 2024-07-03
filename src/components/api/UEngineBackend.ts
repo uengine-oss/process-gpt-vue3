@@ -465,7 +465,7 @@ class UEngineBackend implements Backend {
 
     async getSystemList() {
         const response = await axiosInstance.get(`/definition/system`);
-        if(response.data.length > 0) return response.data;
+        if(response.data._embedded.definitions > 0) return response.data._embedded.definitions;
         return null;
     }
     // async getSystemList() {
