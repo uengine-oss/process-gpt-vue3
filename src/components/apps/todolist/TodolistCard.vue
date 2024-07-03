@@ -73,11 +73,11 @@ export default {
     mounted() {
         this.mode = window.$mode;
     },
-    created() {
-        this.loadToDo();
-        this.loadCompletedWorkList();
-        // this.loadInProgress();
-        // this.loadPending();
+    async created() {
+        await Promise.all([
+            this.loadToDo(),
+            this.loadCompletedWorkList()
+        ]);
     },
     methods: {
         executeTask(item) {
@@ -100,9 +100,6 @@ export default {
                             me.todolist.find(x => x.id == 'PENDING').tasks.push(item);
                         } 
                     })
-                    // me.todolist.find(x => x.id == 'TODO').tasks.push(...worklist);
-                    // me.todolist.find(x => x.id == 'IN_PROGRESS').tasks.push(...worklist);
-                    // me.todolist.find(x => x.id == 'PENDING').tasks.push(...worklist);
                 }
             })
         },
@@ -135,28 +132,6 @@ export default {
                 }
             })
         },
-        // loadInProgress() {
-        //     var me = this
-        //     me.$try({
-        //         context: me,
-        //         action: async () => {
-        //             let back = BackendFactory.createBackend();
-        //             let worklist = await back.getInProgressList()
-        //             
-        //         }
-        //     })
-        // },
-        // loadPending() {
-        //     var me = this
-        //     me.$try({
-        //         context: me,
-        //         action: async () => {
-        //             let back = BackendFactory.createBackend();
-        //             let worklist = await back.getPendingList()
-        //             
-        //         }
-        //     })
-        // },
         loadWorkItemByInstId(instId) {
             const todoTasks = this.todolist.find(item => item.id === 'TODO').tasks;
             const instanceIds = todoTasks.map(task => task.instId);

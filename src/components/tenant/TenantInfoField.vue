@@ -128,6 +128,30 @@
                 ref="tenantId"
             ></VTextField>
 
+            <v-sheet class="mb-5" :color="color" tile>
+                <div style="margin-top: 120px;" class="d-flex flex-column align-center">
+                    <h2 class="text-grey200">{{ guideSlides[13].title }}</h2>
+                    <img :src="guideSlides[12].image" style="width: 200%; margin-top: 20px;"/>
+                    <img :src="guideSlides[13].image" style="width: 200%; margin-top: 20px;"/>
+                    <div class="text-grey100" style="margin-top: 20px; text-align: center;" v-html="guideSlides[13].description"></div>
+                </div>
+            </v-sheet>
+
+            <v-label class="text-subtitle-1 font-weight-medium pb-2">Site URL</v-label>
+            <div class="d-flex">
+                <VTextField
+                    :value="`${value.id}.process-gpt.io`" 
+                    type="text"
+                    disabled
+                ></VTextField>
+                <v-tooltip text="Copy">
+                    <template v-slot:activator="{ props }">
+                        <v-btn v-bind="props" icon variant="text" @click="copyToClipboard">
+                            <v-icon>mdi-content-copy</v-icon>
+                        </v-btn>
+                    </template>
+                </v-tooltip>
+            </div>
 
             <!-- <v-label class="text-subtitle-1 font-weight-medium pb-2">
                 {{ $t('createAdminAccount.supabaseConnectionInfo') }}
@@ -153,6 +177,8 @@ import help_image_8 from '@/assets/images/tenant/help/8.png';
 import help_image_9 from '@/assets/images/tenant/help/9.png';
 import help_image_10 from '@/assets/images/tenant/help/10.png';
 import help_image_11 from '@/assets/images/tenant/help/11.png';
+import help_image_13 from '@/assets/images/tenant/help/13.png';
+import help_image_14 from '@/assets/images/tenant/help/14.png';
 
 export default {
     name: 'TenantInfoField',
@@ -237,6 +263,14 @@ export default {
             {
                 title: 'STEP 4. 사용할 테넌트명(회사명) 입력하기',
                 description: '1. 사용할 테넌트명을 아래의 ID 입력창에 입력하고 생성하기 버튼을 클릭해서 테넌트를 생성합니다.<br>입력한 테넌트명은 서브도메인으로 사용됩니다. <br>e.g. { 입력한 테넌트명 }.process-gpt.io'
+            },
+            {
+                image: help_image_13,
+            },
+            {
+                image: help_image_14,
+                title: 'STEP 5. Supabase Site URL 설정하기',
+                description: '1. Supabase 의 Authentication 메뉴를 선택하고 URL Configuration 를 클릭합니다. <br> 2.STEP 4 에서 입력한 테넌트명이 포함된 Site URL 을 복사하여 Site URL 입력란에 입력하고 저장합니다.'
             }
         ]
     }),
@@ -313,6 +347,15 @@ export default {
                     throw new Error(`'${this.value.id}'는 이미 존재하는 테넌트 ID입니다. 다른 ID를 사용해주세요.`)
                 }
             }
+        },
+
+        copyToClipboard() {
+            const textToCopy = `${this.value.id}.process-gpt.io`;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                this.$emit('showSnackbar', 'Copied to clipboard');
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
         }
     }
 };
