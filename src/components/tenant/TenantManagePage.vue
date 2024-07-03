@@ -153,6 +153,17 @@ export default {
 
     async created() {
         let me = this
+        const checkIsLogin = async () => {
+            const isLogin = localStorage.getItem("accessToken") ? true : false
+            if(!isLogin) {
+                alert("로그인이 필요합니다.")
+                await me.$router.push('/auth/login')
+                return false
+            }
+            return true
+        }
+
+        if(!(await checkIsLogin())) return
         me.$try({
             context: me,
             action: async () => {
