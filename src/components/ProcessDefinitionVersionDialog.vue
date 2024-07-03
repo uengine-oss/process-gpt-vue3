@@ -107,7 +107,7 @@ export default {
                 action: async () => {
                     if (me.process && me.process.processDefinitionId) {
                         me.isNew = false
-                        var bpmn = await backend.getRawDefinition(me.process.processDefinitionId, { type: 'bpmn' })
+                        var bpmn = me.process.processDefinitionId != 'Unknown'? await backend.getRawDefinition(me.process.processDefinitionId, { type: 'bpmn' }):null;
                         if(bpmn) {
                             if(me.useLock) {
                                 // GPT
