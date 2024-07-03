@@ -1,5 +1,9 @@
 <template>
-    <v-card elevation="10" style="background-color: rgba(255, 255, 255, 0)" :class="{ 'is-deleted': isDeleted, 'user-left-part': !isAdmin }">
+    <v-card
+        elevation="10"
+        style="background-color: rgba(255, 255, 255, 0)"
+        :class="{ 'is-deleted': isDeleted, 'user-left-part': !isAdmin }"
+    >
         <AppBaseCard>
             <template v-slot:leftpart>
                 <h5 v-if="!isAdmin" class="text-h5 font-weight-semibold pa-3">{{ projectName }}</h5>
@@ -314,7 +318,7 @@ export default {
     },
     data: () => ({
         isXmlMode: false,
-        prompt: "",
+        prompt: '',
         changedXML: '',
         path: 'proc_def',
         isChanged: false,
@@ -383,7 +387,7 @@ export default {
             return path;
         },
         isAdmin() {
-            const isAdmin = localStorage.getItem("isAdmin") === "true";
+            const isAdmin = localStorage.getItem('isAdmin') === 'true';
             return isAdmin;
         }
     },
@@ -562,7 +566,7 @@ export default {
             const me = this;
             try {
                 const externalSystems = await backend.getSystemList();
-                if(externalSystems) {
+                if (externalSystems) {
                     externalSystems.forEach(async (externalSystem) => {
                         const system = await backend.getSystem(externalSystem.name.replace('.json', ''));
                         me.externalSystems.push(system);
@@ -590,11 +594,9 @@ export default {
                         }
                         me.checkedLock(lastPath);
                     } else {
-                        me.processDefinition = {
-                            processDefinitionId: lastPath,
-                            processDefinitionName: lastPath
-                        };
                         me.processDefinition = await me.convertXMLToJSON(me.bpmn);
+                        me.processDefinition.processDefinitionId = lastPath;
+                        me.processDefinition.processDefinitionName = lastPath;
                     }
                 } else if (lastPath == 'chat') {
                     // me.processDefinition = null;
@@ -624,16 +626,16 @@ export default {
                 }
                 me.processDefinitionMap = await backend.getProcessDefinitionMap();
             } catch (e) {
-                console.log(e)
+                console.log(e);
                 alert(e);
             }
         },
 
         beforeSendMessage(newMessage) {
-            if(this.processDefinitionMap){
+            if (this.processDefinitionMap) {
                 this.generator.setProcessDefinitionMap(this.processDefinitionMap);
             }
-            if(this.processDefinition){
+            if (this.processDefinition) {
                 this.generator.setProcessDefinition(this.processDefinition);
             }
             this.sendMessage(newMessage);
@@ -706,46 +708,58 @@ export default {
                 let unknown = jsonProcess;
 
                 if (unknown.megaProcessId && this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
-                    if (!this.processDefinitionMap.mega_proc_list.some(megaProcess => megaProcess.name == unknown.megaProcessId)) {
+                    if (!this.processDefinitionMap.mega_proc_list.some((megaProcess) => megaProcess.name == unknown.megaProcessId)) {
                         this.processDefinitionMap.mega_proc_list.push({
                             name: unknown.megaProcessId,
                             id: unknown.megaProcessId,
-                            major_proc_list: [{
-                                name: unknown.majorProcessId,
-                                id: unknown.majorProcessId,
-                                sub_proc_list: [{
-                                    id: unknown.processDefinitionId,
-                                    name: unknown.processDefinitionName
-                                }]
-                            }]
-                        })
+                            major_proc_list: [
+                                {
+                                    name: unknown.majorProcessId,
+                                    id: unknown.majorProcessId,
+                                    sub_proc_list: [
+                                        {
+                                            id: unknown.processDefinitionId,
+                                            name: unknown.processDefinitionName
+                                        }
+                                    ]
+                                }
+                            ]
+                        });
                     }
                     if (unknown.majorProcessId) {
-                        this.processDefinitionMap.mega_proc_list.forEach(megaProcess => {
+                        this.processDefinitionMap.mega_proc_list.forEach((megaProcess) => {
                             if (megaProcess.name == unknown.megaProcess) {
-                                if (megaProcess.major_proc_list.some(majorProcess => majorProcess.name == unknown.majorProcessId)) {
-                                    const idx = megaProcess.major_proc_list.findIndex(majorProcess => majorProcess.name == unknown.majorProcessId);
-                                    if (!megaProcess.major_proc_list[idx].sub_proc_list.some(subProcess => subProcess.id == unknown.processDefinitionId)) {
+                                if (megaProcess.major_proc_list.some((majorProcess) => majorProcess.name == unknown.majorProcessId)) {
+                                    const idx = megaProcess.major_proc_list.findIndex(
+                                        (majorProcess) => majorProcess.name == unknown.majorProcessId
+                                    );
+                                    if (
+                                        !megaProcess.major_proc_list[idx].sub_proc_list.some(
+                                            (subProcess) => subProcess.id == unknown.processDefinitionId
+                                        )
+                                    ) {
                                         megaProcess.major_proc_list[idx].sub_proc_list.push({
                                             id: unknown.processDefinitionId,
                                             name: unknown.processDefinitionName
-                                        })
+                                        });
                                     }
                                 } else {
                                     megaProcess.major_proc_list.push({
                                         name: unknown.majorProcessId,
                                         id: unknown.majorProcessId,
-                                        sub_proc_list: [{
-                                            id: unknown.processDefinitionId,
-                                            name: unknown.processDefinitionName
-                                        }]
-                                    })
+                                        sub_proc_list: [
+                                            {
+                                                id: unknown.processDefinitionId,
+                                                name: unknown.processDefinitionName
+                                            }
+                                        ]
+                                    });
                                 }
                             }
-                        })
+                        });
                     }
                 }
-                
+
                 if (unknown.modifications) {
                     unknown.modifications.forEach((modification) => {
                         if (modification.action == 'replace') {
@@ -754,7 +768,7 @@ export default {
                             this.bpmn = this.createBpmnXml(this.processDefinition);
                         } else if (modification.action == 'add') {
                             this.modificationAdd(modification);
-                            this.modificationElement(modification)
+                            this.modificationElement(modification);
                             // console.log(modification)
                             // this.bpmn = this.createBpmnXml(this.processDefinition);
                         } else if (modification.action == 'delete') {
@@ -770,17 +784,18 @@ export default {
             this.isChanged = true;
         },
         modificationElement(modification) {
-            console.log(modification)
-            let result = {element: null, di: null}
+            console.log(modification);
+            let result = { element: null, di: null };
             const parser = new DOMParser();
-            let elementXML = '<bpmn:userTask id="" name="" role=""></bpmn:userTask>'
+            let elementXML = '<bpmn:userTask id="" name="" role=""></bpmn:userTask>';
             let element = parser.parseFromString(elementXML, 'application/xml');
             // const userTask = parser.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'userTask');
             element.documentElement.setAttribute('id', modification.value.id);
             element.documentElement.setAttribute('name', modification.value.name);
             element.documentElement.setAttribute('role', modification.value.role);
 
-            let diXML = '<bpmndi:BPMNShape id="" bpmnElement=""><dc:Bounds x="790" y="140" width="100" height="80" /><bpmndi:BPMNLabel /></bpmndi:BPMNShape>'
+            let diXML =
+                '<bpmndi:BPMNShape id="" bpmnElement=""><dc:Bounds x="790" y="140" width="100" height="80" /><bpmndi:BPMNLabel /></bpmndi:BPMNShape>';
             result.element = tmp;
             result.diagram = tmp.di;
             return result;
@@ -816,7 +831,7 @@ export default {
                 }
             });
             return componentByName;
-        },
+        }
     }
 };
 </script>
@@ -858,4 +873,3 @@ export default {
     z-index: 10;
 }
 </style>
-
