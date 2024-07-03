@@ -6,6 +6,7 @@ import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { encodingForModel } from "js-tiktoken";
 import _ from 'lodash';
 import GeneratorAgent from "./GeneratorAgent.vue";
+import JSON5 from 'json5';
 
 export default {
     mixins: [GeneratorAgent],
@@ -665,7 +666,7 @@ export default {
 
         extractJSON(inputString, checkFunction) {
             try {
-                JSON.parse(inputString); // if no problem, just return the whole thing
+                JSON5.parse(inputString); // if no problem, just return the whole thing
                 return inputString;
             } catch (e) {}
 
