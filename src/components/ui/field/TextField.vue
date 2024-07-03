@@ -48,7 +48,7 @@ export default {
                 },
                 commonSettingInfos["localDisabled"]
             ],
-            id: crypto.randomUUID()
+            id: (Date.now().toString() + Math.random().toString(36).substring(2, 5))
         };
     },
 

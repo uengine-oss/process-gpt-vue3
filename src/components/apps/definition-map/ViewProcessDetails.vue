@@ -2,7 +2,8 @@
     <div v-if="onLoad">
         <!-- Mega Process -->
         <div class="d-flex align-items-center">
-            <v-card class="d-flex justify-center align-center pa-3 mb-3 bg-lightwarning details-title-card"
+            <v-card class="d-flex justify-center align-center pa-3 mb-3 details-title-card"
+                color="primary"
                 elevation="10"
             >
                 <div class="d-flex flex-column justify-content-center align-items-center">
@@ -16,9 +17,10 @@
                 <div class="line flex-grow-1"></div>
                 <div class="dot"></div>
             </div>
-            <v-card class="d-flex align-center pa-3 mb-3 bg-lightwarning"
+            <v-card class="d-flex align-center pa-3 mb-3"
                 elevation="10"
                 style="border-radius: 10px !important;"
+                color="primary"
             >
                 <h6 class="text-h6 font-weight-semibold text-center">{{ filteredProcess.name }}</h6>
                 <!-- <div class="ml-auto">

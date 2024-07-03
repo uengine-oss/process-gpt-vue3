@@ -6,7 +6,7 @@ import * as directives from 'vuetify/directives';
 //DragScroll
 import { VueDraggableNext } from 'vue-draggable-next'
 //Data tables
-// import { VDataTable } from 'vuetify/labs/VDataTable';
+// import { VDataTable } from 'vuetify/components/VDataTable';
 import { BLUE_THEME, AQUA_THEME, PURPLE_THEME, GREEN_THEME, CYAN_THEME, ORANGE_THEME } from '@/theme/LightTheme';
 import {
     DARK_BLUE_THEME,
@@ -46,6 +46,11 @@ export default createVuetify({
             rounded: 'xl'
         },
         VTextField: {
+            variant: 'outlined',
+            density: 'comfortable',
+            color: 'primary'
+        },
+        VStepper: {
             variant: 'outlined',
             density: 'comfortable',
             color: 'primary'

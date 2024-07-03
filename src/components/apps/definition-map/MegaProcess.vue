@@ -1,6 +1,6 @@
 <template>
     <div class="w-100" @mouseover="hover = true" @mouseleave="hover = false">
-        <v-card class="align-center pa-3 mb-3 bg-lightwarning" elevation="10" style="border-radius: 10px !important;"
+        <v-card class="align-center pa-3 mb-3" color="primary" elevation="10" style="border-radius: 10px !important;"
             @click="goProcess(value.name, 'mega')">
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-h6 font-weight-semibold">
                 <v-row class="ma-0 pa-0">

@@ -422,6 +422,16 @@ export default {
 
 
       onInitComponent: function (comp) {
+        const getUUID = () => {
+          const s4 = () => {
+            return Math.floor((1 + Math.random()) * 0x10000)
+            .toString(16)
+            .substring(1);
+          }
+
+          return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4()
+        }
+
         window.mashup.onchangeKEditor(comp, 'onInitComponent');
 
         
@@ -438,7 +448,7 @@ export default {
               const renderedComponents = window.mashup.kEditor[0].children[0].querySelectorAll(`div[id='${prevVueRenderId}']`)
               if(renderedComponents.length == 2) {
                 let htmlToRender = window.mashup.kEditorContentToHtml(renderedComponents[0].outerHTML, false)
-                const newVueRenderId = `vuemount_${crypto.randomUUID()}`
+                const newVueRenderId = `vuemount_${getUUID()}`
                 htmlToRender = htmlToRender.replace(prevVueRenderId, newVueRenderId)
                 comp[0].querySelector(".keditor-component-content").innerHTML = htmlToRender
 

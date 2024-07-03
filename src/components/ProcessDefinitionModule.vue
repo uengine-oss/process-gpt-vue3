@@ -975,6 +975,11 @@ export default {
 
                 const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
                 const result = await parser.parseStringPromise(xmlString);
+                var processDefinitionId = 'Unknown';
+                if(this.fullPath) {
+                    processDefinitionId = this.fullPath;
+                }
+
                 function ensureArray(item) {
                     return Array.isArray(item) ? item : item ? [item] : [];
                 }
@@ -1047,8 +1052,8 @@ export default {
                 }
 
                 const jsonData = {
-                    processDefinitionName: 'Unknown',
-                    processDefinitionId: 'Unknown',
+                    processDefinitionName: processDefinitionId,
+                    processDefinitionId: processDefinitionId,
                     description: 'process.description',
                     data: data,
                     roles: lanes.map((lane) => ({
