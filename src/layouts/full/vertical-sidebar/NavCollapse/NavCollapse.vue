@@ -25,7 +25,8 @@ const getChild = async (subitem, i) => {
     let menu = [];
     res.forEach((el) => {
         var obj = {
-            title: el.name.split('.')[0]
+            title: el.name.split('.')[0],
+            type: el.name.split('.')[1]
         };
 
         if (el.directory) {

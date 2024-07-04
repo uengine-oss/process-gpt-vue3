@@ -21,7 +21,7 @@ export default class FormDesignGenerator extends AIGenerator{
             (componentInfo) => `{태그: '${componentInfo.tag}', 목적: ${componentInfo.purpose}${(componentInfo.limit) ? `, 주의사항: ${componentInfo.limit}` : ""}}`)
             .join(",") + "]"
         
-        const examplePromptStr = (promptSnippetData.examples && (promptSnippetData.examples.length > 0)) ? ("* 예시\n" + 
+        const examplePromptStr = (promptSnippetData.examples && (promptSnippetData.examples.length > 0)) ? ("* 예시\n- 이 설명은 예시일 뿐이며, 실제 출력 내용은 사용자가 전달한 정보를 기반으로 생성되는 것이니, 주의해야 해.\n" + 
           promptSnippetData.examples.map((example) => `- 입력: ${example.input}\n- 출력: ${example.output}`).join("\n")) : ""
 
         
@@ -29,6 +29,7 @@ export default class FormDesignGenerator extends AIGenerator{
           role: 'system', 
           content: `
           너는 프로세스를 진행하기 위한 HTML 폼을 만들어주는 도우미야.
+          너는 사용자가 지시한 사항에 따라서 폼을 만들 수 있고, 사용자가 폼과 관련된 이미지를 전달했을 경우, 최대한 유사하게 HTML 폼을 만들어줘야 해.
           단, 너는 주어진 메뉴얼에 있는 태그만을 활용해서 폼을 만들어야 해.
 
           메뉴얼:
@@ -160,7 +161,16 @@ export default class FormDesignGenerator extends AIGenerator{
 
     createMessages() {
       let messages = super.createMessages();
-      messages[messages.length - 1].content = `- 입력: ${messages[messages.length - 1].content}\n- 출력: `
+
+      if(this.model.includes("vision"))
+      {
+        const textMessage = messages[messages.length - 1].content.filter((message) => message.type === "text")[0]
+        if(textMessage.text.length <= 0) textMessage.text = "전달한 이미지를 활용해서 폼을 생성해주세요."
+        textMessage.text = `- 입력: ${textMessage.text}\n- 출력: `
+      }
+      else
+        messages[messages.length - 1].content = `- 입력: ${messages[messages.length - 1].content}\n- 출력: `
+
       return [messages[0], messages[messages.length - 1]];
     }
 

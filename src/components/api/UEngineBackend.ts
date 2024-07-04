@@ -410,6 +410,11 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
+    async getAllInstanceList() {
+        const response = await axiosInstance.get(`/instances/search/findAll`);
+        return response.data._embedded.instances;
+    }
+
     // Running Instance API
     async getInstanceList() {
         // return [];
@@ -441,6 +446,9 @@ class UEngineBackend implements Backend {
 
     async getDryRunInstance(defPath: String){
         const response = await axiosInstance.get(`/dry-run/${defPath}`);
+        // const response = await axiosInstance.get(encodeURI(`/dry-run/${defPath}`));
+        // const response = await axiosInstance.get(encodeURI(`/dry-run/${encodeURIComponent(defPath.toString())}`));
+        
         if (!response.data) return null;
         return response.data;
     }
@@ -457,8 +465,13 @@ class UEngineBackend implements Backend {
 
     async getSystemList() {
         const response = await axiosInstance.get(`/definition/system`);
-        return response.data._embedded.definitions;
+        if(response.data._embedded.definitions.length > 0) return response.data._embedded.definitions;
+        return null;
     }
+    // async getSystemList() {
+    //     const response = await axiosInstance.get(`/definition/system`);
+    //     return response.data._embedded.definitions;
+    // }
 
     async getSystem(systemId: String) {
         const response = await axiosInstance.get(`/definition/system/${systemId}`);

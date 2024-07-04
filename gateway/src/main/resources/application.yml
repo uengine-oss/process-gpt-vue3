@@ -7,7 +7,7 @@ server:
 
 keycloak-client:
   server-url: http://localhost:9090
-  realm: uengine
+  realm: uengine6
 
 spring:
   config:

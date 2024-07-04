@@ -11,18 +11,18 @@
                         rounded
                         density="comfortable"
                         variant="solo"
-                        v-model="copyUengineProperties.httpMethods"
+                        v-model="copyUengineProperties.method"
                     ></v-autocomplete>
                 </v-col>
                 <v-col cols="8">
-                    <v-text-field label="API URL" v-model="copyUengineProperties.API"></v-text-field>
+                    <v-text-field label="API URL" v-model="copyUengineProperties.uriTemplate"></v-text-field>
                 </v-col>
             </v-row>
         </div>
         <div style="height: 40%" v-if="copyUengineProperties.httpMethods != 'GET'">
             <v-row class="ma-0 pa-0" style="height: 100%">
                 <vue-monaco-editor
-                    v-model:value="copyUengineProperties.payload"
+                    v-model:value="copyUengineProperties.inputPayloadTemplate"
                     theme="vs-dark"
                     language="json"
                     :options="MONACO_EDITOR_OPTIONS"
@@ -99,6 +99,9 @@ export default {
     },
     async created() {
         this.copyUengineProperties = this.uengineProperties;
+        if(!typeof this.copyUengineProperties.inputPayloadTemplate != 'string') {
+            this.copyUengineProperties.inputPayloadTemplate = JSON.stringify(this.copyUengineProperties.inputPayloadTemplate)
+        }
         this.storage = StorageBaseFactory.getStorage();
         this.openaiToken = await this.getToken();
         Object.keys(this.requiredKeyLists).forEach((key) => {
@@ -160,7 +163,7 @@ export default {
         let target = null;
         def.rootElements.forEach((element) => {
             if (element.$type == 'bpmn:Collaboration') {
-                element.messageFlows.forEach((messageFlow) => {
+                element.messageFlows?.forEach((messageFlow) => {
                     if (messageFlow.sourceRef.id == this.element.id) {
                         target = messageFlow.targetRef.id;
                     }
@@ -278,9 +281,9 @@ export default {
                 context: this,
                 action: async () => {
                     // Changed to arrow function
-                    this.copyUengineProperties.API = response.API;
-                    this.copyUengineProperties.payload = JSON.stringify(response.payloadJSON);
-                    this.copyUengineProperties.httpMethods = response.httpMethods;
+                    this.copyUengineProperties.uriTemplate = response.uriTemplate;
+                    this.copyUengineProperties.inputPayloadTemplate = JSON.stringify(response.inputPayloadTemplate);
+                    this.copyUengineProperties.method = response.method;
                 }
             });
         },

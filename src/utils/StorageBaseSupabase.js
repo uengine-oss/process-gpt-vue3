@@ -721,18 +721,15 @@ export default class StorageBaseSupabase {
 
     async search(keyword) {
         let results = [];
-        const isAdmin = window.localStorage.getItem('isAdmin') === 'true';
-        if (isAdmin) {
+        if (window.$jms) {
             results = await Promise.all([
-                this.searchProcInst(keyword),
-                this.searchProcDef(keyword),
-                this.searchFormDef(keyword),
-                this.searchChatRoom(keyword),
-                this.searchChat(keyword)
+                this.searchProcDef(keyword)
             ]);
         } else {
             results = await Promise.all([
                 this.searchProcInst(keyword),
+                this.searchProcDef(keyword),
+                this.searchFormDef(keyword),
                 this.searchChatRoom(keyword),
                 this.searchChat(keyword)
             ]);
@@ -926,4 +923,6 @@ export default class StorageBaseSupabase {
             return null;
         }
     }
+
+    
 }

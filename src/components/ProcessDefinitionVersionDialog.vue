@@ -11,8 +11,12 @@
                         <v-switch v-model="isMajor"
                             :label="this.isMajor ? `Major Update: ${newVersion}` : `Minor Update: ${newVersion}`"
                             color="primary" :disabled="isNew" hide-details></v-switch>
-                        <v-text-field v-if="isNew" v-model="information.proc_def_id" label="ID"
-                            :rules="[v => !!v || 'ID is required']" required></v-text-field>
+                        <v-text-field v-if="isNew" 
+                            v-model="information.proc_def_id" 
+                            label="ID"
+                            :rules="[v => !!v || 'ID is required']" 
+                            required
+                        ></v-text-field>
                         <v-text-field 
                             v-model="information.name" 
                             label="Name" 
@@ -103,7 +107,7 @@ export default {
                 action: async () => {
                     if (me.process && me.process.processDefinitionId) {
                         me.isNew = false
-                        var bpmn = await backend.getRawDefinition(me.process.processDefinitionId, { type: 'bpmn' })
+                        var bpmn = me.process.processDefinitionId != 'Unknown'? await backend.getRawDefinition(me.process.processDefinitionId, { type: 'bpmn' }):null;
                         if(bpmn) {
                             if(me.useLock) {
                                 // GPT
@@ -136,8 +140,8 @@ export default {
                                 }
                             } else {
                                 // Uengine
-                                me.information.proc_def_id = me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1]
-                                me.information.name = me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1]
+                                me.information.proc_def_id = me.$route.params.pathMatch.join('/');
+                                me.information.name = me.$route.params.pathMatch.join('/');
                             }
                         } else {
                             me.isNew = true
@@ -167,7 +171,7 @@ export default {
                         arcv_id: me.process ? `${me.process.processDefinitionId}_${me.newVersion}` : `${me.information.proc_def_id}_${me.newVersion}`,
                         version: me.newVersion,
                         name: me.information.name,
-                        proc_def_id: me.process ? me.process.processDefinitionId : me.information.proc_def_id,
+                        proc_def_id: me.information.proc_def_id,
                         prevSnapshot: me.information.snapshot,
                         prevDiff: me.information.diff,
                         type: 'bpmn'
