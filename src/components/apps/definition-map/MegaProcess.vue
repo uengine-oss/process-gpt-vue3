@@ -5,11 +5,12 @@
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-h6 font-weight-semibold">
                 <v-row class="ma-0 pa-0">
                     <v-col :cols="enableEdit ? '8' : '12'" class="ma-0 pa-0 text-left">
-                        <div>{{ value.name }}</div>
+                        <div style="color:white;">{{ value.name }}</div>
                     </v-col>
                     <v-col :cols="enableEdit ? '4' : ''" class="ma-0 pa-0">
                         <div class="ml-auto add-major-process">
                             <ProcessMenu
+                                class="mega-proc-btn"
                                 :size="20"
                                 :type="type"
                                 :process="value"
@@ -117,3 +118,9 @@ export default {
     },
 }
 </script>
+
+<style>
+.mega-proc-btn button {
+    color:white;
+}
+</style>
