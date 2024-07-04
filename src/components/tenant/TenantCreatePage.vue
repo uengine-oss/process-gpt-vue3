@@ -6,11 +6,11 @@
         </v-icon>
 
         <v-row no-gutters justify="center">
-            <h1 class="text-grey200">테넌트 생성</h1>
+            <h1 class="text-grey200">회사 생성</h1>
         </v-row>
         <!-- <v-row no-gutters justify="center">
             <p class="font-weight-semibold text-grey100 text-h5">
-                주어진 정보를 통해서 새로운 테넌트를 생성합니다.
+                주어진 정보를 통해서 새로운 회사를 생성합니다.
             </p>
         </v-row> -->
         <TenantInfoField v-model="tenantInfo" :isEdit="false" ref="tenantInfoField" @stopLoading="stopLoading"></TenantInfoField>
@@ -93,12 +93,24 @@ export default {
                     // #endregion
                     await me.$router.push('/tenant/manage');
                 },
-                successMsg: '테넌트가 정상적으로 생성되었습니다. 생성된 테넌트에 접속시 현재 로그인된 계정을 이메일 인증 이후 사용하실 수 있습니다.'
+                successMsg: '회사가 정상적으로 생성되었습니다. 생성된 회사가 관리하는 페이지에 접속 시 현재 로그인된 계정을 이메일 인증 이후 사용하실 수 있습니다.'
             });
         }
     },
 
     async created() {
+        let me = this
+        const checkIsLogin = async () => {
+            const isLogin = localStorage.getItem("accessToken") ? true : false
+            if(!isLogin) {
+                alert("로그인이 필요합니다.")
+                await me.$router.push('/auth/login')
+                return false
+            }
+            return true
+        }
+
+        if(!(await checkIsLogin())) return
         this.storage = StorageBaseFactory.getStorage()
     },
 };

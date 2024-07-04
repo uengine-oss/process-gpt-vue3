@@ -1172,6 +1172,16 @@
                 },
 /// >>> 수정된 영역
                 receive: function (event, ui) {
+                    const getUUID = () => {
+                        const s4 = () => {
+                            return Math.floor((1 + Math.random()) * 0x10000)
+                            .toString(16)
+                            .substring(1);
+                        }
+                
+                        return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4()
+                    }
+
                     flog('On received snippet', event, ui);
                     
                     if(ui.item.attr("data-type") === 'component-object-form') {
@@ -1180,7 +1190,7 @@
                         var item = ui.item;
                         var container;
                         var snippetContent; 
-                        const vueRenderUUID = `vuemount_${crypto.randomUUID()}`
+                        const vueRenderUUID = `vuemount_${getUUID()}`
                         
                         if (item.is('.keditor-snippet')) {
                             var snippetContentElement = body.find(item.attr('data-snippet'));

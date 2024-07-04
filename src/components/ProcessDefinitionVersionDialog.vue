@@ -107,7 +107,7 @@ export default {
                 action: async () => {
                     if (me.process && me.process.processDefinitionId) {
                         me.isNew = false
-                        var bpmn = await backend.getRawDefinition(me.process.processDefinitionId, { type: 'bpmn' })
+                        var bpmn = me.process.processDefinitionId != 'Unknown'? await backend.getRawDefinition(me.process.processDefinitionId, { type: 'bpmn' }):null;
                         if(bpmn) {
                             if(me.useLock) {
                                 // GPT
@@ -140,8 +140,8 @@ export default {
                                 }
                             } else {
                                 // Uengine
-                                me.information.proc_def_id = me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1]
-                                me.information.name = me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1]
+                                me.information.proc_def_id = me.$route.params.pathMatch.join('/');
+                                me.information.name = me.$route.params.pathMatch.join('/');
                             }
                         } else {
                             me.isNew = true

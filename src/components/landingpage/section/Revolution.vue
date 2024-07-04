@@ -1,15 +1,31 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
 
-const isTenantServer = ref(window.$isTenantServer);
 
-const computedLink = computed(() => {
-  if (window.$mode === 'ProcessGPT') {
-    return '/definition-map';
-  } else {
-    return isTenantServer ? '/tenant/manage' : '/dashboard2';
-  }
-});
+const router = useRouter()
+const gotoDashboard = async () => {
+    const checkIsLogin = async () => {
+        const isLogin = localStorage.getItem("accessToken") ? true : false
+        if(!isLogin) {
+            alert("로그인이 필요합니다.")
+            await router.push('/auth/login')
+            return false
+        }
+        return true
+    }
+
+    const gotoProperUrl = async () => {
+        let gotoUrl = ""
+
+        if(window.$isTenantServer) gotoUrl = '/tenant/manage'
+        else gotoUrl = (window.$mode === 'ProcessGPT') ? '/definition-map' : '/dashboard2'
+
+        await router.push(gotoUrl)
+    }
+
+    if(await checkIsLogin()) await gotoProperUrl()
+}
 </script>
 <template>
     <div class="revotion bg-bglight py-14">
@@ -27,7 +43,7 @@ const computedLink = computed(() => {
                     <div class="mt-6 d-sm-flex gap-3 justify-center" data-aos="fade-up" data-aos-delay="800"
                         data-aos-duration="1000">
 
-                        <v-btn :to="computedLink" color="primary" rounded="pill"
+                        <v-btn @click="gotoDashboard" color="primary" rounded="pill"
                             class="mt-sm-0 mt-4 lp-btn-shadow m-btn-full btn-custom-lg mb-sm-0 mb-4 cp-start" size="large"
                         >{{ $t('mainPage.start') }}
                         </v-btn>

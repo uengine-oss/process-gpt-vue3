@@ -53,13 +53,14 @@ export default {
             }
             return '';
         },
-        instanceId () {
+        chatRoomId () {
+            let result = '';
             if (this.processInstance && this.processInstance.proc_inst_id) {
-                return this.processInstance.proc_inst_id;
+                result = this.processInstance.proc_inst_id;
             } else if (this.$route.params.instId) {
-                return atob(this.$route.params.instId);
+                result = atob(this.$route.params.instId);
             }
-            return '';
+            return result;
         }
     },
     async created() {
@@ -80,14 +81,6 @@ export default {
                 text: "processExecution.agent"
             }
         }
-    },
-    mounted() {
-        if (this.processInstance && this.processInstance.proc_inst_id) {
-            this.chatRoomId = this.processInstance.proc_inst_id;
-        }
-    },
-    beforeUnmount() {
-
     },
     watch: {
         "$route": {
@@ -189,7 +182,7 @@ export default {
         },
         async beforeSendMessage(newMessage) {
             if (newMessage && newMessage.text != '') {
-                if (this.instanceId) {
+                if (this.chatRoomId) {
                     this.putMessage(this.createMessageObj(newMessage));
                     this.generator.beforeGenerate(newMessage, false);
                 } else {
@@ -208,7 +201,7 @@ export default {
             const uuid = this.uuid();
             const message = {
                 "messages": msg,
-                "id": this.instanceId,
+                "id": this.chatRoomId,
                 "uuid": uuid,
             }
             this.putObject(`chats/${uuid}`, message);

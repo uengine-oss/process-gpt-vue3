@@ -70,7 +70,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 import BpmnUengine from '@/components/BpmnUengine.vue';
 import customBpmnModule from '@/components/customBpmn';
-import { VDataTable } from 'vuetify/labs/VDataTable';
+import { VDataTable } from 'vuetify/components/VDataTable';
 export default {
     name: 'admin-detail',
     components: {
@@ -92,6 +92,7 @@ export default {
         },
         roles: [],
         currentActivities: [],
+        activityVariables: {}
 
     }),
     async created() {
@@ -102,10 +103,14 @@ export default {
     watch: {
         processDefinition() {
             console.log(this.processDefinition);
+        },
+        async $route(before, after) {
+            await this.init();
         }
     },
     methods: {
         async init() {
+            this.loaded = false
             this.instanceId = this.$route.params.id;
             await this.getInstanceDetail();
             await this.getProcessDefinition();
@@ -121,6 +126,13 @@ export default {
             await backend.getInstance(this.instanceId).then((response) => {
                 console.log(response);
                 me.instanceDetail = response;
+            });
+        },
+        openSubProcess(e) {
+            // this.$router.go("/adodm")
+            this.$router.push({
+                name: 'Admin Detail',
+                params: { id: this.activityVariables[e.id]['instanceIdOfSubProcess'] }
             });
         },
         async getProcessDefinition() {
@@ -166,6 +178,10 @@ export default {
         },
         setVariableList(variables) {
             let me = this;
+            me.processVariables = [];
+            me.roles = [];
+            me.activityVariables = {};
+            me.currentActivities = []
             for(let key of Object.keys(variables)) {
                 if (key.includes(':_roleMapping_of_')) {
                     let tmp = {
@@ -173,18 +189,27 @@ export default {
                         endpoint: variables[key].endpoint,
                         resourceName: variables[key].resourceName
                     };
-                    if (!me.roles) me.roles = [];
                     me.roles.push(tmp);
                 } else if (key.startsWith(':')) {
                     let tmp = { key: key, value: variables[key] };
-                    if (!me.processVariables) me.processVariables = [];
                     me.processVariables.push(tmp);
                 } else if (key.includes('_status')) {
                     if (variables[key] == 'Completed' || variables[key] == 'Running') {
                         me.currentActivities.push(key.split(':')[0]);
                     }
+                } else {
+                    if (key.includes(':')) {
+                        let activity = key.split(':')[0];
+                        let variableKey = key.split(':')[1];
+                        let value = variables[key];
+                        if(!me.activityVariables[activity]) {
+                            me.activityVariables[activity] = {};
+                        }
+                        me.activityVariables[activity][variableKey] = value;
+                    }
                 }
             }
+            
             me.loaded = true;
         }
     }

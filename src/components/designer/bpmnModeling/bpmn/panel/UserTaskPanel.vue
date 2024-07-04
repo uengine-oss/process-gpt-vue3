@@ -435,12 +435,27 @@ export default {
             me.isOpenFieldMapper = true;            
         },
         createForm() {
+            const getUUID = () => {
+                const s4 = () => {
+                    return Math.floor((1 + Math.random()) * 0x10000)
+                    .toString(16)
+                    .substring(1);
+                }
+
+                return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4()
+            }
+
             let urlData = {}
             urlData["formName"] = `${this.name}폼`
             urlData["inputNames"] = this.copyUengineProperties.parameters.map(p => p.argument.text)
-            urlData["initPrompt"] = `'${urlData["formName"]}'폼을 생성해줘. 입력해야하는 값들은 다음과 같아: ${urlData["inputNames"].join(", ")}`
+
+            if(urlData["inputNames"].length > 0)
+                urlData["initPrompt"] = `'${urlData["formName"]}'을 생성해줘. 입력해야하는 값들은 다음과 같아: ${urlData["inputNames"].join(", ")}`
+            else
+                urlData["initPrompt"] = `'${urlData["formName"]}'을 생성해줘.`
+            
             urlData["processId"] = this.processDefinitionId
-            urlData["channelId"] = crypto.randomUUID()
+            urlData["channelId"] = getUUID()
             console.log("새로운 폼을 만들기 위한 데이터: " + JSON.stringify(urlData))
             console.log("채널 ID: " + urlData["channelId"])
 

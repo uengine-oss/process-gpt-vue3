@@ -229,12 +229,12 @@ export default {
 
             me.definition.processVariables.forEach(async (variable) => {
                 if(variable.defaultValue) {
-                    if (forms.find((item) => item === variable.defaultValue.formDefId && variable.type === 'Form')) {
-                    let formHtml = await me.backend.getRawDefinition(variable.defaultValue.formDefId, { type: 'form' });
-                    let fields = me.parseFormHtmlField(formHtml);
+                    if (variable.defaultValue.formDefId && variable.type === 'Form') {
+                        let formHtml = await me.backend.getRawDefinition(variable.defaultValue.formDefId, { type: 'form' });
+                        let fields = me.parseFormHtmlField(formHtml);
 
-                    variable.fields = fields;
-                }
+                        variable.fields = fields;
+                    }
                 }
             });
         },

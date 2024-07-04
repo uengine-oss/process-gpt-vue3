@@ -87,7 +87,7 @@ export default {
                     const result = await back.putWorklist(task.taskId, task);
                     // Process-GPT
                     if (window.$mode == 'ProcessGPT') {
-                        if (result && result.cannotProceedErrors && result.cannotProceedErrors.length > 0) {
+                        if (result && result.errors && result.errors.length > 0) {
                             me.taskId = task.taskId;
                             me.workItem = await back.getWorkItem(me.taskId);
                             me.dialog = true;
@@ -101,7 +101,8 @@ export default {
                 },
                 onFail: (e) => {
                     me.$emit('updateStatus', task.taskId, me.originColumnId);
-                }
+                },
+                successMsg: '해당 업무 완료'
             });
         },
         closeDialog(isUpdated) {
