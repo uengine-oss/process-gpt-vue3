@@ -446,6 +446,9 @@ class UEngineBackend implements Backend {
 
     async getDryRunInstance(defPath: String){
         const response = await axiosInstance.get(`/dry-run/${defPath}`);
+        // const response = await axiosInstance.get(encodeURI(`/dry-run/${defPath}`));
+        // const response = await axiosInstance.get(encodeURI(`/dry-run/${encodeURIComponent(defPath.toString())}`));
+        
         if (!response.data) return null;
         return response.data;
     }
@@ -462,7 +465,7 @@ class UEngineBackend implements Backend {
 
     async getSystemList() {
         const response = await axiosInstance.get(`/definition/system`);
-        if(response.data.length > 0) return response.data;
+        if(response.data._embedded.definitions.length > 0) return response.data._embedded.definitions;
         return null;
     }
     // async getSystemList() {

@@ -57,7 +57,7 @@ const sidebarItems = ref<SidebarItem[]>([
 onBeforeMount(() => {
     // window.mode 값에 따라 sidebarItems 수정
     if (window.$mode === 'ProcessGPT') {
-        sidebarItems.value = sidebarItems.value.filter(item => item.to !== '/dashboard2' && item.to !== '/calendar');
+        sidebarItems.value = sidebarItems.value.filter(item => item.to !== '/calendar');
     }
     window.addEventListener('scroll', handleScroll);
 });

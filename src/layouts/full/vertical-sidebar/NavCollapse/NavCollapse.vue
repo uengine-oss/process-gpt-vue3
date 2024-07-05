@@ -3,12 +3,13 @@ import { computed } from 'vue';
 import DropDown from '../DropDown/index.vue';
 // import Icon from '../Icon.vue';
 import { Icon } from '@iconify/vue';
+import BackendFactory from '@/components/api/BackendFactory';
+
 const props = defineProps({
     item: Object, 
     level: Number, 
     type: String,
 });
-import BackendFactory from '@/components/api/BackendFactory';
 
 const useI18n = computed(() => {
     if (props.level > 0 && !props.type) {
@@ -25,7 +26,8 @@ const getChild = async (subitem, i) => {
     let menu = [];
     res.forEach((el) => {
         var obj = {
-            title: el.name.split('.')[0]
+            title: el.name.split('.')[0],
+            type: el.name.split('.')[1]
         };
 
         if (el.directory) {

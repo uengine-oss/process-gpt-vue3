@@ -1,6 +1,6 @@
 <template>
     <div class="mb-3" @mouseover="hover = true" @mouseleave="hover = false">
-        <v-card class="align-center bg-lightsecondary pa-2 pr-3 pl-3" elevation="10"
+        <v-card class="align-center bg-lightsecondary pa-2 pr-3 pl-3 cp-major" elevation="10"
             style="border-radius: 10px !important; margin-bottom:5px;" @click="goProcess(parent.name, 'mega')">
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-1 font-weight-semibold">
                 <v-row class="ma-0 pa-0">
@@ -52,7 +52,7 @@
         </div>
         <v-card v-if="!processDialogStatus && enableEdit && hover" 
             @click="openSubProcessDialog('add')"
-            class="add-process-card-hover cp-add-mega"
+            class="add-process-card-hover"
             elevation="9" variant="outlined"
             style="display: flex;
                 justify-content: center;
@@ -61,7 +61,7 @@
                 height:26px;"
         >
             <v-row class="pa-0 ma-0 definitionMap-add-card">
-                <PlusIcon size="20" stroke-width="2" />
+                <PlusIcon class="cp-add-sub" size="20" stroke-width="2" />
                 <div>&nbsp;{{ $t('processDefinitionMap.addSub') }}</div>
             </v-row>
         </v-card>

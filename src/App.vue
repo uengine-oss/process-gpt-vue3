@@ -6,6 +6,7 @@
             indeterminate
             class="my-progress-linear"
         ></v-progress-linear>
+        <v-overlay v-model="loading" :scrim="true" :persistent="true"></v-overlay>
         <v-snackbar
             v-model="snackbar"
             class="custom-snackbar"
