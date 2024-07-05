@@ -92,6 +92,10 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                  "description": "description of process data",
                  "type": "Text" | "Number" | "Date" | "Boolean" | "Location" | "Document" | "Picture",
               }],
+              "roles": [{
+                 "name": "role name",
+                 "resolutionRule": "how to find the actual user mapping for the role"
+              }],
               "components" :
               [{
                   "componentType" :"Gateway",
@@ -140,13 +144,6 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                     "condition": "기존 프로세스 정보중 "data" 내에 존재하는 값만을 사용하여 condition 을 생성해야한다. "data" 목록을 보고 condition 생성에 필요한 "data" 의 "name" 만으로 생성해야함." // 기존 프로세스 정보가 존재하는 경우에만 생성해야하며, 생성시 기존 프로세스 정보를 참고하여 컨디션을 생성해야한다.
                 }
               ],
-              "roles": [{
-                 "name": "role name",
-                 "resolutionRule": "how to find the actual user mapping for the role",
-                 "y": 숫자로 된 roles 위치,
-                 "width": 숫자로 된 roles 넓이,
-                 "height": 숫자로 된 roles 높이
-              }],
               "participants": [
                 {
                     "name": "participant name",
