@@ -86,7 +86,7 @@
 
             <v-btn style="margin-left: 20px;" color="primary" @click="openConsultingDialog = true"><v-icon small style="margin-right: 10px;">mdi-auto-fix</v-icon>프로세스 컨설팅 시작하기</v-btn>
         </v-card>
-        <v-dialog style="width: 1000px;" v-model="openConsultingDialog" persistent>
+        <v-dialog style="max-width: 1000px;" v-model="openConsultingDialog" persistent>
             <ProcessConsultingChat @closeConsultingDialog="closeConsultingDialog" @createdBPMN="createdBPMN" />
         </v-dialog>
         <v-dialog v-model="alertDialog" max-width="500" persistent>
