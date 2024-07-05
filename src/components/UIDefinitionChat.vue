@@ -367,6 +367,18 @@ export default {
             rows.forEach(row => {
                 const isMultiDataMode = row.getAttribute('is_multidata_mode');
                 if (!isMultiDataMode || (isMultiDataMode === 'false')) {
+                    // row의 부모 노드를 계속 탐색해서. 그 노드가 is_multidata_mode="true"의 속성을 가졌는지 확인함
+                    let isPerentNodeMultiDataMode = false;
+                    let parentNode = row.parentNode;
+                    while(parentNode && parentNode.tagName.toLowerCase() !== 'body') {
+                        if(parentNode.getAttribute('is_multidata_mode') === "true") {
+                            isPerentNodeMultiDataMode = true;
+                            break;
+                        }
+                        parentNode = parentNode.parentNode;
+                    }
+                    
+
                     const newRow = document.createElement('row-layout');
                     
 
@@ -374,7 +386,7 @@ export default {
                     newRow.setAttribute('alias', row.getAttribute('alias') ?? "");
                     newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode') ?? "false");
 
-                    newRow.setAttribute('v-model', 'formValues');
+                    newRow.setAttribute('v-model', (isPerentNodeMultiDataMode) ? 'item' : 'formValues');
                     newRow.setAttribute('v-slot', 'slotProps');
 
 

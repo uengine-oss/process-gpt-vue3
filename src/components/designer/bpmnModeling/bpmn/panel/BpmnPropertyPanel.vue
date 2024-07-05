@@ -63,9 +63,10 @@ export default {
         console.log(this.element);
         // Extension이 없는 경우 무조건 빈 Property 생성
         if (!this.element.extensionElements) {
+            this.element.extensionElements = {};
             this.element.extensionElements.values = [];
             this.element.extensionElements.values[0] = {
-                json: {}
+                json: "{}"
             };
         }
 
