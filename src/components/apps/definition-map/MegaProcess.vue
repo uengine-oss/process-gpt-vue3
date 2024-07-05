@@ -1,6 +1,6 @@
 <template>
     <div class="w-100" @mouseover="hover = true" @mouseleave="hover = false">
-        <v-card class="align-center pa-3 mb-3" color="primary" elevation="10" style="border-radius: 10px !important;"
+        <v-card class="align-center pa-3 mb-3 cp-mega" color="primary" elevation="10" style="border-radius: 10px !important;"
             @click="goProcess(value.name, 'mega')">
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-h6 font-weight-semibold">
                 <v-row class="ma-0 pa-0">
@@ -62,7 +62,7 @@
                 height:34px;"
         >
             <v-row class="pa-0 ma-0 definitionMap-add-card">
-                <PlusIcon size="20" stroke-width="2" />
+                <PlusIcon class="cp-add-major" size="20" stroke-width="2" />
                 <div>&nbsp;{{ $t('processDefinitionMap.addMajor') }}</div>
             </v-row>
         </v-card>

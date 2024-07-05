@@ -45,7 +45,7 @@ function validate(values: any, { setErrors }: any) {
         <VTextField
             v-model="username"
             :rules="emailRules"
-            class="mb-8"
+            class="mb-8 cp-id"
             required
             hide-details="auto"
         ></VTextField>
@@ -56,7 +56,7 @@ function validate(values: any, { setErrors }: any) {
             required
             hide-details="auto"
             type="password"
-            class="pwdInput"
+            class="pwdInput cp-pwd"
         ></VTextField>
         <div class="d-flex flex-wrap align-center my-3 ml-n2">
             <v-checkbox v-model="checkbox" :rules="[(v:any) => !!v || 'You must agree to continue!']" required hide-details color="primary">

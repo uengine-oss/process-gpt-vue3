@@ -31,7 +31,7 @@
 
                     <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName != editUser">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" size="24" class="cp-lock" @click="openAlertDialog">
+                            <v-btn v-bind="props" icon variant="text" size="24" @click="openAlertDialog">
                                 <LockIcon width="24" height="24" />
                             </v-btn>
                         </template>
@@ -40,7 +40,7 @@
 
                     <v-tooltip location="bottom" v-if="!useLock">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" size="24" class="cp-lock" @click="saveProcess()">
+                            <v-btn v-bind="props" icon variant="text" size="24" @click="saveProcess()">
                                 <Icon icon="material-symbols:save-outline" width="24" height="24" />
                             </v-btn>
                         </template>
