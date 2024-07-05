@@ -730,7 +730,7 @@ export default {
                     }
                     if (unknown.majorProcessId) {
                         this.processDefinitionMap.mega_proc_list.forEach((megaProcess) => {
-                            if (megaProcess.name == unknown.megaProcess) {
+                            if (megaProcess.name == unknown.megaProcessId) {
                                 if (megaProcess.major_proc_list.some((majorProcess) => majorProcess.name == unknown.majorProcessId)) {
                                     const idx = megaProcess.major_proc_list.findIndex(
                                         (majorProcess) => majorProcess.name == unknown.majorProcessId
