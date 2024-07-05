@@ -1408,13 +1408,27 @@ export default {
                                 modeler = store.getModeler;
                                 xmlObj = await modeler.saveXML({ format: true, preamble: true });
                                 me.processDefinition = await me.convertXMLToJSON(xmlObj.xml);
-                                if (me.processDefinition.roles && me.processDefinition.roles.length > 0) {
+                                if (me.processDefinition != null && (
+                                    me.processDefinition.data.length > 0 ||
+                                    me.processDefinition.roles.length > 0 ||
+                                    me.processDefinition.events.length > 0 ||
+                                    me.processDefinition.components.length > 0 ||
+                                    me.processDefinition.gateways.length > 0 ||
+                                    me.processDefinition.sequences.length > 0
+                                )) {
                                     break;
                                 }
                                 retryCount++;
                                 await new Promise(resolve => setTimeout(resolve, 500));
                             }
-                            if (me.processDefinition.roles && me.processDefinition.roles.length == 0) {
+                            if (me.processDefinition == null || (
+                                me.processDefinition.data.length == 0 &&
+                                me.processDefinition.roles.length == 0 &&
+                                me.processDefinition.events.length == 0 &&
+                                me.processDefinition.components.length == 0 &&
+                                me.processDefinition.gateways.length == 0 &&
+                                me.processDefinition.sequences.length == 0
+                            )) {
                                 throw new Error('Model does not exist');
                             }
                         }
