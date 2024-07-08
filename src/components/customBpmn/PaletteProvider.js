@@ -24,11 +24,6 @@ export default function PaletteProvider(palette,
 
   palette.registerProvider(this);
 
-
-  eventBus.on('palette.changed', (event) => {//UI 깨짐 방지
-    this.setPaletteWidth(695); 
-  });
-
 }
 
 PaletteProvider.$inject = [
@@ -192,11 +187,4 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
   });
 
   return actions;
-};
-
-PaletteProvider.prototype.setPaletteWidth = function(width) {
-  const palette = document.querySelector('.djs-palette');
-  if (palette) {
-    palette.style.setProperty('width', width + 'px', 'important');
-  }
 };
