@@ -73,6 +73,7 @@ const customizer = useCustomizerStore();
                     <!-- <NavItem v-else-if="!item.disable && !item.header" class="leftPadding" :item="item" /> -->
                 </template>
                 <template v-if="definitionList">
+                    <!-- 정의 목록 리스트 -->
                     <NavCollapse class="leftPadding" :item="definitionList" @update:item="(def) => (definitionList = def)" :level="0" :type="'definition-list'" />
                 </template>
                 <!-- <Moreoption/> -->
