@@ -327,7 +327,7 @@
                             </v-col>
                         </div>
                     </perfect-scrollbar>
-                    <div style="position:relative">
+                    <div style="position:relative; z-index: 9999;">
                         <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
                             <v-tooltip :text="'카메라'">
                                 <template v-slot:activator="{ props }">
@@ -359,7 +359,7 @@
                                     </v-btn>
                                 </template>
                             </v-tooltip>
-                            <v-form v-if="(type == 'instances' || type == 'chats') && !agentInfo.isRunning"
+                            <v-form v-if="(type == 'instances' || type == 'chats' || type == 'consulting') && !agentInfo.isRunning"
                                 ref="uploadForm" @submit.prevent="submitFile"
                                 style="height:30px;"
                                 class="chat-selected-file"
@@ -441,7 +441,7 @@
             <!-- image upload -->
             <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
             <div id="imagePreview" style="max-width: 200px;"></div>
-            <form class="d-flex align-center pa-0">
+            <form style="z-index: 9999; position: relative;" class="d-flex align-center pa-0">
                 <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                     class="shadow-none message-input-box cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
                     auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"

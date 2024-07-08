@@ -9,7 +9,9 @@
         "paths": {
             "@/*": ["./src/*"]
         },
-        "allowJs": true
+        "allowJs": true,
+        "verbatimModuleSyntax": true, // 추가된 옵션
+        "ignoreDeprecations": "5.0"
     },
     "references": [
         {

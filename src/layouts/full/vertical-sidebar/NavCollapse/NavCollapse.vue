@@ -3,12 +3,13 @@ import { computed } from 'vue';
 import DropDown from '../DropDown/index.vue';
 // import Icon from '../Icon.vue';
 import { Icon } from '@iconify/vue';
+import BackendFactory from '@/components/api/BackendFactory';
+
 const props = defineProps({
     item: Object, 
     level: Number, 
     type: String,
 });
-import BackendFactory from '@/components/api/BackendFactory';
 
 const useI18n = computed(() => {
     if (props.level > 0 && !props.type) {

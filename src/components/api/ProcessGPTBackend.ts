@@ -88,6 +88,9 @@ class ProcessGPTBackend implements Backend {
 
     async putRawDefinition(xml: any, defId: string, options: any) {
         try {
+            defId = defId.toLowerCase();
+            defId = defId.replace(/[/.]/g, "_");
+
             // 폼 정보를 저장하기 위해서
             if(options && options.type === "form") {
                 await storage.putObject('form_def', {
@@ -96,9 +99,6 @@ class ProcessGPTBackend implements Backend {
                 });
                 return
             }
-
-            defId = defId.toLowerCase();
-            defId = defId.replace(/[/.]/g, "_");
 
             const procDef: any = {
                 id: defId,

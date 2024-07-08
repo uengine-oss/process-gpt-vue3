@@ -1,7 +1,7 @@
 <template>
     <div class="container" :style="containerStyle">
         <v-btn class="record-close-btn" icon density="comfortable" @click="closeRecording"
-            :style="!$globalState.state.isRightZoomed ? '' : 'top:10px;'"
+            :style="!$globalState.state.isRightZoomed ? '' : 'top:10px; z-index: 9999;'"
         >
             <v-icon>mdi-close</v-icon>
         </v-btn>

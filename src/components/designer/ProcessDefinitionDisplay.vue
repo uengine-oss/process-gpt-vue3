@@ -15,16 +15,15 @@
         >
             <template v-slot:item="{ props, item }">
                 <v-list-item
-                    v-if="bindOptions.returnObject"
+                    v-if="mode == 'ProcessGPT'"
                     v-bind="props"
-                    :subtitle="item.value.displayPath"
-                    :title="item.value[bindOptions.itemTitle]"
+                    :title="item.raw[bindOptions.itemTitle]"
                 ></v-list-item>
                 <v-list-item
                     v-else
                     v-bind="props"
-                    :subtitle="item.raw.displayPath"
-                    :title="item.raw[bindOptions.itemTitle]"
+                    :subtitle="item.value.displayPath"
+                    :title="item.value[bindOptions.itemTitle]"
                 ></v-list-item>
             </template>
             <!-- <template v-slot:item="{ item }">
@@ -49,7 +48,7 @@ import { ref, watch } from 'vue';
 export default {
     props:{
         modelValue: {
-            type: String,
+            type: Object,
             required: true
         },
         fileExtensions: {
@@ -90,6 +89,7 @@ export default {
         }
     },
     created(){
+        console.log(this.options)
         this.init()
     },
     watch:{
@@ -128,6 +128,7 @@ export default {
                     //     displayPath:"/form"
                     //     id:"form/test"
                     // }
+                    console.log(lists)
                     
                     me.items = lists
                     me.loading = false

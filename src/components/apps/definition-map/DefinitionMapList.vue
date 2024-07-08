@@ -49,6 +49,8 @@ import MegaProcess from './MegaProcess.vue';
 import ProcessDialog from './ProcessDialog.vue';
 import BaseProcess from './BaseProcess.vue'
 
+import BackendFactory from '@/components/api/BackendFactory';
+
 export default {
     components: {
         MegaProcess,
@@ -63,6 +65,16 @@ export default {
         processType: '',
         processRenderer: 0
     }),
+    created() {
+        this.classifyProcess();
+    },
+    watch: {
+        enableEdit(newVal) {
+            if(newVal) {
+                this.classifyProcess();
+            }
+        }
+    },
     methods: {
         addProcess(newProcess) {
             const id = newProcess.name.toLowerCase().replace(/[/.]/g, "_");
@@ -72,6 +84,45 @@ export default {
                 major_proc_list: [],
             };
             this.value.mega_proc_list.push(newMegaProc);
+        },
+        async classifyProcess() {
+            let subProcList = [];
+            let unclassifiedIdx = -1;
+            this.value.mega_proc_list.forEach((mega, index) => {
+                if (mega.id == "unclassified") {
+                    unclassifiedIdx = index;
+                } else {
+                    mega.major_proc_list.forEach(major => {
+                        subProcList = [...subProcList, ...major.sub_proc_list];
+                    });
+                }
+            })
+            if (subProcList.length > 0) {
+                subProcList = subProcList.map(sub => sub.id);
+                const backend = BackendFactory.createBackend();
+                let definitions = await backend.listDefinition();
+                definitions = definitions.filter(definition => !subProcList.includes(definition.id));
+                if (definitions.length > 0) {
+                    definitions = definitions.map(definition => { return { id: definition.id, name: definition.name } });
+                    if (unclassifiedIdx == -1) {
+                        this.value.mega_proc_list.push({
+                            id: "unclassified",
+                            name: "미분류",
+                            major_proc_list: [{
+                                id: "unclassified_major",
+                                name: "미분류",
+                                sub_proc_list: definitions,
+                            }],
+                        })
+                    } else {
+                        this.value.mega_proc_list[unclassifiedIdx].major_proc_list = [{
+                            id: "unclassified_major",
+                            name: "미분류",
+                            sub_proc_list: definitions,
+                        }];
+                    }
+                }
+            }
         },
     },
 }
