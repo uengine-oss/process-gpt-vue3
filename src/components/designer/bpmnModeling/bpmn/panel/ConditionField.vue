@@ -28,7 +28,7 @@
                     <v-btn  v-if="idx == getConditions(condition).length - 1"  icon variant="text" @click="addCondition(item)">
                         <v-icon>mdi-plus</v-icon>
                     </v-btn>
-                    <v-btn icon variant="text" @click="deleteCondition(item, idx)">
+                    <v-btn v-if="getConditions(condition).length > 1" icon variant="text" @click="deleteCondition(item, idx)">
                         <v-icon>mdi-delete-outline</v-icon>
                     </v-btn>
                 </div>
