@@ -327,7 +327,7 @@
                             </v-col>
                         </div>
                     </perfect-scrollbar>
-                    <div :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''">
+                    <div :style="type == 'consulting' ? 'position:relative; z-index: 9999;':'position:relative;'">
                         <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
                             <v-tooltip :text="'카메라'">
                                 <template v-slot:activator="{ props }">
