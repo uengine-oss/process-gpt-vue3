@@ -83,6 +83,7 @@
                         v-on:updateElement="(val) => updateElement(val)"
                         :definition="thisDefinition"
                         :processDefinitionId="definitionPath"
+                        :processDefinition="processDefinition"
                         :validationList="validationList"
                     ></bpmn-property-panel>
                     <!-- {{ definition }} -->

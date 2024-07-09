@@ -25,6 +25,11 @@
                     style="margin-right: 8px !important; font-size: 15px"
                 ></v-radio>
             </v-radio-group>
+            <div style="margin-top: 10px;">Resolution Rule</div>
+            <v-text-field
+                v-if="role.resolutionRule"
+                v-model="role.resolutionRule"
+            ></v-text-field>
             <v-text-field
                 v-if="type == 'org.uengine.five.overriding.IAMRoleResolutionContext'"
                 v-model="copyUengineProperties.roleResolutionContext.scope"
@@ -49,7 +54,9 @@ export default {
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
-        isViewMode: Boolean
+        isViewMode: Boolean,
+        processDefinition: Object,
+        element: Object,
     },
     created() {
         // console.log(this.element)
@@ -58,6 +65,13 @@ export default {
         // Object.keys(this.requiredKeyLists).forEach((key) => {
         //     this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
         // });
+        const role = this.processDefinition.roles.find(role => role.name === this.element.name);
+        if (role) {
+            this.role = role
+        } else {
+            console.log('Role not found');
+        }
+
     },
     data() {
         return {
@@ -81,7 +95,8 @@ export default {
             paramKey: '',
             paramValue: '',
             definitionCnt: 0,
-            type: 'None'
+            type: 'None',
+            role: null,
         };
     },
     async mounted() {
