@@ -25,8 +25,12 @@ const props = defineProps({
                     </span>
                 </div>
             </template>
-            <v-list-item-title v-if="useI18n" class="text-subtitle-1 font-weight-medium" :color="item.BgColor">{{ $t(item.title) }}</v-list-item-title>
-            <v-list-item-title v-else class="text-subtitle-1 font-weight-medium" :color="item.BgColor">{{ item.title }}</v-list-item-title>
+            <v-tooltip bottom :text="useI18n ? $t(item.title) : item.title">
+                <template v-slot:activator="{ props }">
+                    <v-list-item-title v-if="useI18n" class="text-subtitle-1 font-weight-medium" :color="item.BgColor" v-bind="props">{{ $t(item.title) }}</v-list-item-title>
+                    <v-list-item-title v-else class="text-subtitle-1 font-weight-medium" :color="item.BgColor" v-bind="props">{{ item.title }}</v-list-item-title>
+                </template>
+            </v-tooltip>
             <!---If Caption-->
             <v-list-item-subtitle v-if="item.subCaption" class="text-caption mt-n1 hide-menu">
                 {{ item.subCaption }}
