@@ -258,15 +258,6 @@ export default {
     data: () => ({
         panel: false,
         panelId: null,
-        options: {
-            propertiesPanel: {
-                invalidationList: {}
-            },
-            additionalModules: [
-                customBpmnModule,
-                customPaletteModule
-            ]
-        },
         roles: [],
         element: null,
         definitions: null,
@@ -314,6 +305,15 @@ export default {
             return {
                 height: this.isAdmin ? '100%' : 'calc(100% - 50px)'
             };
+        },
+        options() {
+            let result =  {
+                propertiesPanel: {
+                    invalidationList: {}
+                },
+                additionalModules: this.isViewMode ? [customBpmnModule] : [customBpmnModule, customPaletteModule]
+            };
+            return result
         }
     },
     watch: {
