@@ -1,7 +1,7 @@
 <template>
     <div class="w-100">
         <slot name="contents">
-            <div v-for="(message, index) in filterMessages" :key="index" class="w-100">
+            <div v-for="(message, index) in filterMessages" :key="index" class="w-100 pa-4">
                 <slot name="messageProfile">
                     <v-row class="ma-0 pa-0" style="margin-bottom:10px !important;">
                         <v-avatar class="pr-2" size="40">

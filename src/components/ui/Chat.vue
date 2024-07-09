@@ -592,8 +592,10 @@ export default {
                 me.$emit("requestFile", event.target.getAttribute('data-filename'));
             }
         });
-        if(window.location.pathname && window.location.pathname.includes('/definitions/')){
+        if (window.location.pathname && window.location.pathname.includes('/definitions/')) {
             this.chatHeight = 'height:calc(100vh - 337px)'
+        } else if (window.location.pathname && window.location.pathname.includes('/instancelist')) {
+            this.chatHeight = 'height:calc(100vh - 350px)' // 원하는 height 값으로 변경
         }
     },
     watch: {
