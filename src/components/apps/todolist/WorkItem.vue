@@ -401,14 +401,20 @@ export default {
                         me.workItem = me.dryRunWorkItem
                        
                         me.currentComponent = me.workItem.activity.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.activity.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
+
+                        me.currentActivities = [me.workItem.activity.tracingTag];
                     } else {
                         me.workItem = await backend.getWorkItem(me.currentTaskId);
                         me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, { type: 'bpmn' });
                         if (me.workItem.worklist.execScope) me.workItem.execScope = me.workItem.worklist.execScope;
                         me.workListByInstId = await backend.getWorkListByInstId(me.workItem.worklist.instId);
                         me.currentComponent = me.workItem.worklist.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
+                        me.currentActivities = me.workListByInstId.map((item) => {
+                            if(item.status != 'COMPLETED' && item.status != 'DONE') {
+                                return item.tracingTag;
+                            }
+                        });
                     }
-                    me.currentActivities = [me.workItem.activity.tracingTag];
                     me.updatedDefKey++;
                 }
             });
