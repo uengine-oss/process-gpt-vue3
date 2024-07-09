@@ -77,23 +77,40 @@ const getChild = async (subitem, i) => {
                         </div>
                     </template>
                     <!---Title  -->
-                    <v-list-item-title class="text-subtitle-1 font-weight-medium">
-                        {{ useI18n ? $t(item.title) : item.title }}
-                    </v-list-item-title>
+                    <v-tooltip :text="useI18n ? $t(item.title) : item.title">
+                        <template v-slot:activator="{ props }">
+                            <v-list-item-title
+                                class="text-subtitle-1 font-weight-medium"
+                                v-bind="props"
+                            >
+                                {{ useI18n ? $t(item.title) : item.title }}
+                            </v-list-item-title>
+                        </template>
+                    </v-tooltip>
                     <!---If Caption-->
-                    <v-list-item-subtitle v-if="item.subCaption" class="text-caption mt-n1 hide-menu">
-                        {{ item.subCaption }}
-                    </v-list-item-subtitle>
+                    <v-tooltip v-if="item.subCaption" :text="item.subCaption">
+                        <template v-slot:activator="{ props }">
+                            <v-list-item-subtitle
+                                class="text-caption mt-n1 hide-menu"
+                                v-bind="props"
+                            >
+                                {{ item.subCaption }}
+                            </v-list-item-subtitle>
+                        </template>
+                    </v-tooltip>
                 </v-list-item>
             </template>
             <!-- ---------------------------------------------- -->
             <!---Sub Item-->
             <!-- ---------------------------------------------- -->
             <div class="mb-4 sublinks">
-                <template v-for="(subitem, i) in item.children" :key="i" v-if="item.children">
-                    <NavCollapse :item="subitem" v-if="subitem.directory" :level="level + 1" @click="getChild(subitem, i)" />
-                    <NavCollapse :item="subitem" v-else-if="subitem.children" :level="level + 1" />
-                    <DropDown :item="subitem" :level="level + 1" v-else></DropDown>
+                <!-- 정의목록 하위 내용 보여주는곳 -->
+                <template v-for="(subitem, i) in item.children" :key="i">
+                    <template v-if="item.children">
+                        <NavCollapse :item="subitem" v-if="subitem.directory" :level="level + 1" @click="getChild(subitem, i)" />
+                        <NavCollapse :item="subitem" v-else-if="subitem.children" :level="level + 1" />
+                        <DropDown :item="subitem" :level="level + 1" v-else></DropDown>
+                    </template>
                 </template>
                 <!-- <template v-for="(subitem, i) in item.children" :key="i" v-if="item.directory">
                     <NavCollapse :item="subitem" v-if="subitem.directory" :level="level + 1"

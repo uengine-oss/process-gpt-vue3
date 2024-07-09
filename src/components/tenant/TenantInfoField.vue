@@ -1,184 +1,82 @@
 <template>
-    <div style="width:100%; display: flex; flex-direction: column; align-items: center;">
-        <div style="width: 100%; max-width: 500px;">
-            <v-sheet class="mb-5" :color="color" tile>
-                <div class="d-flex flex-column align-center">
-                    <h2 class="text-grey200">{{ guideSlides[0].title }}</h2>
-                    <img :src="guideSlides[0].image" style="width: 200%; margin-top: 20px;"/>
-                    <div class="text-grey100" style="margin-top: 20px; text-align: center;" v-html="guideSlides[0].description"></div>
-                </div>
-                <div style="margin-top: 120px;" class="d-flex flex-column align-center">
-                    <h2 class="text-grey200">{{ guideSlides[1].title }}</h2>
-                    <img :src="guideSlides[1].image" style="width: 200%; margin-top: 20px;"/>
-                    <div class="text-grey100" style="margin-top: 20px; text-align: center;" v-html="guideSlides[1].description"></div>
-                </div>
-                <div style="margin-top: 120px;" class="d-flex flex-column align-center">
-                    <h2 class="text-grey200">{{ guideSlides[2].title }}</h2>
-                    <img :src="guideSlides[2].image" style="width: 200%; margin-top: 20px;"/>
-                    <div class="text-grey100" style="margin-top: 20px; text-align: center;" v-html="guideSlides[2].description"></div>
-                </div>
-                <div style="margin-top: 120px;" class="d-flex flex-column align-center">
-                    <h2 class="text-grey200">{{ guideSlides[3].title }}</h2>
-                    <img :src="guideSlides[3].image" style="width: 200%; margin-top: 20px;"/>
-                    <div class="text-grey100" style="margin-top: 20px; text-align: center;" v-html="guideSlides[3].description"></div>
-                </div>
-            </v-sheet>
-            
-            <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ 'Password *' }}</v-label>
-            <VTextField 
-                v-model.trim="value.password"
-                type="password"
-                required
-                ref="password"
-            ></VTextField>
-
-            <v-sheet class="mb-5" :color="color" tile>
-                <div style="margin-top: 120px;" class="d-flex flex-column align-center">
-                    <h2 class="text-grey200">{{ guideSlides[4].title }}</h2>
-                    <img :src="guideSlides[4].image" style="width: 200%; margin-top: 20px;"/>
-                    <img :src="guideSlides[5].image" style="width: 200%; margin-top: 20px;"/>
-                    <div class="text-grey100" style="margin-top: 20px; text-align: center;" v-html="guideSlides[4].description"></div>
-                </div>
-                <div style="margin-top: 120px;" class="d-flex flex-column align-center">
-                    <h2 class="text-grey200">{{ guideSlides[6].title }}</h2>
-                    <img :src="guideSlides[6].image" style="width: 200%; margin-top: 20px;"/>
-                    <div class="text-grey100" style="margin-top: 20px; text-align: center;" v-html="guideSlides[6].description"></div>
-                </div>
-            </v-sheet>
-
-            <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ 'URL *' }}</v-label>
-            <VTextField 
-                v-model.trim="value.url" 
-                type="url"
-                required
-                ref="url"
-            ></VTextField>
-
-            <v-sheet class="mb-5" :color="color" tile>
-                <div style="margin-top: 120px;" class="d-flex flex-column align-center">
-                    <h2 class="text-grey200">{{ guideSlides[7].title }}</h2>
-                    <img :src="guideSlides[7].image" style="width: 200%; margin-top: 20px;"/>
-                    <img :src="guideSlides[8].image" style="width: 200%; margin-top: 20px;"/>
-                    <div class="text-grey100" style="margin-top: 20px; text-align: center;" v-html="guideSlides[7].description"></div>
-                </div>
-            </v-sheet>
-
-            <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ 'Secret *' }}</v-label>
-            <VTextField 
-                v-model.trim="value.secret"
-                type="password"
-                required
-                ref="secret"
-            ></VTextField>
-
-            <v-sheet class="mb-5" :color="color" tile>
-                <div style="margin-top: 120px;" class="d-flex flex-column align-center">
-                    <h2 class="text-grey200">{{ guideSlides[9].title }}</h2>
-                    <img :src="guideSlides[9].image" style="width: 200%; margin-top: 20px;"/>
-                    <img :src="guideSlides[10].image" style="width: 200%; margin-top: 20px;"/>
-                    <div class="text-grey100" style="margin-top: 20px; text-align: center;" v-html="guideSlides[9].description"></div>
-                </div>
-            </v-sheet>
-
-            <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ 'Host *' }}</v-label>
-            <VTextField 
-                v-model.trim="value.host"
-                type="url"
-                required
-                ref="host"
-            ></VTextField>
-
-            <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ 'Database Name *' }}</v-label>
-            <VTextField 
-                v-model.trim="value.databaseName"
-                type="text"
-                required
-                ref="databaseName"
-            ></VTextField>
-
-            <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ 'Port *' }}</v-label>
-            <VTextField 
-                v-model.trim="value.port"
-                type="number"
-                required
-                ref="port"
-            ></VTextField>
-
-            <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ 'User *' }}</v-label>
-            <VTextField 
-                v-model.trim="value.user"
-                type="text"
-                required
-                ref="user"
-            ></VTextField>
-
-            <v-sheet class="mb-5" :color="color" tile>
-                <div style="margin-top: 120px;" class="d-flex flex-column align-center">
-                    <h2 class="text-grey200">{{ guideSlides[11].title }}</h2>
-                    <div class="text-grey100" style="margin-top: 20px; text-align: center;" v-html="guideSlides[11].description"></div>
-                </div>
-            </v-sheet>
-
-            <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAdminAccount.tenantID') }}</v-label>
-            <VTextField
-                v-model.trim="value.id" 
-                type="text"
-                :disabled="isEdit"
-                required
-                ref="tenantId"
-            ></VTextField>
-
-            <v-sheet class="mb-5" :color="color" tile>
-                <div style="margin-top: 120px;" class="d-flex flex-column align-center">
-                    <h2 class="text-grey200">{{ guideSlides[13].title }}</h2>
-                    <img :src="guideSlides[12].image" style="width: 200%; margin-top: 20px;"/>
-                    <img :src="guideSlides[13].image" style="width: 200%; margin-top: 20px;"/>
-                    <div class="text-grey100" style="margin-top: 20px; text-align: center;" v-html="guideSlides[13].description"></div>
-                </div>
-            </v-sheet>
-
-            <v-label class="text-subtitle-1 font-weight-medium pb-2">Site URL</v-label>
-            <div class="d-flex">
-                <VTextField
-                    :value="`${value.id}.process-gpt.io`" 
-                    type="text"
-                    disabled
-                ></VTextField>
-                <v-tooltip text="Copy">
-                    <template v-slot:activator="{ props }">
-                        <v-btn v-bind="props" icon variant="text" @click="copyToClipboard">
-                            <v-icon>mdi-content-copy</v-icon>
-                        </v-btn>
+    <div>
+        <v-row class="ma-0 pa-0">
+            <v-col cols="3" class="pa-4">
+                <v-list>
+                    <template v-for="(guideSlide, index) in guideSlides" :key="index">
+                        <v-list-item
+                            v-for="(item, itemIndex) in guideSlide.items" :key="itemIndex"
+                            :class="{'active-slide': activeIndex === index + '_' + itemIndex}"
+                            @click="scrollToSlide(index, itemIndex)"
+                        >
+                            <v-list-item-title>{{ item.title }}</v-list-item-title>
+                        </v-list-item>
                     </template>
-                </v-tooltip>
-            </div>
-
-            <!-- <v-label class="text-subtitle-1 font-weight-medium pb-2">
-                {{ $t('createAdminAccount.supabaseConnectionInfo') }}
-                <v-btn icon @click="openHelpPage">
-                    <v-icon>mdi-help-circle</v-icon>
-                </v-btn>
-            </v-label>
-            <v-divider class="mb-4" /> -->
-        </div>
+                </v-list>
+            </v-col>
+            <v-col cols="9" class="tenant-info-box pa-4"
+                style="height:calc(100vh - 50px); overflow:auto;"
+                @scroll="handleScroll"
+            >
+                <template v-for="(guideSlide, index) in guideSlides" :key="index">
+                    <div v-for="(item, itemIndex) in guideSlide.items" :key="itemIndex" class="mb-16">
+                        <h2 class="text-grey200" :ref="'slide' + index + '_' + itemIndex">{{ item.title }}</h2>
+                        <template v-for="(image, imageIndex) in item.images" :key="imageIndex">
+                            <img :src="image" :class="image == '/src/assets/images/tenant/help/1.png' ? 'create-account-img' : 'tenant-info-image'"/>
+                        </template>
+                        <div style="font-size:18px;" v-for="(desc, descIndex) in item.description" :key="descIndex" v-html="desc"></div>
+                        <template v-for="(textField, textFieldIndex) in item.textFields" :key="textFieldIndex">
+                            <div v-if="textField.value" class="d-flex tenant-info-text-filed">
+                                <VTextField
+                                    :value="`${value.id}.process-gpt.io`" 
+                                    type="text"
+                                    disabled
+                                ></VTextField>
+                                <v-tooltip text="Copy">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-bind="props" icon variant="text" @click="copyToClipboard">
+                                            <v-icon>mdi-content-copy</v-icon>
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
+                            </div>
+                            <VTextField v-else v-model.trim="value[getModel(textField.model)]"
+                                :label="textField.label"
+                                :type="textField.type"
+                                :ref="textField.ref"
+                                :disabled="isEdit || textField.disabled"
+                                class="tenant-info-text-filed"
+                                required
+                            ></VTextField>
+                        </template>
+                    </div>
+                </template>
+                <v-row no-gutters class="pa-0 pb-16">
+                    <v-btn 
+                        size="large" 
+                        class="mt-2" 
+                        color="primary"  
+                        rounded="pill"
+                        type="submit"
+                        :loading="isLoading"
+                        @click="createInfoTenant()"
+                    >생성하기</v-btn>
+                </v-row>
+            </v-col>
+        </v-row>
     </div>
 </template>
 
 <script>
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
-import help_image_1 from '@/assets/images/tenant/help/1.png';
-import help_image_2 from '@/assets/images/tenant/help/2.png';
-import help_image_3 from '@/assets/images/tenant/help/3.png';
-import help_image_4 from '@/assets/images/tenant/help/4.png';
-import help_image_5 from '@/assets/images/tenant/help/5.png';
-import help_image_6 from '@/assets/images/tenant/help/6.png';
-import help_image_7 from '@/assets/images/tenant/help/7.png';
-import help_image_8 from '@/assets/images/tenant/help/8.png';
-import help_image_9 from '@/assets/images/tenant/help/9.png';
-import help_image_10 from '@/assets/images/tenant/help/10.png';
-import help_image_11 from '@/assets/images/tenant/help/11.png';
-import help_image_13 from '@/assets/images/tenant/help/13.png';
-import help_image_14 from '@/assets/images/tenant/help/14.png';
+import createAccount from '@/assets/images/tenant/help/1.png';
+import selectNewProject from '@/assets/images/tenant/help/2.png';
+import createOrganization from '@/assets/images/tenant/help/3.png';
+import createProject from '@/assets/images/tenant/help/4.png';
+import apiUrlCopy from '@/assets/images/tenant/help/5.png';
+import secretCopy from '@/assets/images/tenant/help/6.png';
+import databaseCopy from '@/assets/images/tenant/help/7.png';
+import siteUrl from '@/assets/images/tenant/help/8.png';
 
 export default {
     name: 'TenantInfoField',
@@ -190,7 +88,8 @@ export default {
         isEdit: {
             type: Boolean,
             default: false
-        }
+        },
+        isLoading: Boolean
     },
     emits: ['update:modelValue'],
     expose: ['validCheck'],
@@ -208,71 +107,194 @@ export default {
 
     data: () => ({
         storage: null,
+        activeIndex: 0,
         guideSlides: [
             {
-                image: help_image_1,
-                title: 'STEP 1. Supabase 계정 만들기',
-                description: '1. <a href="https://supabase.com/dashboard/sign-up" target="_blank">Supabase 회원가입 페이지</a>로 들어가서 계정을 생성합니다.'
-            },
-
-            {
-                image: help_image_2,
-                title: 'STEP 2. Supabase 프로젝트 만들기',
-                description: '1. 계정 생성 이후 화면에서 New Project 버튼을 클릭해서 새로운 프로젝트를 생성합니다.'
-            },
-            {
-                image: help_image_3,
-                title: 'STEP 2. Supabase 프로젝트 만들기',
-                description: '1. 새롭게 생성할 기관명을 Name 항목에 입력하고, Create organization 버튼을 클릭해서 새로운 기관을 생성합니다.'
-            },
-            {
-                image: help_image_4,
-                title: 'STEP 2. Supabase 프로젝트 만들기',
-                description: '1. 생성한 Organization 내에 프로젝트(DB)를 생성해야합니다. 생성할 프로젝트명을 Project name 항목에 입력하고, 사용할 데이터베이스 비밀번호를 입력합니다.<br> 2. 입력한 비밀번호를 아래의 Password 입력창에 붙혀넣어줍니다.<br> 3. Region을 위의 스크린샷과 같이 Seoul로 선택하고, Create new project 버튼을 클릭해서 프로젝트를 생성합니다.'
-            },
-
-            {
-                image: help_image_5,
-                title: 'STEP 3. Supabase 연결 정보 입력하기',
-                description: '1. 프로젝트 생성이 완료되면 왼쪽 최하단의 톱니바퀴 모양 아이콘을 클릭합니다.<br>2. 화면에 표시되는 Settings 메뉴리스트중 API 메뉴를 선택합니다.'
+                step: 1,
+                items: [
+                    {
+                        title: 'STEP 1. 계정 만들기',
+                        images: [
+                            createAccount
+                        ],
+                        description: [
+                            '( *암호는 대문자, 소문자, 숫자, 특수문자가 모두 포함돼야 합니다. )<br>',
+                            '1. <a href="https://supabase.com/dashboard/sign-up" target="_blank">Supabase 회원가입 페이지</a>로 들어가서 계정을 생성합니다.',
+                        ]
+                    }
+                ]
             },
             {
-                image: help_image_6,
+                step: 2,
+                items: [
+                    {
+                        title: 'STEP 2. 프로젝트 또는 조직 만들기',
+                        images: [
+                            selectNewProject
+                        ],
+                        description: [
+                            '1. 계정 생성 이후 화면에서 새 프로젝트(New Project) 또는 신규 조직(New organization)을 선택합니다.<br>',
+                            '2. 선택 후 New Project를 클릭합니다.'
+                        ]
+                    },
+                    {
+                        title: 'STEP 2. 신규 조직(New organization) 생성',
+                        images: [
+                            createOrganization
+                        ],
+                        description: [
+                            '(*이미 조직(organization)이 있으면 이 단계는 건너뛰어도 괜찮습니다.)<br>',
+                            '1. 새롭게 생성할 조직(New organization)명을 Name 항목에 입력합니다.<br>',
+                            '2. Create organization 버튼을 클릭해서 새로운 기관을 생성합니다.'
+                        ]
+                    },
+                    {
+                        title: 'STEP 2. 새 프로젝트(New Project) 만들기',
+                        images: [
+                            createProject
+                        ],
+                        description: [
+                            '1. 생성한 조직(organization)을 선택하고, 생성할 프로젝트명을 Project name 항목에 입력합니다.<br>',
+                            '2. 사용할 데이터베이스 비밀번호를 입력합니다.<br>',
+                            '(*입력한 비밀번호를 아래의 Database Password 입력창에 붙혀넣어줍니다.)<br>',
+                            '3. Region을 위의 스크린샷과 같이 Seoul로 선택합니다.<br>',
+                            '4. Create new project 버튼을 클릭해서 프로젝트를 생성합니다.<br>',
+                        ],
+                        textFields: [
+                            {
+                                label: 'Database Password',
+                                type: 'password',
+                                model: 'password',
+                                ref: 'password',
+                            }
+                        ]
+                    }
+                ]
             },
             {
-                image: help_image_7,
-                title: 'STEP 3. Supabase 연결 정보 입력하기',
-                description: '1. Project URL 섹션에 있는 URL 항목을 복사하여 아래의 URL 입력창에 붙혀넣습니다.'
+                step: 3,
+                items: [
+                    {
+                        title: 'STEP 3. Project URL 연결하기',
+                        images: [
+                            apiUrlCopy
+                        ],
+                        description: [
+                            '1. 프로젝트 생성이 완료되면 왼쪽 최하단의 톱니바퀴 모양 아이콘을 클릭합니다.<br>',
+                            '2. 화면에 표시되는 Settings 메뉴리스트중 API 메뉴를 선택합니다.<br>',
+                            '3. (*Project URL 섹션에 있는 URL 항목을 복사하여 아래의 URL 입력창에 붙혀넣습니다.)'
+                        ],
+                        textFields: [
+                            {
+                                label: 'URL',
+                                type: 'url',
+                                model: 'url',
+                                ref: 'url',
+                            },
+                        ]
+                    },
+                    {
+                        title: 'STEP 3. Secret API Key 연결',
+                        images: [
+                            secretCopy
+                        ],
+                        description: [
+                            '1. Project API keys 섹션의 Reveal 버튼을 클릭하여 Secret 키 값을 확인할 수 있습니다.<br>',
+                            '(*Secret 키를 복사하여 아래의 Secret 입력창에 붙혀넣습니다.)'
+                        ],
+                        textFields: [
+                            {
+                                label: 'Secret',
+                                type: 'password',
+                                model: 'secret',
+                                ref: 'secret',
+                            },
+                        ]
+                    },
+                    {
+                        title: 'STEP 3. DataBase 연결',
+                        images: [
+                            databaseCopy
+                        ],
+                        description: [
+                            '1. Settings 메뉴리스트중 Database 메뉴를 선택합니다.<br>',
+                            '2. Connection parameters 섹션에서 Host, Database name, Port, User 값을 복사하여 아래의 각 입력창에 붙혀넣습니다.'
+                        ],
+                        textFields: [
+                            {
+                                label: 'Host',
+                                type: 'url',
+                                model: 'host',
+                                ref: 'host',
+                            },
+                            {
+                                label: 'Database Name',
+                                type: 'text',
+                                model: 'databaseName',
+                                ref: 'databaseName',
+                            },
+                            {
+                                label: 'Port',
+                                type: 'number',
+                                model: 'port',
+                                ref: 'port',
+                            },
+                            {
+                                label: 'User',
+                                type: 'text',
+                                model: 'user',
+                                ref: 'user',
+                            },
+                        ]
+                    },
+                ]
             },
             {
-                image: help_image_8,
-                title: 'STEP 3. Supabase 연결 정보 입력하기',
-                description: '1. Project API keys 섹션의 Reveal 버튼을 클릭하여 Secret 키 값을 확인할 수 있습니다. <br> 2. Secret 키를 복사하여 아래의 Secret 입력창에 붙혀넣습니다.'
+                step: 4,
+                items: [
+                    {
+                        title: 'STEP 4. 사용할 회사명 입력하기',
+                        description: [
+                            '1. 사용할 회사명을 아래의 ID 입력창에 입력하고 생성하기 버튼을 클릭해서 회사를 생성합니다.<br>',
+                            '입력한 회사명은 서브도메인으로 사용됩니다.<br>',
+                            'e.g. { 입력한 회사명 }.process-gpt.io'
+                        ],
+                        textFields: [
+                            {
+                                label: '회사 ID',
+                                type: 'text',
+                                model: 'id',
+                                ref: 'tenantId',
+                            },
+                        ]
+                    },
+                ]
             },
             {
-                image: help_image_9,
-            },
-            {
-                image: help_image_10,
-                title: 'STEP 3. Supabase 연결 정보 입력하기',
-                description: '1. Settings 메뉴리스트중 Database 메뉴를 선택합니다. <br>2. Connection parameters 섹션에서 Host, Database name, Port, User 값을 복사하여 아래의 각 입력창에 붙혀넣습니다.'
-            },
-            {
-                image: help_image_11,
-            },
-            {
-                title: 'STEP 4. 사용할 테넌트명(회사명) 입력하기',
-                description: '1. 사용할 테넌트명을 아래의 ID 입력창에 입력하고 생성하기 버튼을 클릭해서 테넌트를 생성합니다.<br>입력한 테넌트명은 서브도메인으로 사용됩니다. <br>e.g. { 입력한 테넌트명 }.process-gpt.io'
-            },
-            {
-                image: help_image_13,
-            },
-            {
-                image: help_image_14,
-                title: 'STEP 5. Supabase Site URL 설정하기',
-                description: '1. Supabase 의 Authentication 메뉴를 선택하고 URL Configuration 를 클릭합니다. <br> 2.STEP 4 에서 입력한 테넌트명이 포함된 Site URL 을 복사하여 Site URL 입력란에 입력하고 저장합니다.'
+                step: 5,
+                items: [
+                    {
+                        title: 'STEP 5. Supabase Site URL 설정하기',
+                        images: [
+                            siteUrl
+                        ],
+                        description: [
+                            '1. 왼쪽 메뉴 중 자물쇠 아이콘(Authentication) 메뉴를 선택합니다.<br>',
+                            '2. URL Configuration을 클릭합니다.<br>',
+                            '2. 아래 보이는 STEP 4에서 입력한 회사명이 포함된 Site URL을 복사 버튼을 눌러 복사 후 복사하여 Site URL 입력란에 입력합니다.<br>',
+                            '4. save 버튼을 눌러 저장합니다.'
+                        ],
+                        textFields: [
+                            {
+                                label: 'Site URL',
+                                disabled: true,
+                                value: true
+                            },
+                        ]
+                    }
+                ]
             }
-        ]
+        ],
     }),
 
     async created() {
@@ -280,72 +302,133 @@ export default {
     },
 
     methods: {
+        getModel(model) {
+            return model
+        },
+        createInfoTenant() {
+            this.$emit('beforeCreateTenant');
+        },
+        handleScroll() {
+            const slideKeys = Object.keys(this.$refs).filter(key => key.startsWith('slide'));
+            slideKeys.forEach((key) => {
+                const slides = this.$refs[key];
+                slides.forEach((slide) => {
+                    if (slide) {
+                        const rect = slide.getBoundingClientRect();
+                        if (rect.top >= 0 && rect.bottom <= window.innerHeight) {
+                            this.activeIndex = key.replace('slide', '');
+                        }
+                    }
+                });
+            });
+        },
+        scrollToSlide(index, itemIndex) {
+            const slide = this.$refs['slide' + index + '_' + itemIndex];
+            if (slide && slide[0]) {
+                slide[0].scrollIntoView();
+            }
+        },
         openHelpPage() {
             window.open('/tenant/help', '_blank')
         },
 
         async validCheck() {
-            if(!this.value.password || this.value.password === '') {
-                this.$refs.password.focus()
-                this.$emit('stopLoading');
-                throw new Error("Password를 입력해주세요.")
-            }
-            
-            if(!this.value.url || this.value.url === '') {
-                this.$refs.url.focus()
-                this.$emit('stopLoading');
-                throw new Error("URL을 입력해주세요.")
-            }
-
-            if(!this.value.secret || this.value.secret === '') {
-                this.$refs.secret.focus()
-                this.$emit('stopLoading');
-                throw new Error("Secret을 입력해주세요.")
-            }
-
-            if(!this.value.host || this.value.host === '') {
-                this.$refs.host.focus()
-                this.$emit('stopLoading');
-                throw new Error("Host를 입력해주세요.")
-            }
-
-            if(!this.value.databaseName || this.value.databaseName === '') {
-                this.$refs.databaseName.focus()
-                this.$emit('stopLoading');
-                throw new Error("Database Name을 입력해주세요.")
-            }
-
-            if(!this.value.port || this.value.port === '') {
-                this.$refs.port.focus()
-                this.$emit('stopLoading');
-                throw new Error("Port를 입력해주세요.")
-            }
-
-            if(this.value.port.match(/^[0-9]+$/) === null) {
-                this.$refs.port.focus()
-                this.$emit('stopLoading');
-                throw new Error("Port는 숫자만 입력해주세요.")
-            }
-
-            if(!this.value.user || this.value.user === '') {
-                this.$refs.user.focus()
-                this.$emit('stopLoading');
-                throw new Error("User를 입력해주세요.")
-            }
-
-            if(!this.value.id || this.value.id === '') {
-                this.$refs.tenantId.focus()
-                this.$emit('stopLoading');
-                throw new Error("테넌트 ID를 입력해주세요.")
-            }
-
-            if(this.isEdit === false) {
-                const dbTenantInfo = await this.storage.getObject(`tenant_def/${this.value.id}`, {key: 'id'})
-                if(dbTenantInfo !== undefined) {
-                    this.$refs.tenantId.focus()
-                    this.$emit('stopLoading');
-                    throw new Error(`'${this.value.id}'는 이미 존재하는 테넌트 ID입니다. 다른 ID를 사용해주세요.`)
+            try {
+                if (!this.value.password || this.value.password === '') {
+                    try {
+                        this.$refs.password.focus();
+                    } catch (e) {
+                        this.$emit('stopLoading');
+                        throw new Error("STEP2의 새 프로젝트 만들기에서 Database Password를 입력해 주세요.");
+                    }
                 }
+
+                if (!this.value.url || this.value.url === '') {
+                    try {
+                        this.$refs.url.focus();
+                    } catch (e) {
+                        this.$emit('stopLoading');
+                        throw new Error("STEP3의 Project URL 연결하기에서 URL을 입력해 주세요.");
+                    }
+                }
+
+                if (!this.value.secret || this.value.secret === '') {
+                    try {
+                        this.$refs.secret.focus();
+                    } catch (e) {
+                        this.$emit('stopLoading');
+                        throw new Error("STEP3의 Secret API Key 연결에서 Secret을 입력해주세요.");
+                    }
+                }
+
+                if (!this.value.host || this.value.host === '') {
+                    try {
+                        this.$refs.host.focus();
+                    } catch (e) {
+                        this.$emit('stopLoading');
+                        throw new Error("STEP3의 DataBase 연결에서 Host를 입력해주세요.");
+                    }
+                }
+
+                if (!this.value.databaseName || this.value.databaseName === '') {
+                    try {
+                        this.$refs.databaseName.focus();
+                    } catch (e) {
+                        this.$emit('stopLoading');
+                        throw new Error("STEP3의 DataBase 연결에서 Database Name을 입력해주세요.");
+                    }
+                }
+
+                if (!this.value.port || this.value.port === '') {
+                    try {
+                        this.$refs.port.focus();
+                    } catch (e) {
+                        this.$emit('stopLoading');
+                        throw new Error("STEP3의 DataBase 연결에서 Port를 입력해주세요.");
+                    }
+                }
+
+                if (this.value.port.match(/^[0-9]+$/) === null) {
+                    try {
+                        this.$refs.port.focus();
+                    } catch (e) {
+                        this.$emit('stopLoading');
+                        throw new Error("STEP3의 DataBase 연결에서 Port는 숫자만 입력해주세요.");
+                    }
+                }
+
+                if (!this.value.user || this.value.user === '') {
+                    try {
+                        this.$refs.user.focus();
+                    } catch (e) {
+                        this.$emit('stopLoading');
+                        throw new Error("STEP3의 DataBase 연결에서 User를 입력해주세요.");
+                    }
+                }
+
+                if (!this.value.id || this.value.id === '') {
+                    try {
+                        this.$refs.tenantId.focus();
+                    } catch (e) {
+                        this.$emit('stopLoading');
+                        throw new Error("STEP4의 사용할 회사명 입력하기에서 회사 ID를 입력해주세요.");
+                    }
+                }
+
+                if (this.isEdit === false) {
+                    const dbTenantInfo = await this.storage.getObject(`tenant_def/${this.value.id}`, { key: 'id' });
+                    if (dbTenantInfo !== undefined) {
+                        try {
+                            this.$refs.tenantId.focus();
+                        } catch (e) {
+                            this.$emit('stopLoading');
+                            throw new Error(`STEP4의 사용할 회사명 입력하기에서 '${this.value.id}'는 이미 존재하는 회사 ID입니다. 다른 ID를 사용해주세요.`);
+                        }
+                    }
+                }
+            } catch (error) {
+                this.$emit('stopLoading');
+                throw error; // 에러를 다시 던져서 상위 호출 스택으로 전달합니다.
             }
         },
 
@@ -360,3 +443,34 @@ export default {
     }
 };
 </script>
+
+<style>
+.active-slide {
+    background-color: #f0f0f0; /* Change this to your desired highlight color */
+}
+.tenant-info-image {
+    width:70%;
+    margin-top:20px;
+}
+
+.tenant-info-text-filed {
+    width:70%;
+    margin-top:20px;
+}
+
+.create-account-img {
+    width:35%;
+}
+
+@media only screen and (max-width:1280px) {
+    .tenant-info-image {
+        width:100%;
+    }
+    .tenant-info-text-filed {
+        width:100%;
+    }
+    .create-account-img {
+        width:100%;
+    }
+}
+</style>
