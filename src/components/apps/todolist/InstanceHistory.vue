@@ -1,35 +1,22 @@
 <template>
-    <div style="height: 100%">
-        <v-card-title>프로세스 진행상태</v-card-title>
-        <div style="overflow: auto; height: 100%">
-            <div v-if="bpmn" style="height: 100%">
-                <process-definition
-                    class="work-item-definition"
-                    style="height: 100%"
-                    :currentActivities="currentActivities"
-                    :bpmn="bpmn"
-                    :key="updatedDefKey"
-                    :isViewMode="true"
-                ></process-definition>
+    <div>
+        <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
+            <div class="d-flex w-100">
+                <component :is="'work-history-' + mode" :messages="messages" :isComplete="isComplete"
+                    @clickMessage="navigateToWorkItemByTaskId" />
             </div>
-            <dif v-else class="no-bpmn-found-text"> No BPMN found </dif>
-        </div>
+        </perfect-scrollbar>
     </div>
 </template>
 
 <script>
-
-import ProcessDefinition from '@/components/ProcessDefinition.vue';
-
 import WorkItemChat from '@/components/ui/WorkItemChat.vue';
 import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
-
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
 export default {
     components: {
-        ProcessDefinition,
         'work-history-uEngine': WorkItemChat,
         'work-history-ProcessGPT': ProcessInstanceChat,
     },

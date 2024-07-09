@@ -24,6 +24,7 @@ export default {
         toggleVersionDialog(open) {
             // Version Dialog
             this.versionDialog = open;
+            this.loading = false
         },
         // createBpmnXml(jsonModel) {
         //     const bpmnDefinitions = {
@@ -1956,27 +1957,17 @@ export default {
                                 xmlObj = await modeler.saveXML({ format: true, preamble: true });
                                 newProcessDefinition = await me.convertXMLToJSON(xmlObj.xml);
                                 if (newProcessDefinition != null && (
-                                    newProcessDefinition.data.length > 0 ||
-                                    newProcessDefinition.roles.length > 0 ||
-                                    newProcessDefinition.events.length > 0 ||
-                                    newProcessDefinition.components.length > 0 ||
-                                    newProcessDefinition.gateways.length > 0 ||
-                                    newProcessDefinition.sequences.length > 0
+                                    (newProcessDefinition.data && newProcessDefinition.data.length > 0) ||
+                                    (newProcessDefinition.roles && newProcessDefinition.roles.length > 0) ||
+                                    (newProcessDefinition.events && newProcessDefinition.events.length > 0) ||
+                                    (newProcessDefinition.components && newProcessDefinition.components.length > 0) ||
+                                    (newProcessDefinition.gateways && newProcessDefinition.gateways.length > 0) ||
+                                    (newProcessDefinition.sequences && newProcessDefinition.sequences.length > 0)
                                 )) {
                                     break;
                                 }
                                 retryCount++;
                                 await new Promise(resolve => setTimeout(resolve, 500));
-                            }
-                            if (newProcessDefinition == null || (
-                                newProcessDefinition.data.length == 0 &&
-                                newProcessDefinition.roles.length == 0 &&
-                                newProcessDefinition.events.length == 0 &&
-                                newProcessDefinition.components.length == 0 &&
-                                newProcessDefinition.gateways.length == 0 &&
-                                newProcessDefinition.sequences.length == 0
-                            )) {
-                                throw new Error('Model does not exist');
                             }
                         } else {
                             newProcessDefinition = await me.convertXMLToJSON(xmlObj.xml);
@@ -1996,10 +1987,10 @@ export default {
                             }
                             if (me.processDefinition.activities) {
                                 newProcessDefinition.activities = newProcessDefinition.activities.map(activity => {
-                                    const oldActivity = me.processDefinition.roles.find(oldActivity => oldActivity.id === activity.id);
+                                    const oldActivity = me.processDefinition.activities.find(oldActivity => oldActivity.id === activity.id);
                                     if (oldActivity) {
-                                        activity.instruction = oldRole.instruction;
-                                        activity.checkpoints = oldRole.checkpoints;
+                                        activity.instruction = oldActivity.instruction;
+                                        activity.checkpoints = oldActivity.checkpoints;
                                     }
                                     return activity;
                                 });
@@ -2026,7 +2017,9 @@ export default {
                 },
                 onFail: (e) => {
                     console.log(e);
-                }
+                    me.loading = false;
+                },
+                successMsg: '저장되었습니다.'
             });
         },
         async convertXMLToJSON(xmlString) {
