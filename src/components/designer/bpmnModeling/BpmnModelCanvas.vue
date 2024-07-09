@@ -195,10 +195,8 @@
                 </v-tooltip>
                 <v-tooltip location="top" v-for="(item, idx) in dragItems" :key="idx">
                     <template v-slot:activator="{ props }">
-                        <!-- <v-btn> -->
                         <span class="icons draggable" align="center" :class="item.icon" :_component="item.component"
                             :_width="item.width" :_height="item.height" v-bind="props"></span>
-                        <!-- </v-btn> -->
                     </template>
                     <span>{{ item.label }}</span>
                 </v-tooltip>

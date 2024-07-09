@@ -6,7 +6,7 @@
                     <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
                         <template v-slot:activator="{ props }">
                             <v-btn @click="openProcessVariables" icon v-bind="props" class="processVariables-btn">
-                                <Icon icon="tabler:variable" width="32" height="32" />
+                                <Icon class="cp-process-variables" icon="tabler:variable" width="32" height="32" />
                             </v-btn>
                         </template>
                     </v-tooltip>
@@ -125,7 +125,7 @@
                                 <tbody>
                                     <tr v-for="item in processVariables" :key="item.name">
                                         <td class="text-subtitle-1">{{ item.name }}</td>
-                                        <td>
+                                        <td class="cp-v-type">
                                             {{ item.type }}
                                         </td>
                                         <td v-if="item.defaultValue" class="text-subtitle-1">{{ item.defaultValue.formDefId }}</td>
@@ -170,14 +170,14 @@
                                     "
                                 >
                                     <div style="display: flex; justify-content: center; align-items: center">
-                                        <Icon icon="streamline:add-1-solid" width="24" height="24" style="color: #5eb2e8" />
+                                        <Icon class="cp-variables-add" icon="streamline:add-1-solid" width="24" height="24" style="color: #5eb2e8" />
                                     </div>
                                 </v-card>
                             </v-row>
                             <div v-if="processVariablesWindow">
                                 <v-card variant="outlined">
                                     <v-card-text class="ma-0 pa-0">
-                                        <process-variable mode="add" @add-variables="(val) => addUengineVariable(val)"></process-variable>
+                                        <process-variable class="cp-v-add" mode="add" @add-variables="(val) => addUengineVariable(val)"></process-variable>
                                     </v-card-text>
                                 </v-card>
                             </div>
