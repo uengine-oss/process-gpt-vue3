@@ -42,7 +42,7 @@ const customizer = useCustomizerStore();
                     <!---End Single Item-->
                 </template>
 
-                <ProcessInstanceList />
+                <!-- <ProcessInstanceList /> -->
 
                 <!-- definition menu item -->
                 <template v-for="item in definitionItem" :key="item.title">
@@ -58,7 +58,7 @@ const customizer = useCustomizerStore();
                                         @click="navigateTo(subItem.to)"
                                         v-bind="props"
                                         icon variant="text" 
-                                        class="text-medium-emphasis"
+                                        class="text-medium-emphasis cp-menu"
                                         density="comfortable"
                                     >
                                         <Icon :icon="subItem.icon" width="20" height="20" />    
@@ -73,6 +73,7 @@ const customizer = useCustomizerStore();
                     <!-- <NavItem v-else-if="!item.disable && !item.header" class="leftPadding" :item="item" /> -->
                 </template>
                 <template v-if="definitionList">
+                    <!-- 정의 목록 리스트 -->
                     <NavCollapse class="leftPadding" :item="definitionList" @update:item="(def) => (definitionList = def)" :level="0" :type="'definition-list'" />
                 </template>
                 <!-- <Moreoption/> -->
@@ -87,13 +88,13 @@ const customizer = useCustomizerStore();
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
-import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
+// import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 
 const backend = BackendFactory.createBackend();
 
 export default {
     components: {
-        ProcessInstanceList
+        // ProcessInstanceList
     },
     data: () => ({
         sidebarItem: [],
@@ -157,6 +158,9 @@ export default {
         this.EventBus.on('definitions-updated', async () => {
             await this.getDefinitionList();
         });
+        this.EventBus.on('instances-updated', async () => {
+            await this.loadInstances();
+        });
     },
     methods: {
         async getDefinitionList() {
@@ -169,6 +173,17 @@ export default {
                     to: `/`,
                     children: []
                 };
+                let instanceList = await backend.getInstanceList();
+                if (!instanceList) instanceList = [];
+                instanceList = instanceList.map((item) => {
+                    item = {
+                        title: item.instName,
+                        to: `/instancelist/${btoa(item.instId)}`,
+                        type:'instance'
+                    };
+                    menu.children.push(item);
+                    return item;
+                });
                 list.forEach((item) => {
                     if (item.directory) {
                         if (item.name != 'instances') {

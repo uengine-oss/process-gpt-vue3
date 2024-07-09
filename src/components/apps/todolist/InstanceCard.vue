@@ -1,44 +1,48 @@
 <template>
     <v-card elevation="10" v-if="instance" style="height: calc(100vh - 155px)">
-        <div class="px-3 pt-3 pb-2 d-flex align-center">
-            <h5 class="text-h5 font-weight-semibold">
-                {{ instance.name }} (ID: {{ instance.instanceId }})
-            </h5>
+        <div class="d-flex">
+            <div class="px-3 py-3 pb-2 align-center">
+                <div class="d-flex">
+                    <h5 class="text-h5 font-weight-semibold">
+                        {{ instance.name }}
+                    </h5>
 
-            <v-chip v-if="instance.status" size="x-small" variant="outlined"
-                style="margin: 2px 0px 0px 5px !important; display: flex; align-items: center">
-                {{ instance.status }}
-            </v-chip>
-            <div v-for="event in eventList">
-                <v-btn @click="fireMessage(event)"> {{ event }} 보내기 </v-btn>
+                    <v-chip v-if="instance.status" size="x-small" variant="outlined"
+                        style="margin: 2px 0px 0px 5px !important; display: flex; align-items: center">
+                        {{ instance.status }}
+                    </v-chip>
+                    <div v-for="event in eventList">
+                        <v-btn @click="fireMessage(event)"> {{ event }} 보내기 </v-btn>
+                    </div>
+                </div>
+                <div v-if="instance.instanceId" class="font-weight-medium" style="color:gray; font-size:14px;">
+                    ID: {{ instance.instanceId }}
+                </div>
             </div>
-
             <v-btn v-if="deletable" @click="deleteInstance" variant="plain" icon class="ml-auto">
                 <v-icon>mdi-delete</v-icon>
             </v-btn>
         </div>
 
-        <v-card flat>
-            <v-tabs v-model="tab" bg-color="transparent" height="50" color="primary">
-                <v-tab value="progress">
-                    진행 상황
-                </v-tab>
-                <v-tab value="todo">
-                    워크아이템
-                </v-tab>
-            </v-tabs>
-            <v-divider></v-divider>
-            <v-card-text class="pa-0">
-                <v-window v-model="tab">
-                    <v-window-item value="progress">
-                        <InstanceProgress :instance="instance" />
-                    </v-window-item>
-                    <v-window-item value="todo">
-                        <InstanceTodo :instance="instance" />
-                    </v-window-item>
-                </v-window>
-            </v-card-text>
-        </v-card>
+        <v-tabs v-model="tab" bg-color="transparent" height="40" color="primary">
+            <v-tab value="progress">
+                진행 상황
+            </v-tab>
+            <v-tab value="todo">
+                워크아이템
+            </v-tab>
+        </v-tabs>
+        <v-divider></v-divider>
+        <v-card-text class="pa-0">
+            <v-window v-model="tab">
+                <v-window-item value="progress">
+                    <InstanceProgress :instance="instance" />
+                </v-window-item>
+                <v-window-item value="todo">
+                    <InstanceTodo :instance="instance" />
+                </v-window-item>
+            </v-window>
+        </v-card-text>
     </v-card>
     <v-card v-else>
         <!-- 존재 하지 않은 인스턴스 -->

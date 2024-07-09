@@ -20,14 +20,16 @@ describe('프로세스 정의', () => {
     cy.get('.cp-start').click();
 
     // Login
-    cy.get('#input-32').clear().type(email);
+    cy.get('.cp-id input').clear();
+    cy.get('.cp-id').type(email);
     cy.wait(1000);
-    cy.get('#input-34').clear().type(password);
+    cy.get('.cp-pwd input').clear();
+    cy.get('.cp-pwd').type(password);
     cy.get('.cp-login').click();
     cy.wait(1000);
 
     // Process Menu Open
-    cy.get('.cp-menu-open').click();
+    cy.get('.cp-menu').eq(3).click();
     cy.wait(500);
 
     // 프로세스 정의

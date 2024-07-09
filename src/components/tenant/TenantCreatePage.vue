@@ -13,20 +13,13 @@
                 주어진 정보를 통해서 새로운 회사를 생성합니다.
             </p>
         </v-row> -->
-        <TenantInfoField v-model="tenantInfo" :isEdit="false" ref="tenantInfoField" @stopLoading="stopLoading"></TenantInfoField>
-
-        <v-row no-gutters style="margin-top: 30px; margin-bottom: 100px;" justify="center">
-            <v-btn 
-                size="large" 
-                class="mt-2" 
-                color="primary"  
-                rounded="pill"
-                type="submit"
-                style="width: 500px;"
-                :loading="isLoading"
-                @click="beforeCreateTenant"
-            >생성하기</v-btn>
-        </v-row>
+        <TenantInfoField v-model="tenantInfo"
+            ref="tenantInfoField"
+            :isEdit="false"
+            :isLoading='isLoading'
+            @stopLoading="stopLoading"
+            @beforeCreateTenant="beforeCreateTenant"
+        ></TenantInfoField>
     </div>
 </template>
 
@@ -68,7 +61,7 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    await me.$refs.tenantInfoField.validCheck()
+                    await me.$refs.tenantInfoField.validCheck();
 
                     const userInfo = await me.storage.getUserInfo();
 
@@ -85,7 +78,7 @@ export default {
                     });
 
                     // #region 사용자 정보에 추가한 테넌트 ID 업데이트
-                    const dbUserInfo = await me.storage.getObject(`users/${userInfo.uid}`, {key: 'id'})
+                    const dbUserInfo = await me.storage.getObject(`users/${userInfo.uid}`, { key: 'id' });
                     await me.storage.putObject(`users/${userInfo.uid}`, {
                         ...dbUserInfo,
                         tenants: (dbUserInfo.tenants) ? [...dbUserInfo.tenants, me.tenantInfo.id] : [me.tenantInfo.id]

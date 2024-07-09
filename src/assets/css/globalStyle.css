@@ -87,7 +87,7 @@ hr {
 /* bpm .bpmn-icon-screw-wrench 아이콘 나타나지 않아 넣어둔 부분 */
 
 .vue-bpmn-diagram-container .djs-palette {
-    width: 605px !important;
+    width: 695px !important;
     height: 50px;
     margin-left: 35px;
     background-color: white;
@@ -137,12 +137,11 @@ hr {
     right: 5px
 }
 
-@media only screen and (max-width:800px) {
+@media only screen and (max-width:1500px) {
     .vue-bpmn-diagram-container .djs-palette {
-        width: 325px !important;
+        width: 375px !important;
         height: 94px !important;
     }
 }
-
 
 

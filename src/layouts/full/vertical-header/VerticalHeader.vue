@@ -105,7 +105,7 @@ function navigateTo(item: SidebarItem) {
                     <v-btn class="hidden-lg-and-up" icon
                         @click.stop="customizer.SET_SIDEBAR_DRAWER"
                     >
-                        <Icon class="cp-menu-open" icon="solar:list-bold-duotone" height="24" width="24" />
+                        <Icon icon="solar:list-bold-duotone" height="24" width="24" />
                     </v-btn>
                     <v-tooltip :text="$t('headerMenu.sidebar')">
                         <template v-slot:activator="{ props }">

@@ -59,6 +59,22 @@
                     <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
                 </v-row>
             </div>
+            <div style="margin-top: 10px;">Instruction</div>
+            <v-text-field
+                v-if="activity.instruction"
+                v-model="activity.instruction"
+            ></v-text-field>
+            <div v-if="activity.checkpoints && activity.checkpoints.length > 0" style="margin-top: 10px;">
+                <div>Checkpoints</div>
+                <v-row class="ma-0 pa-0">
+                    <div v-for="(checkpoint, idx) in activity.checkpoints" :key="idx" class="mr-2 mt-2" style="width: -webkit-fill-available;">
+                        <v-text-field
+                            v-model="activity.checkpoints[idx]"
+                            :label="`${idx + 1}`"
+                        ></v-text-field>
+                    </div>
+                </v-row>
+            </div>
         </div>
         <div v-else-if="!isLoading && selectedActivity == 'FormActivity'">
             <div>
@@ -147,6 +163,8 @@ export default {
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
+        processDefinition: Object,
+        element: Object,
         isViewMode: Boolean,
         role: String,
         roles: Array,
@@ -154,7 +172,6 @@ export default {
         definition: Object,
         name: String
     },
-    created() {},
     data() {
         return {
             isLoading: false,
@@ -192,10 +209,17 @@ export default {
             nodes: {},
             replaceFromExpandableNode: null,
             replaceToExpandableNode: null,
+            activity: null
         };
     },
     created() {
         this.backend = BackendFactory.createBackend();
+        const activity = this.processDefinition.activities.find(activity => activity.id === this.element.id);
+        if (activity) {
+            this.activity = activity
+        } else {
+            console.log('Activity not found');
+        }
     },
     mounted() {
         let me = this;

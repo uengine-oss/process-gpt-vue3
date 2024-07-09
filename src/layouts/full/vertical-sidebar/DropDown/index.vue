@@ -9,13 +9,14 @@ const useI18n = computed(() => {
 });
 
 function getIcon(item) {
-    console.log(`Item:`, item);
     if (item.type && item.type.includes('bpmn')) {
         return 'carbon:ibm-process-mining';
     } else if (item.type && item.type.includes('json')) {
         return 'carbon:json';
     } else if (item.type && item.type.includes('form')) {
         return 'carbon:document';
+    } else if (item.type && item.type.includes('instance')) {
+        return 'ph:cube';
     } else {
         return 'carbon:ibm-process-mining';
     }
@@ -44,7 +45,16 @@ function getIcon(item) {
                     height="24"
                 />
             </template>
-            <v-list-item-title class="ml-4 text-body-1">{{ useI18n ? $t(item.title) : item.title }}</v-list-item-title>
+            <v-tooltip bottom :text="useI18n ? $t(item.title) : item.title">
+                <template v-slot:activator="{ props }">
+                    <v-list-item-title
+                        class="ml-4 text-body-1"
+                        v-bind="props"
+                    >
+                        {{ useI18n ? $t(item.title) : item.title }}
+                    </v-list-item-title>
+                </template>
+            </v-tooltip>
             <!---If Caption-->
             <v-list-item-subtitle v-if="item.subCaption" class="text-caption mt-n1 hide-menu">
                 {{ item.subCaption }}
