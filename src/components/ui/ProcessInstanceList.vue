@@ -1,6 +1,6 @@
 <template>
     <div>
-        <NavItem class="leftPadding" :item="definitionMap" />
+        <!-- <NavItem class="leftPadding" :item="definitionMap" /> -->
         <NavGroup v-if="!JMS && instanceList.length > 0" :item="runningInstances" :key="runningInstances.header" />
         <template v-for="item in instanceList" :key="item.title">
             <NavItem v-if="!JMS" class="leftPadding" :item="item" :use-i18n="false" />
@@ -25,12 +25,12 @@ export default {
         NavItem
     },
     data: () => ({
-        definitionMap: {
-            title: "processDefinitionMap.title",
-            icon: 'ri:layout-grid-2-line',
-            BgColor: 'primary',
-            to: "/definition-map",
-        },
+        // definitionMap: {
+        //     title: "processDefinitionMap.title",
+        //     icon: 'ri:layout-grid-2-line',
+        //     BgColor: 'primary',
+        //     to: "/definition-map",
+        // },
         // runningInstances: {
         //     title: 'runningInstance.title',
         //     icon: 'solar:list-bold',

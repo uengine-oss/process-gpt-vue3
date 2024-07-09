@@ -9,13 +9,14 @@ const useI18n = computed(() => {
 });
 
 function getIcon(item) {
-    console.log(`Item:`, item);
     if (item.type && item.type.includes('bpmn')) {
         return 'carbon:ibm-process-mining';
     } else if (item.type && item.type.includes('json')) {
         return 'carbon:json';
     } else if (item.type && item.type.includes('form')) {
         return 'carbon:document';
+    } else if (item.type && item.type.includes('instance')) {
+        return 'ph:cube';
     } else {
         return 'carbon:ibm-process-mining';
     }
