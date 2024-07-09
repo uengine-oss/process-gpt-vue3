@@ -1943,6 +1943,7 @@ export default {
                     const store = useBpmnStore();
                     let modeler = store.getModeler;
                     let xmlObj = await modeler.saveXML({ format: true, preamble: true });
+                    let newProcessDefinition
 
                     // if (me.processDefinition) {
                     //     info.definition = me.processDefinition;
@@ -1953,32 +1954,59 @@ export default {
                             while (retryCount < 10) {
                                 modeler = store.getModeler;
                                 xmlObj = await modeler.saveXML({ format: true, preamble: true });
-                                me.processDefinition = await me.convertXMLToJSON(xmlObj.xml);
-                                if (me.processDefinition != null && (
-                                    me.processDefinition.data.length > 0 ||
-                                    me.processDefinition.roles.length > 0 ||
-                                    me.processDefinition.events.length > 0 ||
-                                    me.processDefinition.components.length > 0 ||
-                                    me.processDefinition.gateways.length > 0 ||
-                                    me.processDefinition.sequences.length > 0
+                                newProcessDefinition = await me.convertXMLToJSON(xmlObj.xml);
+                                if (newProcessDefinition != null && (
+                                    newProcessDefinition.data.length > 0 ||
+                                    newProcessDefinition.roles.length > 0 ||
+                                    newProcessDefinition.events.length > 0 ||
+                                    newProcessDefinition.components.length > 0 ||
+                                    newProcessDefinition.gateways.length > 0 ||
+                                    newProcessDefinition.sequences.length > 0
                                 )) {
                                     break;
                                 }
                                 retryCount++;
                                 await new Promise(resolve => setTimeout(resolve, 500));
                             }
-                            if (me.processDefinition == null || (
-                                me.processDefinition.data.length == 0 &&
-                                me.processDefinition.roles.length == 0 &&
-                                me.processDefinition.events.length == 0 &&
-                                me.processDefinition.components.length == 0 &&
-                                me.processDefinition.gateways.length == 0 &&
-                                me.processDefinition.sequences.length == 0
+                            if (newProcessDefinition == null || (
+                                newProcessDefinition.data.length == 0 &&
+                                newProcessDefinition.roles.length == 0 &&
+                                newProcessDefinition.events.length == 0 &&
+                                newProcessDefinition.components.length == 0 &&
+                                newProcessDefinition.gateways.length == 0 &&
+                                newProcessDefinition.sequences.length == 0
                             )) {
                                 throw new Error('Model does not exist');
                             }
+                        } else {
+                            newProcessDefinition = await me.convertXMLToJSON(xmlObj.xml);
                         }
-                        me.processDefinition = await me.convertXMLToJSON(xmlObj.xml);
+
+                        if (!me.processDefinition) {
+                            me.processDefinition = newProcessDefinition
+                        } else {
+                            if (me.processDefinition.roles) {
+                                newProcessDefinition.roles = newProcessDefinition.roles.map(newRole => {
+                                    const oldRole = me.processDefinition.roles.find(oldRole => oldRole.name === newRole.name);
+                                    if (oldRole) {
+                                        newRole.resolutionRule = oldRole.resolutionRule;
+                                    }
+                                    return newRole;
+                                });
+                            }
+                            if (me.processDefinition.activities) {
+                                newProcessDefinition.activities = newProcessDefinition.activities.map(activity => {
+                                    const oldActivity = me.processDefinition.roles.find(oldActivity => oldActivity.id === activity.id);
+                                    if (oldActivity) {
+                                        activity.instruction = oldRole.instruction;
+                                        activity.checkpoints = oldRole.checkpoints;
+                                    }
+                                    return activity;
+                                });
+                            }
+                            me.processDefinition = newProcessDefinition
+                        }
+
                         if (info.name && info.name != '') {
                             me.processDefinition.processDefinitionName = info.name;
                         }

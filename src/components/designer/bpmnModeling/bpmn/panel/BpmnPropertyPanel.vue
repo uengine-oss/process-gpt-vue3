@@ -33,6 +33,7 @@
                 @update:uengineProperties="(newProps) => (uengineProperties = newProps)"
                 :definition="definition"
                 :processDefinitionId="processDefinitionId"
+                :processDefinition="processDefinition"
                 @addUengineVariable="(val) => $emit('addUengineVariable', val)"
             ></component>
         </v-card-text>
@@ -48,6 +49,7 @@ export default {
     name: 'bpmn-property-panel',
     props: {
         element: Object,
+        processDefinition: Object,
         processDefinitionId: String,
         isViewMode: Boolean,
         definition: Object,

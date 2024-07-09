@@ -83,6 +83,7 @@
                         v-on:updateElement="(val) => updateElement(val)"
                         :definition="thisDefinition"
                         :processDefinitionId="definitionPath"
+                        :processDefinition="processDefinition"
                         :validationList="validationList"
                     ></bpmn-property-panel>
                     <!-- {{ definition }} -->
@@ -220,6 +221,7 @@ import { useBpmnStore } from '@/stores/bpmn';
 import BpmnLLM from './BpmnLLM.vue';
 import BpmnuEngine from './BpmnUengine.vue';
 import customBpmnModule from './customBpmn';
+import customPaletteModule from './customPalette';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
@@ -261,7 +263,8 @@ export default {
                 invalidationList: {}
             },
             additionalModules: [
-                customBpmnModule
+                customBpmnModule,
+                customPaletteModule
             ]
         },
         roles: [],

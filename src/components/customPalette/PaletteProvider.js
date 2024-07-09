@@ -23,7 +23,6 @@ export default function PaletteProvider(palette,
   this._isMac = (/mac/i).test(navigator.platform);
 
   palette.registerProvider(this);
-
 }
 
 PaletteProvider.$inject = [
@@ -95,7 +94,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     'redo': {
       group: 'tools',
       className: 'mdi mdi-redo-variant',
-      title: isMac? 'Redo (Cmd + Shift + Z)' :'Redo (Ctrl + Y)',
+      title: isMac? 'Redo (Cmd + Y)' :'Redo (Ctrl + Y)',
       action: {
         click: function(event) {
           commandStack.redo();

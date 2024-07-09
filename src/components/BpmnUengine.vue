@@ -304,16 +304,23 @@ export default {
                 self.bpmnViewer.importXML(self.diagramXML);
             }
 
-            const commandStack = self.bpmnViewer.get('commandStack');
-            document.addEventListener('keydown', (event) => {
-            if (event.ctrlKey && event.key === 'z') {
-                event.preventDefault();
-                commandStack.undo();
-            } else if (event.ctrlKey && event.key === 'y') {
-                event.preventDefault();
-                commandStack.redo();
+            
+
+            try {
+                const commandStack = self.bpmnViewer.get('commandStack');
+                document.addEventListener('keydown', (event) => {
+                    if ((event.metaKey || event.ctrlKey) && event.key === 'z') {
+                        event.preventDefault();
+                        commandStack.undo();
+                    } else if ((event.metaKey || event.ctrlKey) && event.key === 'y') {
+                        event.preventDefault();
+                        commandStack.redo();
+                    }
+                });
             }
-            });
+            catch(e) {
+
+            }
         },
         extendUEngineProperties(businessObject) {
             let self = this;

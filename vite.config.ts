@@ -12,11 +12,6 @@ export default defineConfig({
         VITE_DB_URL: `"${process.env.VITE_DB_URL}"`, // wrapping in "" since it's a string
         VITE_DB_PW: `"${process.env.VITE_DB_PW}"`
     },
-    build: {
-        rollupOptions: {
-            external: ['apextree'],
-        },
-    },
     plugins: [
         vue(),
         vuetify({
