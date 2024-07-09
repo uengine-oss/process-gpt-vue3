@@ -1,14 +1,23 @@
 <template>
     <div>
-        <v-autocomplete v-model="localModelValue" :items="usersToSelect" :label="(localAlias && localAlias.length > 0) ? localAlias : localName" :disabled="localDisabled"
-                        item-title="id" item-value="id" chips closable-chips multiple small-chips>
-                        <template v-slot:chip="{ props, item }">
-                            <v-chip v-bind="props" :text="item.raw.username ?? item.raw.email"></v-chip>
-                        </template>
+        <v-autocomplete v-model="localModelValue" 
+            :items="usersToSelect" 
+            :label="(localAlias && localAlias.length > 0) ? localAlias : localName" 
+            :disabled="localDisabled"
+            item-title="id" 
+            :item-value="itemValue" 
+            chips closable-chips multiple small-chips
+        >
+            <template v-slot:chip="{ props, item }">
+                <v-chip v-bind="props" :text="item.raw.username ?? item.raw.email"></v-chip>
+            </template>
 
-                        <template v-slot:item="{ props, item }">
-                            <v-list-item v-bind="props" :title="item.raw.username ?? item.raw.email" :subtitle="item.raw.email"></v-list-item>
-                        </template>
+            <template v-slot:item="{ props, item }">
+                <v-list-item v-bind="props"
+                    :title="item.raw.username ?? item.raw.email" 
+                    :subtitle="item.raw.email"
+                ></v-list-item>
+            </template>
         </v-autocomplete>
     </div>
 </template>
@@ -27,7 +36,11 @@ export default {
 
         name: String,
         alias: String,
-        disabled: String
+        disabled: String,
+        itemValue: {
+            type: String,
+            default: "id"
+        }
     },
 
     data() {

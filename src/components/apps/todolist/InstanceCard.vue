@@ -12,6 +12,10 @@
             <div v-for="event in eventList">
                 <v-btn @click="fireMessage(event)"> {{ event }} 보내기 </v-btn>
             </div>
+
+            <v-btn v-if="deletable" @click="deleteInstance" variant="plain" icon class="ml-auto">
+                <v-icon>mdi-delete</v-icon>
+            </v-btn>
         </div>
 
         <v-card flat>
@@ -84,6 +88,15 @@ export default {
         isCompleted() {
             return this.instance.status == "COMPLETED"
         },
+        deletable() {
+            if (this.instance) {
+                const email = localStorage.getItem('email');
+                if (this.instance.current_user_ids && this.instance.current_user_ids.length > 0 && this.instance.current_user_ids.includes(email)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     },
     methods: {
         init() {
@@ -93,7 +106,9 @@ export default {
                 action: async () => {
                     if (!me.id) return;
                     me.instance = await backend.getInstance(me.id);
-                    me.eventList = await backend.getEventList(me.instance.instanceId);
+                    if (me.instance) {
+                        me.eventList = await backend.getEventList(me.instance.instanceId);
+                    }
                 }
             });
         },
@@ -102,6 +117,19 @@ export default {
         },
         fireMessage(event) {
             backend.fireMessage(this.instance.instanceId, event);
+        },
+        deleteInstance() {
+            var me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    if (!me.id) return;
+                    await backend.deleteInstance(me.id);
+                    me.EventBus.emit('instances-updated');
+                    me.$router.push("/todolist");
+                },
+                successMsg: '인스턴스가 삭제되었습니다.',
+            });
         }
     }
 };

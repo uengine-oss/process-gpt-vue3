@@ -47,6 +47,7 @@ export interface Backend {
     putSystem(system: any): Promise<any>;
     getSystem(systemId: String): Promise<any>;
     getCurrentWorkItemByCorrKey(corrKey: number): Promise<any>;
+    deleteInstance(instanceId: string): Promise<any>;
 }
 
 // export type { Backend }

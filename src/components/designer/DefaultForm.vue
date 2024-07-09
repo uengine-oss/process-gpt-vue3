@@ -1,16 +1,12 @@
 <template>
     <div v-if="inputItems.length > 0" class="input-group" style="width: 100%;">
-        <v-row v-for="item in inputItems" :key="item.key">
-            <v-col cols="4">
-                <v-list-subheader>{{item.key}}</v-list-subheader>
-            </v-col>
-            <v-col cols="8">
-                <v-text-field
-                    v-model="item.value"
-                    :disabled="isComplete"
-                ></v-text-field>
-            </v-col>
-        </v-row>
+        <div v-for="item in inputItems" :key="item.key" class="px-1">
+            <v-text-field
+                v-model="item.value"
+                :label="item.key"
+                :disabled="isComplete"
+            ></v-text-field>
+        </div>
     </div>
     <div v-else>
         <div class="d-flex justify-center">
