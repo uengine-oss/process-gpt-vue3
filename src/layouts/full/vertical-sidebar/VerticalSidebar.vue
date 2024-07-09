@@ -58,7 +58,7 @@ const customizer = useCustomizerStore();
                                         @click="navigateTo(subItem.to)"
                                         v-bind="props"
                                         icon variant="text" 
-                                        class="text-medium-emphasis"
+                                        class="text-medium-emphasis cp-menu"
                                         density="comfortable"
                                     >
                                         <Icon :icon="subItem.icon" width="20" height="20" />    
@@ -73,6 +73,7 @@ const customizer = useCustomizerStore();
                     <!-- <NavItem v-else-if="!item.disable && !item.header" class="leftPadding" :item="item" /> -->
                 </template>
                 <template v-if="definitionList">
+                    <!-- 정의 목록 리스트 -->
                     <NavCollapse class="leftPadding" :item="definitionList" @update:item="(def) => (definitionList = def)" :level="0" :type="'definition-list'" />
                 </template>
                 <!-- <Moreoption/> -->

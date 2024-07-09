@@ -44,7 +44,16 @@ function getIcon(item) {
                     height="24"
                 />
             </template>
-            <v-list-item-title class="ml-4 text-body-1">{{ useI18n ? $t(item.title) : item.title }}</v-list-item-title>
+            <v-tooltip bottom :text="useI18n ? $t(item.title) : item.title">
+                <template v-slot:activator="{ props }">
+                    <v-list-item-title
+                        class="ml-4 text-body-1"
+                        v-bind="props"
+                    >
+                        {{ useI18n ? $t(item.title) : item.title }}
+                    </v-list-item-title>
+                </template>
+            </v-tooltip>
             <!---If Caption-->
             <v-list-item-subtitle v-if="item.subCaption" class="text-caption mt-n1 hide-menu">
                 {{ item.subCaption }}
