@@ -42,7 +42,7 @@ const customizer = useCustomizerStore();
                     <!---End Single Item-->
                 </template>
 
-                <!-- <ProcessInstanceList /> -->
+                <ProcessInstanceList />
 
                 <!-- definition menu item -->
                 <template v-for="item in definitionItem" :key="item.title">
@@ -88,13 +88,13 @@ const customizer = useCustomizerStore();
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
-// import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
+import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 
 const backend = BackendFactory.createBackend();
 
 export default {
     components: {
-        // ProcessInstanceList
+        ProcessInstanceList
     },
     data: () => ({
         sidebarItem: [],
