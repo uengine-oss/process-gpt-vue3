@@ -1,7 +1,7 @@
 <template>
     <div>
         <!-- <NavItem class="leftPadding" :item="definitionMap" /> -->
-        <NavGroup v-if="!JMS && instanceList.length > 0" :item="runningInstances" :key="runningInstances.header" />
+        <!-- <NavGroup v-if="!JMS && instanceList.length > 0" :item="runningInstances" :key="runningInstances.header" /> -->
         <template v-for="item in instanceList" :key="item.title">
             <NavItem v-if="!JMS" class="leftPadding" :item="item" :use-i18n="false" />
         </template>
@@ -67,6 +67,7 @@ export default {
             if (!result) result = [];
             this.instanceList = result.map((item) => {
                 item = {
+                    icon: 'ph:cube',
                     title: item.instName,
                     to: `/instancelist/${btoa(item.instId)}`
                 };

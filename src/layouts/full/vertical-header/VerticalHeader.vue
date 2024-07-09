@@ -34,6 +34,12 @@ const sidebarItems = ref<SidebarItem[]>([
         disable: false
     },
     {
+        title: 'processDefinitionMap.title',
+        icon: 'ri:layout-grid-2-line',
+        to: '/definition-map',
+        disable: false
+    },
+    {
         title: 'chats.title',
         icon: 'solar:chat-round-unread-line-duotone',
         to: '/chats',

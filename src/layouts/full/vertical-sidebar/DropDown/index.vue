@@ -15,8 +15,6 @@ function getIcon(item) {
         return 'carbon:json';
     } else if (item.type && item.type.includes('form')) {
         return 'carbon:document';
-    } else if (item.type && item.type.includes('instance')) {
-        return 'ph:cube';
     } else {
         return 'carbon:ibm-process-mining';
     }

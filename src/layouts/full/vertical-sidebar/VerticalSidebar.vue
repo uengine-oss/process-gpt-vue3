@@ -42,7 +42,7 @@ const customizer = useCustomizerStore();
                     <!---End Single Item-->
                 </template>
 
-                <!-- <ProcessInstanceList /> -->
+                <ProcessInstanceList />
 
                 <!-- definition menu item -->
                 <template v-for="item in definitionItem" :key="item.title">
@@ -88,13 +88,13 @@ const customizer = useCustomizerStore();
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
-// import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
+import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 
 const backend = BackendFactory.createBackend();
 
 export default {
     components: {
-        // ProcessInstanceList
+        ProcessInstanceList
     },
     data: () => ({
         sidebarItem: [],
@@ -158,9 +158,9 @@ export default {
         this.EventBus.on('definitions-updated', async () => {
             await this.getDefinitionList();
         });
-        this.EventBus.on('instances-updated', async () => {
-            await this.loadInstances();
-        });
+        // this.EventBus.on('instances-updated', async () => {
+        //     await this.loadInstances();
+        // });
     },
     methods: {
         async getDefinitionList() {
@@ -173,17 +173,18 @@ export default {
                     to: `/`,
                     children: []
                 };
-                let instanceList = await backend.getInstanceList();
-                if (!instanceList) instanceList = [];
-                instanceList = instanceList.map((item) => {
-                    item = {
-                        title: item.instName,
-                        to: `/instancelist/${btoa(item.instId)}`,
-                        type:'instance'
-                    };
-                    menu.children.push(item);
-                    return item;
-                });
+                // 정의목록 하위에 인스턴스 목록 표시해주기 위해 사용
+                // let instanceList = await backend.getInstanceList();
+                // if (!instanceList) instanceList = [];
+                // instanceList = instanceList.map((item) => {
+                //     item = {
+                //         title: item.instName,
+                //         to: `/instancelist/${btoa(item.instId)}`,
+                //         type:'instance'
+                //     };
+                //     menu.children.push(item);
+                //     return item;
+                // });
                 list.forEach((item) => {
                     if (item.directory) {
                         if (item.name != 'instances') {
