@@ -21,7 +21,7 @@ const props = defineProps({ item: Object, level: Number });
                     <Icon :icon="'solar:' + item.icon" height="24" width="24" :level="level"
                     :class="'position-relative z-index-2 texthover-' + item.BgColor" />
                 </i>
-                <span class="z-index-1  ml-3 cp-menu">{{ $t(item.title) }}</span>
+                <span class="z-index-1  ml-3">{{ $t(item.title) }}</span>
             </span>
         </span>
         <!---If Caption-->

@@ -58,7 +58,7 @@ const customizer = useCustomizerStore();
                                         @click="navigateTo(subItem.to)"
                                         v-bind="props"
                                         icon variant="text" 
-                                        class="text-medium-emphasis"
+                                        class="text-medium-emphasis cp-menu"
                                         density="comfortable"
                                     >
                                         <Icon :icon="subItem.icon" width="20" height="20" />    

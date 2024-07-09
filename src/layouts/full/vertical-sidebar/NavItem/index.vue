@@ -25,8 +25,8 @@ const props = defineProps({
                     </span>
                 </div>
             </template>
-            <v-list-item-title v-if="useI18n" class="text-subtitle-1 font-weight-medium cp-menu" :color="item.BgColor">{{ $t(item.title) }}</v-list-item-title>
-            <v-list-item-title v-else class="text-subtitle-1 font-weight-medium cp-menu" :color="item.BgColor">{{ item.title }}</v-list-item-title>
+            <v-list-item-title v-if="useI18n" class="text-subtitle-1 font-weight-medium" :color="item.BgColor">{{ $t(item.title) }}</v-list-item-title>
+            <v-list-item-title v-else class="text-subtitle-1 font-weight-medium" :color="item.BgColor">{{ item.title }}</v-list-item-title>
             <!---If Caption-->
             <v-list-item-subtitle v-if="item.subCaption" class="text-caption mt-n1 hide-menu">
                 {{ item.subCaption }}
