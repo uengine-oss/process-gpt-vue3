@@ -123,7 +123,11 @@ export default {
                     if (me.instance) {
                         me.bpmn = await backend.getRawDefinition(me.instance.defId, { type: 'bpmn' });
                         me.workListByInstId = await backend.getWorkListByInstId(me.instance.instanceId);
-                        me.currentActivities = me.workListByInstId.map((item) => item.tracingTag);
+                        if (me.mode == 'ProcessGPT') {
+                            me.currentActivities = me.instance.current_activity_ids;
+                        } else {
+                            me.currentActivities = me.workListByInstId.map((item) => item.tracingTag);
+                        }
                         me.updatedDefKey++;
                     }
                 }

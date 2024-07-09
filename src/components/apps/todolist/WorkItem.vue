@@ -28,6 +28,7 @@
                         :currentActivities="currentActivities"
                         @updateCurrentActivities="updateCurrentActivities"
                         @close="close"
+                        @executeProcess="executeProcess"
                     ></component>
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
@@ -171,6 +172,7 @@
                         :currentActivities="currentActivities"
                         @updateCurrentActivities="updateCurrentActivities"
                         @close="close"
+                        @executeProcess="executeProcess"
                     ></component>
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
@@ -406,7 +408,6 @@ export default {
                         me.workListByInstId = await backend.getWorkListByInstId(me.workItem.worklist.instId);
                         me.currentComponent = me.workItem.worklist.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
                     }
-
                     me.currentActivities = [me.workItem.activity.tracingTag];
                     me.updatedDefKey++;
                 }
@@ -433,6 +434,9 @@ export default {
         },
         delay(time) {
             return new Promise((resolve) => setTimeout(resolve, time));
+        },
+        executeProcess(value) {
+            this.$emit('executeProcess', value)
         }
     }
 };

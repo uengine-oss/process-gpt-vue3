@@ -211,8 +211,8 @@ class ProcessGPTBackend implements Backend {
             if (!input.process_instance_id) {
                 input.process_instance_id = "new";
             }
-            if (!input.userInfo) {
-                input.userInfo = await storage.getUserInfo();
+            if (!input.role_mappings) {
+                input.role_mappings = [];
             }
             input['process_definition_id'] = defId.toLowerCase();
             
@@ -423,7 +423,7 @@ class ProcessGPTBackend implements Backend {
     async putWorklist(taskId: string, workItem: any) {
         try {
             let result: any = null;
-            if (!workItem.instId) {
+            if (!workItem.instId || workItem.status != "DONE") {
                 const putObj = {
                     id: taskId,
                     proc_def_id: workItem.defId,
@@ -723,13 +723,10 @@ class ProcessGPTBackend implements Backend {
 
             let result: any = null;
             const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
-            const userInfo = await storage.getUserInfo();
-            
             const input = {
                 answer: JSON.stringify(inputData),
                 process_instance_id: workItem.proc_inst_id,
                 process_definition_id: workItem.proc_def_id,
-                userInfo: userInfo,
                 activity_id: workItem.activity_id,
             };
             const req = {
@@ -922,6 +919,21 @@ class ProcessGPTBackend implements Backend {
     async getCurrentWorkItemByCorrKey(corrKey: number) {
         try {
             return null;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteInstance(instId: string) {
+        try {
+            const defId = instId.split('.')[0];
+            await Promise.all([
+                await storage.delete(defId, { match: { proc_inst_id: instId } }),
+                await storage.delete('proc_inst', { match: { id: instId } }),
+                await storage.delete('todolist', { match: { proc_inst_id: instId } }),
+                await storage.delete('chats', { match: { id: instId } })
+            ]);
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);

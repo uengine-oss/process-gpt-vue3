@@ -85,8 +85,8 @@
             <div v-else></div>
         </v-card-text>
         <v-dialog v-model="executeDialog">
-            <!-- <ProcessExecuteDialog :definitionId="processDefinition.id" @close="executeDialog = false"></ProcessExecuteDialog> -->
-            <dry-run-process :definitionId="processDefinition.id"  @close="executeDialog = false"></dry-run-process>
+            <process-execute-dialog v-if="mode === 'ProcessGPT'" :definitionId="processDefinition.id" @close="executeDialog = false"></process-execute-dialog>
+            <dry-run-process v-else :definitionId="processDefinition.id"  @close="executeDialog = false"></dry-run-process>
         </v-dialog>
     </v-card>
 </template>
@@ -125,6 +125,9 @@ export default {
         executeDialog: false
     }),
     computed: {
+        mode() {
+            return window.$mode;
+        },
         JMS() {
             return window.$jms;
         }
@@ -218,11 +221,7 @@ export default {
             this.$emit('capture')
         },
         executeProcess() {
-            if (window.$mode === 'ProcessGPT') {
-                this.startProcess();
-            } else {
-                this.executeDialog = true
-            }
+            this.executeDialog = true
         },
         startProcess() {
             var me = this;

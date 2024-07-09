@@ -2,7 +2,7 @@
     <v-row class="ma-0 pa-0 task-btn" style="right: 40px">
         <v-spacer></v-spacer>
         <div v-if="!isCompleted">
-            <v-btn @click="completeTask()" color="#0085DB" style="color: white;" rounded>완료</v-btn>
+            <v-btn @click="executeProcess" color="#0085DB" style="color: white;" rounded>완료</v-btn>
         </div>
     </v-row>
     <div style="height: calc(100vh - 255px); padding: 20px">
@@ -59,6 +59,9 @@ export default {
     computed: {
         isCompleted() {
             return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
+        },
+        mode() {
+            return window.$mode;
         }
     },
     created() {
@@ -83,15 +86,11 @@ export default {
                 }
             }
         },
-        async completeTask() {
+        completeTask(value) {
             var me = this;
             me.$try({
                 context: me,
                 action: async () => {
-                    let value = { parameterValues: {} };
-                    let parameterValues = me.inputItems.reduce((acc, item) => ({ ...acc, [item.key]: item.value }), {});
-                    if (parameterValues) value.parameterValues = parameterValues;
-                   
                     if(me.isDryRun) {
                         let workItem = me.dryRunWorkItem
                         if (workItem.execScope) value.execScope = workItem.execScope;
@@ -117,6 +116,17 @@ export default {
         close(){
             this.$emit('close')
         },
+        executeProcess(){
+            let value = { parameterValues: {} };
+            let parameterValues = this.inputItems.reduce((acc, item) => ({ ...acc, [item.key]: item.value }), {});
+            if (parameterValues) value.parameterValues = parameterValues;
+            
+            if(this.isDryRun && this.mode == 'ProcessGPT') {
+                this.$emit('executeProcess', value)
+            } else {
+                this.completeTask(value)
+            }
+        }
     }
 };
 </script>

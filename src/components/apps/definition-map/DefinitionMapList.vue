@@ -69,8 +69,8 @@ export default {
         this.classifyProcess();
     },
     watch: {
-        enableEdit(newVal) {
-            if(newVal) {
+        enableEdit(newVal, oldVal) {
+            if(newVal !== oldVal) {
                 this.classifyProcess();
             }
         }

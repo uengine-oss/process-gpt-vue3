@@ -128,7 +128,6 @@ export default {
                     //     displayPath:"/form"
                     //     id:"form/test"
                     // }
-                    console.log(lists)
                     
                     me.items = lists
                     me.loading = false

@@ -205,8 +205,8 @@
         </v-dialog>
 
         <v-dialog v-model="executeDialog" max-width="80%">
-            <dry-run-process :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
-            <!-- <process-execute-dialog :definitionId="definitionPath" :roles="roles" @close="executeDialog = false"></process-execute-dialog> -->
+            <process-execute-dialog v-if="mode === 'LLM'" :definitionId="definitionPath" @close="executeDialog = false"></process-execute-dialog>
+            <dry-run-process v-else :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
         </v-dialog>
 
         <!-- <v-navigation-drawer permanent location="right" :width="400"> {{ panelId }} </v-navigation-drawer> -->
@@ -511,11 +511,7 @@ export default {
             this.$emit('change');
         },
         executeProcess() {
-            if (window.$mode === 'ProcessGPT') {
-                this.startProcess();
-            } else {
-                this.executeDialog = !this.executeDialog;
-            }
+            this.executeDialog = !this.executeDialog;
         },
         startProcess() {
             var me = this;
