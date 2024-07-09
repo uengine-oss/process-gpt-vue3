@@ -177,7 +177,6 @@ export default {
                         type: 'bpmn'
                     })
                 },
-                successMsg: '저장되었습니다.'
             })
         },
         close() {
