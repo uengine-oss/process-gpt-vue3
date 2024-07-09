@@ -67,7 +67,7 @@ export default {
             if (!result) result = [];
             this.instanceList = result.map((item) => {
                 item = {
-                    icon: 'solar:list-bold',
+                    icon: 'ph:cube',
                     title: item.instName,
                     to: `/instancelist/${btoa(item.instId)}`
                 };
