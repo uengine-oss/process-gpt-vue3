@@ -328,9 +328,6 @@ export default {
                 slide[0].scrollIntoView();
             }
         },
-        openHelpPage() {
-            window.open('/tenant/help', '_blank')
-        },
 
         async validCheck() {
             try {
