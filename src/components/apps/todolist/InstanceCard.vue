@@ -67,7 +67,7 @@ export default {
         tabItems: [
             { value: 'progress', label: '진행 상황', component: 'InstanceProgress' },
             { value: 'todo', label: '워크 아이템', component: 'InstanceTodo' },
-            { value: 'history', label: '워크 히스토리', component: 'InstanceHistory' }
+            { value: 'workhistory', label: '워크 히스토리', component: 'InstanceWorkHistory' }
         ]
     }),
     watch: {
