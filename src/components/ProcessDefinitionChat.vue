@@ -6,7 +6,9 @@
     >
         <AppBaseCard>
             <template v-slot:leftpart>
-                <h5 v-if="!isAdmin" class="text-h5 font-weight-semibold pa-3">{{ projectName }}</h5>
+                <h5 v-if="!isAdmin" class="text-h5 font-weight-semibold pa-3" style="background-color: white;">
+                    {{ projectName }}
+                </h5>
                 <process-definition
                     class="process-definition-resize"
                     :bpmn="bpmn"

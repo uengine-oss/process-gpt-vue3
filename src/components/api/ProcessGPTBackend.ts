@@ -33,7 +33,7 @@ class ProcessGPTBackend implements Backend {
             return [...procDefs, ...formDefs]
 
         } catch (e) {
-            this.checkDBConnection();
+            // this.checkDBConnection();
             //@ts-ignore
             throw new Error(e.message);
         }
@@ -80,7 +80,7 @@ class ProcessGPTBackend implements Backend {
             }
             
         } catch (e) {
-            this.checkDBConnection();
+            // this.checkDBConnection();
             //@ts-ignore
             throw new Error(e.message);
         }
@@ -144,7 +144,7 @@ class ProcessGPTBackend implements Backend {
             }
 
         } catch (e) {
-            this.checkDBConnection();
+            // this.checkDBConnection();
             throw new Error('error when to save definition: ' + (e instanceof Error ? e.message : ''));
         }
     }
@@ -177,7 +177,7 @@ class ProcessGPTBackend implements Backend {
             }
 
         } catch (error) {
-            this.checkDBConnection();
+            // this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -235,17 +235,23 @@ class ProcessGPTBackend implements Backend {
                     const data = JSON.parse(res.data);
                     if (data) {
                         result = data;
+                        if (result.cannotProceedErrors && result.cannotProceedErrors.length > 0) {
+                            result.errors = result.cannotProceedErrors;
+                            const dataNotExist = result.cannotProceedErrors.find((item: any) => item.type === 'DATA_FIELD_NOT_EXIST');
+                            if (!dataNotExist) {
+                                throw new Error(result.cannotProceedErrors.map((item: any) => item.reason).join('\n'));
+                            }
+                        }
                     }
                 }
             })
             .catch(error => {
-                result = error
-                // throw new Error(error && error.detail ? error.detail : error);
+                throw new Error(error && error.detail ? error.detail : error);
             });
 
             return result;
         } catch (error) {
-            this.checkDBConnection();
+            // this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -272,7 +278,7 @@ class ProcessGPTBackend implements Backend {
             }
             return data;
         } catch (e) {
-            this.checkDBConnection();
+            // this.checkDBConnection();
             //@ts-ignore
             throw new Error(e.message);
         }
@@ -297,12 +303,13 @@ class ProcessGPTBackend implements Backend {
 
             let parameters: any[] = [];
             let variableForHtmlFormContext: any = {};
+            let activityInfo: any = null;
 
             if (defInfo && defInfo.definition) {
                 // form
                 const formData: any = defInfo.definition.data.filter((variable: any) => variable.type === 'Form') || [];
                 // parameters
-                const activityInfo: any = defInfo.definition.activities.find((activity: any) => activity.id === data.activity_id);
+                activityInfo = defInfo.definition.activities.find((activity: any) => activity.id === data.activity_id);
                 
                 if (activityInfo) {
                     if (formData.length > 0) {
@@ -355,6 +362,8 @@ class ProcessGPTBackend implements Backend {
                     tracingTag: data.activity_id || '',
                     parameters: parameters || [],
                     variableForHtmlFormContext: variableForHtmlFormContext || {},
+                    instruction: activityInfo && activityInfo.instruction ? activityInfo.instruction : "",
+                    checkpoints: activityInfo && activityInfo.checkpoints ? activityInfo.checkpoints : []
                 },
                 parameterValues: parameterValues || {}
             }
@@ -406,7 +415,7 @@ class ProcessGPTBackend implements Backend {
             }
             return worklist;
         } catch (error) {
-            this.checkDBConnection();
+            // this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -453,7 +462,7 @@ class ProcessGPTBackend implements Backend {
             }
             return result;
         } catch (error) {
-            this.checkDBConnection();
+            // this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -463,7 +472,7 @@ class ProcessGPTBackend implements Backend {
         try {
             await storage.delete(`todolist/${taskId}`, { key: 'id' });
         } catch (error) {
-            this.checkDBConnection();
+            // this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -477,7 +486,7 @@ class ProcessGPTBackend implements Backend {
             }
             return null;
         } catch (error) {
-            this.checkDBConnection();
+            // this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -509,7 +518,7 @@ class ProcessGPTBackend implements Backend {
             }
             return {};
         } catch (error) {
-            this.checkDBConnection();
+            // this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         } 
@@ -523,7 +532,7 @@ class ProcessGPTBackend implements Backend {
             }
             await storage.putObject('configuration', putObj);
         } catch (error) {
-            this.checkDBConnection();
+            // this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -540,7 +549,7 @@ class ProcessGPTBackend implements Backend {
         
             return await storage.list('proc_def_arcv', options);
         } catch (error) {
-            this.checkDBConnection();
+            // this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -632,7 +641,7 @@ class ProcessGPTBackend implements Backend {
             }
             await storage.putObject(defId, putObj);
         } catch (error) {
-            this.checkDBConnection();
+            // this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -707,7 +716,7 @@ class ProcessGPTBackend implements Backend {
             }
             return worklist;
         } catch (error) {
-            this.checkDBConnection();
+            // this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -754,7 +763,7 @@ class ProcessGPTBackend implements Backend {
             return result;
 
         } catch (e) {
-            this.checkDBConnection();
+            // this.checkDBConnection();
             //@ts-ignore
             throw new Error(e.message);
         }
@@ -778,7 +787,7 @@ class ProcessGPTBackend implements Backend {
             }
             await storage.putObject('chats', putObj);
         } catch (e) {
-            this.checkDBConnection();
+            // this.checkDBConnection();
             //@ts-ignore
             throw new Error(e.message);
         }
@@ -808,7 +817,7 @@ class ProcessGPTBackend implements Backend {
             let instList: any[] = await this.fetchInstanceListByStatus("RUNNING");
             return instList;
         } catch (error) {
-            this.checkDBConnection();
+            // this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -819,7 +828,7 @@ class ProcessGPTBackend implements Backend {
             let instList: any[] = await this.fetchInstanceListByStatus("COMPLETED");
             return instList;
         } catch (error) {
-            this.checkDBConnection();
+            // this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -847,7 +856,7 @@ class ProcessGPTBackend implements Backend {
             })
             return worklist;
         } catch (e) {
-            this.checkDBConnection();
+            // this.checkDBConnection();
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -934,6 +943,36 @@ class ProcessGPTBackend implements Backend {
                 await storage.delete('todolist', { match: { proc_inst_id: instId } }),
                 await storage.delete('chats', { match: { id: instId } })
             ]);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async bindRole(roles: any) {
+        try {
+            let result: any = null;
+            const token = localStorage.getItem('accessToken');
+            await axios.post(`/execution/role-binding`, {
+                "input": {
+                    "roles": roles
+                }
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(res => {
+                if (res.data) {
+                    const data = JSON.parse(res.data);
+                    result = data.roleBindings;
+                }
+            })
+            .catch(error => {
+                throw new Error(error && error.detail ? error.detail : error);
+            });
+            return result;
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);

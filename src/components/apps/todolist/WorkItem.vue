@@ -1,13 +1,19 @@
 <template>
     <v-card elevation="10" v-if="currentComponent" :key="updatedKey">
-        <v-card-title>
-            <v-row class="ma-0 pa-0 mt-1 ml-3" style="line-height: 100%">
-                <div style="font-size: 20px; font-weight: 500">{{ activityName }}</div>
-                <v-chip v-if="workItemStatus" size="small" variant="outlined" density="comfortable" style="margin-left: 5px">{{ workItemStatus }}</v-chip>
-            </v-row>
-        </v-card-title>
+        <div class="px-3 py-3 pb-2 align-center">
+            <div class="d-flex">
+                <h5 class="text-h5 font-weight-semibold">
+                    {{ activityName }}
+                </h5>
+                <v-chip v-if="workItemStatus" size="x-small" variant="outlined" 
+                    style="margin: 2px 0px 0px 5px !important; display: flex; align-items: center">
+                    {{ workItemStatus }}
+                </v-chip>
+            </div>
+        </div>
+
         <!-- pc 사이즈 -->
-        <v-row class="ma-0 pa-2 mt-2 work-item-pc">
+        <v-row class="ma-0 pa-2 work-item-pc">
             <!-- Left -->
             <v-col
                 class="pa-0"
@@ -15,9 +21,7 @@
                 :style="$globalState.state.isZoomed ? 'height: calc(100vh - 70px);' : 'height: calc(100vh - 215px);'"
                 style="overflow: auto"
             >
-                <div v-if="currentComponent"
-                    class="work-itme-current-component"
-                >
+                <div v-if="currentComponent" class="work-itme-current-component" style="height: 100%;">
                     <component 
                         :is="currentComponent" 
                         :definitionId="definitionId"
@@ -57,8 +61,7 @@
             <v-col class="pa-0" cols="8">
                 <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
                     <v-tabs v-model="selectedTab">
-                        <v-tab value="progress" v-if="checkPoints">진행 상황/체크포인트</v-tab>
-                        <v-tab value="progress" v-else>진행 상황</v-tab>
+                        <v-tab value="progress">진행 상황</v-tab>
                         <v-tab v-if="messages && messages.length > 0" value="history">워크 히스토리</v-tab>
                         <v-tab v-if="messages" value="agent">Agent 초안 생성</v-tab>
                     </v-tabs>
@@ -69,7 +72,7 @@
                                 :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 280px);'"
                                 style="color: black; overflow: auto"
                             >
-                                <div class="pa-0 pl-2" :style="!checkPoints ? 'height:100%;' : 'height:50%;'" :key="updatedDefKey">
+                                <div class="pa-0 pl-2" style="height:100%;" :key="updatedDefKey">
                                     <div v-if="bpmn" style="height: 100%">
 
                                         <BpmnUengine
@@ -103,20 +106,6 @@
                                         ></process-definition> -->
                                     </div>
                                     <div v-else class="no-bpmn-found-text">No BPMN found</div>
-                                </div>
-                                <div v-if="checkPoints" style="overflow: auto; height: 50%">
-                                    <v-card-title>CheckPoint ({{ checkedCount }}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>
-                                    <div style="margin: -15px 0px 0px 5px">
-                                        <div v-for="(checkPoint, index) in checkPoints" :key="index" style="height: 40px">
-                                            <v-checkbox
-                                                style="height: 40px !important"
-                                                v-model="checkPoint.checked"
-                                                :label="checkPoint.name"
-                                                color="primary"
-                                                hide-details
-                                            ></v-checkbox>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </v-window-item>
@@ -159,9 +148,7 @@
                 cols="12"
                 style="overflow: auto"
             >
-                <div v-if="currentComponent"
-                    class="work-itme-current-component"
-                >
+                <div v-if="currentComponent" class="work-itme-current-component" style="height: 100%;">
                     <component 
                         :is="currentComponent" 
                         :definitionId="definitionId"
@@ -201,8 +188,7 @@
             <v-col class="pa-0" cols="12">
                 <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
                     <v-tabs v-model="selectedTab">
-                        <v-tab value="progress" v-if="checkPoints">진행 상황/체크포인트</v-tab>
-                        <v-tab value="progress" v-else>진행 상황</v-tab>
+                        <v-tab value="progress">진행 상황</v-tab>
                         <v-tab v-if="messages && messages.length > 0" value="history">워크 히스토리</v-tab>
                         <v-tab v-if="messages" value="agent">Agent 초안 생성</v-tab>
                     </v-tabs>
@@ -213,7 +199,7 @@
                                 :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 280px);'"
                                 style="color: black; overflow: auto"
                             >
-                                <div class="pa-0 pl-2" :style="!checkPoints ? 'height:100%;' : 'height:50%;'" :key="updatedDefKey">
+                                <div class="pa-0 pl-2" style="height:100%;" :key="updatedDefKey">
                                     <div v-if="bpmn" style="height: 100%">
                                         <BpmnUengine
                                             ref="bpmnVue"
@@ -245,20 +231,6 @@
                                         ></process-definition> -->
                                     </div>
                                     <div v-else class="no-bpmn-found-text">No BPMN found</div>
-                                </div>
-                                <div v-if="checkPoints" style="overflow: auto; height: 50%">
-                                    <v-card-title>CheckPoint ({{ checkedCount }}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>
-                                    <div style="margin: -15px 0px 0px 5px">
-                                        <div v-for="(checkPoint, index) in checkPoints" :key="index" style="height: 40px">
-                                            <v-checkbox
-                                                style="height: 40px !important"
-                                                v-model="checkPoint.checked"
-                                                :label="checkPoint.name"
-                                                color="primary"
-                                                hide-details
-                                            ></v-checkbox>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </v-window-item>
@@ -330,7 +302,6 @@ export default {
     },
     data: () => ({    
         workItem: null,
-        checkPoints: null,
         workListByInstId: null,
     
         // bpmn
@@ -360,10 +331,6 @@ export default {
         },
         currentTaskId() {
             return this.taskId ? this.taskId : this.$route.params.taskId
-        },
-        checkedCount() {
-            if (!this.checkPoints) return 0;
-            return this.checkPoints.filter((checkPoint) => checkPoint.checked).length;
         },
         messages() {
             if (!this.workListByInstId) return [];
