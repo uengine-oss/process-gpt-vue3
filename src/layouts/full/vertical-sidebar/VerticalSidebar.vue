@@ -23,24 +23,9 @@ const customizer = useCustomizerStore();
         expand-on-hover
         width="275"
     >
-        <v-row class="pa-2 ma-0">
-            <Logo :style="logoPadding"/>
-            <v-spacer></v-spacer>
-            <v-tooltip :text="$t('processDefinitionMap.title')"
-                location="bottom"
-            >
-                <template v-slot:activator="{ props }">
-                    <v-btn icon variant="text"
-                        v-bind="props"
-                        class="text-medium-emphasis"
-                        density="comfortable"
-                        :to="'/definition-map'"
-                    >
-                        <Icon icon="jam:write" width="24" height="24" />
-                    </v-btn>
-                </template>
-            </v-tooltip>
-        </v-row>
+        <div class="pa-2">
+            <Logo />
+        </div>
         <!-- ---------------------------------------------- -->
         <!---Navigation -->
         <!-- ---------------------------------------------- -->
@@ -114,8 +99,7 @@ export default {
     data: () => ({
         sidebarItem: [],
         definitionItem: [],
-        definitionList: null,
-        logoPadding: ''
+        definitionList: null
     }),
     computed: {
         JMS() {
@@ -174,10 +158,6 @@ export default {
         this.EventBus.on('definitions-updated', async () => {
             await this.getDefinitionList();
         });
-        if (window.$mode === 'uEngine') {
-            this.logoPadding = 'padding:6px'
-        }
-        // 정의목록 하위에 인스턴스 목록 표시해주기 위해 사용
         // this.EventBus.on('instances-updated', async () => {
         //     await this.loadInstances();
         // });
@@ -211,7 +191,8 @@ export default {
                             var obj = {
                                 title: item.name,
                                 // to: `/definitions/${item.definition.processDefinitionId}`,
-                                directory: true
+                                directory: true,
+                                BgColor: 'primary'
                             };
                             menu.children.push(obj);
                         }
@@ -220,19 +201,22 @@ export default {
                         if (item.path && item.path.includes('.bpmn')) {
                             obj = {
                                 title: item.name,
-                                to: `/definitions/${item.path.split('.')[0]}`
+                                to: `/definitions/${item.path.split('.')[0]}`,
+                                BgColor: 'primary'
                             };
                             menu.children.push(obj);
                         } else if (item.path && item.path.includes('.form')) {
                             obj = {
                                 title: item.name,
-                                to: `/ui-definitions/${item.path.split('.')[0]}`
+                                to: `/ui-definitions/${item.path.split('.')[0]}`,
+                                BgColor: 'primary'
                             };
                             menu.children.push(obj);
                         } else if (item.definition) {
                             obj = {
                                 title: item.definition.processDefinitionName,
-                                to: `/definitions/${item.definition.processDefinitionId}`
+                                to: `/definitions/${item.definition.processDefinitionId}`,
+                                BgColor: 'primary'
                             };
                             menu.children.push(obj);
                         }

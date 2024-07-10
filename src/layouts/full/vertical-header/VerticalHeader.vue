@@ -27,10 +27,16 @@ interface SidebarItem {
 }
 
 const sidebarItems = ref<SidebarItem[]>([
+    // {
+    //     title: 'headerMenu.dashboard',
+    //     icon: 'lucide:layout-panel-top',
+    //     to: '/dashboard2',
+    //     disable: false
+    // },
     {
-        title: 'headerMenu.dashboard',
-        icon: 'lucide:layout-panel-top',
-        to: '/dashboard2',
+        title: 'processDefinitionMap.title',
+        icon: 'jam:write',
+        to: '/definition-map',
         disable: false
     },
     {
