@@ -17,8 +17,8 @@ const props = defineProps({
         <v-list-item  :to="item.type === 'external' ? '' : item.to" :href="item.type === 'external' ? item.to : ''" rounded
             :class="'  bg-hover-' + item.BgColor" :color="item.BgColor" :ripple="false" :disabled="item.disabled"
             :target="item.type === 'external' ? '_blank' : ''" v-scroll-to="{ el: '#top' }">
-            <!---If icon-->
-            <template v-slot:prepend>
+            <!-- 사이드바 리스트 아이콘 -->
+            <template v-if="item.icon" v-slot:prepend>
                 <div :class="'navbox  bg-hover-' + item.BgColor" :color="item.BgColor">
                     <span class="icon-box">
                         <Icon :icon="item.icon" height="24" width="24" :level="level" :class="'position-relative z-index-2 texthover-' + item.BgColor" />

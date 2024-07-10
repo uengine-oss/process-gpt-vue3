@@ -67,9 +67,10 @@ export default {
             if (!result) result = [];
             this.instanceList = result.map((item) => {
                 item = {
-                    icon: 'ph:cube',
+                    // icon: 'ph:cube',
                     title: item.instName,
-                    to: `/instancelist/${btoa(item.instId)}`
+                    to: `/instancelist/${btoa(item.instId)}`,
+                    BgColor:'primary'
                 };
                 return item;
             });

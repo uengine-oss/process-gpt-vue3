@@ -23,9 +23,24 @@ const customizer = useCustomizerStore();
         expand-on-hover
         width="275"
     >
-        <div class="pa-5 pl-4">
-            <Logo />
-        </div>
+        <v-row class="pa-2 ma-0">
+            <Logo :style="logoPadding"/>
+            <v-spacer></v-spacer>
+            <v-tooltip :text="$t('processDefinitionMap.title')"
+                location="bottom"
+            >
+                <template v-slot:activator="{ props }">
+                    <v-btn icon variant="text"
+                        v-bind="props"
+                        class="text-medium-emphasis"
+                        density="comfortable"
+                        :to="'/definition-map'"
+                    >
+                        <Icon icon="jam:write" width="24" height="24" />
+                    </v-btn>
+                </template>
+            </v-tooltip>
+        </v-row>
         <!-- ---------------------------------------------- -->
         <!---Navigation -->
         <!-- ---------------------------------------------- -->
@@ -99,7 +114,8 @@ export default {
     data: () => ({
         sidebarItem: [],
         definitionItem: [],
-        definitionList: null
+        definitionList: null,
+        logoPadding: ''
     }),
     computed: {
         JMS() {
@@ -158,6 +174,10 @@ export default {
         this.EventBus.on('definitions-updated', async () => {
             await this.getDefinitionList();
         });
+        if (window.$mode === 'uEngine') {
+            this.logoPadding = 'padding:6px'
+        }
+        // 정의목록 하위에 인스턴스 목록 표시해주기 위해 사용
         // this.EventBus.on('instances-updated', async () => {
         //     await this.loadInstances();
         // });
