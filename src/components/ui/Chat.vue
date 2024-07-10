@@ -23,7 +23,7 @@
                                         <img :src="chatInfo.img" width="50" />
                                     </v-avatar>
                                     <div>
-                                        <h5 class="text-h5 mb-n1">{{ $t(chatInfo.title) }}</h5>
+                                        <h5 class="text-h5 mb-n1">{{ $t(chatInfo.title) }}123</h5>
                                         <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
                                     </div>
                                 </div>
@@ -40,7 +40,7 @@
                                     <template v-slot:title>
                                         <Icon style="margin-left:-6px;" icon="clarity:info-line" width="32" height="32" />
                                     </template>
-                                    <small style="white-space: pre-line;">
+                                    <small style="white-space: pre-line; font-size:14px;">
                                         {{ filteredAlert.detail }}
                                     </small>
                                 </v-alert>
