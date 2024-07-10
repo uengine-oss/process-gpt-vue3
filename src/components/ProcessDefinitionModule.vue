@@ -168,6 +168,13 @@ export default {
             pc.setAttribute('id', `Participant`);
             pc.setAttribute('name', `Participant`);
             pc.setAttribute('processRef', jsonModel.processDefinitionId);
+
+            const properties = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
+            pc.appendChild(properties);
+
+            const json = xmlDoc.createElementNS('http://uengine', 'uengine:json');    
+            json.textContent = JSON.stringify("{}");
+            properties.appendChild(json);
             collaboration.appendChild(pc);
 
             // Data 매핑
@@ -178,6 +185,10 @@ export default {
                     const variable = xmlDoc.createElementNS('http://uengine', 'uengine:variable');
                     variable.setAttribute('name', data.name);
                     variable.setAttribute('type', data.type);
+                    const variableJson =  xmlDoc.createElementNS('http://uengine', 'uengine:json');
+                    variableJson.textContent = JSON.stringify({"defaultValue":""})
+                    
+                    variable.appendChild(variableJson);
                     root.appendChild(variable);
                 });
             }
@@ -215,13 +226,28 @@ export default {
                     let root = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
                     let params = xmlDoc.createElementNS('http://uengine', 'uengine:json');
                     params.setAttribute('key', 'condition');
-                    params.textContent = JSON.stringify({
-                        condition: sequence.condition ? sequence.condition : ''
-                    });
-                    // }
-                    root.appendChild(params);
-                    extensionElements.appendChild(root);
-                    sequenceFlow.appendChild(extensionElements);
+                    if(sequence.condition) {
+                        if(sequence.condition.key && sequence.condition.condition && sequence.condition.value)  {
+                            
+                        const conditionJson = {
+                            condition: {
+                                _type:"org.uengine.kernel.Evaluate",
+                                key: sequence.condition.key,
+                                condition: sequence.condition.condition,
+                                value: sequence.condition.value
+                            }
+                        }
+                        if(!sequence.name || sequence.name == '') {
+                            let sequenceName = sequence.condition.condition + ' ' + sequence.condition.value;
+                            sequenceFlow.setAttribute('name', sequenceName);
+                        }
+                        params.textContent = JSON.stringify(conditionJson);
+                        root.appendChild(params);
+                        extensionElements.appendChild(root);
+                        sequenceFlow.appendChild(extensionElements);
+                        }
+
+                    }
                     process.appendChild(sequenceFlow);
 
                     outGoing[sequence.source] = 'SequenceFlow_' + sequence.source + '_' + sequence.target;
@@ -261,7 +287,6 @@ export default {
                 let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
                 let root = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
                 let params = xmlDoc.createElementNS('http://uengine', 'uengine:json');
-                params.setAttribute('key', 'condition');
                 // {"argument":{"text":"symptom"}, "variable":{"name": "symptom"}, "direction":
                 //     "OUT"}
                 let inputDataList = [];
@@ -283,7 +308,6 @@ export default {
 
                 if(role) {
                     let activityData = {
-                        role: { name: activity.role },
                         parameters: [...inputDataList, ...outputDataList]
                     };
                     params.textContent = JSON.stringify(activityData);
@@ -308,16 +332,6 @@ export default {
                 const bpmnGateway = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:' + gateway.type);
                     bpmnGateway.setAttribute('id', gateway.id);
                     bpmnGateway.setAttribute('name', gateway.name);
-                    let extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
-                    let root = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
-                    let params = xmlDoc.createElementNS('http://uengine', 'uengine:json');
-                    params.setAttribute('key', 'condition');
-                    params.textContent = JSON.stringify({
-                        condition: gateway.condition ? gateway.condition : ''
-                    });
-                    root.appendChild(params);
-                    extensionElements.appendChild(root);
-                    bpmnGateway.appendChild(extensionElements);
 
                     if (outGoing[gateway.id]) {
                         let outGoingSeq = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:outgoing');
