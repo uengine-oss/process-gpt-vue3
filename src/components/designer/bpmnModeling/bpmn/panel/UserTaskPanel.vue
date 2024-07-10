@@ -214,11 +214,13 @@ export default {
     },
     created() {
         this.backend = BackendFactory.createBackend();
-        const activity = this.processDefinition.activities.find(activity => activity.id === this.element.id);
-        if (activity) {
-            this.activity = activity
-        } else {
-            console.log('Activity not found');
+        if(this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0){
+            const activity = this.processDefinition.activities.find(activity => activity.id === this.element.id);
+            if (activity) {
+                this.activity = activity
+            } else {
+                console.log('Activity not found');
+            }
         }
     },
     mounted() {

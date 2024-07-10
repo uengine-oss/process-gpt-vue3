@@ -1,22 +1,23 @@
 <template>
-    <v-card flat style="height: calc(100vh - 260px)">
-        <div style="overflow: auto; height: 100%" class="py-2">
+    <div style="height: 100%">
+        <div style="overflow: auto; height: 100%">
             <div v-if="bpmn" style="height: 100%">
                 <process-definition
                     class="work-item-definition"
+                    style="height: 100%"
                     :currentActivities="currentActivities"
                     :bpmn="bpmn"
                     :key="updatedDefKey"
                     :isViewMode="true"
-                    style="height: 100%"
                 ></process-definition>
             </div>
             <dif v-else class="no-bpmn-found-text"> No BPMN found </dif>
         </div>
-    </v-card>
+    </div>
 </template>
 
 <script>
+
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
@@ -31,9 +32,7 @@ export default {
     },
     data: () => ({
         bpmn: null,
-        workListByInstId: null,
         currentActivities: [],
-        // status variables
         updatedKey: 0,
         updatedDefKey: 0,
     }),

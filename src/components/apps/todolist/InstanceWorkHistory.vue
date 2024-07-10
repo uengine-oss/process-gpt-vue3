@@ -1,12 +1,12 @@
 <template>
-    <v-card flat style="height: calc(100vh - 260px)">
+    <div>
         <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
             <div class="d-flex w-100">
                 <component :is="'work-history-' + mode" :messages="messages" :isComplete="isComplete"
                     @clickMessage="navigateToWorkItemByTaskId" />
             </div>
         </perfect-scrollbar>
-    </v-card>
+    </div>
 </template>
 
 <script>
