@@ -23,7 +23,7 @@
                                         <img :src="chatInfo.img" width="50" />
                                     </v-avatar>
                                     <div>
-                                        <h5 class="text-h5 mb-n1">{{ $t(chatInfo.title) }}123</h5>
+                                        <h5 class="text-h5 mb-n1">{{ $t(chatInfo.title) }}</h5>
                                         <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
                                     </div>
                                 </div>
