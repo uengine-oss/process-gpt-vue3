@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed, onBeforeMount } from 'vue';
+import { ref, watch, computed, onBeforeMount, onMounted, onBeforeUnmount } from 'vue';
 import { useCustomizerStore } from '../../../stores/customizer';
 import { useEcomStore } from '@/stores/apps/eCommerce';
 import { useRouter } from 'vue-router';
@@ -24,20 +24,16 @@ interface SidebarItem {
     icon: string;
     to: string;
     disable: boolean;
+    isMobile?: boolean;
 }
 
 const sidebarItems = ref<SidebarItem[]>([
     {
-        title: 'headerMenu.dashboard',
-        icon: 'lucide:layout-panel-top',
-        to: '/dashboard2',
-        disable: false
-    },
-    {
         title: 'processDefinitionMap.title',
-        icon: 'ri:layout-grid-2-line',
+        icon: 'jam:write',
         to: '/definition-map',
-        disable: false
+        disable: false,
+        isMobile: false
     },
     {
         title: 'chats.title',
@@ -68,6 +64,24 @@ onBeforeMount(() => {
     window.addEventListener('scroll', handleScroll);
 });
 
+onMounted(() => {
+    const handleResize = () => {
+        const width = window.innerWidth;
+        sidebarItems.value.forEach(item => {
+            if (item.isMobile !== undefined) {
+                item.isMobile = width > 1280;
+            }
+        });
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // 초기 호출
+
+    // Clean up event listener on component unmount
+    onBeforeUnmount(() => {
+        window.removeEventListener('resize', handleResize);
+    });
+});
 
 // 우선 순위 변경 감시
 watch(priority, (newPriority) => {
@@ -122,7 +136,7 @@ function navigateTo(item: SidebarItem) {
                         </template>
                     </v-tooltip>
                     <template v-for="item in sidebarItems" :key="item.title">
-                        <v-tooltip :text="$t(item.title)">
+                        <v-tooltip v-if="!item.isMobile" :text="$t(item.title)">
                             <template v-slot:activator="{ props }">
                                 <v-btn icon v-bind="props" @click="navigateTo(item)">
                                     <Icon :icon="item.icon" height="24" width="24" />
@@ -140,79 +154,21 @@ function navigateTo(item: SidebarItem) {
                     </v-tooltip>
                 </v-row>
 
-                <!-- ---------------------------------------------- -->
-                <!-- Search part --> <!-- ---------------------------------------------- -->
-                
-
-
                 <!---/Search part -->
                 <v-spacer class="hidden-sm-and-down" />
 
                 <div class="hidden-md-and-up header-logo">
                     <Logo />
                 </div>
-
-                <!-- ---------------------------------------------- -->
-                <!---right part -->
-                <!-- ---------------------------------------------- -->
-                <!-- ---------------------------------------------- -->
-                <!-- translate -->
-                <!-- ---------------------------------------------- -->
                 <div class="hidden-sm-and-down mr-sm-6 mr-4">
                     <Searchbar />
                 </div>
-                <!-- <div class="hidden-sm-and-down mr-sm-6 mr-4">
-                    <LanguageDD />
-                </div> -->
-
-                <!-- ---------------------------------------------- -->
-                <!-- ShoppingCart -->
-                <!-- ---------------------------------------------- -->
-                <!-- <div class="hidden-sm-and-down mr-sm-6 mr-4">
-                    <v-btn icon variant="text" to="/ecommerce/checkout" size="small">
-                        <v-badge color="primary" :content="getCart?.length" offset-x="-4" offset-y="-6">
-                            <Icon icon="solar:cart-3-line-duotone" height="24" width="24" />
-                        </v-badge>
-                    </v-btn>
-                </div> -->
-                <!-- ---------------------------------------------- -->
-                <!-- Notification -->
-                <!-- ---------------------------------------------- -->
                 <div class="hidden-sm-and-down mr-sm-6 mr-4">
                     <NotificationDD />
                 </div>
-                <!-- ---------------------------------------------- -->
-                <!-- User Profile -->
-                <!-- ---------------------------------------------- -->
                 <div class="hidden-sm-and-down">
                     <ProfileDD />
                 </div>
-
-                <!-----Mobile header------>
-                <!-- <v-menu :close-on-content-click="false" class="mobile_popup ">
-                    <template v-slot:activator="{ props }">
-                        <v-btn icon class="hidden-md-and-up" flat v-bind="props" size="small">
-                            <DotsIcon stroke-width="2" size="24" class="text-primary" />
-                        </v-btn>
-                    </template>
-                    <v-sheet rounded="lg" elevation="10" class="mt-5 dropdown-box px-4 py-6">
-                        <div class="d-flex justify-space-between align-center">
-                            <div class="mr-sm-3 mr-2">
-                                <Searchbar />
-                            </div>
-                            <LanguageDD />
-                            <v-btn icon variant="text" class="mr-sm-3 mr-2" to="/ecommerce/checkout"
-                                size="small">
-                                <v-badge color="primary" :content="getCart?.length" offset-x="-4" offset-y="-6">
-                                    <Icon icon="solar:cart-3-line-duotone" height="24" width="24" />
-                                </v-badge>
-                            </v-btn>
-                            <MessagesDD />
-                            <NotificationDD />
-                            <ProfileDD />
-                        </div>
-                    </v-sheet>
-                </v-menu> -->
             </v-app-bar>
         </div>
     </div>

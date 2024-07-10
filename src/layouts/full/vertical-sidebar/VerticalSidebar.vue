@@ -15,7 +15,7 @@ const customizer = useCustomizerStore();
         left
         v-model="customizer.Sidebar_drawer"
         rail-width="70"
-        :mobile-breakpoint="960"
+        :mobile-breakpoint="1279"
         app
         class="leftSidebar ml-sm-5 mt-sm-5 bg-containerBg"
         elevation="10"
@@ -23,7 +23,25 @@ const customizer = useCustomizerStore();
         expand-on-hover
         width="275"
     >
-        <div class="pa-5 pl-4">
+        <v-row class="pa-2 ma-0 is-sidebar-pc">
+            <Logo :style="logoPadding"/>
+            <v-spacer></v-spacer>
+            <v-tooltip :text="$t('processDefinitionMap.title')"
+                location="bottom"
+            >
+                <template v-slot:activator="{ props }">
+                    <v-btn icon variant="text"
+                        v-bind="props"
+                        class="text-medium-emphasis"
+                        density="comfortable"
+                        :to="'/definition-map'"
+                    >
+                        <Icon icon="jam:write" width="24" height="24" />
+                    </v-btn>
+                </template>
+            </v-tooltip>
+        </v-row>
+        <div class="pa-5 pl-4 is-sidebar-mobile">
             <Logo />
         </div>
         <!-- ---------------------------------------------- -->
@@ -68,15 +86,11 @@ const customizer = useCustomizerStore();
                         </template>
                     </v-row>
                     <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
-
-                    <!-- 하단 목록으로 뿌려주던 리스트 형식 메뉴 -->
-                    <!-- <NavItem v-else-if="!item.disable && !item.header" class="leftPadding" :item="item" /> -->
                 </template>
                 <template v-if="definitionList">
                     <!-- 정의 목록 리스트 -->
                     <NavCollapse class="leftPadding" :item="definitionList" @update:item="(def) => (definitionList = def)" :level="0" :type="'definition-list'" />
                 </template>
-                <!-- <Moreoption/> -->
             </v-list>
         </perfect-scrollbar>
 
@@ -99,7 +113,8 @@ export default {
     data: () => ({
         sidebarItem: [],
         definitionItem: [],
-        definitionList: null
+        definitionList: null,
+        logoPadding: ''
     }),
     computed: {
         JMS() {
@@ -158,6 +173,9 @@ export default {
         this.EventBus.on('definitions-updated', async () => {
             await this.getDefinitionList();
         });
+        if (window.$mode === 'uEngine') {
+            this.logoPadding = 'padding:6px'
+        }
         // this.EventBus.on('instances-updated', async () => {
         //     await this.loadInstances();
         // });
@@ -173,25 +191,14 @@ export default {
                     to: `/`,
                     children: []
                 };
-                // 정의목록 하위에 인스턴스 목록 표시해주기 위해 사용
-                // let instanceList = await backend.getInstanceList();
-                // if (!instanceList) instanceList = [];
-                // instanceList = instanceList.map((item) => {
-                //     item = {
-                //         title: item.instName,
-                //         to: `/instancelist/${btoa(item.instId)}`,
-                //         type:'instance'
-                //     };
-                //     menu.children.push(item);
-                //     return item;
-                // });
                 list.forEach((item) => {
                     if (item.directory) {
                         if (item.name != 'instances') {
                             var obj = {
                                 title: item.name,
                                 // to: `/definitions/${item.definition.processDefinitionId}`,
-                                directory: true
+                                directory: true,
+                                BgColor: 'primary'
                             };
                             menu.children.push(obj);
                         }
@@ -200,19 +207,22 @@ export default {
                         if (item.path && item.path.includes('.bpmn')) {
                             obj = {
                                 title: item.name,
-                                to: `/definitions/${item.path.split('.')[0]}`
+                                to: `/definitions/${item.path.split('.')[0]}`,
+                                BgColor: 'primary'
                             };
                             menu.children.push(obj);
                         } else if (item.path && item.path.includes('.form')) {
                             obj = {
                                 title: item.name,
-                                to: `/ui-definitions/${item.path.split('.')[0]}`
+                                to: `/ui-definitions/${item.path.split('.')[0]}`,
+                                BgColor: 'primary'
                             };
                             menu.children.push(obj);
                         } else if (item.definition) {
                             obj = {
                                 title: item.definition.processDefinitionName,
-                                to: `/definitions/${item.definition.processDefinitionId}`
+                                to: `/definitions/${item.definition.processDefinitionId}`,
+                                BgColor: 'primary'
                             };
                             menu.children.push(obj);
                         }

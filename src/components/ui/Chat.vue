@@ -40,7 +40,7 @@
                                     <template v-slot:title>
                                         <Icon style="margin-left:-6px;" icon="clarity:info-line" width="32" height="32" />
                                     </template>
-                                    <small style="white-space: pre-line;">
+                                    <small style="white-space: pre-line; font-size:14px;">
                                         {{ filteredAlert.detail }}
                                     </small>
                                 </v-alert>
