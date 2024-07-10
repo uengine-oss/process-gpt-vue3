@@ -312,7 +312,10 @@ export default {
                     if ((event.metaKey || event.ctrlKey) && event.key === 'z') {
                         event.preventDefault();
                         commandStack.undo();
-                    } else if ((event.metaKey || event.ctrlKey) && event.key === 'y') {
+                    } else if (event.ctrlKey && event.key === 'y') {
+                        event.preventDefault();
+                        commandStack.redo();
+                    } else if(event.metaKey && event.shiftKey && event.key ==='z') {
                         event.preventDefault();
                         commandStack.redo();
                     }

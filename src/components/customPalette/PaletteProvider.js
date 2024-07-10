@@ -94,7 +94,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     'redo': {
       group: 'tools',
       className: 'mdi mdi-redo-variant',
-      title: isMac? 'Redo (Cmd + Y)' :'Redo (Ctrl + Y)',
+      title: isMac? 'Redo (Cmd + Shift + Z)' :'Redo (Ctrl + Y)',
       action: {
         click: function(event) {
           commandStack.redo();
