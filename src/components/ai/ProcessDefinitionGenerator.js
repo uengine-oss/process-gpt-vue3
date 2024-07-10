@@ -64,6 +64,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
             이전 component와 현재 component의 role이 다를 경우 y값은 아래쪽으로 300 거리만큼 떨어뜨림 이 때 role이 같은 component가 이전에도 존재할 경우 해당 컴포넌트의 y값을 가짐
             각 componenet는 현재는 없는 role이 존재하는것을 기준으로 안에 들어가게끔 배치해야 함
             components는 role이 같으면 묶여있는 형태로 배치하고 y간격은 50이상 100 이하로 함
+            components의 source는 이전 컴포넌트와 연결이 있으면 그 연결된 컴포넌트의 id를 넣음
             왠만하면 간격은 일정하게 하고 위 아래 간격은 양 옆 간격보다 짧아야 함
             events, activities, gateways 간 겹침 금지
             각 event, activitie, gateway는 부모 roles에 포함하므로 그 범위를 안에 위치하도록 함
@@ -102,18 +103,17 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   "id": "gateway_id",
                   "name": "gateway name",
                   "role": "role name", // You must use the name among the created "roles".,
+                  "source": "components id",
                   "type": "ExclusiveGateway | ParallelGateway | InclusiveGateway | EventBasedGateway",
                   "description": "선택적 또는 병렬 프로세스 흐름을 제어하는 게이트웨이 설명",
                   "condition": "기존 프로세스 정보중 "data" 내에 존재하는 값만을 사용하여 condition 을 생성해야한다. "data" 목록을 보고 condition 생성에 필요한 "data" 의 "name" 만으로 분기 조건, 조건문을 생성해야함."
-                  "role": "role name" // You must use the name among the created "roles".,
-                  "x": 숫자로 된 게이트웨이 위치,
-                  "y": 숫자로 된 게이트웨이 위치
                 },
                 {
                   "componentType" :"Activity",
                   "id": "String-based unique id of the activity not including space",
                   "name": "activity name",
                   "type": "UserActivity" | "EMailActivity" | "ScriptActivity",
+                  "source": "components id",
                   "description": "description of activity",
                   "instruction": "instruction to user",
                   "role": "role name", // You must use the name among the created "roles".
@@ -121,20 +121,18 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                    "outputData": [
                      "name of data for output"
                    ],
-                   "checkpoints":["checkpoint 1", "checkpoint 2"],
-                   "x": 숫자로 된 액티비티 위치,
-                   "y": 숫자로 된 액티비티 위치
+                   "checkpoints":["checkpoint 1", "checkpoint 2"]
+                   "source": "components id"
                  },
                  {
                   "componentType" :"Event",
                   "id": "event_id",
                   "name": "event name",
                   "role": "role name", // You must use the name among the created "roles".,
+                  "source": "components id" StartEvent 말고는 반드시 존재해야함,
                   "type": "StartEvent | EndEvent | IntermediateCatchEvent | MessageEvent | TimerEvent | ErrorEvent | ConditionalEvent | SignalEvent | TerminationEvent | LinkEvent | CompensationEvent | MultipleEvent | ParallelEvent | EscalationEvent | CancelEvent",
                   "description": "프로세스의 시작, 종료 또는 중간 이벤트 설명",
-                  "trigger": "이벤트 트리거 조건 (if applicable)",
-                  "x": 숫자로 된 이벤트 위치,
-                  "y": 숫자로 된 이벤트 위치
+                  "trigger": "이벤트 트리거 조건 (if applicable)"
                 }
               ],
               "sequences": [ 

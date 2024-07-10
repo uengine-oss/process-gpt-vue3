@@ -84,7 +84,9 @@ export default {
     async created() {
         var me = this;
         this.storage = StorageBaseFactory.getStorage();
-        this.openaiToken = await this.getToken();
+        // this.openaiToken = await this.getToken();
+        this.openaiToken = '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';
+        
         
         this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
     },
@@ -686,7 +688,9 @@ export default {
             if (match) {
                 if (checkFunction)
                     match.forEach((shouldBeJson) => {
-                        if (checkFunction(shouldBeJson)) return shouldBeJson;
+                        const lastIndex = shouldBeJson.lastIndexOf('}');
+                        const result = shouldBeJson.slice(0, lastIndex + 1);
+                        if (checkFunction(result)) return result;
                     });
                 else return match[1];
             }
