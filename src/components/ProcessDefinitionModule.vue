@@ -238,7 +238,7 @@ export default {
                             }
                         }
                         if(!sequence.name || sequence.name == '') {
-                            let sequenceName = sequence.condition.condition + ' ' + sequence.condition.value;
+                            let sequenceName = sequence.condition.condition + '' + sequence.condition.value;
                             sequenceFlow.setAttribute('name', sequenceName);
                         }
                         params.textContent = JSON.stringify(conditionJson);
@@ -491,6 +491,8 @@ export default {
                             componentX = 100;
                             componentY += 150;
                         }
+                    } else if(component.type == 'EndEvent') {
+                        componentX = 1200;
                     }
 
                     dcBoundsComponent.setAttribute('width', width);
