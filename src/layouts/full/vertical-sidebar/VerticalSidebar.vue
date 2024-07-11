@@ -242,14 +242,16 @@ export default {
                             obj = {
                                 title: item.name,
                                 to: `/definitions/${item.path.split('.')[0]}`,
-                                BgColor: 'primary'
+                                BgColor: 'primary',
+                                type: 'bpmn'
                             };
                             menu.children.push(obj);
                         } else if (item.path && item.path.includes('.form')) {
                             obj = {
                                 title: item.name,
                                 to: `/ui-definitions/${item.path.split('.')[0]}`,
-                                BgColor: 'primary'
+                                BgColor: 'primary',
+                                type: 'form'
                             };
                             menu.children.push(obj);
                         } else if (item.definition) {
