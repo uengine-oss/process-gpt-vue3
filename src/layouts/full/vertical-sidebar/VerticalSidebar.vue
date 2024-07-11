@@ -89,7 +89,13 @@ const customizer = useCustomizerStore();
                 </template>
                 <template v-if="definitionList">
                     <!-- 정의 목록 리스트 -->
-                    <NavCollapse class="leftPadding" :item="definitionList" @update:item="(def) => (definitionList = def)" :level="0" :type="'definition-list'" />
+                    <NavCollapse v-for="(definition, i) in definitionList.children" :key="i"
+                        :item="definition" 
+                        class="leftPadding"
+                        @update:item="(def) => (definitionList[i] = def)" 
+                        :level="0" 
+                        :type="'definition-list'" 
+                    />
                 </template>
             </v-list>
         </perfect-scrollbar>
@@ -181,14 +187,39 @@ export default {
         // });
     },
     methods: {
+        async getChild(subitem) {
+            let res = await backend.listDefinition(subitem.path);
+            let menu = [];
+            const me = this
+            res.forEach((el) => {
+                var obj = {
+                    title: el.name.split('.')[0],
+                    type: el.name.split('.')[1],
+                    BgColor : 'primary'
+                };
+
+                if (el.directory) {                 
+                    obj.directory = true;
+                    obj.children = [];
+                    obj.path = el.path
+                    me.getChild(obj)
+                } else {
+                    if (el.name.split('.')[1] == 'form') {
+                        obj.to = `/ui-definitions/${el.path.split('.')[0]}`;
+                    } else {
+                        obj.to = `/definitions/${el.path.split('.')[0]}`;
+                    }
+                }
+                menu.push(obj);
+            });
+            subitem.children = menu;
+        },
         async getDefinitionList() {
+            const me = this
             const list = await backend.listDefinition();
             if (list && list.length > 0) {
                 var menu = {
-                    title: 'processList.title',
-                    icon: 'solar:list-bold',
-                    BgColor: 'primary',
-                    to: `/`,
+                    
                     children: []
                 };
                 list.forEach((item) => {
@@ -196,10 +227,13 @@ export default {
                         if (item.name != 'instances') {
                             var obj = {
                                 title: item.name,
+                                icon: 'ic:outline-folder',
                                 // to: `/definitions/${item.definition.processDefinitionId}`,
                                 directory: true,
-                                BgColor: 'primary'
+                                BgColor: 'primary',
+                                path: item.path
                             };
+                            me.getChild(obj)
                             menu.children.push(obj);
                         }
                     } else if (item) {

@@ -27,8 +27,8 @@ function getIcon(item) {
         <v-list-item
             :to="item.to"
             rounded="lg"
-            class=""
-            color=""
+            :class="'bg-hover-' + item.BgColor"
+            :color="item.BgColor"
             :ripple="false"
             :disabled="item.disabled"
             :target="item.type === 'external' ? '_blank' : ''"
@@ -37,11 +37,13 @@ function getIcon(item) {
         >
             <!---If icon-->
             <template v-slot:prepend>
-                <Icon
-                    :icon="getIcon(item)"
-                    width="24"
-                    height="24"
-                />
+                <div :class="'navbox  bg-hover-' + item.BgColor" :color="item.BgColor">
+                    <Icon
+                        :icon="getIcon(item)"
+                        width="24"
+                        height="24"
+                    />
+                </div>
             </template>
             <v-tooltip bottom :text="useI18n ? $t(item.title) : item.title">
                 <template v-slot:activator="{ props }">
