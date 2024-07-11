@@ -4,7 +4,7 @@
             :isAgentMode="isAgentMode" :userInfo="userInfo" :disableChat="disableChat" :type="'instances'" :name="chatName" :chatRoomId="chatRoomId"
             @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
             @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage">
-            <template v-slot:custom-title v-if="$route.params.instId">
+            <template v-slot:custom-title>
                 <div></div>
             </template>
         </Chat>

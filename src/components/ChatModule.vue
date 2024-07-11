@@ -602,13 +602,18 @@ export default {
                     jsonData = null
                 }
             }
+            jsonData = removeComments(jsonData);
             if(jsonData != null) {
                 this.afterGenerationFinished(jsonData);
             } else {
                 this.afterGenerationFinished(response);
             }
         },
-
+        removeComments(text) {
+            text = text.replace(/\/\/.*/g, '');
+            text = text.replace(/\/\*[\s\S]*?\*\//g, '');
+            return text;
+        },
         onModelStopped(response) {
             let messageWriting = this.messages[this.messages.length - 1];
             delete messageWriting.isLoading;
