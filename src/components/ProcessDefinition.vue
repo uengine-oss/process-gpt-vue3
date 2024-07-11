@@ -309,7 +309,7 @@ export default {
         options() {
             let result =  {
                 propertiesPanel: {
-                    invalidationList: {}
+                    invalidationList: this.validationList
                 },
                 additionalModules: this.isViewMode ? [customBpmnModule] : [customBpmnModule, customPaletteModule]
             };
