@@ -33,7 +33,7 @@ function getIcon(item) {
             :disabled="item.disabled"
             :target="item.type === 'external' ? '_blank' : ''"
             v-scroll-to="{ el: '#top' }"
-            :style="{ marginLeft: 8 + (level - 1) * 20 + 'px' }"
+            :style="{ marginLeft: 8 + (level - 1) + 'px' }"
         >
             <!---If icon-->
             <template v-slot:prepend>
