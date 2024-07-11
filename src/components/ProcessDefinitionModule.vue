@@ -361,6 +361,8 @@ export default {
             var roleY  = {};
             var roleWidth = 0;
             var roleHeight = {};
+            var startX = 0;
+            var startY = 0;
 
             if(jsonModel.components) {
                 Object.keys(jsonModel.components).forEach((key) => {
@@ -493,6 +495,9 @@ export default {
                         }
                     } else if(component.type == 'EndEvent') {
                         componentX = 1200;
+                        if(startY > componentY) {
+                            componentY = startY;
+                        }
                     }
 
                     dcBoundsComponent.setAttribute('width', width);
@@ -539,6 +544,12 @@ export default {
                         type: component.type? component.type : "Activity",
                         source: component.source? component.source: currentSource
                     };
+
+                    if(component.type == 'StartEvent') {
+                        startX = componentX;
+                        startY = componentY;
+                    }
+
 
                     
                     if(roleX > 0) {
@@ -628,7 +639,7 @@ export default {
              if (jsonModel.sequences) {
                 jsonModel.sequences.forEach((sequence) => {
                     if (!offsetPos[sequence.source] || !offsetPos[sequence.target]) {
-                        return false;e
+                        return false;
                     }
 
                     const bpmnEdge = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNEdge');
@@ -658,6 +669,11 @@ export default {
                     if(startX > endX) {
                         endX = parseInt(targetPos.x) || 0;
                         endY = (parseInt(targetPos.y) || 0) + (parseInt(targetPos.height) || 0) / 2;
+                    }
+
+                    if(distanceY < 0) {
+                        endX = (parseInt(targetPos.x) || 0) + (parseInt(targetPos.width) || 0) / 2;
+                        endY = (parseInt(targetPos.y) || 0) + (parseInt(targetPos.height) || 0);
                     }
 
                     // 첫 번째 waypoint (시작점)
@@ -702,15 +718,27 @@ export default {
                         waypointMiddle1.setAttribute('y', startY);
                         bpmnEdge.appendChild(waypointMiddle1);
 
-                        const waypointMiddle2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                        waypointMiddle2.setAttribute('x', startX);
-                        waypointMiddle2.setAttribute('y', endY);
-                        bpmnEdge.appendChild(waypointMiddle2);
+                        if(distanceY >= 0) {
+                            const waypointMiddle2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                            waypointMiddle2.setAttribute('x', startX);
+                            waypointMiddle2.setAttribute('y', endY);
+                            bpmnEdge.appendChild(waypointMiddle2);
 
-                        const waypointMiddle3 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                        waypointMiddle3.setAttribute('x', endX);
-                        waypointMiddle3.setAttribute('y', endY);
-                        bpmnEdge.appendChild(waypointMiddle3);
+                            const waypointMiddle3 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                            waypointMiddle3.setAttribute('x', endX);
+                            waypointMiddle3.setAttribute('y', endY);
+                            bpmnEdge.appendChild(waypointMiddle3);
+                        } else {
+                            const waypointMiddle2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                            waypointMiddle2.setAttribute('x', endX);
+                            waypointMiddle2.setAttribute('y', startY);
+                            bpmnEdge.appendChild(waypointMiddle2);
+
+                            const waypointMiddle3 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                            waypointMiddle3.setAttribute('x', endX);
+                            waypointMiddle3.setAttribute('y', endY);
+                            bpmnEdge.appendChild(waypointMiddle3);
+                        }
 
                         const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
                         waypoint2.setAttribute('x', endX);
@@ -846,6 +874,11 @@ export default {
                     let root = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
                     let params = xmlDoc.createElementNS('http://uengine', 'uengine:json');
                     params.setAttribute('key', 'condition');
+                    if(sequence.condition == '예') {
+                        sequence.condition = 'true';
+                    } else if(sequence.condition == '아니오') {
+                        sequence.condition = 'false';
+                    }
                     params.textContent = JSON.stringify({
                         condition: sequence.condition ? sequence.condition : ''
                     });
