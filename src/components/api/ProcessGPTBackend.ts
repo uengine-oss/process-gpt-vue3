@@ -354,8 +354,8 @@ class ProcessGPTBackend implements Backend {
                     dueDate: data.end_date,
                     status: data.status === 'TODO' ? 'NEW' : data.status === 'DONE' ? 'COMPLETED' : data.status,
                     description: data.description || "",
-                    tool: data.tool || ""
-                    
+                    tool: data.tool || "",
+                    currentActivities: inst.current_activity_ids || []
                 },
                 activity: {
                     name: data.activity_name,
@@ -376,14 +376,17 @@ class ProcessGPTBackend implements Backend {
 
     async getWorkList(options?: any) {
         try {
-            const filter = { match: {} };
+            const filter: any = { match: {} };
+            if (options && options.status) {
+                filter.match.status = options.status;
+            }
             if (options && options.instId) {
-                filter.match = { proc_inst_id: options.instId };
+                filter.match.proc_inst_id = options.instId;
             } else {
                 const email = localStorage.getItem("email");
-                filter.match = { user_id: email };
+                filter.match.user_id = email;
             }
-            const list = await storage.list('todolist', filter);
+            const list = await storage.list('worklist', filter);
             const worklist: any[] = [];
             if (list && list.length > 0) {
                 for (const item of list) {
@@ -399,17 +402,9 @@ class ProcessGPTBackend implements Backend {
                         title: item.activity_name || "",
                         tracingTag: item.activity_id || "",
                         description: item.description || "",
-                        tool: item.tool || ""
+                        tool: item.tool || "",
+                        instName: item.proc_inst_name || ""
                     };
-                    if (item.proc_inst_id) {
-                        const data = await storage.getString(item.proc_def_id, { 
-                            match: { proc_inst_id: item.proc_inst_id },
-                            column: "proc_inst_name"
-                        });
-                        if (data && data.proc_inst_name) {
-                            workItem.description = data.proc_inst_name;
-                        }
-                    }
                     worklist.push(workItem);
                 }
             }
@@ -628,7 +623,19 @@ class ProcessGPTBackend implements Backend {
     }
 
     async setVariable(instanceId: string, varName: string, varValue: any) {
-        throw new Error("Method not implemented.");
+        try {
+            const columnName: any = varName.toLowerCase().replace(/ /g, '_');
+            const defId: any = instanceId.split('.')[0];
+            const putObj: any = {
+                proc_inst_id: instanceId,
+                [columnName]: varValue
+            }
+
+            await storage.putObject(defId, putObj);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
     }
 
     async setVariableWithTaskId(instId: string, taskId: string, varName: string, varValue: any) {
@@ -667,63 +674,19 @@ class ProcessGPTBackend implements Backend {
         throw new Error("Method not implemented.");
     }
 
-    async getInProgressList() {
-        throw new Error("Method not implemented.");
+    async getInProgressList(options?: any) {
+        const completedOptions = { ...options, status: "IN_PROGRESS" };
+        return this.getWorkList(completedOptions);
     }
 
     async getCompletedList(options?: any) {
-        try {
-            const filter: any = {
-                match: {
-                    status: "DONE"
-                }
-            };
-            if (options && options.instId) {
-                filter.match.proc_inst_id = options.instId;
-            } else {
-                const email = localStorage.getItem("email");
-                filter.match.user_id = email;
-            }
-            const list = await storage.list('todolist', filter);
-            const worklist: any[] = [];
-            if (list && list.length > 0) {
-                for (const item of list) {
-                    const workItem: any = {
-                        defId: item.proc_def_id,
-                        endpoint: item.user_id,
-                        instId: item.proc_inst_id,
-                        rootInstId: null,
-                        taskId: item.id,
-                        startDate: item.start_date,
-                        dueDate: item.end_date,
-                        status: item.status,
-                        title: item.activity_name,
-                        tracingTag: item.activity_id || "",
-                        description: item.description || "",
-                        tool: item.tool || ""
-                    };
-                    if (item.proc_inst_id) {
-                        const data = await storage.getString(item.proc_def_id, { 
-                            match: { proc_inst_id: item.proc_inst_id },
-                            column: "proc_inst_name"
-                        });
-                        if (data && data.proc_inst_name) {
-                            workItem.description = data.proc_inst_name;
-                        }
-                    }
-                    worklist.push(workItem);
-                }
-            }
-            return worklist;
-        } catch (error) {
-            // this.checkDBConnection();
-            //@ts-ignore
-            throw new Error(error.message);
-        }
+        const completedOptions = { ...options, status: "DONE" };
+        return this.getWorkList(completedOptions);
     }
 
-    async getPendingList() {
-        throw new Error("Method not implemented.");
+    async getPendingList(options?: any) {
+        const completedOptions = { ...options, status: "PENDING" };
+        return this.getWorkList(completedOptions);
     }
 
     async putWorkItemComplete(taskId: string, inputData: any) {

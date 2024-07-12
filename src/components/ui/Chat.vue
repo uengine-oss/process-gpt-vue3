@@ -1,13 +1,6 @@
 <template>
     <div class="customHeight" style="background-color: rgba( 255, 255, 255, 1 );">
-        <Record v-if="recordingMode"
-            @close="recordingModeChange()"
-            @start="startRecording()"
-            @stop="stopRecording()"
-            :audioResponse="newMessage"
-            :chatRoomId="chatRoomId"
-        />
-        <div v-else>
+        <div>
             <div>
                 <div>
                     <slot name="custom-title">
@@ -497,6 +490,10 @@
                 </div>
             </form>
         </div>
+        <v-dialog v-model="recordingMode" fullscreen>
+            <Record @close="recordingModeChange()" @start="startRecording()" @stop="stopRecording()"
+                :audioResponse="newMessage" :chatRoomId="chatRoomId" />
+        </v-dialog>
     </div>
 </template>
 
@@ -710,7 +707,7 @@ export default {
         },
         recordingModeChange() {
             this.recordingMode = !this.recordingMode
-            this.$globalState.methods.toggleRightZoom();
+            // this.$globalState.methods.toggleRightZoom();
         },
         // 애니메이션 표시를 위해 system의 답변이 있더라도 표시 가능하게 하려고 만든 methods
         shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index) {
