@@ -117,7 +117,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     } else if (is(element, 'bpmn:Gateway')) {
       this.drawCustomGateway(parentNode, shape, element);
     } else if (is(element, 'bpmn:SequenceFlow')) {
-      this.drawCustomConnection(parentNode, element);
+      this.drawConnection(parentNode, element);
     } else if (is(element, 'bpmn:SubProcess')) {
       this.drawCustomSubProcess(parentNode, shape, element);
     }
@@ -191,7 +191,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
   }
 
   // 이벤트끼리의 연결선과 화살표 관련
-  drawCustomConnection(parentNode, element) {
+  drawConnection(parentNode, element) {
 
     if (is(element, 'bpmn:SequenceFlow')) {
       var strokColor = this.getValidateColor(this.validate(element.id));
