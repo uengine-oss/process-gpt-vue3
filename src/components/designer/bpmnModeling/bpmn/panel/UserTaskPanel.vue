@@ -116,6 +116,7 @@
 
     <v-dialog
         v-model="isOpenFieldMapper"
+        class="mapper-dialog"
         max-width="80%"
         max-height="80%"
         @afterLeave="$refs.mapper && $refs.mapper.saveFormMapperJson()"

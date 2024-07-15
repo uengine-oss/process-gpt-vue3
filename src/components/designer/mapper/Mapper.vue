@@ -203,6 +203,7 @@ export default {
         const resizeObserver = new ResizeObserver((entries) => {
             for (let entry of entries) {
                 this.addTreeViewPort();
+                this.adjustFormAreaHeight();
             }
         });
         this.$nextTick(() => {
@@ -211,6 +212,11 @@ export default {
                 this.addTreeViewPort();
             }, 500);
         });
+        
+        const treeviewsContainer = document.querySelector('.form-mapper .treeviews-container');
+            if (treeviewsContainer) {
+            resizeObserver.observe(treeviewsContainer);
+        }
 
         this.renderFormMapperFromMappingElementJson(this.formMapperJson);
     },
@@ -663,6 +669,18 @@ export default {
             } else {
                 this.appendComponent[blockName] = true;
             }
+        },
+        adjustFormAreaHeight() {
+            const treeviewsContainer = document.querySelector('.form-mapper .treeviews-container');
+            const formArea = document.querySelector('.form-mapper #formArea');
+
+            if (treeviewsContainer && formArea) {
+                // Get the computed height of the treeviews-container
+                const treeviewsHeight = treeviewsContainer.offsetHeight;
+
+                // Set the height of the formArea to match the treeviews-container
+                formArea.style.height = `${treeviewsHeight}px`;
+            }
         }
     },
     computed: {
@@ -771,6 +789,11 @@ export default {
 .form-mapper .connector.isNew:hover {
     stroke: rgb(115, 0, 128);
     stroke-width: 3;
+}
+
+.mapper-dialog .v-overlay__content{
+    overflow: auto !important;
+    scrollbar-width: none;
 }
 
 .form-mapper .treeviews-container {
