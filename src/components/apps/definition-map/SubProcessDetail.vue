@@ -43,10 +43,10 @@
             <div class="ml-auto d-flex">
                 <div v-if="onLoad && bpmn">
                     <v-btn v-if="!JMS" icon variant="text" class="ml-3" :size="24" @click="executeProcess">
-                        <Icon icon="carbon:play-outline" width="24" height="24" />
+                        <Icons :icon="'play-outline'" :color="'black'" />
                     </v-btn>
                     <v-btn icon variant="text" class="ml-3" :size="24" @click="capture">
-                        <Icon icon="mage:image-download" width="24" height="24" />
+                        <Icons :icon="'image-download'" :color="'black'" />
                     </v-btn>
                 </div>
                 <v-tooltip :text="$t('processDefinition.zoom')">
@@ -56,15 +56,11 @@
                             v-bind="props"
                             @click="$globalState.methods.toggleZoom()"
                         >
-                            <!-- 캔버스 확대 -->
-                            <Icon
-                                v-if="!$globalState.state.isZoomed"
-                                icon="material-symbols:zoom-out-map-rounded"
-                                width="24"
-                                height="24"
+                            <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
+                            <Icons
+                                :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
+                                :color="'black'"
                             />
-                            <!-- 캔버스 축소 -->
-                            <Icon v-else icon="material-symbols:zoom-in-map-rounded" width="24" height="24" />
                         </v-btn>
                     </template>
                 </v-tooltip>

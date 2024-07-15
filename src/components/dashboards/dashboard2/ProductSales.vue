@@ -109,7 +109,7 @@ const chartOptions = computed(() => {
                 <div class="d-flex align-center mt-2 gap-4">
                     <div class="d-flex align-center">
                         <v-avatar class="bg-lightprimary me-4">
-                            <Icon icon="solar:user-circle-linear" class="text-primary" width="24" height="24"/>
+                            <Icons :icon="'user-circle-linear'" class="text-primary" />
                         </v-avatar>
                         <div>
                             <h6 class="text-h6 font-weight-semibold d-flex align-center">36,436 <v-chip color="success" class="bg-lightsuccess ml-1" variant="outlined" size="x-small">+12%</v-chip></h6>

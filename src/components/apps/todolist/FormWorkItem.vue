@@ -1,8 +1,8 @@
 <template>
-    <v-row class="ma-0 pa-0 task-btn" style="right: 40px">
+    <v-row class="ma-0 pa-0 task-btn" style="right:50px; top:12px;">
         <v-spacer></v-spacer>
         <div class="from-work-item-pc" v-if="workItemStatus == 'NEW' || workItemStatus == 'DRAFT'">
-            <v-btn v-if="!isDryRun" @click="saveTask()" color="primary" rounded>중간 저장</v-btn>
+            <v-btn v-if="!isDryRun" @click="saveTask()" color="primary" class="mr-2" rounded>중간 저장</v-btn>
             <v-btn @click="$try(completeTask, null, {sucessMsg: '워크아이템 완료'})" color="primary" rounded>제출 완료</v-btn>
         </div>
         <div class="from-work-item-mobile" v-if="workItemStatus == 'NEW' || workItemStatus == 'DRAFT'">
@@ -12,7 +12,7 @@
                         icon v-bind="props"
                         density="comfortable"
                     >
-                        <Icon icon="mdi:content-save-plus-outline" width="32" height="32" />
+                        <Icons :icon="'save'" :width="32" :height="32"/>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -22,7 +22,7 @@
                         icon v-bind="props"
                         density="comfortable"
                     >
-                        <Icon icon="iconoir:submit-document" width="28" height="28" />
+                        <Icons :icon="'submit-document'" :width="28" :height="28"/>
                     </v-btn>
                 </template>
             </v-tooltip>

@@ -164,7 +164,7 @@
                                                                                     class="ml-2"
                                                                                     size="small" icon density="comfortable"
                                                                                 >
-                                                                                    <Icon icon="gridicons:play" width="24" height="24" />
+                                                                                    <Icons :icon="'play'" :color="'black'"/>
                                                                                 </v-btn>
                                                                             </div>
                                                                         </v-row>
@@ -370,7 +370,7 @@
                                                 height:30px;
                                                 margin:12.5px 0px 0px 0px;"
                                         >
-                                            <Icon icon="material-symbols:upload" width="24" height="24" />
+                                            <Icons :icon="'upload'" />
                                         </v-btn>
                                     </template>
                                 </v-tooltip>

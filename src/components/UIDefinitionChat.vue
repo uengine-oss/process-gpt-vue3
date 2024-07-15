@@ -21,7 +21,7 @@
                                             class="text-medium-emphasis"
                                             @click="openSaveDialog"
                                         >
-                                            <Icon icon="material-symbols:save" width="24" height="24" />
+                                            <Icons :icon="'save'" />
                                         </v-btn>
                                     </template>
                                     <span>{{ $t('uiDefinition.save') }}</span>
@@ -101,7 +101,7 @@
                                         class="text-medium-emphasis"
                                         @click="openSaveDialog"
                                     >
-                                        <Icon icon="material-symbols:save" width="24" height="24" />
+                                        <Icons :icon="'save'" />
                                     </v-btn>
                                 </template>
                                 <span>{{ $t('uiDefinition.save') }}</span>
