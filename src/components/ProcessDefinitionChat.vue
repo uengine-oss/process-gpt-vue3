@@ -84,8 +84,7 @@
                                                 @click="toggleLock"
                                                 density="comfortable"
                                             >
-                                                <Icon v-if="lock" icon="f7:lock" width="24" height="24"></Icon>
-                                                <Icon v-else icon="f7:lock-open" width="24" height="24"></Icon>
+                                                <Icons :icon="lock ? 'lock' : 'unLock'"/>
                                             </v-btn>
                                         </template>
                                         <span v-if="lock">{{
@@ -158,8 +157,7 @@
                                             @click="showXmlMode()"
                                             density="comfortable"
                                         >
-                                            <Icon v-if="isXmlMode" icon="fluent-mdl2:modeling-view" width="24" height="24" />
-                                            <Icon v-else icon="lucide:code-xml" width="24" height="24" />
+                                            <Icons :icon="isXmlMode ? 'modeling-view' : 'xml'"/>
                                         </v-btn>
                                     </template>
                                     <span>{{ isXmlMode ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>
@@ -218,8 +216,7 @@
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis" @click="toggleLock">
-                                        <Icon v-if="lock" icon="f7:lock" width="24" height="24"></Icon>
-                                        <Icon v-else icon="f7:lock-open" width="24" height="24"></Icon>
+                                        <Icons :icon="lock ? 'lock' : 'unLock'" :color="'black'"/>
                                     </v-btn>
                                 </template>
                                 <span v-if="lock">{{ $t('chat.unlock') }}</span>

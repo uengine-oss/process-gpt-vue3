@@ -164,7 +164,7 @@
                                                                                     class="ml-2"
                                                                                     size="small" icon density="comfortable"
                                                                                 >
-                                                                                    <Icon icon="gridicons:play" width="24" height="24" />
+                                                                                    <Icons :icon="'play'" :color="'black'"/>
                                                                                 </v-btn>
                                                                             </div>
                                                                         </v-row>

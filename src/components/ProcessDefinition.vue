@@ -6,7 +6,6 @@
                     <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
                         <template v-slot:activator="{ props }">
                             <v-btn @click="openProcessVariables" icon v-bind="props" class="processVariables-btn">
-                                <!-- <Icon class="cp-process-variables" icon="tabler:variable" width="32" height="32" /> -->
                                 <Icons class="cp-process-variables" :icon="'variable'" :width="32" :height="32" :color="'black'" />
                             </v-btn>
                         </template>
@@ -28,7 +27,7 @@
                     <v-tooltip v-if="executable" :text="$t('processDefinition.execution')">
                         <template v-slot:activator="{ props }">
                             <v-btn icon v-bind="props" class="processExecute" @click="executeProcess">
-                                <Icon icon="gridicons:play" width="32" height="32" />
+                                <Icons :icon="'play'" :width="32" :height="32" :color="'black'"/>
                             </v-btn>
                         </template>
                     </v-tooltip>
@@ -169,7 +168,7 @@
                                     "
                                 >
                                     <div style="display: flex; justify-content: center; align-items: center">
-                                        <Icon class="cp-variables-add" icon="streamline:add-1-solid" width="24" height="24" style="color: #5eb2e8" />
+                                        <Icons class="cp-variables-add" :icon="'plus'" :color="'#5eb2e8'" />
                                     </div>
                                 </v-card>
                             </v-row>
