@@ -164,7 +164,7 @@ export default {
         containerStyle() {
             return {
                 backgroundColor: getPrimary.value,
-                height: !this.$globalState.state.isRightZoomed ? 'calc(100vh - 155px)' : '100vh'
+                height: '100vh'
             };
         }
     }

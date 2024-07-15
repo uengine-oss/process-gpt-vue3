@@ -376,11 +376,15 @@ export default {
                         if (me.workItem.worklist.execScope) me.workItem.execScope = me.workItem.worklist.execScope;
                         me.workListByInstId = await backend.getWorkListByInstId(me.workItem.worklist.instId);
                         me.currentComponent = me.workItem.worklist.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
-                        me.currentActivities = me.workListByInstId.map((item) => {
-                            if(item.status != 'COMPLETED' && item.status != 'DONE') {
-                                return item.tracingTag;
-                            }
-                        });
+                        if (me.workItem.worklist.currentActivities) {
+                            me.currentActivities = me.workItem.worklist.currentActivities;
+                        } else {
+                            me.currentActivities = me.workListByInstId.map((item) => {
+                                if(item.status != 'COMPLETED' && item.status != 'DONE') {
+                                    return item.tracingTag;
+                                }
+                            });
+                        }
                     }
                     me.updatedDefKey++;
                 }

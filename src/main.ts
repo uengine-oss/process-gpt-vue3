@@ -220,6 +220,8 @@ if (window.location.host.includes('localhost') || window.location.host.includes(
                                     }
                                 }
                                 return;
+                            } else {
+                                break;
                             }
                         } catch (error) {
                             console.error('Attempt failed:', error);

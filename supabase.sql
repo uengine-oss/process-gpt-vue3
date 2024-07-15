@@ -45,6 +45,14 @@ create table todolist (
     tool text
 );
 
+create view public.worklist as
+select
+  t.*,
+  p.name as proc_inst_name
+from
+  todolist t
+  join public.proc_inst p on t.proc_inst_id = p.id;
+
 drop table if exists public.users CASCADE;
 create table public.users (
     id uuid not null primary key,

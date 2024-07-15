@@ -1,7 +1,8 @@
 <template>
     <v-row v-if="!isCompleted" class="ma-0 pa-0 task-btn" style="right: 50px">
         <v-spacer></v-spacer>
-        <v-btn @click="executeProcess" color="#0085DB" style="color: white;" rounded>완료</v-btn>
+        <v-btn v-if="!isDryRun" @click="intermediateSave" color="primary" rounded class="mr-1">중간 저장</v-btn>
+        <v-btn @click="executeProcess" color="primary" rounded>완료</v-btn>
     </v-row>
     <div class="pa-4" style="height: 100%;">
         <div v-if="isCompleted">
@@ -17,7 +18,8 @@
         <div v-else class="d-flex flex-column overflow-y-auto" style="height: 100%;">
             <!-- Instruction -->
             <div class="mb-4">
-                <v-alert v-if="workItem.activity.instruction" title="Instruction" type="info" variant="outlined" density="compact">
+                <v-alert v-if="workItem.activity.instruction" title="Instruction" type="info" variant="outlined"
+                    density="compact">
                     <template v-slot:text>
                         <span style="font-size: 14px;">{{ workItem.activity.instruction }}</span>
                     </template>
@@ -26,7 +28,7 @@
             <!-- Input Form -->
             <div>
                 <DefaultForm v-if="inputItems && inputItems.length > 0" :inputItems="inputItems" />
-                <AudioTextarea v-model="newMessage" />
+                <AudioTextarea v-model="newMessage" :workItem="workItem" />
             </div>
             <!-- CheckPoint -->
             <v-sheet v-if="checkPoints" class="mt-auto pa-3 border border-success rounded">
@@ -35,13 +37,8 @@
                     CheckPoint ({{ checkedCount }}/{{ checkPoints ? checkPoints.length : 0 }})
                 </div>
                 <div v-for="(checkPoint, index) in checkPoints" :key="index">
-                    <v-checkbox
-                        v-model="checkPoint.checked"
-                        :label="checkPoint.name"
-                        hide-details
-                        density="compact"
-                        color="success"
-                    ></v-checkbox>
+                    <v-checkbox v-model="checkPoint.checked" :label="checkPoint.name" hide-details density="compact" 
+                        color="success"></v-checkbox>
                 </div>
             </v-sheet>
         </div>
@@ -105,6 +102,9 @@ export default {
         this.init();
     },
     methods: {
+        close(){
+            this.$emit('close')
+        },
         async init() {
             var me = this;
             if(me.isDryRun){
@@ -156,9 +156,6 @@ export default {
                 successMsg: '해당 업무 완료'
             });
         },
-        close(){
-            this.$emit('close')
-        },
         executeProcess(){
             let value = { parameterValues: {} };
             let parameterValues = this.inputItems.reduce((acc, item) => ({ ...acc, [item.key]: item.value }), {});
@@ -171,6 +168,20 @@ export default {
             } else {
                 this.completeTask(value)
             }
+        },
+        intermediateSave() {
+            var me = this;
+            me.$try({
+                context: me,
+                action: () => {
+                    if (me.inputItems && me.inputItems.length > 0) {
+                        me.inputItems.forEach(async (variable) => {
+                            await backend.setVariable(me.workItem.worklist.instId, variable.name, variable.value);
+                        })
+                    }
+                },
+                successMsg: '중간 저장 완료'
+            });
         },
     }
 };

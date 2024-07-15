@@ -2,8 +2,8 @@
     <v-row class="ma-0 pa-0 task-btn" style="right: 40px">
         <v-spacer></v-spacer>
         <div class="from-work-item-pc" v-if="workItemStatus == 'NEW' || workItemStatus == 'DRAFT'">
-            <v-btn v-if="!isDryRun" @click="saveTask()" color="#0085DB" style="color: white" rounded>중간 저장</v-btn>
-            <v-btn @click="$try(completeTask, null, {sucessMsg: '워크아이템 완료'})" variant="tex" rounded>제출 완료</v-btn>
+            <v-btn v-if="!isDryRun" @click="saveTask()" color="primary" rounded>중간 저장</v-btn>
+            <v-btn @click="$try(completeTask, null, {sucessMsg: '워크아이템 완료'})" color="primary" rounded>제출 완료</v-btn>
         </div>
         <div class="from-work-item-mobile" v-if="workItemStatus == 'NEW' || workItemStatus == 'DRAFT'">
             <v-tooltip text="중간 저장">
