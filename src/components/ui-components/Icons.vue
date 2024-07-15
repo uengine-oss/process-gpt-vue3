@@ -1,5 +1,5 @@
 <template>
-    <div v-html="svgContent" :style="{ width: width + 'px', height: height + 'px' }"></div>
+    <div v-html="svgContent" :icon="`'${icon}'`" :style="{ width: width + 'px', height: height + 'px' }"></div>
 </template>
 
 <script>

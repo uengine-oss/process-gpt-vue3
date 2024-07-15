@@ -6,7 +6,7 @@
                 style="position: sticky; top: 0; z-index:2; background-color:white">
                 <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
                 <v-btn v-if="$route.path !== '/definition-map'" style="margin-left: 3px; margin-top: 1px;" icon variant="text" size="24">
-                    <Icon @click="goProcessMap" icon="humbleicons:arrow-go-back" width="24" height="24" />
+                    <Icons :icon="'arrow-go-back'" :color="'black'"/>
                 </v-btn>
                 
                 <!-- buttons -->
@@ -52,7 +52,7 @@
                     </span>
 
                     <v-btn icon variant="text" :size="24" class="ml-3" @click="capturePng">
-                        <Icon icon="mage:image-download" width="24" height="24" />
+                        <Icons :icon="'image-download'" :color="'black'"/>
                     </v-btn>
 
                     <!-- 프로세스 정의 체계도 캔버스 확대 축소 버튼 및 아이콘 -->

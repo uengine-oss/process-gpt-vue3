@@ -157,7 +157,7 @@
                                             @click="showXmlMode()"
                                             density="comfortable"
                                         >
-                                            <Icons :icon="isXmlMode ? 'modeling-view' : 'xml'"/>
+                                            <Icons :icon="'xml'" :color="isXmlMode ? '#1976D2' : '#666666'"/>
                                         </v-btn>
                                     </template>
                                     <span>{{ isXmlMode ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>
@@ -258,8 +258,7 @@
                                         class="text-medium-emphasis"
                                         @click="showXmlMode()"
                                     >
-                                        <Icon v-if="isXmlMode" icon="fluent-mdl2:modeling-view" width="24" height="24" />
-                                        <Icon v-else icon="lucide:code-xml" width="24" height="24" />
+                                        <Icons :icon="'xml'" :color="isXmlMode ? '#1976D2' : 'black'"/>
                                     </v-btn>
                                 </template>
                                 <span>{{ isXmlMode ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>

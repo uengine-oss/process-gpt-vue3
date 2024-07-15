@@ -46,7 +46,7 @@
                         <Icon icon="carbon:play-outline" width="24" height="24" />
                     </v-btn>
                     <v-btn icon variant="text" class="ml-3" :size="24" @click="capture">
-                        <Icon icon="mage:image-download" width="24" height="24" />
+                        <Icons :icon="'image-download'" :color="'black'" />
                     </v-btn>
                 </div>
                 <v-tooltip :text="$t('processDefinition.zoom')">
