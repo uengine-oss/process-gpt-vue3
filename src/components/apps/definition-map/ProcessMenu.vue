@@ -10,7 +10,7 @@
                             density="compact"
                             size="small"
                         >
-                            <Icon icon="tabler:pencil-cog" width="16" height="16" />
+                            <Icons :icon="'pencil-cog'" :width="12" :height="12" :color="'black'" />
                         </v-btn>
                     </template>
                 </v-tooltip>
@@ -21,7 +21,7 @@
                             density="compact"
                             size="small"
                         >
-                            <Icon icon="oi:pencil" />
+                            <Icons :icon="'pencil'" :width="12" :height="12" :color="'black'"/>
                         </v-btn>
                     </template>
                 </v-tooltip>
@@ -32,7 +32,7 @@
                             density="compact"
                             size="small"
                         >
-                            <Icon icon="el:trash" />
+                            <Icons :icon="'pencil'" :width="12" :height="12" :color="'black'"/>
                         </v-btn>
                     </template>
                 </v-tooltip>
