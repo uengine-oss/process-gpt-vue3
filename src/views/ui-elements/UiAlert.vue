@@ -8,7 +8,7 @@ import Basic from '@/components/ui-components/alert/Basic.vue';
 import Filled from '@/components/ui-components/alert/Filled.vue';
 import Description from '@/components/ui-components/alert/Description.vue';
 import Action from '@/components/ui-components/alert/Action.vue';
-import Icons from '@/components/ui-components/alert/Icons.vue';
+// import Icons from '@/components/ui-components/alert/Icons.vue';
 import Outlined from '@/components/ui-components/alert/Outlined.vue';
 import Closable from '@/components/ui-components/alert/Closable.vue';
 // common components
@@ -71,7 +71,7 @@ const breadcrumbs = ref([
                     <!-- With Icons -->
                     <v-col cols="12">
                         <UiChildCard title="With Icons">
-                            <Icons/>
+                            <!-- <Icons/> -->
                         </UiChildCard>
                     </v-col>
                     

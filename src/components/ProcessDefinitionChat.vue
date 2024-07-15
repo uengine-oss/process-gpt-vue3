@@ -66,7 +66,7 @@
                                             density="comfortable"
                                             @click="triggerFileInput"
                                         >
-                                            <Icon icon="material-symbols:upload" width="24" height="24" />
+                                            <Icons :icon="'upload'" />
                                         </v-btn>
                                     </template>
                                     <span>{{ $t('chat.import') }}</span>
@@ -123,7 +123,7 @@
                                                 @click="toggleLock"
                                                 density="comfortable"
                                             >
-                                                <Icon icon="material-symbols:save" width="24" height="24" />
+                                                <Icons :icon="'save'" />
                                             </v-btn>
                                         </template>
                                         <span>{{ $t('chat.processDefinitionSave') }}</span>
@@ -208,7 +208,7 @@
                                         class="text-medium-emphasis"
                                         @click="triggerFileInput"
                                     >
-                                        <Icon icon="material-symbols:upload" width="24" height="24" />
+                                        <Icons :icon="'upload'" />
                                     </v-btn>
                                 </template>
                                 <span>{{ $t('chat.import') }}</span>

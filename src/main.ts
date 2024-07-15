@@ -30,6 +30,7 @@ import setLocale from './plugins/setLocale';
 
 // icon
 import { Icon } from '@iconify/vue';
+import Icons from '@/components/ui-components/Icons.vue'
 
 // css
 import '@/assets/css/globalStyle.css';
@@ -281,6 +282,7 @@ app.use(createPinia());
 app.use(VCalendar, {});
 app.use(VueTablerIcons);
 app.component('Icon', Icon);
+app.component('Icons', Icons)
 // app.use(print);
 app.use(VueRecaptcha, {
     siteKey: '6LdzqbcaAAAAALrGEZWQHIHUhzJZc8O-KSTdTTh_',

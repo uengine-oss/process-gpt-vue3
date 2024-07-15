@@ -377,7 +377,7 @@
                                                 height:30px;
                                                 margin:12.5px 0px 0px 0px;"
                                         >
-                                            <Icon icon="material-symbols:upload" width="24" height="24" />
+                                            <Icons :icon="'upload'" />
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
