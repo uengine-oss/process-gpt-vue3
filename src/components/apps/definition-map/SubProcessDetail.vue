@@ -43,7 +43,7 @@
             <div class="ml-auto d-flex">
                 <div v-if="onLoad && bpmn">
                     <v-btn v-if="!JMS" icon variant="text" class="ml-3" :size="24" @click="executeProcess">
-                        <Icon icon="carbon:play-outline" width="24" height="24" />
+                        <Icons :icon="'play-outline'" :color="'black'" />
                     </v-btn>
                     <v-btn icon variant="text" class="ml-3" :size="24" @click="capture">
                         <Icons :icon="'image-download'" :color="'black'" />
