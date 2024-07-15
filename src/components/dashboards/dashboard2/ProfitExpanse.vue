@@ -32,7 +32,7 @@
                     <v-card-title class="mb-3">Total</v-card-title>
                     <div class="d-flex align-center gap-4 mb-3 pb-3">
                         <v-avatar style="background-color:#FFF0B4;">
-                            <Icon color="#FFB933" icon="icons8:todo-list" width="24" height="24" />
+                            <Icons :icon="'todo-list'" :color="'#FFB933'" />
                         </v-avatar>
                         <div>
                             <h5 class="text-h5 font-weight-semibold">{{ summary.todo }}</h5>
@@ -41,7 +41,7 @@
                     </div>
                     <div class="d-flex align-center gap-4 mb-3 pb-3">
                         <v-avatar class="bg-lighterror">
-                            <Icon color="#FBA690" icon="carbon:in-progress" width="24" height="24"/>
+                            <Icons :icon="'in-progress'" :color="'#FBA690'" />
                         </v-avatar>
                         <div>
                             <h5 class="text-h5 font-weight-semibold">{{ summary.inProcess }}</h5>
@@ -50,7 +50,7 @@
                     </div>
                     <div class="d-flex align-center gap-4 mb-3 pb-3">
                         <v-avatar class="bg-lightinfo">
-                            <Icon color="#2995DC" icon="lets-icons:done-ring-round" width="24" height="24"/>
+                            <Icons :icon="'done-ring-round'" :color="'#2995DC'" />
                         </v-avatar>
                         <div>
                             <h5 class="text-h5 font-weight-semibold">{{ summary.done }}</h5>
@@ -59,7 +59,7 @@
                     </div>
                     <div class="d-flex align-center gap-4  mb-3 pb-3">
                         <v-avatar class=" bg-lightsecondary">
-                            <Icon color="grey" icon="fluent-mdl2:total" width="24" height="24" />
+                            <Icons :icon="'total'" :color="'grey'" />
                         </v-avatar>
                         <div>
                             <h5 class="text-h5 font-weight-semibold">{{ summary.total }}</h5>
