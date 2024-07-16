@@ -31,7 +31,7 @@
                             <v-col>
                                 <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
                                     <template v-slot:title>
-                                        <Icon style="margin-left:-6px;" icon="clarity:info-line" width="32" height="32" />
+                                        <Icons style="padding-left:-5px;" :icon="'info-line'" :size="32" :color="'#2196F3'"/>
                                     </template>
                                     <small style="white-space: pre-line; font-size:14px;">
                                         {{ filteredAlert.detail }}
@@ -79,7 +79,7 @@
                                                             icon variant="text" size="x-small"  
                                                             style="background-color:white !important;"
                                                         >
-                                                            <Icon icon="solar:backspace-bold" height="20" width="20" />
+                                                            <Icons :icon="'backspace-bold'" :size="20" :color="'black'" />
                                                         </v-btn>
                                                     </v-row>
                                                 </div>
@@ -106,7 +106,7 @@
                                                                 class="float-left edit-btn"
                                                                 style="background-color:white;"
                                                             >
-                                                                <Icon icon="solar:pen-bold" height="20" width="20" />
+                                                                <icons :icon="'pencil'" :size="20" :color="'black'" />
                                                             </v-btn>
 
                                                         <!-- <transition name="slide-fade"> -->
@@ -134,7 +134,7 @@
                                                         size="small" icon density="comfortable"
                                                         style="position:absolute; right:5px; top:5px; z-index:1;"
                                                     >
-                                                        <Icon icon="el:trash" />
+                                                        <Icons :icon="'trash'" :color="'black'"/>
                                                     </v-btn>
                                                     <v-list>
                                                         <div>
@@ -444,21 +444,21 @@
                             density="comfortable"
                             icon
                         >
-                            <Icon icon="ic:round-headset" width="24" height="24" />
+                            <Icons :icon="'round-headset'" :color="'black'" />
                         </v-btn>
                         <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
                             density="comfortable"
                             icon
                         >
-                            <Icon icon="ic:sharp-mic" width="24" height="24" />
+                            <Icons :icon="'sharp-mic'" :color="'black'" />
                         </v-btn>
                         <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
                             density="comfortable"
                             icon
                         >
-                            <Icon icon="fa-solid:stop" width="20" height="20" />
+                            <Icons :icon="'stop'" :size="'20'" :color="'black'" />
                         </v-btn>
-                        <Icon v-if="isMicRecorderLoading" icon="eos-icons:bubble-loading" width="24" height="24" />
+                        <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" :color="'black'" />
                     </template>
                     <template v-slot:append-inner>
                         <div style="height: -webkit-fill-available; margin-right: 10px; margin-top: 10px;">
