@@ -90,24 +90,23 @@
         </v-row>
         <v-dialog v-model="isViewProcessVariables" max-width="1000">
             <v-card>
-                <v-tabs v-model="processVariableTab" bg-color="transparent" height="50" color="primary">
-                    <v-tab value="variable">
-                       {{ $t('processDefinition.editProcessData') }} 
-                    </v-tab>
-                    <v-tab value="pattern">
-                        {{ $t('processDefinition.instanceNamePattern') }} 
-                    </v-tab>
-                </v-tabs>
-
-                <v-btn icon 
-                    style="position: absolute; right: 5px; top: 5px" 
-                    @click="isViewProcessVariables = false">
-                    <v-icon>mdi-close</v-icon>
-                </v-btn>
-
-                <v-window v-model="processVariableTab">
-                    <v-window-item value="variable">
-                        <v-card-text style="height: 1000px; width: 1000px;">
+                <div class="d-flex">
+                    <v-tabs v-model="processVariableTab" bg-color="transparent" height="50" color="primary">
+                        <v-tab value="variable">
+                        {{ $t('processDefinition.editProcessData') }} 
+                        </v-tab>
+                        <v-tab value="pattern">
+                            {{ $t('processDefinition.instanceNamePattern') }} 
+                        </v-tab>
+                    </v-tabs>
+                    <v-btn icon variant="plain" class="ml-auto" @click="isViewProcessVariables = false">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </div>
+                
+                <v-card-text>
+                    <v-window v-model="processVariableTab">
+                        <v-window-item value="variable">
                             <VDataTable class="border rounded-md" :items-per-page="5" :items-per-page-text="$t('processDefinition.itemsPerPage')">
                                 <thead>
                                     <tr>
@@ -191,14 +190,12 @@
                                     </v-card-text>
                                 </v-card>
                             </div>
-                        </v-card-text>
-                    </v-window-item>
-                    <v-window-item value="pattern">
-                        <v-card-text style="height: 1000px; width: 1000px;">
-                            <InstanceNamePatternForm :pattern="instanceNamePattern" @update="updateInstanceNamePattern"></InstanceNamePatternForm>
-                        </v-card-text>
-                    </v-window-item>
-                </v-window>
+                        </v-window-item>
+                        <v-window-item value="pattern">
+                            <InstanceNamePatternForm :pattern="instanceNamePattern" @update="updateInstanceNamePattern" />
+                        </v-window-item>
+                    </v-window>
+                </v-card-text>
             </v-card>
         </v-dialog>
 

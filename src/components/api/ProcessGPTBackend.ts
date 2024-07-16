@@ -440,6 +440,14 @@ class ProcessGPTBackend implements Backend {
                     activity_name: workItem.title,
                 }
                 await storage.putObject('todolist', putObj);
+
+                if (workItem.status == "IN_PROGRESS" || workItem.status == "PENDING") {
+                    const putInst = {
+                        proc_inst_id: workItem.instId,
+                        current_activity_ids: [workItem.tracingTag || workItem.title]
+                    }
+                    await storage.putObject(workItem.defId, putInst);
+                }
             } else { // instance workItem
                 const answer = {
                     "activity_id": workItem.tracingTag || workItem.title,
