@@ -13,7 +13,7 @@ import { Icon } from '@iconify/vue';
             <div class="" v-bind="props">
                 <div class="hidden-md-and-down">
                     <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5 ">
-                        <Icon icon="solar:magnifer-linear" height="22" width="22" />
+                        <Icons :icon="'magnifer-linear'" :size="22" />
                         <v-text-field v-model="searchKeyword" variant="plain" density="compact"
                             class="position-relative pt-0 ml-3 custom-placeholer-color" placeholder="검색"
                             single-line hide-details
@@ -21,7 +21,7 @@ import { Icon } from '@iconify/vue';
                     </div>
                 </div>
                 <v-btn icon variant="text" class="custom-hover-primary ml-sm-3 search hidden-md-and-up" size="small">
-                    <Icon icon="solar:magnifer-linear" height="22" width="22" />
+                    <Icons :icon="'magnifer-linear'" :size="22" />
                 </v-btn>
             </div>
         </template>
