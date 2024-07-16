@@ -33,7 +33,7 @@
         <div align="right" @click="generateAPI">
             <v-btn prepend-icon color="primary">
                 <template v-slot:prepend>
-                    <Icon icon="mdi:wand" />
+                    <Icons :icon="'magic'" :color="'black'" />
                 </template>
                 생성
             </v-btn>

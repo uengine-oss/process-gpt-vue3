@@ -79,7 +79,7 @@ const customizer = useCustomizerStore();
                                         class="text-medium-emphasis cp-menu"
                                         density="comfortable"
                                     >
-                                        <Icon :icon="subItem.icon" width="20" height="20" />    
+                                        <Icons :icon="subItem.icon" :size="20" />    
                                     </v-btn>
                                 </template>
                             </v-tooltip>
@@ -136,33 +136,33 @@ export default {
                     disable: false
                 },
                 {
+                    title: 'processDefinition.title',
+                    icon: 'ibm-process-mining',
+                    BgColor: 'primary',
+                    to: '/definitions/chat',
+                    disable: false
+                },
+                {
+                    title: 'uiDefinition.title',
+                    icon: 'document',
+                    BgColor: 'primary',
+                    to: '/ui-definitions/chat',
+                    disable: true
+                },
+                {
                     title: 'organizationChartDefinition.title',
-                    icon: 'solar:users-group-rounded-line-duotone',
+                    icon: 'users-group-rounded-line-duotone',
                     BgColor: 'primary',
                     to: '/organization',
                     disable: true
                 },
                 {
                     title: 'systemDefinition.title',
-                    icon: 'solar:server-line-duotone',
+                    icon: 'server-line-duotone',
                     BgColor: 'primary',
                     to: '/system',
                     disable: true
                 },
-                {
-                    title: 'uiDefinition.title',
-                    icon: 'icon-park-outline:layout-five',
-                    BgColor: 'primary',
-                    to: '/ui-definitions/chat',
-                    disable: true
-                },
-                {
-                    title: 'processDefinition.title',
-                    icon: 'tabler:device-imac-cog',
-                    BgColor: 'primary',
-                    to: '/definitions/chat',
-                    disable: false
-                }
             ]
             this.getDefinitionList();
         }
@@ -227,7 +227,7 @@ export default {
                         if (item.name != 'instances') {
                             var obj = {
                                 title: item.name,
-                                icon: 'ic:outline-folder',
+                                icon: 'outline-folder',
                                 // to: `/definitions/${item.definition.processDefinitionId}`,
                                 directory: true,
                                 BgColor: 'primary',

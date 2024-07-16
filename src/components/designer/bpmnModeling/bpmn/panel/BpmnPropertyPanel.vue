@@ -3,10 +3,8 @@
         <v-row class="pa-0 ma-0">
             <v-spacer></v-spacer>
             <v-btn @click="save">
-                <Icon icon="mdi:close" width="24" height="24" class="cursor-pointer" />
+                <Icons :icon="'close'" :color="'black'" class="cursor-pointer" />
             </v-btn>
-
-            <!-- <Icon icon="mdi:close" width="24" height="24" @click="$emit('close')" class="cursor-pointer" /> -->
         </v-row>
         <v-card-text style="overflow: auto; height: calc(-155px + 100vh); width: 700px">
             <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>

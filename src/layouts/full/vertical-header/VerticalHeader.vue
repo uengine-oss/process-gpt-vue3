@@ -30,26 +30,26 @@ interface SidebarItem {
 const sidebarItems = ref<SidebarItem[]>([
     {
         title: 'processDefinitionMap.title',
-        icon: 'jam:write',
+        icon: 'write',
         to: '/definition-map',
         disable: false,
         isMobile: false
     },
     {
         title: 'chats.title',
-        icon: 'solar:chat-round-unread-line-duotone',
+        icon: 'chat-round-unread-line-duotone',
         to: '/chats',
         disable: false
     },
     {
         title: 'headerMenu.todoList',
-        icon: 'pajamas:overview',
+        icon: 'overview',
         to: '/todolist',
         disable: false
     },
     {
         title: 'headerMenu.calendar',
-        icon: 'solar:calendar-line-duotone',
+        icon: 'calendar-line-duotone',
         to: '/calendar',
         disable: false
     }
@@ -125,13 +125,13 @@ function navigateTo(item: SidebarItem) {
                     <v-btn class="hidden-lg-and-up" icon
                         @click.stop="customizer.SET_SIDEBAR_DRAWER"
                     >
-                        <Icon icon="solar:list-bold-duotone" height="24" width="24" />
+                        <Icons :icon="'list-bold-duotone'"/>
                     </v-btn>
                     <v-tooltip :text="$t('headerMenu.sidebar')">
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" class="hidden-md-and-down" icon
                                 @click.stop="customizer.SET_MINI_SIDEBAR(!customizer.mini_sidebar)">
-                                <Icon icon="solar:list-bold-duotone" height="24" width="24" />
+                                <Icons :icon="'list-bold-duotone'"/>
                             </v-btn>
                         </template>
                     </v-tooltip>
@@ -139,7 +139,7 @@ function navigateTo(item: SidebarItem) {
                         <v-tooltip v-if="!item.isMobile" :text="$t(item.title)">
                             <template v-slot:activator="{ props }">
                                 <v-btn icon v-bind="props" @click="navigateTo(item)">
-                                    <Icon :icon="item.icon" height="24" width="24" />
+                                    <Icons :icon="item.icon"/>
                                 </v-btn>
                             </template>
                         </v-tooltip>

@@ -25,12 +25,15 @@ export default {
         size: {
             type: [String, Number],
             default: 24
+        },
+        originalColor: {
+            type: Boolean,
+            default: false
         }
     },
     data() {
         return {
-            svgContent: '',
-            svgCache: {}
+            svgContent: ''
         };
     },
     computed: {
@@ -54,24 +57,39 @@ export default {
     },
     methods: {
         async loadSvg() {
-            if (this.svgCache[this.icon]) {
-                this.updateSvgContent(this.svgCache[this.icon]);
+            const cachedSvg = localStorage.getItem(this.icon);
+            if (cachedSvg) {
+                this.updateSvgContent(cachedSvg);
             } else {
                 const response = await fetch(`/assets/images/icon/${this.icon}.svg`);
                 let svg = await response.text();
-                this.svgCache[this.icon] = svg;
+                localStorage.setItem(this.icon, svg); // 로컬 스토리지에 SVG 저장
                 this.updateSvgContent(svg);
             }
         },
+        shouldAddFill(svg) {
+            return !svg.match(/fill="currentColor"/) && 
+                !svg.match(/stroke="currentColor"/) && 
+                !svg.match(/stroke="none"/) && 
+                !svg.match(/fill="none"/);
+        },
         updateSvgContent(svg) {
-            // 기존 fill 속성을 모두 제거
-            svg = svg.replace(/fill="[^"]*"/g, '');
-            // 모든 path 요소에 fill 속성 추가
-            svg = svg.replace(/<path/g, `<path fill="${this.color}"`);
+            if (!this.originalColor) {
+                // currentColor를 사용하는 stroke 및 fill 속성을 동적으로 변경
+                svg = svg.replace(/stroke="currentColor"/g, `stroke="${this.color}"`);
+                svg = svg.replace(/fill="currentColor"/g, `fill="${this.color}"`);
+
+                // 조건에 따라 <path>에 fill 속성 추가
+                if (this.shouldAddFill(svg)) {
+                    svg = svg.replace(/<path/g, `<path fill="${this.color}"`);
+                }
+            }
+
             // 루트 SVG 요소에 width와 height 속성 설정
             svg = svg.replace(/<svg/, `<svg width="${this.computedWidth}" height="${this.computedHeight}"`);
+            
             this.svgContent = svg;
-        }
+        },
     }
 };
 </script>

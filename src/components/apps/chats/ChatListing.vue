@@ -9,7 +9,7 @@ const props = defineProps({
     userInfo: Object
 });
 
-const emit = defineEmits(['chat-selected', 'create-chat-room']);
+const emit = defineEmits(['chat-selected', 'create-chat-room', 'delete-chat-room']);
 
 const formatTimeOrNow = (createdAt) => {
     const createdAtDate = new Date(createdAt);
@@ -63,6 +63,7 @@ const getProfile = (email) => {
 // const items = ref([{ title: 'Sort by time' }, { title: 'Sort by Unread' }, { title: 'Mark all as read' }]);
 
 const dialog = ref(false);
+const deleteDialog = ref(false);
 const inputObj = ref({
     name: '',
     participants: []
@@ -102,6 +103,16 @@ const openEditDialog = (chat) => {
     inputObj.value = { ...chat };
     editMode.value = true;
     dialog.value = true;
+};
+
+const openDeleteDialog = (chat) => {
+    inputObj.value = { ...chat };
+    deleteDialog.value = true;
+};
+
+const deleteChatRoom = () => {
+    emit('delete-chat-room', inputObj.value.id);
+    deleteDialog.value = false;
 };
 
 </script>
@@ -161,7 +172,22 @@ const openEditDialog = (chat) => {
             <v-card-actions>
                 <v-spacer></v-spacer>
                 <v-btn color="blue darken-1" text @click="dialog = false">취소</v-btn>
-                <v-btn color="blue darken-1" text @click="confirmDialog">{{ editMode ? '수정' : '생성' }}</v-btn>
+                <v-btn color="primary" text @click="confirmDialog">{{ editMode ? '저장' : '생성' }}</v-btn>
+            </v-card-actions>
+        </v-card>
+    </v-dialog>
+    <v-dialog v-model="deleteDialog" persistent max-width="600px">
+        <v-card>
+            <v-card-title>
+                채팅방 삭제
+            </v-card-title>
+            <v-card-text>
+                "{{ inputObj.name }}" 채팅방을 삭제하시겠습니까 ?
+            </v-card-text>
+            <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn color="blue darken-1" text @click="deleteDialog = false">취소</v-btn>
+                <v-btn color="error" text @click="deleteChatRoom">삭제</v-btn>
             </v-card-actions>
         </v-card>
     </v-dialog>
@@ -215,9 +241,21 @@ const openEditDialog = (chat) => {
                                 v-if="chat.participants.find(participant => participant.email == userInfo.email).isExistUnReadMessage"
                                 style="position: relative; top: 1.5px;" dot inline color="info">
                             </v-badge>
-                            <v-btn size="x-small" icon>
-                                <v-icon @click="openEditDialog(chat)">mdi-dots-vertical</v-icon>
-                            </v-btn>
+                            <v-menu location="end">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" size="x-small" icon>
+                                        <v-icon>mdi-dots-vertical</v-icon>
+                                    </v-btn>
+                                </template>
+                                <v-list style="width: 70px; text-align-last: center;">
+                                    <v-list-item @click="openEditDialog(chat)">
+                                        <v-list-item-title>설정</v-list-item-title>
+                                    </v-list-item>
+                                    <v-list-item @click="openDeleteDialog(chat)">
+                                        <v-list-item-title style="color: red;">삭제</v-list-item-title>
+                                    </v-list-item>
+                                </v-list>
+                            </v-menu>
                         </small>
                     </div>
                 </template>

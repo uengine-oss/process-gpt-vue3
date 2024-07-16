@@ -41,7 +41,7 @@
                     <v-tooltip location="bottom" v-if="!useLock">
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" icon variant="text" size="24" @click="saveProcess()">
-                                <Icons :icon="'save'" />
+                                <Icons :icon="'save'" :color="'black'"/>
                             </v-btn>
                         </template>
                         <span>{{ $t('processDefinitionMap.save') }}</span>
@@ -84,7 +84,9 @@
                 </div>
             </div>
 
-            <v-btn style="margin-left: 20px;" color="primary" @click="openConsultingDialog = true"><v-icon small style="margin-right: 10px;">mdi-auto-fix</v-icon>프로세스 컨설팅 시작하기</v-btn>
+            <v-btn style="margin-left: 20px;" color="primary" @click="openConsultingDialog = true">
+                <Icons :icon="'magic'" :size="18" :color="'white'" style="margin-right: 10px;" />프로세스 컨설팅 시작하기
+            </v-btn>
         </v-card>
         <v-dialog style="max-width: 1000px;" v-model="openConsultingDialog" persistent>
             <ProcessConsultingChat @closeConsultingDialog="closeConsultingDialog" @createdBPMN="createdBPMN" />

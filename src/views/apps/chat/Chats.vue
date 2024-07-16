@@ -10,6 +10,7 @@
                     :userInfo="userInfo"
                     @chat-selected="chatRoomSelected" 
                     @create-chat-room="createChatRoom"
+                    @delete-chat-room="deleteChatRoom"
                 />
                 </div>
             </template>
@@ -104,7 +105,7 @@ export default {
     watch: {
         currentChatRoom: {
             handler(newVal) {
-                if(this.generator){
+                if(this.generator && newVal && newVal.id){
                     this.chatRoomId = newVal.id;
                     this.generator.setChatRoomData(newVal);
                 }
@@ -196,6 +197,21 @@ export default {
                 }
             });
         },
+        deleteChatRoom(chatRoomId){
+            let index = this.chatRoomList.findIndex(room => room.id === chatRoomId);
+            if(index !== -1) {
+                this.chatRoomList.splice(index, 1);
+            }
+            this.storage.delete(`chats/${chatRoomId}`, {key: 'id'});
+            this.storage.delete(`chat_rooms/${chatRoomId}`, {key: 'id'});
+
+            if(this.chatRoomList && this.chatRoomList.length > 0){
+                this.chatRoomSelected(this.chatRoomList[0])
+            } else {
+                this.currentChatRoom = null
+                this.messages = []
+            }
+        },
         createChatRoom(chatRoomInfo){
             if(!chatRoomInfo.id){
                 chatRoomInfo.id = this.uuid();
@@ -222,8 +238,8 @@ export default {
                 }
             }
             
-            this.currentChatRoom = chatRoomInfo
             this.putObject(`chat_rooms`, chatRoomInfo);
+            this.chatRoomSelected(chatRoomInfo)
         },
         setReadMessage(idx){
             let participant = this.chatRoomList[idx].participants.find(participant => participant.email === this.userInfo.email);
