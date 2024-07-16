@@ -28,6 +28,7 @@
                     :loading="loading"
                     :open="versionDialog"
                     :definitionPath="fullPath"
+                    :processName="projectName"
                     @close="toggleVersionDialog"
                     @save="saveDefinition"
                 ></process-definition-version-dialog>
@@ -37,6 +38,17 @@
                     @close="toggleVerMangerDialog"
                     @changeXML="changeXML"
                 ></ProcessDefinitionVersionManager>
+                <v-dialog v-model="deleteDialog" max-width="500">
+                    <v-card>
+                        <v-card-text>
+                            {{ $t('processDefinition.deleteProcessMessage') }}
+                        </v-card-text>
+                        <v-card-actions class="justify-center pt-0">
+                            <v-btn color="primary" variant="flat" @click="deleteProcess">{{ $t('processDefinition.delete') }}</v-btn>
+                            <v-btn color="error" variant="flat" @click="deleteDialog = false">{{ $t('processDefinition.cancel') }}</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
             </template>
             <template v-slot:rightpart>
                 <div v-if="isAdmin" class="no-scrollbar">
@@ -53,130 +65,14 @@
                         @sendEditedMessage="sendEditedMessage"
                         @stopMessage="stopMessage"
                     >
-                        <template v-slot:custom-tools>
-                            <v-row class="ma-0 pa-0 mt-3">
-                                <v-tooltip location="bottom">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn
-                                            v-bind="props"
-                                            icon
-                                            variant="text"
-                                            type="file"
-                                            class="text-medium-emphasis"
-                                            density="comfortable"
-                                            @click="triggerFileInput"
-                                        >
-                                            <Icons :icon="'upload'" />
-                                        </v-btn>
-                                    </template>
-                                    <span>{{ $t('chat.import') }}</span>
-                                </v-tooltip>
-                                <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn" style="display: none" />
-
-                                <template v-if="bpmn && fullPath != ''">
-                                    <v-tooltip location="bottom">
-                                        <template v-slot:activator="{ props }">
-                                            <v-btn
-                                                v-bind="props"
-                                                icon
-                                                variant="text"
-                                                class="text-medium-emphasis"
-                                                @click="toggleLock"
-                                                density="comfortable"
-                                            >
-                                                <Icons :icon="lock ? 'lock' : 'unLock'"/>
-                                            </v-btn>
-                                        </template>
-                                        <span v-if="lock">{{
-                                            editUser != '' && editUser != userInfo.name
-                                                ? `현재 ${editUser} 님께서 수정 중입니다. 체크아웃 하는 경우 ${editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크아웃 하시겠습니까?`
-                                                : $t('chat.unlock')
-                                        }}</span>
-                                        <span v-else>{{ $t('chat.lock') }}</span>
-                                    </v-tooltip>
-
-                                    <v-tooltip location="bottom">
-                                        <template v-slot:activator="{ props }">
-                                            <v-btn
-                                                v-bind="props"
-                                                icon
-                                                variant="text"
-                                                class="text-medium-emphasis"
-                                                @click="toggleVerMangerDialog"
-                                                density="comfortable"
-                                            >
-                                                <HistoryIcon size="24" />
-                                            </v-btn>
-                                        </template>
-                                        <span>{{ $t('chat.history') }}</span>
-                                    </v-tooltip>
-                                </template>
-                                <template v-else>
-                                    <v-tooltip location="bottom">
-                                        <template v-slot:activator="{ props }">
-                                            <v-btn
-                                                v-bind="props"
-                                                icon
-                                                variant="text"
-                                                class="text-medium-emphasis"
-                                                @click="toggleLock"
-                                                density="comfortable"
-                                            >
-                                                <Icons :icon="'save'" />
-                                            </v-btn>
-                                        </template>
-                                        <span>{{ $t('chat.processDefinitionSave') }}</span>
-                                    </v-tooltip>
-                                </template>
-
-                                <v-tooltip location="bottom">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn
-                                            v-if="bpmn && fullPath != ''"
-                                            v-bind="props"
-                                            icon
-                                            variant="text"
-                                            class="text-medium-emphasis"
-                                            @click="beforeDelete"
-                                            density="comfortable"
-                                        >
-                                            <TrashIcon size="24" />
-                                        </v-btn>
-                                    </template>
-                                    <span>{{ $t('processDefinition.deleteProcess') }}</span>
-                                </v-tooltip>
-
-                                <v-tooltip location="bottom">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn
-                                            v-if="bpmn && fullPath != ''"
-                                            v-bind="props"
-                                            icon
-                                            variant="text"
-                                            class="text-medium-emphasis"
-                                            @click="showXmlMode()"
-                                            density="comfortable"
-                                        >
-                                            <Icons :icon="'xml'" :color="isXmlMode ? '#1976D2' : '#666666'"/>
-                                        </v-btn>
-                                    </template>
-                                    <span>{{ isXmlMode ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>
-                                </v-tooltip>
-                            </v-row>
+                        <template v-slot:custom-title>
+                            <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
+                                :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
+                                @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
+                                @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete" />
                         </template>
                     </Chat>
                 </div>
-                <v-dialog v-model="deleteDialog" max-width="500">
-                    <v-card>
-                        <v-card-text>
-                            {{ $t('processDefinition.deleteProcessMessage') }}
-                        </v-card-text>
-                        <v-card-actions class="justify-center pt-0">
-                            <v-btn color="primary" variant="flat" @click="deleteProcess">{{ $t('processDefinition.delete') }}</v-btn>
-                            <v-btn color="error" variant="flat" @click="deleteDialog = false">{{ $t('processDefinition.cancel') }}</v-btn>
-                        </v-card-actions>
-                    </v-card>
-                </v-dialog>
             </template>
 
             <template v-slot:mobileLeftContent>
@@ -194,76 +90,11 @@
                     @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage"
                 >
-                    <template v-slot:custom-tools>
-                        <div class="d-flex">
-                            <v-tooltip location="bottom">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn
-                                        v-bind="props"
-                                        icon
-                                        variant="text"
-                                        type="file"
-                                        class="text-medium-emphasis"
-                                        @click="triggerFileInput"
-                                    >
-                                        <Icons :icon="'upload'" />
-                                    </v-btn>
-                                </template>
-                                <span>{{ $t('chat.import') }}</span>
-                            </v-tooltip>
-                            <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn" style="display: none" />
-
-                            <v-tooltip location="bottom">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis" @click="toggleLock">
-                                        <Icons :icon="lock ? 'lock' : 'unLock'" :color="'black'"/>
-                                    </v-btn>
-                                </template>
-                                <span v-if="lock">{{ $t('chat.unlock') }}</span>
-                                <span v-else>{{ $t('chat.lock') }}</span>
-                            </v-tooltip>
-
-                            <v-tooltip location="bottom">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis" @click="toggleVerMangerDialog">
-                                        <HistoryIcon size="24" />
-                                    </v-btn>
-                                </template>
-                                <span>{{ $t('chat.history') }}</span>
-                            </v-tooltip>
-
-                            <v-tooltip location="bottom">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn
-                                        v-if="bpmn && fullPath != ''"
-                                        v-bind="props"
-                                        icon
-                                        variant="text"
-                                        class="text-medium-emphasis"
-                                        @click="beforeDelete"
-                                    >
-                                        <TrashIcon size="24" />
-                                    </v-btn>
-                                </template>
-                                <span>{{ $t('processDefinition.deleteProcess') }}</span>
-                            </v-tooltip>
-
-                            <v-tooltip location="bottom">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn
-                                        v-if="bpmn && fullPath != ''"
-                                        v-bind="props"
-                                        icon
-                                        variant="text"
-                                        class="text-medium-emphasis"
-                                        @click="showXmlMode()"
-                                    >
-                                        <Icons :icon="'xml'" :color="isXmlMode ? '#1976D2' : 'black'"/>
-                                    </v-btn>
-                                </template>
-                                <span>{{ isXmlMode ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>
-                            </v-tooltip>
-                        </div>
+                    <template v-slot:custom-title>
+                        <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
+                            :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
+                            @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
+                            @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete" />
                     </template>
                 </Chat>
             </template>
@@ -278,6 +109,8 @@ import xml2js from 'xml2js';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import ProcessDefinitionVersionDialog from '@/components/ProcessDefinitionVersionDialog.vue';
 import ProcessDefinitionVersionManager from '@/components/ProcessDefinitionVersionManager.vue';
+import ProcessDefinitionChatHeader from '@/components/ProcessDefinitionChatHeader.vue';
+
 import ChatDetail from '@/components/apps/chats/ChatDetail.vue';
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
@@ -312,7 +145,8 @@ export default {
         // BpmnModelingCanvas,
         ChatGenerator,
         ProcessDefinitionVersionDialog,
-        ProcessDefinitionVersionManager
+        ProcessDefinitionVersionManager,
+        ProcessDefinitionChatHeader
     },
     data: () => ({
         isXmlMode: false,
@@ -425,9 +259,6 @@ export default {
                     me.EventBus.emit('definitions-updated');
                 }
             });
-        },
-        triggerFileInput() {
-            this.$refs.fileInput.click();
         },
         handleFileChange(event) {
             let me = this;

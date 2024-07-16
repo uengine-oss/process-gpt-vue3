@@ -7,26 +7,20 @@
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
                 <v-card-text>
-                    <v-col>
-                        <v-switch v-model="isMajor"
-                            :label="this.isMajor ? `Major Update: ${newVersion}` : `Minor Update: ${newVersion}`"
-                            color="primary" :disabled="isNew" hide-details></v-switch>
-                        <v-text-field v-if="isNew" 
-                            v-model="information.proc_def_id" 
-                            label="ID"
-                            :rules="[v => !!v || 'ID is required']" 
-                            required
-                        ></v-text-field>
-                        <v-text-field 
-                            v-model="information.name" 
-                            label="Name" 
-                            :rules="[v => !!v || 'Name is required']"
-                            required
-                        ></v-text-field>
-                    </v-col>
+                    <v-switch v-model="isMajor"
+                        :label="this.isMajor ? `Major Update: ${newVersion}` : `Minor Update: ${newVersion}`"
+                        color="primary" :disabled="isNew" hide-details
+                    ></v-switch>
+                    <div v-if="isNew">
+                        <v-text-field v-model="information.proc_def_id" label="ID" :rules="[v => !!v || 'ID is required']" 
+                            required class="pb-2"></v-text-field>
+                        <v-text-field  v-model="information.name" label="Name" :rules="[v => !!v || 'Name is required']" 
+                            required class="pb-2"></v-text-field>
+                    </div>
+                    <v-textarea v-model="information.message" label="Message" hide-details rows="3"></v-textarea>
                 </v-card-text>
                 <v-card-actions style="justify-content: right;">
-                    <v-btn v-if="!loading" @click="save()"> SAVE </v-btn>
+                    <v-btn v-if="!loading" @click="save()" color="primary"> SAVE </v-btn>
                     <v-progress-circular v-if="loading" color="primary" :size="25" indeterminate
                         style="margin: 5px;"></v-progress-circular>
                 </v-card-actions>
@@ -49,6 +43,7 @@ export default {
         process: Object,
         definition: Object,
         loading: Boolean,
+        processName: String
     },
     data: () => ({
         storage: null,
@@ -61,7 +56,8 @@ export default {
             proc_def_id: null,
             snapshot: null,
             diff: null,
-            timeStamp: null
+            timeStamp: null,
+            message: null
         },
         isOpen: false, // inner var
     }),
@@ -92,6 +88,13 @@ export default {
                 this.load();
             } else {
                 this.isOpen = false
+            }
+        },
+        "$route": function (newVal) {
+            if (newVal) {
+                if (this.isOpen) {
+                    this.load();
+                }
             }
         }
     },
@@ -126,16 +129,18 @@ export default {
                                 //     })
                                 if (versionInfo.length > 0) {
                                     me.information = versionInfo[0]
-                                    me.information.name = definitionInfo.name
+                                    me.information.name = me.processName ? me.processName: definitionInfo.name
+                                    me.information.message = ""
                                 } else {
                                     me.information = {
                                         arcv_id: definitionInfo.id,
                                         version: 0.0,
-                                        name: definitionInfo.name,
+                                        name: me.processName ? me.processName: definitionInfo.name,
                                         proc_def_id: definitionInfo.id,
                                         snapshot: bpmn,
                                         diff: null,
-                                        timeStamp: null
+                                        timeStamp: null,
+                                        message: null
                                     }
                                 }
                             } else {
@@ -153,6 +158,7 @@ export default {
                         if (me.$route.query && me.$route.query.id && me.$route.query.name) {
                             me.information.id = me.$route.query.id;
                             me.information.name = me.$route.query.name;
+                            me.information.message = ""
                         }
                     }
                     me.isOpen = true
@@ -174,7 +180,8 @@ export default {
                         proc_def_id: me.information.proc_def_id,
                         prevSnapshot: me.information.snapshot,
                         prevDiff: me.information.diff,
-                        type: 'bpmn'
+                        type: 'bpmn',
+                        message: me.information.message
                     })
                 },
             })

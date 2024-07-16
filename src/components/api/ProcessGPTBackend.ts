@@ -113,7 +113,8 @@ class ProcessGPTBackend implements Backend {
                 proc_def_id: defId,
                 version: options.version,
                 snapshot: xml,
-                diff: options.diffs,
+                diff: options.diff,
+                message: options.message
             }
             await storage.putObject('proc_def_arcv', procDefArcv);
             
