@@ -44,7 +44,7 @@ const getCart = computed(() => {
                     </div>
                     <v-btn class="hidden-lg-and-up" icon variant="text" @click.stop="customizer.SET_SIDEBAR_DRAWER"
                         size="small">
-                        <Icon icon="solar:list-bold-duotone" height="24" width="24" />
+                        <Icons :icon="'list-bold-duotone'"/>
                     </v-btn>
 
                     <v-spacer class="hidden-sm-and-down" />

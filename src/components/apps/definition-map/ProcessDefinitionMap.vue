@@ -41,7 +41,7 @@
                     <v-tooltip location="bottom" v-if="!useLock">
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" icon variant="text" size="24" @click="saveProcess()">
-                                <Icons :icon="'save'" />
+                                <Icons :icon="'save'" :color="'black'"/>
                             </v-btn>
                         </template>
                         <span>{{ $t('processDefinitionMap.save') }}</span>

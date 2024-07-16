@@ -24,7 +24,7 @@
         />
         <div class="controls">
             <v-btn v-if="!isRecording && !isAudioPlaying && !isLoading" @click="toggleRecording()" icon density="comfortable">
-                <Icon icon='bi:mic-fill' width="24" height="24" />
+                <Icons :icon="'sharp-mic'" :color="'black'" />
             </v-btn>
             <v-btn v-else-if="!sendRecordingStatus" @click="sendRecording()" icon density="comfortable">
                 <Icons :icon="'stop'" :color="'black'" />

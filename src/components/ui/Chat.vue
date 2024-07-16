@@ -158,7 +158,7 @@
                                                                                     class="ml-2"
                                                                                     size="small" icon density="comfortable"
                                                                                 >
-                                                                                    <Icon :icon="work.expanded ? 'iconamoon:arrow-up-2' : 'iconamoon:arrow-down-2'" width="24" height="24"/>
+                                                                                    <icons :icon="work.expanded ? 'arrow-up-2' : 'arrow-down-2'" :color="'black'"/>
                                                                                 </v-btn>
                                                                                 <v-btn  @click="startProcess(work, index)"
                                                                                     class="ml-2"
@@ -252,11 +252,11 @@
                                                                         variant="text" size="x-small" icon
                                                                         style="background-color:white;"
                                                                     >
-                                                                        <Icon v-if="message.jsonContent && isviewJSONStatus"
-                                                                            icon="iconamoon:arrow-up-2" width="20" height="20"
+                                                                        <Icons v-if="message.jsonContent && isviewJSONStatus"
+                                                                            :icon="'arrow-up-2'" :size="20"
                                                                         />
-                                                                        <Icon v-else
-                                                                            icon="iconamoon:arrow-down-2" width="20" height="20"
+                                                                        <Icons v-else
+                                                                            :icon="'arrow-down-2'" :size="20"
                                                                         />
                                                                     </v-btn>
                                                                 </div>
@@ -344,7 +344,7 @@
                                         :disabled="!(newMessage || agentInfo.draftPrompt)" icon variant="text"
                                         class="text-medium-emphasis" @click="requestDraftAgent" v-bind="props"
                                         style="width:30px; height:30px; margin:1px 0px 0px 5px;">
-                                        <Icon icon="fluent:document-one-page-sparkle-16-regular" width="20" height="20" />
+                                        <Icons :icon="'document-sparkle'" :size="20" :color="'black'" />
                                     </v-btn>
                                     <v-btn v-if="(type == 'instances' || type == 'chats') && agentInfo.isRunning" icon variant="text"
                                         class="text-medium-emphasis" style="width:30px; height:30px;">
