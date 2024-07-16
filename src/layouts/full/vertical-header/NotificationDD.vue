@@ -10,7 +10,7 @@
                         <span class="heartbit"></span>
                         <span class="point"></span>
                     </div>
-                    <Icon icon="solar:bell-bing-line-duotone" height="24" width="24" />
+                    <Icons :icon="'bell-bing-line-duotone'" />
                 </div>
             </v-btn>
         </template>

@@ -20,14 +20,14 @@
                             <v-row class="pa-0 ma-0">
                                 <div v-html="message.content" @click="clickContent(message)"></div>
                                 <v-spacer></v-spacer>
-                                <Icon v-if="filterMessages[index].open"
+                                <Icons v-if="filterMessages[index].open"
                                     @click="openDescription(index)"
-                                    icon="iconamoon:arrow-up-2" width="24" height="24"
+                                    :icon="'arrow-up-2'" :color="'black'"
                                     style="cursor: pointer;"
                                 />
-                                <Icon v-else
+                                <Icons v-else
                                     @click="openDescription(index)"
-                                    icon="iconamoon:arrow-down-2" width="24" height="24"
+                                    :icon="'arrow-down-2'" :color="'black'"
                                     style="cursor: pointer;"
                                 />
                             </v-row>

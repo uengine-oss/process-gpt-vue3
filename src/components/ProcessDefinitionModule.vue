@@ -1663,6 +1663,7 @@ export default {
                 let activities = [];
                 let sequenceFlows = [];
                 let gateways = [];
+                let instanceNamePattern = null;
 
                 const participants =
                     result['bpmn:definitions'] && result['bpmn:definitions']['bpmn:collaboration'] && result['bpmn:definitions']['bpmn:collaboration']['bpmn:participant']
@@ -1715,6 +1716,7 @@ export default {
                               }))
                             : [];
                     data = data.concat(dataTmp);
+                    instanceNamePattern = process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] && process['bpmn:extensionElements']['uengine:properties']['uengine:json'] ? JSON.parse(process['bpmn:extensionElements']['uengine:properties']['uengine:json']).instanceNamePattern : null;
                 }
 
                 const jsonData = {
@@ -1843,7 +1845,8 @@ export default {
                                 ? flow['bpmn:extensionElements']['uengine:properties']['uengine:json'] || '{}'
                                 : '{}'
                     })),
-                    participants: participants
+                    participants: participants,
+                    instanceNamePattern: instanceNamePattern
                 };
                 resultJsonData = jsonData;
                 return resultJsonData;
