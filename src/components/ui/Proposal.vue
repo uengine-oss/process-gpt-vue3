@@ -48,7 +48,7 @@
                                                         <div style="font-weight: bold;">
                                                             {{ content.title }}
                                                             <a :href="chat.content.link" target="_blank" style="margin-right: 10px;">
-                                                                <Icons :icon="'file-type-pdf2'" :size="35" :originalColor="true"/>
+                                                                <Icons :icon="'file-type-pdf2'" :size="35" />
                                                             </a>
                                                         </div>
                                                         <div>{{ content.snippet }}</div>

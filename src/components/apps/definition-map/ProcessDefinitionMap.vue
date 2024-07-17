@@ -85,7 +85,7 @@
             </div>
 
             <v-btn style="margin-left: 20px;" color="primary" @click="openConsultingDialog = true">
-                <Icons :icon="'magic'" :size="18" :color="'white'" style="margin-right: 10px;" />프로세스 컨설팅 시작하기
+                <Icons :icon="'magic'" :size="18"  style="margin-right: 10px;" />프로세스 컨설팅 시작하기
             </v-btn>
         </v-card>
         <v-dialog style="max-width: 1000px;" v-model="openConsultingDialog" persistent>

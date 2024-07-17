@@ -66,7 +66,7 @@ const customizer = useCustomizerStore();
                 <template v-for="item in definitionItem" :key="item.title">
                     <!-- Item Sub Header -->
                     <v-row v-if="item.header && !item.disable"
-                        class="pa-0 ma-0" 
+                        class="pa-0 pl-2 ma-0" 
                     >
                         <NavGroup :item="item" :key="item.title" />
                         <template v-for="subItem in definitionItem" :key="subItem.title">
