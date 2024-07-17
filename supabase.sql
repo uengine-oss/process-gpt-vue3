@@ -318,6 +318,7 @@ create table
     snapshot text null,
     "timeStamp" timestamp without time zone null default current_timestamp,
     diff text null,
+    message text null,
     constraint proc_def_arcv_pkey primary key (arcv_id)
   ) tablespace pg_default;
 

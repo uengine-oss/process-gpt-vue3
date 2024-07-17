@@ -825,23 +825,26 @@ export default {
             }
         },
         async submitFile() {
-            if (!this.file) return; // 파일이 없으면 함수 종료
+            var me = this
+            
+            me.$try({
+                action: async () => {
+                    if (!me.file) return; // 파일이 없으면 함수 종료
+        
+                    const formData = new FormData();
+                    formData.append('file', this.file[0]); // 'file' 키에 파일 데이터 추가
 
-            const formData = new FormData();
-            formData.append('file', this.file[0]); // 'file' 키에 파일 데이터 추가
-
-            try {
-                const response = await axios.post(`/memento/uploadfile/`, formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                });
-                console.log(response.data); // 응답 로그 출력
-                // 성공적으로 파일을 전송한 후의 로직을 여기에 작성하세요.
-            } catch (error) {
-                console.error(error); // 에러 로그 출력
-                // 파일 전송 실패 시의 로직을 여기에 작성하세요.
-            }
+                    const response = await axios.post(`/memento/uploadfile/`, formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                        },
+                    });
+                    console.log(response.data); // 응답 로그 출력
+                    this.file = null
+                    
+                },
+                successMsg: '파일 업로드가 완료되었습니다.'
+            })
         },
         openVerMangerDialog() {
             this.$emit('openVerMangerDialog', true)

@@ -51,6 +51,16 @@ export default {
             return atob(this.$route.params.instId);
         },
     },
+    watch: {
+        instance: {
+            deep: true,
+            async handler(newVal, oldVal) {
+                if (newVal.instanceId !== oldVal.instanceId) {
+                    await this.init();
+                }
+            }
+        },
+    },
     methods: {
         init() {
             var me = this;
