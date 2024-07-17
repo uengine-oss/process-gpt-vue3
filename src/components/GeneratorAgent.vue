@@ -15,7 +15,7 @@ export default {
             this.ws.send(`request_file:${fileName}`);
         },
         requestAgent(str){
-            this.wsa.send(str);
+            this.ws.send(str);
         },
         connectAgent(url){
             if(!url) {
