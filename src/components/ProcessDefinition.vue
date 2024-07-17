@@ -70,7 +70,7 @@
                 </v-card>
             </v-col>
             <div v-if="panel && !isViewMode" style="position: fixed; z-index: 999; right: 0; height: 100%">
-                <v-card elevation="1" style="height: calc(100vh - 155px)">
+                <v-card elevation="1">
                     <bpmn-property-panel
                         :element="element"
                         @close="closePanel"
@@ -104,7 +104,7 @@
                     </v-btn>
                 </div>
                 
-                <v-card-text>
+                <v-card-text style="overflow: auto;">
                     <v-window v-model="processVariableTab">
                         <v-window-item value="variable">
                             <VDataTable class="border rounded-md" :items-per-page="5" :items-per-page-text="$t('processDefinition.itemsPerPage')">
