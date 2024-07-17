@@ -6,7 +6,7 @@
                 style="position: sticky; top: 0; z-index:2; background-color:white">
                 <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
                 <v-btn v-if="$route.path !== '/definition-map'" style="margin-left: 3px; margin-top: 1px;" icon variant="text" size="24">
-                    <Icons :icon="'arrow-go-back'" :color="'black'"/>
+                    <Icons :icon="'arrow-go-back'" />
                 </v-btn>
                 
                 <!-- buttons -->
@@ -41,7 +41,7 @@
                     <v-tooltip location="bottom" v-if="!useLock">
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" icon variant="text" size="24" @click="saveProcess()">
-                                <Icons :icon="'save'" :color="'black'"/>
+                                <Icons :icon="'save'" />
                             </v-btn>
                         </template>
                         <span>{{ $t('processDefinitionMap.save') }}</span>
@@ -52,7 +52,7 @@
                     </span>
 
                     <v-btn icon variant="text" :size="24" class="ml-3" @click="capturePng">
-                        <Icons :icon="'image-download'" :color="'black'"/>
+                        <Icons :icon="'image-download'" />
                     </v-btn>
 
                     <!-- 프로세스 정의 체계도 캔버스 확대 축소 버튼 및 아이콘 -->
@@ -63,7 +63,7 @@
                                 <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
                                 <Icons
                                     :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
-                                    :color="'black'"
+                                    
                                 />
                             </v-btn>
                         </template>

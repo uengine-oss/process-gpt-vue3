@@ -79,7 +79,7 @@
                                                             icon variant="text" size="x-small"  
                                                             style="background-color:white !important;"
                                                         >
-                                                            <Icons :icon="'backspace-bold'" :size="20" :color="'black'" />
+                                                            <Icons :icon="'backspace-bold'" :size="20"  />
                                                         </v-btn>
                                                     </v-row>
                                                 </div>
@@ -106,7 +106,7 @@
                                                                 class="float-left edit-btn"
                                                                 style="background-color:white;"
                                                             >
-                                                                <icons :icon="'pencil'" :size="20" :color="'black'" />
+                                                                <icons :icon="'pencil'" :size="20"  />
                                                             </v-btn>
 
                                                         <!-- <transition name="slide-fade"> -->
@@ -134,7 +134,7 @@
                                                         size="small" icon density="comfortable"
                                                         style="position:absolute; right:5px; top:5px; z-index:1;"
                                                     >
-                                                        <Icons :icon="'trash'" :color="'black'"/>
+                                                        <Icons :icon="'trash'" />
                                                     </v-btn>
                                                     <v-list>
                                                         <div>
@@ -158,13 +158,13 @@
                                                                                     class="ml-2"
                                                                                     size="small" icon density="comfortable"
                                                                                 >
-                                                                                    <icons :icon="work.expanded ? 'arrow-up-2' : 'arrow-down-2'" :color="'black'"/>
+                                                                                    <icons :icon="work.expanded ? 'arrow-up-2' : 'arrow-down-2'" />
                                                                                 </v-btn>
                                                                                 <v-btn  @click="startProcess(work, index)"
                                                                                     class="ml-2"
                                                                                     size="small" icon density="comfortable"
                                                                                 >
-                                                                                    <Icons :icon="'play'" :color="'black'"/>
+                                                                                    <Icons :icon="'play'" />
                                                                                 </v-btn>
                                                                             </div>
                                                                         </v-row>
@@ -344,7 +344,7 @@
                                         :disabled="!(newMessage || agentInfo.draftPrompt)" icon variant="text"
                                         class="text-medium-emphasis" @click="requestDraftAgent" v-bind="props"
                                         style="width:30px; height:30px; margin:1px 0px 0px 5px;">
-                                        <Icons :icon="'document-sparkle'" :size="20" :color="'black'" />
+                                        <Icons :icon="'document-sparkle'" :size="20"  />
                                     </v-btn>
                                     <v-btn v-if="(type == 'instances' || type == 'chats') && agentInfo.isRunning" icon variant="text"
                                         class="text-medium-emphasis" style="width:30px; height:30px;">
@@ -444,21 +444,21 @@
                             density="comfortable"
                             icon
                         >
-                            <Icons :icon="'round-headset'" :color="'black'" />
+                            <Icons :icon="'round-headset'"  />
                         </v-btn>
                         <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
                             density="comfortable"
                             icon
                         >
-                            <Icons :icon="'sharp-mic'" :color="'black'" />
+                            <Icons :icon="'sharp-mic'"  />
                         </v-btn>
                         <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
                             density="comfortable"
                             icon
                         >
-                            <Icons :icon="'stop'" :size="'20'" :color="'black'" />
+                            <Icons :icon="'stop'" :size="'20'"  />
                         </v-btn>
-                        <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" :color="'black'" />
+                        <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'"  />
                     </template>
                     <template v-slot:append-inner>
                         <div style="height: -webkit-fill-available; margin-right: 10px; margin-top: 10px;">

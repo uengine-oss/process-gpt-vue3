@@ -48,7 +48,7 @@
                                     :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
                                     :width="32"
                                     :height="32"
-                                    :color="'black'"
+                                    
                                 />
                             </v-btn>
                         </template>
@@ -173,7 +173,7 @@
                                     :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
                                     :width="32"
                                     :height="32"
-                                    :color="'black'"
+                                    
                                 />
                             </v-btn>
                         </template>

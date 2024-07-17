@@ -148,7 +148,7 @@
                     <v-btn v-if="!isRunning" icon variant="text" type="submit" @click="sendMessage()" class="text-medium-emphasis"
                         :disabled="!newMessage"
                     >
-                        <Icons :icon="'document-sparkle'" :color="'black'" />
+                        <Icons :icon="'document-sparkle'"  />
                     </v-btn>
                     <v-btn v-else icon variant="text" class="text-medium-emphasis">
                         <v-progress-circular style="top: 50%" indeterminate color="primary"></v-progress-circular>

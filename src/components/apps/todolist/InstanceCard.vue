@@ -20,7 +20,7 @@
                 </div>
             </div>
             <v-btn v-if="deletable" @click="deleteInstance" variant="plain" icon class="ml-auto">
-                <Icons :icon="'trash'" :color="'black'"/>
+                <Icons :icon="'trash'" />
             </v-btn>
         </div>
 

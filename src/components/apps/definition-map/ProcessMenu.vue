@@ -10,7 +10,7 @@
                             density="compact"
                             size="small"
                         >
-                            <Icons :icon="'pencil-cog'" :width="12" :height="12" :color="'black'" />
+                            <Icons :icon="'pencil-cog'" :width="12" :height="12"  />
                         </v-btn>
                     </template>
                 </v-tooltip>
@@ -21,7 +21,7 @@
                             density="compact"
                             size="small"
                         >
-                            <Icons :icon="'pencil'" :width="12" :height="12" :color="'black'"/>
+                            <Icons :icon="'pencil'" :width="12" :height="12" />
                         </v-btn>
                     </template>
                 </v-tooltip>
@@ -32,7 +32,7 @@
                             density="compact"
                             size="small"
                         >
-                            <Icons :icon="'trash'" :width="12" :height="12" :color="'black'"/>
+                            <Icons :icon="'trash'" :width="12" :height="12" />
                         </v-btn>
                     </template>
                 </v-tooltip>

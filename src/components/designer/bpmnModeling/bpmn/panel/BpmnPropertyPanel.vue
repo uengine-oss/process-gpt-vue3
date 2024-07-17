@@ -3,7 +3,7 @@
         <v-row class="pa-0 ma-0">
             <v-spacer></v-spacer>
             <v-btn @click="save">
-                <Icons :icon="'close'" :color="'black'" class="cursor-pointer" />
+                <Icons :icon="'close'"  class="cursor-pointer" />
             </v-btn>
         </v-row>
         <v-card-text style="overflow: auto; height: calc(-155px + 100vh); width: 700px">

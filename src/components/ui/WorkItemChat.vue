@@ -22,12 +22,12 @@
                                 <v-spacer></v-spacer>
                                 <Icons v-if="filterMessages[index].open"
                                     @click="openDescription(index)"
-                                    :icon="'arrow-up-2'" :color="'black'"
+                                    :icon="'arrow-up-2'" 
                                     style="cursor: pointer;"
                                 />
                                 <Icons v-else
                                     @click="openDescription(index)"
-                                    :icon="'arrow-down-2'" :color="'black'"
+                                    :icon="'arrow-down-2'" 
                                     style="cursor: pointer;"
                                 />
                             </v-row>

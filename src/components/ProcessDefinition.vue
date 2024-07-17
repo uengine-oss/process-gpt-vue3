@@ -6,7 +6,7 @@
                     <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
                         <template v-slot:activator="{ props }">
                             <v-btn @click="openProcessVariables" icon v-bind="props" class="processVariables-btn">
-                                <Icons class="cp-process-variables" :icon="'variable'" :width="32" :height="32" :color="'black'" />
+                                <Icons class="cp-process-variables" :icon="'variable'" :width="32" :height="32"  />
                             </v-btn>
                         </template>
                     </v-tooltip>
@@ -18,7 +18,7 @@
                                     :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
                                     :width="32"
                                     :height="32"
-                                    :color="'black'"
+                                    
                                 />
                             </v-btn>
                         </template>
@@ -27,7 +27,7 @@
                     <v-tooltip v-if="executable" :text="$t('processDefinition.execution')">
                         <template v-slot:activator="{ props }">
                             <v-btn icon v-bind="props" class="processExecute" @click="executeProcess">
-                                <Icons :icon="'play'" :width="32" :height="32" :color="'black'"/>
+                                <Icons :icon="'play'" :width="32" :height="32" />
                             </v-btn>
                         </template>
                     </v-tooltip>

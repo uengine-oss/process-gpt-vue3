@@ -5,12 +5,12 @@
             <template v-slot:append-inner>
                 <div class="d-flex align-self-end cursor-pointer">
                     <div @click="onChangeRecordingDialog" class="mr-1">
-                        <Icons :icon="'round-headset'" :color="'black'" />
+                        <Icons :icon="'round-headset'"  />
                     </div>
                     <div @click="onClickMic">
-                        <Icons v-if="!isMicRecording && !isMicRecorderLoading" :icon="'sharp-mic'" :color="'black'" />
-                        <Icons v-else-if="!isMicRecorderLoading" :icon="'stop'" :size="'20'" :color="'black'" />
-                        <Icons v-else-if="isMicRecorderLoading" :icon="'bubble-loading'" :color="'black'" />
+                        <Icons v-if="!isMicRecording && !isMicRecorderLoading" :icon="'sharp-mic'"  />
+                        <Icons v-else-if="!isMicRecorderLoading" :icon="'stop'" :size="'20'"  />
+                        <Icons v-else-if="isMicRecorderLoading" :icon="'bubble-loading'"  />
                     </div>
                 </div>
             </template>

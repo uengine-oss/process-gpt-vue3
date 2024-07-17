@@ -46,7 +46,7 @@
                         실행
                     </v-btn>
                     <v-btn icon variant="text" class="ml-3" :size="24" @click="capture">
-                        <Icons :icon="'image-download'" :color="'black'" />
+                        <Icons :icon="'image-download'"  />
                     </v-btn>
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
@@ -58,7 +58,7 @@
                                 <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
                                 <Icons
                                     :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
-                                    :color="'black'"
+                                    
                                 />
                             </v-btn>
                         </template>
