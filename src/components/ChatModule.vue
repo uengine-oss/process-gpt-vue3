@@ -102,8 +102,9 @@ export default {
                     me.agentInfo.isRunning = true
                     me.requestAgent(me.agentInfo.draftPrompt)
                 },
-                // onFail() {
-                // }
+                onFail() {
+                    me.agentInfo.isRunning = false
+                }
             })
         },
         async getToken(){
