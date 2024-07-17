@@ -12,7 +12,7 @@ export default {
         },
         color: {
             type: String,
-            default: '#666666'
+            default: ''
         },
         width: {
             type: [String, Number],
@@ -25,10 +25,6 @@ export default {
         size: {
             type: [String, Number],
             default: 24
-        },
-        originalColor: {
-            type: Boolean,
-            default: false
         }
     },
     data() {
@@ -57,13 +53,14 @@ export default {
     },
     methods: {
         async loadSvg() {
-            const cachedSvg = localStorage.getItem(this.icon);
+            const storageKey = `icons-${this.icon}`;
+            const cachedSvg = localStorage.getItem(storageKey);
             if (cachedSvg) {
                 this.updateSvgContent(cachedSvg);
             } else {
                 const response = await fetch(`/assets/images/icon/${this.icon}.svg`);
                 let svg = await response.text();
-                localStorage.setItem(this.icon, svg); // 로컬 스토리지에 SVG 저장
+                localStorage.setItem(storageKey, svg); // 로컬 스토리지에 SVG 저장
                 this.updateSvgContent(svg);
             }
         },
@@ -74,7 +71,7 @@ export default {
                 !svg.match(/fill="none"/);
         },
         updateSvgContent(svg) {
-            if (!this.originalColor) {
+            if (this.color) {
                 // currentColor를 사용하는 stroke 및 fill 속성을 동적으로 변경
                 svg = svg.replace(/stroke="currentColor"/g, `stroke="${this.color}"`);
                 svg = svg.replace(/fill="currentColor"/g, `fill="${this.color}"`);

@@ -71,7 +71,7 @@
                                     <v-tooltip text="삭제">
                                         <template v-slot:activator="{ props }">
                                             <v-btn @click="(e) => {e.stopPropagation(); tenantIdToDelete = tenantInfo.id; deleteDialog = true}" icon v-bind="props" style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
-                                                <v-icon size="24">mdi-delete</v-icon>
+                                                <Icons :icon="'trash'" :color="'black'"/>
                                             </v-btn>
                                         </template>
                                     </v-tooltip>

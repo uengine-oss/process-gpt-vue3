@@ -20,7 +20,7 @@
                 </div>
             </div>
             <v-btn v-if="deletable" @click="deleteInstance" variant="plain" icon class="ml-auto">
-                <v-icon>mdi-delete</v-icon>
+                <Icons :icon="'trash'" :color="'black'"/>
             </v-btn>
         </div>
 
