@@ -36,7 +36,7 @@ const customizer = useCustomizerStore();
                         density="comfortable"
                         :to="'/definition-map'"
                     >
-                        <Icon icon="jam:write" width="24" height="24" />
+                        <Icons :icon="'write'" />
                     </v-btn>
                 </template>
             </v-tooltip>

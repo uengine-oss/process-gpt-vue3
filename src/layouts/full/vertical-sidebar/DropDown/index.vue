@@ -40,7 +40,6 @@ function getIcon(item) {
                 <div :class="'navbox  bg-hover-' + item.BgColor" :color="item.BgColor">
                     <Icons
                         :icon="getIcon(item)"
-                        :color="'black'"
                     />
                 </div>
             </template>

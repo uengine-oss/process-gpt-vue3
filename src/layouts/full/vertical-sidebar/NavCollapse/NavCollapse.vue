@@ -59,12 +59,11 @@ const backend = BackendFactory.createBackend();
                     <template v-slot:prepend>
                         <div :class="'navbox  bg-hover-' + item.BgColor" :color="item.BgColor">
                             <span class="icon-box" v-if="level > 0">
-                                <Icons :icon="'outline-folder'" :color="'black'" />
+                                <Icons :icon="'outline-folder'" />
                             </span>
                             <span class="icon-box" v-else>
                                 <Icons
                                     :icon="item.icon"
-                                    :color="'black'"
                                     :level="level"
                                     :class="'position-relative z-index-2 texthover-' + item.BgColor"
                                 />
