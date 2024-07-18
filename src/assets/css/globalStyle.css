@@ -88,7 +88,7 @@ hr {
 .vue-bpmn-diagram-container .djs-palette {
     width: 695px !important;
     height: 50px;
-    margin-left: 35px;
+    left:5px; top:5px;
     background-color: white;
     border: none;
     border-radius: 10px;
@@ -136,14 +136,14 @@ hr {
     right: 5px
 }
 
-@media only screen and (max-width:1500px) {
+@media only screen and (max-width:1450px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 375px !important;
         height: 94px !important;
     }
 }
 
-@media only screen and (max-width:600px) {
+@media only screen and (max-width:550px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 230px !important;
         height:135px !important;

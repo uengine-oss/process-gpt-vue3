@@ -461,10 +461,4 @@ export default {
     top: 20px;
     z-index: 1;
 }
-.processVariables-btn {
-    position: absolute;
-    left: 5px;
-    top: 20px;
-    z-index: 1;
-}
 </style>
