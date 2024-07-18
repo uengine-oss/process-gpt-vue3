@@ -466,22 +466,18 @@ export default {
         afterModelStopped(response) {
             // console.log(response)
         },
-        async afterGenerationFinished(response) {
-            let responseObj = response
+        async afterGenerationFinished(responseObj) {
             if(responseObj){
-                if(responseObj.work == 'SKIP'){
-                    if(!this.ProcessGPTActive){
-                        this.messages.pop();
-                    }
-                } else {
-                    if(this.ProcessGPTActive){
-                        responseObj.expanded = false
-                        this.generatedWorkList.push(responseObj)
-                    }
-                    let obj = this.createMessageObj(response, 'system')
-                    if(responseObj.messageForUser){
-                        obj.messageForUser = responseObj.messageForUser
-                    }
+                let obj = this.createMessageObj(responseObj, 'system')
+                if(responseObj.messageForUser){
+                    obj.messageForUser = responseObj.messageForUser
+                }
+                if(responseObj.work == 'CompanyQuery' || responseObj.work == 'ScheduleQuery'){
+                    this.messages.push({
+                        role: 'system',
+                        content: '...',
+                        isLoading: true
+                    });
                     if(responseObj.work == 'CompanyQuery'){
                         try{
                             let responseMemento = await axios.post(`/memento/query`, { query: responseObj.content});
@@ -507,17 +503,13 @@ export default {
                         }
                     } else if(responseObj.work == 'ScheduleQuery'){
                         console.log(responseObj)
-                    } else {
-                        if(!this.ProcessGPTActive){
-                            obj.uuid = this.uuid()
-                            obj.systemRequest = true
-                            obj.requestUserEmail = this.userInfo.email
-                        }
                     }
-                    if(!this.ProcessGPTActive){
-                        // this.messages.pop();
-                        this.putMessage(obj)
-                    }
+                    obj.uuid = this.uuid()
+                    this.putMessage(obj)
+                } else {
+                    if(!this.ProcessGPTActive) this.ProcessGPTActive = true
+                    responseObj.expanded = false
+                    this.generatedWorkList.push(responseObj)
                 }
             }
         },
