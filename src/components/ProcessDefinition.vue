@@ -16,9 +16,7 @@
                                 <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
                                 <Icons
                                     :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
-                                    :width="32"
-                                    :height="32"
-                                    
+                                    :size="32"
                                 />
                             </v-btn>
                         </template>
