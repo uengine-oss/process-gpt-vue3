@@ -25,8 +25,7 @@
                     </v-menu>
                 </div>
             </div>
-            <div v-if="processDefinition" class="d-flex align-center"
-                @click="updateBpmn(processDefinition.bpmn); subProcessBreadCrumb = []">
+            <div v-if="processDefinition" class="d-flex align-center">
                 <h6 class="text-h6 font-weight-semibold">
                     {{ processDefinition ? processDefinition.name : "" }}
                 </h6>
