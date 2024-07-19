@@ -86,7 +86,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   "id": "gateway_id",
                   "name": "gateway name",
                   "role": "role name", // You must use the name among the created "roles".,
-                  "source": "components id", 반드시 존재해야함
+                  "source": "components id", //반드시 존재해야함
                   "type": "ExclusiveGateway | ParallelGateway | InclusiveGateway | EventBasedGateway",
                   "description": "선택적 또는 병렬 프로세스 흐름을 제어하는 게이트웨이 설명"
                 },
@@ -100,11 +100,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   "instruction": "instruction to user",
                   "role": "role name", // You must use the name among the created "roles".
                   "inputData": ["name of data for input"],
-                   "outputData": [
-                     "name of data for output"
-                   ],
-                   "checkpoints":["checkpoint 1", "checkpoint 2"]
-                   "source": "components id"
+                  "outputData": ["name of data for output"],
+                  "checkpoints":["checkpoint 1", "checkpoint 2"]
                  },
                  {
                   "componentType" :"Event",

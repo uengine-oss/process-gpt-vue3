@@ -446,6 +446,12 @@ export default {
                         if (lastSameSource) {
                             componentX = lastSameSource.x;
                             componentY = lastSameSource.y + 100;
+                            if(lastSameSource.type.indexOf("Gateway") != -1) {
+                                componentX += 150;
+                                componentY += 100;
+                            } else if(lastSameSource.type.indexOf("Activity") != -1) {
+                            } else if(lastSameSource.type.indexOf("Event") != -1) {
+                            }
                         } else {
                             componentX = source? source.x + 150 : 150;
                             componentY = source? source.y : 0;
@@ -453,11 +459,6 @@ export default {
                                 if (source.role != component.role) {
                                     componentY += 150;
                                 } else {
-                                    if(source.type == "Gateway") {
-                                    } else if(source.type == "Activity") {
-                                    } else if(source.type == "Event") {
-
-                                    }
                                 }
                             }
                         }
@@ -466,7 +467,7 @@ export default {
 
 
                     const componentShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
-                    if(component.type == "Event") {
+                    if(component.componentType == "Event") {
                         componentShape.setAttribute('id', `Shape_${component.id}`);
                     } else {
                         componentShape.setAttribute('id', `BPMNShape_${component.id}`);
@@ -595,7 +596,7 @@ export default {
             }
 
             dcBoundsParticipant.setAttribute('x', mainX - 30);
-            dcBoundsParticipant.setAttribute('y', mainY - 75);
+            dcBoundsParticipant.setAttribute('y', mainY -275);
 
             dcBoundsParticipant.setAttribute('width', mainWidth);
             dcBoundsParticipant.setAttribute('height', mainHeight + 45);
@@ -616,9 +617,12 @@ export default {
                     dcBoundsLane.setAttribute('x', roleX ? roleX : 0);
                     dcBoundsLane.setAttribute('y', roleYResult);
 
-                    if(jsonModel.roles[lastKey].name == role.name) {
+                    if(jsonModel.roles[lastKey].name == role.name && roleIndex != 0) {
                         roleHeightResult -= 155;
+                    } else {
+                        roleHeightResult -= 5;
                     }
+
 
                     // 가장 바깥 라인 안쪽의 스윔라인 자체 길이
                     dcBoundsLane.setAttribute('width', roleWidth + 85);
