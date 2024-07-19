@@ -194,6 +194,13 @@ export default {
             if (this.fullPath && this.fullPath != '') {
                 this.chatRoomId = this.fullPath;
             }
+
+            await this.storage.putObject('test_sql_0719', {
+                id: '1',
+                test1: {'1': "test"},
+                test2: false,
+                test3: false
+            });
         });
     },
     watch: {
