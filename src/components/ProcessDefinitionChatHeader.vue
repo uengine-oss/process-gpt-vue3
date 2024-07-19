@@ -19,7 +19,7 @@
                             </template>
                             <span>{{ $t('chat.import') }}</span>
                         </v-tooltip>
-                        <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn" style="display: none" />
+                        <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn ,.jsonold" style="display: none" />
                 
                         <div v-if="bpmn && fullPath != ''">
                             <v-tooltip location="bottom">

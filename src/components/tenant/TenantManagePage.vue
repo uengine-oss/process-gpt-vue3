@@ -9,7 +9,8 @@
         </v-row>
         <v-row no-gutters justify="center">
             <p class="font-weight-semibold text-grey100 text-h5">
-                새로운 회사를 생성하거나 선택한 회사가 관리하는 페이지로 이동합니다.
+                새로운 회사를 생성하거나 선택한 회사가 관리하는 페이지로 이동합니다.<br>
+                (* 모바일 환경에서는 가입 진행이 불가능합니다.)
             </p>
         </v-row>
 
@@ -21,16 +22,12 @@
                     justify-content: center;
                     align-items: center;
                     border-radius: 10px !important;
-                    width: 500px;
-                    height: 45px;"
+                    width: 500px;"
+                    color="primary"
             >
                 <v-row class="pa-0 ma-0">
-                    <v-col cols="1">
-                        <v-icon style="color: green;" size="24">mdi-plus</v-icon>
-                    </v-col>
-                    <v-col cols="11">
-                        새로운 회사 생성
-                    </v-col>
+                    <Icons  :icon="'plus'" :size="16" class="mr-2" />
+                    <div>새로운 회사 생성</div>
                 </v-row>
             </v-card>
         </v-row>

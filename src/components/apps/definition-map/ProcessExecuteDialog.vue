@@ -1,27 +1,18 @@
 <template>
-    <v-card style="width: 100%;" class="py-4">
-        <AppBaseCard>
-            <template v-slot:leftpart>
-                <v-card flat>
-                    <v-card-title>
-                        <v-row class="ma-0 pa-0 mt-1 ml-3" style="line-height: 100%">
-                            <div style="font-size: 20px; font-weight: 500">Role Mapping</div>
-                        </v-row>
-                    </v-card-title>
-                    <v-card-text>
-                        <div class="mt-4">
-                            <div v-for="roleMapping in roleMappings" :key="roleMapping.name">
-                                <user-select-field v-model="roleMapping.endpoint" 
-                                    :name="roleMapping.name"
-                                    :item-value="'email'"
-                                ></user-select-field>
-                            </div>
-                        </div>
-                    </v-card-text>
-                </v-card>
-            </template>
-
-            <template v-slot:rightpart>
+    <v-card flat class="w-100">
+        <div :class="{'d-flex': !isMobile}">
+            <div class="pa-4" style="min-width: 300px;">
+                <div style="font-size: 20px; font-weight: 500">Role Mapping</div>
+                <div class="mt-4">
+                    <div v-for="roleMapping in roleMappings" :key="roleMapping.name">
+                        <user-select-field v-model="roleMapping.endpoint" 
+                            :name="roleMapping.name"
+                            :item-value="'email'"
+                        ></user-select-field>
+                    </div>
+                </div>
+            </div>
+            <div class="w-100 pa-2">
                 <div v-if="workItem != null">
                     <WorkItem 
                         :definitionId="definitionId" 
@@ -34,28 +25,8 @@
                 <div v-else>
                     Loading...                    
                 </div>
-            </template>
-
-            <template v-slot:mobileLeftContent>
-                <v-card flat>
-                    <v-card-title>
-                        <v-row class="ma-0 pa-0 mt-1 ml-3">
-                            <div style="font-size: 20px; font-weight: 500">Role Mapping</div>
-                        </v-row>
-                    </v-card-title>
-                    <v-card-text>
-                        <div class="mt-4">
-                            <div v-for="roleMapping in roleMappings" :key="roleMapping.name">
-                                <user-select-field v-model="roleMapping.endpoint" 
-                                    :name="roleMapping.name"
-                                    :item-value="'email'"
-                                ></user-select-field>
-                            </div>
-                        </div>
-                    </v-card-text>
-                </v-card>
-            </template>
-        </AppBaseCard>
+            </div>
+        </div>
     </v-card>
 </template>
 
@@ -85,9 +56,15 @@ export default {
         roleMappings: [],
         organizationChart: {},
         userList: [],
+        isMobile: false,
     }),
     created() {
         this.init();
+        this.checkIfMobile();
+        window.addEventListener('resize', this.checkIfMobile);
+    },
+    beforeDestroy() {
+        window.removeEventListener('resize', this.checkIfMobile);
     },
     methods: {
         init() {
@@ -200,6 +177,9 @@ export default {
             }
 
             return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+        },
+        checkIfMobile() {
+            this.isMobile = window.innerWidth <= 1080;
         }
     }
 };

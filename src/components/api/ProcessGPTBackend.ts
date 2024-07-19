@@ -544,14 +544,26 @@ class ProcessGPTBackend implements Backend {
 
     async getDefinitionVersions(defId: string, options: any) {
         try {
-            if(!options) options = {};
-
+            let list: any = [];
             defId = defId.toLowerCase();
-            if(!options.match) options.match = {}
-            options.match.proc_def_id = defId;
-            
-        
-            return await storage.list('proc_def_arcv', options);
+            if(!options) {
+                options = {
+                    match: {
+                        proc_def_id: defId
+                    }
+                };
+            } else {
+                if (!options.match) options.match = {};
+                options.match.proc_def_id = defId;
+            }
+            list = await storage.list('proc_def_arcv', options);
+            const procDefName = await storage.getString(`proc_def/${defId}`, { key: 'id', column: "name" });
+            if(procDefName) {
+                list.forEach((item: any) => {
+                    item.name = procDefName;
+                });
+            }
+            return list;
         } catch (error) {
             // this.checkDBConnection();
             //@ts-ignore
