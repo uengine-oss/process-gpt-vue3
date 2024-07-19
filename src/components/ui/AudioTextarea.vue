@@ -69,7 +69,9 @@ export default {
     created() {
         this.newMessage = this.modelValue;
         if (this.workItem) {
-            this.chatRoomId = this.workItem.worklist.instId;
+            if(this.workItem.worklist) {
+                this.chatRoomId = this.workItem.worklist.instId;
+            }
         }
     },
     methods: {
