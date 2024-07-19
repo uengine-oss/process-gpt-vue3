@@ -4,13 +4,13 @@
         <v-card elevation="10" color="primary">
           <v-card-text style="padding:15px;">
             <img :src="item.img" alt="shape" class="shape">
-            <Icons :icon="item.icon" :size="30" :color="'white'" class="mb-6"/>
+            <Icons :icon="item.icon" :size="32"  class="mb-6"/>
             <div class="text-h1 font-weight-semibold mb-2 text-white">{{ item.count }}</div>
             <v-row class="ma-0 pa-0">
               <p class="text-subtitle-1 opacity-50 font-weight-medium">{{ $t(item.name) }}</p>
               <v-spacer></v-spacer>
               <v-btn @click="goToTodoList" icon text width="24" height="24" color="primary">
-                <Icons :icon="'tab-move'" :width="20" :height="20" :color="'white'"/>
+                <Icons :icon="'tab-move'" :size="20" />
               </v-btn>
             </v-row>
           </v-card-text>

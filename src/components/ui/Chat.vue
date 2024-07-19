@@ -149,7 +149,7 @@
                                                                             </template>
                                                                             <template v-else>
                                                                                 <div style="padding-top:2px;">
-                                                                                    <Icon :icon="getWorkIcon(work.work)" />
+                                                                                    <Icons :icon="getWorkIcon(work.work)" />
                                                                                 </div>
                                                                             </template>
                                                                             <div style="margin-left:5px; margin-top:0px;">{{ work.messageForUser }}</div>
@@ -234,11 +234,11 @@
                                                             <pre v-else class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
                                                             <!-- <pre class="text-body-1">{{ message.content }}</pre> -->
 
-                                                            <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
+                                                            <!-- <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
                                                                 <v-btn style="margin-right: 5px" size="small"
                                                                     @click="startProcess(message)">y</v-btn>
                                                                 <v-btn size="small" @click="cancelProcess(message)">n</v-btn>
-                                                            </p>
+                                                            </p> -->
                                                             <v-row class="pa-0 ma-0">
                                                                 <v-spacer></v-spacer>
                                                                 <div v-if="replyIndex === index" >
@@ -246,7 +246,7 @@
                                                                         variant="text" size="x-small" icon
                                                                         style="background-color:white; margin-right:5px;"
                                                                     >
-                                                                        <Icon icon="material-symbols:reply" width="20" height="20" />
+                                                                        <Icons :icon="'reply'" :size="20" />
                                                                     </v-btn>
                                                                     <v-btn @click="viewJSON(index)"
                                                                         variant="text" size="x-small" icon
@@ -326,7 +326,7 @@
                                 <template v-slot:activator="{ props }">
                                     <v-btn icon variant="text" class="text-medium-emphasis" @click="capture" v-bind="props"
                                         style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
-                                        <Icon icon="iconoir:camera" width="20" height="20" />
+                                        <Icons :icon="'camera'" :size="20" />
                                     </v-btn>
                                 </template>
                             </v-tooltip>
@@ -334,7 +334,7 @@
                                 <template v-slot:activator="{ props }">
                                     <v-btn icon variant="text" class="text-medium-emphasis" @click="uploadImage" v-bind="props"
                                         style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
-                                        <Icon icon="iconoir:add-media-image" width="20" height="20" />
+                                        <Icons :icon="'add-media-image'" :size="20" />
                                     </v-btn>
                                 </template>
                             </v-tooltip>
@@ -464,11 +464,11 @@
                         <div style="height: -webkit-fill-available; margin-right: 10px; margin-top: 10px;">
                             <v-btn v-if="!isLoading" class="cp-send" icon variant="text" type="submit" @click="beforeSend"
                                 style="width:30px; height:30px;" :disabled="disableBtn">
-                                <Icon icon="teenyicons:send-outline" width="20" height="20" />
+                                <icons :icon="'send-outline'" :size="20" />
                             </v-btn>
                             <v-btn v-else icon variant="text" @click="isLoading = !isLoading"
                                 style="width:30px; height:30px;">
-                                <Icon icon="ic:outline-stop-circle" width="20" height="20" />
+                                <Icons :icon="'outline-stop-circle'" :size="20" />
                             </v-btn>
                             <!-- <v-btn icon variant="text" class="text-medium-emphasis">
                                 <PaperclipIcon size="20" />
@@ -543,11 +543,11 @@ export default {
     data() {
         return {
             workIcons: {
-                "ScheduleQuery" : "solar:calendar-line-duotone", // 달력 아이콘
-                "ScheduleRegistration" : "solar:calendar-line-duotone", // 달력 아이콘
-                "TodoListRegistration" : "pajamas:overview", // TODO 리스트 아이콘
-                "StartProcessInstance" : "carbon:ibm-process-mining",
-                "CreateProcessDefinition" : "tabler:device-imac-cog"
+                "ScheduleQuery" : "calendar-line-duotone", // 달력 아이콘
+                "ScheduleRegistration" : "calendar-line-duotone", // 달력 아이콘
+                "TodoListRegistration" : "overview", // TODO 리스트 아이콘
+                "StartProcessInstance" : "ibm-process-mining",
+                "CreateProcessDefinition" : "device-imac-cog"
             },
             recordingMode: false,
             defaultWorkIcon: defaultWorkIcon,
@@ -909,19 +909,19 @@ export default {
             const user = this.userList.find(user => user.email === email);
             return user ? user.profile : '';
         },
-        shouldDisplayButtons(message, index) {
-            if (message.role !== 'system' || !message.systemRequest || message.requestUserEmail !== this.userInfo.email) {
-                return false;
-            }
-            // 현재 메시지 이후로 동일한 userInfo.email을 가진 메시지가 있는지 확인
-            for (let i = index + 1; i < this.filteredMessages.length; i++) {
-                if (this.filteredMessages[i].email === this.userInfo.email) {
-                    return false; // 동일한 email을 가진 메시지가 있다면 버튼을 표시하지 않음
-                }
-            }
-            // 위의 조건들을 모두 통과했다면 버튼을 표시
-            return true;
-        },
+        // shouldDisplayButtons(message, index) {
+        //     if (message.role !== 'system') {
+        //         return false;
+        //     }
+        //     // 현재 메시지 이후로 동일한 userInfo.email을 가진 메시지가 있는지 확인
+        //     for (let i = index + 1; i < this.filteredMessages.length; i++) {
+        //         if (this.filteredMessages[i].email === this.userInfo.email) {
+        //             return false; // 동일한 email을 가진 메시지가 있다면 버튼을 표시하지 않음
+        //         }
+        //     }
+        //     // 위의 조건들을 모두 통과했다면 버튼을 표시
+        //     return true;
+        // },
         shouldDisplayUserInfo() {
             return (message, index) => {
                 if(!message.disableMsg){

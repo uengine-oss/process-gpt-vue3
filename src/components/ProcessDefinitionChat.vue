@@ -110,7 +110,7 @@ import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import ProcessDefinitionVersionDialog from '@/components/ProcessDefinitionVersionDialog.vue';
 import ProcessDefinitionVersionManager from '@/components/ProcessDefinitionVersionManager.vue';
 import ProcessDefinitionChatHeader from '@/components/ProcessDefinitionChatHeader.vue';
-
+import ProcessDefinitionConvertModule from '@/components/ProcessDefinitionConvertModule.vue';
 import ChatDetail from '@/components/apps/chats/ChatDetail.vue';
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
@@ -133,7 +133,7 @@ var jsondiffpatch = jsondiff.create({
     }
 });
 export default {
-    mixins: [ChatModule, ProcessDefinitionModule],
+    mixins: [ChatModule, ProcessDefinitionModule, ProcessDefinitionConvertModule],
     name: 'ProcessDefinitionChat',
     components: {
         Chat,
@@ -146,7 +146,8 @@ export default {
         ChatGenerator,
         ProcessDefinitionVersionDialog,
         ProcessDefinitionVersionManager,
-        ProcessDefinitionChatHeader
+        ProcessDefinitionChatHeader,
+        ProcessDefinitionConvertModule
     },
     data: () => ({
         isXmlMode: false,
@@ -270,8 +271,16 @@ export default {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const content = e.target.result;
+
+                let jsonContent = content;
+                let convertedBpmn = '';
+
+                if(file.name.indexOf('.jsonold') != -1) {
+                    jsonContent = me.convertOldJson(JSON.parse(content));
+                    convertedBpmn = me.createBpmnXml(jsonContent);
+                }
                 // 파일 내용 처리
-                me.loadBPMN(content);
+                me.loadBPMN(convertedBpmn);
             };
             reader.readAsText(file);
         },
@@ -743,7 +752,7 @@ export default {
 @media only screen and (max-width: 1279px) {
     .process-definition-resize {
         width: 100%;
-        height: calc(100vh - 192px) !important;
+        height: calc(100% - 38px) !important;
     }
 }
 

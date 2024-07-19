@@ -3,34 +3,32 @@
         <v-row style="height: 100%" class="ma-0">
             <v-col class="d-flex ma-0 pa-0" style="height: 100%">
                 <v-card style="border-radius: 0px !important; border: none; height: 100%" flat>
-                    <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn @click="openProcessVariables" icon v-bind="props" class="processVariables-btn">
-                                <Icons class="cp-process-variables" :icon="'variable'" :width="32" :height="32"  />
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
-                    <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn icon v-bind="props" class="processVariables-zoom" @click="$globalState.methods.toggleZoom()">
-                                <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
-                                <Icons
-                                    :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
-                                    :width="32"
-                                    :height="32"
-                                    
-                                />
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
-                    <!-- 실행 버튼  -->
-                    <v-tooltip v-if="executable" :text="$t('processDefinition.execution')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn icon v-bind="props" class="processExecute" @click="executeProcess">
-                                <Icons :icon="'play'" :width="32" :height="32" />
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
+                    <v-row class="ma-0 pa-0 button-container">
+                        <!-- 프로세스 실행 버튼  -->
+                        <v-tooltip v-if="executable" :text="$t('processDefinition.execution')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn icon v-bind="props" @click="executeProcess" class="btn-execute">
+                                    <Icons :icon="'play'" :width="32" :height="32" />
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
+                        <!-- 프로세스 변수 추가 버튼 -->
+                        <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn @click="openProcessVariables" icon v-bind="props" class="cp-process-variables btn-variables">
+                                    <Icons :icon="'variable'" :width="32" :height="32"  />
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
+                        <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
+                        <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn icon v-bind="props" @click="$globalState.methods.toggleZoom()" class="btn-zoom">
+                                    <Icons :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'" :size="32"/>
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
+                    </v-row>
                     <div v-if="isXmlMode"
                         style="height: calc(100% - 70px);
                         margin-top: 70px; overflow: auto;
@@ -70,7 +68,7 @@
                 </v-card>
             </v-col>
             <div v-if="panel && !isViewMode" style="position: fixed; z-index: 999; right: 0; height: 100%">
-                <v-card elevation="1" style="height: calc(100vh - 155px)">
+                <v-card elevation="1">
                     <bpmn-property-panel
                         :element="element"
                         @close="closePanel"
@@ -104,7 +102,7 @@
                     </v-btn>
                 </div>
                 
-                <v-card-text>
+                <v-card-text style="overflow: auto;">
                     <v-window v-model="processVariableTab">
                         <v-window-item value="variable">
                             <VDataTable class="border rounded-md" :items-per-page="5" :items-per-page-text="$t('processDefinition.itemsPerPage')">
@@ -854,10 +852,30 @@ export default {
     top: 20px;
     z-index: 1;
 }
-.processVariables-btn {
+
+.button-container {
     position: absolute;
-    left: 5px;
-    top: 20px;
+    right: 5px;
+    top: 5px;
     z-index: 1;
+    display: flex;
+    flex-direction: row;
+}
+
+@media only screen and (max-width: 550px) {
+    .button-container {
+        position: absolute;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+    .btn-execute {
+        order: 3;
+    }
+    .btn-variables {
+        order: 2;
+    }
+    .btn-zoom {
+        order: 1;
+    }
 }
 </style>

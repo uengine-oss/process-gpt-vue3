@@ -41,7 +41,7 @@
                                         <div style="font-weight: bold;">
                                             {{ item.title }}
                                             <a :href="item.link" target="_blank" style="margin-right: 10px;">
-                                                <Icons :icon="'file-type-pdf2'" :size="35" :originalColor="true"/>
+                                                <Icons :icon="'file-type-pdf2'" :size="35" />
                                             </a>
                                         </div>
                                         <div>{{ item.snippet }}</div>

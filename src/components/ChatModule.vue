@@ -102,8 +102,9 @@ export default {
                     me.agentInfo.isRunning = true
                     me.requestAgent(me.agentInfo.draftPrompt)
                 },
-                // onFail() {
-                // }
+                onFail() {
+                    me.agentInfo.isRunning = false
+                }
             })
         },
         async getToken(){
@@ -141,9 +142,10 @@ export default {
                                 if ((me.messages && me.messages.length > 0) 
                                 && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
                                 // &&  me.messages[me.messages.length - 1].content.replace(/\s+/g, '') === data.new.messages.content.replace(/\s+/g, '')) {
-                                && me.messages[me.messages.length - 1].content.replace(/\s+/g, '').includes(data.new.messages.content.replace(/\s+/g, ''))
+                                && (me.messages[me.messages.length - 1].content == '...' || me.messages[me.messages.length - 1].content.replace(/\s+/g, '').includes(data.new.messages.content.replace(/\s+/g, '')))
                                 ) {
                                     me.messages[me.messages.length - 1] = data.new.messages
+                                    me.messages[me.messages.length - 1].isLoading = false
                                     me.EventBus.emit('instances-updated');
                                 } else {
                                     me.messages.push(data.new.messages)
@@ -545,7 +547,6 @@ export default {
                         let messageWriting = this.messages[this.messages.length - 1];
                         messageWriting.content = response;
                         messageWriting.jsonContent = this.extractJSON(response);
-                        // messageWriting.systemRequest = false;
     
                         if (messageWriting.jsonContent) {
                             let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
@@ -602,7 +603,7 @@ export default {
                     jsonData = null
                 }
             }
-            jsonData = removeComments(jsonData);
+            // jsonData = this.removeComments(jsonData);
             if(jsonData != null) {
                 this.afterGenerationFinished(jsonData);
             } else {

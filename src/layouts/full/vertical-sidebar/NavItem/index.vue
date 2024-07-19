@@ -21,7 +21,7 @@ const props = defineProps({
             <template v-if="item.icon" v-slot:prepend>
                 <div :class="'navbox  bg-hover-' + item.BgColor" :color="item.BgColor">
                     <span class="icon-box">
-                        <Icon :icon="item.icon" height="24" width="24" :level="level" :class="'position-relative z-index-2 texthover-' + item.BgColor" />
+                        <Icons :icon="item.icon" :level="level" :class="'position-relative z-index-2 texthover-' + item.BgColor" />
                     </span>
                 </div>
             </template>

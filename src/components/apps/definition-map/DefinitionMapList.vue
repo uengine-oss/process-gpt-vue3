@@ -11,7 +11,7 @@
                 <v-col class="cursor-pointer" cols="12" md="2" sm="3">
                     <v-card v-if="!processDialogStatus"
                         @click="openProcessDialog('add')"
-                        class="add-process-card-hover cp-add-mega"
+                        class="cp-add-mega"
                         elevation="9" variant="outlined"
                         color="primary"
                         style="padding: 10px;
@@ -127,9 +127,3 @@ export default {
     },
 }
 </script>
-
-<style>
-.add-process-card-hover:hover {
-    background-color: rgb(33, 150, 243, 0.1)
-}
-</style>

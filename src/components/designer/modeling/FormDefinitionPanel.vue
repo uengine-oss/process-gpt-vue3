@@ -14,7 +14,7 @@
       </v-btn>
     </v-card-item>
 
-    <v-card-text>
+    <v-card-text style="overflow: auto;">
       <template v-for="(settingInfo, index) in componentRef.settingInfos" :key="index">  
         <v-text-field v-if="(settingInfo.settingType === 'text') && isShowCheck(settingInfo)" :ref="settingInfo.dataToUse" 
                       :label="settingInfo.settingLabel" v-model.trim="componentProps[settingInfo.dataToUse]"
