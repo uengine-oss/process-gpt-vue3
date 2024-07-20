@@ -99,7 +99,7 @@
                             {{ $t('processDefinition.instanceNamePattern') }} 
                         </v-tab>
                     </v-tabs>
-                    <v-btn icon variant="plain" class="ml-auto" @click="isViewProcessVariables = false">
+                    <v-btn icon variant="plain" class="ml-auto cp-v-close" @click="isViewProcessVariables = false">
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </div>

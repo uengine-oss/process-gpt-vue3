@@ -118,7 +118,7 @@
                                                 v-bind="props"
                                                 icon
                                                 variant="text"
-                                                class="text-medium-emphasis"
+                                                class="text-medium-emphasis cp-def-save"
                                                 @click="toggleLock"
                                                 density="comfortable"
                                             >
