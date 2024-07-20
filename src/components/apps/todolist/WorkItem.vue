@@ -284,7 +284,10 @@ export default {
             required: true
         },
         taskId: String,
-        isDryRun: Boolean,
+        isDryRun: {
+            type: Boolean,
+            default: false
+        },
         dryRunWorkItem: Object
     },
     components: {

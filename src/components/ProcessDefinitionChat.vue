@@ -339,24 +339,22 @@ export default {
             // Version Manager Dialog
             this.verMangerDialog = open;
         },
-        changeXML(info) {
+        async changeXML(info) {
             var me = this;
-            me.$try({
-                context: me,
-                action: async () => {
-                    if (!info) return;
-                    if (!info.id) return;
-
-                    await me.storage.putObject(`${me.path}`, {
-                        id: info.id,
-                        name: info.name,
-                        bpmn: info.xml
-                    });
-                    me.bpmn = info.xml;
-                    me.definitionChangeCount++;
-                    me.toggleVerMangerDialog(false);
-                }
+            if (!info) return;
+            if (!info.id) return;
+            if (info.xml) {
+                me.processDefinition = await me.convertXMLToJSON(info.xml);
+            }
+            await me.storage.putObject('proc_def', {
+                id: info.id,
+                name: info.name,
+                bpmn: info.xml,
+                definition: me.processDefinition
             });
+            me.bpmn = info.xml;
+            me.definitionChangeCount++;
+            me.toggleVerMangerDialog(false);
         },
         async changeElement() {
             this.$nextTick(async () => {

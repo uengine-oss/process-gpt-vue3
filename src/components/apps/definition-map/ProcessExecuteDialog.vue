@@ -91,19 +91,24 @@ export default {
                     const startActivity = me.definition.activities[0];
                     if (startActivity) {
                         let parameters = [];
+                        let variableForHtmlFormContext = {};
                         if (startActivity.properties) {
-                            parameters = JSON.parse(startActivity.properties).parameters;
-                            parameters.forEach((item) => {
-                                if (item.direction == 'OUT') {
-                                    item.direction = 'IN';
-                                } else if (item.direction == 'IN') {
-                                    item.direction = 'OUT';
-                                }
-                                item.variable.defaultValue = "";
-                            })
-                        } else {
-                            parameters = [];
+                            const properties = JSON.parse(startActivity.properties);
+                            if (properties.parameters) {
+                                parameters = properties.parameters;
+                                parameters.forEach((item) => {
+                                    if (item.direction == 'OUT') {
+                                        item.direction = 'IN';
+                                    } else if (item.direction == 'IN') {
+                                        item.direction = 'OUT';
+                                    }
+                                    item.variable.defaultValue = "";
+                                })
+                            } else if (properties.variableForHtmlFormContext) {
+                                variableForHtmlFormContext = properties.variableForHtmlFormContext;
+                            }
                         }
+                        
                         let parameterValues = {};
                         if (parameters.length > 0) {
                             parameters.forEach((item) => {
@@ -129,7 +134,7 @@ export default {
                                 name: startActivity.name,
                                 tracingTag: startActivity.id || '',
                                 parameters: parameters || [],
-                                variableForHtmlFormContext: {},
+                                variableForHtmlFormContext: variableForHtmlFormContext || {},
                                 tool: startActivity.tool || "",
                                 instruction: startActivity.instruction ? startActivity.instruction : "",
                                 checkpoints: startActivity.checkpoints ? startActivity.checkpoints : []
