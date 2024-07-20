@@ -31,7 +31,7 @@
                             <v-col>
                                 <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
                                     <template v-slot:title>
-                                        <Icon style="margin-left:-6px;" icon="clarity:info-line" width="32" height="32" />
+                                        <Icons style="padding-left:-5px;" :icon="'info-line'" :size="32" :color="'#2196F3'"/>
                                     </template>
                                     <small style="white-space: pre-line; font-size:14px;">
                                         {{ filteredAlert.detail }}
@@ -79,7 +79,7 @@
                                                             icon variant="text" size="x-small"  
                                                             style="background-color:white !important;"
                                                         >
-                                                            <Icon icon="solar:backspace-bold" height="20" width="20" />
+                                                            <Icons :icon="'backspace-bold'" :size="20"  />
                                                         </v-btn>
                                                     </v-row>
                                                 </div>
@@ -106,7 +106,7 @@
                                                                 class="float-left edit-btn"
                                                                 style="background-color:white;"
                                                             >
-                                                                <Icon icon="solar:pen-bold" height="20" width="20" />
+                                                                <icons :icon="'pencil'" :size="20"  />
                                                             </v-btn>
 
                                                         <!-- <transition name="slide-fade"> -->
@@ -134,7 +134,7 @@
                                                         size="small" icon density="comfortable"
                                                         style="position:absolute; right:5px; top:5px; z-index:1;"
                                                     >
-                                                        <Icon icon="el:trash" />
+                                                        <Icons :icon="'trash'" />
                                                     </v-btn>
                                                     <v-list>
                                                         <div>
@@ -149,7 +149,7 @@
                                                                             </template>
                                                                             <template v-else>
                                                                                 <div style="padding-top:2px;">
-                                                                                    <Icon :icon="getWorkIcon(work.work)" />
+                                                                                    <Icons :icon="getWorkIcon(work.work)" />
                                                                                 </div>
                                                                             </template>
                                                                             <div style="margin-left:5px; margin-top:0px;">{{ work.messageForUser }}</div>
@@ -158,13 +158,13 @@
                                                                                     class="ml-2"
                                                                                     size="small" icon density="comfortable"
                                                                                 >
-                                                                                    <Icon :icon="work.expanded ? 'iconamoon:arrow-up-2' : 'iconamoon:arrow-down-2'" width="24" height="24"/>
+                                                                                    <icons :icon="work.expanded ? 'arrow-up-2' : 'arrow-down-2'" />
                                                                                 </v-btn>
                                                                                 <v-btn  @click="startProcess(work, index)"
                                                                                     class="ml-2"
                                                                                     size="small" icon density="comfortable"
                                                                                 >
-                                                                                    <Icons :icon="'play'" :color="'black'"/>
+                                                                                    <Icons :icon="'play'" />
                                                                                 </v-btn>
                                                                             </div>
                                                                         </v-row>
@@ -234,11 +234,11 @@
                                                             <pre v-else class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
                                                             <!-- <pre class="text-body-1">{{ message.content }}</pre> -->
 
-                                                            <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
+                                                            <!-- <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
                                                                 <v-btn style="margin-right: 5px" size="small"
                                                                     @click="startProcess(message)">y</v-btn>
                                                                 <v-btn size="small" @click="cancelProcess(message)">n</v-btn>
-                                                            </p>
+                                                            </p> -->
                                                             <v-row class="pa-0 ma-0">
                                                                 <v-spacer></v-spacer>
                                                                 <div v-if="replyIndex === index" >
@@ -246,17 +246,17 @@
                                                                         variant="text" size="x-small" icon
                                                                         style="background-color:white; margin-right:5px;"
                                                                     >
-                                                                        <Icon icon="material-symbols:reply" width="20" height="20" />
+                                                                        <Icons :icon="'reply'" :size="20" />
                                                                     </v-btn>
                                                                     <v-btn @click="viewJSON(index)"
                                                                         variant="text" size="x-small" icon
                                                                         style="background-color:white;"
                                                                     >
-                                                                        <Icon v-if="message.jsonContent && isviewJSONStatus"
-                                                                            icon="iconamoon:arrow-up-2" width="20" height="20"
+                                                                        <Icons v-if="message.jsonContent && isviewJSONStatus"
+                                                                            :icon="'arrow-up-2'" :size="20"
                                                                         />
-                                                                        <Icon v-else
-                                                                            icon="iconamoon:arrow-down-2" width="20" height="20"
+                                                                        <Icons v-else
+                                                                            :icon="'arrow-down-2'" :size="20"
                                                                         />
                                                                     </v-btn>
                                                                 </div>
@@ -326,7 +326,7 @@
                                 <template v-slot:activator="{ props }">
                                     <v-btn icon variant="text" class="text-medium-emphasis" @click="capture" v-bind="props"
                                         style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
-                                        <Icon icon="iconoir:camera" width="20" height="20" />
+                                        <Icons :icon="'camera'" :size="20" />
                                     </v-btn>
                                 </template>
                             </v-tooltip>
@@ -334,7 +334,7 @@
                                 <template v-slot:activator="{ props }">
                                     <v-btn icon variant="text" class="text-medium-emphasis" @click="uploadImage" v-bind="props"
                                         style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
-                                        <Icon icon="iconoir:add-media-image" width="20" height="20" />
+                                        <Icons :icon="'add-media-image'" :size="20" />
                                     </v-btn>
                                 </template>
                             </v-tooltip>
@@ -344,7 +344,7 @@
                                         :disabled="!(newMessage || agentInfo.draftPrompt)" icon variant="text"
                                         class="text-medium-emphasis" @click="requestDraftAgent" v-bind="props"
                                         style="width:30px; height:30px; margin:1px 0px 0px 5px;">
-                                        <Icon icon="fluent:document-one-page-sparkle-16-regular" width="20" height="20" />
+                                        <Icons :icon="'document-sparkle'" :size="20"  />
                                     </v-btn>
                                     <v-btn v-if="(type == 'instances' || type == 'chats') && agentInfo.isRunning" icon variant="text"
                                         class="text-medium-emphasis" style="width:30px; height:30px;">
@@ -444,31 +444,31 @@
                             density="comfortable"
                             icon
                         >
-                            <Icon icon="ic:round-headset" width="24" height="24" />
+                            <Icons :icon="'round-headset'"  />
                         </v-btn>
                         <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
                             density="comfortable"
                             icon
                         >
-                            <Icon icon="ic:sharp-mic" width="24" height="24" />
+                            <Icons :icon="'sharp-mic'"  />
                         </v-btn>
                         <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
                             density="comfortable"
                             icon
                         >
-                            <Icon icon="fa-solid:stop" width="20" height="20" />
+                            <Icons :icon="'stop'" :size="'20'"  />
                         </v-btn>
-                        <Icon v-if="isMicRecorderLoading" icon="eos-icons:bubble-loading" width="24" height="24" />
+                        <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'"  />
                     </template>
                     <template v-slot:append-inner>
                         <div style="height: -webkit-fill-available; margin-right: 10px; margin-top: 10px;">
                             <v-btn v-if="!isLoading" class="cp-send" icon variant="text" type="submit" @click="beforeSend"
                                 style="width:30px; height:30px;" :disabled="disableBtn">
-                                <Icon icon="teenyicons:send-outline" width="20" height="20" />
+                                <icons :icon="'send-outline'" :size="20" />
                             </v-btn>
                             <v-btn v-else icon variant="text" @click="isLoading = !isLoading"
                                 style="width:30px; height:30px;">
-                                <Icon icon="ic:outline-stop-circle" width="20" height="20" />
+                                <Icons :icon="'outline-stop-circle'" :size="20" />
                             </v-btn>
                             <!-- <v-btn icon variant="text" class="text-medium-emphasis">
                                 <PaperclipIcon size="20" />
@@ -543,11 +543,11 @@ export default {
     data() {
         return {
             workIcons: {
-                "ScheduleQuery" : "solar:calendar-line-duotone", // 달력 아이콘
-                "ScheduleRegistration" : "solar:calendar-line-duotone", // 달력 아이콘
-                "TodoListRegistration" : "pajamas:overview", // TODO 리스트 아이콘
-                "StartProcessInstance" : "carbon:ibm-process-mining",
-                "CreateProcessDefinition" : "tabler:device-imac-cog"
+                "ScheduleQuery" : "calendar-line-duotone", // 달력 아이콘
+                "ScheduleRegistration" : "calendar-line-duotone", // 달력 아이콘
+                "TodoListRegistration" : "overview", // TODO 리스트 아이콘
+                "StartProcessInstance" : "ibm-process-mining",
+                "CreateProcessDefinition" : "device-imac-cog"
             },
             recordingMode: false,
             defaultWorkIcon: defaultWorkIcon,
@@ -825,23 +825,26 @@ export default {
             }
         },
         async submitFile() {
-            if (!this.file) return; // 파일이 없으면 함수 종료
+            var me = this
+            
+            me.$try({
+                action: async () => {
+                    if (!me.file) return; // 파일이 없으면 함수 종료
+        
+                    const formData = new FormData();
+                    formData.append('file', this.file[0]); // 'file' 키에 파일 데이터 추가
 
-            const formData = new FormData();
-            formData.append('file', this.file[0]); // 'file' 키에 파일 데이터 추가
-
-            try {
-                const response = await axios.post(`/memento/uploadfile/`, formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                });
-                console.log(response.data); // 응답 로그 출력
-                // 성공적으로 파일을 전송한 후의 로직을 여기에 작성하세요.
-            } catch (error) {
-                console.error(error); // 에러 로그 출력
-                // 파일 전송 실패 시의 로직을 여기에 작성하세요.
-            }
+                    const response = await axios.post(`/memento/uploadfile/`, formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                        },
+                    });
+                    console.log(response.data); // 응답 로그 출력
+                    this.file = null
+                    
+                },
+                successMsg: '파일 업로드가 완료되었습니다.'
+            })
         },
         openVerMangerDialog() {
             this.$emit('openVerMangerDialog', true)
@@ -906,19 +909,19 @@ export default {
             const user = this.userList.find(user => user.email === email);
             return user ? user.profile : '';
         },
-        shouldDisplayButtons(message, index) {
-            if (message.role !== 'system' || !message.systemRequest || message.requestUserEmail !== this.userInfo.email) {
-                return false;
-            }
-            // 현재 메시지 이후로 동일한 userInfo.email을 가진 메시지가 있는지 확인
-            for (let i = index + 1; i < this.filteredMessages.length; i++) {
-                if (this.filteredMessages[i].email === this.userInfo.email) {
-                    return false; // 동일한 email을 가진 메시지가 있다면 버튼을 표시하지 않음
-                }
-            }
-            // 위의 조건들을 모두 통과했다면 버튼을 표시
-            return true;
-        },
+        // shouldDisplayButtons(message, index) {
+        //     if (message.role !== 'system') {
+        //         return false;
+        //     }
+        //     // 현재 메시지 이후로 동일한 userInfo.email을 가진 메시지가 있는지 확인
+        //     for (let i = index + 1; i < this.filteredMessages.length; i++) {
+        //         if (this.filteredMessages[i].email === this.userInfo.email) {
+        //             return false; // 동일한 email을 가진 메시지가 있다면 버튼을 표시하지 않음
+        //         }
+        //     }
+        //     // 위의 조건들을 모두 통과했다면 버튼을 표시
+        //     return true;
+        // },
         shouldDisplayUserInfo() {
             return (message, index) => {
                 if(!message.disableMsg){

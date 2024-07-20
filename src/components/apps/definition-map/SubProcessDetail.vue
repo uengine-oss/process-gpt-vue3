@@ -25,8 +25,7 @@
                     </v-menu>
                 </div>
             </div>
-            <div v-if="processDefinition" class="d-flex align-center"
-                @click="updateBpmn(processDefinition.bpmn); subProcessBreadCrumb = []">
+            <div v-if="processDefinition" class="d-flex align-center">
                 <h6 class="text-h6 font-weight-semibold">
                     {{ processDefinition ? processDefinition.name : "" }}
                 </h6>
@@ -42,28 +41,28 @@
 
             <div class="ml-auto d-flex">
                 <div v-if="onLoad && bpmn">
-                    <v-btn v-if="!JMS" icon variant="text" class="ml-3" :size="24" @click="executeProcess">
-                        <Icons :icon="'play-outline'" :color="'black'" />
+                    <v-btn v-if="!JMS" color="#1976D2" density="comfortable" class="ml-3" @click="executeProcess">
+                        실행
                     </v-btn>
                     <v-btn icon variant="text" class="ml-3" :size="24" @click="capture">
-                        <Icons :icon="'image-download'" :color="'black'" />
+                        <Icons :icon="'image-download'"  />
                     </v-btn>
+                    <v-tooltip :text="$t('processDefinition.zoom')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn :size="30"
+                                icon variant="text" class="ml-2"
+                                v-bind="props"
+                                @click="$globalState.methods.toggleZoom()"
+                            >
+                                <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
+                                <Icons
+                                    :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
+                                    
+                                />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
                 </div>
-                <v-tooltip :text="$t('processDefinition.zoom')">
-                    <template v-slot:activator="{ props }">
-                        <v-btn :size="30"
-                            icon variant="text" class="ml-3"
-                            v-bind="props"
-                            @click="$globalState.methods.toggleZoom()"
-                        >
-                            <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
-                            <Icons
-                                :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
-                                :color="'black'"
-                            />
-                        </v-btn>
-                    </template>
-                </v-tooltip>
             </div>
         </div>
 

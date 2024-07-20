@@ -36,7 +36,7 @@ const customizer = useCustomizerStore();
                         density="comfortable"
                         :to="'/definition-map'"
                     >
-                        <Icon icon="jam:write" width="24" height="24" />
+                        <Icons :icon="'write'" />
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -66,7 +66,7 @@ const customizer = useCustomizerStore();
                 <template v-for="item in definitionItem" :key="item.title">
                     <!-- Item Sub Header -->
                     <v-row v-if="item.header && !item.disable"
-                        class="pa-0 ma-0" 
+                        class="pa-0 pl-2 ma-0" 
                     >
                         <NavGroup :item="item" :key="item.title" />
                         <template v-for="subItem in definitionItem" :key="subItem.title">
@@ -79,7 +79,7 @@ const customizer = useCustomizerStore();
                                         class="text-medium-emphasis cp-menu"
                                         density="comfortable"
                                     >
-                                        <Icon :icon="subItem.icon" width="20" height="20" />    
+                                        <Icons :icon="subItem.icon" :size="20" />    
                                     </v-btn>
                                 </template>
                             </v-tooltip>
@@ -136,33 +136,33 @@ export default {
                     disable: false
                 },
                 {
+                    title: 'processDefinition.title',
+                    icon: 'ibm-process-mining',
+                    BgColor: 'primary',
+                    to: '/definitions/chat',
+                    disable: false
+                },
+                {
+                    title: 'uiDefinition.title',
+                    icon: 'document',
+                    BgColor: 'primary',
+                    to: '/ui-definitions/chat',
+                    disable: true
+                },
+                {
                     title: 'organizationChartDefinition.title',
-                    icon: 'solar:users-group-rounded-line-duotone',
+                    icon: 'users-group-rounded-line-duotone',
                     BgColor: 'primary',
                     to: '/organization',
                     disable: true
                 },
                 {
                     title: 'systemDefinition.title',
-                    icon: 'solar:server-line-duotone',
+                    icon: 'server-line-duotone',
                     BgColor: 'primary',
                     to: '/system',
                     disable: true
                 },
-                {
-                    title: 'uiDefinition.title',
-                    icon: 'icon-park-outline:layout-five',
-                    BgColor: 'primary',
-                    to: '/ui-definitions/chat',
-                    disable: true
-                },
-                {
-                    title: 'processDefinition.title',
-                    icon: 'tabler:device-imac-cog',
-                    BgColor: 'primary',
-                    to: '/definitions/chat',
-                    disable: false
-                }
             ]
             this.getDefinitionList();
         }
@@ -227,7 +227,7 @@ export default {
                         if (item.name != 'instances') {
                             var obj = {
                                 title: item.name,
-                                icon: 'ic:outline-folder',
+                                icon: 'outline-folder',
                                 // to: `/definitions/${item.definition.processDefinitionId}`,
                                 directory: true,
                                 BgColor: 'primary',

@@ -83,16 +83,16 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
               "components" :
               [{
                   "componentType" :"Gateway",
-                  "id": "gateway_id",
+                  "id": "gateway_id",//id는 영어로 써야됨
                   "name": "gateway name",
                   "role": "role name", // You must use the name among the created "roles".,
-                  "source": "components id", 반드시 존재해야함
+                  "source": "components id", //반드시 존재해야함
                   "type": "ExclusiveGateway | ParallelGateway | InclusiveGateway | EventBasedGateway",
                   "description": "선택적 또는 병렬 프로세스 흐름을 제어하는 게이트웨이 설명"
                 },
                 {
                   "componentType" :"Activity",
-                  "id": "String-based unique id of the activity not including space",
+                  "id": "String-based unique id of the activity not including space",//id는 영어로 써야됨
                   "name": "activity name",
                   "type": "UserActivity" | "EMailActivity" | "ScriptActivity",
                   "source": "components id", 반드시 존재해야함
@@ -100,15 +100,12 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   "instruction": "instruction to user",
                   "role": "role name", // You must use the name among the created "roles".
                   "inputData": ["name of data for input"],
-                   "outputData": [
-                     "name of data for output"
-                   ],
-                   "checkpoints":["checkpoint 1", "checkpoint 2"]
-                   "source": "components id"
+                  "outputData": ["name of data for output"],
+                  "checkpoints":["checkpoint 1", "checkpoint 2"]
                  },
                  {
                   "componentType" :"Event",
-                  "id": "event_id",
+                  "id": "event_id",//id는 영어로 써야됨
                   "name": "event name",
                   "role": "role name", // You must use the name among the created "roles".,
                   "source": "components id", 반드시 존재해야함,
@@ -158,6 +155,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                10. 절대로 JSON 내부에 주석이 있으면 안돼.
                11. 중간에 액티비티가 추가된다면, 추가된 액티비티의 앞뒤 액티비티 간의 Sequence도 반드시 삭제해.
                12. Sequence는 replace가 없어. add 혹은 delete 해야해.
+               13. id는 반드시 영어로 들어가야 함
             \`\`\`
               { 
                 "modifications": [

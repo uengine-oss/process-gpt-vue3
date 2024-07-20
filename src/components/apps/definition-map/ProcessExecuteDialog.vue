@@ -1,27 +1,18 @@
 <template>
-    <v-card style="width: 100%;" class="py-4">
-        <AppBaseCard>
-            <template v-slot:leftpart>
-                <v-card flat>
-                    <v-card-title>
-                        <v-row class="ma-0 pa-0 mt-1 ml-3" style="line-height: 100%">
-                            <div style="font-size: 20px; font-weight: 500">Role Mapping</div>
-                        </v-row>
-                    </v-card-title>
-                    <v-card-text>
-                        <div class="mt-4">
-                            <div v-for="roleMapping in roleMappings" :key="roleMapping.name">
-                                <user-select-field v-model="roleMapping.endpoint" 
-                                    :name="roleMapping.name"
-                                    :item-value="'email'"
-                                ></user-select-field>
-                            </div>
-                        </div>
-                    </v-card-text>
-                </v-card>
-            </template>
-
-            <template v-slot:rightpart>
+    <v-card flat class="w-100">
+        <div :class="{'d-flex': !isMobile}">
+            <div class="pa-4" style="min-width: 300px;">
+                <div style="font-size: 20px; font-weight: 500">Role Mapping</div>
+                <div class="mt-4">
+                    <div v-for="roleMapping in roleMappings" :key="roleMapping.name">
+                        <user-select-field v-model="roleMapping.endpoint" 
+                            :name="roleMapping.name"
+                            :item-value="'email'"
+                        ></user-select-field>
+                    </div>
+                </div>
+            </div>
+            <div class="w-100 pa-2">
                 <div v-if="workItem != null">
                     <WorkItem 
                         :definitionId="definitionId" 
@@ -34,28 +25,8 @@
                 <div v-else>
                     Loading...                    
                 </div>
-            </template>
-
-            <template v-slot:mobileLeftContent>
-                <v-card flat>
-                    <v-card-title>
-                        <v-row class="ma-0 pa-0 mt-1 ml-3">
-                            <div style="font-size: 20px; font-weight: 500">Role Mapping</div>
-                        </v-row>
-                    </v-card-title>
-                    <v-card-text>
-                        <div class="mt-4">
-                            <div v-for="roleMapping in roleMappings" :key="roleMapping.name">
-                                <user-select-field v-model="roleMapping.endpoint" 
-                                    :name="roleMapping.name"
-                                    :item-value="'email'"
-                                ></user-select-field>
-                            </div>
-                        </div>
-                    </v-card-text>
-                </v-card>
-            </template>
-        </AppBaseCard>
+            </div>
+        </div>
     </v-card>
 </template>
 
@@ -85,9 +56,15 @@ export default {
         roleMappings: [],
         organizationChart: {},
         userList: [],
+        isMobile: false,
     }),
     created() {
         this.init();
+        this.checkIfMobile();
+        window.addEventListener('resize', this.checkIfMobile);
+    },
+    beforeDestroy() {
+        window.removeEventListener('resize', this.checkIfMobile);
     },
     methods: {
         init() {
@@ -114,19 +91,24 @@ export default {
                     const startActivity = me.definition.activities[0];
                     if (startActivity) {
                         let parameters = [];
+                        let variableForHtmlFormContext = {};
                         if (startActivity.properties) {
-                            parameters = JSON.parse(startActivity.properties).parameters;
-                            parameters.forEach((item) => {
-                                if (item.direction == 'OUT') {
-                                    item.direction = 'IN';
-                                } else if (item.direction == 'IN') {
-                                    item.direction = 'OUT';
-                                }
-                                item.variable.defaultValue = "";
-                            })
-                        } else {
-                            parameters = [];
+                            const properties = JSON.parse(startActivity.properties);
+                            if (properties.parameters) {
+                                parameters = properties.parameters;
+                                parameters.forEach((item) => {
+                                    if (item.direction == 'OUT') {
+                                        item.direction = 'IN';
+                                    } else if (item.direction == 'IN') {
+                                        item.direction = 'OUT';
+                                    }
+                                    item.variable.defaultValue = "";
+                                })
+                            } else if (properties.variableForHtmlFormContext) {
+                                variableForHtmlFormContext = properties.variableForHtmlFormContext;
+                            }
                         }
+                        
                         let parameterValues = {};
                         if (parameters.length > 0) {
                             parameters.forEach((item) => {
@@ -152,7 +134,7 @@ export default {
                                 name: startActivity.name,
                                 tracingTag: startActivity.id || '',
                                 parameters: parameters || [],
-                                variableForHtmlFormContext: {},
+                                variableForHtmlFormContext: variableForHtmlFormContext || {},
                                 tool: startActivity.tool || "",
                                 instruction: startActivity.instruction ? startActivity.instruction : "",
                                 checkpoints: startActivity.checkpoints ? startActivity.checkpoints : []
@@ -200,6 +182,9 @@ export default {
             }
 
             return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+        },
+        checkIfMobile() {
+            this.isMobile = window.innerWidth <= 1080;
         }
     }
 };

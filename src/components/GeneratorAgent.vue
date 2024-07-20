@@ -18,7 +18,13 @@ export default {
             this.ws.send(str);
         },
         connectAgent(url){
-            if(!url) url = `ws://${window.location.host}/autonomous`
+            if(!url) {
+                if(window.location.href.includes("https://")){
+                    url = `wss://${window.location.host}/autonomous`
+                } else {
+                    url = `ws://${window.location.host}/autonomous`
+                }
+            }
             this.ws = new WebSocket(url);
         },
         releaseAgent(){

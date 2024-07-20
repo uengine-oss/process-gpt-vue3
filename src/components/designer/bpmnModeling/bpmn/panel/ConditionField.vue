@@ -29,7 +29,7 @@
                         <v-icon>mdi-plus</v-icon>
                     </v-btn>
                     <v-btn v-if="getConditions(condition).length > 1" icon variant="text" @click="deleteCondition(item, idx)">
-                        <v-icon>mdi-delete-outline</v-icon>
+                        <Icons :icon="'trash'" />
                     </v-btn>
                 </div>
                 <div v-else class="pa-3 border">
@@ -38,7 +38,7 @@
                             {{ item._type }}
                         </v-chip>
                         <v-btn icon variant="text" class="ml-auto" @click="deleteCondition(item, idx)">
-                            <v-icon>mdi-delete-outline</v-icon>
+                            <Icons :icon="'trash'" />
                         </v-btn>
                     </div>
                     <ConditionField :value="item.conditionsVt" />

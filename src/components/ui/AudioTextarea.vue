@@ -5,12 +5,12 @@
             <template v-slot:append-inner>
                 <div class="d-flex align-self-end cursor-pointer">
                     <div @click="onChangeRecordingDialog" class="mr-1">
-                        <Icon icon="ic:round-headset" width="24" height="24" />
+                        <Icons :icon="'round-headset'"  />
                     </div>
                     <div @click="onClickMic">
-                        <Icon v-if="!isMicRecording && !isMicRecorderLoading" icon="ic:sharp-mic" width="24" height="24" />
-                        <Icon v-else-if="!isMicRecorderLoading" icon="fa-solid:stop" width="20" height="20" />
-                        <Icon v-else-if="isMicRecorderLoading" icon="eos-icons:bubble-loading" width="24" height="24" />
+                        <Icons v-if="!isMicRecording && !isMicRecorderLoading" :icon="'sharp-mic'"  />
+                        <Icons v-else-if="!isMicRecorderLoading" :icon="'stop'" :size="'20'"  />
+                        <Icons v-else-if="isMicRecorderLoading" :icon="'bubble-loading'"  />
                     </div>
                 </div>
             </template>
@@ -69,7 +69,9 @@ export default {
     created() {
         this.newMessage = this.modelValue;
         if (this.workItem) {
-            this.chatRoomId = this.workItem.worklist.instId;
+            if(this.workItem.worklist) {
+                this.chatRoomId = this.workItem.worklist.instId;
+            }
         }
     },
     methods: {

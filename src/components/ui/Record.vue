@@ -24,13 +24,13 @@
         />
         <div class="controls">
             <v-btn v-if="!isRecording && !isAudioPlaying && !isLoading" @click="toggleRecording()" icon density="comfortable">
-                <Icon icon='bi:mic-fill' width="24" height="24" />
+                <Icons :icon="'sharp-mic'"  />
             </v-btn>
             <v-btn v-else-if="!sendRecordingStatus" @click="sendRecording()" icon density="comfortable">
-                <Icon icon='fa-solid:stop' width="24" height="24" />
+                <Icons :icon="'stop'"  />
             </v-btn>
             <v-btn v-else @click="stopAudioStream()" icon density="comfortable">
-                <Icon icon='fa-solid:stop' width="24" height="24" />
+                <Icons :icon="'stop'"  />
             </v-btn>
             <div v-if="!isAudioPlaying && !isLoading" class="bars">
                 <div v-for="n in 4" :key="n" class="bar" :style="{ height: boxHeight(n) + 'px' }"></div>

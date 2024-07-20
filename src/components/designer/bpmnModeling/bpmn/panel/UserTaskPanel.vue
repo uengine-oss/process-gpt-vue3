@@ -10,7 +10,7 @@
                 value="FormActivity"
             ></v-radio>
             <v-radio
-                label="외부 어플리케이션"
+                label="외부 애플리케이션"
                 value="URLActivity"
             ></v-radio>
         </v-radio-group>
@@ -280,7 +280,8 @@ export default {
                 me.copyUengineProperties.role = { name: me.role };
             }
 
-            me.selectedActivity = me.copyUengineProperties._type ? me.copyUengineProperties._type.split('.').pop() : 'DefaultActivity';
+            // me.selectedActivity = me.copyUengineProperties._type ? me.copyUengineProperties._type.split('.').pop() : 'DefaultActivity';
+            me.selectedActivity = 'DefaultActivity';
             if(me.selectedActivity == 'DefaultActivity') {
                 delete me.copyUengineProperties._type;
                 if (!me.copyUengineProperties.parameters) me.copyUengineProperties.parameters = [];

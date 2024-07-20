@@ -10,13 +10,13 @@ const useI18n = computed(() => {
 
 function getIcon(item) {
     if (item.type && item.type.includes('bpmn')) {
-        return 'carbon:ibm-process-mining';
+        return 'ibm-process-mining';
     } else if (item.type && item.type.includes('json')) {
-        return 'carbon:json';
+        return 'json';
     } else if (item.type && item.type.includes('form')) {
-        return 'carbon:document';
+        return 'document';
     } else {
-        return 'carbon:ibm-process-mining';
+        return 'ibm-process-mining';
     }
 }
 </script>
@@ -38,10 +38,8 @@ function getIcon(item) {
             <!---If icon-->
             <template v-slot:prepend>
                 <div :class="'navbox  bg-hover-' + item.BgColor" :color="item.BgColor">
-                    <Icon
+                    <Icons
                         :icon="getIcon(item)"
-                        width="24"
-                        height="24"
                     />
                 </div>
             </template>

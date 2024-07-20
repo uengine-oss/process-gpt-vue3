@@ -17,7 +17,7 @@ hr {
 
 .processVariables-zoom {
     position: absolute;
-    right: 20px;
+    right: 5px;
     top: 20px;
     z-index: 1;
 }
@@ -34,7 +34,6 @@ hr {
     display: flex;
     justify-content: center;
     align-items: center;
-    color: #5EB2E8;
     font-weight: 700;
 }
 
@@ -89,7 +88,7 @@ hr {
 .vue-bpmn-diagram-container .djs-palette {
     width: 695px !important;
     height: 50px;
-    margin-left: 35px;
+    left:5px; top:5px;
     background-color: white;
     border: none;
     border-radius: 10px;
@@ -137,10 +136,17 @@ hr {
     right: 5px
 }
 
-@media only screen and (max-width:1500px) {
+@media only screen and (max-width:1450px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 375px !important;
         height: 94px !important;
+    }
+}
+
+@media only screen and (max-width:550px) {
+    .vue-bpmn-diagram-container .djs-palette {
+        width: 230px !important;
+        height:135px !important;
     }
 }
 

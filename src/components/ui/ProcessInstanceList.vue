@@ -2,7 +2,7 @@
     <div>
         <!-- <NavItem class="leftPadding" :item="definitionMap" /> -->
         <template v-for="item in instanceList" :key="item.title">
-            <NavItem v-if="!JMS" class="leftPadding" :item="item" :use-i18n="false" />
+            <NavItem v-if="!JMS" class="leftPadding pl-2" :item="item" :use-i18n="false" />
         </template>
     </div>
 </template>

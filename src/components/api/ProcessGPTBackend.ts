@@ -113,7 +113,8 @@ class ProcessGPTBackend implements Backend {
                 proc_def_id: defId,
                 version: options.version,
                 snapshot: xml,
-                diff: options.diffs,
+                diff: options.diff,
+                message: options.message
             }
             await storage.putObject('proc_def_arcv', procDefArcv);
             
@@ -128,18 +129,15 @@ class ProcessGPTBackend implements Backend {
             }
 
             if (!window.$jms) {
-                const list = await storage.list(defId);
-                if (list.code == ErrorCode.TableNotFound) {
-                    try {
-                        await axios.post(`/execution/process-db-schema/invoke`, {
-                            "input": {
-                                "process_definition_id": defId
-                            }
-                        })
-                    } catch(error) {
-                        //@ts-ignore
-                        throw new Error("Error when to creating database for the definition: " + (error && error.detail ? error.detail : error));
-                    }
+                try {
+                    await axios.post(`/execution/process-db-schema/invoke`, {
+                        "input": {
+                            "process_definition_id": defId
+                        }
+                    })
+                } catch(error) {
+                    //@ts-ignore
+                    throw new Error("Error when to creating database for the definition: " + (error && error.detail ? error.detail : error));
                 }
             }
 
@@ -306,24 +304,11 @@ class ProcessGPTBackend implements Backend {
             let activityInfo: any = null;
 
             if (defInfo && defInfo.definition) {
-                // form
-                const formData: any = defInfo.definition.data.filter((variable: any) => variable.type === 'Form') || [];
-                // parameters
                 activityInfo = defInfo.definition.activities.find((activity: any) => activity.id === data.activity_id);
-                
-                if (activityInfo) {
-                    if (formData.length > 0) {
-                        formData.forEach((item: any) => {
-                            if(activityInfo.outputData.includes(item.name)) {
-                                variableForHtmlFormContext = {
-                                    name: item.name
-                                }
-                            }
-                        });
-                    }
-
-                    if (activityInfo.properties) {
-                        parameters = JSON.parse(activityInfo.properties).parameters;
+                if (activityInfo && activityInfo.properties) {
+                    const properties = JSON.parse(activityInfo.properties);
+                    if (properties.parameters) {
+                        parameters = properties.parameters;
                         parameters.forEach((item: any) => {
                             if (data.status != 'DONE' && item.direction == 'OUT') {
                                 item.direction = 'IN';
@@ -332,8 +317,8 @@ class ProcessGPTBackend implements Backend {
                             }
                             item.variable.defaultValue = inst[item.variable.name.toLowerCase().replace(/ /g, '_')] || "";
                         })
-                    } else {
-                        parameters = [];
+                    } else if (properties.variableForHtmlFormContext) {
+                        variableForHtmlFormContext = properties.variableForHtmlFormContext;
                     }
                 }
             }
@@ -543,14 +528,26 @@ class ProcessGPTBackend implements Backend {
 
     async getDefinitionVersions(defId: string, options: any) {
         try {
-            if(!options) options = {};
-
+            let list: any = [];
             defId = defId.toLowerCase();
-            if(!options.match) options.match = {}
-            options.match.proc_def_id = defId;
-            
-        
-            return await storage.list('proc_def_arcv', options);
+            if(!options) {
+                options = {
+                    match: {
+                        proc_def_id: defId
+                    }
+                };
+            } else {
+                if (!options.match) options.match = {};
+                options.match.proc_def_id = defId;
+            }
+            list = await storage.list('proc_def_arcv', options);
+            const procDefName = await storage.getString(`proc_def/${defId}`, { key: 'id', column: "name" });
+            if(procDefName) {
+                list.forEach((item: any) => {
+                    item.name = procDefName;
+                });
+            }
+            return list;
         } catch (error) {
             // this.checkDBConnection();
             //@ts-ignore

@@ -6,7 +6,7 @@
                 style="position: sticky; top: 0; z-index:2; background-color:white">
                 <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
                 <v-btn v-if="$route.path !== '/definition-map'" style="margin-left: 3px; margin-top: 1px;" icon variant="text" size="24">
-                    <Icons :icon="'arrow-go-back'" :color="'black'"/>
+                    <Icons :icon="'arrow-go-back'" />
                 </v-btn>
                 
                 <!-- buttons -->
@@ -52,7 +52,7 @@
                     </span>
 
                     <v-btn icon variant="text" :size="24" class="ml-3" @click="capturePng">
-                        <Icons :icon="'image-download'" :color="'black'"/>
+                        <Icons :icon="'image-download'" />
                     </v-btn>
 
                     <!-- 프로세스 정의 체계도 캔버스 확대 축소 버튼 및 아이콘 -->
@@ -61,10 +61,7 @@
                             <v-btn v-bind="props" class="ml-3"
                                 @click="$globalState.methods.toggleZoom()" icon variant="text" :size="24">
                                 <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
-                                <Icons
-                                    :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
-                                    :color="'black'"
-                                />
+                                <Icons :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"/>
                             </v-btn>
                         </template>
                     </v-tooltip>
@@ -84,7 +81,12 @@
                 </div>
             </div>
 
-            <v-btn style="margin-left: 20px;" color="primary" @click="openConsultingDialog = true"><v-icon small style="margin-right: 10px;">mdi-auto-fix</v-icon>프로세스 컨설팅 시작하기</v-btn>
+            <v-btn v-if="componentName == 'DefinitionMapList'"
+                @click="openConsultingDialog = true"
+                style="margin-left: 20px;" color="primary"
+            >
+                <Icons :icon="'magic'" :size="18"  style="margin-right: 10px;" />프로세스 컨설팅 시작하기
+            </v-btn>
         </v-card>
         <v-dialog style="max-width: 1000px;" v-model="openConsultingDialog" persistent>
             <ProcessConsultingChat @closeConsultingDialog="closeConsultingDialog" @createdBPMN="createdBPMN" />

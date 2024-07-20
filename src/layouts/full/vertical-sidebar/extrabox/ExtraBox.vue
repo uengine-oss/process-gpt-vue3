@@ -25,7 +25,7 @@ const isAdmin = localStorage.getItem("isAdmin");
                 <v-tooltip :text="$t('ExtraBox.logOut')">
                     <template v-slot:activator="{ props }">
                         <v-btn icon class="bg-lightprimary" flat  size="small" @click="authStore.logout()" v-bind="props">
-                            <Icon icon="solar:logout-linear" class="text-primary" stroke-width="3" height="24" width="24" />
+                            <Icons :icon="'logout-outline'" class="text-primary" stroke-width="3" />
                         </v-btn>
                     </template>
                 </v-tooltip>

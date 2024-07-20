@@ -48,7 +48,7 @@
                                     :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
                                     :width="32"
                                     :height="32"
-                                    :color="'black'"
+                                    
                                 />
                             </v-btn>
                         </template>
@@ -173,7 +173,7 @@
                                     :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
                                     :width="32"
                                     :height="32"
-                                    :color="'black'"
+                                    
                                 />
                             </v-btn>
                         </template>
@@ -284,7 +284,10 @@ export default {
             required: true
         },
         taskId: String,
-        isDryRun: Boolean,
+        isDryRun: {
+            type: Boolean,
+            default: false
+        },
         dryRunWorkItem: Object
     },
     components: {
@@ -458,12 +461,6 @@ export default {
 .processExecute {
     position: absolute;
     right: 80px;
-    top: 20px;
-    z-index: 1;
-}
-.processVariables-btn {
-    position: absolute;
-    left: 5px;
     top: 20px;
     z-index: 1;
 }

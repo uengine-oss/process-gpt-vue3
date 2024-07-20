@@ -293,7 +293,7 @@ export default {
 
         this.messages.push({
             "role": "system",
-            "content": `안녕하세요! ${this.userInfo.name}님의 프로세스에 어떤 문제 또는 어떤 부분을 자동화하고 싶으신지 말씀해주시면 도와드리겠습니다!`,
+            "content": `안녕하세요! ${this.userInfo.name}님의 어떤 업종에 종사하시며, 어떤 문제를 겪고 계신가요? 말씀해주시면 도와드리겠습니다!`,
             "timeStamp": Date.now(),
         })
     },
