@@ -47,21 +47,21 @@ const customizer = useCustomizerStore();
                 <!-- definition menu item -->
                 <template v-for="item in definitionItem" :key="item.title">
                     <!-- Item Sub Header -->
-                    <v-row v-if="item.header && !item.disable"
-                        class="pa-0 ma-0" 
-                    >
+                    <v-row v-if="item.header && !item.disable" class="pa-0 ma-0">
                         <NavGroup :item="item" :key="item.title" />
                         <template v-for="subItem in definitionItem" :key="subItem.title">
                             <v-tooltip v-if="subItem.title" location="bottom" :text="$t(subItem.title)">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-if="!subItem.header && !subItem.disable"
+                                    <v-btn
+                                        v-if="!subItem.header && !subItem.disable"
                                         @click="navigateTo(subItem.to)"
                                         v-bind="props"
-                                        icon variant="text" 
+                                        icon
+                                        variant="text"
                                         class="text-medium-emphasis"
                                         density="comfortable"
                                     >
-                                        <Icon :icon="subItem.icon" width="20" height="20" />    
+                                        <Icon :icon="subItem.icon" width="20" height="20" />
                                     </v-btn>
                                 </template>
                             </v-tooltip>
@@ -73,7 +73,16 @@ const customizer = useCustomizerStore();
                     <!-- <NavItem v-else-if="!item.disable && !item.header" class="leftPadding" :item="item" /> -->
                 </template>
                 <template v-if="definitionList">
-                    <NavCollapse class="leftPadding" :item="definitionList" @update:item="(def) => (definitionList = def)" :level="0" :type="'definition-list'" />
+                    <NavCollapse
+                        class="leftPadding"
+                        :item="definitionList"
+                        @update:item="(def) => (definitionList = def)"
+                        :level="0"
+                        :type="'definition-list'"
+                    />
+                </template>
+                <template>
+                    <NavItem class="leftPadding" :item="adminItem" />
                 </template>
                 <!-- <Moreoption/> -->
             </v-list>
@@ -98,7 +107,11 @@ export default {
     data: () => ({
         sidebarItem: [],
         definitionItem: [],
-        definitionList: null
+        definitionList: null,
+        adminItem: {
+            title: 'admin.title',
+            to: '/admin',
+        }
     }),
     computed: {
         JMS() {
@@ -141,7 +154,7 @@ export default {
                     to: '/definitions/chat',
                     disable: false
                 }
-            ]
+            ];
             this.getDefinitionList();
         }
 
@@ -207,7 +220,7 @@ export default {
         },
         navigateTo(path) {
             this.$router.push(path);
-        },
+        }
     }
 };
 </script>
