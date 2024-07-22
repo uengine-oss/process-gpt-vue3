@@ -1,21 +1,12 @@
 <template>
     <div>
         <v-radio-group v-model="selectedActivity" inline>
-            <v-radio
-                label="Default"
-                value="DefaultActivity"
-            ></v-radio>
-            <v-radio
-                label="Form"
-                value="FormActivity"
-            ></v-radio>
-            <v-radio
-                label="외부 어플리케이션"
-                value="URLActivity"
-            ></v-radio>
+            <v-radio label="Default" value="DefaultActivity"></v-radio>
+            <v-radio label="Form" value="FormActivity"></v-radio>
+            <v-radio label="외부 어플리케이션" value="URLActivity"></v-radio>
         </v-radio-group>
         <div v-if="!isLoading && selectedActivity == 'DefaultActivity'">
-            <div v-if="inputData.length > 0" style="margin-bottom: 20px">
+            <!-- <div v-if="inputData.length > 0" style="margin-bottom: 20px">
                 <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.inputData') }}</div>
                 <v-row class="ma-0 pa-0">
                     <div v-for="(input, idx) in inputData" :key="idx" class="mr-2 mt-2">
@@ -51,12 +42,13 @@
                         </v-chip>
                     </div>
                 </v-row>
-            </div>
+            </div> -->
             <div>
                 <v-row class="ma-0 pa-0">
-                    <div style="margin-bottom:10px; font-size: 13px; font-weight: 500;">Parameter Context</div>
+                    <div style="margin-bottom: 10px; font-size: 13px; font-weight: 500">Parameter Context</div>
                     <v-spacer></v-spacer>
-                    <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
+                    <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters" @updateParameters="(params) =>updateParameters(params)"></bpmn-parameter-contexts>
+                    <v-btn text color="primary" class="my-3" @click="openFormMapper()"> Field Mapping </v-btn>
                 </v-row>
             </div>
         </div>
@@ -94,16 +86,16 @@
             </div>
         </div>
         <div v-else-if="!isLoading && selectedActivity == 'URLActivity'">
-            <EventSynchronizationForm v-model="copyUengineProperties" :roles="roles" :taskName="name" :definition="copyDefinition"></EventSynchronizationForm>
+            <EventSynchronizationForm
+                v-model="copyUengineProperties"
+                :roles="roles"
+                :taskName="name"
+                :definition="copyDefinition"
+            ></EventSynchronizationForm>
         </div>
     </div>
 
-    <v-dialog
-        v-model="isOpenFieldMapper"
-        max-width="80%"
-        max-height="80%"
-        @afterLeave="$refs.mapper && $refs.mapper.saveFormMapperJson()"
-    >
+    <v-dialog v-model="isOpenFieldMapper" max-width="80%" max-height="80%" @afterLeave="$refs.mapper && $refs.mapper.saveFormMapperJson()">
         <mapper
             ref="mapper"
             :name="name"
@@ -116,19 +108,26 @@
             @closeFormMapper="closeFormMapper"
         />
     </v-dialog>
-            
+
     <v-dialog v-model="isOpenFormCreateDialog" max-width="500">
         <v-card>
             <v-card-text>
-                {{"폼 생성을 하시겠습니까?"}}
+                {{ '폼 생성을 하시겠습니까?' }}
             </v-card-text>
             <v-card-actions>
                 <v-spacer></v-spacer>
                 <v-btn color="error" @click="isOpenFormCreateDialog = false">아니오</v-btn>
-                <v-btn color="primary" @click="isOpenFormCreateDialog = false; createForm()">예</v-btn>
+                <v-btn
+                    color="primary"
+                    @click="
+                        isOpenFormCreateDialog = false;
+                        createForm();
+                    "
+                    >예</v-btn
+                >
             </v-card-actions>
         </v-card>
-    </v-dialog> 
+    </v-dialog>
 </template>
 <script>
 import BpmnParameterContexts from '@/components/designer/bpmnModeling/bpmn/variable/BpmnParameterContexts.vue';
@@ -191,7 +190,7 @@ export default {
             isOpenFormCreateDialog: false,
             nodes: {},
             replaceFromExpandableNode: null,
-            replaceToExpandableNode: null,
+            replaceToExpandableNode: null
         };
     },
     created() {
@@ -203,131 +202,167 @@ export default {
         me.init();
     },
     computed: {
-        inputData() {
-            let params = this.copyUengineProperties.parameters;
-            let result = [];
-            if (params)
-                params.forEach((element) => {
-                    if (element.direction == 'IN' || element.direction == 'IN-OUT') result.push(element);
-                });
-            return result;
-        },
-        outputData() {
-            let params = this.copyUengineProperties.parameters;
-            let result = [];
-            if (params)
-                params.forEach((element) => {
-                    if (element.direction == 'OUT' || element.direction == 'IN-OUT') result.push(element);
-                });
-            return result;
-        }
+        // inputData() {
+        //     let params = this.copyUengineProperties.parameters;
+        //     let result = [];
+        //     if (params)
+        //         params.forEach((element) => {
+        //             if (element.direction == 'IN' || element.direction == 'IN-OUT') result.push(element);
+        //         });
+        //     return result;
+        // },
+        // outputData() {
+        //     let params = this.copyUengineProperties.parameters;
+        //     let result = [];
+        //     if (params)
+        //         params.forEach((element) => {
+        //             if (element.direction == 'OUT' || element.direction == 'IN-OUT') result.push(element);
+        //         });
+        //     return result;
+        // }
     },
     watch: {
-        "selectedActivity":function(newVal,oldVal){
-            if(!oldVal) return;
-
+        selectedActivity: function (newVal, oldVal) {
+            console.log(this);
+            if (!oldVal) return;
             this.updateProperties();
         },
-        "selectedForm":function(newVal, oldVal) {
-            var me = this
-            if(newVal){
+        selectedForm: function (newVal, oldVal) {
+            var me = this;
+            if (newVal) {
                 // const [formName, formAlias] = newVal.split('_');
                 // const formItem = this.definition.processVariables.find(item => item.type === 'Form' && item.defaultValue.name === formName && item.defaultValue.alias === formAlias);
                 let formVariable = me.copyDefinition.processVariables.find((item) => item.name === newVal);
-                let variableForHtmlFormContext = formVariable ? { name: formVariable.name } : {}
+                let variableForHtmlFormContext = formVariable ? { name: formVariable.name } : {};
                 me.copyUengineProperties.variableForHtmlFormContext = variableForHtmlFormContext;
 
-                if(oldVal) me.copyUengineProperties.mappingContext = {}; // CHECK!!!
-                me.formMapperJson = JSON.stringify(me.copyUengineProperties.mappingContext, null, 2)
+                if (oldVal) me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] }; // CHECK!!!
+                me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization.mappingContext, null, 2);
             } else {
-                me.copyUengineProperties.variableForHtmlFormContext = {}
-                me.copyUengineProperties.mappingContext = {};
+                me.copyUengineProperties.variableForHtmlFormContext = {};
+                me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
             }
         },
+        parameters: function (newVal, oldVal) {
+            this.nodes["arguments"] = {
+                text: "arguments",
+                children: [],
+                parent: null
+            };
+            console.log(newVal)
+            
+            me.replaceFromExpandableNode = function (nodeKey) {
+                if (nodeKey.indexOf(`arguments.`) != -1) {
+                    return nodeKey.replace(`arguments.`, `[arguments].`);
+                }
+
+                return null;
+            };
+
+            me.replaceToExpandableNode = function (nodeKey) {
+                if (nodeKey.indexOf(`[arguments].`) != -1) {
+                    return nodeKey.replace(`[arguments].`, `arguments.`);
+                }
+
+                return null;
+            };
+        }
     },
     methods: {
-        init(){
-            var me = this
+        init() {
+            var me = this;
             // ??
             if (me.roles.length > 0) {
                 me.copyUengineProperties.role = { name: me.role };
             }
 
             me.selectedActivity = me.copyUengineProperties._type ? me.copyUengineProperties._type.split('.').pop() : 'DefaultActivity';
-            if(me.selectedActivity == 'DefaultActivity') {
+            if (me.selectedActivity == 'DefaultActivity') {
                 delete me.copyUengineProperties._type;
-                if (!me.copyUengineProperties.parameters) me.copyUengineProperties.parameters = [];
-            } else if(me.selectedActivity == 'FormActivity'){
+                if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
+                if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
+                if (!me.copyUengineProperties.eventSynchronization.attributes)
+                    me.copyUengineProperties.eventSynchronization.attributes = [];
+                if (!me.copyUengineProperties.eventSynchronization.mappingContext)
+                    me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
+            } else if (me.selectedActivity == 'FormActivity') {
                 me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
-                if (!me.copyUengineProperties.variableForHtmlFormContext) me.copyUengineProperties.variableForHtmlFormContext = {} 
-                if (!me.copyUengineProperties.mappingContext) me.copyUengineProperties.mappingContext = {}
+                if (!me.copyUengineProperties.variableForHtmlFormContext) me.copyUengineProperties.variableForHtmlFormContext = {};
+                if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
+                if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
+                if (!me.copyUengineProperties.eventSynchronization.attributes)
+                    me.copyUengineProperties.eventSynchronization.attributes = [];
+                if (!me.copyUengineProperties.eventSynchronization.mappingContext)
+                    me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
 
                 me.selectedForm = me.copyUengineProperties.variableForHtmlFormContext.name;
-                me.formMapperJson = JSON.stringify(me.copyUengineProperties.mappingContext, null, 2);
-                if(!me.selectedForm) me.isOpenFormCreateDialog = true
-            } else if(me.selectedActivity == 'URLActivity'){     
+                me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization.mappingContext, null, 2);
+                if (!me.selectedForm) me.isOpenFormCreateDialog = true;
+            } else if (me.selectedActivity == 'URLActivity') {
                 me.copyUengineProperties._type = 'org.uengine.kernel.URLActivity';
                 if (!me.copyUengineProperties.url) me.copyUengineProperties.url = '';
                 if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
                 if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
-                if (!me.copyUengineProperties.eventSynchronization.attributes) me.copyUengineProperties.eventSynchronization.attributes = [];
-                if (!me.copyUengineProperties.eventSynchronization.mappingContext) me.copyUengineProperties.eventSynchronization.mappingContext = {};
+                if (!me.copyUengineProperties.eventSynchronization.attributes)
+                    me.copyUengineProperties.eventSynchronization.attributes = [];
+                if (!me.copyUengineProperties.eventSynchronization.mappingContext)
+                    me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
+                me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization.mappingContext, null, 2);
             }
 
-            me.copyDefinition = me.definition;           
+            me.copyDefinition = me.definition;
         },
-        updateProperties(){
-            var me = this   
-            me.isLoading = true
-            if(me.selectedActivity == 'FormActivity'){
+        updateParameters(mappingContext) {
+            console.log(mappingContext)
+            this.copyUengineProperties.eventSynchronization.mappingContext = mappingContext;
+        },
+        updateProperties() {
+            var me = this;
+            me.isLoading = true;
+            if (me.selectedActivity == 'FormActivity') {
                 me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
-                if (!me.copyUengineProperties.variableForHtmlFormContext) me.copyUengineProperties.variableForHtmlFormContext = {} 
-                if (!me.copyUengineProperties.mappingContext) me.copyUengineProperties.mappingContext = {}
+                if (!me.copyUengineProperties.variableForHtmlFormContext) me.copyUengineProperties.variableForHtmlFormContext = {};
+                if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
+                if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
+                if (!me.copyUengineProperties.eventSynchronization.attributes)
+                    me.copyUengineProperties.eventSynchronization.attributes = [];
+                if (!me.copyUengineProperties.eventSynchronization.mappingContext)
+                    me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
 
                 me.selectedForm = me.copyUengineProperties.variableForHtmlFormContext.name;
-                me.formMapperJson = JSON.stringify(me.copyUengineProperties.mappingContext, null, 2)
+                me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization.mappingContext, null, 2);
 
-                if(!me.selectedForm) me.isOpenFormCreateDialog = true
-            } else if(me.selectedActivity == 'URLActivity' ){
+                if (!me.selectedForm) me.isOpenFormCreateDialog = true;
+            } else if (me.selectedActivity == 'URLActivity') {
                 me.copyUengineProperties._type = 'org.uengine.kernel.URLActivity';
                 if (!me.copyUengineProperties.url) me.copyUengineProperties.url = '';
                 if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
                 if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
-                if (!me.copyUengineProperties.eventSynchronization.attributes) me.copyUengineProperties.eventSynchronization.attributes = [];
-                if (!me.copyUengineProperties.eventSynchronization.mappingContext) me.copyUengineProperties.eventSynchronization.mappingContext = {};
+                if (!me.copyUengineProperties.eventSynchronization.attributes)
+                    me.copyUengineProperties.eventSynchronization.attributes = [];
+                if (!me.copyUengineProperties.eventSynchronization.mappingContext)
+                    me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
             } else {
-                if (!me.copyUengineProperties.parameters) me.copyUengineProperties.parameters = [];
+                if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
+                if (!me.copyUengineProperties.eventSynchronization.mappingContext)
+                    me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
             }
-            me.isLoading = false
+            me.isLoading = false;
         },
-        beforeSave(){
-            var me = this
+        beforeSave() {
+            var me = this;
             // 필수 요소만 포함, 나머지 제거.
-            if(me.selectedActivity == 'FormActivity'){
-                const { variableForHtmlFormContext, mappingContext, _type } = me.copyUengineProperties;
-                me.copyUengineProperties = { variableForHtmlFormContext, mappingContext, _type };
-            } else if(me.selectedActivity == 'URLActivity' ){
+            if (me.selectedActivity == 'FormActivity') {
+                const { variableForHtmlFormContext, eventSynchronization, _type } = me.copyUengineProperties;
+                me.copyUengineProperties = { variableForHtmlFormContext, eventSynchronization, _type };
+            } else if (me.selectedActivity == 'URLActivity') {
                 const { url, eventSynchronization, _type } = me.copyUengineProperties;
                 me.copyUengineProperties = { url, eventSynchronization, _type };
             } else {
-                const { parameters } = me.copyUengineProperties;
-                me.copyUengineProperties = { parameters };
+                const { eventSynchronization } = me.copyUengineProperties;
+                me.copyUengineProperties = { eventSynchronization };
             }
             me.$emit('update:uengineProperties', me.copyUengineProperties);
-        },
-        deleteInputData(inputData) {
-            const index = this.copyUengineProperties.parameters.findIndex((element) => element.key === inputData.key);
-            if (index > -1) {
-                this.copyUengineProperties.parameters.splice(index, 1);
-                // this.$emit('update:uEngineProperties', this.copyUengineProperties);
-            }
-        },
-        deleteOutputData(outputData) {
-            const index = this.copyUengineProperties.parameters.findIndex((element) => element.key === outputData.key);
-            if (index > -1) {
-                this.copyUengineProperties.parameters.splice(index, 1);
-                // this.$emit('update:uEngineProperties', this.copyUengineProperties);
-            }
         },
         ensureKeyExists(obj, key, defaultValue) {
             if (!obj.hasOwnProperty(key)) {
@@ -375,7 +410,7 @@ export default {
         saveFormMapperJson(jsonString) {
             this.formMapperJson = jsonString;
             // this.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
-            this.copyUengineProperties.mappingContext = JSON.parse(jsonString);
+            this.copyUengineProperties.eventSynchronization.mappingContext = JSON.parse(jsonString);
             // this.$emit('update:uEngineProperties', this.copyUengineProperties);
         },
         closeFormMapper() {
@@ -383,108 +418,61 @@ export default {
         },
         async openFormMapper() {
             var me = this;
-            if(!me.selectedForm) return;
+            if (!me.selectedForm) return;
 
-            // expandableTrees 예시
-            // if (!this.nodes['test']) {
-            //     this.nodes['test'] = {
-            //         text: 'test',
-            //         children: [],
-            //         parent: null
-            //     };
-            // }
-
-            // let instanceNodes = [
-            //     'instanceId',
-            //     'name',
-            //     'locale',
-            //     'status',
-            //     'info',
-            //     'dueDate',
-            //     'mainProcessInstanceId',
-            //     'mainActivityTracingTag',
-            //     'rootProcessInstanceId',
-            //     'ext1',
-            //     'ext2',
-            //     'ext3',
-            //     'ext4',
-            //     'ext5'
-            // ];
-
-            // if (this.nodes['test']) {
-            //     this.nodes['test'].children = [];
-            //     instanceNodes.forEach((node) => {
-            //         this.nodes['test'].children.push(node);
-            //     });
-            // }
-
-            // me.replaceFromExpandableNode = function(nodeKey) {
-            //     if(nodeKey.indexOf("test.") != -1) {
-            //         return nodeKey.replace("test.", "[test].");
-            //     }
-            //     return null;
-            // };
-
-            // me.replaceToExpandableNode = function(nodeKey) {
-            //     if(nodeKey.indexOf("[test].") != -1) {
-            //         return nodeKey.replace("[test].", "test.");
-            //     }
-            //     return null;
-            // };
-
-            me.isOpenFieldMapper = true;            
+            me.isOpenFieldMapper = true;
         },
         createForm() {
             const getUUID = () => {
                 const s4 = () => {
                     return Math.floor((1 + Math.random()) * 0x10000)
-                    .toString(16)
-                    .substring(1);
-                }
+                        .toString(16)
+                        .substring(1);
+                };
 
-                return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4()
-            }
+                return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+            };
 
-            let urlData = {}
-            urlData["formName"] = `${this.name}폼`
-            urlData["inputNames"] = this.copyUengineProperties.parameters.map(p => p.argument.text)
+            let urlData = {};
+            urlData['formName'] = `${this.name}폼`;
+            urlData['inputNames'] = this.copyUengineProperties.eventSynchronization.mappingContext.map((p) => p.key);
 
-            if(urlData["inputNames"].length > 0)
-                urlData["initPrompt"] = `'${urlData["formName"]}'을 생성해줘. 입력해야하는 값들은 다음과 같아: ${urlData["inputNames"].join(", ")}`
-            else
-                urlData["initPrompt"] = `'${urlData["formName"]}'을 생성해줘.`
-            
-            urlData["processId"] = this.processDefinitionId
-            urlData["channelId"] = getUUID()
-            console.log("새로운 폼을 만들기 위한 데이터: " + JSON.stringify(urlData))
-            console.log("채널 ID: " + urlData["channelId"])
+            if (urlData['inputNames'].length > 0)
+                urlData['initPrompt'] = `'${urlData['formName']}'을 생성해줘. 입력해야하는 값들은 다음과 같아: ${urlData['inputNames'].join(
+                    ', '
+                )}`;
+            else urlData['initPrompt'] = `'${urlData['formName']}'을 생성해줘.`;
 
-            const formTabUrl = `/ui-definitions/chat?process_def_url_data=${btoa(encodeURIComponent(JSON.stringify(urlData)))}`
-            window.open(formTabUrl, '_blank')
+            urlData['processId'] = this.processDefinitionId;
+            urlData['channelId'] = getUUID();
+            console.log('새로운 폼을 만들기 위한 데이터: ' + JSON.stringify(urlData));
+            console.log('채널 ID: ' + urlData['channelId']);
 
-            const channel = new BroadcastChannel(urlData["channelId"])
+            const formTabUrl = `/ui-definitions/chat?process_def_url_data=${btoa(encodeURIComponent(JSON.stringify(urlData)))}`;
+            window.open(formTabUrl, '_blank');
+
+            const channel = new BroadcastChannel(urlData['channelId']);
             channel.onmessage = (event) => {
                 const formValueInfo = {
                     name: event.data.name,
                     id: event.data.id
-                }
-
+                };
 
                 this.$emit('addUengineVariable', {
-                    "name": formValueInfo.name,
-                    "type": "Form",
-                    "defaultValue": formValueInfo.id,
-                    "description": "",
-                    "datasource": {
-                        "type": "",
-                        "sql": ""
+                    name: formValueInfo.name,
+                    type: 'Form',
+                    defaultValue: formValueInfo.id,
+                    description: '',
+                    datasource: {
+                        type: '',
+                        sql: ''
                     },
-                    "table": "",
-                    "backend": null
-                })
+                    table: '',
+                    backend: null
+                });
 
-                this.selectedForm = formValueInfo.name
-            }
+                this.selectedForm = formValueInfo.name;
+            };
         }
     }
 };

@@ -29,7 +29,7 @@
                 :element="element"
                 ref="panelComponent"
                 @update:name="(val) => (name = val)"
-                @updae:text="(val) => (text = text)"
+                @update:text="(val) => (text = text)"
                 @update:uengineProperties="(newProps) => (uengineProperties = newProps)"
                 :definition="definition"
                 :processDefinitionId="processDefinitionId"
