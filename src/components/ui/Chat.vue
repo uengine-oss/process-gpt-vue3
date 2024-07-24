@@ -36,6 +36,7 @@
                                     <small style="white-space: pre-line; font-size:14px;">
                                         {{ filteredAlert.detail }}
                                     </small>
+                                    <v-btn @click="reGenerateAgentAI()" color="primary" style="margin-left: 10px;" v-if="filteredAlert.detail == 'Agent 기능을 사용해 제안서 초안을 작성하십시오.' && !showDraftDialog">try again</v-btn>
                                 </v-alert>
                                 
                                 <div v-for="(message, index) in filteredMessages" :key="index" class="px-1 py-1">
@@ -538,7 +539,8 @@ export default {
         generatedWorkList: Array,
         ProcessGPTActive: Boolean,
         isAgentMode: Boolean,
-        chatRoomId: String
+        chatRoomId: String,
+        showDraftDialog: Boolean
     },
     data() {
         return {
@@ -684,6 +686,9 @@ export default {
         }
     },
     methods: {
+        reGenerateAgentAI(){
+            this.$emit('reGenerateAgentAI');
+        },
         getOtherUserMessageColor(message) {
             if (message.role === 'user') {
                 return {
