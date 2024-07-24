@@ -2,7 +2,7 @@
     <div class="container">
         <canvas ref="canvas"></canvas>
         <button title="Record" @click="toggleRecording">
-            <Icon class="record" :icon="isRecording ? 'teenyicons:stop-solid' : 'fad:arm-recording'"></Icon>
+            <Icons class="record" :icon="isRecording ? 'stop' : 'armrecording'" />
         </button>
         <audio ref="audio" controls></audio>
     </div>

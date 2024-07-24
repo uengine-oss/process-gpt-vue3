@@ -1,99 +1,175 @@
 <template>
-    <v-card style="width: 100%; height: 100%">
-        <v-card-title> Process 실행 </v-card-title>
-
-        <v-card-text>
-            <!-- Role Mapping Context -->
-            <v-col>
-                <v-row v-for="roleMapping in roleMappings">
-                    <v-text-field label="Role Name" readonly v-model="roleMapping.roleName"></v-text-field>
-                    <v-text-field label="Role Endpoint" v-model="roleMapping.roleEndpoint"></v-text-field>
-                    <v-text-field label="Resource Names" v-model="roleMapping.resourceNames"></v-text-field>
-                </v-row>
-            </v-col>
-            <!-- <v-col>
-                <v-btn @click="addRoleMapping">Role Mapping 추가</v-btn>
-            </v-col> -->
-        </v-card-text>
-
-        <v-card-actions class="justify-center">
-            <v-btn color="primary" variant="flat" class="cp-process-save" @click="executeProcess">실행</v-btn>
-            <v-btn color="error" variant="flat" @click="closeDialog()">닫기</v-btn>
-        </v-card-actions>
+    <v-card flat class="w-100">
+        <div :class="{'d-flex': !isMobile}">
+            <div class="pa-4" style="min-width: 300px;">
+                <div style="font-size: 20px; font-weight: 500">Role Mapping</div>
+                <div class="mt-4">
+                    <div v-for="roleMapping in roleMappings" :key="roleMapping.name">
+                        <user-select-field v-model="roleMapping.endpoint" 
+                            :name="roleMapping.name"
+                            :item-value="'email'"
+                        ></user-select-field>
+                    </div>
+                </div>
+            </div>
+            <div class="w-100 pa-2">
+                <div v-if="workItem != null">
+                    <WorkItem 
+                        :definitionId="definitionId" 
+                        :dryRunWorkItem="workItem" 
+                        :isDryRun="true"
+                        @close="closeDialog"
+                        @executeProcess="executeProcess"
+                    ></WorkItem>
+                </div>
+                <div v-else>
+                    Loading...                    
+                </div>
+            </div>
+        </div>
     </v-card>
 </template>
 
 <script>
-import BpmnRoleParameterContexts from '@/components/designer/bpmnModeling/bpmn/role/BpmnRoleParameterContexts.vue';
+import AppBaseCard from '@/components/shared/AppBaseCard.vue';
+
+import WorkItem from '@/components/apps/todolist/WorkItem.vue';
+import OrganizationChart from "@/components/ui/OrganizationChart.vue";
+import UserSelectField from '@/components/ui/field/UserSelectField.vue';
+
 import BackendFactory from '@/components/api/BackendFactory';
-import { useBpmnStore } from '@/stores/bpmn';
+const backend = BackendFactory.createBackend();
 
 export default {
-    components: { BpmnRoleParameterContexts },
+    components: {
+        AppBaseCard,
+        WorkItem,
+        OrganizationChart,
+        UserSelectField
+    },
     props: {
         definitionId: String,
-        roles: Array
     },
     data: () => ({
-        newProcess: {
-            id: '',
-            label: ''
-        },
-        uengine: null,
-        isNewDef: false,
-        addDialog: false,
-        updateDialog: false,
-        roleName: '',
-        roleEndpoint: '',
-        resourceNames: '',
-        roleMappings: []
+        definition: null,
+        workItem: null,
+        roleMappings: [],
+        organizationChart: {},
+        userList: [],
+        isMobile: false,
     }),
-    computed: {},
-    watch: {},
     created() {
-        let me = this;
-        this.uengine = BackendFactory.createBackend();
-        this.roles.forEach(function (role) {
-            me.roleMappings.push({
-                roleName: role,
-                roleEndpoint: '',
-                resourceNames: ''
-            });
-        });
+        this.init();
+        this.checkIfMobile();
+        window.addEventListener('resize', this.checkIfMobile);
+    },
+    beforeDestroy() {
+        window.removeEventListener('resize', this.checkIfMobile);
     },
     methods: {
+        init() {
+            var me = this;
+            me.$try({
+                action: async () => {
+                    const defInfo = await backend.getRawDefinition(me.definitionId);
+                    me.definition = defInfo.definition;
+                    
+                    me.roleMappings = me.definition.roles.map((role) => {
+                        return {
+                            name: role.name,
+                            endpoint: ""
+                        };
+                    });
+
+                    const roleBindings = await backend.bindRole(me.definition.roles);
+                    if (roleBindings && roleBindings.length > 0) {
+                        roleBindings.forEach((roleBinding) => {
+                            me.roleMappings.find((role) => role.name === roleBinding.roleName).endpoint = roleBinding.userId;
+                        })
+                    }
+                    
+                    const startActivity = me.definition.activities[0];
+                    if (startActivity) {
+                        let parameters = [];
+                        let variableForHtmlFormContext = {};
+                        if (startActivity.properties) {
+                            const properties = JSON.parse(startActivity.properties);
+                            if (properties.parameters) {
+                                parameters = properties.parameters;
+                                parameters.forEach((item) => {
+                                    if (item.direction == 'OUT') {
+                                        item.direction = 'IN';
+                                    } else if (item.direction == 'IN') {
+                                        item.direction = 'OUT';
+                                    }
+                                    item.variable.defaultValue = "";
+                                })
+                            } else if (properties.variableForHtmlFormContext) {
+                                variableForHtmlFormContext = properties.variableForHtmlFormContext;
+                            }
+                        }
+                        
+                        let parameterValues = {};
+                        if (parameters.length > 0) {
+                            parameters.forEach((item) => {
+                                parameterValues[item.argument.text] = item.variable.defaultValue
+                            })
+                        }
+
+                        me.workItem = {
+                            worklist: {
+                                defId: me.definitionId,
+                                role: startActivity.role,
+                                endpoint: "",
+                                instId: "",
+                                rootInstId: null,
+                                taskId: this.uuid(),
+                                startDate: new Date(),
+                                dueDate: null,
+                                status: 'TODO',
+                                description: startActivity.description || "",
+                                tool: startActivity.tool || ""
+                            },
+                            activity: {
+                                name: startActivity.name,
+                                tracingTag: startActivity.id || '',
+                                parameters: parameters || [],
+                                variableForHtmlFormContext: variableForHtmlFormContext || {},
+                                tool: startActivity.tool || "",
+                                instruction: startActivity.instruction ? startActivity.instruction : "",
+                                checkpoints: startActivity.checkpoints ? startActivity.checkpoints : []
+                            },
+                            parameterValues: parameterValues || {}
+                        }
+                    }
+                }
+            });
+        },
         closeDialog() {
             this.$emit('close');
         },
-        async executeProcess() {
+        async executeProcess(value) {
             var me = this;
             me.$try({
                 context: me,
                 action: async () => {
-                    let roleMappings = [];
-                    me.roleMappings.forEach((roleMapping) => {
-                        let endpoints = roleMapping.roleEndpoint.split(',');
-                        let resourceNames = roleMapping.resourceNames.split(',');
-                        endpoints = endpoints.map((endpoint) => endpoint.trim()).filter((item) => item !== '');
-                        resourceNames = resourceNames.map((resourceName) => resourceName.trim());
-                        if (endpoints.length > 0) {
-                            roleMappings.push({
-                                name: roleMapping.roleName,
-                                endpoints: endpoints,
-                                resourceNames: resourceNames
-                            });
-                        }
-                    });
-                    let command = {
-                        processDefinitionId: me.definitionId
+                    let input = {
+                        process_definition_id: me.definitionId,
+                        activity_id: me.workItem.activity.tracingTag,
+                        role_mappings: me.roleMappings,
+                        answer: value
                     };
-                    if (roleMappings.length > 0) {
-                        command.roleMappings = roleMappings;
+                    me.roleMappings.forEach(role => {
+                        if (me.workItem.worklist.role === role.name && role.endpoint) {
+                            me.workItem.worklist.endpoint = role.endpoint;
+                        }
+                    })
+                    const result = await backend.start(input);
+                    if (result && result.errors && result.errors.length > 0) {
+                    } else {
+                        me.closeDialog();
+                        me.EventBus.emit('instances-updated');
                     }
-                    command.correlationKeyValue = this.uuid();
-                    await me.uengine.start(command);
-                    me.closeDialog();
-                    me.EventBus.emit('instances-updated');
                 },
                 successMsg: 'Process 실행 완료'
             });
@@ -106,14 +182,10 @@ export default {
             }
 
             return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+        },
+        checkIfMobile() {
+            this.isMobile = window.innerWidth <= 1080;
         }
-        // addRoleMapping() {
-        //     this.roleMappings.push({
-        //         roleName: '',
-        //         roleEndpoint: '',
-        //         resourceNames: ''
-        //     });
-        // }
     }
 };
 </script>

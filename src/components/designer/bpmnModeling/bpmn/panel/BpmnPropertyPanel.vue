@@ -1,14 +1,16 @@
 <template>
-    <div>
+    <div style="height: calc(100vh - 155px)">
         <v-row class="pa-0 ma-0">
             <v-spacer></v-spacer>
-            <v-btn @click="save">
-                <Icon icon="mdi:close" width="24" height="24" class="cursor-pointer" />
+            <v-btn @click="save"
+                icon text
+                size="small"
+                class="mr-4 mt-4"
+            >
+                <Icons :icon="'close'"  class="cursor-pointer" :size="16"/>
             </v-btn>
-
-            <!-- <Icon icon="mdi:close" width="24" height="24" @click="$emit('close')" class="cursor-pointer" /> -->
         </v-row>
-        <v-card-text style="overflow: auto; height: calc(-155px + 100vh); width: 700px">
+        <v-card-text style="overflow: auto; height: calc(100% - 30px); width: 700px">
             <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
             <div style="float: right">Role: {{ role.name }}</div>
             <div>{{ $t('BpnmPropertyPanel.name') }}</div>
@@ -33,6 +35,7 @@
                 @update:uengineProperties="(newProps) => (uengineProperties = newProps)"
                 :definition="definition"
                 :processDefinitionId="processDefinitionId"
+                :processDefinition="processDefinition"
                 @addUengineVariable="(val) => $emit('addUengineVariable', val)"
             ></component>
         </v-card-text>
@@ -48,6 +51,7 @@ export default {
     name: 'bpmn-property-panel',
     props: {
         element: Object,
+        processDefinition: Object,
         processDefinitionId: String,
         isViewMode: Boolean,
         definition: Object,
@@ -62,10 +66,16 @@ export default {
         // }
         console.log(this.element);
         // Extension이 없는 경우 무조건 빈 Property 생성
+        if(this.element) {
+            this.name = this.element.name;
+            this.text = this.element.text;
+        }
+        
         if (!this.element.extensionElements) {
+            this.element.extensionElements = {};
             this.element.extensionElements.values = [];
             this.element.extensionElements.values[0] = {
-                json: {}
+                json: "{}"
             };
         }
 
@@ -118,9 +128,7 @@ export default {
 
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
-        this.name = this.element.name;
         this.$refs.cursor.focus();
-        this.text = this.element.text;
     },
     computed: {
         panelName() {

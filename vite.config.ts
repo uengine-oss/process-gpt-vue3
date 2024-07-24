@@ -3,6 +3,7 @@ import { defineConfig, loadEnv } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import vuetify from 'vite-plugin-vuetify';
 import dotenv from 'dotenv'
+import path from 'path';
 dotenv.config()
 
 // https://vitejs.dev/config/
@@ -10,7 +11,7 @@ export default defineConfig({
     define: {
         VITE_DB_URL: `"${process.env.VITE_DB_URL}"`, // wrapping in "" since it's a string
         VITE_DB_PW: `"${process.env.VITE_DB_PW}"`
-      },
+    },
     plugins: [
         vue(),
         vuetify({
@@ -20,7 +21,8 @@ export default defineConfig({
     ],
     resolve: {
         alias: {
-            '@': fileURLToPath(new URL('./src', import.meta.url))
+            '@': fileURLToPath(new URL('./src', import.meta.url)),
+            'apextree': path.resolve(__dirname, 'node_modules/apextree/apextree.min.js')
         }
     },
     css: {

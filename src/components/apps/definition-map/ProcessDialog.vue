@@ -59,7 +59,7 @@
                                     density="compact"
                                     size="small"
                                 >
-                                <Icon icon="material-symbols:close" />
+                                    <Icons :icon="'close'"  :width="12" :height="12" />
                                 </v-btn>
                             </template>
                         </v-tooltip>
@@ -75,7 +75,7 @@
                             density="compact"
                             size="small"
                         >
-                        <Icon icon="material-symbols:close" />
+                            <Icons :icon="'close'"  :width="12" :height="12" />
                         </v-btn>
                     </template>
                 </v-tooltip>
@@ -100,7 +100,7 @@
                         density="compact"
                         size="small"
                     >
-                    <Icon icon="material-symbols:close" />
+                        <Icons :icon="'close'"  :width="12" :height="12" />
                     </v-btn>
                 </template>
             </v-tooltip>

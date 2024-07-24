@@ -1,7 +1,7 @@
 <template>
     <div class="w-100">
         <slot name="contents">
-            <div v-for="(message, index) in filterMessages" :key="index" class="w-100">
+            <div v-for="(message, index) in filterMessages" :key="index" class="w-100 pa-4">
                 <slot name="messageProfile">
                     <v-row class="ma-0 pa-0" style="margin-bottom:10px !important;">
                         <v-avatar class="pr-2" size="40">
@@ -20,14 +20,14 @@
                             <v-row class="pa-0 ma-0">
                                 <div v-html="message.content" @click="clickContent(message)"></div>
                                 <v-spacer></v-spacer>
-                                <Icon v-if="filterMessages[index].open"
+                                <Icons v-if="filterMessages[index].open"
                                     @click="openDescription(index)"
-                                    icon="iconamoon:arrow-up-2" width="24" height="24"
+                                    :icon="'arrow-up-2'" 
                                     style="cursor: pointer;"
                                 />
-                                <Icon v-else
+                                <Icons v-else
                                     @click="openDescription(index)"
-                                    icon="iconamoon:arrow-down-2" width="24" height="24"
+                                    :icon="'arrow-down-2'" 
                                     style="cursor: pointer;"
                                 />
                             </v-row>

@@ -3,10 +3,10 @@
         <v-col cols="12">
             <v-row class="align-center ">
                 <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
-                    <v-label class=" font-weight-medium" for="hbnm">{{ $t('ProcessVariable.name') }}</v-label>
+                    <v-label class="font-weight-medium" for="hbnm">{{ $t('ProcessVariable.name') }}</v-label>
                 </v-col>
                 <v-col cols="12" sm="9">
-                    <v-text-field v-model="processVariable.name" color="primary" variant="outlined" type="text"
+                    <v-text-field class="cp-v-name" v-model="processVariable.name" color="primary" variant="outlined" type="text"
                         id="hbnm" hide-details />
                 </v-col>
             </v-row>
@@ -15,7 +15,7 @@
                     <v-label class=" font-weight-medium" for="hcpm">{{ $t('ProcessVariable.type') }}</v-label>
                 </v-col>
                 <v-col cols="12" sm="9">
-                    <v-autocomplete v-model="processVariable.type" :items="types" color="primary" variant="outlined"
+                    <v-autocomplete class="cp-v-type" v-model="processVariable.type" :items="types" color="primary" variant="outlined"
                         hide-details></v-autocomplete>
                 </v-col>
             </v-row>
@@ -80,7 +80,7 @@
             </v-row>
             <v-row class="ma-0 mt-2">
                 <v-spacer></v-spacer>
-                <v-btn v-if="mode === 'add'" color="primary" rounded="pill" @click="addVariable">{{
+                <v-btn class="cp-v-add" v-if="mode === 'add'" color="primary" rounded="pill" @click="addVariable">{{
                         $t('ProcessVariable.add') }}</v-btn>
                 <v-btn v-else color="primary" rounded="pill" @click="editVariable">{{ $t('ProcessVariable.edit') }}</v-btn>
             </v-row>

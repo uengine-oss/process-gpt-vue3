@@ -8,7 +8,7 @@
                     class="text-medium-emphasis"
                     @click="promptInput.isVisible = !promptInput.isVisible"
                 >
-                    <Icon icon="mdi:magic" width="24" height="24" />
+                    <Icons :icon="'magic'"  />
                 </v-btn>
             </template>
             <span>{{ $t('BpnmPropertyPanel.generateScript') }}</span>

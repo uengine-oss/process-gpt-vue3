@@ -5,20 +5,20 @@
             <v-btn v-if="isRoot" color="primary" class="ml-2" variant="flat" density="comfortable"
                 @click="openDialog('addTeam')">
                 <template v-slot:prepend>
-                    <Icon icon="tabler:users-plus" width="20" height="20" />
+                    <Icons :icon="'users-plus'" :size="20" />
                 </template>
                 팀 추가
             </v-btn>
             <div v-else class="d-flex">
                 <v-btn color="primary" class="ml-2" variant="flat" density="comfortable" @click="openDialog('edit')">
                     <template v-slot:prepend>
-                        <Icon icon="tabler:user-edit" width="20" height="20" />
+                        <Icons :icon="'user-edit'" :size="20" />
                     </template>
                     수정
                 </v-btn>
                 <v-btn color="error" class="ml-2" variant="flat" density="comfortable" @click="openDialog('delete')">
                     <template v-slot:prepend>
-                        <Icon icon="tabler:user-minus" width="20" height="20" />
+                        <Icons :icon="'user-minus'" :size="20" />
                     </template>
                     삭제
                 </v-btn>

@@ -1,8 +1,8 @@
 <template>
     <v-card flat>
         <div v-if="foldedbtn">
-            <v-btn block @click="foldedbtn = false" style="background: lightgrey;">
-                <Icon icon="streamline:ai-edit-spark" style="font-size: large; margin-right: 5px;"/> AI Retrieval
+            <v-btn block @click="foldedbtn = false" style="background: lightgrey; font-size: large;">
+                <Icons :icon="'ai-edit-spark'"  style="margin-right: 5px;"/> AI Retrieval
             </v-btn>
             <v-progress-linear
                 v-if="loading"

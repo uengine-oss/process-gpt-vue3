@@ -64,7 +64,11 @@ export const useAuthStore = defineStore({
                     var result: any = await storage?.signUp(userInfo);
 
                     if (result.error) {
-                        alert(result.errorMsg);
+                        if(result.errorMsg === 'Email rate limit exceeded'){
+                            alert(`${result.errorMsg}\n\n연결된 Supabase 의 SMTP 설정을 변경하여 이메일 전송 한도를 변경하거나 잠시 뒤에 다시 시도해주세요.\n\nSMTP 설정은 Supabase 대시보드의 Project Settings > Authentication > SMTP Settings 섹션에서 확인하실 수 있습니다.`);
+                        } else {
+                            alert(result.errorMsg);
+                        }
                     } else {
                         await storage?.writeUserData(result, userInfo);
                         router.push(window.$isTenantServer ? '/tenant/manage' : '/definition-map');

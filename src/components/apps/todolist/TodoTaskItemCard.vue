@@ -6,9 +6,9 @@
         :class="{'border-primary': isDueTodayOrTomorrow, 'border-purple': isPastDue}"
     >
         <v-card-title class="ma-0 pa-0">
-            <v-row class="ma-0 pa-0 mt-1" style="line-height:100%;">
+            <div class="ma-0 pa-0 mt-1" style="line-height:100%;">
                 <!-- 가로배치 -->
-                <v-col cols="12" class="pa-0">
+                <div class="pa-0">
                     <div class="d-flex align-items-center" style="width: 100%;">
                         <div style="font-size:16px; font-weight:500;">{{ task.title }}</div>
                         <v-spacer></v-spacer>
@@ -30,28 +30,31 @@
                             </v-menu>
                         </RouterLink>
                     </div>
-                </v-col>
+                </div>
                 <!-- 세로배치 -->
-                <v-col cols="12" v-if="mode == 'uEngine'" 
+                <div v-if="mode == 'uEngine'" 
                     class="pa-0"
                     style="font-size:12px; margin-top: 5px;"
                 >
                     TaskId : {{ task.taskId }} / InstId: {{ task.instId }}
-                </v-col>
-                <v-col cols="12" class="pa-0">
+                </div>
+                <div v-else colos="12" class="pa-0">
+                    <div class="text-caption">{{ task.instName }}</div>
+                </div>
+                <div class="pa-0">
                     <div class="d-flex align-center">
                         <CalendarIcon size="16" />
                         <div class="body-text-1 text-dark pl-2">
                             {{ formattedDate }}
                         </div>
                     </div>
-                </v-col>
-                <v-col cols="12" class="pa-0">
+                </div>
+                <div class="pa-0">
                     <div class="text-subtitle-2">
                         {{ task.description }}
                     </div>
-                </v-col>
-            </v-row>
+                </div>
+            </div>
         </v-card-title>
 
         <v-dialog v-model="dialog" max-width="500">

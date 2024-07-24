@@ -118,14 +118,14 @@ export default {
                 return;
             }
             if (!this.name || this.name == '') {
-                if (Array.isArray(this.copyUengineProperties.condition)) {
-                    if (this.copyUengineProperties.condition.length > 0) {
-                        expression = this.copyUengineProperties.condition[0].conditionsVt[0];
-                    }
+                let name = 'condition'
+                if (this.copyUengineProperties.condition.conditionsVt) {
+                    name = 'multiCondition';
                 } else {
                     expression = this.copyUengineProperties.condition;
+                    name = expression.key + " " + expression.condition + " " + expression.value;
                 }
-                const name = expression.key + " " + expression.condition + " " + expression.value;
+                
                 this.$emit('update:name', name);
             }
         }

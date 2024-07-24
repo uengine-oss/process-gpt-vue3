@@ -13,7 +13,7 @@
                 </div> -->
 
                 <div style="font-size: medium;">Event Attributes</div>
-                <draggable v-model="attributes" :options="dragOptions" style="height: 200px;">
+                <draggable v-model="attributes" :options="dragOptions" class="mb-6">
                     <div v-for="(attribute, idx) in attributes" :key="idx">
                         <div v-if="attribute.isEdit" style="display: flex; align-items: center; height: 10%;">
                             <v-tooltip location="bottom">

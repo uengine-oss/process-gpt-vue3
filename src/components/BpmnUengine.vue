@@ -406,6 +406,27 @@ export default {
             if (self.diagramXML) {
                 self.bpmnViewer.importXML(self.diagramXML);
             }
+
+            
+
+            try {
+                const commandStack = self.bpmnViewer.get('commandStack');
+                document.addEventListener('keydown', (event) => {
+                    if ((event.metaKey || event.ctrlKey) && event.key === 'z') {
+                        event.preventDefault();
+                        commandStack.undo();
+                    } else if (event.ctrlKey && event.key === 'y') {
+                        event.preventDefault();
+                        commandStack.redo();
+                    } else if(event.metaKey && event.shiftKey && event.key ==='z') {
+                        event.preventDefault();
+                        commandStack.redo();
+                    }
+                });
+            }
+            catch(e) {
+
+            }
         },
         extendUEngineProperties(businessObject) {
             let self = this;
@@ -603,6 +624,16 @@ export default {
                 .catch((err) => {
                     self.$emit('error', err);
                 });
+        },
+        undo() {
+            const self = this;
+            const commandStack = self.bpmnViewer.get('commandStack');
+            commandStack.undo();
+        },
+        redo() {
+            const self = this;
+            const commandStack = self.bpmnViewer.get('commandStack');
+            commandStack.redo();
         }
     }
 };

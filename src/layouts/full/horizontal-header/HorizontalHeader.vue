@@ -44,7 +44,7 @@ const getCart = computed(() => {
                     </div>
                     <v-btn class="hidden-lg-and-up" icon variant="text" @click.stop="customizer.SET_SIDEBAR_DRAWER"
                         size="small">
-                        <Icon icon="solar:list-bold-duotone" height="24" width="24" />
+                        <Icons :icon="'list-bold-duotone'"/>
                     </v-btn>
 
                     <v-spacer class="hidden-sm-and-down" />
@@ -55,27 +55,6 @@ const getCart = computed(() => {
                     <div class="hidden-sm-and-down mr-sm-6 mr-4">
                         <Searchbar />
                     </div>
-
-                    <!-- ---------------------------------------------- -->
-                    <!---right part -->
-                    <!-- ---------------------------------------------- -->
-                    <!-- ---------------------------------------------- -->
-                    <!-- translate -->
-                    <!-- ---------------------------------------------- -->
-                    <!-- <div class="hidden-sm-and-down mr-sm-6 mr-4">
-                        <LanguageDD />
-                    </div> -->
-
-                    <!-- ---------------------------------------------- -->
-                    <!-- ShoppingCart -->
-                    <!-- ---------------------------------------------- -->
-                    <!-- <div class="hidden-sm-and-down mr-sm-4 mr-4">
-                        <v-btn icon variant="text" class=" mr-sm-3 mr-2" to="/ecommerce/checkout" size="small">
-                            <v-badge color="primary" :content="getCart?.length" offset-x="-4" offset-y="-6">
-                                <Icon icon="solar:cart-3-line-duotone" height="24" width="24" />
-                            </v-badge>
-                        </v-btn>
-                    </div> -->
 
                     <!-- ---------------------------------------------- -->
                     <!-- Notification -->
@@ -102,12 +81,6 @@ const getCart = computed(() => {
                                 <div class="mr-sm-3 mr-2">
                                     <Searchbar />
                                 </div>
-                                <!-- <LanguageDD /> -->
-                                <!-- <v-btn icon variant="text" class=" mr-sm-3 mr-2" to="/ecommerce/checkout" size="small">
-                                    <v-badge color="primary" :content="getCart?.length" offset-x="-4" offset-y="-6">
-                                        <Icon icon="solar:cart-3-line-duotone" height="24" width="24" />
-                                    </v-badge>
-                                </v-btn> -->
                                 <NotificationDD />
                                 <ProfileDD />
                             </div>

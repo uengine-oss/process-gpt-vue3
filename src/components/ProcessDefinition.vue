@@ -3,36 +3,32 @@
         <v-row style="height: 100%" class="ma-0">
             <v-col class="d-flex ma-0 pa-0" style="height: 100%">
                 <v-card style="border-radius: 0px !important; border: none; height: 100%" flat>
-                    <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn @click="openProcessVariables" icon v-bind="props" class="processVariables-btn">
-                                <Icon icon="tabler:variable" width="32" height="32" />
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
-                    <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn icon v-bind="props" class="processVariables-zoom" @click="$globalState.methods.toggleZoom()">
-                                <!-- 캔버스 확대 -->
-                                <Icon
-                                    v-if="!$globalState.state.isZoomed"
-                                    icon="material-symbols:zoom-out-map-rounded"
-                                    width="32"
-                                    height="32"
-                                />
-                                <!-- 캔버스 축소 -->
-                                <Icon v-else icon="material-symbols:zoom-in-map-rounded" width="32" height="32" />
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
-                    <!-- 실행 버튼  -->
-                    <v-tooltip v-if="executable" :text="$t('processDefinition.execution')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn icon v-bind="props" class="processExecute" @click="executeProcess">
-                                <Icon icon="gridicons:play" width="32" height="32" />
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
+                    <v-row class="ma-0 pa-0 button-container">
+                        <!-- 프로세스 실행 버튼  -->
+                        <v-tooltip v-if="executable" :text="$t('processDefinition.execution')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn icon v-bind="props" @click="executeProcess" class="btn-execute">
+                                    <Icons :icon="'play'" :width="32" :height="32" />
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
+                        <!-- 프로세스 변수 추가 버튼 -->
+                        <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn @click="openProcessVariables" icon v-bind="props" class="cp-process-variables btn-variables">
+                                    <Icons :icon="'variable'" :width="32" :height="32"  />
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
+                        <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
+                        <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn icon v-bind="props" @click="$globalState.methods.toggleZoom()" class="btn-zoom">
+                                    <Icons :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'" :size="32"/>
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
+                    </v-row>
                     <div v-if="isXmlMode"
                         style="height: calc(100% - 70px);
                         margin-top: 70px; overflow: auto;
@@ -72,7 +68,7 @@
                 </v-card>
             </v-col>
             <div v-if="panel && !isViewMode" style="position: fixed; z-index: 999; right: 0; height: 100%">
-                <v-card elevation="1" style="height: calc(100vh - 155px)">
+                <v-card elevation="1">
                     <bpmn-property-panel
                         :element="element"
                         @close="closePanel"
@@ -83,7 +79,9 @@
                         v-on:updateElement="(val) => updateElement(val)"
                         :definition="thisDefinition"
                         :processDefinitionId="definitionPath"
+                        :processDefinition="processDefinition"
                         :validationList="validationList"
+                        @addUengineVariable="addUengineVariable"
                     ></bpmn-property-panel>
                     <!-- {{ definition }} -->
                 </v-card>
@@ -91,24 +89,23 @@
         </v-row>
         <v-dialog v-model="isViewProcessVariables" max-width="1000">
             <v-card>
-                <v-tabs v-model="processVariableTab" bg-color="transparent" height="50" color="primary">
-                    <v-tab value="variable">
-                       {{ $t('processDefinition.editProcessData') }} 
-                    </v-tab>
-                    <v-tab value="pattern">
-                        {{ $t('processDefinition.instanceNamePattern') }} 
-                    </v-tab>
-                </v-tabs>
-
-                <v-btn icon 
-                    style="position: absolute; right: 5px; top: 5px" 
-                    @click="isViewProcessVariables = false">
-                    <v-icon>mdi-close</v-icon>
-                </v-btn>
-
-                <v-window v-model="processVariableTab">
-                    <v-window-item value="variable">
-                        <v-card-text style="height: 1000px; width: 1000px;">
+                <div class="d-flex">
+                    <v-tabs v-model="processVariableTab" bg-color="transparent" height="50" color="primary">
+                        <v-tab value="variable">
+                        {{ $t('processDefinition.editProcessData') }} 
+                        </v-tab>
+                        <v-tab value="pattern">
+                            {{ $t('processDefinition.instanceNamePattern') }} 
+                        </v-tab>
+                    </v-tabs>
+                    <v-btn icon variant="plain" class="ml-auto cp-v-close" @click="isViewProcessVariables = false">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </div>
+                
+                <v-card-text style="overflow: auto; height:calc(100vh - 200px);">
+                    <v-window v-model="processVariableTab">
+                        <v-window-item value="variable">
                             <VDataTable class="border rounded-md" :items-per-page="5" :items-per-page-text="$t('processDefinition.itemsPerPage')">
                                 <thead>
                                     <tr>
@@ -124,7 +121,7 @@
                                 <tbody>
                                     <tr v-for="item in processVariables" :key="item.name">
                                         <td class="text-subtitle-1">{{ item.name }}</td>
-                                        <td>
+                                        <td class="cp-v-type">
                                             {{ item.type }}
                                         </td>
                                         <td v-if="item.defaultValue" class="text-subtitle-1">{{ item.defaultValue.formDefId }}</td>
@@ -169,14 +166,14 @@
                                     "
                                 >
                                     <div style="display: flex; justify-content: center; align-items: center">
-                                        <Icon icon="streamline:add-1-solid" width="24" height="24" style="color: #5eb2e8" />
+                                        <Icons class="cp-variables-add" :icon="'plus'" :color="'#5eb2e8'" />
                                     </div>
                                 </v-card>
                             </v-row>
                             <div v-if="processVariablesWindow">
                                 <v-card variant="outlined">
                                     <v-card-text class="ma-0 pa-0">
-                                        <process-variable mode="add" @add-variables="(val) => addUengineVariable(val)"></process-variable>
+                                        <process-variable class="cp-v-add" mode="add" @add-variables="(val) => addUengineVariable(val)"></process-variable>
                                     </v-card-text>
                                 </v-card>
                             </div>
@@ -192,20 +189,18 @@
                                     </v-card-text>
                                 </v-card>
                             </div>
-                        </v-card-text>
-                    </v-window-item>
-                    <v-window-item value="pattern">
-                        <v-card-text style="height: 1000px; width: 1000px;">
-                            <InstanceNamePatternForm :pattern="instanceNamePattern" @update="updateInstanceNamePattern"></InstanceNamePatternForm>
-                        </v-card-text>
-                    </v-window-item>
-                </v-window>
+                        </v-window-item>
+                        <v-window-item value="pattern">
+                            <InstanceNamePatternForm :pattern="instanceNamePattern" @update="updateInstanceNamePattern" />
+                        </v-window-item>
+                    </v-window>
+                </v-card-text>
             </v-card>
         </v-dialog>
 
         <v-dialog v-model="executeDialog" max-width="80%">
-            <!-- <dry-run-process :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process> -->
-            <process-execute-dialog :definitionId="definitionPath" :roles="roles" @close="executeDialog = false"></process-execute-dialog>
+            <process-execute-dialog v-if="mode === 'LLM'" :definitionId="definitionPath" @close="executeDialog = false"></process-execute-dialog>
+            <dry-run-process v-else :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
         </v-dialog>
 
         <!-- <v-navigation-drawer permanent location="right" :width="400"> {{ panelId }} </v-navigation-drawer> -->
@@ -220,6 +215,7 @@ import { useBpmnStore } from '@/stores/bpmn';
 import BpmnLLM from './BpmnLLM.vue';
 import BpmnuEngine from './BpmnUengine.vue';
 import customBpmnModule from './customBpmn';
+import customPaletteModule from './customPalette';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
@@ -256,14 +252,6 @@ export default {
     data: () => ({
         panel: false,
         panelId: null,
-        options: {
-            propertiesPanel: {
-                invalidationList: {}
-            },
-            additionalModules: [
-                customBpmnModule
-            ]
-        },
         roles: [],
         element: null,
         definitions: null,
@@ -311,6 +299,15 @@ export default {
             return {
                 height: this.isAdmin ? '100%' : 'calc(100% - 50px)'
             };
+        },
+        options() {
+            let result =  {
+                propertiesPanel: {
+                    invalidationList: this.validationList
+                },
+                additionalModules: this.isViewMode ? [customBpmnModule] : [customBpmnModule, customPaletteModule]
+            };
+            return result
         }
     },
     watch: {
@@ -508,11 +505,7 @@ export default {
             this.$emit('change');
         },
         executeProcess() {
-            if (window.$mode === 'ProcessGPT') {
-                this.startProcess();
-            } else {
-                this.executeDialog = !this.executeDialog;
-            }
+            this.executeDialog = !this.executeDialog;
         },
         startProcess() {
             var me = this;
@@ -860,10 +853,30 @@ export default {
     top: 20px;
     z-index: 1;
 }
-.processVariables-btn {
+
+.button-container {
     position: absolute;
-    left: 5px;
-    top: 20px;
+    right: 5px;
+    top: 5px;
     z-index: 1;
+    display: flex;
+    flex-direction: row;
+}
+
+@media only screen and (max-width: 550px) {
+    .button-container {
+        position: absolute;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+    .btn-execute {
+        order: 3;
+    }
+    .btn-variables {
+        order: 2;
+    }
+    .btn-zoom {
+        order: 1;
+    }
 }
 </style>

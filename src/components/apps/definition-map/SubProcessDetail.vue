@@ -25,8 +25,7 @@
                     </v-menu>
                 </div>
             </div>
-            <div v-if="processDefinition" class="d-flex align-center"
-                @click="updateBpmn(processDefinition.bpmn); subProcessBreadCrumb = []">
+            <div v-if="processDefinition" class="d-flex align-center">
                 <h6 class="text-h6 font-weight-semibold">
                     {{ processDefinition ? processDefinition.name : "" }}
                 </h6>
@@ -42,32 +41,28 @@
 
             <div class="ml-auto d-flex">
                 <div v-if="onLoad && bpmn">
-                    <v-btn v-if="!JMS" icon variant="text" class="ml-3" :size="24" @click="executeProcess">
-                        <Icon icon="carbon:play-outline" width="24" height="24" />
+                    <v-btn v-if="!JMS" color="#1976D2" density="comfortable" class="ml-3" @click="executeProcess">
+                        실행
                     </v-btn>
                     <v-btn icon variant="text" class="ml-3" :size="24" @click="capture">
-                        <Icon icon="mage:image-download" width="24" height="24" />
+                        <Icons :icon="'image-download'"  />
                     </v-btn>
+                    <v-tooltip :text="$t('processDefinition.zoom')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn :size="30"
+                                icon variant="text" class="ml-2"
+                                v-bind="props"
+                                @click="$globalState.methods.toggleZoom()"
+                            >
+                                <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
+                                <Icons
+                                    :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
+                                    
+                                />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
                 </div>
-                <v-tooltip :text="$t('processDefinition.zoom')">
-                    <template v-slot:activator="{ props }">
-                        <v-btn :size="30"
-                            icon variant="text" class="ml-3"
-                            v-bind="props"
-                            @click="$globalState.methods.toggleZoom()"
-                        >
-                            <!-- 캔버스 확대 -->
-                            <Icon
-                                v-if="!$globalState.state.isZoomed"
-                                icon="material-symbols:zoom-out-map-rounded"
-                                width="24"
-                                height="24"
-                            />
-                            <!-- 캔버스 축소 -->
-                            <Icon v-else icon="material-symbols:zoom-in-map-rounded" width="24" height="24" />
-                        </v-btn>
-                    </template>
-                </v-tooltip>
             </div>
         </div>
 
@@ -85,8 +80,8 @@
             <div v-else></div>
         </v-card-text>
         <v-dialog v-model="executeDialog">
-            <!-- <ProcessExecuteDialog :definitionId="processDefinition.id" @close="executeDialog = false"></ProcessExecuteDialog> -->
-            <dry-run-process :definitionId="processDefinition.id"  @close="executeDialog = false"></dry-run-process>
+            <process-execute-dialog v-if="mode === 'ProcessGPT'" :definitionId="processDefinition.id" @close="executeDialog = false"></process-execute-dialog>
+            <dry-run-process v-else :definitionId="processDefinition.id"  @close="executeDialog = false"></dry-run-process>
         </v-dialog>
     </v-card>
 </template>
@@ -125,6 +120,9 @@ export default {
         executeDialog: false
     }),
     computed: {
+        mode() {
+            return window.$mode;
+        },
         JMS() {
             return window.$jms;
         }
@@ -218,11 +216,7 @@ export default {
             this.$emit('capture')
         },
         executeProcess() {
-            if (window.$mode === 'ProcessGPT') {
-                this.startProcess();
-            } else {
-                this.executeDialog = true
-            }
+            this.executeDialog = true
         },
         startProcess() {
             var me = this;

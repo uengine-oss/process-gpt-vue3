@@ -1,7 +1,8 @@
 <template>
-    <div class="mb-3" @mouseover="hover = true" @mouseleave="hover = false">
-        <v-card class="align-center bg-lightsecondary pa-2 pr-3 pl-3" elevation="10"
-            style="border-radius: 10px !important; margin-bottom:5px;" @click="goProcess(parent.name, 'mega')">
+    <div class="mb-3 major-hover">
+        <v-card class="align-center pa-2 pr-3 pl-3 cp-major" elevation="10"
+            style="border-radius: 10px !important; margin-bottom:5px; background-color: rgba(var(--v-theme-primary), 0.2);" @click="goProcess(parent.name, 'mega')"
+        >
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-1 font-weight-semibold">
                 <v-row class="ma-0 pa-0">
                     <v-col :cols="enableEdit ? '8' : '12'" class="ma-0 pa-0 text-left">
@@ -50,10 +51,11 @@
                 <SubProcess :value="item" :parent="value" :enableEdit="enableEdit" />
             </div>
         </div>
-        <v-card v-if="!processDialogStatus && enableEdit && hover" 
+        <v-card v-if="!processDialogStatus && enableEdit" 
             @click="openSubProcessDialog('add')"
-            class="add-process-card-hover cp-add-mega"
+            class="add-sub-card"
             elevation="9" variant="outlined"
+            color="primary"
             style="display: flex;
                 justify-content: center;
                 align-items: center;
@@ -61,7 +63,7 @@
                 height:26px;"
         >
             <v-row class="pa-0 ma-0 definitionMap-add-card">
-                <PlusIcon size="20" stroke-width="2" />
+                <PlusIcon class="cp-add-sub" size="20" stroke-width="2" />
                 <div>&nbsp;{{ $t('processDefinitionMap.addSub') }}</div>
             </v-row>
         </v-card>
@@ -124,3 +126,19 @@ export default {
     },
 }
 </script>
+
+<style>
+.add-sub-card {
+    display: none !important;
+}
+
+.major-hover:hover .add-sub-card {
+    display: flex !important;
+}
+
+@media only screen and (max-width: 700px) {
+    .add-sub-card {
+        display: flex !important;
+    }
+}
+</style>

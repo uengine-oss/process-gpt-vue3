@@ -15,7 +15,7 @@
                                     <v-img v-if="item.raw.profile" :src="item.raw.profile" width="45px" 
                                         class="rounded-circle img-fluid" />
                                     <v-avatar v-else>
-                                        <Icon icon="solar:user-circle-bold" width="50px" height="50px" />
+                                        <Icons :icon="'user-circle-bold'" :size="50" />
                                     </v-avatar>
                                 </div>
                                 <div class="ml-5">

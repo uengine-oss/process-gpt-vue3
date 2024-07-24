@@ -6,7 +6,7 @@
                 <v-btn @click="goToCalendar()"
                     icon
                 >
-                    <Icon icon="material-symbols:tab-move" width="24" height="24" />
+                    <Icons :icon="'tab-move'" :width="24" :height="24" />
                 </v-btn>
             </div>
         </v-card-text>

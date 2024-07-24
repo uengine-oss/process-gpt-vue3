@@ -4,7 +4,7 @@
             :isAgentMode="isAgentMode" :userInfo="userInfo" :disableChat="disableChat" :type="'instances'" :name="chatName" :chatRoomId="chatRoomId"
             @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
             @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage">
-            <template v-slot:custom-title v-if="$route.params.instId">
+            <template v-slot:custom-title>
                 <div></div>
             </template>
         </Chat>
@@ -317,7 +317,7 @@ export default {
 @media only screen and (max-width:1279px) {
     .process-definition-resize {
         width: 100%;
-        height: calc(100vh - 192px) !important;
+        height: calc(100% - 38px) !important;
     }
 }
 

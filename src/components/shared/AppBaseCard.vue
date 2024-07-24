@@ -73,7 +73,7 @@ const slotName = computed(() => {
                 style="z-index:1; background-color:white;"
                 :style="!$globalState.state.isRightZoomed ? '' : 'display:none;'"    
             >
-                <Menu2Icon size="20" class="mr-2 cp-dialog-open" /> Menu
+                <Menu2Icon size="20" class="mr-2 cp-dialog-open cp-def-menu" /> Menu
             </v-btn>
             <v-divider class="d-lg-none d-block" />
             <slot :name="slotName"></slot>

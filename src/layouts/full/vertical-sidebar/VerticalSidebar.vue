@@ -15,7 +15,7 @@ const customizer = useCustomizerStore();
         left
         v-model="customizer.Sidebar_drawer"
         rail-width="70"
-        :mobile-breakpoint="960"
+        :mobile-breakpoint="1279"
         app
         class="leftSidebar ml-sm-5 mt-sm-5 bg-containerBg"
         elevation="10"
@@ -23,7 +23,25 @@ const customizer = useCustomizerStore();
         expand-on-hover
         width="275"
     >
-        <div class="pa-5 pl-4">
+        <v-row class="pa-5 pl-4 ma-0 is-sidebar-pc">
+            <Logo :style="logoPadding"/>
+            <v-spacer></v-spacer>
+            <v-tooltip :text="$t('processDefinitionMap.title')"
+                location="bottom"
+            >
+                <template v-slot:activator="{ props }">
+                    <v-btn icon variant="text"
+                        v-bind="props"
+                        class="text-medium-emphasis"
+                        density="comfortable"
+                        :to="'/definition-map'"
+                    >
+                        <Icons :icon="'write'" />
+                    </v-btn>
+                </template>
+            </v-tooltip>
+        </v-row>
+        <div class="pa-5 pl-4 is-sidebar-mobile">
             <Logo />
         </div>
         <!-- ---------------------------------------------- -->
@@ -47,7 +65,9 @@ const customizer = useCustomizerStore();
                 <!-- definition menu item -->
                 <template v-for="item in definitionItem" :key="item.title">
                     <!-- Item Sub Header -->
-                    <v-row v-if="item.header && !item.disable" class="pa-0 ma-0">
+                    <v-row v-if="item.header && !item.disable"
+                        class="pa-0 pl-2 ma-0" 
+                    >
                         <NavGroup :item="item" :key="item.title" />
                         <template v-for="subItem in definitionItem" :key="subItem.title">
                             <v-tooltip v-if="subItem.title" location="bottom" :text="$t(subItem.title)">
@@ -56,35 +76,28 @@ const customizer = useCustomizerStore();
                                         v-if="!subItem.header && !subItem.disable"
                                         @click="navigateTo(subItem.to)"
                                         v-bind="props"
-                                        icon
-                                        variant="text"
-                                        class="text-medium-emphasis"
+                                        icon variant="text" 
+                                        class="text-medium-emphasis cp-menu"
                                         density="comfortable"
                                     >
-                                        <Icon :icon="subItem.icon" width="20" height="20" />
+                                        <Icons :icon="subItem.icon" :size="20" />    
                                     </v-btn>
                                 </template>
                             </v-tooltip>
                         </template>
                     </v-row>
                     <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
-
-                    <!-- 하단 목록으로 뿌려주던 리스트 형식 메뉴 -->
-                    <!-- <NavItem v-else-if="!item.disable && !item.header" class="leftPadding" :item="item" /> -->
                 </template>
                 <template v-if="definitionList">
-                    <NavCollapse
+                    <!-- 정의 목록 리스트 -->
+                    <NavCollapse v-for="(definition, i) in definitionList.children" :key="i"
+                        :item="definition" 
                         class="leftPadding"
-                        :item="definitionList"
-                        @update:item="(def) => (definitionList = def)"
-                        :level="0"
-                        :type="'definition-list'"
+                        @update:item="(def) => (definitionList[i] = def)" 
+                        :level="0" 
+                        :type="'definition-list'" 
                     />
                 </template>
-                <template>
-                    <NavItem class="leftPadding" :item="adminItem" />
-                </template>
-                <!-- <Moreoption/> -->
             </v-list>
         </perfect-scrollbar>
 
@@ -108,10 +121,7 @@ export default {
         sidebarItem: [],
         definitionItem: [],
         definitionList: null,
-        adminItem: {
-            title: 'admin.title',
-            to: '/admin',
-        }
+        logoPadding: ''
     }),
     computed: {
         JMS() {
@@ -127,34 +137,34 @@ export default {
                     disable: false
                 },
                 {
+                    title: 'processDefinition.title',
+                    icon: 'ibm-process-mining',
+                    BgColor: 'primary',
+                    to: '/definitions/chat',
+                    disable: false
+                },
+                {
+                    title: 'uiDefinition.title',
+                    icon: 'document',
+                    BgColor: 'primary',
+                    to: '/ui-definitions/chat',
+                    disable: true
+                },
+                {
                     title: 'organizationChartDefinition.title',
-                    icon: 'solar:users-group-rounded-line-duotone',
+                    icon: 'users-group-rounded-line-duotone',
                     BgColor: 'primary',
                     to: '/organization',
                     disable: true
                 },
                 {
                     title: 'systemDefinition.title',
-                    icon: 'solar:server-line-duotone',
+                    icon: 'server-line-duotone',
                     BgColor: 'primary',
                     to: '/system',
                     disable: true
                 },
-                {
-                    title: 'uiDefinition.title',
-                    icon: 'icon-park-outline:layout-five',
-                    BgColor: 'primary',
-                    to: '/ui-definitions/chat',
-                    disable: true
-                },
-                {
-                    title: 'processDefinition.title',
-                    icon: 'tabler:device-imac-cog',
-                    BgColor: 'primary',
-                    to: '/definitions/chat',
-                    disable: false
-                }
-            ];
+            ]
             this.getDefinitionList();
         }
 
@@ -170,16 +180,47 @@ export default {
         this.EventBus.on('definitions-updated', async () => {
             await this.getDefinitionList();
         });
+        if (window.$mode === 'uEngine') {
+            this.logoPadding = 'padding:6px'
+        }
+        // this.EventBus.on('instances-updated', async () => {
+        //     await this.loadInstances();
+        // });
     },
     methods: {
+        async getChild(subitem) {
+            let res = await backend.listDefinition(subitem.path);
+            let menu = [];
+            const me = this
+            res.forEach((el) => {
+                var obj = {
+                    title: el.name.split('.')[0],
+                    type: el.name.split('.')[1],
+                    BgColor : 'primary'
+                };
+
+                if (el.directory) {                 
+                    obj.directory = true;
+                    obj.children = [];
+                    obj.path = el.path
+                    me.getChild(obj)
+                } else {
+                    if (el.name.split('.')[1] == 'form') {
+                        obj.to = `/ui-definitions/${el.path.split('.')[0]}`;
+                    } else {
+                        obj.to = `/definitions/${el.path.split('.')[0]}`;
+                    }
+                }
+                menu.push(obj);
+            });
+            subitem.children = menu;
+        },
         async getDefinitionList() {
+            const me = this
             const list = await backend.listDefinition();
             if (list && list.length > 0) {
                 var menu = {
-                    title: 'processList.title',
-                    icon: 'solar:list-bold',
-                    BgColor: 'primary',
-                    to: `/`,
+                    
                     children: []
                 };
                 list.forEach((item) => {
@@ -187,9 +228,13 @@ export default {
                         if (item.name != 'instances') {
                             var obj = {
                                 title: item.name,
+                                icon: 'outline-folder',
                                 // to: `/definitions/${item.definition.processDefinitionId}`,
-                                directory: true
+                                directory: true,
+                                BgColor: 'primary',
+                                path: item.path
                             };
+                            me.getChild(obj)
                             menu.children.push(obj);
                         }
                     } else if (item) {
@@ -197,19 +242,24 @@ export default {
                         if (item.path && item.path.includes('.bpmn')) {
                             obj = {
                                 title: item.name,
-                                to: `/definitions/${item.path.split('.')[0]}`
+                                to: `/definitions/${item.path.split('.')[0]}`,
+                                BgColor: 'primary',
+                                type: 'bpmn'
                             };
                             menu.children.push(obj);
                         } else if (item.path && item.path.includes('.form')) {
                             obj = {
                                 title: item.name,
-                                to: `/ui-definitions/${item.path.split('.')[0]}`
+                                to: `/ui-definitions/${item.path.split('.')[0]}`,
+                                BgColor: 'primary',
+                                type: 'form'
                             };
                             menu.children.push(obj);
                         } else if (item.definition) {
                             obj = {
                                 title: item.definition.processDefinitionName,
-                                to: `/definitions/${item.definition.processDefinitionId}`
+                                to: `/definitions/${item.definition.processDefinitionId}`,
+                                BgColor: 'primary'
                             };
                             menu.children.push(obj);
                         }

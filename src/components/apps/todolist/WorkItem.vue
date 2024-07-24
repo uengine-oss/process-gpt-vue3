@@ -1,13 +1,19 @@
 <template>
     <v-card elevation="10" v-if="currentComponent" :key="updatedKey">
-        <v-card-title>
-            <v-row class="ma-0 pa-0 mt-1 ml-3" style="line-height: 100%">
-                <div style="font-size: 20px; font-weight: 500">{{ activityName }}</div>
-                <v-chip v-if="workItemStatus" size="small" variant="outlined" density="comfortable" style="margin-left: 5px">{{ workItemStatus }}</v-chip>
-            </v-row>
-        </v-card-title>
+        <div class="px-3 py-3 pb-2 align-center">
+            <div class="d-flex">
+                <h5 class="text-h5 font-weight-semibold">
+                    {{ activityName }}
+                </h5>
+                <v-chip v-if="workItemStatus" size="x-small" variant="outlined" 
+                    style="margin: 2px 0px 0px 5px !important; display: flex; align-items: center">
+                    {{ workItemStatus }}
+                </v-chip>
+            </div>
+        </div>
+
         <!-- pc 사이즈 -->
-        <v-row class="ma-0 pa-2 mt-2 work-item-pc">
+        <v-row class="ma-0 pa-2 work-item-pc">
             <!-- Left -->
             <v-col
                 class="pa-0"
@@ -15,9 +21,7 @@
                 :style="$globalState.state.isZoomed ? 'height: calc(100vh - 70px);' : 'height: calc(100vh - 215px);'"
                 style="overflow: auto"
             >
-                <div v-if="currentComponent"
-                    class="work-itme-current-component"
-                >
+                <div v-if="currentComponent" class="work-itme-current-component" style="height: 100%;">
                     <component 
                         :is="currentComponent" 
                         :definitionId="definitionId"
@@ -28,6 +32,7 @@
                         :currentActivities="currentActivities"
                         @updateCurrentActivities="updateCurrentActivities"
                         @close="close"
+                        @executeProcess="executeProcess"
                     ></component>
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
@@ -38,15 +43,13 @@
                                 v-bind="props"
                                 class="processVariables-zoom task-btn"
                             >
-                                <!-- 캔버스 확대 -->
-                                <Icon
-                                    v-if="!$globalState.state.isZoomed"
-                                    icon="material-symbols:zoom-out-map-rounded"
-                                    width="32"
-                                    height="32"
+                                <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
+                                <Icons
+                                    :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
+                                    :width="32"
+                                    :height="32"
+                                    
                                 />
-                                <!-- 캔버스 축소 -->
-                                <Icon v-else icon="material-symbols:zoom-in-map-rounded" width="32" height="32" />
                             </v-btn>
                         </template>
                     </v-tooltip>
@@ -56,8 +59,7 @@
             <v-col class="pa-0" cols="8">
                 <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
                     <v-tabs v-model="selectedTab">
-                        <v-tab value="progress" v-if="checkPoints">진행 상황/체크포인트</v-tab>
-                        <v-tab value="progress" v-else>진행 상황</v-tab>
+                        <v-tab value="progress">진행 상황</v-tab>
                         <v-tab v-if="messages && messages.length > 0" value="history">워크 히스토리</v-tab>
                         <v-tab v-if="messages" value="agent">Agent 초안 생성</v-tab>
                     </v-tabs>
@@ -68,7 +70,7 @@
                                 :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 280px);'"
                                 style="color: black; overflow: auto"
                             >
-                                <div class="pa-0 pl-2" :style="!checkPoints ? 'height:100%;' : 'height:50%;'" :key="updatedDefKey">
+                                <div class="pa-0 pl-2" style="height:100%;" :key="updatedDefKey">
                                     <div v-if="bpmn" style="height: 100%">
 
                                         <BpmnUengine
@@ -102,20 +104,6 @@
                                         ></process-definition> -->
                                     </div>
                                     <div v-else class="no-bpmn-found-text">No BPMN found</div>
-                                </div>
-                                <div v-if="checkPoints" style="overflow: auto; height: 50%">
-                                    <v-card-title>CheckPoint ({{ checkedCount }}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>
-                                    <div style="margin: -15px 0px 0px 5px">
-                                        <div v-for="(checkPoint, index) in checkPoints" :key="index" style="height: 40px">
-                                            <v-checkbox
-                                                style="height: 40px !important"
-                                                v-model="checkPoint.checked"
-                                                :label="checkPoint.name"
-                                                color="primary"
-                                                hide-details
-                                            ></v-checkbox>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </v-window-item>
@@ -158,9 +146,7 @@
                 cols="12"
                 style="overflow: auto"
             >
-                <div v-if="currentComponent"
-                    class="work-itme-current-component"
-                >
+                <div v-if="currentComponent" class="work-itme-current-component" style="height: 100%;">
                     <component 
                         :is="currentComponent" 
                         :definitionId="definitionId"
@@ -171,6 +157,7 @@
                         :currentActivities="currentActivities"
                         @updateCurrentActivities="updateCurrentActivities"
                         @close="close"
+                        @executeProcess="executeProcess"
                     ></component>
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
@@ -181,15 +168,13 @@
                                 v-bind="props"
                                 class="processVariables-zoom task-btn"
                             >
-                                <!-- 캔버스 확대 -->
-                                <Icon
-                                    v-if="!$globalState.state.isZoomed"
-                                    icon="material-symbols:zoom-out-map-rounded"
-                                    width="32"
-                                    height="32"
+                                <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
+                                <Icons
+                                    :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
+                                    :width="32"
+                                    :height="32"
+                                    
                                 />
-                                <!-- 캔버스 축소 -->
-                                <Icon v-else icon="material-symbols:zoom-in-map-rounded" width="32" height="32" />
                             </v-btn>
                         </template>
                     </v-tooltip>
@@ -199,8 +184,7 @@
             <v-col class="pa-0" cols="12">
                 <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
                     <v-tabs v-model="selectedTab">
-                        <v-tab value="progress" v-if="checkPoints">진행 상황/체크포인트</v-tab>
-                        <v-tab value="progress" v-else>진행 상황</v-tab>
+                        <v-tab value="progress">진행 상황</v-tab>
                         <v-tab v-if="messages && messages.length > 0" value="history">워크 히스토리</v-tab>
                         <v-tab v-if="messages" value="agent">Agent 초안 생성</v-tab>
                     </v-tabs>
@@ -211,7 +195,7 @@
                                 :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 280px);'"
                                 style="color: black; overflow: auto"
                             >
-                                <div class="pa-0 pl-2" :style="!checkPoints ? 'height:100%;' : 'height:50%;'" :key="updatedDefKey">
+                                <div class="pa-0 pl-2" style="height:100%;" :key="updatedDefKey">
                                     <div v-if="bpmn" style="height: 100%">
                                         <BpmnUengine
                                             ref="bpmnVue"
@@ -243,20 +227,6 @@
                                         ></process-definition> -->
                                     </div>
                                     <div v-else class="no-bpmn-found-text">No BPMN found</div>
-                                </div>
-                                <div v-if="checkPoints" style="overflow: auto; height: 50%">
-                                    <v-card-title>CheckPoint ({{ checkedCount }}/{{ checkPoints ? checkPoints.length : 0 }})</v-card-title>
-                                    <div style="margin: -15px 0px 0px 5px">
-                                        <div v-for="(checkPoint, index) in checkPoints" :key="index" style="height: 40px">
-                                            <v-checkbox
-                                                style="height: 40px !important"
-                                                v-model="checkPoint.checked"
-                                                :label="checkPoint.name"
-                                                color="primary"
-                                                hide-details
-                                            ></v-checkbox>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </v-window-item>
@@ -314,7 +284,10 @@ export default {
             required: true
         },
         taskId: String,
-        isDryRun: Boolean,
+        isDryRun: {
+            type: Boolean,
+            default: false
+        },
         dryRunWorkItem: Object
     },
     components: {
@@ -328,7 +301,6 @@ export default {
     },
     data: () => ({    
         workItem: null,
-        checkPoints: null,
         workListByInstId: null,
     
         // bpmn
@@ -358,10 +330,6 @@ export default {
         },
         currentTaskId() {
             return this.taskId ? this.taskId : this.$route.params.taskId
-        },
-        checkedCount() {
-            if (!this.checkPoints) return 0;
-            return this.checkPoints.filter((checkPoint) => checkPoint.checked).length;
         },
         messages() {
             if (!this.workListByInstId) return [];
@@ -399,15 +367,24 @@ export default {
                         me.workItem = me.dryRunWorkItem
                        
                         me.currentComponent = me.workItem.activity.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.activity.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
+
+                        me.currentActivities = [me.workItem.activity.tracingTag];
                     } else {
                         me.workItem = await backend.getWorkItem(me.currentTaskId);
                         me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, { type: 'bpmn' });
                         if (me.workItem.worklist.execScope) me.workItem.execScope = me.workItem.worklist.execScope;
                         me.workListByInstId = await backend.getWorkListByInstId(me.workItem.worklist.instId);
                         me.currentComponent = me.workItem.worklist.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
+                        if (me.workItem.worklist.currentActivities) {
+                            me.currentActivities = me.workItem.worklist.currentActivities;
+                        } else {
+                            me.currentActivities = me.workListByInstId.map((item) => {
+                                if(item.status != 'COMPLETED' && item.status != 'DONE') {
+                                    return item.tracingTag;
+                                }
+                            });
+                        }
                     }
-
-                    me.currentActivities = [me.workItem.activity.tracingTag];
                     me.updatedDefKey++;
                 }
             });
@@ -433,6 +410,9 @@ export default {
         },
         delay(time) {
             return new Promise((resolve) => setTimeout(resolve, time));
+        },
+        executeProcess(value) {
+            this.$emit('executeProcess', value)
         }
     }
 };
@@ -481,12 +461,6 @@ export default {
 .processExecute {
     position: absolute;
     right: 80px;
-    top: 20px;
-    z-index: 1;
-}
-.processVariables-btn {
-    position: absolute;
-    left: 5px;
     top: 20px;
     z-index: 1;
 }

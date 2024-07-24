@@ -25,8 +25,11 @@
                         </v-menu>
                     </v-btn>
 
-                    <v-btn icon variant="text" @click="deleteCondition(item, idx)">
-                        <v-icon>mdi-delete-outline</v-icon>
+                    <v-btn  v-if="idx == getConditions(condition).length - 1"  icon variant="text" @click="addCondition(item)">
+                        <v-icon>mdi-plus</v-icon>
+                    </v-btn>
+                    <v-btn v-if="getConditions(condition).length > 1" icon variant="text" @click="deleteCondition(item, idx)">
+                        <Icons :icon="'trash'" />
                     </v-btn>
                 </div>
                 <div v-else class="pa-3 border">
@@ -35,7 +38,7 @@
                             {{ item._type }}
                         </v-chip>
                         <v-btn icon variant="text" class="ml-auto" @click="deleteCondition(item, idx)">
-                            <v-icon>mdi-delete-outline</v-icon>
+                            <Icons :icon="'trash'" />
                         </v-btn>
                     </div>
                     <ConditionField :value="item.conditionsVt" />
@@ -170,6 +173,19 @@ export default {
                     value: '',
                     condition: '',
                 };
+            }
+        },
+        addCondition(item) {
+
+            if(Array.isArray(this.condition)){
+                this.condition.push({
+                        _type: 'org.uengine.kernel.Evaluate',
+                        key: '',
+                        value: '',
+                        condition: '',
+                    });
+            }else {
+                this.changeCondition(item, "AND")
             }
         },
         checkCondition(item) {

@@ -1,15 +1,16 @@
 <template>
-    <div class="w-100" @mouseover="hover = true" @mouseleave="hover = false">
-        <v-card class="align-center pa-3 mb-3" color="primary" elevation="10" style="border-radius: 10px !important;"
+    <div class="w-100 mega-hover">
+        <v-card class="align-center pa-3 mb-3 cp-mega" color="primary" elevation="10" style="border-radius: 10px !important;"
             @click="goProcess(value.name, 'mega')">
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-h6 font-weight-semibold">
                 <v-row class="ma-0 pa-0">
                     <v-col :cols="enableEdit ? '8' : '12'" class="ma-0 pa-0 text-left">
-                        <div>{{ value.name }}</div>
+                        <div style="color:white;">{{ value.name }}</div>
                     </v-col>
                     <v-col :cols="enableEdit ? '4' : ''" class="ma-0 pa-0">
                         <div class="ml-auto add-major-process">
                             <ProcessMenu
+                                class="mega-proc-btn"
                                 :size="20"
                                 :type="type"
                                 :process="value"
@@ -50,10 +51,11 @@
                 <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" />
             </div>
         </div>
-        <v-card v-if="!processDialogStatus && enableEdit && hover" 
+        <v-card v-if="!processDialogStatus && enableEdit" 
             @click="openProcessDialog('add')"
-            class="add-process-card-hover bg-lightsecondary cp-add-mega pa-2"
+            class="cp-add-mega pa-2 add-major-card"
             elevation="9" variant="outlined"
+            color="primary"
             style="display: flex;
                 justify-content: center;
                 align-items: center;
@@ -61,7 +63,7 @@
                 height:34px;"
         >
             <v-row class="pa-0 ma-0 definitionMap-add-card">
-                <PlusIcon size="20" stroke-width="2" />
+                <PlusIcon class="cp-add-major" size="20" stroke-width="2" />
                 <div>&nbsp;{{ $t('processDefinitionMap.addMajor') }}</div>
             </v-row>
         </v-card>
@@ -117,3 +119,22 @@ export default {
     },
 }
 </script>
+
+<style>
+.mega-proc-btn button {
+    color:white;
+}
+.add-major-card {
+    display: none !important;
+}
+
+.mega-hover:hover .add-major-card {
+    display: flex !important;
+}
+
+@media only screen and (max-width: 700px) {
+    .add-major-card {
+        display: flex !important;
+    }
+}
+</style>

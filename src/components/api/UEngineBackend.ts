@@ -51,6 +51,10 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.delete('/definition/' + requestPath);
         return response.data;
     }
+    async deleteInstance(instanceId: string) {
+        const response = await axiosInstance.delete(`/instance/${instanceId}`);
+        return response.data;
+    }
     async putRawDefinition(definition: any, requestPath: string, options: any) {
         let req = {
             definition: definition

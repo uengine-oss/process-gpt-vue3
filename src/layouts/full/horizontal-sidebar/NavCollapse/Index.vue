@@ -17,7 +17,7 @@ const props = defineProps({ item: Object, level: Number });
         <span v-else>
             <span class="icon-box">
                 <i class="navIcon">
-                    <Icon :icon="'solar:' + item.icon" height="24" width="24" :level="level"
+                    <Icons :icon="item.icon" :level="level"
                     :class="'position-relative z-index-2 texthover-' + item.BgColor" />
                 </i>
                 <span class="z-index-1  ml-3">{{ $t(item.title) }}</span>

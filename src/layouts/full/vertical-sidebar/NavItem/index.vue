@@ -17,16 +17,20 @@ const props = defineProps({
         <v-list-item  :to="item.type === 'external' ? '' : item.to" :href="item.type === 'external' ? item.to : ''" rounded
             :class="'  bg-hover-' + item.BgColor" :color="item.BgColor" :ripple="false" :disabled="item.disabled"
             :target="item.type === 'external' ? '_blank' : ''" v-scroll-to="{ el: '#top' }">
-            <!---If icon-->
-            <template v-slot:prepend>
+            <!-- 사이드바 리스트 아이콘 -->
+            <template v-if="item.icon" v-slot:prepend>
                 <div :class="'navbox  bg-hover-' + item.BgColor" :color="item.BgColor">
                     <span class="icon-box">
-                        <Icon :icon="item.icon" height="24" width="24" :level="level" :class="'position-relative z-index-2 texthover-' + item.BgColor" />
+                        <Icons :icon="item.icon" :level="level" :class="'position-relative z-index-2 texthover-' + item.BgColor" />
                     </span>
                 </div>
             </template>
-            <v-list-item-title v-if="useI18n" class="text-subtitle-1 font-weight-medium cp-menu" :color="item.BgColor">{{ $t(item.title) }}</v-list-item-title>
-            <v-list-item-title v-else class="text-subtitle-1 font-weight-medium cp-menu" :color="item.BgColor">{{ item.title }}</v-list-item-title>
+            <v-tooltip bottom :text="useI18n ? $t(item.title) : item.title">
+                <template v-slot:activator="{ props }">
+                    <v-list-item-title v-if="useI18n" class="text-subtitle-1 font-weight-medium" :color="item.BgColor" v-bind="props">{{ $t(item.title) }}</v-list-item-title>
+                    <v-list-item-title v-else class="text-subtitle-1 font-weight-medium" :color="item.BgColor" v-bind="props">{{ item.title }}</v-list-item-title>
+                </template>
+            </v-tooltip>
             <!---If Caption-->
             <v-list-item-subtitle v-if="item.subCaption" class="text-caption mt-n1 hide-menu">
                 {{ item.subCaption }}

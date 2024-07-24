@@ -1,28 +1,23 @@
 <template>
-    <v-row class="ma-0 pa-0 task-btn" style="right: 40px">
+    <v-row class="ma-0 pa-0 task-btn" style="right:50px; top:12px;">
         <v-spacer></v-spacer>
-        <div class="from-work-item-pc" v-if="workItemStatus == 'NEW' || workItemStatus == 'DRAFT'">
-            <v-btn v-if="!isDryRun" @click="saveTask()" color="#0085DB" style="color: white" rounded>중간 저장</v-btn>
-            <v-btn @click="$try(completeTask, null, {sucessMsg: '워크아이템 완료'})" variant="tex" rounded>제출 완료</v-btn>
+        <div class="from-work-item-pc" v-if="!isCompleted">
+            <v-btn v-if="!isDryRun" @click="saveTask" color="primary" class="mr-2" rounded>중간 저장</v-btn>
+            <v-btn @click="executeProcess" color="primary" rounded>제출 완료</v-btn>
         </div>
-        <div class="from-work-item-mobile" v-if="workItemStatus == 'NEW' || workItemStatus == 'DRAFT'">
+        <div class="from-work-item-mobile" v-if="!isCompleted">
             <v-tooltip text="중간 저장">
                 <template v-slot:activator="{ props }">
-                    <v-btn @click="saveTask()"
-                        icon v-bind="props"
-                        density="comfortable"
-                    >
-                        <Icon icon="mdi:content-save-plus-outline" width="32" height="32" />
+                    <v-btn @click="saveTask" icon v-bind="props" density="comfortable">
+                        <Icons :icon="'save'" :width="32" :height="32"/>
                     </v-btn>
                 </template>
             </v-tooltip>
             <v-tooltip text="제출 완료">
                 <template v-slot:activator="{ props }">
-                    <v-btn @click="$try(completeTask, null, {sucessMsg: '워크아이템 완료'})" variant="tex"
-                        icon v-bind="props"
-                        density="comfortable"
-                    >
-                        <Icon icon="iconoir:submit-document" width="28" height="28" />
+                    <v-btn @click="executeProcess" icon v-bind="props"
+                        density="comfortable">
+                        <Icons :icon="'submit-document'" :width="28" :height="28"/>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -30,18 +25,29 @@
     </v-row>
     <div class="pa-4">
         <!-- <FormMapper></FormMapper> -->
+        <Instruction :workItem="workItem" />
         <DynamicForm ref="dynamicForm" :formHTML="html" v-model="formData"></DynamicForm>
+        <AudioTextarea v-if="!isCompleted" v-model="newMessage" :workItem="workItem" />
+        <CheckPoints :workItem="workItem" />
     </div>
 </template>
 
 <script>
-import BackendFactory from '@/components/api/BackendFactory';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 
+import Instruction from '@/components/ui/Instruction.vue';
+import AudioTextarea from '@/components/ui/AudioTextarea.vue';
+import CheckPoints from '@/components/ui/CheckPoints.vue';
+
+import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
+
 export default {
     components: {
-        DynamicForm
+        DynamicForm,
+        Instruction,
+        AudioTextarea,
+        CheckPoints
     },
     props: {
         definitionId: String,
@@ -69,12 +75,18 @@ export default {
     data: () => ({
         html: null,
         formDefId: null,
-        formData: {}
+        formData: {},
+        newMessage: '',
+        checkPoints: null,
     }),
     computed: {
         isCompleted(){
             return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
-        }
+        },
+        checkedCount() {
+            if (!this.checkPoints) return 0;
+            return this.checkPoints.filter((checkPoint) => checkPoint.checked).length;
+        },
     },
     watch:  {
         html() {
@@ -89,7 +101,6 @@ export default {
     methods: {
         async init() {
             var me = this;
-            let formName = null;
             if(me.isDryRun) {
                 me.formDefId = me.dryRunWorkItem.activity.tool.split(':')[1];
             } else {
@@ -226,7 +237,20 @@ export default {
         fail(msg){
             this.$emit('fail', msg)
         },
-       
+        executeProcess() {
+            let value = {};
+            // if (this.newMessage && this.newMessage.length > 0) {
+            //     value.parameterValues['user_input_text'] = this.newMessage;
+            // }
+
+            if(this.isDryRun && $mode == 'ProcessGPT') {
+                const formColumn = this.formDefId.replace(/\s+/g, '_').toLowerCase();
+                value[formColumn] = this.formData;
+                this.$emit('executeProcess', value);
+            } else {
+                this.completeTask();
+            }
+        },
     }
 };
 </script>

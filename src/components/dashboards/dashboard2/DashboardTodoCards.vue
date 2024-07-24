@@ -4,13 +4,13 @@
         <v-card elevation="10" color="primary">
           <v-card-text style="padding:15px;">
             <img :src="item.img" alt="shape" class="shape">
-            <Icon :icon="item.icon" width="30" height="30" class="mb-6"/>
+            <Icons :icon="item.icon" :size="32"  class="mb-6"/>
             <div class="text-h1 font-weight-semibold mb-2 text-white">{{ item.count }}</div>
             <v-row class="ma-0 pa-0">
               <p class="text-subtitle-1 opacity-50 font-weight-medium">{{ $t(item.name) }}</p>
               <v-spacer></v-spacer>
               <v-btn @click="goToTodoList" icon text width="24" height="24" color="primary">
-                <Icon icon="material-symbols:tab-move" width="20" height="20" />
+                <Icons :icon="'tab-move'" :size="20" />
               </v-btn>
             </v-row>
           </v-card-text>
@@ -34,56 +34,56 @@ export default {
           name: 'DashboardTodoList.todo',
           count: 0,
           img: shape1,
-          icon: "icons8:todo-list",
+          icon: "todo-list",
           status: "TODO"
         },
         {
           name: 'DashboardTodoList.inProgress',
           count: 0,
           img: shape2,
-          icon: "carbon:in-progress",
+          icon: "in-progress",
           status: "IN_PROGRESS"
         },
         {
           name: 'DashboardTodoList.done',
           count: 0,
           img: shape3,
-          icon: "lets-icons:done-ring-round",
+          icon: "done-ring-round",
           status: "DONE"
         }
       ]
     }
   },
   async created() {
-      const storage = StorageBaseFactory.getStorage();
-      let userId = localStorage.getItem('email');
-      if (!userId) {
-          const loginUserInfo = await storage?.getUserInfo();
-          userId = loginUserInfo.email;
-      }
-      for (let item of this.todoList) {
-          const options = {
-              match: {
-                  status: item.status,
-                  user_id: userId
-              }
-          };
-          // getCount 함수를 호출하여 개수를 조회
-          const todoCount = await storage.getCount("todolist", options);
+    const storage = StorageBaseFactory.getStorage();
+    let userId = localStorage.getItem('email');
+    if (!userId) {
+      const loginUserInfo = await storage?.getUserInfo();
+      userId = loginUserInfo.email;
+    }
+    for (let item of this.todoList) {
+      const options = {
+        match: {
+          status: item.status,
+          user_id: userId
+        }
+      };
+      // getCount 함수를 호출하여 개수를 조회
+      const todoCount = await storage.getCount("todolist", options);
 
-          // 조회 결과에서 에러가 없다면, 해당 개수를 item.count에 할당
-          if (todoCount && typeof todoCount === 'number') { // 에러가 없고, 숫자형 데이터인 경우
-              item.count = todoCount;
-          } else if (todoCount && todoCount.error) { // 에러 객체가 존재하는 경우
-              console.error(`Error fetching count for ${item.status}`, todoCount.error);
-              item.count = 0; // 에러가 발생한 경우, count를 0으로 설정
-          } else { // 그 외의 경우 (예상치 못한 응답 형태)
-              console.error(`Unexpected response format for ${item.status}`, todoCount);
-              item.count = 0;
-          }
+      // 조회 결과에서 에러가 없다면, 해당 개수를 item.count에 할당
+      if (todoCount !== null && todoCount !== undefined && typeof todoCount === 'number') { // 에러가 없고, 숫자형 데이터인 경우
+        item.count = todoCount;
+      } else if (todoCount && todoCount.error) { // 에러 객체가 존재하는 경우
+        console.error(`Error fetching count for ${item.status}`, todoCount.error);
+        item.count = 0; // 에러가 발생한 경우, count를 0으로 설정
+      } else { // 그 외의 경우 (예상치 못한 응답 형태)
+        console.error(`Unexpected response format for ${item.status}`, todoCount);
+        item.count = 0;
       }
-      // 데이터 업데이트 후 Vue 인스턴스의 상태를 갱신하기 위해 반응형 데이터를 업데이트
-      this.todoList = [...this.todoList];
+    }
+    // 데이터 업데이트 후 Vue 인스턴스의 상태를 갱신하기 위해 반응형 데이터를 업데이트
+    this.todoList = [...this.todoList];
   },
   methods: {
     goToTodoList() {

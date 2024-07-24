@@ -109,11 +109,11 @@ watch(
             <h6 class="text-h6 mt-11 mb-2">Container Option</h6>
             <v-btn-toggle v-model="customizer.boxed" color="primary" class="my-2 btn-group-custom gap-3" rounded="0" group>
                 <v-btn :value="true" variant="text" elevation="10" class="rounded-xl">
-                    <Icon icon="solar:cardholder-linear" height="22" width="22" size="22" class="mr-2" />
+                    <Icons :icon="'cardholder-linear'" :size="22" class="mr-2" />
                     Boxed
                 </v-btn>
                 <v-btn :value="false" variant="text" elevation="10" class="rounded-xl">
-                    <Icon icon="solar:scanner-linear" height="22" width="22" size="22" class="mr-2" />
+                    <Icons :icon="'scanner-linear'" :size="22" class="mr-2" />
                     Full
                 </v-btn>
             </v-btn-toggle>
@@ -122,11 +122,11 @@ watch(
             <h6 class="text-h6 mt-11 mb-2">Sidebar Type</h6>
             <v-btn-toggle v-model="customizer.mini_sidebar" color="primary" class="my-2 btn-group-custom gap-3" rounded="0" group>
                 <v-btn :value="false" variant="text" elevation="10" class="rounded-xl">
-                    <Icon icon="solar:sidebar-minimalistic-outline" height="22" width="22" size="22" class="mr-2" />
+                    <Icons :icon="'sidebar-minimalistic-outline'" :size="22" class="mr-2" />
                     Full
                 </v-btn>
                 <v-btn :value="true" variant="text" elevation="10" class="rounded-xl">
-                    <Icon icon="solar:siderbar-outline" height="22" width="22" size="22" class="mr-2" />
+                    <Icons :icon="'siderbar-outline'" :size="22" class="mr-2" />
                     Collapse
                 </v-btn>
             </v-btn-toggle>

@@ -57,7 +57,13 @@
         </div>
     </div>
 
-    <v-dialog v-model="isOpenFieldMapper" max-width="80%" max-height="80%" @afterLeave="$refs.mapper && $refs.mapper.saveFormMapperJson()">
+    <v-dialog
+        v-model="isOpenFieldMapper"
+        class="mapper-dialog"
+        max-width="80%"
+        max-height="80%"
+        @afterLeave="$refs.mapper && $refs.mapper.saveFormMapperJson()"
+    >
         <mapper
             ref="mapper"
             :name="name"
@@ -108,6 +114,8 @@ export default {
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
+        processDefinition: Object,
+        element: Object,
         isViewMode: Boolean,
         role: String,
         roles: Array,
@@ -115,7 +123,6 @@ export default {
         definition: Object,
         name: String
     },
-    created() {},
     data() {
         return {
             isLoading: false,
@@ -152,11 +159,20 @@ export default {
             isOpenFormCreateDialog: false,
             nodes: {},
             replaceFromExpandableNode: null,
-            replaceToExpandableNode: null
+            replaceToExpandableNode: null,
+            activity: null
         };
     },
     created() {
         this.backend = BackendFactory.createBackend();
+        if(this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0){
+            const activity = this.processDefinition.activities.find(activity => activity.id === this.element.id);
+            if (activity) {
+                this.activity = activity
+            } else {
+                console.log('Activity not found');
+            }
+        }
     },
     mounted() {
         let me = this;

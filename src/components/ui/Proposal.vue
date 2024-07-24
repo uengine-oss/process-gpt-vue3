@@ -48,7 +48,7 @@
                                                         <div style="font-weight: bold;">
                                                             {{ content.title }}
                                                             <a :href="chat.content.link" target="_blank" style="margin-right: 10px;">
-                                                                <Icon icon="vscode-icons:file-type-pdf2" width="35px" height="35px"/>
+                                                                <Icons :icon="'file-type-pdf2'" :size="35" />
                                                             </a>
                                                         </div>
                                                         <div>{{ content.snippet }}</div>
@@ -146,8 +146,9 @@
                 </template>
                 <template v-slot:append-inner>
                     <v-btn v-if="!isRunning" icon variant="text" type="submit" @click="sendMessage()" class="text-medium-emphasis"
-                        :disabled="!newMessage">
-                        <Icon width="24" height="24" icon="fluent:document-one-page-sparkle-16-regular"  />
+                        :disabled="!newMessage"
+                    >
+                        <Icons :icon="'document-sparkle'"  />
                     </v-btn>
                     <v-btn v-else icon variant="text" class="text-medium-emphasis">
                         <v-progress-circular style="top: 50%" indeterminate color="primary"></v-progress-circular>
