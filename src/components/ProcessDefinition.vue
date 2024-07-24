@@ -103,7 +103,7 @@
                     </v-btn>
                 </div>
                 
-                <v-card-text style="overflow: auto;">
+                <v-card-text style="overflow: auto; height:calc(100vh - 200px);">
                     <v-window v-model="processVariableTab">
                         <v-window-item value="variable">
                             <VDataTable class="border rounded-md" :items-per-page="5" :items-per-page-text="$t('processDefinition.itemsPerPage')">
