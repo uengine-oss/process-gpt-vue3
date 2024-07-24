@@ -764,9 +764,12 @@ export default {
         openPanel(id) {
             console.log(id);
             this.element = this.findElement(this.definitions, 'id', id);
+
             if(this.element){
+                const businessObject = {};
+                businessObject.businessObject = this.element;
                 this.panel = true;
-                this.$refs.bpmnVue.extendUEngineProperties(this.element);
+                this.$refs.bpmnVue.extendUEngineProperties(businessObject);
             }
         },
         closePanel() {
