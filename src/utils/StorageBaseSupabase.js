@@ -344,8 +344,12 @@ export default class StorageBaseSupabase {
                 if(error.code === 'PGRST204' && error.message.includes('does not exist')){
                     try {
                         const typeMapping = this.getTypeMapping(value);
+                        const regex = /relation '(\w+)'/;
+                        const match = error.message.match(regex);
+                        console.log(match[1])    
+                        const tableName = match ? match[1] : arguments[0]
                         await axios.post(`/execution/add_table_columns`, {
-                            "tableName": arguments[0],
+                            "tableName": tableName,
                             "tableColumns": typeMapping      
                         });
                         // alert('DB 가 자동 업데이트 되었습니다. 다시 한번 시도해주세요.');

@@ -544,6 +544,13 @@ export default {
                 context: this,
                 action: async () => { // Changed to arrow function
                     if(!this.ProcessGPTActive){
+                        if(this.messages && this.messages.length == 0){
+                            this.messages.push({
+                                role: 'system',
+                                content: '...',
+                                isLoading: true
+                            });
+                        }
                         let messageWriting = this.messages[this.messages.length - 1];
                         messageWriting.content = response;
                         messageWriting.jsonContent = this.extractJSON(response);
@@ -584,6 +591,13 @@ export default {
         },
         onGenerationFinished(response) {
             if(!this.ProcessGPTActive){
+                if(this.messages && this.messages.length == 0){
+                    this.messages.push({
+                        role: 'system',
+                        content: '...',
+                        isLoading: true
+                    });
+                }
                 let messageWriting = this.messages[this.messages.length - 1];
                 messageWriting.timeStamp = Date.now();
 
@@ -605,7 +619,12 @@ export default {
             }
             // jsonData = this.removeComments(jsonData);
             if(jsonData != null) {
-                this.afterGenerationFinished(jsonData);
+                if(jsonData['formValues']){
+                    this.EventBus.emit('form-values-updated', jsonData['formValues']);
+                    this.messages[this.messages.length - 1].content = '초안 생성을 완료하였습니다.'
+                } else {
+                    this.afterGenerationFinished(jsonData);
+                }
             } else {
                 this.afterGenerationFinished(response);
             }
