@@ -95,26 +95,32 @@ describe('프로세스 정의', () => {
     cy.get('body').contains('Text').click();
     cy.get('.cp-v-add').eq(1).click({force: true});
     
-    cy.get('.cp-v-name').type("troubleType");
-    cy.wait(500);
-    cy.get('.cp-v-type').eq(1).click();
-    cy.wait(500);
-    cy.get('body').contains('Text').click();
-    cy.get('.cp-v-add').click({force: true});
+    // cy.get('.cp-v-name').type("troubleType");
+    // cy.wait(500);
+    // cy.get('.cp-v-type').eq(1).click();
+    // cy.wait(500);
+    // cy.get('.cp-v-type').contains('Text').click();
+    // cy.get('.cp-v-add').eq(1).click({force: true});
     
-    cy.get('.cp-v-name').type("troubleResult");
-    cy.wait(500);
-    cy.get('.cp-v-type').eq(2).click();
-    cy.wait(500);
-    cy.get('body').contains('Text').click();
-    cy.get('.cp-v-add').click({force: true});
+    // cy.get('.cp-v-name').type("troubleResult");
+    // cy.wait(500);
+    // cy.get('.cp-v-type').eq(0).click();
+    // cy.wait(500);
+    // cy.get('body').contains('Text').click();
+    // cy.get('.cp-v-add').eq(1).click({force: true});
     
-    cy.get('.cp-v-name').type("selectManeger");
+    // cy.get('.cp-v-name').type("selectManeger");
+    // cy.wait(500);
+    // cy.get('.cp-v-type').eq(0).click();
+    // cy.wait(500);
+    // cy.get('body').contains('Text').click();
+    // cy.get('.cp-v-add').eq(1).click({force: true});
+
+    cy.get('.cp-v-close').click();
     cy.wait(500);
-    cy.get('.cp-v-type').eq(3).click();
+    cy.get('.cp-def-menu').click();
     cy.wait(500);
-    cy.get('body').contains('Text').click();
-    cy.get('.cp-v-add').eq(1).click({force: true});
+    cy.get('.cp-def-save').click({force: true});
     
     
 

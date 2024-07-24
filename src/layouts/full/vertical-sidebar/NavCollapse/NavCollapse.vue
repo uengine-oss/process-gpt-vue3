@@ -9,13 +9,6 @@ const props = defineProps({
     type: String,
 });
 
-const useI18n = computed(() => {
-    if (props.level > 0 && !props.type) {
-        return false;
-    }
-    return true;
-});
-
 const emit = defineEmits(['update:item']);
 const backend = BackendFactory.createBackend();
 
@@ -71,13 +64,13 @@ const backend = BackendFactory.createBackend();
                         </div>
                     </template>
                     <!---Title  -->
-                    <v-tooltip :text="useI18n ? $t(item.title) : item.title">
+                    <v-tooltip :text="item.title">
                         <template v-slot:activator="{ props }">
                             <v-list-item-title
                                 class="text-subtitle-1 font-weight-medium"
                                 v-bind="props"
                             >
-                                {{ useI18n ? $t(item.title) : item.title }}
+                                {{ item.title }}
                             </v-list-item-title>
                         </template>
                     </v-tooltip>

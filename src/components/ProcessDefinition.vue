@@ -81,6 +81,7 @@
                         :processDefinitionId="definitionPath"
                         :processDefinition="processDefinition"
                         :validationList="validationList"
+                        @addUengineVariable="addUengineVariable"
                     ></bpmn-property-panel>
                     <!-- {{ definition }} -->
                 </v-card>
@@ -97,12 +98,12 @@
                             {{ $t('processDefinition.instanceNamePattern') }} 
                         </v-tab>
                     </v-tabs>
-                    <v-btn icon variant="plain" class="ml-auto" @click="isViewProcessVariables = false">
+                    <v-btn icon variant="plain" class="ml-auto cp-v-close" @click="isViewProcessVariables = false">
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </div>
                 
-                <v-card-text style="overflow: auto;">
+                <v-card-text style="overflow: auto; height:calc(100vh - 200px);">
                     <v-window v-model="processVariableTab">
                         <v-window-item value="variable">
                             <VDataTable class="border rounded-md" :items-per-page="5" :items-per-page-text="$t('processDefinition.itemsPerPage')">
@@ -763,9 +764,12 @@ export default {
         openPanel(id) {
             console.log(id);
             this.element = this.findElement(this.definitions, 'id', id);
+
             if(this.element){
+                const businessObject = {};
+                businessObject.businessObject = this.element;
                 this.panel = true;
-                this.$refs.bpmnVue.extendUEngineProperties(this.element);
+                this.$refs.bpmnVue.extendUEngineProperties(businessObject);
             }
         },
         closePanel() {

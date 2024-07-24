@@ -9,7 +9,7 @@ import FullCalendar from './FullCalender.vue';
 </script>
 <template>
     <v-row>
-        <v-col cols="12">
+        <v-col cols="12" class="pa-0 ma-0">
             <UiParentCard title="Full Calender">
                 <FullCalendar />
             </UiParentCard>
