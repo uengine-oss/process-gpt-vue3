@@ -75,11 +75,42 @@ export default {
             } else {
                 if (!me.workItem.activity.parameters) me.workItem.activity.parameters = [];
                 if (me.isCompleted) {
-                    me.outputItems = me.workItem.activity.parameters.filter((item) => item.direction.includes('IN'))
-                        .map((item) => ({ name: item.variable.name, key: item.argument.text, value: me.workItem.parameterValues[item.argument.text]}));
+                    let result = me.workItem.activity.eventSynchronization.mappingContext.mappingElements.filter((item) => {
+                        const re = new RegExp('out', 'gi')
+                        return item.direction.match(re)
+                    }).map((item) => ({ name: item.variable?.name, key: item.argument.text}));
+                    console.log(result)
+                    console.log(me.workItem.parameterValues)
                 } else {
-                    me.inputItems = me.workItem.activity.parameters.filter((item) => item.direction.includes('OUT'))
-                        .map((item) => ({ name: item.variable.name, key: item.argument.text, value: item.variable.defaultValue }));
+                    me.inputItems = me.workItem.activity.eventSynchronization.mappingContext.mappingElements.filter((item) => {
+                        const re = new RegExp('out', 'gi')
+                        return item.direction.match(re)
+                    }).map((item) => {
+                        if(item.variable) {
+                            return { name: item.variable.name, key: item.argument.text, value: item.variable.defaultValue }
+                        } else {
+                            if(item.transformerMapping) {
+                                // Object.keys(item.transformerMapping.transformer.argumentSourceMap).forEach(key => {
+                                //     if(typeof item.transformerMapping.transformer.argumentSourceMap[key] == 'string') {
+                                //         return { name: item.transformerMapping.transformer.argumentSourceMap[key] , key: item.transformerMapping.transformer.argumentSourceMap[key] , value: "" }
+                                //     }
+                                // })
+                                for (let key in Object.keys(item.transformerMapping.transformer.argumentSourceMap)) {
+                                    console.log(Object.keys(item.transformerMapping.transformer.argumentSourceMap)[key])
+                                    let resultkey = Object.keys(item.transformerMapping.transformer.argumentSourceMap)[key]
+                                    if(typeof item.transformerMapping.transformer.argumentSourceMap[resultkey] == 'string') {
+                                        let parts = item.transformerMapping.transformer.argumentSourceMap[resultkey].split(".");
+                                        let result = parts.slice(1).join(".");
+                                        return { name: result , key: result , value: "" }
+                                    }
+                                }
+                            }
+                            // return { name: "", key: "", value: "" };
+                        }
+                    });
+
+                    console.log(me.inputItems)
+
                 }
             }
         },

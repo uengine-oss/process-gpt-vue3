@@ -255,7 +255,7 @@ export default {
             me.value = JSON.parse(JSON.stringify(me.modelValue));
             me.attributes = me.value.eventSynchronization.attributes.map(attribute => ({ ...attribute, isEdit: false }))
             if(me.attributes && me.attributes.length == 0){
-                me.attributes.push({name: 'id', className: 'Long', isKey: false, isCorrKey: true}) //init value.
+                // me.attributes.push({name: 'id', className: 'Long', isKey: false, isCorrKey: true}) //init value.
             }
             me.isLoading = false;
         },

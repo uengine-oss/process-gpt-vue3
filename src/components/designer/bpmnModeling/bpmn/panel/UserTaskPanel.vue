@@ -6,51 +6,12 @@
             <v-radio label="외부 어플리케이션" value="URLActivity"></v-radio>
         </v-radio-group>
         <div v-if="!isLoading && selectedActivity == 'DefaultActivity'">
-            <!-- <div v-if="inputData.length > 0" style="margin-bottom: 20px">
-                <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.inputData') }}</div>
-                <v-row class="ma-0 pa-0">
-                    <div v-for="(input, idx) in inputData" :key="idx" class="mr-2 mt-2">
-                        <v-chip v-if="input.mandatory" color="primary" variant="outlined" class="text-body-2" @click="deleteInputData(input)">
-                            {{ input.argument.text }}
-                            <CircleXIcon class="ml-2" start size="20" />
-                        </v-chip>
-                        <v-chip v-else class="text-body-2" variant="outlined" @click="deleteInputData(inputData)">
-                            {{ input.argument.text }}
-                            <CircleXIcon class="ml-2" start size="20" />
-                        </v-chip>
-                    </div>
-                </v-row>
-            </div>
-            
-            <div v-if="outputData.length > 0" style="margin-bottom: 20px">
-                <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.outputData') }}</div>
-                <v-row class="ma-0 pa-0">
-                    <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
-                        <v-chip
-                            v-if="output.mandatory"
-                            color="primary"
-                            class="text-body-2"
-                            variant="outlined"
-                            @click="deleteOutputData(output)"
-                        >
-                            {{ output.variable.name }}
-                            <CircleXIcon class="ml-2" start size="20" />
-                        </v-chip>
-                        <v-chip v-else class="text-body-2" variant="outlined" @click="deleteOutputData(output)">
-                            {{ output.variable.name }}
-                            <CircleXIcon class="ml-2" start size="20" />
-                        </v-chip>
-                    </div>
-                </v-row>
-            </div> -->
-            <div>
-                <v-row class="ma-0 pa-0">
-                    <div style="margin-bottom: 10px; font-size: 13px; font-weight: 500">Parameter Context</div>
-                    <v-spacer></v-spacer>
-                    <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters" @updateParameters="(params) =>updateParameters(params)"></bpmn-parameter-contexts>
-                    <v-btn text color="primary" class="my-3" @click="openFormMapper()"> Field Mapping </v-btn>
-                </v-row>
-            </div>
+            <EventSynchronizationForm
+                v-model="copyUengineProperties"
+                :roles="roles"
+                :taskName="name"
+                :definition="copyDefinition"
+            ></EventSynchronizationForm>
         </div>
         <div v-else-if="!isLoading && selectedActivity == 'FormActivity'">
             <div>
@@ -79,11 +40,12 @@
                     </v-col>
                 </v-row>
             </div>
-            <div>
-                <v-row class="ma-0 pa-0">
-                    <v-btn text color="primary" class="my-3" @click="openFormMapper()"> Field Mapping </v-btn>
-                </v-row>
-            </div>
+            <EventSynchronizationForm
+                v-model="copyUengineProperties"
+                :roles="roles"
+                :taskName="name"
+                :definition="copyDefinition"
+            ></EventSynchronizationForm>
         </div>
         <div v-else-if="!isLoading && selectedActivity == 'URLActivity'">
             <EventSynchronizationForm
