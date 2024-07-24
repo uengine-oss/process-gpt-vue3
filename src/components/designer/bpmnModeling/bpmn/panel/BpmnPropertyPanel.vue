@@ -31,7 +31,7 @@
                 :element="element"
                 ref="panelComponent"
                 @update:name="(val) => (name = val)"
-                @update:text="(val) => (text = text)"
+                @update:text="(val) => (text = val)"
                 @update:uengineProperties="(newProps) => (uengineProperties = newProps)"
                 :definition="definition"
                 :processDefinitionId="processDefinitionId"
