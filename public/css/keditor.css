@@ -189,7 +189,7 @@ body.highlighted-container-content .keditor-container-content:before {
   margin-bottom: 10px;
 }
 #keditor-snippets-container > .keditor-tab-content > .keditor-snippets-filter-wrapper + .keditor-tab-content-inner {
-  height: calc(100% - 88px);
+  height: calc(100% - 110px);
 }
 .keditor-snippet {
   padding: 15px;
