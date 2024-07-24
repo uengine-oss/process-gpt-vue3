@@ -66,6 +66,11 @@ export default {
         // }
         console.log(this.element);
         // Extension이 없는 경우 무조건 빈 Property 생성
+        if(this.element) {
+            this.name = this.element.name;
+            this.text = this.element.text;
+        }
+        
         if (!this.element.extensionElements) {
             this.element.extensionElements = {};
             this.element.extensionElements.values = [];
@@ -123,9 +128,7 @@ export default {
 
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
-        this.name = this.element.name;
         this.$refs.cursor.focus();
-        this.text = this.element.text;
     },
     computed: {
         panelName() {
