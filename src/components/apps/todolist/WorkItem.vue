@@ -306,6 +306,7 @@ export default {
     data: () => ({    
         workItem: null,
         workListByInstId: null,
+        windowWidth: window.innerWidth,
     
         // bpmn
         bpmn: null,
@@ -335,7 +336,10 @@ export default {
         this.EventBus.on('formData-updated', (newformData) => {
             this.formData = newformData
         });
-        
+        window.addEventListener('resize', this.handleResize);
+    },
+    beforeDestroy() {
+        window.removeEventListener('resize', this.handleResize);
     },
     computed: {
         mode() {
@@ -368,8 +372,17 @@ export default {
         isCompleted() {
             return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
         },
-        isMobile(){
-            return false
+        isMobile() {
+            return this.windowWidth <= 700;
+        }
+    },
+    watch: {
+        windowWidth(newWidth) {
+            if (newWidth <= 700) {
+                this.isMobile = true;
+            } else {
+                this.isMobile = false;
+            }
         }
     },
     methods: {
@@ -404,6 +417,9 @@ export default {
                     me.updatedDefKey++;
                 }
             });
+        },
+        handleResize() {
+            this.windowWidth = window.innerWidth;
         },
         updateCurrentActivities(currentActivities){
             if(!currentActivities) currentActivities = []
@@ -463,17 +479,6 @@ export default {
     font-weight: 500;
 }
 
-.work-item-mobile {
-    display: none;
-}
-@media only screen and (max-width:700px) {
-    .work-item-mobile {
-        display: block;
-    }
-    .work-item-pc {
-        display: none;
-    }
-}
 .processExecute {
     position: absolute;
     right: 80px;
