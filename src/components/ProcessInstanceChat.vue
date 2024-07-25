@@ -211,6 +211,8 @@ export default {
         reGenerateAgentAI(){
             this.messages = []
             this.isReGen = true
+            this.attachedImage = null
+            this.imagePreview = null
             this.showDraftDialog = true
         },
         requestDraftAgent(newVal) {
