@@ -146,34 +146,41 @@ export default {
             if (response === 'yes') {
                 this.showDraftDialog = false;
                 if(!this.isReGen){
-                    const options = {
-                        match: {
-                            id: this.processInstance.proc_inst_id
-                        }
-                    };
-                    const data = await this.storage.list('proc_inst', options);
-                    if(this.html){
+                    
+                    if(this.processInstance && this.processInstance.proc_inst_id){
+                        const options = {
+                            match: {
+                                id: this.processInstance.proc_inst_id
+                            }
+                        };
+                        const inst_data = await this.storage.list('proc_inst', options);
                         this.generator.previousMessages.push({
-                            "content": "이전 작업 내역 리스트: " + JSON.stringify(data),
+                            "content": "이전 작업 내역 리스트: " + JSON.stringify(inst_data),
                             "role": "system"
                         })
+                    } else {
                         this.generator.previousMessages.push({
-                            "content": "현재 작업 입력 양식: " + this.html,
-                            "role": "system"
-                        })
-                        let formValues = {
-                            "formValues": this.formData
-                        }
-                        this.generator.previousMessages.push({
-                            "content": "생성해야할 답변 형식: " + JSON.stringify(formValues),
-                            "role": "system"
-                        })
-                        let userList = await this.storage.list('users');
-                        this.generator.previousMessages.push({
-                            "content": "유저 목록: " + JSON.stringify(userList),
+                            "content": "이전 작업 내역 리스트: null",
                             "role": "system"
                         })
                     }
+
+                    this.generator.previousMessages.push({
+                        "content": "현재 작업 입력 양식: " + this.html,
+                        "role": "system"
+                    })
+                    let formValues = {
+                        "formValues": this.formData
+                    }
+                    this.generator.previousMessages.push({
+                        "content": "생성해야할 답변 형식: " + JSON.stringify(formValues),
+                        "role": "system"
+                    })
+                    let userList = await this.storage.list('users');
+                    this.generator.previousMessages.push({
+                        "content": "유저 목록: " + JSON.stringify(userList),
+                        "role": "system"
+                    })
                 }
                 
                 if (this.imagePreview && this.imagePreview != '') {
