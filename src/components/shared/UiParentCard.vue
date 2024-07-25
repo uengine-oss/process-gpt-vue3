@@ -16,7 +16,7 @@ const props = defineProps({
             </div>
         </v-card-item>
         <v-divider></v-divider>
-        <v-card-text>
+        <v-card-text class="ma-0 pa-2">
             <slot />
         </v-card-text>
     </v-card>

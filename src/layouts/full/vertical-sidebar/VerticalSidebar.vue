@@ -72,7 +72,8 @@ const customizer = useCustomizerStore();
                         <template v-for="subItem in definitionItem" :key="subItem.title">
                             <v-tooltip v-if="subItem.title" location="bottom" :text="$t(subItem.title)">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-if="!subItem.header && !subItem.disable"
+                                    <v-btn
+                                        v-if="!subItem.header && !subItem.disable"
                                         @click="navigateTo(subItem.to)"
                                         v-bind="props"
                                         icon variant="text" 
@@ -269,7 +270,7 @@ export default {
         },
         navigateTo(path) {
             this.$router.push(path);
-        },
+        }
     }
 };
 </script>

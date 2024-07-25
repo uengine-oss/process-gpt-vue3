@@ -93,6 +93,12 @@ export default {
             if (this.isCompleted) {
                 this.html = this.disableFormHTML(this.html);
             }
+            this.EventBus.emit('html-updated', this.html);
+        },
+        formData() {
+            if(this.formData){
+                this.EventBus.emit('formData-updated', this.formData);
+            }
         }
     },
     mounted() {
@@ -111,6 +117,10 @@ export default {
             if(!me.isDryRun) {
                 me.loadForm()
             }
+
+            me.EventBus.on('form-values-updated', (formValues) => {
+                me.formData = formValues
+            });
         },
         async loadForm(){
             var me = this;
@@ -165,7 +175,9 @@ export default {
             Object.keys(variable.valueMap).forEach((key) => {
                 if (typeof variable.valueMap[key] == 'object') {
                     variable.valueMap[key].forEach((item) => {
-                        item._type = 'java.util.HashMap';
+                        if(item && item._type){
+                            item._type = 'java.util.HashMap';
+                        }
                     });
                 }
             });

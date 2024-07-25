@@ -49,7 +49,7 @@
         </div>
         <v-spacer></v-spacer>
         <v-btn text color="primary" class="my-3" @click="addMapping">
-            Add Mapping
+            Add Argument
         </v-btn>
     </div>
 
@@ -85,7 +85,7 @@ export default {
         'parameterContexts': {
             deep: true,
             handler: function (newVal, oldVal) {
-                console.log(newVal, oldVal)
+                this.$emit("updateParameters", newVal)
             }
         },
         // calleeDefinitionId  : function(val){
@@ -128,10 +128,10 @@ export default {
             this.parameterContexts.push({
                 direction: 'IN-OUT',
                 variable: {
-                    name: 'name'
+                    name: ''
                 },
                 argument: {
-                    text: 'arg'
+                    text: 'argument'
                 }
             })
         },

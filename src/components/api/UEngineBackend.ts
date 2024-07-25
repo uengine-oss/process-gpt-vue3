@@ -177,7 +177,7 @@ class UEngineBackend implements Backend {
         return response.data;
     }
     async putWorkItem(taskId: string, workItem: any) {
-        const response = await axiosInstance.post(`/work-item/${taskId}`, workItem);
+        const response = await axiosInstance.post(`/work-item/${taskId}/save`, workItem);
         return response.data;
     }
 

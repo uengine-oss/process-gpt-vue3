@@ -38,6 +38,9 @@ export default defineComponent({
         datesSet: this.handleDateSet,
         initialView: 'dayGridMonth',
         initialDate: null,
+        longPressDelay: 0, // 모바일에서 터치 꾹 누름 문제 해결
+        
+        
       },
       currentEvents: [],
       calendarKey: 0,
@@ -316,6 +319,9 @@ export default defineComponent({
 </template>
 
 <style lang='css'>
+.fc-daygrid-day-bottom {
+  margin-top: -15px !important;
+}
 .fc .fc-button-group>.fc-button {
   display: flex;
   align-items: center;
@@ -408,18 +414,6 @@ export default defineComponent({
   background-color: #eaf6ff;
 }
 
-
-@media screen and (max-width:600px) {
-  .fc .fc-toolbar {
-    display: block;
-    text-align: center;
-  }
-
-  .fc-toolbar-chunk .fc-toolbar-title {
-    margin: 15px 0
-  }
-}
-
 /* 추가된 스타일 */
 .event-details {
   padding: 10px;
@@ -451,5 +445,25 @@ export default defineComponent({
 
 .event-details-title {
   margin: 0;
+}
+
+@media screen and (max-width:600px) {
+  .fc .fc-toolbar {
+    display: block;
+    text-align: center;
+  }
+
+  .fc-toolbar-chunk .fc-toolbar-title {
+    margin: 15px 0
+  }
+
+  .fc .fc-button-group>.fc-button {
+    display: flex;
+    align-items: center;
+    padding: 2px 10px;
+  }
+  .fc-toolbar-title {
+    padding:10px;
+  }
 }
 </style>

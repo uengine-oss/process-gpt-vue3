@@ -13,7 +13,7 @@
         </div>
 
         <!-- pc 사이즈 -->
-        <v-row class="ma-0 pa-2 work-item-pc">
+        <v-row v-if="!isMobile" class="ma-0 pa-2 work-item-pc">
             <!-- Left -->
             <v-col
                 class="pa-0"
@@ -128,6 +128,8 @@
                                         <component
                                             :is="'work-history-' + mode"
                                             :messages="[]"
+                                            :html="html"
+                                            :formData="formData"
                                             :isAgentMode="true"
                                         />
                                     </div>
@@ -139,7 +141,7 @@
             </v-col>
         </v-row>
         <!-- 모바일 사이즈 -->
-        <v-row class="ma-0 pa-2 mt-2 work-item-mobile">
+        <v-row v-else class="ma-0 pa-2 mt-2 work-item-mobile">
             <!-- Left -->
             <v-col
                 class="pa-0"
@@ -251,6 +253,8 @@
                                         <component
                                             :is="'work-history-' + mode"
                                             :messages="[]"
+                                            :html="html"
+                                            :formData="formData"
                                             :isAgentMode="true"
                                         />
                                     </div>
@@ -302,6 +306,7 @@ export default {
     data: () => ({    
         workItem: null,
         workListByInstId: null,
+        windowWidth: window.innerWidth,
     
         // bpmn
         bpmn: null,
@@ -317,12 +322,24 @@ export default {
         updatedDefKey: 0,
         selectedTab: 'progress',
         eventList: [],
+        html: null,
+        formData: null
     }),
     created() {
         this.init();
         this.EventBus.on('process-definition-updated', async () => {
             this.updatedDefKey++;
         });
+        this.EventBus.on('html-updated', (newHtml) => {
+            this.html = newHtml
+        });
+        this.EventBus.on('formData-updated', (newformData) => {
+            this.formData = newformData
+        });
+        window.addEventListener('resize', this.handleResize);
+    },
+    beforeDestroy() {
+        window.removeEventListener('resize', this.handleResize);
     },
     computed: {
         mode() {
@@ -354,6 +371,18 @@ export default {
         },
         isCompleted() {
             return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
+        },
+        isMobile() {
+            return this.windowWidth <= 700;
+        }
+    },
+    watch: {
+        windowWidth(newWidth) {
+            if (newWidth <= 700) {
+                this.isMobile = true;
+            } else {
+                this.isMobile = false;
+            }
         }
     },
     methods: {
@@ -388,6 +417,9 @@ export default {
                     me.updatedDefKey++;
                 }
             });
+        },
+        handleResize() {
+            this.windowWidth = window.innerWidth;
         },
         updateCurrentActivities(currentActivities){
             if(!currentActivities) currentActivities = []
@@ -447,17 +479,6 @@ export default {
     font-weight: 500;
 }
 
-.work-item-mobile {
-    display: none;
-}
-@media only screen and (max-width:700px) {
-    .work-item-mobile {
-        display: block;
-    }
-    .work-item-pc {
-        display: none;
-    }
-}
 .processExecute {
     position: absolute;
     right: 80px;
