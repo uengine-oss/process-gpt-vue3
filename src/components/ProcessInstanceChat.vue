@@ -146,7 +146,7 @@ export default {
             if (response === 'yes') {
                 this.showDraftDialog = false;
                 if(!this.isReGen){
-                    
+
                     if(this.processInstance && this.processInstance.proc_inst_id){
                         const options = {
                             match: {
@@ -179,6 +179,11 @@ export default {
                     let userList = await this.storage.list('users');
                     this.generator.previousMessages.push({
                         "content": "유저 목록: " + JSON.stringify(userList),
+                        "role": "system"
+                    })
+                    const organization = await this.getData(`configuration/organization`, {key: 'key'});
+                    this.generator.previousMessages.push({
+                        "content": "회사 조직도: " + JSON.stringify(organization.value),
                         "role": "system"
                     })
                 }
