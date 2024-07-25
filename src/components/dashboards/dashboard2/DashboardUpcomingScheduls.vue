@@ -3,11 +3,11 @@
         <v-card-text style="padding:20px 20px 0px 20px">
             <div class="d-flex align-center justify-space-between">
                 <h5 class="text-h5 mb-1 font-weight-semibold">{{ $t('DashboardUpcomingScheduls.title') }}</h5>
-                <v-btn @click="goToCalendar()"
+                <!-- <v-btn @click="goToCalendar()"
                     icon
                 >
                     <Icons :icon="'tab-move'" :width="24" :height="24" />
-                </v-btn>
+                </v-btn> -->
             </div>
         </v-card-text>
         <v-table class="mt-0 mb-0 pa-5" style="padding-top:0px !important;">
@@ -93,9 +93,9 @@ export default {
 
     },
     methods: {
-        goToCalendar() {
-            this.$router.push('/calendar');
-        },
+        // goToCalendar() {
+        //     this.$router.push('/calendar');
+        // },
         formatDateTime(datetime) {
             if (!datetime) return '';
             const [datePart, timePart] = datetime.split('T');
