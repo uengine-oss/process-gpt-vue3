@@ -24,12 +24,12 @@ const sidebarItem: menu[] = [
         BgColor: 'primary',
         to: "/todolist",
     },
-    {
-        title: 'Calendar',
-        icon: 'calendar-line-duotone',
-        BgColor: 'primary',
-        to: '/calendar'
-    },
+    // {
+    //     title: 'Calendar',
+    //     icon: 'calendar-line-duotone',
+    //     BgColor: 'primary',
+    //     to: '/calendar'
+    // },
     {
         title: "Chats",
         icon: 'chat-round-unread-line-duotone',
