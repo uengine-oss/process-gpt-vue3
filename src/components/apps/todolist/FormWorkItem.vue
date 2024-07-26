@@ -195,44 +195,52 @@ export default {
         async completeTask() {
             let me = this
             // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드
-            let workItem = { parameterValues: {} };
-            let variables = {}
+            me.$try({
+                context: me,
+                action: async () => {
+                    let workItem = { parameterValues: {} };
+                    let variables = {}
 
-            if($mode=="uEngine")
-                await me.saveForm(variables)
-            
-            if($mode=="ProcessGPT"){
-                workItem.parameterValues = me.formData
-            }
+                    if($mode=="uEngine")
+                        await me.saveForm(variables)
+                    
+                    if($mode=="ProcessGPT"){
+                        workItem.parameterValues = me.formData
+                    }
 
-            ///////////////////////////////////
+                    ///////////////////////////////////
 
 
-            //#region 폼 정의시에 검증 스크립트가 등록된 경우, 해당 스크립트를 실행시켜서 유효성을 검사
-            const error = me.$refs.dynamicForm.validate()
-            if (error && error.length > 0) {
-                alert("※ 폼에 정의된 유효성 검사에 실패했습니다 !\n> " + error)
-                return;
-            }
-            //#endregion
+                    //#region 폼 정의시에 검증 스크립트가 등록된 경우, 해당 스크립트를 실행시켜서 유효성을 검사
+                    const error = me.$refs.dynamicForm.validate()
+                    if (error && error.length > 0) {
+                        alert("※ 폼에 정의된 유효성 검사에 실패했습니다 !\n> " + error)
+                        return;
+                    }
+                    //#endregion
 
-            if (me.workItem.execScope) workItem.execScope = me.workItem.execScope;
+                    if (me.workItem.execScope) workItem.execScope = me.workItem.execScope;
 
-            if(me.isDryRun){
-                let processExecutionCommand = {
-                    processDefinitionId: me.definitionId
+                    if(me.isDryRun){
+                        let processExecutionCommand = {
+                            processDefinitionId: me.definitionId
+                        }
+                                
+                        await backend.startDryRun({
+                            processExecutionCommand: processExecutionCommand,
+                            workItem: workItem,
+                            variables: variables
+                        });
+                        me.close()
+                    } else {
+                        if (this.newMessage && this.newMessage.length > 0) {
+                            workItem['user_input_text'] = this.newMessage;
+                        }
+                        await backend.putWorkItemComplete(me.$route.params.taskId, workItem);
+                        me.$router.push('/todolist');
+                    }
                 }
-                        
-                await backend.startDryRun({
-                    processExecutionCommand: processExecutionCommand,
-                    workItem: workItem,
-                    variables: variables
-                });
-                me.close()
-            } else {  
-                await backend.putWorkItemComplete(me.$route.params.taskId, workItem);
-                me.$router.push('/todolist');
-            }
+            })
         },
         disableFormHTML(html) {
             const parser = new DOMParser();
@@ -251,9 +259,9 @@ export default {
         },
         executeProcess() {
             let value = {};
-            // if (this.newMessage && this.newMessage.length > 0) {
-            //     value.parameterValues['user_input_text'] = this.newMessage;
-            // }
+            if (this.newMessage && this.newMessage.length > 0) {
+                value['user_input_text'] = this.newMessage;
+            }
 
             if(this.isDryRun && $mode == 'ProcessGPT') {
                 const formColumn = this.formDefId.replace(/\s+/g, '_').toLowerCase();

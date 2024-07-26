@@ -1,5 +1,6 @@
 <template>
     <div class="included" style="margin-bottom: 22px">
+        
         <v-autocomplete
                 v-model="value"
                 :items="items"
@@ -22,8 +23,8 @@
                 <v-list-item
                     v-else
                     v-bind="props"
-                    :subtitle="item.value.displayPath"
-                    :title="item.value[bindOptions.itemTitle]"
+                    :subtitle="item.raw.displayPath"
+                    :title="item.raw[bindOptions.itemTitle]"
                 ></v-list-item>
             </template>
             <!-- <template v-slot:item="{ item }">

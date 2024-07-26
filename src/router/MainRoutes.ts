@@ -159,11 +159,11 @@ const MainRoutes = {
             path: '/apps/contacts',
             component: () => import('@/views/apps/contact/Contact.vue')
         },
-        {
-            name: 'Calendar',
-            path: '/calendar',
-            component: () => import('@/views/apps/calendar/Calendar.vue')
-        },
+        // {
+        //     name: 'Calendar',
+        //     path: '/calendar',
+        //     component: () => import('@/views/apps/calendar/Calendar.vue')
+        // },
         {
             name: 'Kanban',
             path: '/apps/kanban',

@@ -47,12 +47,13 @@ const sidebarItems = ref<SidebarItem[]>([
         to: '/todolist',
         disable: false
     },
-    {
-        title: 'headerMenu.calendar',
-        icon: 'calendar-line-duotone',
-        to: '/calendar',
-        disable: false
-    }
+    // full calendar 메뉴 제거
+    // {
+    //     title: 'headerMenu.calendar',
+    //     icon: 'calendar-line-duotone',
+    //     to: '/calendar',
+    //     disable: false
+    // }
 ]);
 
 // 생명주기 훅 사용
