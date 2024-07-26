@@ -76,7 +76,7 @@ declare global {
 }
 
 async function setupSupabase() {
-    // window.$mode = 'uEngine';   
+    // window.$mode = 'uEngine';
     window.$mode = 'ProcessGPT';
     window.$jms = false;
 

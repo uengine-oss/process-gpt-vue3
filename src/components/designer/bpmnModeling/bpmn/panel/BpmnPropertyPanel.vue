@@ -66,11 +66,6 @@ export default {
         // }
         console.log(this.element);
         // Extension이 없는 경우 무조건 빈 Property 생성
-        if(this.element) {
-            this.name = this.element.name;
-            this.text = this.element.text;
-        }
-        
         if (!this.element.extensionElements) {
             this.element.extensionElements = {};
             this.element.extensionElements.values = [];
@@ -128,6 +123,10 @@ export default {
 
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
+        if(this.element) {
+            this.name = this.element.name;
+            this.text = this.element.text;
+        }
         this.$refs.cursor.focus();
     },
     computed: {
@@ -192,14 +191,35 @@ export default {
             if (this.$refs.panelComponent && this.$refs.panelComponent.beforeSave) {
                 this.$refs.panelComponent.beforeSave();
             }
+
             const modeling = this.bpmnModeler.get('modeling');
             const elementRegistry = this.bpmnModeler.get('elementRegistry');
             const task = elementRegistry.get(this.element.id);
-            this.elementCopy.extensionElements.values[0].json = JSON.stringify(this.uengineProperties);
-            this.elementCopy.name = this.name;
-            if (this.elementCopy.text) this.elementCopy.text = this.text;
-            modeling.updateProperties(task, this.elementCopy);
+            const name = this.name;
+            const json = JSON.stringify(this.uengineProperties);
+
+            const elementCopyDeep = _.cloneDeep(this.elementCopy);
+
+            modeling.updateProperties(task, { name });
+
+            if (elementCopyDeep.extensionElements && elementCopyDeep.extensionElements.values) {
+                elementCopyDeep.extensionElements.values[0].json = json;
+            } else {
+                elementCopyDeep.extensionElements = {
+                values: [{ json }]
+                };
+            }
+
+            if (this.elementCopy.text) elementCopyDeep.text = this.text;
+
+            modeling.updateProperties(task, {
+                extensionElements: elementCopyDeep.extensionElements,
+                text: elementCopyDeep.text
+            });
+
             this.$emit('close');
+
+            console.log(task.businessObject.extensionElements.values[0]);
         },
         checkValidation(){
             let key = Object.keys(this.validationList).filter(item => item === this.element.id);
