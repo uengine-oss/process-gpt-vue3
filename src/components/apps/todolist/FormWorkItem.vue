@@ -119,7 +119,11 @@ export default {
             }
 
             me.EventBus.on('form-values-updated', (formValues) => {
-                me.formData = formValues
+                if(formValues){
+                    Object.keys(formValues).forEach(function (key){
+                        me.formData[key] = formValues[key]
+                    })
+                }
             });
         },
         async loadForm(){

@@ -5,6 +5,9 @@
             v-model="selectedFiles"
             :disabled="localDisabled"
         ></v-file-input>
+        <div v-if="selectedFiles && selectedFiles.length > 0 && imgBaseUrl && imgBaseUrl.includes('data:image/')">
+            <img :src="imgBaseUrl" alt="Selected Image" style="width: 350px; max-height: auto;" />
+        </div>
     </div>
 </template>
 
@@ -29,6 +32,7 @@ export default {
             localDisabled: false,
             
             selectedFiles: null,
+            imgBaseUrl: null,
 
             settingInfos: [
                 commonSettingInfos["localName"],
@@ -48,6 +52,7 @@ export default {
             const reader = new FileReader();
             reader.onload = (e) => {
                 this.$emit('update:modelValue', e.target.result)
+                this.imgBaseUrl = e.target.result
             }
             reader.readAsDataURL(this.selectedFiles[0])
         }

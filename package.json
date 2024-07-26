@@ -68,7 +68,7 @@
         "gsap": "^3.12.5",
         "highlight.js": "^11.9.0",
         "javascript-time-ago": "^2.5.9",
-        "js-tiktoken": "^1.0.10",
+        "js-tiktoken": "^1.0.12",
         "json2yaml": "^1.1.0",
         "jsondiff": "0.0.0",
         "jsondiffpatch": "^0.6.0",
