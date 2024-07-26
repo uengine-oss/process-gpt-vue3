@@ -48,6 +48,9 @@ export interface Backend {
     getSystem(systemId: String): Promise<any>;
     getCurrentWorkItemByCorrKey(corrKey: number): Promise<any>;
     deleteInstance(instanceId: string): Promise<any>;
+    getNotifications(): Promise<any>;
+    setNotifications(value: any): Promise<any>;
+    search(keyword: string): Promise<any>;
 }
 
 // export type { Backend }

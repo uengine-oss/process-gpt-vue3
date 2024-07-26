@@ -25,7 +25,7 @@
             <v-divider></v-divider>
             <perfect-scrollbar style="height:300px">
                 <v-list lines="one">
-                    <v-list-item v-for="item in filteredNotifications" :key="item.id" @click="checkNotification(item)">
+                    <v-list-item v-for="item in notifications" :key="item.id" @click="checkNotification(item)">
                         <template v-slot:prepend>
                             <div class="mr-2">
                                 <v-chip color="primary" variant="tonal" size="x-small" label>
@@ -52,79 +52,31 @@
 </template>
 
 <script>
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
-const storage = StorageBaseFactory.getStorage();
-
-import { formatDistanceToNowStrict } from 'date-fns';
+import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
 
 export default {
     data: () => ({
         notifications: [],
-        filteredNotifications: [],
     }),
-    async created() {
-        await this.getNotifications();
-        await storage.watch('notifications', async (data) => {
-            if(data && data.new) {
-                await this.getNotifications();
-            }
-        });
-    },
     computed: {
         notiCount() {
-            if (this.filteredNotifications.length > 0) {
-                return this.filteredNotifications.length;
+            if (this.notifications.length > 0) {
+                return this.notifications.length;
             }
             return 0;
         },
-   },
+    },
+    async created() {
+        await this.getNotifications();
+    },
     methods: {
         async getNotifications() {
-            const userId = localStorage.getItem('email');
-            const options = {
-                limit: 10,
-                orderBy: 'time_stamp',
-                sort: 'desc',
-                match: { user_id: userId, is_checked: false },
-            }
-            const list = await storage.list('notifications', options);
-            if (list.length > 0) {
-                this.notifications = list;
-                this.filteredNotifications = Object.values(list.reduce((acc, item) => {
-                    const timeStamp = formatDistanceToNowStrict(new Date(item.time_stamp), {
-                        addSuffix: false
-                    });
-                    item.timeStamp = timeStamp;
-
-                    if (!acc[item.url]) {
-                        item.count = 1;
-                        acc[item.url] = item;
-                    } else if (new Date(item.time_stamp) > new Date(acc[item.url].time_stamp)) {
-                        item.count = acc[item.url].count + 1;
-                        acc[item.url] = item;
-                    } else {
-                        acc[item.url].count += 1;
-                    }
-                    return acc;
-                }, {}));
-            } else {
-                this.notifications = [];
-                this.filteredNotifications = [];
-            }
+            this.notifications = await backend.getNotifications();
         },
         async checkNotification(value) {
             this.$router.push(value.url);
-            if (value.count > 1) {
-                this.notifications.forEach(async (item) => {
-                    if (item.url === value.url && item.user_id === value.user_id) {
-                        const putObj = { id: item.id, is_checked: true };
-                        await storage.putObject('notifications', putObj);
-                    }
-                })
-            } else {
-                const putObj = { id: value.id, is_checked: true };
-                await storage.putObject('notifications', putObj);
-            }
+            await backend.setNotifications(value);
             await this.getNotifications();
         }
     }

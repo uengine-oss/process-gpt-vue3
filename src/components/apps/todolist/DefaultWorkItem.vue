@@ -19,7 +19,7 @@
             </div>
             <div v-else>
                 <DefaultForm v-if="inputItems && inputItems.length > 0" :inputItems="inputItems" />
-                <AudioTextarea v-model="newMessage" :workItem="workItem" />
+                <AudioTextarea v-model="newMessage" :workItem="workItem" @close="close" />
             </div>
             <CheckPoints :workItem="workItem" />
         </div>
@@ -164,8 +164,10 @@ export default {
         },
         executeProcess(){
             let value = { parameterValues: {} };
-            let parameterValues = this.inputItems.reduce((acc, item) => ({ ...acc, [item.key]: item.value }), {});
-            if (parameterValues) value.parameterValues = parameterValues;
+            if (this.inputItems && this.inputItems.length > 0) {
+                let parameterValues = this.inputItems.reduce((acc, item) => ({ ...acc, [item.key]: item.value }), {});
+                if (parameterValues) value.parameterValues = parameterValues;
+            }
             if (this.newMessage && this.newMessage.length > 0) {
                 value.parameterValues['user_input_text'] = this.newMessage;
             }
