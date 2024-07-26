@@ -31,10 +31,9 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
+const backend = BackendFactory.createBackend();
 // import xmljs from 'xml-js';
 // import diff from 'deep-diff';
-const backend = BackendFactory.createBackend();
 export default {
     name: 'ProcessDefinitionVersionDialog',
     components: {},
@@ -46,7 +45,6 @@ export default {
         processName: String
     },
     data: () => ({
-        storage: null,
         isMajor: false, // default:false (minor)
         isNew: false,
         information: {
@@ -99,8 +97,6 @@ export default {
         }
     },
     created() {
-        var me = this
-        me.storage = StorageBaseFactory.getStorage();
     },
     methods: {
         load() {
@@ -126,12 +122,6 @@ export default {
                                         size: 1,
                                     });
 
-                                //  let versionInfo = await me.storage.list(`proc_def_arcv`, {
-                                //         sort: 'desc',
-                                //         orderBy: 'timeStamp',
-                                //         size: 1,
-                                //         match: { 'proc_def_id': me.process.processDefinitionId }
-                                //     })
                                 if (versionInfo.length > 0) {
                                     me.information = versionInfo[0]
                                     me.information.name = me.processName ? me.processName: definitionInfo.name

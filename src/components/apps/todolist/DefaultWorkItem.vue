@@ -19,7 +19,7 @@
             </div>
             <div v-else>
                 <DefaultForm v-if="inputItems && inputItems.length > 0" :inputItems="inputItems" />
-                <AudioTextarea v-model="newMessage" :workItem="workItem" />
+                <AudioTextarea v-model="newMessage" :workItem="workItem" @close="close" />
             </div>
             <CheckPoints :workItem="workItem" />
         </div>
@@ -91,8 +91,32 @@ export default {
             if(me.isDryRun){
                 let workitem = me.dryRunWorkItem
                 let activitiy = workitem.activity
-                me.inputItems = activitiy.parameters.filter((item) => item.direction.includes('OUT'))
-                        .map((item) => ({ name: item.variable.name, key: item.argument.text, value: item.variable.defaultValue }));
+                me.inputItems = me.workItem.activity.eventSynchronization.mappingContext.mappingElements.filter((item) => {
+                        const re = new RegExp('out', 'gi')
+                        return item.direction.match(re)
+                    }).map((item) => {
+                        if(item.variable) {
+                            return { name: item.variable.name, key: item.argument.text, value: item.variable.defaultValue }
+                        } else {
+                            if(item.transformerMapping) {
+                                // Object.keys(item.transformerMapping.transformer.argumentSourceMap).forEach(key => {
+                                //     if(typeof item.transformerMapping.transformer.argumentSourceMap[key] == 'string') {
+                                //         return { name: item.transformerMapping.transformer.argumentSourceMap[key] , key: item.transformerMapping.transformer.argumentSourceMap[key] , value: "" }
+                                //     }
+                                // })
+                                for (let key in Object.keys(item.transformerMapping.transformer.argumentSourceMap)) {
+                                    console.log(Object.keys(item.transformerMapping.transformer.argumentSourceMap)[key])
+                                    let resultkey = Object.keys(item.transformerMapping.transformer.argumentSourceMap)[key]
+                                    if(typeof item.transformerMapping.transformer.argumentSourceMap[resultkey] == 'string') {
+                                        let parts = item.transformerMapping.transformer.argumentSourceMap[resultkey].split(".");
+                                        let result = parts.slice(1).join(".");
+                                        return { name: result , key: result , value: "" }
+                                    }
+                                }
+                            }
+                            // return { name: "", key: "", value: "" };
+                        }
+                    });
             } else {
                 if (!me.workItem.activity.parameters) me.workItem.activity.parameters = [];
                 if (me.isCompleted) {
@@ -100,8 +124,8 @@ export default {
                         const re = new RegExp('out', 'gi')
                         return item.direction.match(re)
                     }).map((item) => ({ name: item.variable?.name, key: item.argument.text}));
-                    console.log(result)
-                    console.log(me.workItem.parameterValues)
+                    // console.log(result)
+                    // console.log(me.workItem.parameterValues)
                 } else {
                     me.inputItems = me.workItem.activity.eventSynchronization.mappingContext.mappingElements.filter((item) => {
                         const re = new RegExp('out', 'gi')
@@ -164,8 +188,10 @@ export default {
         },
         executeProcess(){
             let value = { parameterValues: {} };
-            let parameterValues = this.inputItems.reduce((acc, item) => ({ ...acc, [item.key]: item.value }), {});
-            if (parameterValues) value.parameterValues = parameterValues;
+            if (this.inputItems && this.inputItems.length > 0) {
+                let parameterValues = this.inputItems.reduce((acc, item) => ({ ...acc, [item.key]: item.value }), {});
+                if (parameterValues) value.parameterValues = parameterValues;
+            }
             if (this.newMessage && this.newMessage.length > 0) {
                 value.parameterValues['user_input_text'] = this.newMessage;
             }

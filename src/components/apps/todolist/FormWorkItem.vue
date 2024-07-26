@@ -27,7 +27,7 @@
         <!-- <FormMapper></FormMapper> -->
         <Instruction :workItem="workItem" />
         <DynamicForm ref="dynamicForm" :formHTML="html" v-model="formData"></DynamicForm>
-        <AudioTextarea v-if="!isCompleted" v-model="newMessage" :workItem="workItem" />
+        <AudioTextarea v-if="!isCompleted" v-model="newMessage" :workItem="workItem" @close="close" />
         <CheckPoints :workItem="workItem" />
     </div>
 </template>

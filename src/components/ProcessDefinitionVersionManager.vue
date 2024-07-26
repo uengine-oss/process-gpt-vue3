@@ -65,13 +65,13 @@
 </template>
 
 <script>
-import ProcessDefinition from '@/components/ProcessDefinition.vue';
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
-import BackendFactory from '@/components/api/BackendFactory';
 import { Icon } from '@iconify/vue';
 
-// import 'vue-diff/dist/index.css';
+import ProcessDefinition from '@/components/ProcessDefinition.vue';
+import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
+
+// import 'vue-diff/dist/index.css';
 export default {
     name: 'ProcessDefinitionVersionManager',
     components: {
@@ -83,7 +83,6 @@ export default {
         process: Object
     },
     data: () => ({
-        storage: null,
         basePath: 'proc_def_arcv',
         isOpen: false, // inner var
 
@@ -139,8 +138,6 @@ export default {
         },
     },
     created() {
-        var me = this
-        me.storage = StorageBaseFactory.getStorage();
     },
     methods: {
         async load() {

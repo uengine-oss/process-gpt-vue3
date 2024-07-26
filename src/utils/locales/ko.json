@@ -73,6 +73,9 @@
     "runningInstance": {
         "title": "실행 중인 인스턴스"
     },
+    "admin": {
+      "title": "관리자 메뉴"   
+    },
     "completeInstance": {
         "title": "종료된 인스턴스"
     },

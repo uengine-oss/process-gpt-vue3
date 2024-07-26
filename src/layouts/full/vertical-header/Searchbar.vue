@@ -47,8 +47,8 @@ import { Icon } from '@iconify/vue';
 </template>
 
 <script>
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
-const storage = StorageBaseFactory.getStorage();
+import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
 
 export default {
     data: () => ({
@@ -65,7 +65,7 @@ export default {
     },
     methods: {
         async search(keyword) {
-            this.searchResult = await storage.search(keyword)
+            this.searchResult = await backend.search(keyword)
         },
         summarize(text) {
             const startIndex = text.indexOf(this.searchKeyword);

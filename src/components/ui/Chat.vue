@@ -491,10 +491,8 @@
                 </div>
             </form>
         </div>
-        <v-dialog v-model="recordingMode" fullscreen>
-            <Record @close="recordingModeChange()" @start="startRecording()" @stop="stopRecording()"
-                :audioResponse="newMessage" :chatRoomId="chatRoomId" />
-        </v-dialog>
+        <Record @close="recordingModeChange()" @start="startRecording()" @stop="stopRecording()"
+            :audioResponse="newMessage" :chatRoomId="chatRoomId" :recordingMode="recordingMode" />
     </div>
 </template>
 
