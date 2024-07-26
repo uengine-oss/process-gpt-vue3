@@ -72,6 +72,7 @@ declare global {
       $supabase: any;
       $jms: any;
       $isTenantServer: boolean;
+      $tenantName: string;
     }
 }
 
@@ -120,6 +121,7 @@ async function setupSupabase() {
         } else {
             let res: any;
             window.$isTenantServer = false;
+            window.$tenantName = subdomain;
             await (async () => {
                 let options: {
                     key: string;
