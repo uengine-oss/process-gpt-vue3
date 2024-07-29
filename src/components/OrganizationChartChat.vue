@@ -182,10 +182,14 @@ export default {
             if (messageWriting.jsonContent) {
                 let unknown;
                 try {
-                    unknown = partialParse(messageWriting.jsonContent);
+                    unknown = JSON.parse(messageWriting.jsonContent)
                 } catch(e) {
-                    console.log(e)
-                    return;
+                    try {
+                        unknown = partialParse(messageWriting.jsonContent);
+                    } catch(e) {
+                        console.log(e)
+                        return;
+                    }
                 }
 
                 if (unknown && unknown.modifications) {
