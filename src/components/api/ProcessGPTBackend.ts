@@ -151,7 +151,11 @@ class ProcessGPTBackend implements Backend {
 
     async getRawDefinition(defId: string, options: any) {
         try {
-            if(defId) defId = defId.toLowerCase();
+            if (defId) {
+                defId = defId.toLowerCase();
+            } else {
+                return;
+            }
 
             if (options) {
                 // 폼 정보를 불러오기 위해서
@@ -727,7 +731,7 @@ class ProcessGPTBackend implements Backend {
                     "content": inputData.parameterValues["user_input_text"],
                     "timeStamp": new Date().toISOString()
                 }
-                this.updateInstanceChat(workItem.proc_inst_id, [newMessage]);
+                this.updateInstanceChat(workItem.proc_inst_id, newMessage);
             }
 
             const input = {
