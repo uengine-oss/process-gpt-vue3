@@ -80,8 +80,6 @@ import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import Chat from "@/components/ui/Chat.vue";
 import OrganizationChart from "@/components/ui/OrganizationChart.vue";
 
-const storageKey = 'configuration'
-
 export default {
     mixins: [ChatModule],
     components: {
@@ -101,9 +99,7 @@ export default {
     }),
     async created() {
         await this.init();
-
-        const defaultName = window.$mode == 'uEngine' ? 'uEngine6' : 'Process-GPT'
-        const defaultImage = window.$mode == 'uEngine' ? '/src/assets/images/chat/uengine6-bpm-favicon.png' : '/src/assets/images/chat/chat-icon.png'
+        const defaultName = window.$tenantName || window.$mode;
 
         this.generator = new ChatGenerator(this, {
             isStream: true,
@@ -115,7 +111,7 @@ export default {
                 id: "root",
                 data: {
                     id: "root",
-                    img: defaultImage,
+                    img: "",
                     name: defaultName,
                 },
                 children: []
@@ -123,9 +119,17 @@ export default {
         }
     },
     methods: {
-        async loadData(path) {
-            const data = await this.getData(`${storageKey}/organization`, {key: 'key'});
+        uuid() {
+            function s4() {
+                return Math.floor((1 + Math.random()) * 0x10000)
+                    .toString(16)
+                    .substring(1);
+            }
 
+            return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+        },
+        async loadData(path) {
+            const data = await this.getData(`configuration/organization`, {key: 'key'});
             if (data && data.value) {
                 if (data.value.chart) {
                     this.organizationChart = data.value.chart;
@@ -135,20 +139,20 @@ export default {
                 }
             }
 
-            const message = await this.getData(`${storageKey}/organization_chat`, {key: 'key'});
-            if (message && message.value) {
-                if (message.value.message) {
-                    this.messages = message.value.message
-                }
-            }
+            await this.getChatList('organization_chart_chat');
 
             this.userList = await this.storage.list("users");
         },
-
         beforeSendMessage(newMessage) {
             this.sendMessage(newMessage);
+            const msgObj = this.createMessageObj(newMessage);
+            const putObj =  {
+                id: 'organization_chart_chat',
+                uuid: this.uuid(),
+                messages: msgObj,
+            };
+            this.putObject("chats", putObj);
         },
-
         afterModelCreated(response) {
             let messageWriting = this.messages[this.messages.length - 1];
 
@@ -168,18 +172,13 @@ export default {
                 }
             }
         },
-
         drawChart(obj) {
             if (obj && obj.organizationChart) {
                 this.organizationChart = obj.organizationChart;
             }
         },
-
         async afterGenerationFinished(response) {
             let messageWriting = this.messages[this.messages.length - 1];
-            if (messageWriting.isLoading) {
-                messageWriting.isLoading = false
-            }
             if (messageWriting.jsonContent) {
                 let unknown;
                 try {
@@ -214,29 +213,27 @@ export default {
                         }
                     };
                     this.drawChart(this.organizationChart);
-                    this.putObject(storageKey, putObj);
+                    this.putObject("configuration", putObj);
                 }
             }
 
-            const msgObj =  {
-                key: 'organization_chat',
-                value: {
-                    message: this.messages,
-                }
-            };
-            this.putObject(storageKey, msgObj);
-        },
-
-        afterModelStopped(response) {
+            const newMessage = this.messages[this.messages.length - 1];
             const putObj =  {
-                key: 'organization_chat',
-                value: {
-                    message: this.messages,
-                }
+                id: 'organization_chart_chat',
+                uuid: this.uuid(),
+                messages: newMessage,
             };
-            this.putObject(storageKey, putObj);
+            this.putObject("chats", putObj);
         },
-
+        afterModelStopped(response) {
+            const newMessage = this.messages[this.messages.length - 1];
+            const putObj =  {
+                id: 'organization_chart_chat',
+                uuid: this.uuid(),
+                messages: newMessage,
+            };
+            this.putObject("chats", putObj);
+        },
         async createNewUser(users) {
             if (users && users.length > 0) {
                 users.forEach(async user => {
@@ -260,7 +257,6 @@ export default {
             this.newUserList = [];
             this.userDialog = false;
         },
-
         async deleteUser(users) {
             if (users && users.length > 0) {
                 users.forEach(async user => {
@@ -275,7 +271,6 @@ export default {
                 this.userList = await this.storage.list("users");
             }
         },
-
         async updateNode() {
             const putObj =  {
                 key: 'organization',
@@ -283,7 +278,7 @@ export default {
                     chart: this.organizationChart,
                 }
             };
-            await this.putObject(storageKey, putObj);
+            await this.putObject("configuration", putObj);
         },
     }
 }
