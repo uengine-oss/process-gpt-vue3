@@ -47,13 +47,13 @@ hr {
 }
 
 .highlight:not(.djs-connection) .djs-visual> :nth-child(1) {
-    stroke-width: 2px !important;
-    stroke: #5140bd !important;
-    fill: #5140bd !important;
+    stroke-width: 5px !important;
+    stroke: #68369A !important;
+    /* fill: #68369A !important; */
 }
 
 .highlight:not(.djs-connection) .djs-visual> :nth-child(2) {
-    fill: #ffffff !important;
+    /* fill: #ffffff !important; */
 }
 
 /* 팔레트 커스텀 부분 */
@@ -134,6 +134,34 @@ hr {
     position: absolute;
     top: 10px;
     right: 5px
+}
+/* 화면정의 2중 border 제거 스타일 (시작)  */
+/* .form-definition-panel-box .v-text-field .v-field--no-label input, 
+.form-definition-panel-box .v-text-field .v-field--active input {
+    border: none;
+}
+
+.container-setting-box .v-text-field .v-field--no-label input, 
+.container-setting-box .v-text-field .v-field--active input {
+    border: none;
+}
+
+.form-save-box  .v-text-field .v-field--no-label input, 
+.form-save-box .v-text-field .v-field--active input {
+    border: none;
+} */
+/* 화면정의 2중 border 제거 스타일 (끝)  */
+
+.form-dialog-close-btn {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+}
+
+.form-apply-btn {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
 }
 
 @media only screen and (max-width:1450px) {

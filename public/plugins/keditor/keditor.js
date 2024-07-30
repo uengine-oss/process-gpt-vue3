@@ -117,14 +117,14 @@
     // Default configuration of KEditor
     KEditor.DEFAULTS = {
         niceScrollEnabled: true,
-        btnMoveContainerText: '<i class="fa fa-sort"></i>',
+        btnMoveContainerText: '<i class="mdi mdi-arrow-all"></i>',
         btnMoveComponentText: '<i class="fa fa-arrows"></i>',
-        btnSettingContainerText: '<i class="fa fa-cog"></i>',
-        btnSettingComponentText: '<i class="fa fa-cog"></i>',
-        btnDuplicateContainerText: '<i class="fa fa-files-o"></i>',
-        btnDuplicateComponentText: '<i class="fa fa-files-o"></i>',
-        btnDeleteContainerText: '<i class="fa fa-times"></i>',
-        btnDeleteComponentText: '<i class="fa fa-times"></i>',
+        btnSettingContainerText: '<i class="mdi mdi-pencil"></i>',
+        btnSettingComponentText: '<i class="mdi mdi-pencil"></i>',
+        btnDuplicateContainerText: '<i class="mdi mdi-content-duplicate"></i>',
+        btnDuplicateComponentText: '<i class="mdi mdi-content-duplicate"></i>',
+        btnDeleteContainerText: '<i class="mdi mdi-delete"></i>',
+        btnDeleteComponentText: '<i class="mdi mdi-delete"></i>',
         tabContainersText: 'Containers',
         tabContainersTitle: 'Containers',
         tabComponentsText: 'Components',
@@ -594,17 +594,21 @@
             $('<div />').html(resp).find('> div').each(function (i) {
                 var snippet = $(this);
                 var content = snippet.html().trim();
-                var previewUrl = snippet.attr('data-preview');
+                var previewName = snippet.attr('data-preview');
                 var previewStyle = snippet.attr('data-preview-style');
                 var type = snippet.attr('data-type');
                 var title = snippet.attr('data-keditor-title');
                 var snippetHtml = '';
                 var categories = snippet.attr('data-categories') || '';
                 
+                // 기본 경로와 확장자를 추가하여 previewUrl 생성
+                var previewUrl = '/snippets/default/preview/' + previewName + '.svg';
+                
                 flog('Snippet #' + i + ' type=' + type + ' categories=' + categories, previewUrl, content);
                 
-                snippetHtml += '<section class="keditor-ui keditor-snippet" data-snippet="#keditor-snippet-' + i + '" data-type="' + type + '" ' + (options.snippetsTooltipEnabled ? 'data-toggle="tooltip" data-placement="' + options.snippetsTooltipPosition + '"' : '') + ' title="' + title.replace(/\\n/g, '&#10;') + '" data-categories="' + categories + '">';
+                snippetHtml += '<section class="keditor-ui keditor-snippet" data-snippet="#keditor-snippet-' + i + '" data-type="' + type + '" data-categories="' + categories + '">';
                 snippetHtml += '   <img class="keditor-ui keditor-snippet-preview" src="' + previewUrl + '" style="'+previewStyle+'"/>';
+                snippetHtml += '   <div class="keditor-snippet-title">' + title.replace(/\\n/g, '&#10;') + '</div>'; // Add title text
                 snippetHtml += '</section>';
                 
                 categories = categories.split(options.snippetsCategoriesSeparator);
@@ -909,7 +913,10 @@
                 settingForm.addClass('active');
             }
 
-            self.toggleSidebar(true);
+            // 오른쪽 레이아웃 추가 를 위한 판넬 는 부분 (시작)
+            // self.toggleSidebar(true);
+            // 오른쪽 레이아웃 추가 를 위한 판넬 는 부분 (끝)
+            
             // body.addClass('opened-keditor-setting');
         },
         

@@ -45,12 +45,12 @@
                 </div>
             </template>
             <template v-slot:rightpart>
-                <v-tabs v-model="currentTabName" style="position: fixed; z-index: 999" class="text-black" fixed-tabs>
+                <v-tabs v-model="currentTabName" style="position: fixed; z-index: 999" color="primary" fixed-tabs>
                     <v-tab value="edit">편집</v-tab>
                     <v-tab value="preview">미리보기</v-tab>
                 </v-tabs>
                 <v-window v-model="currentTabName" class="fill-height">
-                    <v-window-item value="edit" class="fill-height mt-15" style="overflow-y: auto">
+                    <v-window-item value="edit" class="fill-height mt-12" style="overflow-y: auto">
                         <mashup
                             v-if="isShowMashup"
                             ref="mashup"
