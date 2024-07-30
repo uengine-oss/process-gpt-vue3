@@ -228,9 +228,10 @@ import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
-import XmlViewer from 'vue3-xml-viewer';
-import InstanceNamePatternForm from '@/components/designer/InstanceNamePatternForm.vue';
-import BackendFactory from '@/components/api/BackendFactory';
+import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
+import XmlViewer from 'vue3-xml-viewer'
+import InstanceNamePatternForm from '@/components/designer/InstanceNamePatternForm.vue'
+import BackendFactory from "@/components/api/BackendFactory";
 
 export default {
     name: 'ProcessDefinition',
@@ -243,6 +244,7 @@ export default {
         VDataTable,
         ProcessExecuteDialog,
         DryRunProcess,
+        'process-gpt-execute': ProcessGPTExecute,
         XmlViewer,
         InstanceNamePatternForm
     },

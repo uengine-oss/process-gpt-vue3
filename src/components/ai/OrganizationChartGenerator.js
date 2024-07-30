@@ -7,6 +7,7 @@ export default class OrganizationChartGenerator extends AIGenerator{
 
         this.contexts = null;
 
+        const companyName = window.$tenantName || window.$mode;
         const organizaionChart = JSON.stringify(client.organizaionChart);
         const users = JSON.stringify(client.userList);
 
@@ -24,15 +25,15 @@ export default class OrganizationChartGenerator extends AIGenerator{
                     "id": "root", // root 는 절대 변경되지 말아야해
                     "data": {
                         "id": "root",
-                        "img": "/src/assets/images/chat/chat-icon.png",
-                        "name": "Process-GPT"
+                        "img": "",
+                        "name": "${companyName}" // 회사 이름
                     },
                     "children": [
                         {
                             "id": "String-based unique id of the team",
                             "data": {
                                 "id": "String-based unique id of the team",
-                                "img": "/src/assets/images/chat/chat-icon.png",  // 팀 이미지가 없는 경우 기본값으로 사용할 이미지
+                                "img": "",
                                 "name": "team name",
                                 "isTeam": true // 부서 혹은 팀인 경우 항상 true
                             },
@@ -60,8 +61,7 @@ export default class OrganizationChartGenerator extends AIGenerator{
             
             - 가입된 직원 목록:
             ${users}
-            
-            
+                        
             - 신규 사원의 입사
             : 이름, 이메일 (유일키), 직급, 소속팀, 역할, 프로필 이미지 등 입사자의 정보를 입력 받아야해. 입력 받은 정보로 직원 목록에서 가입된 사람인지 확인하고 만약 가입된 유저가 아니라면 회원가입 처리를 위해 이름과 이메일을 다음과 같은 json 포맷을 리턴해줘:
             예시)

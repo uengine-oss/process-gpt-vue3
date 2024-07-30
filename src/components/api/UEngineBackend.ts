@@ -7,6 +7,19 @@ class UEngineBackend implements Backend {
     //     super();
     // }
 
+    async getNotifications() {
+        // Placeholder implementation
+        return [];
+    }
+
+    async setNotifications(value: any) {
+        // Placeholder implementation
+    }
+
+    async search(keyword: string) {
+        // Placeholder implementation
+        return [];
+    }
     // Process Definition Service Impl API
     async listDefinition(basePath: string) {
         let url = '/definition';

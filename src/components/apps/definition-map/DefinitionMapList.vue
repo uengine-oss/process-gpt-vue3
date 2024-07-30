@@ -101,7 +101,7 @@ export default {
                 subProcList = subProcList.map(sub => sub.id);
                 const backend = BackendFactory.createBackend();
                 let definitions = await backend.listDefinition();
-                definitions = definitions.filter(definition => !subProcList.includes(definition.id));
+                definitions = definitions.filter(definition => !subProcList.includes(definition.id) && !definition.path.includes('.form'));
                 if (definitions.length > 0) {
                     definitions = definitions.map(definition => { return { id: definition.id, name: definition.name } });
                     if (unclassifiedIdx == -1) {

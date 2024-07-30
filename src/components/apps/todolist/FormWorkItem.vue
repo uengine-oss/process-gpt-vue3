@@ -27,7 +27,7 @@
         <!-- <FormMapper></FormMapper> -->
         <Instruction :workItem="workItem" />
         <DynamicForm ref="dynamicForm" :formHTML="html" v-model="formData"></DynamicForm>
-        <AudioTextarea v-if="!isCompleted" v-model="newMessage" :workItem="workItem" />
+        <AudioTextarea v-if="!isCompleted" v-model="newMessage" :workItem="workItem" @close="close" />
         <CheckPoints :workItem="workItem" />
     </div>
 </template>
@@ -123,7 +123,11 @@ export default {
             }
 
             me.EventBus.on('form-values-updated', (formValues) => {
-                me.formData = formValues
+                if(formValues){
+                    Object.keys(formValues).forEach(function (key){
+                        me.formData[key] = formValues[key]
+                    })
+                }
             });
         },
         async loadForm(){
