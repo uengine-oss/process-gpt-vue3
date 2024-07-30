@@ -1,18 +1,28 @@
 <template>
     <div>
-        <draggable class="list-group cursor-pointer" :list="condition" :animation="0" ghost-class="ghost-card"
-            group="condition">
-            
+        <draggable class="list-group cursor-pointer" :list="condition" :animation="0" ghost-class="ghost-card" group="condition">
             <template v-for="(item, idx) in getConditions(condition)" :key="idx">
                 <div v-if="checkCondition(item)" class="d-flex">
-                    <v-combobox v-model="item.key" :items="varItems" variant="outlined"
-                        style="max-width: 100px; overflow-x: hidden;"></v-combobox>
+                    <v-combobox
+                        v-model="item.key"
+                        :items="varItems"
+                        variant="outlined"
+                        style="max-width: 100px; overflow-x: hidden"
+                    ></v-combobox>
 
-                    <v-select v-model="item.condition" :items="conditionList" class="mx-1"
-                        style="max-width: 100px; overflow-x: hidden;"></v-select>
+                    <v-select
+                        v-model="item.condition"
+                        :items="conditionList"
+                        class="mx-1"
+                        style="max-width: 100px; overflow-x: hidden"
+                    ></v-select>
 
-                    <v-combobox v-model="item.value" :items="varItems" variant="outlined"
-                        style="max-width: 100px; overflow-x: hidden;"></v-combobox>
+                    <v-combobox
+                        v-model="item.value"
+                        :items="varItems"
+                        variant="outlined"
+                        style="max-width: 100px; overflow-x: hidden"
+                    ></v-combobox>
 
                     <v-btn icon variant="text">
                         <DotsVerticalIcon />
@@ -25,7 +35,7 @@
                         </v-menu>
                     </v-btn>
 
-                    <v-btn  v-if="idx == getConditions(condition).length - 1"  icon variant="text" @click="addCondition(item)">
+                    <v-btn v-if="idx == getConditions(condition).length - 1" icon variant="text" @click="addCondition(item)">
                         <v-icon>mdi-plus</v-icon>
                     </v-btn>
                     <v-btn v-if="getConditions(condition).length > 1" icon variant="text" @click="deleteCondition(item, idx)">
@@ -41,7 +51,7 @@
                             <Icons :icon="'trash'" />
                         </v-btn>
                     </div>
-                    <ConditionField :value="item.conditionsVt" />
+                    <ConditionField :value="item.conditionsVt ? item.conditionsVt : item.condition" @update:value="(val) => updateChild(item, val)" />
                 </div>
             </template>
         </draggable>
@@ -54,21 +64,14 @@ import { useBpmnStore } from '@/stores/bpmn';
 export default {
     name: 'ConditionField',
     props: {
-        value: Object,
+        value: Object
     },
     data() {
         return {
             condition: {},
             varItems: [],
-            conditionList: [
-                '==',
-                '!=',
-                '>',
-                '>=',
-                '<',
-                '<=',
-            ],
-            menuList: ["AND", "OR", "NOT"],
+            conditionList: ['==', '!=', '>', '>=', '<', '<='],
+            menuList: ['AND', 'OR', 'NOT'],
             modeler: null
         };
     },
@@ -76,9 +79,10 @@ export default {
         condition: {
             deep: true,
             handler(val) {
-                this.$emit("update:value", val);
-            },
-        },
+                console.log(val);
+                this.$emit('update:value', val);
+            }
+        }
     },
     async created() {
         if (this.value) {
@@ -88,7 +92,7 @@ export default {
                 _type: 'org.uengine.kernel.Evaluate',
                 key: '',
                 value: '',
-                condition: '',
+                condition: ''
             };
         }
 
@@ -107,25 +111,29 @@ export default {
     mounted() {
         const bpmnStore = useBpmnStore();
         const modeler = bpmnStore.getModeler;
-        const def = modeler.getDefinitions()
-        console.log(def)
+        const def = modeler.getDefinitions();
+        console.log(def);
         def.rootElements.forEach((ele) => {
-            if (ele.$type == "bpmn:Process") {
-                ele.extensionElements?.values?.forEach(props => {
-                    if (props.$type == "uengine:Properties") {
-                        props.variables?.forEach(val => {
-                            this.varItems.push(val.$attrs.name)
-                        })
+            if (ele.$type == 'bpmn:Process') {
+                ele.extensionElements?.values?.forEach((props) => {
+                    if (props.$type == 'uengine:Properties') {
+                        props.variables?.forEach((val) => {
+                            this.varItems.push(val.$attrs.name);
+                        });
                     }
-                })
+                });
             }
-        })
+        });
     },
     methods: {
+        updateChild(item, val) {
+            //
+            if(item._type == 'org.uengine.kernel.Not')
+            item.condition = val
+        },
         changeCondition(item, type) {
             const child = JSON.parse(JSON.stringify(item));
-
-            if (type == "AND") {
+            if (type == 'AND') {
                 item.conditionsVt = [];
                 item.conditionsVt.push(child);
                 item._type = 'org.uengine.kernel.And';
@@ -133,12 +141,12 @@ export default {
                     _type: 'org.uengine.kernel.Evaluate',
                     key: '',
                     value: '',
-                    condition: '',
+                    condition: ''
                 });
                 delete item.key;
                 delete item.value;
                 delete item.condition;
-            } else if (type == "OR") {
+            } else if (type == 'OR') {
                 item.conditionsVt = [];
                 item.conditionsVt.push(child);
                 item._type = 'org.uengine.kernel.Or';
@@ -146,61 +154,63 @@ export default {
                     _type: 'org.uengine.kernel.Evaluate',
                     key: '',
                     value: '',
-                    condition: '',
+                    condition: ''
                 });
                 delete item.key;
                 delete item.value;
                 delete item.condition;
-            } else if (type == "NOT") {
-                item._type = 'org.uengine.kernel.NOT';
+            } else if (type == 'NOT') {
+                item._type = 'org.uengine.kernel.Not';
+                delete item.key;
+                delete item.value;
+                delete item.condition;
             }
         },
         deleteCondition(item, idx) {
-            if(Array.isArray(this.condition)){
+            if (Array.isArray(this.condition)) {
                 this.condition.splice(idx, 1);
                 if (this.condition.length == 0) {
-                    this.condition ={
+                    this.condition = {
                         _type: 'org.uengine.kernel.Evaluate',
                         key: '',
                         value: '',
-                        condition: '',
+                        condition: ''
                     };
                 }
             } else {
-                this.condition ={
+                this.condition = {
                     _type: 'org.uengine.kernel.Evaluate',
                     key: '',
                     value: '',
-                    condition: '',
+                    condition: ''
                 };
             }
         },
         addCondition(item) {
-
-            if(Array.isArray(this.condition)){
+            if (Array.isArray(this.condition)) {
                 this.condition.push({
-                        _type: 'org.uengine.kernel.Evaluate',
-                        key: '',
-                        value: '',
-                        condition: '',
-                    });
-            }else {
-                this.changeCondition(item, "AND")
+                    _type: 'org.uengine.kernel.Evaluate',
+                    key: '',
+                    value: '',
+                    condition: ''
+                });
+            } else {
+                this.changeCondition(item, 'AND');
             }
         },
         checkCondition(item) {
-            const condition = item._type.includes('Evaluate')
+            const condition = item._type.includes('Evaluate');
             return condition;
         },
         getConditions(item) {
             var result = [];
             if (Array.isArray(item)) {
                 result = item;
-            }else{
+            } else {
                 result.push(item);
             }
             return result;
-        },
+        }
     }
-}
+};
 </script>

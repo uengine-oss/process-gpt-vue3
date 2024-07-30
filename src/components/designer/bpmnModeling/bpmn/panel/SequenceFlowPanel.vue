@@ -121,6 +121,9 @@ export default {
                 let name = 'condition'
                 if (this.copyUengineProperties.condition.conditionsVt) {
                     name = 'multiCondition';
+                } else if (this.copyUengineProperties.condition.condition) {
+                    expression = this.copyUengineProperties.condition;
+                    name = "NOT " + expression.condition.key + " " + expression.condition.condition + " " + expression.condition.value;
                 } else {
                     expression = this.copyUengineProperties.condition;
                     name = expression.key + " " + expression.condition + " " + expression.value;
