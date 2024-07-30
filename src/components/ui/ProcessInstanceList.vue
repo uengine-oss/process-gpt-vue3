@@ -36,16 +36,16 @@ export default {
         await this.loadInstances();
     },
     mounted() {
-        const storage = StorageBaseFactory.getStorage();
-        storage.watch('proc_inst', async (data) => {
-            if(data && data.new){
-                await this.loadInstances();
-            }
-        });
+        // const storage = StorageBaseFactory.getStorage();
+        // storage.watch('proc_inst', async (data) => {
+        //     if(data && data.new){
+        //         await this.loadInstances();
+        //     }
+        // });
 
-        this.EventBus.on('instances-updated', async () => {
-            await this.loadInstances();
-        });
+        // this.EventBus.on('instances-updated', async () => {
+        //     await this.loadInstances();
+        // });
     },
     computed: {
         JMS() {

@@ -63,12 +63,12 @@ export default {
         filteredNotifications: [],
     }),
     async created() {
-        await this.getNotifications();
-        await storage.watch('notifications', async (data) => {
-            if(data && data.new) {
-                await this.getNotifications();
-            }
-        });
+        // await this.getNotifications();
+        // await storage.watch('notifications', async (data) => {
+        //     if(data && data.new) {
+        //         await this.getNotifications();
+        //     }
+        // });
     },
     computed: {
         notiCount() {

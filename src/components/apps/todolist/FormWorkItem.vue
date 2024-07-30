@@ -71,6 +71,10 @@ export default {
                 return []
             }
         },
+        isSimulate: {
+            type: Boolean,
+            default: false
+        }
     },
     data: () => ({
         html: null,
@@ -156,7 +160,7 @@ export default {
 
                     await me.saveForm();
                     ///////////////////////////////////
-                    await backend.putWorkItem(me.$route.params.taskId, { parameterValues: {} });
+                    await backend.putWorkItem(me.$route.params.taskId, { parameterValues: {} }, me.isSimulate);
                 },
                 successMsg: '중간 저장 완료'
             });
@@ -236,7 +240,7 @@ export default {
                         if (this.newMessage && this.newMessage.length > 0) {
                             workItem['user_input_text'] = this.newMessage;
                         }
-                        await backend.putWorkItemComplete(me.$route.params.taskId, workItem);
+                        await backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate);
                         me.$router.push('/todolist');
                     }
                 }
