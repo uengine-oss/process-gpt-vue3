@@ -199,8 +199,11 @@
         </v-dialog>
 
         <v-dialog v-model="executeDialog" max-width="80%">
-            <process-execute-dialog v-if="mode === 'LLM'" :definitionId="definitionPath" @close="executeDialog = false"></process-execute-dialog>
-            <dry-run-process v-else :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
+            <process-gpt-execute v-if="mode === 'LLM'" :definitionId="definitionPath" @close="executeDialog = false"></process-gpt-execute>
+            <div v-else>
+                <process-execute-dialog :definitionId="definitionPath" @close="executeDialog = false"></process-execute-dialog>
+                <dry-run-process :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
+            </div>
         </v-dialog>
 
         <!-- <v-navigation-drawer permanent location="right" :width="400"> {{ panelId }} </v-navigation-drawer> -->
@@ -220,6 +223,7 @@ import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
+import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
 import XmlViewer from 'vue3-xml-viewer'
 import InstanceNamePatternForm from '@/components/designer/InstanceNamePatternForm.vue'
 import BackendFactory from "@/components/api/BackendFactory";
@@ -235,6 +239,7 @@ export default {
         VDataTable,
         ProcessExecuteDialog,
         DryRunProcess,
+        'process-gpt-execute': ProcessGPTExecute,
         XmlViewer,
         InstanceNamePatternForm
     },

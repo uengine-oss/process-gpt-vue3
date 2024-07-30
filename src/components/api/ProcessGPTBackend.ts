@@ -231,7 +231,7 @@ class ProcessGPTBackend implements Backend {
                 input.role_mappings = [];
             }
             input['process_definition_id'] = defId.toLowerCase();
-            if (input.chat_room_id) {
+            if (!input.chat_room_id) {
                 input['chat_room_id'] = `${input.process_definition_id}.${this.uuid()}`;
             }
 

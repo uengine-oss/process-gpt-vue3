@@ -80,8 +80,11 @@
             <div v-else></div>
         </v-card-text>
         <v-dialog v-model="executeDialog">
-            <process-execute-dialog v-if="mode === 'ProcessGPT'" :definitionId="processDefinition.id" @close="executeDialog = false"></process-execute-dialog>
-            <dry-run-process v-else :definitionId="processDefinition.id"  @close="executeDialog = false"></dry-run-process>
+            <process-gpt-execute v-if="mode === 'ProcessGPT'" :definitionId="processDefinition.id" @close="executeDialog = false"></process-gpt-execute>
+            <div v-else>
+                <process-execute-dialog :definitionId="processDefinition.id" @close="executeDialog = false"></process-execute-dialog>
+                <dry-run-process :definitionId="processDefinition.id"  @close="executeDialog = false"></dry-run-process>
+            </div>
         </v-dialog>
     </v-card>
 </template>
@@ -90,6 +93,7 @@
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import ProcessExecuteDialog from '@/components/apps/definition-map/ProcessExecuteDialog.vue';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
+import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
 import BaseProcess from './BaseProcess.vue'
 
 import BackendFactory from '@/components/api/BackendFactory';
@@ -98,7 +102,8 @@ export default {
     components: {
         ProcessDefinition,
         ProcessExecuteDialog,
-        'dry-run-process': DryRunProcess
+        'dry-run-process': DryRunProcess,
+        'process-gpt-execute': ProcessGPTExecute
     },
     mixins: [BaseProcess],
     props: {
