@@ -324,7 +324,7 @@ export default {
             } 
         },
         checkDisableChat() {
-            if (this.isComplete) {
+            if (this.isComplete || this.isAgentMode) {
                 this.disableChat = true;
             }
 

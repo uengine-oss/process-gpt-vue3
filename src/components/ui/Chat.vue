@@ -382,6 +382,7 @@
                                     label="Choose a file"
                                     prepend-icon="mdi-paperclip"
                                     outlined
+                                    :disabled="disableChat"
                                 ></v-file-input>
                                 <v-tooltip v-if="type == 'chats'" :text="ProcessGPTActive ? $t('chat.isDisableProcessGPT') : $t('chat.isEnableProcessGPT')">
                                     <template v-slot:activator="{ props }">
