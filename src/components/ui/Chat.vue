@@ -36,7 +36,7 @@
                                     <small style="white-space: pre-line; font-size:14px;">
                                         {{ filteredAlert.detail }}
                                     </small>
-                                    <v-btn @click="reGenerateAgentAI()" color="primary" style="margin-left: 10px;" v-if="filteredAlert.detail == 'Agent 기능을 사용해 제안서 초안을 작성하십시오.' && !showDraftDialog">try again</v-btn>
+                                    <v-btn @click="reGenerateAgentAI()" color="primary" style="margin-left: 10px;" v-if="filteredAlert.detail == 'Agent 기능을 사용해 제안서 초안을 작성하십시오.'">try again</v-btn>
                                 </v-alert>
                                 
                                 <div v-for="(message, index) in filteredMessages" :key="index" class="px-1 py-1">
@@ -382,6 +382,7 @@
                                     label="Choose a file"
                                     prepend-icon="mdi-paperclip"
                                     outlined
+                                    :disabled="disableChat"
                                 ></v-file-input>
                                 <v-tooltip v-if="type == 'chats'" :text="ProcessGPTActive ? $t('chat.isDisableProcessGPT') : $t('chat.isEnableProcessGPT')">
                                     <template v-slot:activator="{ props }">
@@ -491,10 +492,8 @@
                 </div>
             </form>
         </div>
-        <v-dialog v-model="recordingMode" fullscreen>
-            <Record @close="recordingModeChange()" @start="startRecording()" @stop="stopRecording()"
-                :audioResponse="newMessage" :chatRoomId="chatRoomId" />
-        </v-dialog>
+        <Record @close="recordingModeChange()" @start="startRecording()" @stop="stopRecording()"
+            :audioResponse="newMessage" :chatRoomId="chatRoomId" :recordingMode="recordingMode" />
     </div>
 </template>
 
@@ -539,8 +538,7 @@ export default {
         generatedWorkList: Array,
         ProcessGPTActive: Boolean,
         isAgentMode: Boolean,
-        chatRoomId: String,
-        showDraftDialog: Boolean
+        chatRoomId: String
     },
     data() {
         return {

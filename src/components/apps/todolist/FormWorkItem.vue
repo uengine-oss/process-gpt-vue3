@@ -27,7 +27,7 @@
         <!-- <FormMapper></FormMapper> -->
         <Instruction :workItem="workItem" />
         <DynamicForm ref="dynamicForm" :formHTML="html" v-model="formData"></DynamicForm>
-        <AudioTextarea v-if="!isCompleted" v-model="newMessage" :workItem="workItem" />
+        <AudioTextarea v-if="!isCompleted" v-model="newMessage" :workItem="workItem" @close="close" />
         <CheckPoints :workItem="workItem" />
     </div>
 </template>
@@ -71,6 +71,10 @@ export default {
                 return []
             }
         },
+        isSimulate: {
+            type: Boolean,
+            default: false
+        }
     },
     data: () => ({
         html: null,
@@ -119,7 +123,11 @@ export default {
             }
 
             me.EventBus.on('form-values-updated', (formValues) => {
-                me.formData = formValues
+                if(formValues){
+                    Object.keys(formValues).forEach(function (key){
+                        me.formData[key] = formValues[key]
+                    })
+                }
             });
         },
         async loadForm(){
@@ -156,7 +164,7 @@ export default {
 
                     await me.saveForm();
                     ///////////////////////////////////
-                    await backend.putWorkItem(me.$route.params.taskId, { parameterValues: {} });
+                    await backend.putWorkItem(me.$route.params.taskId, { parameterValues: {} }, me.isSimulate);
                 },
                 successMsg: '중간 저장 완료'
             });
@@ -236,7 +244,7 @@ export default {
                         if (this.newMessage && this.newMessage.length > 0) {
                             workItem['user_input_text'] = this.newMessage;
                         }
-                        await backend.putWorkItemComplete(me.$route.params.taskId, workItem);
+                        await backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate);
                         me.$router.push('/todolist');
                     }
                 }

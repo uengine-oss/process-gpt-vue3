@@ -117,7 +117,7 @@
                         </v-window-item>
                         <v-window-item value="agent" class="pa-2">
                             <v-card elevation="10" class="pa-4">
-                                <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
+                                <perfect-scrollbar v-if="messages" class="h-100" ref="scrollContainer" @scroll="handleScroll">
                                     <div class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
                                         <component
                                             :is="'work-history-' + mode"

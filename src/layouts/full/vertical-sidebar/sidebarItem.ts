@@ -60,6 +60,12 @@ const sidebarItem: menu[] = [
         BgColor: 'primary',
         to: "/organization",
     },
+     {
+        title: "시스템 정의",
+        icon: 'server-line-duotone',
+        BgColor: 'primary',
+        to: "/system",
+    },
     {
         title: "프로세스 정의",
         icon: 'chat-dots-linear',
@@ -71,6 +77,13 @@ const sidebarItem: menu[] = [
         icon: 'chat-dots-linear',
         BgColor: 'primary',
         to: "/ui-definitions/chat",
+    },
+    {
+        title: "정의 목록",
+        icon: 'list-outline',
+        BgColor: 'primary',
+        to: "/definitions",
+        children: []
     },
     {
         title: "정의 목록",

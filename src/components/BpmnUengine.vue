@@ -279,22 +279,32 @@ export default {
             }
 
             eventBus.on('drag.end', function (e) {
-                self.$emit('change');
+                self.debounce(() => {
+                    self.$emit('change');
+                }, 100)
             });
 
             eventBus.on('shape.removed', function (e) {
-                self.$emit('change');
+                self.debounce(() => {
+                    self.$emit('change');
+                }, 100)
             });
 
             eventBus.on('connection.removed', function (e) {
-                self.$emit('change');
+                self.debounce(() => {
+                    self.$emit('change');
+                }, 100)
             });
 
             eventBus.on('connection.added', function (e) {
-                self.$emit('change');
+                self.debounce(() => {
+                    self.$emit('change');
+                }, 100)
             });
 
-            self.$emit('change');
+            self.debounce(() => {
+                    self.$emit('change');
+                }, 100)
 
             // var events = ['element.hover', 'element.out', 'element.click', 'element.dblclick', 'element.mousedown', 'element.mouseup'];
             // events.forEach(function (event) {
@@ -370,6 +380,15 @@ export default {
         }
     },
     methods: {
+        debounce(func, timeout) {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    func.apply(this, args);
+                }, timeout);
+            };
+        },
         initializeViewer() {
             var container = this.$refs.container;
             var self = this;
@@ -405,27 +424,6 @@ export default {
             }
             if (self.diagramXML) {
                 self.bpmnViewer.importXML(self.diagramXML);
-            }
-
-            
-
-            try {
-                const commandStack = self.bpmnViewer.get('commandStack');
-                document.addEventListener('keydown', (event) => {
-                    if ((event.metaKey || event.ctrlKey) && event.key === 'z') {
-                        event.preventDefault();
-                        commandStack.undo();
-                    } else if (event.ctrlKey && event.key === 'y') {
-                        event.preventDefault();
-                        commandStack.redo();
-                    } else if(event.metaKey && event.shiftKey && event.key ==='z') {
-                        event.preventDefault();
-                        commandStack.redo();
-                    }
-                });
-            }
-            catch(e) {
-
             }
         },
         extendUEngineProperties(businessObject) {
@@ -624,16 +622,6 @@ export default {
                 .catch((err) => {
                     self.$emit('error', err);
                 });
-        },
-        undo() {
-            const self = this;
-            const commandStack = self.bpmnViewer.get('commandStack');
-            commandStack.undo();
-        },
-        redo() {
-            const self = this;
-            const commandStack = self.bpmnViewer.get('commandStack');
-            commandStack.redo();
         }
     }
 };

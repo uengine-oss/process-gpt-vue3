@@ -16,7 +16,7 @@
                         <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
                             <template v-slot:activator="{ props }">
                                 <v-btn @click="openProcessVariables" icon v-bind="props" class="cp-process-variables btn-variables">
-                                    <Icons :icon="'variable'" :width="32" :height="32"  />
+                                    <Icons :icon="'variable'" :width="32" :height="32" />
                                 </v-btn>
                             </template>
                         </v-tooltip>
@@ -24,16 +24,12 @@
                         <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
                             <template v-slot:activator="{ props }">
                                 <v-btn icon v-bind="props" @click="$globalState.methods.toggleZoom()" class="btn-zoom">
-                                    <Icons :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'" :size="32"/>
+                                    <Icons :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'" :size="32" />
                                 </v-btn>
                             </template>
                         </v-tooltip>
                     </v-row>
-                    <div v-if="isXmlMode"
-                        style="height: calc(100% - 70px);
-                        margin-top: 70px; overflow: auto;
-                        padding:10px;"
-                    >
+                    <div v-if="isXmlMode" style="height: calc(100% - 70px); margin-top: 70px; overflow: auto; padding: 10px">
                         <XmlViewer :xml="bpmn" />
                     </div>
                     <bpmnu-engine
@@ -92,21 +88,25 @@
                 <div class="d-flex">
                     <v-tabs v-model="processVariableTab" bg-color="transparent" height="50" color="primary">
                         <v-tab value="variable">
-                        {{ $t('processDefinition.editProcessData') }} 
+                            {{ $t('processDefinition.editProcessData') }}
                         </v-tab>
                         <v-tab value="pattern">
-                            {{ $t('processDefinition.instanceNamePattern') }} 
+                            {{ $t('processDefinition.instanceNamePattern') }}
                         </v-tab>
                     </v-tabs>
                     <v-btn icon variant="plain" class="ml-auto cp-v-close" @click="isViewProcessVariables = false">
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </div>
-                
-                <v-card-text style="overflow: auto; height:calc(100vh - 200px);">
+
+                <v-card-text style="overflow: auto; height: calc(100vh - 200px)">
                     <v-window v-model="processVariableTab">
                         <v-window-item value="variable">
-                            <VDataTable class="border rounded-md" :items-per-page="5" :items-per-page-text="$t('processDefinition.itemsPerPage')">
+                            <VDataTable
+                                class="border rounded-md"
+                                :items-per-page="5"
+                                :items-per-page-text="$t('processDefinition.itemsPerPage')"
+                            >
                                 <thead>
                                     <tr>
                                         <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.name') }}</th>
@@ -173,7 +173,11 @@
                             <div v-if="processVariablesWindow">
                                 <v-card variant="outlined">
                                     <v-card-text class="ma-0 pa-0">
-                                        <process-variable class="cp-v-add" mode="add" @add-variables="(val) => addUengineVariable(val)"></process-variable>
+                                        <process-variable
+                                            class="cp-v-add"
+                                            mode="add"
+                                            @add-variables="(val) => addUengineVariable(val)"
+                                        ></process-variable>
                                     </v-card-text>
                                 </v-card>
                             </div>
@@ -199,8 +203,12 @@
         </v-dialog>
 
         <v-dialog v-model="executeDialog" max-width="80%">
-            <process-execute-dialog v-if="mode === 'LLM'" :definitionId="definitionPath" @close="executeDialog = false"></process-execute-dialog>
-            <dry-run-process v-else :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
+            <process-execute-dialog
+                v-if="mode === 'LLM'"
+                :definitionId="definitionPath"
+                @close="executeDialog = false"
+            ></process-execute-dialog>
+            <dry-run-process v-else :definitionId="definitionPath" @close="executeDialog = false" :is-simulate="isViewMode"></dry-run-process>
         </v-dialog>
 
         <!-- <v-navigation-drawer permanent location="right" :width="400"> {{ panelId }} </v-navigation-drawer> -->
@@ -220,6 +228,7 @@ import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
+import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
 import XmlViewer from 'vue3-xml-viewer'
 import InstanceNamePatternForm from '@/components/designer/InstanceNamePatternForm.vue'
 import BackendFactory from "@/components/api/BackendFactory";
@@ -235,6 +244,7 @@ export default {
         VDataTable,
         ProcessExecuteDialog,
         DryRunProcess,
+        'process-gpt-execute': ProcessGPTExecute,
         XmlViewer,
         InstanceNamePatternForm
     },
@@ -256,7 +266,7 @@ export default {
         element: null,
         definitions: null,
         isViewProcessVariables: false,
-        processVariableTab:'variable',
+        processVariableTab: 'variable',
         copyProcessDefinition: null,
         processVariablesWindow: false,
         editDialog: false,
@@ -267,7 +277,7 @@ export default {
         bpmnModeler: null,
         processVariables: [],
         instanceNamePattern: null,
-        executeDialog: false,
+        executeDialog: false
         // definitionPath: null
     }),
     computed: {
@@ -287,12 +297,11 @@ export default {
             if (window.$jms) {
                 return false;
             } else if (!this.isViewMode && this.$route.path !== '/definitions/chat') {
-                return true
-            } else if (this.isViewMode && this.$route.path.includes('/definitions/') && 
-                this.$route.path !== '/definitions/chat') {
-                return true
+                return true;
+            } else if (this.isViewMode && this.$route.path.includes('/definitions/') && this.$route.path !== '/definitions/chat') {
+                return true;
             } else {
-                return false
+                return false;
             }
         },
         containerStyle() {
@@ -301,13 +310,13 @@ export default {
             };
         },
         options() {
-            let result =  {
+            let result = {
                 propertiesPanel: {
                     invalidationList: this.validationList
                 },
                 additionalModules: this.isViewMode ? [customBpmnModule] : [customBpmnModule, customPaletteModule]
             };
-            return result
+            return result;
         }
     },
     watch: {
@@ -456,9 +465,9 @@ export default {
                 extensionElements.get('values').push(uengineProperties);
             }
 
-            if(uengineProperties.json){
-                let processJson = JSON.parse(uengineProperties.json)
-                self.instanceNamePattern = processJson.instanceNamePattern ? processJson.instanceNamePattern : ''
+            if (uengineProperties.json) {
+                let processJson = JSON.parse(uengineProperties.json);
+                self.instanceNamePattern = processJson.instanceNamePattern ? processJson.instanceNamePattern : '';
             }
 
             uengineProperties?.variables?.forEach(function (variable) {
@@ -467,13 +476,16 @@ export default {
                     type: variable.$attrs.type
                 };
                 if (variable.json) {
-                    obj.defaultValue = JSON.parse(variable.json).defaultValue;
+                    obj = JSON.parse(variable.json);
                 }
+                obj.name= variable.$attrs.name,
+                obj.type= variable.$attrs.type
+                // console.log(obj, variable)
                 self.processVariables.push(obj);
             });
         },
 
-        updateInstanceNamePattern(val){
+        updateInstanceNamePattern(val) {
             let def = this.bpmnModeler.getDefinitions();
             const processElement = def.rootElements.find((element) => element.$type === 'bpmn:Process');
             if (!processElement) {
@@ -493,13 +505,13 @@ export default {
                 uengineProperties = extensionElements.values.find((val) => val.$type === 'uengine:Properties');
             }
 
-            let processJson = {}
-            if(uengineProperties.json){
-                processJson = JSON.parse(uengineProperties.json)  
-            } 
+            let processJson = {};
+            if (uengineProperties.json) {
+                processJson = JSON.parse(uengineProperties.json);
+            }
 
-            processJson.instanceNamePattern = val
-            uengineProperties.json = JSON.stringify(processJson)
+            processJson.instanceNamePattern = val;
+            uengineProperties.json = JSON.stringify(processJson);
         },
         changeElement() {
             this.$emit('change');
@@ -513,9 +525,9 @@ export default {
                 action: async () => {
                     const backend = BackendFactory.createBackend();
                     const input = {
-                        process_instance_id: "new",
-                        process_definition_id: me.processDefinition.processDefinitionId,
-                    }
+                        process_instance_id: 'new',
+                        process_definition_id: me.processDefinition.processDefinitionId
+                    };
                     const data = await backend.start(input);
                     if (data.instanceId) {
                         me.$router.push(`/instancelist/${btoa(data.instanceId)}`);
@@ -523,7 +535,7 @@ export default {
                     me.EventBus.emit('instances-updated');
                 },
                 successMsg: 'Process 실행 완료'
-            })
+            });
         },
         addUengineVariable(val) {
             if (val.type == 'Form') {
@@ -745,7 +757,7 @@ export default {
             }
             uengineProperties.get('variables')[this.editedIndex].$attrs.name = val.name;
             uengineProperties.get('variables')[this.editedIndex].$attrs.type = val.type;
-            uengineProperties.get('variables')[this.editedIndex].json = val.json;
+            uengineProperties.get('variables')[this.editedIndex].json = JSON.stringify(val);
 
             this.editDialog = false;
         },
@@ -765,7 +777,7 @@ export default {
             console.log(id);
             this.element = this.findElement(this.definitions, 'id', id);
 
-            if(this.element){
+            if (this.element) {
                 const businessObject = {};
                 businessObject.businessObject = this.element;
                 this.panel = true;

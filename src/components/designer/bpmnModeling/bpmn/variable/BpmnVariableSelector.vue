@@ -1,14 +1,14 @@
 <template>
     <div style="width: 100%">
         <div style="margin-right: 20px">
-            <v-select
-                v-model="selectVal"
+            <v-text-field
+                readonly
+                v-model="selectVal.name"
                 :items="processVariableDescriptors"
-                item-title="name"
                 label="Process Data"
                 @update:modelValue="(val) => onChanged(val)"
                 variant="outlined"
-            ></v-select>
+            ></v-text-field>
         </div>
 
         <div v-if="keys.length > 0">

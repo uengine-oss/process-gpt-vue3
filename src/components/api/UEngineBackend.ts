@@ -7,6 +7,19 @@ class UEngineBackend implements Backend {
     //     super();
     // }
 
+    async getNotifications() {
+        // Placeholder implementation
+        return [];
+    }
+
+    async setNotifications(value: any) {
+        // Placeholder implementation
+    }
+
+    async search(keyword: string) {
+        // Placeholder implementation
+        return [];
+    }
     // Process Definition Service Impl API
     async listDefinition(basePath: string) {
         let url = '/definition';
@@ -186,8 +199,16 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
-    async putWorkItemComplete(taskId: string, workItem: any) {
-        const response = await axiosInstance.post(`/work-item/${taskId}/complete`, workItem);
+    async putWorkItemComplete(taskId: string, workItem: any, isSimulate: boolean) {
+        let config = {};
+        if (isSimulate) {
+            config = {
+                headers: {
+                    'isSimulate': 'true'
+                }
+            };
+        }
+        const response = await axiosInstance.post(`/work-item/${taskId}/complete`, workItem, config);
         return response.data;
     }
 
@@ -448,8 +469,9 @@ class UEngineBackend implements Backend {
         }));
     }
 
-    async getDryRunInstance(defPath: String){
-        const response = await axiosInstance.get(`/dry-run/${defPath}`);
+    async getDryRunInstance(defPath: String, isSimulate: boolean){
+        const headers = isSimulate ? { headers: { 'isSimulate': 'true' } } : {};
+        const response = await axiosInstance.get(`/dry-run/${defPath}`, headers);
         // const response = await axiosInstance.get(encodeURI(`/dry-run/${defPath}`));
         // const response = await axiosInstance.get(encodeURI(`/dry-run/${encodeURIComponent(defPath.toString())}`));
         
@@ -457,8 +479,10 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
-    async startDryRun(command: object){
-        const response = await axiosInstance.post(`/dry-run`,command);
+    async startDryRun(command: object, isSimulate: boolean){
+        const headers = isSimulate ? { headers: { 'isSimulate': 'true' } } : {'isSimulate': 'false'};
+        const response = await axiosInstance.post(`/dry-run`,command,headers);
+
         return response.data;
     }
 

@@ -2,7 +2,6 @@
     <div style="background-color: rgba(255, 255, 255, 0); width: 100%;">
         <Chat :messages="messages" :agentInfo="agentInfo" :chatInfo="chatInfo"
             :isAgentMode="isAgentMode" :userInfo="userInfo" :disableChat="disableChat" :type="'instances'" :name="chatName" :chatRoomId="chatRoomId"
-            :showDraftDialog="showDraftDialog"
             @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
             @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
             @reGenerateAgentAI="reGenerateAgentAI"
@@ -11,22 +10,6 @@
                 <div></div>
             </template>
         </Chat>
-        <v-dialog v-model="showDraftDialog" max-width="500">
-            <v-card>
-                <v-card-title class="headline">제안서 초안을 생성하시겠습니까?</v-card-title>
-                <v-card-text>
-                    <v-file-input label="이미지 첨부" prepend-icon="mdi-paperclip" accept="image/*" v-model="attachedImage" @change="previewImage"></v-file-input>
-                    <div v-if="imagePreview" class="image-preview" style="text-align: center;">
-                        <img :src="imagePreview" alt="Image Preview" style="max-width: 100%; max-height: 500px;" />
-                    </div>
-                </v-card-text>
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn @click="handleDraftResponse('no')">취소</v-btn>
-                    <v-btn color="primary" @click="handleDraftResponse('yes')">생성</v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
     </div>
 </template>
 
@@ -60,10 +43,8 @@ export default {
         path: 'proc_inst',
         organizationChart: [],
         chatInfo: null,
-        showDraftDialog: false,
-        isReGen: false,
-        attachedImage: null,
-        imagePreview: null,
+        // isReGen: false,
+        imgKeyList: [],
         // bpmn
         onLoad: false,
         bpmn: null,
@@ -112,7 +93,7 @@ export default {
                 preferredLanguage: 'Korean'
             });
 
-            this.showDraftDialog = true;
+            this.handleDraftResponse()
         }
     },
     watch: {
@@ -132,88 +113,148 @@ export default {
         },
     },
     methods: {
-        previewImage(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    this.imagePreview = e.target.result;
+        async resizeBase64Image(base64Str, minWidth, minHeight) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.src = base64Str;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > minWidth) {
+                            height *= minWidth / width;
+                            width = minWidth;
+                        }
+                    } else {
+                        if (height > minHeight) {
+                            width *= minHeight / height;
+                            height = minHeight;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL());
                 };
-                reader.readAsDataURL(file);
+            });
+        },
+        reGenerateAgentAI(){
+            this.messages = []
+            // this.isReGen = true
+            this.handleDraftResponse()
+        },
+        async handleDraftResponse() {
+            this.messages.push({
+                role: 'system',
+                content: '...',
+                isLoading: true
+            });
+            this.isVisionMode = false
+            this.imgKeyList = []
+        
+            if(this.formData && typeof this.formData == 'object'){
+                for (const key of Object.keys(this.formData)) {
+                    if(this.formData[key] && this.formData[key].includes("data:image/")){
+                        this.imgKeyList.push(key)
+                        this.isVisionMode = true
+                        this.generator.previousMessages = []
+                        // const resizedImage = await this.resizeBase64Image(this.formData[key], 224, 224);
+                        this.generator.previousMessages.push({
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": "해당 이미지를 분석하고 이미지 분석 내용을 자세하게 한글로 설명해. 이미지에 표시된 날짜, 글자 위주로 집중 분석한 결과를 설명해. 결과는 최대한 정확하고 자세하지만 최대한 요약해서 생성해주면 좋아."
+                                },
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": this.formData[key]
+                                    }
+                                }
+                            ],
+                            "role": "user"
+                        });
+                        this.generator.model = "gpt-4-vision-preview";
+                    } 
+                }
+            }
+            if(this.isVisionMode){
+                this.generator.generate()
+            } else {
+                this.generateAgentAI()
             }
         },
-        async handleDraftResponse(response) {
-            if (response === 'yes') {
-                this.showDraftDialog = false;
-                if(!this.isReGen){
+        async generateAgentAI(response){
+            var me = this
+            this.isVisionMode = false
+            
+            this.generator = new AgentGenerator(this, {
+                isStream: true,
+                preferredLanguage: 'Korean'
+            });
+                        
+            this.generator.model = "gpt-4o";
+            
+            if(response){
+                this.generator.previousMessages.push({
+                    "content": "첨부된 이미지에 대한 설명: " + response,
+                    "role": "user"
+                })
+            }
+            // if(!this.isReGen){
+                if(this.processInstance && this.processInstance.proc_inst_id){
                     const options = {
                         match: {
                             id: this.processInstance.proc_inst_id
                         }
                     };
-                    const data = await this.storage.list('proc_inst', options);
-                    if(this.html){
-                        this.generator.previousMessages.push({
-                            "content": "이전 작업 내역 리스트: " + JSON.stringify(data),
-                            "role": "system"
-                        })
-                        this.generator.previousMessages.push({
-                            "content": "현재 작업 입력 양식: " + this.html,
-                            "role": "system"
-                        })
-                        let formValues = {
-                            "formValues": this.formData
-                        }
-                        this.generator.previousMessages.push({
-                            "content": "생성해야할 답변 형식: " + JSON.stringify(formValues),
-                            "role": "system"
-                        })
-                        let userList = await this.storage.list('users');
-                        this.generator.previousMessages.push({
-                            "content": "유저 목록: " + JSON.stringify(userList),
-                            "role": "system"
-                        })
-                    }
-                }
-                
-                if (this.imagePreview && this.imagePreview != '') {
+                    const inst_data = await this.storage.list('proc_inst', options);
                     this.generator.previousMessages.push({
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": "해당 이미지를 분석하고 참고하여 답변 예시를 작성해야합니다."
-                            },
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": this.imagePreview
-                                }
-                            }
-                        ],
-                        "role": "system"
+                        "content": "이전 작업 내역 리스트: " + JSON.stringify(inst_data),
+                        "role": "user"
                     })
-
-                    this.generator.model = "gpt-4-vision-preview";
                 } else {
-                    this.generator.model = "gpt-4o";
+                    this.generator.previousMessages.push({
+                        "content": "이전 작업 내역 리스트: null",
+                        "role": "user"
+                    })
                 }
-                this.messages.push({
-                    role: 'system',
-                    content: '...',
-                    isLoading: true
-                });
 
-                this.generator.generate()
-            } else {
-                this.showDraftDialog = false;
-            }
-        },
-        reGenerateAgentAI(){
-            this.messages = []
-            this.isReGen = true
-            this.attachedImage = null
-            this.imagePreview = null
-            this.showDraftDialog = true
+                this.generator.previousMessages.push({
+                    "content": "현재 작업 입력 양식: " + this.html,
+                    "role": "user"
+                })
+
+                let formData = JSON.parse(JSON.stringify(me.formData))
+                if(this.imgKeyList.length > 0){
+                    this.imgKeyList.forEach(function (key){
+                        delete formData[key]
+                    })
+                    me.imgKeyList = []
+                }
+                let formValues = {
+                    "formValues": formData
+                }
+                this.generator.previousMessages.push({
+                    "content": "생성해야할 답변 형식: " + JSON.stringify(formValues),
+                    "role": "user"
+                })
+                let userList = await this.storage.list('users');
+                this.generator.previousMessages.push({
+                    "content": "유저 목록: " + JSON.stringify(userList),
+                    "role": "user"
+                })
+                const organization = await this.getData(`configuration/organization`, {key: 'key'});
+                this.generator.previousMessages.push({
+                    "content": "회사 조직도: " + JSON.stringify(organization.value),
+                    "role": "user"
+                })
+            // }
+
+            this.generator.generate()
         },
         requestDraftAgent(newVal) {
             var me = this
@@ -283,7 +324,7 @@ export default {
             } 
         },
         checkDisableChat() {
-            if (this.isComplete) {
+            if (this.isComplete || this.isAgentMode) {
                 this.disableChat = true;
             }
 

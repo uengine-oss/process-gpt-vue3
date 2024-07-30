@@ -66,9 +66,6 @@
 </template>
 
 <script>
-import { format } from 'date-fns';
-
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import BackendFactory from "@/components/api/BackendFactory";
 
 export default {
@@ -134,75 +131,6 @@ export default {
             }
 
             return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
-        },
-        
-        async addNewSchedule(task) {
-            const storage = StorageBaseFactory.getStorage();
-
-            const uid = localStorage.getItem('uid');
-            const year_month = format(new Date(task.start_date), "yyyy_MM");
-            const schedule = await storage.getObject(`calendar/${uid}`, {key: 'uid'});
-
-            var newSchedule = {};
-            if (schedule && schedule.data) {
-                if (schedule.data[`${year_month}`]) {
-                    newSchedule = schedule.data;
-                } else {
-                    newSchedule[`${year_month}`] = {}
-                }
-                newSchedule[`${year_month}`][`${task.id}`] = {
-                    id: task.id,
-                    start: task.start_date,
-                    end: task.end_date,
-                    title: task.activity_id,
-                    allDay: true,
-                }
-            } else {
-                newSchedule[`${year_month}`] = {}
-                newSchedule[`${year_month}`][`${task.id}`] = {
-                    id: task.id,
-                    start: task.start_date,
-                    end: task.end_date,
-                    title: task.activity_id,
-                    allDay: true,
-                }
-            }
-            
-            var putObj = {
-                uid: uid,
-                data: newSchedule
-            };
-            storage.putObject('calendar', putObj);
-            
-            this.sendNotification(task);
-        },
-        async sendNotification(data) {
-            const storage = StorageBaseFactory.getStorage();
-            const userInfo = await storage.getUserInfo();
-
-            const options = {
-                match: {
-                    id: userInfo.uid,
-                    email: userInfo.email,
-                }
-            };
-            const result = await storage.getObject('users', options);
-            let notifications = result.notifications;
-            if (!notifications) {
-                notifications = [];
-            }
-            const noti = {
-                id: data.id,
-                type: 'todo',
-                isChecked: false,
-            };
-            notifications.push(noti);
-
-            const obj = {
-                id: userInfo.uid,
-                notifications: notifications,
-            };
-            storage.putObject('users', obj);
         },
     },
 }

@@ -4,6 +4,8 @@ const storage = StorageBaseFactory.getStorage();
 
 import type { Backend } from './Backend';
 
+import { formatDistanceToNowStrict } from 'date-fns';
+
 enum ErrorCode {
     TableNotFound = "42P01"
 }
@@ -149,7 +151,11 @@ class ProcessGPTBackend implements Backend {
 
     async getRawDefinition(defId: string, options: any) {
         try {
-            if(defId) defId = defId.toLowerCase();
+            if (defId) {
+                defId = defId.toLowerCase();
+            } else {
+                return;
+            }
 
             if (options) {
                 // 폼 정보를 불러오기 위해서
@@ -181,6 +187,16 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    uuid() {
+        function s4() {
+            return Math.floor((1 + Math.random()) * 0x10000)
+                .toString(16)
+                .substring(1);
+        }
+
+        return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+    }
+
     async start(input: any) {
         try {
             if (window.$jms) return;
@@ -208,12 +224,17 @@ class ProcessGPTBackend implements Backend {
             }
             if (!input.process_instance_id) {
                 input.process_instance_id = "new";
+            } else {
+                input['chat_room_id'] = input.process_instance_id;
             }
             if (!input.role_mappings) {
                 input.role_mappings = [];
             }
             input['process_definition_id'] = defId.toLowerCase();
-            
+            if (!input.chat_room_id) {
+                input['chat_room_id'] = `${input.process_definition_id}.${this.uuid()}`;
+            }
+
             var result: any = null;
             var url = `/execution/complete`;
             if (input.image != null) {
@@ -700,11 +721,25 @@ class ProcessGPTBackend implements Backend {
 
             let result: any = null;
             const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
+
+            if (inputData.parameterValues && inputData.parameterValues["user_input_text"]) {
+                const newMessage = {
+                    "name": localStorage.getItem('userName'),
+                    "role": "user",
+                    "email": localStorage.getItem('email'),
+                    "image": "",
+                    "content": inputData.parameterValues["user_input_text"],
+                    "timeStamp": new Date().toISOString()
+                }
+                this.updateInstanceChat(workItem.proc_inst_id, newMessage);
+            }
+
             const input = {
                 answer: JSON.stringify(inputData),
                 process_instance_id: workItem.proc_inst_id,
                 process_definition_id: workItem.proc_def_id,
                 activity_id: workItem.activity_id,
+                chat_room_id: workItem.proc_inst_id
             };
             const req = {
                 input: input
@@ -941,6 +976,86 @@ class ProcessGPTBackend implements Backend {
                 throw new Error(error && error.detail ? error.detail : error);
             });
             return result;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getNotifications() {
+        try {
+            await storage.watch('notifications', async (data: any) => {
+                if(data && data.new) {
+                    await this.fetchNotifications();
+                }
+            });
+
+            return await this.fetchNotifications();
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    private async fetchNotifications() {
+        try {
+            let notifications: any[] = [];
+            const userId = localStorage.getItem('email');
+            const options = {
+                limit: 10,
+                orderBy: 'time_stamp',
+                sort: 'desc',
+                match: { user_id: userId, is_checked: false },
+            }
+            const list = await storage.list('notifications', options);
+            if (list.length > 0) {
+                notifications = Object.values(list.reduce((acc: any, item: any) => {
+                    const timeStamp = formatDistanceToNowStrict(new Date(item.time_stamp), {
+                        addSuffix: false
+                    });
+                    item.timeStamp = timeStamp;
+                    if (!acc[item.url]) {
+                        item.count = 1;
+                        acc[item.url] = item;
+                    } else if (new Date(item.time_stamp) > new Date(acc[item.url].time_stamp)) {
+                        item.count = acc[item.url].count + 1;
+                        acc[item.url] = item;
+                    } else {
+                        acc[item.url].count += 1;
+                    }
+                    return acc;
+                }, {}));
+            }
+            return notifications;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async setNotifications(value: any) {
+        try {
+            if (value.count > 1) {
+                const notifications = await this.getNotifications();
+                notifications.forEach(async (item: any) => {
+                    if (item.url === value.url && item.user_id === value.user_id) {
+                        const putObj = { id: item.id, is_checked: true };
+                        await storage.putObject('notifications', putObj);
+                    }
+                });
+            } else {
+                const putObj = { id: value.id, is_checked: true };
+                await storage.putObject('notifications', putObj);
+            }
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async search(keyword: string) {
+        try {
+            return await storage.search(keyword);
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
