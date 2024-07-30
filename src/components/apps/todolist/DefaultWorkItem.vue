@@ -65,6 +65,10 @@ export default {
                 return []
             }
         },
+        isSimulate: {
+            type: Boolean,
+            default: false
+        }
     },
     data: () => ({
         inputItems: null,
@@ -179,7 +183,7 @@ export default {
                         me.close();
                     } else {
                         if (me.workItem.execScope) value.execScope = me.workItem.execScope;
-                        await backend.putWorkItemComplete(me.$route.params.taskId, value);
+                        await backend.putWorkItemComplete(me.$route.params.taskId, value, me.isSimulate);
                         me.$router.push(`/instancelist/${btoa(me.workItem.worklist.instId)}`);  
                     }
                 },
