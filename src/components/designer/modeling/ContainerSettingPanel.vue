@@ -1,13 +1,11 @@
 <template>
-  <v-card class="mx-auto my-8" elevation="16" max-width="600">
+  <v-card class="mx-auto my-8 container-setting-box" elevation="16" max-width="600">
     <v-card-item>
       <v-card-title>
           Edit Container Attribute
       </v-card-title>
       
-      <v-btn icon style="position:absolute; right:5px; top:5px;" @click="$emit('onClose')">
-          <v-icon>mdi-close</v-icon>
-      </v-btn>
+      <v-icon @click="$emit('onClose')" class="form-dialog-close-btn">mdi-close</v-icon>
     </v-card-item>
 
     <v-card-text>
@@ -81,6 +79,7 @@
   
 <style scoped>
 .centered-input:deep(input) {
-  text-align: center
+  text-align: center;
+  margin-right:5px;
 }
 </style>

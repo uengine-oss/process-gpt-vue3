@@ -1,17 +1,15 @@
 <template>
-  <v-card class="mx-auto my-8" elevation="16" max-width="600">
+  <v-card class="mx-auto my-8 pb-10 form-definition-panel-box" elevation="16" max-width="600">
     <v-card-item>
       <v-card-title>
           Edit Form Attribute
       </v-card-title>
 
-      <v-card-subtitle>
+      <v-card-subtitle style="color:#666E7A;">
           type: {{ componentRef.tagName }}
       </v-card-subtitle>
       
-      <v-btn icon style="position:absolute; right:5px; top:5px;" @click="$emit('onClose')">
-          <v-icon>mdi-close</v-icon>
-      </v-btn>
+      <v-icon @click="$emit('onClose')" class="form-dialog-close-btn">mdi-close</v-icon>
     </v-card-item>
 
     <v-card-text style="overflow: auto;">
@@ -45,7 +43,7 @@
                   :items="settingInfo.settingValue" @keyup.enter="save" persistent-placeholder></v-select>
         
         <template v-else-if="(settingInfo.settingType === 'items') && isShowCheck(settingInfo)">
-          <v-tabs v-model="componentProps['localIsDynamicLoad']" class="text-black" fixed-tabs>
+          <v-tabs v-model="componentProps['localIsDynamicLoad']" color="primary" fixed-tabs>
               <v-tab :value="false">Fixed Options</v-tab>
               <v-tab :value="true">Data Binding</v-tab>
           </v-tabs>
@@ -68,9 +66,7 @@
       </template>
     </v-card-text>
 
-    <v-btn @click="save">
-      Apply
-    </v-btn>
+    <v-btn @click="save" color="primary" class="form-apply-btn">Apply</v-btn>
   </v-card>
 
   <v-dialog v-model="isHelpDialogOpen" max-width="600">
@@ -178,6 +174,7 @@
   
 <style scoped>
 .centered-input:deep(input) {
-  text-align: center
+  text-align: center;
+  margin-right:5px;
 }
 </style>

@@ -1,8 +1,12 @@
 <template>
     <div class="logo">
         <RouterLink to="/dashboard2">
-            <img v-if="mode == 'ProcessGPT'" :src="logo" alt="home" />
-            <img style="width:190px;" v-else :src="uEngine6Logo" alt="home" />
+            <img v-if="mode == 'ProcessGPT'" :src="logo" alt="home" 
+              style="width:160px;"
+            />
+            <img v-else :src="uEngine6Logo" alt="home" 
+              style="width:160px;"
+            />
         </RouterLink>
     </div>
 </template>

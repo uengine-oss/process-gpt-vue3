@@ -1,107 +1,89 @@
 <template>
     <div>
         <v-container>
-        <v-row>
-            <v-col cols="5" class="d-flex align-center justify-center">
-            KEY
-            </v-col>
-            <v-col cols="5" class="d-flex align-center justify-center">
-            VALUE
-            </v-col>
-            <v-col cols="2" class="d-flex align-center justify-center">
-            </v-col>
-        </v-row>
-        <v-divider class="my-4"></v-divider>
+            <v-row v-for="(item, index) in localModelValue" :key="index">
+                <template v-for="(val, key) in item" :key="key">
+                    <template v-if="index === itemIndexToEdit">
+                        <v-col cols="5" class="d-flex align-center justify-center">
+                        <v-text-field ref="inputKeyToEditItem" class="centered-input" label="Key" v-model.trim="keyToEdit"
+                                        :rules="[v => !!v || 'Key is required']" required @keyup.enter="editItem(index)"
+                                        @input="onInputKeyToEdit" persistent-placeholder></v-text-field>
+                        </v-col>
+                        <v-col cols="5" class="d-flex align-center justify-center">
+                        <v-text-field ref="inputValueToEditItem" class="centered-input" label="Value" v-model.trim="valueToEdit" @keyup.enter="editItem(index)"
+                                        :placeholder="placeholder.valueToEdit" persistent-placeholder></v-text-field>
+                        </v-col>
+                        <v-col cols="2" class="d-flex align-center justify-center">
+                        <v-sheet class="pb-5">
+                            <v-tooltip :text="$t('uiDefinition.cancel')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn icon flat @click="itemIndexToEdit = -1" v-bind="props">
+                                <v-icon style="color: red;">mdi-close</v-icon>
+                                </v-btn>
+                            </template>
+                            </v-tooltip>
+                        </v-sheet>
 
-        <v-row v-for="(item, index) in localModelValue" :key="index">
-            <template v-for="(val, key) in item" :key="key">
-                <template v-if="index === itemIndexToEdit">
-                    <v-col cols="5" class="d-flex align-center justify-center">
-                    <v-text-field ref="inputKeyToEditItem" class="centered-input" label="Key" v-model.trim="keyToEdit"
-                                    :rules="[v => !!v || 'Key is required']" required @keyup.enter="editItem(index)"
-                                    @input="onInputKeyToEdit" persistent-placeholder></v-text-field>
-                    </v-col>
-                    <v-col cols="5" class="d-flex align-center justify-center">
-                    <v-text-field ref="inputValueToEditItem" class="centered-input" label="Value" v-model.trim="valueToEdit" @keyup.enter="editItem(index)"
-                                    :placeholder="placeholder.valueToEdit" persistent-placeholder></v-text-field>
-                    </v-col>
-                    <v-col cols="2" class="d-flex align-center justify-center">
-                    <v-sheet class="pb-5">
-                        <v-tooltip :text="$t('uiDefinition.cancel')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn icon flat @click="itemIndexToEdit = -1" v-bind="props">
-                            <v-icon style="color: red;">mdi-close</v-icon>
-                            </v-btn>
-                        </template>
-                        </v-tooltip>
-                    </v-sheet>
-
-                    <v-sheet class="pb-5">
-                        <v-tooltip :text="$t('uiDefinition.edit')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn icon flat @click="editItem(index)" v-bind="props">
-                            <PencilIcon stroke-width="1.5" size="20" class="text-primary" />
-                            </v-btn>
-                        </template>
-                        </v-tooltip>
-                    </v-sheet>
-                    </v-col>
-                </template>
-                <template v-else>
-                    <v-col cols="5" class="d-flex align-center justify-center">
-                    {{ key }}
-                    </v-col>
-                    <v-col cols="5" class="d-flex align-center justify-center">
-                    {{ val }}
-                    </v-col>
-                    <v-col cols="2" class="d-flex align-center justify-center">
-                    <v-sheet>
-                        <v-tooltip :text="$t('uiDefinition.edit')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn icon flat @click="itemIndexToEdit = index; keyToEdit = key; valueToEdit = val; placeholder.valueToEdit = key" v-bind="props">
+                        <v-sheet class="pb-5">
+                            <v-tooltip :text="$t('uiDefinition.edit')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn icon flat @click="editItem(index)" v-bind="props">
                                 <PencilIcon stroke-width="1.5" size="20" class="text-primary" />
-                            </v-btn>
-                        </template>
-                        </v-tooltip>
-                    </v-sheet>
+                                </v-btn>
+                            </template>
+                            </v-tooltip>
+                        </v-sheet>
+                        </v-col>
+                    </template>
+                    <template v-else>
+                        <v-col cols="5" class="d-flex align-center justify-center">
+                        {{ key }}
+                        </v-col>
+                        <v-col cols="5" class="d-flex align-center justify-center">
+                        {{ val }}
+                        </v-col>
+                        <v-col cols="2" class="d-flex align-center justify-center">
+                        <v-sheet>
+                            <v-tooltip :text="$t('uiDefinition.edit')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn icon flat @click="itemIndexToEdit = index; keyToEdit = key; valueToEdit = val; placeholder.valueToEdit = key" v-bind="props">
+                                    <PencilIcon stroke-width="1.5" size="20" class="text-primary" />
+                                </v-btn>
+                            </template>
+                            </v-tooltip>
+                        </v-sheet>
 
-                    <v-sheet>
-                        <v-tooltip :text="$t('uiDefinition.delete')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn icon flat @click="deleteItem(index)" v-bind="props">
-                                <TrashIcon stroke-width="1.5" size="20" class="text-error" />
-                            </v-btn>
-                        </template>
-                        </v-tooltip>
-                    </v-sheet>
-                    </v-col>
+                        <v-sheet>
+                            <v-tooltip :text="$t('uiDefinition.delete')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn icon flat @click="deleteItem(index)" v-bind="props">
+                                    <TrashIcon stroke-width="1.5" size="20" class="text-error" />
+                                </v-btn>
+                            </template>
+                            </v-tooltip>
+                        </v-sheet>
+                        </v-col>
+                    </template>
                 </template>
-            </template>
-        </v-row>
+            </v-row>
 
-        <v-row>
-            <v-col cols="5" class="d-flex align-center justify-center">
-            <v-text-field ref="inputKeyToAddItem" class="centered-input" label="Key" v-model.trim="keyToAdd" @keyup.enter="addItem"
-                            @input="onInputKeyToAdd" persistent-placeholder></v-text-field>
-            </v-col>
+            <v-row class="ma-0 pa-0 mt-2">
+                <v-text-field ref="inputKeyToAddItem" class="centered-input" label="Key" v-model.trim="keyToAdd" @keyup.enter="addItem"
+                                @input="onInputKeyToAdd" persistent-placeholder></v-text-field>
 
-            <v-col cols="5" class="d-flex align-center justify-center">
-            <v-text-field ref="inputValueToAddItem" class="centered-input" label="Value" v-model.trim="valueToAdd" @keyup.enter="addItem"
-                            :placeholder="placeholder.valueToAdd" persistent-placeholder></v-text-field>
-            </v-col>
+                <v-text-field ref="inputValueToAddItem" class="centered-input" label="Value" v-model.trim="valueToAdd" @keyup.enter="addItem"
+                                :placeholder="placeholder.valueToAdd" persistent-placeholder></v-text-field>
 
-            <v-col cols="2" class="d-flex align-center justify-center pb-9">
-            <v-sheet>
-                <v-tooltip :text="$t('uiDefinition.add')">
-                <template v-slot:activator="{ props }">
-                    <v-btn icon flat @click="addItem" v-bind="props">
-                        <v-icon style="color: green;" size="40">mdi-plus</v-icon>
-                    </v-btn>
-                </template>
-                </v-tooltip>
-            </v-sheet>
-            </v-col>
-        </v-row>
+                <v-sheet>
+                    <v-tooltip :text="$t('uiDefinition.add')">
+                    <template v-slot:activator="{ props }">
+                        <v-btn icon flat @click="addItem" v-bind="props">
+                            <v-icon size="33">mdi-plus</v-icon>
+                        </v-btn>
+                    </template>
+                    </v-tooltip>
+                </v-sheet>
+            </v-row>
         </v-container>
     </div>
 </template>

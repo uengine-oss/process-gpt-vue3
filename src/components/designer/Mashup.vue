@@ -6,8 +6,7 @@
       </span>
     </div>
 
-    <div id="kEditor1" style="position: relative; top: -135px;">
-    </div>
+    <div id="kEditor1" class="mashup-hover"></div>
     
     
     <v-dialog v-model="isOpenComponentSettingDialog">
@@ -96,7 +95,8 @@ export default {
     loadStylesForKEditor() {
       const cssFiles = [
         '/css/keditor.css',
-        '/css/keditor-component-text.css'
+        // 불필요한 스타일이라 생각해 주석 추후 문제 발생시 복구
+        // '/css/keditor-component-text.css'
       ];
 
       cssFiles.forEach(cssFile => {
@@ -555,7 +555,6 @@ export default {
   width:100%;
   height: 70px;
   width:100%;
-  background-color: whitesmoke;
   text-align: center;
   display: flex;
   align-items: center;
