@@ -1128,10 +1128,9 @@
                 
                 container.attr('id', self.generateId('container'));
                 
-                var containerContents = container
-                    .children('.keditor-container-inner').children('div.row').children('[data-type="container-content"]');
+                var containerContents = $(container)[0].querySelectorAll(".keditor-container-inner div.row [data-type='container-content']");
                 flog('Initialize ' + containerContents.length + ' container content(s)');
-                containerContents.each(function () {
+                $(Array.from(containerContents)).each(function () {
                     var containerContent = $(this);
                     
                     self.initContainerContent(contentArea, container, containerContent);
