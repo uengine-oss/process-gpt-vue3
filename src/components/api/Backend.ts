@@ -41,8 +41,8 @@ export interface Backend {
     getInProgressList(): Promise<any>;
     putWorklist(taskId: string, workItem: any): Promise<any>;
     getEventList(instanceId: string): Promise<any>;
-    getDryRunInstance(defPath: string, isSimulate: boolean): Promise<any>;
-    startDryRun(command: object) : Promise<any>;
+    dryRun(defPath: string, isSimulate: boolean): Promise<any>;
+    startAndComplete(command: object, isSimulate: boolean) : Promise<any>;
     getSystemList(): Promise<any>;
     putSystem(system: any): Promise<any>;
     getSystem(systemId: String): Promise<any>;

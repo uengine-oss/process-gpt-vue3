@@ -469,7 +469,7 @@ class UEngineBackend implements Backend {
         }));
     }
 
-    async getDryRunInstance(defPath: String, isSimulate: boolean){
+    async dryRun(defPath: String, isSimulate: boolean){
         const headers = isSimulate ? { headers: { 'isSimulate': 'true' } } : {};
         const response = await axiosInstance.get(`/dry-run/${defPath}`, headers);
         // const response = await axiosInstance.get(encodeURI(`/dry-run/${defPath}`));
@@ -479,9 +479,9 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
-    async startDryRun(command: object, isSimulate: boolean){
+    async startAndComplete(command: object, isSimulate: boolean){
         const headers = isSimulate ? { headers: { 'isSimulate': 'true' } } : {'isSimulate': 'false'};
-        const response = await axiosInstance.post(`/dry-run`,command,headers);
+        const response = await axiosInstance.post(`/start-and-complete`,command,headers);
 
         return response.data;
     }
@@ -511,7 +511,7 @@ class UEngineBackend implements Backend {
     }
     
     async validate(xml: string){
-        const response = await axiosInstance.post(`/validation`, xml);
+        const response = await axiosInstance.post(`/validate`, xml);
         if (!response.data) return {};
         return response.data;
     }
