@@ -1,6 +1,6 @@
 <template>
-    <div v-show="false">
-        <slot ></slot>
+    <div style="display: none;">
+        <slot></slot>
     </div>
 
     <div v-if="(this.localEventType !== 'click') && (this.encoded_code !== undefined)" class="d-flex align-center justify-center">
@@ -92,20 +92,21 @@ export default {
         this.localEncodedCode = this.encoded_code ?? ""
 
         if(this.encoded_code === undefined) {
+            const noCodeAlert = `alert("'${this.localName}'에 코드가 등록되지 않았습니다! 실행시킬 코드를 등록해주세요.");`
             switch(this.localEventType) {
                 case "click":
                 case "initialize":
                 case "validate":
                     this.$emit('update:modelValue', {
                         eventType: this.localEventType,
-                        code: this.$slots.default(0)[0].children
+                        code: this.$slots.default ? this.$slots.default(0)[0].children : noCodeAlert
                     });
                     break;
                 case "watch":
                     this.$emit('update:modelValue', {
                         eventType: this.localEventType,
                         watchName: this.watch_name,
-                        code: this.$slots.default(0)[0].children
+                        code: this.$slots.default ? this.$slots.default(0)[0].children : noCodeAlert
                     });
                     break;
             }
