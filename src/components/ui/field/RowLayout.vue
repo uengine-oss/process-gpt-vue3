@@ -1,6 +1,6 @@
 <template>
     <template v-if="is_multidata_mode === 'true'">
-        <v-card class="pa-3" variant="outlined" style="border-radius: 0px !important; margin: 5px;">           
+        <v-card class="pa-0 form-layout-card" variant="outlined">           
             <v-card-title class="mb-3 d-flex justify-space-between">
                 <div class="mt-2">{{(alias && alias.length > 0) ? alias : name}}</div>
 
@@ -15,8 +15,8 @@
         </v-card>
     </template>
     <template v-else>
-        <v-card class="pa-3" variant="outlined" style="border-radius: 0px !important; margin: 5px;">           
-            <v-card-title class="mb-3 d-flex justify-space-between">
+        <v-card class="pa-0 form-layout-card" variant="outlined">           
+            <v-card-title v-if="alias && alias.length" class="mb-3 d-flex justify-space-between">
                 <div>{{(alias && alias.length > 0) ? alias : name}}</div>
             </v-card-title>
             

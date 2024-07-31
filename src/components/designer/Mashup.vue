@@ -447,7 +447,9 @@ export default {
             if(prevVueRenderId) {
               const renderedComponents = window.mashup.kEditor[0].children[0].querySelectorAll(`div[id='${prevVueRenderId}']`)
               if(renderedComponents.length == 2) {
-                let htmlToRender = window.mashup.kEditorContentToHtml(renderedComponents[0].outerHTML, false)
+                let htmlToRender = window.mashup.kEditorContentToHtml(renderedComponents[0].outerHTML, !(renderedComponents[0].tagName.toLowerCase() === "section"))
+                htmlToRender = `<div id="${renderedComponents[0].getAttribute("id")}" data-v-app>${htmlToRender}</div>`
+                
                 const newVueRenderId = `vuemount_${getUUID()}`
                 htmlToRender = htmlToRender.replace(prevVueRenderId, newVueRenderId)
                 comp[0].querySelector(".keditor-component-content").innerHTML = htmlToRender

@@ -106,6 +106,7 @@ body.highlighted-container-content .keditor-container-content:before {
   padding: 0;
   margin: 0;
   width: 100%;
+  margin-bottom:10px;
 }
 .keditor-tabs .keditor-tab {
   display: table-cell;
@@ -377,6 +378,7 @@ body.highlighted-container-content .keditor-container-content:before {
 
 .keditor-container-content .keditor-component {
   margin-bottom:10px;
+  padding:5px;
 }
 /* ==================================================================================
    Component

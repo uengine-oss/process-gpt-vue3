@@ -36,15 +36,15 @@ export default {
     created() {
         let me = this;
         me.backend = BackendFactory.createBackend();
-        me.exectueDryRun();
+        me.dryRun();
     },
     methods: {
-        exectueDryRun(){
+        dryRun(){
             var me = this;
             me.$try({
                 context: me,
                 action: async () => {
-                    me.dryRunWorkItem = await me.backend.getDryRunInstance(me.definitionId);
+                    me.dryRunWorkItem = await me.backend.dryRun(me.definitionId);
                 },
             });
         },

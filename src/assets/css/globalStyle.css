@@ -135,22 +135,14 @@ hr {
     top: 10px;
     right: 5px
 }
-/* 화면정의 2중 border 제거 스타일 (시작)  */
-/* .form-definition-panel-box .v-text-field .v-field--no-label input, 
-.form-definition-panel-box .v-text-field .v-field--active input {
-    border: none;
+
+.centered-input:deep(input) {
+    text-align: center;
 }
 
-.container-setting-box .v-text-field .v-field--no-label input, 
-.container-setting-box .v-text-field .v-field--active input {
-    border: none;
+.centered-input {
+    margin-right:10px;
 }
-
-.form-save-box  .v-text-field .v-field--no-label input, 
-.form-save-box .v-text-field .v-field--active input {
-    border: none;
-} */
-/* 화면정의 2중 border 제거 스타일 (끝)  */
 
 .form-dialog-close-btn {
     position: absolute;
@@ -162,6 +154,11 @@ hr {
     position: absolute;
     right: 20px;
     bottom: 20px;
+}
+
+.form-layout-card {
+    margin-bottom: 5px;
+    border-radius: 8px !important;
 }
 
 @media only screen and (max-width:1450px) {
