@@ -73,7 +73,10 @@
                                 <v-btn color="primary" class="full-width my-5" @click="onClickPreviewApplyButton">적용</v-btn>
                             </template>
 
-                            <v-btn color="primary" class="full-width" @click="onClickPreviewSubmitButton">제출</v-btn>
+                            <v-row class="ma-0 pa-0">
+                                <v-spacer></v-spacer>
+                                <v-btn color="primary" @click="onClickPreviewSubmitButton">제출</v-btn>
+                            </v-row>
                         </template>
                         <div v-else class="d-flex align-center justify-center fill-height">
                             <v-progress-circular color="primary" indeterminate></v-progress-circular>
