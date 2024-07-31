@@ -50,7 +50,7 @@
                     <v-tab value="preview">미리보기</v-tab>
                 </v-tabs>
                 <v-window v-model="currentTabName" class="fill-height">
-                    <v-window-item value="edit" class="fill-height mt-12" style="overflow-y: auto">
+                    <v-window-item value="edit" class="fill-height mt-12" style="overflow-y: auto;">
                         <mashup
                             v-if="isShowMashup"
                             ref="mashup"

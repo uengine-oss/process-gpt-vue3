@@ -9,13 +9,15 @@
             <p>{{ localLabel }}</p>
         </div>
         <div v-else-if="this.localEventType === 'click'">
-            <v-btn color="primary" class="w-100" @click="$emit('on_click')">{{ localLabel }}</v-btn>
+            <v-btn :style="containerStyle" class="w-100" @click="$emit('on_click')">{{ localLabel }}</v-btn>
         </div>
     </div>
 </template>
 
 <script>
 import { commonSettingInfos } from "./CommonSettingInfos.vue"
+import { getPrimary } from '@/utils/UpdateColors';
+
 
 export default {
     name: "CodeField",
@@ -83,6 +85,12 @@ export default {
     computed: {
         localLabel() {
             return (this.localAlias && this.localAlias.length > 0) ? this.localAlias : this.localName
+        },
+        containerStyle() {
+            return {
+                backgroundColor: getPrimary.value,
+                color: 'white'
+            };
         }
     },
 
