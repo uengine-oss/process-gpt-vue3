@@ -377,6 +377,7 @@ body.highlighted-container-content .keditor-container-content:before {
 
 .keditor-container-content .keditor-component {
   margin-bottom:10px;
+  padding:5px;
 }
 /* ==================================================================================
    Component

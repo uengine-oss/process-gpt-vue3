@@ -48,7 +48,7 @@
               <v-tab :value="true">Data Binding</v-tab>
           </v-tabs>
           <v-window v-model="componentProps['localIsDynamicLoad']" class="fill-height">
-              <v-window-item :value="false" class="fill-height" style="overflow-y: auto">
+              <v-window-item :value="false" class="fill-height" style="overflow-y: auto; padding:5px;">
                 <FormDefinitionPanelItemTable v-model="componentProps[settingInfo.dataToUse]"></FormDefinitionPanelItemTable>
               </v-window-item>
 
@@ -75,10 +75,7 @@
                 <v-card-title>
                     {{ 'Code Help' }}
                 </v-card-title>
-      
-                <v-btn icon style="position:absolute; right:5px; top:5px;" @click="isHelpDialogOpen = false">
-                    <v-icon>mdi-close</v-icon>
-                </v-btn>
+                <v-icon @click="isHelpDialogOpen = false" class="form-dialog-close-btn">mdi-close</v-icon>
             </v-card-item>
 
             <v-card-text>
@@ -94,9 +91,7 @@
                 <p>alert("line1");<br>alert("line2");</p>// 여러 줄 입력시 각 라인의 끝에 ";"를 붙여야 함
             </v-card-text>
 
-            <v-card-actions style="justify-content: right;">
-                <v-btn @click="isHelpDialogOpen = false" class="w-100" > OK </v-btn>
-            </v-card-actions>
+            
         </v-card>
     </v-dialog>
 </template>
@@ -171,10 +166,3 @@
     }
   }
 </script>
-  
-<style scoped>
-.centered-input:deep(input) {
-  text-align: center;
-  margin-right:5px;
-}
-</style>

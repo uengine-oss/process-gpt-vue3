@@ -19,9 +19,7 @@
                   @keyup.enter="save"></v-checkbox>
     </v-card-text>
 
-    <v-btn @click="save">
-      Apply
-    </v-btn>
+    <v-btn @click="save" color="primary" class="form-apply-btn">Apply</v-btn>
   </v-card>
 </template>
   
@@ -76,10 +74,3 @@
     }
   }
 </script>
-  
-<style scoped>
-.centered-input:deep(input) {
-  text-align: center;
-  margin-right:5px;
-}
-</style>

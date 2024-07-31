@@ -64,7 +64,7 @@
                         </div>
                     </v-window-item>
 
-                    <v-window-item value="preview" class="fill-height mt-15 pa-5" style="overflow-y: auto">
+                    <v-window-item value="preview" class="fill-height mt-10 pa-5" style="overflow-y: auto">
                         <template v-if="isShowPreview">
                             <DynamicForm ref="dynamicForm" :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
 

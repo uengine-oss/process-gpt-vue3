@@ -1,19 +1,14 @@
 <template>
     <div>
-        <v-container>
-            <v-row v-for="(item, index) in localModelValue" :key="index">
+        <v-container class="pa-0 ma-0">
+            <v-row v-for="(item, index) in localModelValue" :key="index" class="pa-0 ma-0 mt-4">
                 <template v-for="(val, key) in item" :key="key">
                     <template v-if="index === itemIndexToEdit">
-                        <v-col cols="5" class="d-flex align-center justify-center">
                         <v-text-field ref="inputKeyToEditItem" class="centered-input" label="Key" v-model.trim="keyToEdit"
                                         :rules="[v => !!v || 'Key is required']" required @keyup.enter="editItem(index)"
                                         @input="onInputKeyToEdit" persistent-placeholder></v-text-field>
-                        </v-col>
-                        <v-col cols="5" class="d-flex align-center justify-center">
                         <v-text-field ref="inputValueToEditItem" class="centered-input" label="Value" v-model.trim="valueToEdit" @keyup.enter="editItem(index)"
                                         :placeholder="placeholder.valueToEdit" persistent-placeholder></v-text-field>
-                        </v-col>
-                        <v-col cols="2" class="d-flex align-center justify-center">
                         <v-sheet class="pb-5">
                             <v-tooltip :text="$t('uiDefinition.cancel')">
                             <template v-slot:activator="{ props }">
@@ -33,7 +28,6 @@
                             </template>
                             </v-tooltip>
                         </v-sheet>
-                        </v-col>
                     </template>
                     <template v-else>
                         <v-col cols="5" class="d-flex align-center justify-center">
@@ -67,7 +61,7 @@
                 </template>
             </v-row>
 
-            <v-row class="ma-0 pa-0 mt-2">
+            <v-row class="ma-0 pa-0 mt-4">
                 <v-text-field ref="inputKeyToAddItem" class="centered-input" label="Key" v-model.trim="keyToAdd" @keyup.enter="addItem"
                                 @input="onInputKeyToAdd" persistent-placeholder></v-text-field>
 
@@ -237,7 +231,3 @@ export default {
     }
 }
 </script>
-
-<style lang="scss">
-
-</style>
