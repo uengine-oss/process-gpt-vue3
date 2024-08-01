@@ -203,12 +203,12 @@
         </v-dialog>
 
         <v-dialog v-model="executeDialog" max-width="80%">
-            <process-execute-dialog
-                v-if="mode === 'LLM'"
-                :definitionId="definitionPath"
-                @close="executeDialog = false"
-            ></process-execute-dialog>
-            <dry-run-process v-else :definitionId="definitionPath" @close="executeDialog = false" :is-simulate="isViewMode"></dry-run-process>
+            <process-gpt-execute v-if="mode === 'LLM'" :definitionId="definitionPath" 
+                @close="executeDialog = false"></process-gpt-execute>
+            <div v-else>
+                <!-- <process-execute-dialog :definitionId="definitionPath" @close="executeDialog = false"></process-execute-dialog> -->
+                <dry-run-process :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
+            </div>
         </v-dialog>
 
         <!-- <v-navigation-drawer permanent location="right" :width="400"> {{ panelId }} </v-navigation-drawer> -->
@@ -430,6 +430,10 @@ export default {
         const store = useBpmnStore();
         store.setProcessDefinition(this);
         this.bpmnModeler = store.getModeler;
+
+        this.EventBus.on('process-definition-updated', (value) => {
+            this.copyProcessDefinition = value;
+        });
 
         // const def = this.bpmnModeler.getDefinitions();
         // console.log(this.definitions)

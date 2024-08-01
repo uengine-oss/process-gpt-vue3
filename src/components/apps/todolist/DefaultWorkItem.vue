@@ -7,7 +7,7 @@
     <div class="pa-4" style="height: 100%;">
         <div class="d-flex flex-column overflow-y-auto"  style="height: 100%;">
             <Instruction :workItem="workItem" />
-            <div v-if="isCompleted">
+            <div>
                 <v-row class="w-100" v-for="item in outputItems" :key="item.name">
                     <v-col cols="5">
                         <v-list-subheader>{{ item.key }}</v-list-subheader>
@@ -17,11 +17,11 @@
                     </v-col>
                 </v-row>
             </div>
-            <div v-else>
+            <div>
                 <DefaultForm v-if="inputItems && inputItems.length > 0" :inputItems="inputItems" />
                 <AudioTextarea v-model="newMessage" :workItem="workItem" @close="close" />
             </div>
-            <CheckPoints :workItem="workItem" />
+            <Checkpoints ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
         </div>
     </div>
 </template>
@@ -31,7 +31,7 @@ import DefaultForm from '@/components/designer/DefaultForm.vue';
 
 import Instruction from '@/components/ui/Instruction.vue';
 import AudioTextarea from '@/components/ui/AudioTextarea.vue';
-import CheckPoints from '@/components/ui/CheckPoints.vue';
+import Checkpoints from '@/components/ui/Checkpoints.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -41,7 +41,7 @@ export default {
         DefaultForm,
         Instruction,
         AudioTextarea,
-        CheckPoints
+        Checkpoints
     },
     props: {
         definitionId: String,
@@ -74,6 +74,7 @@ export default {
         inputItems: null,
         outputItems: null,
         newMessage: '',
+        allCheckpointsChecked: false,
     }),
     computed: {
         isCompleted() {
@@ -190,7 +191,11 @@ export default {
                 successMsg: '해당 업무 완료'
             });
         },
-        executeProcess(){
+        executeProcess() {
+            if (!this.allCheckpointsChecked) {
+                this.$refs.checkpoints.snackbar = true;
+                return;
+            }
             let value = { parameterValues: {} };
             if (this.inputItems && this.inputItems.length > 0) {
                 let parameterValues = this.inputItems.reduce((acc, item) => ({ ...acc, [item.key]: item.value }), {});
@@ -218,6 +223,9 @@ export default {
                 },
                 successMsg: '중간 저장 완료'
             });
+        },
+        updateCheckpoints(status) {
+            this.allCheckpointsChecked = status;
         },
     }
 };
