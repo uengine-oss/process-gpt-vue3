@@ -231,7 +231,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
       strokColor = '#000000';
     }
     diamond.style.stroke = strokColor;
-    diamond.style.strokeWidth = '5'
+    diamond.style.strokeWidth = strokColor === '#000000' ? '2' : '5';
 
     prependTo(diamond, parentNode);
 
@@ -354,7 +354,7 @@ function drawRect(parentNode, width, height, borderRadius, strokeColor, fillColo
     width: width,
     height: height,
     rx: borderRadius,
-    ry: borderRadius,
+    ry: borderRadius, 
     stroke: strokeColor || '#000',
     strokeWidth: strokeColor == '#000000' ? 2 : 5,
     fill: fillColor || '#fff',

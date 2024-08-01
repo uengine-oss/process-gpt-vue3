@@ -1,28 +1,31 @@
 <template>
-    <div>
+    <div style="height:100%;">
         <!-- buttons -->
-        <div v-if="openMenu" style="position: fixed; right: 40px; z-index: 1000; margin-top: 60px;">
-            <v-btn v-if="isRoot" color="primary" class="ml-2" variant="flat" density="comfortable"
-                @click="openDialog('addTeam')">
-                <template v-slot:prepend>
-                    <Icons :icon="'users-plus'" :size="20" />
-                </template>
-                팀 추가
-            </v-btn>
-            <div v-else class="d-flex">
-                <v-btn color="primary" class="ml-2" variant="flat" density="comfortable" @click="openDialog('edit')">
+        <div v-if="openMenu" style="position: absolute; right: 20px; z-index: 1000; top: 60px;">
+            <v-row class="ma-0 pa-0">
+                <v-spacer></v-spacer>
+                <v-btn v-if="isRoot" color="primary" class="ml-2" variant="flat" density="comfortable"
+                    @click="openDialog('addTeam')">
                     <template v-slot:prepend>
-                        <Icons :icon="'user-edit'" :size="20" />
+                        <Icons :icon="'users-plus'" :size="20" />
                     </template>
-                    수정
+                    팀 추가
                 </v-btn>
-                <v-btn color="error" class="ml-2" variant="flat" density="comfortable" @click="openDialog('delete')">
-                    <template v-slot:prepend>
-                        <Icons :icon="'user-minus'" :size="20" />
-                    </template>
-                    삭제
-                </v-btn>
-            </div>
+                <div v-else class="d-flex">
+                    <v-btn color="primary" class="ml-2" variant="flat" density="comfortable" @click="openDialog('edit')">
+                        <template v-slot:prepend>
+                            <Icons :icon="'user-edit'" :size="20" />
+                        </template>
+                        수정
+                    </v-btn>
+                    <v-btn color="error" class="ml-2" variant="flat" density="comfortable" @click="openDialog('delete')">
+                        <template v-slot:prepend>
+                            <Icons :icon="'user-minus'" :size="20" />
+                        </template>
+                        삭제
+                    </v-btn>
+                </div>
+            </v-row>
         </div>
         <!-- organization chart -->
         <div id="tree" ref="tree" class="h-100"></div>
@@ -285,6 +288,7 @@ export default {
 <style scoped>
 #tree {
     width: 100%;
+    height:100%;
 }
 
 @media screen and (max-width: 1080px) {

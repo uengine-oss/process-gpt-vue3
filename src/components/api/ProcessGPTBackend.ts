@@ -54,33 +54,40 @@ class ProcessGPTBackend implements Backend {
             if(options && options.type === "form") {
                 await storage.delete(`form_def/${defId.replace(/\//g, "#")}`, { key: 'id' });
                 return
-            }
-
-            await storage.delete(`proc_def/${defId}`, { key: 'id' });
-            
-            const arcv = await storage.list('proc_def_arcv', {
-                sort: 'desc',
-                orderBy: 'timeStamp',
-                match: { 'proc_def_id': defId }
-            });
-            if (arcv && arcv.length > 0) {
-                await storage.delete(`proc_def_arcv/${defId}`, { key: 'proc_def_id' });
-            }
-            const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
-            if (isLocked) {
-                await storage.delete(`lock/${defId}`, { key: 'id' });
-            }
-
-            if (!window.$jms) {
-                await axios.post(`/execution/drop-process-table/invoke`, {
-                    "input": {
-                        "process_definition_id": defId
-                    }
-                }).catch(error => {
-                    throw new Error(error && error.detail ? error.detail : error);
+            } else {
+                const arcv = await storage.list('proc_def_arcv', {
+                    sort: 'desc',
+                    orderBy: 'timeStamp',
+                    match: { 'proc_def_id': defId }
                 });
+                if (arcv && arcv.length > 0) {
+                    await storage.delete(`proc_def_arcv/${defId}`, { key: 'proc_def_id' });
+                }
+
+                const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
+                if (isLocked) {
+                    await storage.delete(`lock/${defId}`, { key: 'id' });
+                }
+
+                const instList = await storage.list(defId);
+                if (instList && instList.length > 0) {
+                    instList.forEach(async (item: any) => {
+                        await this.deleteInstance(item.id);
+                    });
+                }
+                
+                await storage.delete(`proc_def/${defId}`, { key: 'id' });
+
+                if (!window.$jms) {
+                    await axios.post(`/execution/drop-process-table/invoke`, {
+                        "input": {
+                            "process_definition_id": defId
+                        }
+                    }).catch(error => {
+                        throw new Error(error && error.detail ? error.detail : error);
+                    });
+                }
             }
-            
         } catch (e) {
             // this.checkDBConnection();
             //@ts-ignore
