@@ -3,15 +3,21 @@
         <v-radio-group v-model="selectedActivity" inline>
             <v-radio label="Default" value="HumanActivity"></v-radio>
             <v-radio label="Form" value="FormActivity"></v-radio>
-            <v-radio label="외부 어플리케이션" value="URLActivity"></v-radio>
+            <v-radio v-if="useEvent" label="외부 어플리케이션" value="URLActivity"></v-radio>
         </v-radio-group>
         <div v-if="!isLoading && selectedActivity == 'HumanActivity'">
             <EventSynchronizationForm
+                v-if="useEvent"
                 v-model="copyUengineProperties"
                 :roles="roles"
                 :taskName="name"
                 :definition="copyDefinition"
             ></EventSynchronizationForm>
+            <div v-else>
+                <DefaultArguments v-model="copyUengineProperties"></DefaultArguments>
+                <Instruction v-model="activity.instruction"></Instruction>
+                <Checkpoints v-model="activity.checkpoints"></Checkpoints>
+            </div>
         </div>
         <div v-else-if="!isLoading && selectedActivity == 'FormActivity'">
             <div>
@@ -41,13 +47,18 @@
                 </v-row>
             </div>
             <EventSynchronizationForm
+                v-if="useEvent"
                 v-model="copyUengineProperties"
                 :roles="roles"
                 :taskName="name"
                 :definition="copyDefinition"
             ></EventSynchronizationForm>
+            <div v-else>
+                <Instruction v-model="activity.instruction"></Instruction>
+                <Checkpoints v-model="activity.checkpoints"></Checkpoints>
+            </div>
         </div>
-        <div v-else-if="!isLoading && selectedActivity == 'URLActivity'">
+        <div v-else-if="!isLoading && selectedActivity == 'URLActivity' && useEvent">
             <EventSynchronizationForm
                 v-model="copyUengineProperties"
                 :roles="roles"
@@ -103,13 +114,19 @@ import Mapper from '@/components/designer/mapper/Mapper.vue';
 import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
 import EventSynchronizationForm from '@/components/designer/EventSynchronizationForm.vue';
+import DefaultArguments from '@/components/designer/DefaultArguments.vue';
+import Checkpoints from '@/components/designer/CheckpointsField.vue';
+import Instruction from '@/components/designer/InstructionField.vue';
 
 export default {
     name: 'user-task-panel',
     components: {
         BpmnParameterContexts,
         Mapper,
-        EventSynchronizationForm
+        EventSynchronizationForm,
+        DefaultArguments,
+        Checkpoints,
+        Instruction
     },
     props: {
         uengineProperties: Object,
@@ -123,6 +140,7 @@ export default {
         definition: Object,
         name: String
     },
+    emits: ['update:uengineProperties', 'update:activity', 'addUengineVariable'],
     data() {
         return {
             isLoading: false,
@@ -137,7 +155,6 @@ export default {
             },
             copyUengineProperties: JSON.parse(JSON.stringify(this.uengineProperties)),
             checkpoints: [],
-            editCheckpoint: false,
             checkpointMessage: {
                 $type: 'uengine:Checkpoint',
                 checkpoint: ''
@@ -160,7 +177,10 @@ export default {
             nodes: {},
             replaceFromExpandableNode: null,
             replaceToExpandableNode: null,
-            activity: null
+            activity: {
+                instruction: '',
+                checkpoints: ['']
+            }
         };
     },
     created() {
@@ -168,7 +188,7 @@ export default {
         if(this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0){
             const activity = this.processDefinition.activities.find(activity => activity.id === this.element.id);
             if (activity) {
-                this.activity = activity
+                this.activity = activity;
             } else {
                 console.log('Activity not found');
             }
@@ -180,6 +200,13 @@ export default {
         me.init();
     },
     computed: {
+        useEvent() {
+            if (window.$mode == "ProcessGPT") {
+                return false;
+            } else {
+                return true;
+            }
+        }
         // inputData() {
         //     let params = this.copyUengineProperties.parameters;
         //     let result = [];
@@ -214,11 +241,15 @@ export default {
                 let variableForHtmlFormContext = formVariable ? { name: formVariable.name } : {};
                 me.copyUengineProperties.variableForHtmlFormContext = variableForHtmlFormContext;
 
-                if (oldVal) me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] }; // CHECK!!!
-                me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization.mappingContext, null, 2);
+                if (me.useEvent) {
+                    if (oldVal) me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] }; // CHECK!!!
+                    me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization.mappingContext, null, 2);
+                }
             } else {
                 me.copyUengineProperties.variableForHtmlFormContext = {};
-                me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
+                if (me.useEvent) {
+                    me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
+                }
             }
         },
         parameters: function (newVal, oldVal) {
@@ -244,6 +275,14 @@ export default {
 
                 return null;
             };
+        },
+        activity: {
+            deep: true,
+            handler(newVal, oldVal) {
+                if (!this.useEvent && (newVal.checkpoints || newVal.instruction) ) {
+                    this.EventBus.emit('process-definition-updated', this.processDefinition);
+                }
+            }
         }
     },
     methods: {
@@ -257,26 +296,19 @@ export default {
             me.selectedActivity = me.copyUengineProperties._type ? me.copyUengineProperties._type.split('.').pop() : 'HumanActivity';
             if (me.selectedActivity == 'FormActivity') {
                 me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
-                if (!me.copyUengineProperties.variableForHtmlFormContext) me.copyUengineProperties.variableForHtmlFormContext = {};
-                if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
-                if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
-                if (!me.copyUengineProperties.eventSynchronization.attributes)
-                    me.copyUengineProperties.eventSynchronization.attributes = [];
-                if (!me.copyUengineProperties.eventSynchronization.mappingContext)
-                    me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
-
+                if (!me.copyUengineProperties.variableForHtmlFormContext) {
+                    me.copyUengineProperties.variableForHtmlFormContext = {};
+                }
                 me.selectedForm = me.copyUengineProperties.variableForHtmlFormContext.name;
-                me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization.mappingContext, null, 2);
-                if (!me.selectedForm) me.isOpenFormCreateDialog = true;
+                if (me.useEvent) {
+                    me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization.mappingContext, null, 2);
+                }
+                if (!me.selectedForm) {
+                    me.isOpenFormCreateDialog = true;
+                }
             } else if (me.selectedActivity == 'URLActivity') {
                 me.copyUengineProperties._type = 'org.uengine.kernel.URLActivity';
                 if (!me.copyUengineProperties.url) me.copyUengineProperties.url = '';
-                if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
-                if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
-                if (!me.copyUengineProperties.eventSynchronization.attributes)
-                    me.copyUengineProperties.eventSynchronization.attributes = [];
-                if (!me.copyUengineProperties.eventSynchronization.mappingContext)
-                    me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
                 me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization.mappingContext, null, 2);
             } else {
                 me.copyUengineProperties._type = 'org.uengine.kernel.HumanActivity';

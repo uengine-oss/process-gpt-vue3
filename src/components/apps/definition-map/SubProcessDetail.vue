@@ -80,9 +80,10 @@
             <div v-else></div>
         </v-card-text>
         <v-dialog v-model="executeDialog">
-            <process-gpt-execute v-if="mode === 'ProcessGPT'" :definitionId="processDefinition.id" @close="executeDialog = false"></process-gpt-execute>
+            <process-gpt-execute v-if="mode === 'ProcessGPT'" :definitionId="processDefinition.id" 
+                @close="executeDialog = false"></process-gpt-execute>
             <div v-else>
-                <process-execute-dialog :definitionId="processDefinition.id" @close="executeDialog = false"></process-execute-dialog>
+                <!-- <process-execute-dialog :definitionId="processDefinition.id" @close="executeDialog = false"></process-execute-dialog> -->
                 <dry-run-process :definitionId="processDefinition.id"  @close="executeDialog = false"></dry-run-process>
             </div>
         </v-dialog>

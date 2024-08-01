@@ -28,7 +28,7 @@
         <Instruction :workItem="workItem" />
         <DynamicForm ref="dynamicForm" :formHTML="html" v-model="formData"></DynamicForm>
         <AudioTextarea v-if="!isCompleted" v-model="newMessage" :workItem="workItem" @close="close" />
-        <CheckPoints :workItem="workItem" />
+        <Checkpoints ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
     </div>
 </template>
 
@@ -37,7 +37,7 @@ import DynamicForm from '@/components/designer/DynamicForm.vue';
 
 import Instruction from '@/components/ui/Instruction.vue';
 import AudioTextarea from '@/components/ui/AudioTextarea.vue';
-import CheckPoints from '@/components/ui/CheckPoints.vue';
+import Checkpoints from '@/components/ui/Checkpoints.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -47,7 +47,7 @@ export default {
         DynamicForm,
         Instruction,
         AudioTextarea,
-        CheckPoints
+        Checkpoints
     },
     props: {
         definitionId: String,
@@ -81,15 +81,11 @@ export default {
         formDefId: null,
         formData: {},
         newMessage: '',
-        checkPoints: null,
+        allCheckpointsChecked: false,
     }),
     computed: {
         isCompleted(){
             return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
-        },
-        checkedCount() {
-            if (!this.checkPoints) return 0;
-            return this.checkPoints.filter((checkPoint) => checkPoint.checked).length;
         },
     },
     watch:  {
@@ -129,6 +125,10 @@ export default {
                     })
                 }
             });
+
+            if (!me.workItem.activity.checkpoints || me.workItem.activity.checkpoints.length == 0) {
+                me.allCheckpointsChecked = true;
+            }
         },
         async loadForm(){
             var me = this;
@@ -266,6 +266,10 @@ export default {
             this.$emit('fail', msg)
         },
         executeProcess() {
+            if (!this.allCheckpointsChecked) {
+                this.$refs.checkpoints.snackbar = true;
+                return;
+            }
             let value = {};
             if (this.newMessage && this.newMessage.length > 0) {
                 value['user_input_text'] = this.newMessage;
@@ -278,6 +282,9 @@ export default {
             } else {
                 this.completeTask();
             }
+        },
+        updateCheckpoints(status) {
+            this.allCheckpointsChecked = status;
         },
     }
 };
