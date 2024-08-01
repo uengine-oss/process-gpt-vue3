@@ -50,7 +50,7 @@
                     <v-tab value="preview">미리보기</v-tab>
                 </v-tabs>
                 <v-window v-model="currentTabName" class="fill-height">
-                    <v-window-item value="edit" class="fill-height mt-12" style="overflow-y: auto">
+                    <v-window-item value="edit" class="fill-height mt-12" style="overflow-y: auto;">
                         <mashup
                             v-if="isShowMashup"
                             ref="mashup"
@@ -73,7 +73,10 @@
                                 <v-btn color="primary" class="full-width my-5" @click="onClickPreviewApplyButton">적용</v-btn>
                             </template>
 
-                            <v-btn color="primary" class="full-width" @click="onClickPreviewSubmitButton">제출</v-btn>
+                            <v-row class="ma-0 pa-0">
+                                <v-spacer></v-spacer>
+                                <v-btn color="primary" @click="onClickPreviewSubmitButton">제출</v-btn>
+                            </v-row>
                         </template>
                         <div v-else class="d-flex align-center justify-center fill-height">
                             <v-progress-circular color="primary" indeterminate></v-progress-circular>

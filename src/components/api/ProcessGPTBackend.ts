@@ -881,7 +881,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getDryRunInstance(defPath: string) {
+    async dryRun(defPath: string) {
         try {
             return null;
         } catch (error) {
@@ -890,7 +890,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async startDryRun(command: object) {
+    async startAndComplete(command: object, isSimulate: boolean) {
         try {
             return null;
         } catch (error) {

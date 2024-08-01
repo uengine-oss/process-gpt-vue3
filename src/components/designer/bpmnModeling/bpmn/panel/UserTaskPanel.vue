@@ -1,11 +1,11 @@
 <template>
     <div>
         <v-radio-group v-model="selectedActivity" inline>
-            <v-radio label="Default" value="DefaultActivity"></v-radio>
+            <v-radio label="Default" value="HumanActivity"></v-radio>
             <v-radio label="Form" value="FormActivity"></v-radio>
             <v-radio v-if="useEvent" label="외부 어플리케이션" value="URLActivity"></v-radio>
         </v-radio-group>
-        <div v-if="!isLoading && selectedActivity == 'DefaultActivity'">
+        <div v-if="!isLoading && selectedActivity == 'HumanActivity'">
             <EventSynchronizationForm
                 v-if="useEvent"
                 v-model="copyUengineProperties"
@@ -292,21 +292,9 @@ export default {
             if (me.roles.length > 0) {
                 me.copyUengineProperties.role = { name: me.role };
             }
-            me.selectedActivity = me.copyUengineProperties._type ? me.copyUengineProperties._type.split('.').pop() : 'DefaultActivity';
-            
-            //
-            if (me.useEvent) {
-                if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
-                if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
-                if (!me.copyUengineProperties.eventSynchronization.attributes)
-                    me.copyUengineProperties.eventSynchronization.attributes = [];
-                if (!me.copyUengineProperties.eventSynchronization.mappingContext)
-                    me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
-            }
 
-            if (me.selectedActivity == 'DefaultActivity') {
-                delete me.copyUengineProperties._type;
-            } else if (me.selectedActivity == 'FormActivity') {
+            me.selectedActivity = me.copyUengineProperties._type ? me.copyUengineProperties._type.split('.').pop() : 'HumanActivity';
+            if (me.selectedActivity == 'FormActivity') {
                 me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
                 if (!me.copyUengineProperties.variableForHtmlFormContext) {
                     me.copyUengineProperties.variableForHtmlFormContext = {};
@@ -322,6 +310,14 @@ export default {
                 me.copyUengineProperties._type = 'org.uengine.kernel.URLActivity';
                 if (!me.copyUengineProperties.url) me.copyUengineProperties.url = '';
                 me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization.mappingContext, null, 2);
+            } else {
+                me.copyUengineProperties._type = 'org.uengine.kernel.HumanActivity';
+                if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
+                if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
+                if (!me.copyUengineProperties.eventSynchronization.attributes)
+                    me.copyUengineProperties.eventSynchronization.attributes = [];
+                if (!me.copyUengineProperties.eventSynchronization.mappingContext)
+                    me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
             }
 
             me.copyDefinition = me.definition;
@@ -357,6 +353,7 @@ export default {
                 if (!me.copyUengineProperties.eventSynchronization.mappingContext)
                     me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
             } else {
+                me.copyUengineProperties._type = 'org.uengine.kernel.HumanActivity';
                 if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
                 if (!me.copyUengineProperties.eventSynchronization.mappingContext)
                     me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
@@ -366,17 +363,18 @@ export default {
         beforeSave() {
             var me = this;
             // 필수 요소만 포함, 나머지 제거.
-            if (me.useEvent) {
-                if (me.selectedActivity == 'FormActivity') {
-                    const { variableForHtmlFormContext, eventSynchronization, _type } = me.copyUengineProperties;
-                    me.copyUengineProperties = { variableForHtmlFormContext, eventSynchronization, _type };
-                } else if (me.selectedActivity == 'URLActivity') {
-                    const { url, eventSynchronization, _type } = me.copyUengineProperties;
-                    me.copyUengineProperties = { url, eventSynchronization, _type };
-                } else {
-                    const { eventSynchronization } = me.copyUengineProperties;
-                    me.copyUengineProperties = { eventSynchronization };
-                }
+            if (me.selectedActivity == 'FormActivity') {
+                const { variableForHtmlFormContext, eventSynchronization, _type } = me.copyUengineProperties;
+                me.copyUengineProperties = { variableForHtmlFormContext, eventSynchronization, _type };
+            } else if (me.selectedActivity == 'URLActivity') {
+                const { url, eventSynchronization, _type } = me.copyUengineProperties;
+                me.copyUengineProperties = { url, eventSynchronization, _type };
+            } else if(me.selectedActivity == 'HumanActivity'){
+                const { eventSynchronization, _type } = me.copyUengineProperties;
+                me.copyUengineProperties = { eventSynchronization, _type };
+            } else {
+                const { eventSynchronization } = me.copyUengineProperties;
+                me.copyUengineProperties = { eventSynchronization };
             }
             me.$emit('update:uengineProperties', me.copyUengineProperties);
         },

@@ -1,19 +1,23 @@
 <template>
-    <div style="display: none;">
-        <slot></slot>
-    </div>
+    <div>
+        <div style="display: none;">
+            <slot></slot>
+        </div>
 
-    <div v-if="(this.localEventType !== 'click') && (this.encoded_code !== undefined)" class="d-flex align-center justify-center">
-        <img class="mr-2" src="/snippets/default/preview/input-code.png" style="width: 25px;" />
-        <p>{{ localLabel }}</p>
-    </div>
-    <div v-else-if="this.localEventType === 'click'">
-        <v-btn color="primary" class="w-100 my-5" @click="$emit('on_click')">{{ localLabel }}</v-btn>
+        <div v-if="(this.localEventType !== 'click') && (this.encoded_code !== undefined)" class="d-flex align-center justify-center">
+            <img class="mr-2" src="/snippets/default/preview/input-code.png" style="width: 25px;" />
+            <p>{{ localLabel }}</p>
+        </div>
+        <div v-else-if="this.localEventType === 'click'">
+            <v-btn :style="containerStyle" class="w-100" @click="$emit('on_click')">{{ localLabel }}</v-btn>
+        </div>
     </div>
 </template>
 
 <script>
 import { commonSettingInfos } from "./CommonSettingInfos.vue"
+import { getPrimary } from '@/utils/UpdateColors';
+
 
 export default {
     name: "CodeField",
@@ -81,6 +85,12 @@ export default {
     computed: {
         localLabel() {
             return (this.localAlias && this.localAlias.length > 0) ? this.localAlias : this.localName
+        },
+        containerStyle() {
+            return {
+                backgroundColor: getPrimary.value,
+                color: 'white'
+            };
         }
     },
 
