@@ -161,6 +161,15 @@ hr {
     border-radius: 8px !important;
 }
 
+
+.process-variable-tbody tr td {
+    height:24px !important;
+}
+
+.process-variable-tbody .v-data-table-footer {
+    padding:0px !important;
+}
+
 #apexTreeWrapper {
     height: 100% !important;
 }
