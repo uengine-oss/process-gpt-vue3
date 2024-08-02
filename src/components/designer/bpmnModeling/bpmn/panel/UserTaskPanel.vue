@@ -309,15 +309,19 @@ export default {
             } else if (me.selectedActivity == 'URLActivity') {
                 me.copyUengineProperties._type = 'org.uengine.kernel.URLActivity';
                 if (!me.copyUengineProperties.url) me.copyUengineProperties.url = '';
-                me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization.mappingContext, null, 2);
+                if (me.useEvent) {
+                    me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization.mappingContext, null, 2);
+                }
             } else {
                 me.copyUengineProperties._type = 'org.uengine.kernel.HumanActivity';
-                if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
-                if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
-                if (!me.copyUengineProperties.eventSynchronization.attributes)
-                    me.copyUengineProperties.eventSynchronization.attributes = [];
-                if (!me.copyUengineProperties.eventSynchronization.mappingContext)
-                    me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
+                if (me.useEvent) {
+                    if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
+                    if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
+                    if (!me.copyUengineProperties.eventSynchronization.attributes)
+                        me.copyUengineProperties.eventSynchronization.attributes = [];
+                    if (!me.copyUengineProperties.eventSynchronization.mappingContext)
+                        me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
+                }
             }
 
             me.copyDefinition = me.definition;
@@ -355,26 +359,27 @@ export default {
             } else {
                 me.copyUengineProperties._type = 'org.uengine.kernel.HumanActivity';
                 if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
-                if (!me.copyUengineProperties.eventSynchronization.mappingContext)
-                    me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
+                if (!me.copyUengineProperties.eventSynchronization.mappingContext) me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
             }
             me.isLoading = false;
         },
         beforeSave() {
             var me = this;
             // 필수 요소만 포함, 나머지 제거.
-            if (me.selectedActivity == 'FormActivity') {
-                const { variableForHtmlFormContext, eventSynchronization, _type } = me.copyUengineProperties;
+            if (me.useEvent) {
+                if (me.selectedActivity == 'FormActivity') {
+                    const { variableForHtmlFormContext, eventSynchronization, _type } = me.copyUengineProperties;
                 me.copyUengineProperties = { variableForHtmlFormContext, eventSynchronization, _type };
-            } else if (me.selectedActivity == 'URLActivity') {
-                const { url, eventSynchronization, _type } = me.copyUengineProperties;
-                me.copyUengineProperties = { url, eventSynchronization, _type };
-            } else if(me.selectedActivity == 'HumanActivity'){
-                const { eventSynchronization, _type } = me.copyUengineProperties;
-                me.copyUengineProperties = { eventSynchronization, _type };
-            } else {
-                const { eventSynchronization } = me.copyUengineProperties;
-                me.copyUengineProperties = { eventSynchronization };
+                } else if (me.selectedActivity == 'URLActivity') {
+                    const { url, eventSynchronization, _type } = me.copyUengineProperties;
+                    me.copyUengineProperties = { url, eventSynchronization, _type };
+                } else if(me.selectedActivity == 'HumanActivity'){
+                    const { eventSynchronization, _type } = me.copyUengineProperties;
+                    me.copyUengineProperties = { eventSynchronization, _type };
+                } else {
+                    const { eventSynchronization } = me.copyUengineProperties;
+                    me.copyUengineProperties = { eventSynchronization };
+                }
             }
             me.$emit('update:uengineProperties', me.copyUengineProperties);
         },
@@ -449,7 +454,11 @@ export default {
 
             let urlData = {};
             urlData['formName'] = `${this.name}폼`;
-            urlData['inputNames'] = this.copyUengineProperties.eventSynchronization.mappingContext.map((p) => p.key);
+            if (this.useEvent) {
+                urlData['inputNames'] = this.copyUengineProperties.eventSynchronization.mappingContext.map((p) => p.key);
+            } else {
+                urlData["inputNames"] = this.copyUengineProperties.parameters.map(p => p.argument.text)
+            }
 
             if (urlData['inputNames'].length > 0)
                 urlData['initPrompt'] = `'${urlData['formName']}'을 생성해줘. 입력해야하는 값들은 다음과 같아: ${urlData['inputNames'].join(

@@ -1,13 +1,13 @@
 <template>
-    <v-sheet v-if="checkPoints" class="mt-auto pa-3 border border-success rounded">
+    <v-sheet v-if="checkpoints" class="mt-auto pa-3 border border-success rounded">
         <div class="text-success font-weight-semibold">
             <v-icon class="mr-2">$success</v-icon>
-            Checkpoints ({{ checkedCount }}/{{ checkPoints ? checkPoints.length : 0 }})
+            Checkpoints ({{ checkedCount }}/{{ checkpoints ? checkpoints.length : 0 }})
         </div>
-        <div v-for="(checkPoint, index) in checkPoints" :key="index" class="mt-2">
-            <v-checkbox v-model="checkPoint.checked" hide-details density="compact" color="success">
+        <div v-for="(checkpoint, index) in checkpoints" :key="index" class="mt-2">
+            <v-checkbox v-model="checkpoint.checked" hide-details density="compact" color="success">
                 <template v-slot:label>
-                    <span class="text-body-1" style="line-height: 1.3;">{{ checkPoint.name }}</span>
+                    <span class="text-body-1" style="line-height: 1.3;">{{ checkpoint.name }}</span>
                 </template>
             </v-checkbox>
         </div>
@@ -31,40 +31,35 @@ export default {
         },
     },
     data: () => ({
-        checkPoints: null,
+        checkpoints: null,
         snackbar: false,
     }),
     computed: {
         checkedCount() {
-            if (!this.checkPoints) return 0;
-            return this.checkPoints.filter((checkPoint) => checkPoint.checked).length;
+            if (!this.checkpoints) return 0;
+            return this.checkpoints.filter((checkpoint) => checkpoint.checked).length;
         },
+        allChecked() {
+            return this.checkpoints.every(checkpoint => checkpoint.checked);
+        }
     },
     watch: {
         workItem(newVal) {
             if (newVal && newVal.activity && newVal.activity.checkpoints) {
-                this.checkPoints = newVal.activity.checkpoints.map((checkpoint) => ({
+                this.checkpoints = newVal.activity.checkpoints.map((checkpoint) => ({
                     name: checkpoint,
                     checked: false
                 }));
-                this.updateCheckpoints();
             }
         }
     },
     created() {
         if (this.workItem && this.workItem.activity.checkpoints) {
-            this.checkPoints = this.workItem.activity.checkpoints.map((checkpoint) => ({
+            this.checkpoints = this.workItem.activity.checkpoints.map((checkpoint) => ({
                 name: checkpoint,
                 checked: false
             }));
-            this.updateCheckpoints();
         }
     },
-    methods: {
-        updateCheckpoints() {
-            const allChecked = this.checkPoints.every(checkPoint => checkPoint.checked);
-            this.$emit('update-checkpoints', allChecked);
-        }
-    }
 }
 </script>

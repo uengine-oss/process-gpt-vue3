@@ -81,7 +81,6 @@ export default {
         formDefId: null,
         formData: {},
         newMessage: '',
-        allCheckpointsChecked: false,
     }),
     computed: {
         isCompleted(){
@@ -125,10 +124,6 @@ export default {
                     })
                 }
             });
-
-            if (!me.workItem.activity.checkpoints || me.workItem.activity.checkpoints.length == 0) {
-                me.allCheckpointsChecked = true;
-            }
         },
         async loadForm(){
             var me = this;
@@ -266,7 +261,7 @@ export default {
             this.$emit('fail', msg)
         },
         executeProcess() {
-            if (!this.allCheckpointsChecked) {
+            if (!this.$refs.checkpoints.allChecked) {
                 this.$refs.checkpoints.snackbar = true;
                 return;
             }
@@ -282,9 +277,6 @@ export default {
             } else {
                 this.completeTask();
             }
-        },
-        updateCheckpoints(status) {
-            this.allCheckpointsChecked = status;
         },
     }
 };

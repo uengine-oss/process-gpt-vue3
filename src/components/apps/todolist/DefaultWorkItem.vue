@@ -7,7 +7,7 @@
     <div class="pa-4" style="height: 100%;">
         <div class="d-flex flex-column overflow-y-auto"  style="height: 100%;">
             <Instruction :workItem="workItem" />
-            <div>
+            <div v-if="isCompleted">
                 <v-row class="w-100" v-for="item in outputItems" :key="item.name">
                     <v-col cols="5">
                         <v-list-subheader>{{ item.key }}</v-list-subheader>
@@ -17,11 +17,11 @@
                     </v-col>
                 </v-row>
             </div>
-            <div>
+            <div v-else>
                 <DefaultForm v-if="inputItems && inputItems.length > 0" :inputItems="inputItems" />
                 <AudioTextarea v-model="newMessage" :workItem="workItem" />
             </div>
-            <Checkpoints ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
+            <Checkpoints ref="checkpoints" :workItem="workItem" />
         </div>
     </div>
 </template>
@@ -70,7 +70,6 @@ export default {
         inputItems: null,
         outputItems: null,
         newMessage: '',
-        allCheckpointsChecked: false,
     }),
     computed: {
         isCompleted() {
@@ -87,15 +86,16 @@ export default {
         close(){
             this.$emit('close')
         },
-        async init() {
+        init() {
             var me = this;
-            let workitem = me.workItem
+            let workitem = me.workItem;
             let parameterValues = workitem.parameterValues;
-            
-            me.inputItems = [];
-            Object.keys(parameterValues).forEach(key => {
-                me.inputItems.push({ name: key, key: key, value: parameterValues[key] });
-            });
+            me.inputItems = parameterValues ?
+                Object.entries(parameterValues).map(([key, value]) => ({ name: key, key, value })) : [];
+            if (me.isCompleted) {
+                me.outputItems = parameterValues ?
+                    Object.entries(parameterValues).map(([key, value]) => ({ name: key, key, value })) : [];
+            }
         },
         completeTask(value) {
             var me = this;
@@ -125,7 +125,7 @@ export default {
             });
         },
         executeProcess() {
-            if (!this.allCheckpointsChecked) {
+            if (!this.$refs.checkpoints.allChecked) {
                 this.$refs.checkpoints.snackbar = true;
                 return;
             }
@@ -154,9 +154,6 @@ export default {
                 },
                 successMsg: '중간 저장 완료'
             });
-        },
-        updateCheckpoints(status) {
-            this.allCheckpointsChecked = status;
         },
     }
 };
