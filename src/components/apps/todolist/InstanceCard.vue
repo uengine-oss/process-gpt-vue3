@@ -90,7 +90,7 @@ export default {
     },
     computed: {
         id() {
-            return atob(this.$route.params.instId);
+            return this.$route.params.instId
         },
         isCompleted() {
             return this.instance.status == "COMPLETED"

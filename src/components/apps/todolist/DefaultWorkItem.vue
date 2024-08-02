@@ -21,7 +21,7 @@
                 <DefaultForm v-if="inputItems && inputItems.length > 0" :inputItems="inputItems" />
                 <AudioTextarea v-model="newMessage" :workItem="workItem" />
             </div>
-            <Checkpoints ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
+            <Checkpoints v-if="mode=='ProcessGPT'" ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
         </div>
     </div>
 </template>
@@ -112,12 +112,12 @@ export default {
                         
                         await backend.startAndComplete({
                             processExecutionCommand: processExecutionCommand,
-                            workItem: value   
-                        });
+                            workItem: value,
+                        }, true);
                         me.close();
                     } else {
                         if (me.workItem.execScope) value.execScope = me.workItem.execScope;
-                        await backend.putWorkItemComplete(me.$route.params.taskId, value);
+                        await backend.putWorkItemComplete(me.$route.params.taskId, value, true);
                         me.$router.push(`/instancelist/${btoa(me.workItem.worklist.instId)}`);  
                     }
                 },
@@ -125,10 +125,13 @@ export default {
             });
         },
         executeProcess() {
-            if (!this.allCheckpointsChecked) {
-                this.$refs.checkpoints.snackbar = true;
-                return;
+            if(this.mode == 'ProcessGPT') {
+                if (!this.allCheckpointsChecked) {
+                    this.$refs.checkpoints.snackbar = true;
+                    return;
+                }
             }
+            
             let value = { parameterValues: {} };
             let parameterValues = this.inputItems.reduce((acc, item) => ({ ...acc, [item.key]: item.value }), {});
             if (parameterValues) value.parameterValues = parameterValues;

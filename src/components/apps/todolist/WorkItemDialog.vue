@@ -29,6 +29,10 @@ export default {
     props: {
         taskId: String,
         workItem: Object,
+        isSimulate: {
+            type: Boolean,
+            default: false
+        }
     },
     data: () => ({
         formHtml: null,
@@ -77,7 +81,7 @@ export default {
                         me.workItem.parameterValues = me.formData;
                         inputValue = me.workItem;
                     }
-                    await backend.putWorkItemComplete(me.taskId, inputValue);
+                    await backend.putWorkItemComplete(me.taskId, inputValue, me.isSimulate);
                     me.$emit('closeDialog', true);
                 },
                 onFail(error) {
