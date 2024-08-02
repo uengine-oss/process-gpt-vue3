@@ -323,29 +323,29 @@ class ProcessGPTBackend implements Backend {
     async getWorkItem(taskId: string) {
         try {
             if (!taskId) return
-            const data = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
-            const defInfo = await this.getRawDefinition(data.proc_def_id, null);
-            const inst = await this.getInstance(data.proc_inst_id);
+            const workitem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
+            const defInfo = await this.getRawDefinition(workitem.proc_def_id, null);
+            const inst = await this.getInstance(workitem.proc_inst_id);
 
             let parameters: any[] = [];
             let variableForHtmlFormContext: any = {};
             let activityInfo: any = null;
 
             if (defInfo && defInfo.definition) {
-                activityInfo = defInfo.definition.activities.find((activity: any) => activity.id === data.activity_id);
+                activityInfo = defInfo.definition.activities.find((activity: any) => activity.id === workitem.activity_id);
                 if (activityInfo && activityInfo.properties) {
                     const properties = JSON.parse(activityInfo.properties);
                     if (properties.parameters) {
-                        parameters = properties.parameters;
+                        if (workitem.status != 'DONE') {
+                            parameters = properties.parameters.filter((item: any) => item.direction.includes('IN'));
+                        } else {
+                            parameters = properties.parameters
+                        }
                         parameters.forEach((item: any) => {
-                            if (data.status != 'DONE' && item.direction == 'OUT') {
-                                item.direction = 'IN';
-                            } else if (data.status != 'DONE' && item.direction == 'IN') {
-                                item.direction = 'OUT';
-                            }
                             item.variable.defaultValue = inst[item.variable.name.toLowerCase().replace(/ /g, '_')] || "";
                         })
-                    } else if (properties.variableForHtmlFormContext) {
+                    }
+                    if (properties.variableForHtmlFormContext) {
                         variableForHtmlFormContext = properties.variableForHtmlFormContext;
                     }
                 }
@@ -356,23 +356,23 @@ class ProcessGPTBackend implements Backend {
                     parameterValues[item.argument.text] = item.variable.defaultValue
                 })
             }
-            const workItem = {
+            const newWorkItem = {
                 worklist: {
-                    defId: data.proc_def_id,
-                    endpoint: data.user_id,
-                    instId: data.proc_inst_id,
+                    defId: workitem.proc_def_id,
+                    endpoint: workitem.user_id,
+                    instId: workitem.proc_inst_id,
                     rootInstId: null,
-                    taskId: data.id,
-                    startDate: data.start_date,
-                    dueDate: data.end_date,
-                    status: data.status === 'TODO' ? 'NEW' : data.status === 'DONE' ? 'COMPLETED' : data.status,
-                    description: data.description || "",
-                    tool: data.tool || "",
+                    taskId: workitem.id,
+                    startDate: workitem.start_date,
+                    dueDate: workitem.end_date,
+                    status: workitem.status === 'TODO' ? 'NEW' : workitem.status === 'DONE' ? 'COMPLETED' : workitem.status,
+                    description: workitem.description || "",
+                    tool: workitem.tool || "",
                     currentActivities: inst.current_activity_ids || []
                 },
                 activity: {
-                    name: data.activity_name,
-                    tracingTag: data.activity_id || '',
+                    name: workitem.activity_name,
+                    tracingTag: workitem.activity_id || '',
                     parameters: parameters || [],
                     variableForHtmlFormContext: variableForHtmlFormContext || {},
                     instruction: activityInfo && activityInfo.instruction ? activityInfo.instruction : "",
@@ -380,7 +380,7 @@ class ProcessGPTBackend implements Backend {
                 },
                 parameterValues: parameterValues || {}
             }
-            return workItem;
+            return newWorkItem;
         } catch (e) {
             //@ts-ignore
             throw new Error(e.message);

@@ -81,7 +81,6 @@ export default {
         formDefId: null,
         formData: {},
         newMessage: '',
-        allCheckpointsChecked: false,
     }),
     computed: {
         isCompleted(){
@@ -125,10 +124,6 @@ export default {
                     })
                 }
             });
-
-            if (!me.workItem.activity.checkpoints || me.workItem.activity.checkpoints.length == 0) {
-                me.allCheckpointsChecked = true;
-            }
         },
         async loadForm(){
             var me = this;
@@ -139,6 +134,14 @@ export default {
             let variable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName);
             if (variable && variable.valueMap) {
                 me.formData = variable.valueMap;
+            }
+
+            
+            if(me.workItem?.parameterValues){
+                const parameterValues = me.workItem.parameterValues[varName];
+                if(parameterValues && parameterValues.valueMap){
+                    me.formData = parameterValues.valueMap;
+                }
             }
         },
         async saveTask() {
@@ -181,8 +184,9 @@ export default {
             variable._type = 'org.uengine.contexts.HtmlFormContext';
             variable.valueMap = me.formData;
             Object.keys(variable.valueMap).forEach((key) => {
-                if (typeof variable.valueMap[key] == 'object') {
-                    variable.valueMap[key].forEach((item) => {
+                if (Array.isArray(variable.valueMap[key])) {
+                    if(!variable.valueMap[key]) return;
+                    variable.valueMap[key]?.forEach((item) => {
                         if(item && item._type){
                             item._type = 'java.util.HashMap';
                         }
@@ -234,7 +238,7 @@ export default {
                             processDefinitionId: me.definitionId
                         }
                                 
-                        await backend.startDryRun({
+                        await backend.startAndComplete({
                             processExecutionCommand: processExecutionCommand,
                             workItem: workItem,
                             variables: variables
@@ -266,9 +270,11 @@ export default {
             this.$emit('fail', msg)
         },
         executeProcess() {
-            if (!this.allCheckpointsChecked) {
-                this.$refs.checkpoints.snackbar = true;
-                return;
+            if($mode == 'ProcessGPT') {
+                if (!this.$refs.checkpoints.allChecked) {
+                    this.$refs.checkpoints.snackbar = true;
+                    return;
+                }
             }
             let value = {};
             if (this.newMessage && this.newMessage.length > 0) {
@@ -282,9 +288,6 @@ export default {
             } else {
                 this.completeTask();
             }
-        },
-        updateCheckpoints(status) {
-            this.allCheckpointsChecked = status;
         },
     }
 };
