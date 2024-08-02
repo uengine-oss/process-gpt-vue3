@@ -17,7 +17,7 @@ hr {
 
 .processVariables-zoom {
     position: absolute;
-    right: 20px;
+    right: 5px;
     top: 20px;
     z-index: 1;
 }
@@ -34,7 +34,6 @@ hr {
     display: flex;
     justify-content: center;
     align-items: center;
-    color: #5EB2E8;
     font-weight: 700;
 }
 
@@ -48,13 +47,13 @@ hr {
 }
 
 .highlight:not(.djs-connection) .djs-visual> :nth-child(1) {
-    stroke-width: 2px !important;
-    stroke: #5140bd !important;
-    fill: #5140bd !important;
+    stroke-width: 5px !important;
+    stroke: #68369A !important;
+    /* fill: #68369A !important; */
 }
 
 .highlight:not(.djs-connection) .djs-visual> :nth-child(2) {
-    fill: #ffffff !important;
+    /* fill: #ffffff !important; */
 }
 
 /* 팔레트 커스텀 부분 */
@@ -89,7 +88,7 @@ hr {
 .vue-bpmn-diagram-container .djs-palette {
     width: 695px !important;
     height: 50px;
-    margin-left: 35px;
+    left:5px; top:5px;
     background-color: white;
     border: none;
     border-radius: 10px;
@@ -137,10 +136,60 @@ hr {
     right: 5px
 }
 
-@media only screen and (max-width:1500px) {
+.centered-input:deep(input) {
+    text-align: center;
+}
+
+.centered-input {
+    margin-right:10px;
+}
+
+.form-dialog-close-btn {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+}
+
+.form-apply-btn {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+}
+
+.form-layout-card {
+    margin-bottom: 5px;
+    border-radius: 8px !important;
+}
+
+
+.process-variable-tbody tr td {
+    height:24px !important;
+}
+
+.process-variable-tbody .v-data-table-footer {
+    padding:0px !important;
+}
+
+#apexTreeWrapper {
+    height: 100% !important;
+}
+
+#apexTreeWrapper > svg{
+    height: 98% !important;
+    width: 100% !important;
+}
+
+@media only screen and (max-width:1450px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 375px !important;
         height: 94px !important;
+    }
+}
+
+@media only screen and (max-width:550px) {
+    .vue-bpmn-diagram-container .djs-palette {
+        width: 230px !important;
+        height:135px !important;
     }
 }
 

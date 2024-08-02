@@ -1,13 +1,11 @@
 <template>
     <v-card
-    class="mx-auto my-8"
+    class="mx-auto my-8 form-save-box"
     elevation="16"
     max-width="400"
     >
         <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{ ((savedId) ? "UpdateForm" : "NewForm") }}</v-card-title>
-        <v-btn icon style="position:absolute; right:5px; top:5px;" @click="$emit('onClose')">
-            <v-icon>mdi-close</v-icon>
-        </v-btn>
+        <v-icon @click="$emit('onClose')" class="form-dialog-close-btn">mdi-close</v-icon>
 
         <v-card-text>
             <v-col>

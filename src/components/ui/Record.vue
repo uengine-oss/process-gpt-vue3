@@ -1,42 +1,44 @@
 <template>
-    <div class="container" :style="containerStyle">
-        <v-btn class="record-close-btn" icon density="comfortable" @click="closeRecording"
-            :style="!$globalState.state.isRightZoomed ? '' : 'top:10px; z-index: 9999;'"
-        >
-            <v-icon>mdi-close</v-icon>
-        </v-btn>
-        <div v-if="isLoading" class="loading-circle">
-            <div class="child-circle" v-for="n in 5" :key="n"></div>
-        </div>
-        <div v-else-if="isAudioPlaying" class="audio-bar-box">
-            <div v-for="n in 4" :key="n" class="audio-bar" :style="{ height: AudioPlayingBarHeight(n) + 'px' }"></div>
-        </div>
-        <div v-else class="circle" :style="{ width: circleSize + 'px', height: circleSize + 'px' }"></div>
-        <AudioStream
-            @update:isLoading="updateLoadingStatus"
-            @audio:start="startAudio"
-            @audio:stop="stopAudio"
-            @update:audioBars="updateAudioBars"
-            :audioResponse="audioResponse"
-            :isLoading="isLoading"
-            :stopAudioStreamStatus="stopAudioStreamStatus"
-            :chatRoomId="chatRoomId"
-        />
-        <div class="controls">
-            <v-btn v-if="!isRecording && !isAudioPlaying && !isLoading" @click="toggleRecording()" icon density="comfortable">
-                <Icons :icon="'sharp-mic'"  />
+    <v-dialog v-model="recordingMode" fullscreen>
+        <div class="container" :style="containerStyle">
+            <v-btn class="record-close-btn" icon density="comfortable" @click="closeRecording"
+                :style="!$globalState.state.isRightZoomed ? '' : 'top:10px; z-index: 9999;'"
+            >
+                <v-icon>mdi-close</v-icon>
             </v-btn>
-            <v-btn v-else-if="!sendRecordingStatus" @click="sendRecording()" icon density="comfortable">
-                <Icons :icon="'stop'"  />
-            </v-btn>
-            <v-btn v-else @click="stopAudioStream()" icon density="comfortable">
-                <Icons :icon="'stop'"  />
-            </v-btn>
-            <div v-if="!isAudioPlaying && !isLoading" class="bars">
-                <div v-for="n in 4" :key="n" class="bar" :style="{ height: boxHeight(n) + 'px' }"></div>
+            <div v-if="isLoading" class="loading-circle">
+                <div class="child-circle" v-for="n in 5" :key="n"></div>
+            </div>
+            <div v-else-if="isAudioPlaying" class="audio-bar-box">
+                <div v-for="n in 4" :key="n" class="audio-bar" :style="{ height: AudioPlayingBarHeight(n) + 'px' }"></div>
+            </div>
+            <div v-else class="circle" :style="{ width: circleSize + 'px', height: circleSize + 'px' }"></div>
+            <AudioStream
+                @update:isLoading="updateLoadingStatus"
+                @audio:start="startAudio"
+                @audio:stop="stopAudio"
+                @update:audioBars="updateAudioBars"
+                :audioResponse="audioResponse"
+                :isLoading="isLoading"
+                :stopAudioStreamStatus="stopAudioStreamStatus"
+                :chatRoomId="chatRoomId"
+            />
+            <div class="controls">
+                <v-btn v-if="!isRecording && !isAudioPlaying && !isLoading" @click="toggleRecording()" icon density="comfortable">
+                    <Icons :icon="'sharp-mic'"  />
+                </v-btn>
+                <v-btn v-else-if="!sendRecordingStatus" @click="sendRecording()" icon density="comfortable">
+                    <Icons :icon="'stop'"  />
+                </v-btn>
+                <v-btn v-else @click="stopAudioStream()" icon density="comfortable">
+                    <Icons :icon="'stop'"  />
+                </v-btn>
+                <div v-if="!isAudioPlaying && !isLoading" class="bars">
+                    <div v-for="n in 4" :key="n" class="bar" :style="{ height: boxHeight(n) + 'px' }"></div>
+                </div>
             </div>
         </div>
-    </div>
+    </v-dialog>
 </template>
 
 <script>
@@ -51,6 +53,7 @@ export default {
         AudioStream,
     },
     props: {
+        recordingMode: Boolean,
         audioResponse: String,
         chatRoomId: String
     },
@@ -144,6 +147,7 @@ export default {
         },
         closeRecording() {
             this.$emit('close');
+            this.EventBus.emit('instances-updated');
         },
         startAudio() {
             this.isAudioPlaying = true;

@@ -5,49 +5,33 @@
         <v-btn @click="executeProcess" color="primary" rounded>완료</v-btn>
     </v-row>
     <div class="pa-4" style="height: 100%;">
-        <div v-if="isCompleted">
-            <v-row v-for="item in outputItems" :key="item.name">
-                <v-col cols="5">
-                    <v-list-subheader>{{ item.key }}</v-list-subheader>
-                </v-col>
-                <v-col cols="7">
-                    <v-list-subheader>{{ item.value }}</v-list-subheader>
-                </v-col>
-            </v-row>
-        </div>
-        <div v-else class="d-flex flex-column overflow-y-auto" style="height: 100%;">
-            <!-- Instruction -->
-            <div class="mb-4">
-                <v-alert v-if="workItem.activity.instruction" title="Instruction" type="info" variant="outlined"
-                    density="compact">
-                    <template v-slot:text>
-                        <span style="font-size: 14px;">{{ workItem.activity.instruction }}</span>
-                    </template>
-                </v-alert>
+        <div class="d-flex flex-column overflow-y-auto"  style="height: 100%;">
+            <Instruction :workItem="workItem" />
+            <div v-if="isCompleted">
+                <v-row class="w-100" v-for="item in outputItems" :key="item.name">
+                    <v-col cols="5">
+                        <v-list-subheader>{{ item.key }}</v-list-subheader>
+                    </v-col>
+                    <v-col cols="7">
+                        <v-list-subheader>{{ item.value }}</v-list-subheader>
+                    </v-col>
+                </v-row>
             </div>
-            <!-- Input Form -->
-            <div>
+            <div v-else>
                 <DefaultForm v-if="inputItems && inputItems.length > 0" :inputItems="inputItems" />
                 <AudioTextarea v-model="newMessage" :workItem="workItem" />
             </div>
-            <!-- CheckPoint -->
-            <v-sheet v-if="checkPoints" class="mt-auto pa-3 border border-success rounded">
-                <div class="text-success font-weight-semibold">
-                    <v-icon class="mr-2">$success</v-icon>
-                    CheckPoint ({{ checkedCount }}/{{ checkPoints ? checkPoints.length : 0 }})
-                </div>
-                <div v-for="(checkPoint, index) in checkPoints" :key="index">
-                    <v-checkbox v-model="checkPoint.checked" :label="checkPoint.name" hide-details density="compact" 
-                        color="success"></v-checkbox>
-                </div>
-            </v-sheet>
+            <Checkpoints ref="checkpoints" :workItem="workItem" />
         </div>
     </div>
 </template>
 
 <script>
 import DefaultForm from '@/components/designer/DefaultForm.vue';
+
+import Instruction from '@/components/ui/Instruction.vue';
 import AudioTextarea from '@/components/ui/AudioTextarea.vue';
+import Checkpoints from '@/components/ui/Checkpoints.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -55,7 +39,9 @@ const backend = BackendFactory.createBackend();
 export default {
     components: {
         DefaultForm,
-        AudioTextarea
+        Instruction,
+        AudioTextarea,
+        Checkpoints
     },
     props: {
         definitionId: String,
@@ -83,7 +69,6 @@ export default {
     data: () => ({
         inputItems: null,
         outputItems: null,
-        checkPoints: null,
         newMessage: '',
     }),
     computed: {
@@ -93,10 +78,6 @@ export default {
         mode() {
             return window.$mode;
         },
-        checkedCount() {
-            if (!this.checkPoints) return 0;
-            return this.checkPoints.filter((checkPoint) => checkPoint.checked).length;
-        },
     },
     created() {
         this.init();
@@ -105,28 +86,15 @@ export default {
         close(){
             this.$emit('close')
         },
-        async init() {
+        init() {
             var me = this;
-            if(me.isDryRun){
-                let workitem = me.dryRunWorkItem
-                let activitiy = workitem.activity
-                me.inputItems = activitiy.parameters.filter((item) => item.direction.includes('OUT'))
-                        .map((item) => ({ name: item.variable.name, key: item.argument.text, value: item.variable.defaultValue }));
-            } else {
-                if (!me.workItem.activity.parameters) me.workItem.activity.parameters = [];
-                if (me.isCompleted) {
-                    me.outputItems = me.workItem.activity.parameters.filter((item) => item.direction.includes('IN'))
-                        .map((item) => ({ name: item.variable.name, key: item.argument.text, value: me.workItem.parameterValues[item.argument.text]}));
-                } else {
-                    me.inputItems = me.workItem.activity.parameters.filter((item) => item.direction.includes('OUT'))
-                        .map((item) => ({ name: item.variable.name, key: item.argument.text, value: item.variable.defaultValue }));
-                }
-            }
-            if (me.workItem && me.workItem.activity.checkpoints) {
-                me.checkPoints = me.workItem.activity.checkpoints.map((checkpoint) => ({
-                    name: checkpoint,
-                    checked: false
-                }));
+            let workitem = me.workItem;
+            let parameterValues = workitem.parameterValues;
+            me.inputItems = parameterValues ?
+                Object.entries(parameterValues).map(([key, value]) => ({ name: key, key, value })) : [];
+            if (me.isCompleted) {
+                me.outputItems = parameterValues ?
+                    Object.entries(parameterValues).map(([key, value]) => ({ name: key, key, value })) : [];
             }
         },
         completeTask(value) {
@@ -142,7 +110,7 @@ export default {
                             processDefinitionId: me.definitionId
                         }
                         
-                        await backend.startDryRun({
+                        await backend.startAndComplete({
                             processExecutionCommand: processExecutionCommand,
                             workItem: value   
                         });
@@ -156,7 +124,11 @@ export default {
                 successMsg: '해당 업무 완료'
             });
         },
-        executeProcess(){
+        executeProcess() {
+            if (!this.$refs.checkpoints.allChecked) {
+                this.$refs.checkpoints.snackbar = true;
+                return;
+            }
             let value = { parameterValues: {} };
             let parameterValues = this.inputItems.reduce((acc, item) => ({ ...acc, [item.key]: item.value }), {});
             if (parameterValues) value.parameterValues = parameterValues;

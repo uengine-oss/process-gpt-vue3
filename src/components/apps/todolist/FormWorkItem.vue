@@ -1,27 +1,22 @@
 <template>
     <v-row class="ma-0 pa-0 task-btn" style="right:50px; top:12px;">
         <v-spacer></v-spacer>
-        <div class="from-work-item-pc" v-if="workItemStatus == 'NEW' || workItemStatus == 'DRAFT'">
-            <v-btn v-if="!isDryRun" @click="saveTask()" color="primary" class="mr-2" rounded>중간 저장</v-btn>
-            <v-btn @click="$try(completeTask, null, {sucessMsg: '워크아이템 완료'})" color="primary" rounded>제출 완료</v-btn>
+        <div class="from-work-item-pc" v-if="!isCompleted">
+            <v-btn v-if="!isDryRun" @click="saveTask" color="primary" class="mr-2" rounded>중간 저장</v-btn>
+            <v-btn @click="executeProcess" color="primary" rounded>제출 완료</v-btn>
         </div>
-        <div class="from-work-item-mobile" v-if="workItemStatus == 'NEW' || workItemStatus == 'DRAFT'">
+        <div class="from-work-item-mobile" v-if="!isCompleted">
             <v-tooltip text="중간 저장">
                 <template v-slot:activator="{ props }">
-                    <v-btn @click="saveTask()"
-                        icon v-bind="props"
-                        density="comfortable"
-                    >
+                    <v-btn @click="saveTask" icon v-bind="props" density="comfortable">
                         <Icons :icon="'save'" :width="32" :height="32"/>
                     </v-btn>
                 </template>
             </v-tooltip>
             <v-tooltip text="제출 완료">
                 <template v-slot:activator="{ props }">
-                    <v-btn @click="$try(completeTask, null, {sucessMsg: '워크아이템 완료'})" variant="tex"
-                        icon v-bind="props"
-                        density="comfortable"
-                    >
+                    <v-btn @click="executeProcess" icon v-bind="props"
+                        density="comfortable">
                         <Icons :icon="'submit-document'" :width="28" :height="28"/>
                     </v-btn>
                 </template>
@@ -30,18 +25,29 @@
     </v-row>
     <div class="pa-4">
         <!-- <FormMapper></FormMapper> -->
+        <Instruction :workItem="workItem" />
         <DynamicForm ref="dynamicForm" :formHTML="html" v-model="formData"></DynamicForm>
+        <AudioTextarea v-if="!isCompleted" v-model="newMessage" :workItem="workItem" @close="close" />
+        <Checkpoints ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
     </div>
 </template>
 
 <script>
-import BackendFactory from '@/components/api/BackendFactory';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 
+import Instruction from '@/components/ui/Instruction.vue';
+import AudioTextarea from '@/components/ui/AudioTextarea.vue';
+import Checkpoints from '@/components/ui/Checkpoints.vue';
+
+import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
+
 export default {
     components: {
-        DynamicForm
+        DynamicForm,
+        Instruction,
+        AudioTextarea,
+        Checkpoints
     },
     props: {
         definitionId: String,
@@ -65,21 +71,32 @@ export default {
                 return []
             }
         },
+        isSimulate: {
+            type: Boolean,
+            default: false
+        }
     },
     data: () => ({
         html: null,
         formDefId: null,
-        formData: {}
+        formData: {},
+        newMessage: '',
     }),
     computed: {
         isCompleted(){
             return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
-        }
+        },
     },
     watch:  {
         html() {
             if (this.isCompleted) {
                 this.html = this.disableFormHTML(this.html);
+            }
+            this.EventBus.emit('html-updated', this.html);
+        },
+        formData() {
+            if(this.formData){
+                this.EventBus.emit('formData-updated', this.formData);
             }
         }
     },
@@ -89,7 +106,6 @@ export default {
     methods: {
         async init() {
             var me = this;
-            let formName = null;
             if(me.isDryRun) {
                 me.formDefId = me.dryRunWorkItem.activity.tool.split(':')[1];
             } else {
@@ -100,6 +116,14 @@ export default {
             if(!me.isDryRun) {
                 me.loadForm()
             }
+
+            me.EventBus.on('form-values-updated', (formValues) => {
+                if(formValues){
+                    Object.keys(formValues).forEach(function (key){
+                        me.formData[key] = formValues[key]
+                    })
+                }
+            });
         },
         async loadForm(){
             var me = this;
@@ -110,6 +134,14 @@ export default {
             let variable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName);
             if (variable && variable.valueMap) {
                 me.formData = variable.valueMap;
+            }
+
+            
+            if(me.workItem?.parameterValues){
+                const parameterValues = me.workItem.parameterValues[varName];
+                if(parameterValues && parameterValues.valueMap){
+                    me.formData = parameterValues.valueMap;
+                }
             }
         },
         async saveTask() {
@@ -135,7 +167,7 @@ export default {
 
                     await me.saveForm();
                     ///////////////////////////////////
-                    await backend.putWorkItem(me.$route.params.taskId, { parameterValues: {} });
+                    await backend.putWorkItem(me.$route.params.taskId, { parameterValues: {} }, me.isSimulate);
                 },
                 successMsg: '중간 저장 완료'
             });
@@ -152,9 +184,12 @@ export default {
             variable._type = 'org.uengine.contexts.HtmlFormContext';
             variable.valueMap = me.formData;
             Object.keys(variable.valueMap).forEach((key) => {
-                if (typeof variable.valueMap[key] == 'object') {
-                    variable.valueMap[key].forEach((item) => {
-                        item._type = 'java.util.HashMap';
+                if (Array.isArray(variable.valueMap[key])) {
+                    if(!variable.valueMap[key]) return;
+                    variable.valueMap[key]?.forEach((item) => {
+                        if(item && item._type){
+                            item._type = 'java.util.HashMap';
+                        }
                     });
                 }
             });
@@ -172,44 +207,52 @@ export default {
         async completeTask() {
             let me = this
             // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드
-            let workItem = { parameterValues: {} };
-            let variables = {}
+            me.$try({
+                context: me,
+                action: async () => {
+                    let workItem = { parameterValues: {} };
+                    let variables = {}
 
-            if($mode=="uEngine")
-                await me.saveForm(variables)
-            
-            if($mode=="ProcessGPT"){
-                workItem.parameterValues = me.formData
-            }
+                    if($mode=="uEngine")
+                        await me.saveForm(variables)
+                    
+                    if($mode=="ProcessGPT"){
+                        workItem.parameterValues = me.formData
+                    }
 
-            ///////////////////////////////////
+                    ///////////////////////////////////
 
 
-            //#region 폼 정의시에 검증 스크립트가 등록된 경우, 해당 스크립트를 실행시켜서 유효성을 검사
-            const error = me.$refs.dynamicForm.validate()
-            if (error && error.length > 0) {
-                alert("※ 폼에 정의된 유효성 검사에 실패했습니다 !\n> " + error)
-                return;
-            }
-            //#endregion
+                    //#region 폼 정의시에 검증 스크립트가 등록된 경우, 해당 스크립트를 실행시켜서 유효성을 검사
+                    const error = me.$refs.dynamicForm.validate()
+                    if (error && error.length > 0) {
+                        alert("※ 폼에 정의된 유효성 검사에 실패했습니다 !\n> " + error)
+                        return;
+                    }
+                    //#endregion
 
-            if (me.workItem.execScope) workItem.execScope = me.workItem.execScope;
+                    if (me.workItem.execScope) workItem.execScope = me.workItem.execScope;
 
-            if(me.isDryRun){
-                let processExecutionCommand = {
-                    processDefinitionId: me.definitionId
+                    if(me.isDryRun){
+                        let processExecutionCommand = {
+                            processDefinitionId: me.definitionId
+                        }
+                                
+                        await backend.startAndComplete({
+                            processExecutionCommand: processExecutionCommand,
+                            workItem: workItem,
+                            variables: variables
+                        });
+                        me.close()
+                    } else {
+                        if (this.newMessage && this.newMessage.length > 0) {
+                            workItem['user_input_text'] = this.newMessage;
+                        }
+                        await backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate);
+                        me.$router.push('/todolist');
+                    }
                 }
-                        
-                await backend.startDryRun({
-                    processExecutionCommand: processExecutionCommand,
-                    workItem: workItem,
-                    variables: variables
-                });
-                me.close()
-            } else {  
-                await backend.putWorkItemComplete(me.$route.params.taskId, workItem);
-                me.$router.push('/todolist');
-            }
+            })
         },
         disableFormHTML(html) {
             const parser = new DOMParser();
@@ -226,7 +269,24 @@ export default {
         fail(msg){
             this.$emit('fail', msg)
         },
-       
+        executeProcess() {
+            if (!this.$refs.checkpoints.allChecked) {
+                this.$refs.checkpoints.snackbar = true;
+                return;
+            }
+            let value = {};
+            if (this.newMessage && this.newMessage.length > 0) {
+                value['user_input_text'] = this.newMessage;
+            }
+
+            if(this.isDryRun && $mode == 'ProcessGPT') {
+                const formColumn = this.formDefId.replace(/\s+/g, '_').toLowerCase();
+                value[formColumn] = this.formData;
+                this.$emit('executeProcess', value);
+            } else {
+                this.completeTask();
+            }
+        },
     }
 };
 </script>

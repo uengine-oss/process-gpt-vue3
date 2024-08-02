@@ -8,8 +8,9 @@
             <h1 class="text-grey200" style="font-size: 40px;">{{ $t('tenantManagePage.title') }}</h1>
         </v-row>
         <v-row no-gutters justify="center">
-            <p class="font-weight-semibold text-grey100 text-h5">
-                {{ $t('tenantManagePage.subTitle') }}
+            <p class="font-weight-semibold text-grey100 text-h5" style="text-align: center;">
+                {{ $t('tenantManagePage.subTitle1') }}<br>
+                {{ $t('tenantManagePage.subTitle2') }}               
             </p>
         </v-row>
 
@@ -21,16 +22,12 @@
                     justify-content: center;
                     align-items: center;
                     border-radius: 10px !important;
-                    width: 500px;
-                    height: 45px;"
+                    width: 500px;"
+                    color="primary"
             >
                 <v-row class="pa-0 ma-0">
-                    <v-col cols="1">
-                        <v-icon style="color: green;" size="24">mdi-plus</v-icon>
-                    </v-col>
-                    <v-col cols="11">
-                        {{ $t('tenantManagePage.createCompany') }}
-                    </v-col>
+                    <Icons  :icon="'plus'" :size="16" class="mr-2" />
+                    <div>{{ $t('tenantManagePage.createCompany') }}</div>
                 </v-row>
             </v-card>
         </v-row>

@@ -27,7 +27,7 @@
             </v-radio-group>
             <div style="margin-top: 10px;">Resolution Rule</div>
             <v-text-field
-                v-if="role.resolutionRule"
+                v-if="role && role.resolutionRule"
                 v-model="role.resolutionRule"
             ></v-text-field>
             <v-text-field

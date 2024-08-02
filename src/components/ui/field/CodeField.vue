@@ -1,19 +1,23 @@
 <template>
-    <div v-show="false">
-        <slot ></slot>
-    </div>
+    <div>
+        <div style="display: none;">
+            <slot></slot>
+        </div>
 
-    <div v-if="(this.localEventType !== 'click') && (this.encoded_code !== undefined)" class="d-flex align-center justify-center">
-        <img class="mr-2" src="/snippets/default/preview/input-code.png" style="width: 25px;" />
-        <p>{{ localLabel }}</p>
-    </div>
-    <div v-else-if="this.localEventType === 'click'">
-        <v-btn color="primary" class="w-100 my-5" @click="$emit('on_click')">{{ localLabel }}</v-btn>
+        <div v-if="(this.localEventType !== 'click') && (this.encoded_code !== undefined)" class="d-flex align-center justify-center">
+            <img class="mr-2" src="/snippets/default/preview/input-code.png" style="width: 25px;" />
+            <p>{{ localLabel }}</p>
+        </div>
+        <div v-else-if="this.localEventType === 'click'">
+            <v-btn :style="containerStyle" class="w-100" @click="$emit('on_click')">{{ localLabel }}</v-btn>
+        </div>
     </div>
 </template>
 
 <script>
 import { commonSettingInfos } from "./CommonSettingInfos.vue"
+import { getPrimary } from '@/utils/UpdateColors';
+
 
 export default {
     name: "CodeField",
@@ -81,6 +85,12 @@ export default {
     computed: {
         localLabel() {
             return (this.localAlias && this.localAlias.length > 0) ? this.localAlias : this.localName
+        },
+        containerStyle() {
+            return {
+                backgroundColor: getPrimary.value,
+                color: 'white'
+            };
         }
     },
 
@@ -92,20 +102,21 @@ export default {
         this.localEncodedCode = this.encoded_code ?? ""
 
         if(this.encoded_code === undefined) {
+            const noCodeAlert = `alert("'${this.localName}'에 코드가 등록되지 않았습니다! 실행시킬 코드를 등록해주세요.");`
             switch(this.localEventType) {
                 case "click":
                 case "initialize":
                 case "validate":
                     this.$emit('update:modelValue', {
                         eventType: this.localEventType,
-                        code: this.$slots.default(0)[0].children
+                        code: this.$slots.default ? this.$slots.default(0)[0].children : noCodeAlert
                     });
                     break;
                 case "watch":
                     this.$emit('update:modelValue', {
                         eventType: this.localEventType,
                         watchName: this.watch_name,
-                        code: this.$slots.default(0)[0].children
+                        code: this.$slots.default ? this.$slots.default(0)[0].children : noCodeAlert
                     });
                     break;
             }

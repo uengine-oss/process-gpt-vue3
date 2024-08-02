@@ -31,6 +31,7 @@ export default {
         lastFinishedTime: 0,
         processInstanceId: null,
         chatRoomId: '',
+        isVisionMode: false,
     }),
     computed: {
         useLock() {
@@ -102,8 +103,9 @@ export default {
                     me.agentInfo.isRunning = true
                     me.requestAgent(me.agentInfo.draftPrompt)
                 },
-                // onFail() {
-                // }
+                onFail() {
+                    me.agentInfo.isRunning = false
+                }
             })
         },
         async getToken(){
@@ -141,9 +143,10 @@ export default {
                                 if ((me.messages && me.messages.length > 0) 
                                 && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
                                 // &&  me.messages[me.messages.length - 1].content.replace(/\s+/g, '') === data.new.messages.content.replace(/\s+/g, '')) {
-                                && me.messages[me.messages.length - 1].content.replace(/\s+/g, '').includes(data.new.messages.content.replace(/\s+/g, ''))
+                                && (me.messages[me.messages.length - 1].content == '...' || me.messages[me.messages.length - 1].content.replace(/\s+/g, '').includes(data.new.messages.content.replace(/\s+/g, '')))
                                 ) {
                                     me.messages[me.messages.length - 1] = data.new.messages
+                                    me.messages[me.messages.length - 1].isLoading = false
                                     me.EventBus.emit('instances-updated');
                                 } else {
                                     me.messages.push(data.new.messages)
@@ -541,26 +544,33 @@ export default {
             this.$try({
                 context: this,
                 action: async () => { // Changed to arrow function
-                    if(!this.ProcessGPTActive){
-                        let messageWriting = this.messages[this.messages.length - 1];
-                        messageWriting.content = response;
-                        messageWriting.jsonContent = this.extractJSON(response);
-                        // messageWriting.systemRequest = false;
-    
-                        if (messageWriting.jsonContent) {
-                            let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
-                            const match = messageWriting.content.match(regex);
-                            if (match) {
-                                messageWriting.content = messageWriting.content.replace(match[1], '');
-                                regex = /`{3}(?:json|markdown)?\s?\n/g;
-                                messageWriting.content = messageWriting.content.replace(regex, '');
-                                messageWriting.content = messageWriting.content.replace(/\s?\n?`{3}?\s?\n/g, '');
-                                messageWriting.content = messageWriting.content.replace(/`{3}/g, '');
+                    if(!this.isVisionMode){
+                        if(!this.ProcessGPTActive){
+                            if(this.messages && this.messages.length == 0){
+                                this.messages.push({
+                                    role: 'system',
+                                    content: '...',
+                                    isLoading: true
+                                });
                             }
+                            let messageWriting = this.messages[this.messages.length - 1];
+                            messageWriting.content = response;
+                            messageWriting.jsonContent = this.extractJSON(response);
+        
+                            if (messageWriting.jsonContent) {
+                                let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
+                                const match = messageWriting.content.match(regex);
+                                if (match) {
+                                    messageWriting.content = messageWriting.content.replace(match[1], '');
+                                    regex = /`{3}(?:json|markdown)?\s?\n/g;
+                                    messageWriting.content = messageWriting.content.replace(regex, '');
+                                    messageWriting.content = messageWriting.content.replace(/\s?\n?`{3}?\s?\n/g, '');
+                                    messageWriting.content = messageWriting.content.replace(/`{3}/g, '');
+                                }
+                            }
+                            this.afterModelCreated(response);
                         }
-                        this.afterModelCreated(response);
                     }
-                    
                 },
                 onFail: () => {
                     this.onModelStopped();
@@ -582,31 +592,48 @@ export default {
             };
         },
         onGenerationFinished(response) {
-            if(!this.ProcessGPTActive){
-                let messageWriting = this.messages[this.messages.length - 1];
-                messageWriting.timeStamp = Date.now();
-
-                this.messages.forEach((message) => {
-                    if (message.role == 'system') {
-                        delete message.isLoading;
-                    }
-                });
-            }
-
-            let jsonData = response;
-            if (typeof response == 'string') {
-                jsonData = this.extractJSON(response);
-                if(jsonData && jsonData.includes('{')){
-                    jsonData = JSON.parse(jsonData);
-                } else {
-                    jsonData = null
-                }
-            }
-            jsonData = removeComments(jsonData);
-            if(jsonData != null) {
-                this.afterGenerationFinished(jsonData);
+            var me = this
+            if(this.isVisionMode){
+                this.generateAgentAI(response)
             } else {
-                this.afterGenerationFinished(response);
+                if(!this.ProcessGPTActive){
+                    if(this.messages && this.messages.length == 0){
+                        this.messages.push({
+                            role: 'system',
+                            content: '...',
+                            isLoading: true
+                        });
+                    }
+                    let messageWriting = this.messages[this.messages.length - 1];
+                    messageWriting.timeStamp = Date.now();
+    
+                    this.messages.forEach((message) => {
+                        if (message.role == 'system') {
+                            delete message.isLoading;
+                        }
+                    });
+                }
+    
+                let jsonData = response;
+                if (typeof response == 'string') {
+                    jsonData = this.extractJSON(response);
+                    if(jsonData && jsonData.includes('{')){
+                        jsonData = JSON.parse(jsonData);
+                    } else {
+                        jsonData = null
+                    }
+                }
+                // jsonData = this.removeComments(jsonData);
+                if(jsonData != null) {
+                    if(jsonData['formValues']){
+                        this.EventBus.emit('form-values-updated', jsonData['formValues']);
+                        this.messages[this.messages.length - 1].content = '초안 생성을 완료하였습니다.'
+                    } else {
+                        this.afterGenerationFinished(jsonData);
+                    }
+                } else {
+                    this.afterGenerationFinished(response);
+                }
             }
         },
         removeComments(text) {

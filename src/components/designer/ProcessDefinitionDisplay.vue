@@ -1,5 +1,6 @@
 <template>
     <div class="included" style="margin-bottom: 22px">
+        
         <v-autocomplete
                 v-model="value"
                 :items="items"
@@ -22,8 +23,8 @@
                 <v-list-item
                     v-else
                     v-bind="props"
-                    :subtitle="item.value.displayPath"
-                    :title="item.value[bindOptions.itemTitle]"
+                    :subtitle="item.raw.displayPath"
+                    :title="item.raw[bindOptions.itemTitle]"
                 ></v-list-item>
             </template>
             <!-- <template v-slot:item="{ item }">
@@ -67,13 +68,13 @@ export default {
     computed:{
         bindOptions(){
             return {
-                color: this.options.color ? this.options.color : 'primary',
-                itemTitle: this.options.itemTitle ? this.options.itemTitle : 'name',
-                itemValue: this.options.itemValue ? this.options.itemValue : 'value',
-                label: this.options.label ? this.options.label : 'Select Definition',
-                variant: this.options.variant ? this.options.variant : 'outlined',
-                hideDetails: this.options.hideDetails ? this.options.hideDetails : false,
-                returnObject: this.options.returnObject ? this.options.returnObject : false
+                color: this.options.color || 'primary',
+                itemTitle: this.options.itemTitle || 'name',
+                itemValue: this.options.itemValue || 'value',
+                label: this.options.label || 'Select Definition',
+                variant: this.options.variant || 'outlined',
+                hideDetails: this.options.hideDetails || false,
+                returnObject: this.options.returnObject || false
             }
         },
         mode() {
@@ -131,9 +132,13 @@ export default {
                     
                     me.items = lists
                     me.loading = false
-
+                    const selectedItem = me.items.find(item => item.path === me.value.filePath);
+                    if(selectedItem) {
+                        me.value = selectedItem;
+                    }
                 }
             });
+
         },
         async retrieveFolder(path) {
             var me = this

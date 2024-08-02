@@ -16,10 +16,8 @@
             </template>
         </v-textarea>
 
-        <v-dialog v-model="recordingDialog" fullscreen>
-            <Record @close="onChangeRecordingDialog" @start="startRecording" @stop="stopRecording" :audioResponse="newMessage"
-                :chatRoomId="chatRoomId" />
-        </v-dialog>
+        <Record @close="onChangeRecordingDialog" @start="startRecording" @stop="stopRecording"
+            :audioResponse="newMessage" :chatRoomId="chatRoomId" :recordingMode="recordingDialog" />
     </div>
 </template>
 
@@ -69,12 +67,29 @@ export default {
     created() {
         this.newMessage = this.modelValue;
         if (this.workItem) {
-            this.chatRoomId = this.workItem.worklist.instId;
+            if(this.workItem.worklist && this.workItem.worklist.instId) {
+                this.chatRoomId = this.workItem.worklist.instId;
+            } else if (this.workItem.worklist && !this.workItem.worklist.instId) {
+                const uuid = this.uuid();
+                this.chatRoomId = `${this.workItem.worklist.defId}.${uuid}`;
+            }
         }
     },
     methods: {
+        uuid() {
+            function s4() {
+                return Math.floor((1 + Math.random()) * 0x10000)
+                    .toString(16)
+                    .substring(1);
+            }
+
+            return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+        },
         onChangeRecordingDialog() {
             this.recordingDialog = !this.recordingDialog;
+            if (!this.recordingDialog) {
+                this.$emit("close");
+            }
         },
         async startRecording() {
             this.isRecording = true;

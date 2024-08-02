@@ -12,14 +12,12 @@
             </div>
         </div>
 
-        <!-- pc 사이즈 -->
-        <v-row class="ma-0 pa-2 work-item-pc">
+        <v-row :class="isMobile ? 'ma-0 pa-2 mt-2' : 'ma-0 pa-2'">
             <!-- Left -->
             <v-col
                 class="pa-0"
-                cols="4"
-                :style="$globalState.state.isZoomed ? 'height: calc(100vh - 70px);' : 'height: calc(100vh - 215px);'"
-                style="overflow: auto"
+                :cols="isMobile ? 12 : 4"
+                :style="isMobile ? 'overflow: auto' : ($globalState.state.isZoomed ? 'height: calc(100vh - 70px); overflow: auto' : 'height: calc(100vh - 215px); overflow: auto')"
             >
                 <div v-if="currentComponent" class="work-itme-current-component" style="height: 100%;">
                     <component 
@@ -48,7 +46,6 @@
                                     :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
                                     :width="32"
                                     :height="32"
-                                    
                                 />
                             </v-btn>
                         </template>
@@ -56,7 +53,7 @@
                 </div>
             </v-col>
             <!-- Right -->
-            <v-col class="pa-0" cols="8">
+            <v-col class="pa-0" :cols="isMobile ? 12 : 8">
                 <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
                     <v-tabs v-model="selectedTab">
                         <v-tab value="progress">진행 상황</v-tab>
@@ -67,12 +64,10 @@
                         <v-window-item value="progress">
                             <div
                                 class="pa-2"
-                                :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 280px);'"
-                                style="color: black; overflow: auto"
+                                :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 280px); color: black; overflow: auto'"
                             >
                                 <div class="pa-0 pl-2" style="height:100%;" :key="updatedDefKey">
                                     <div v-if="bpmn" style="height: 100%">
-
                                         <BpmnUengine
                                             ref="bpmnVue"
                                             :bpmn="bpmn"
@@ -93,7 +88,6 @@
                                             v-on:change-shape="onChangeShape"
                                             style="height: 100%"
                                         ></BpmnUengine>
-
                                         
                                         <!-- <process-definition
                                             style="height: 100%"
@@ -123,134 +117,13 @@
                         </v-window-item>
                         <v-window-item value="agent" class="pa-2">
                             <v-card elevation="10" class="pa-4">
-                                <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
+                                <perfect-scrollbar v-if="messages" class="h-100" ref="scrollContainer" @scroll="handleScroll">
                                     <div class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
                                         <component
                                             :is="'work-history-' + mode"
                                             :messages="[]"
-                                            :isAgentMode="true"
-                                        />
-                                    </div>
-                                </perfect-scrollbar>
-                            </v-card>
-                        </v-window-item>
-                    </v-window>
-                </v-alert>
-            </v-col>
-        </v-row>
-        <!-- 모바일 사이즈 -->
-        <v-row class="ma-0 pa-2 mt-2 work-item-mobile">
-            <!-- Left -->
-            <v-col
-                class="pa-0"
-                cols="12"
-                style="overflow: auto"
-            >
-                <div v-if="currentComponent" class="work-itme-current-component" style="height: 100%;">
-                    <component 
-                        :is="currentComponent" 
-                        :definitionId="definitionId"
-                        :work-item="workItem" 
-                        :workItemStatus="workItemStatus" 
-                        :isDryRun="isDryRun" 
-                        :dryRunWorkItem="dryRunWorkItem"
-                        :currentActivities="currentActivities"
-                        @updateCurrentActivities="updateCurrentActivities"
-                        @close="close"
-                        @executeProcess="executeProcess"
-                    ></component>
-                    <v-tooltip :text="$t('processDefinition.zoom')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn
-                                @click="$globalState.methods.toggleZoom()"
-                                size="small"
-                                icon
-                                v-bind="props"
-                                class="processVariables-zoom task-btn"
-                            >
-                                <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
-                                <Icons
-                                    :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
-                                    :width="32"
-                                    :height="32"
-                                    
-                                />
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
-                </div>
-            </v-col>
-            <!-- Right -->
-            <v-col class="pa-0" cols="12">
-                <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
-                    <v-tabs v-model="selectedTab">
-                        <v-tab value="progress">진행 상황</v-tab>
-                        <v-tab v-if="messages && messages.length > 0" value="history">워크 히스토리</v-tab>
-                        <v-tab v-if="messages" value="agent">Agent 초안 생성</v-tab>
-                    </v-tabs>
-                    <v-window v-model="selectedTab">
-                        <v-window-item value="progress">
-                            <div
-                                class="pa-2"
-                                :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 280px);'"
-                                style="color: black; overflow: auto"
-                            >
-                                <div class="pa-0 pl-2" style="height:100%;" :key="updatedDefKey">
-                                    <div v-if="bpmn" style="height: 100%">
-                                        <BpmnUengine
-                                            ref="bpmnVue"
-                                            :bpmn="bpmn"
-                                            :options="options"
-                                            :isViewMode="true"
-                                            :currentActivities="currentActivities"
-                                            v-on:error="handleError"
-                                            v-on:shown="handleShown"
-                                            v-on:openDefinition="(ele) => openSubProcess(ele)"
-                                            v-on:loading="handleLoading"
-                                            v-on:openPanel="(id) => openPanel(id)"
-                                            v-on:update-xml="(val) => $emit('update-xml', val)"
-                                            v-on:definition="(def) => (definitions = def)"
-                                            v-on:add-shape="onAddShape"
-                                            v-on:done="setDefinition"
-                                            v-on:change-sequence="onChangeSequence"
-                                            v-on:remove-shape="onRemoveShape"
-                                            v-on:change-shape="onChangeShape"
-                                            style="height: 100%"
-                                        ></BpmnUengine>
-
-                                        <!-- <process-definition
-                                            style="height: 100%"
-                                            :currentActivities="currentActivities"
-                                            :bpmn="bpmn"
-                                            :key="updatedDefKey"
-                                            :isViewMode="true"
-                                        ></process-definition> -->
-                                    </div>
-                                    <div v-else class="no-bpmn-found-text">No BPMN found</div>
-                                </div>
-                            </div>
-                        </v-window-item>
-                        <v-window-item value="history" class="pa-2">
-                            <v-card elevation="10" class="pa-4">
-                                <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                                    <div class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
-                                        <component
-                                            :is="'work-history-' + mode"
-                                            :messages="messages"
-                                            :isCompleted="isCompleted"
-                                            @clickMessage="navigateToWorkItemByTaskId"
-                                        />
-                                    </div>
-                                </perfect-scrollbar>
-                            </v-card>
-                        </v-window-item>
-                        <v-window-item value="agent" class="pa-2">
-                            <v-card elevation="10" class="pa-4">
-                                <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                                    <div class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
-                                        <component
-                                            :is="'work-history-' + mode"
-                                            :messages="[]"
+                                            :html="html"
+                                            :formData="formData"
                                             :isAgentMode="true"
                                         />
                                     </div>
@@ -284,7 +157,10 @@ export default {
             required: true
         },
         taskId: String,
-        isDryRun: Boolean,
+        isDryRun: {
+            type: Boolean,
+            default: false
+        },
         dryRunWorkItem: Object
     },
     components: {
@@ -299,6 +175,7 @@ export default {
     data: () => ({    
         workItem: null,
         workListByInstId: null,
+        windowWidth: window.innerWidth,
     
         // bpmn
         bpmn: null,
@@ -314,12 +191,24 @@ export default {
         updatedDefKey: 0,
         selectedTab: 'progress',
         eventList: [],
+        html: null,
+        formData: null
     }),
     created() {
         this.init();
         this.EventBus.on('process-definition-updated', async () => {
             this.updatedDefKey++;
         });
+        this.EventBus.on('html-updated', (newHtml) => {
+            this.html = newHtml
+        });
+        this.EventBus.on('formData-updated', (newformData) => {
+            this.formData = newformData
+        });
+        window.addEventListener('resize', this.handleResize);
+    },
+    beforeDestroy() {
+        window.removeEventListener('resize', this.handleResize);
     },
     computed: {
         mode() {
@@ -351,6 +240,18 @@ export default {
         },
         isCompleted() {
             return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
+        },
+        isMobile() {
+            return this.windowWidth <= 700;
+        }
+    },
+    watch: {
+        windowWidth(newWidth) {
+            if (newWidth <= 700) {
+                this.isMobile = true;
+            } else {
+                this.isMobile = false;
+            }
         }
     },
     methods: {
@@ -385,6 +286,9 @@ export default {
                     me.updatedDefKey++;
                 }
             });
+        },
+        handleResize() {
+            this.windowWidth = window.innerWidth;
         },
         updateCurrentActivities(currentActivities){
             if(!currentActivities) currentActivities = []
@@ -444,26 +348,9 @@ export default {
     font-weight: 500;
 }
 
-.work-item-mobile {
-    display: none;
-}
-@media only screen and (max-width:700px) {
-    .work-item-mobile {
-        display: block;
-    }
-    .work-item-pc {
-        display: none;
-    }
-}
 .processExecute {
     position: absolute;
     right: 80px;
-    top: 20px;
-    z-index: 1;
-}
-.processVariables-btn {
-    position: absolute;
-    left: 5px;
     top: 20px;
     z-index: 1;
 }

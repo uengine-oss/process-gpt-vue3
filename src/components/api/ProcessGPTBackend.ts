@@ -4,6 +4,8 @@ const storage = StorageBaseFactory.getStorage();
 
 import type { Backend } from './Backend';
 
+import { formatDistanceToNowStrict } from 'date-fns';
+
 enum ErrorCode {
     TableNotFound = "42P01"
 }
@@ -52,33 +54,40 @@ class ProcessGPTBackend implements Backend {
             if(options && options.type === "form") {
                 await storage.delete(`form_def/${defId.replace(/\//g, "#")}`, { key: 'id' });
                 return
-            }
-
-            await storage.delete(`proc_def/${defId}`, { key: 'id' });
-            
-            const arcv = await storage.list('proc_def_arcv', {
-                sort: 'desc',
-                orderBy: 'timeStamp',
-                match: { 'proc_def_id': defId }
-            });
-            if (arcv && arcv.length > 0) {
-                await storage.delete(`proc_def_arcv/${defId}`, { key: 'proc_def_id' });
-            }
-            const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
-            if (isLocked) {
-                await storage.delete(`lock/${defId}`, { key: 'id' });
-            }
-
-            if (!window.$jms) {
-                await axios.post(`/execution/drop-process-table/invoke`, {
-                    "input": {
-                        "process_definition_id": defId
-                    }
-                }).catch(error => {
-                    throw new Error(error && error.detail ? error.detail : error);
+            } else {
+                const arcv = await storage.list('proc_def_arcv', {
+                    sort: 'desc',
+                    orderBy: 'timeStamp',
+                    match: { 'proc_def_id': defId }
                 });
+                if (arcv && arcv.length > 0) {
+                    await storage.delete(`proc_def_arcv/${defId}`, { key: 'proc_def_id' });
+                }
+
+                const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
+                if (isLocked) {
+                    await storage.delete(`lock/${defId}`, { key: 'id' });
+                }
+
+                const instList = await storage.list(defId);
+                if (instList && instList.length > 0) {
+                    instList.forEach(async (item: any) => {
+                        await this.deleteInstance(item.id);
+                    });
+                }
+                
+                await storage.delete(`proc_def/${defId}`, { key: 'id' });
+
+                if (!window.$jms) {
+                    await axios.post(`/execution/drop-process-table/invoke`, {
+                        "input": {
+                            "process_definition_id": defId
+                        }
+                    }).catch(error => {
+                        throw new Error(error && error.detail ? error.detail : error);
+                    });
+                }
             }
-            
         } catch (e) {
             // this.checkDBConnection();
             //@ts-ignore
@@ -129,18 +138,15 @@ class ProcessGPTBackend implements Backend {
             }
 
             if (!window.$jms) {
-                const list = await storage.list(defId);
-                if (list.code == ErrorCode.TableNotFound) {
-                    try {
-                        await axios.post(`/execution/process-db-schema/invoke`, {
-                            "input": {
-                                "process_definition_id": defId
-                            }
-                        })
-                    } catch(error) {
-                        //@ts-ignore
-                        throw new Error("Error when to creating database for the definition: " + (error && error.detail ? error.detail : error));
-                    }
+                try {
+                    await axios.post(`/execution/process-db-schema/invoke`, {
+                        "input": {
+                            "process_definition_id": defId
+                        }
+                    })
+                } catch(error) {
+                    //@ts-ignore
+                    throw new Error("Error when to creating database for the definition: " + (error && error.detail ? error.detail : error));
                 }
             }
 
@@ -152,7 +158,11 @@ class ProcessGPTBackend implements Backend {
 
     async getRawDefinition(defId: string, options: any) {
         try {
-            if(defId) defId = defId.toLowerCase();
+            if (defId) {
+                defId = defId.toLowerCase();
+            } else {
+                return;
+            }
 
             if (options) {
                 // 폼 정보를 불러오기 위해서
@@ -184,6 +194,16 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    uuid() {
+        function s4() {
+            return Math.floor((1 + Math.random()) * 0x10000)
+                .toString(16)
+                .substring(1);
+        }
+
+        return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+    }
+
     async start(input: any) {
         try {
             if (window.$jms) return;
@@ -211,12 +231,17 @@ class ProcessGPTBackend implements Backend {
             }
             if (!input.process_instance_id) {
                 input.process_instance_id = "new";
+            } else {
+                input['chat_room_id'] = input.process_instance_id;
             }
             if (!input.role_mappings) {
                 input.role_mappings = [];
             }
             input['process_definition_id'] = defId.toLowerCase();
-            
+            if (!input.chat_room_id) {
+                input['chat_room_id'] = `${input.process_definition_id}.${this.uuid()}`;
+            }
+
             var result: any = null;
             var url = `/execution/complete`;
             if (input.image != null) {
@@ -298,43 +323,30 @@ class ProcessGPTBackend implements Backend {
     async getWorkItem(taskId: string) {
         try {
             if (!taskId) return
-            const data = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
-            const defInfo = await this.getRawDefinition(data.proc_def_id, null);
-            const inst = await this.getInstance(data.proc_inst_id);
+            const workitem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
+            const defInfo = await this.getRawDefinition(workitem.proc_def_id, null);
+            const inst = await this.getInstance(workitem.proc_inst_id);
 
             let parameters: any[] = [];
             let variableForHtmlFormContext: any = {};
             let activityInfo: any = null;
 
             if (defInfo && defInfo.definition) {
-                // form
-                const formData: any = defInfo.definition.data.filter((variable: any) => variable.type === 'Form') || [];
-                // parameters
-                activityInfo = defInfo.definition.activities.find((activity: any) => activity.id === data.activity_id);
-                
-                if (activityInfo) {
-                    if (formData.length > 0) {
-                        formData.forEach((item: any) => {
-                            if(activityInfo.outputData.includes(item.name)) {
-                                variableForHtmlFormContext = {
-                                    name: item.name
-                                }
-                            }
-                        });
-                    }
-
-                    if (activityInfo.properties) {
-                        parameters = JSON.parse(activityInfo.properties).parameters;
+                activityInfo = defInfo.definition.activities.find((activity: any) => activity.id === workitem.activity_id);
+                if (activityInfo && activityInfo.properties) {
+                    const properties = JSON.parse(activityInfo.properties);
+                    if (properties.parameters) {
+                        if (workitem.status != 'DONE') {
+                            parameters = properties.parameters.filter((item: any) => item.direction.includes('IN'));
+                        } else {
+                            parameters = properties.parameters
+                        }
                         parameters.forEach((item: any) => {
-                            if (data.status != 'DONE' && item.direction == 'OUT') {
-                                item.direction = 'IN';
-                            } else if (data.status != 'DONE' && item.direction == 'IN') {
-                                item.direction = 'OUT';
-                            }
                             item.variable.defaultValue = inst[item.variable.name.toLowerCase().replace(/ /g, '_')] || "";
                         })
-                    } else {
-                        parameters = [];
+                    }
+                    if (properties.variableForHtmlFormContext) {
+                        variableForHtmlFormContext = properties.variableForHtmlFormContext;
                     }
                 }
             }
@@ -344,23 +356,23 @@ class ProcessGPTBackend implements Backend {
                     parameterValues[item.argument.text] = item.variable.defaultValue
                 })
             }
-            const workItem = {
+            const newWorkItem = {
                 worklist: {
-                    defId: data.proc_def_id,
-                    endpoint: data.user_id,
-                    instId: data.proc_inst_id,
+                    defId: workitem.proc_def_id,
+                    endpoint: workitem.user_id,
+                    instId: workitem.proc_inst_id,
                     rootInstId: null,
-                    taskId: data.id,
-                    startDate: data.start_date,
-                    dueDate: data.end_date,
-                    status: data.status === 'TODO' ? 'NEW' : data.status === 'DONE' ? 'COMPLETED' : data.status,
-                    description: data.description || "",
-                    tool: data.tool || "",
+                    taskId: workitem.id,
+                    startDate: workitem.start_date,
+                    dueDate: workitem.end_date,
+                    status: workitem.status === 'TODO' ? 'NEW' : workitem.status === 'DONE' ? 'COMPLETED' : workitem.status,
+                    description: workitem.description || "",
+                    tool: workitem.tool || "",
                     currentActivities: inst.current_activity_ids || []
                 },
                 activity: {
-                    name: data.activity_name,
-                    tracingTag: data.activity_id || '',
+                    name: workitem.activity_name,
+                    tracingTag: workitem.activity_id || '',
                     parameters: parameters || [],
                     variableForHtmlFormContext: variableForHtmlFormContext || {},
                     instruction: activityInfo && activityInfo.instruction ? activityInfo.instruction : "",
@@ -368,7 +380,7 @@ class ProcessGPTBackend implements Backend {
                 },
                 parameterValues: parameterValues || {}
             }
-            return workItem;
+            return newWorkItem;
         } catch (e) {
             //@ts-ignore
             throw new Error(e.message);
@@ -387,7 +399,7 @@ class ProcessGPTBackend implements Backend {
                 const email = localStorage.getItem("email");
                 filter.match.user_id = email;
             }
-            const list = await storage.list('worklist', filter);
+            const list = await storage.list('todolist', filter);
             const worklist: any[] = [];
             if (list && list.length > 0) {
                 for (const item of list) {
@@ -544,14 +556,26 @@ class ProcessGPTBackend implements Backend {
 
     async getDefinitionVersions(defId: string, options: any) {
         try {
-            if(!options) options = {};
-
+            let list: any = [];
             defId = defId.toLowerCase();
-            if(!options.match) options.match = {}
-            options.match.proc_def_id = defId;
-            
-        
-            return await storage.list('proc_def_arcv', options);
+            if(!options) {
+                options = {
+                    match: {
+                        proc_def_id: defId
+                    }
+                };
+            } else {
+                if (!options.match) options.match = {};
+                options.match.proc_def_id = defId;
+            }
+            list = await storage.list('proc_def_arcv', options);
+            const procDefName = await storage.getString(`proc_def/${defId}`, { key: 'id', column: "name" });
+            if(procDefName) {
+                list.forEach((item: any) => {
+                    item.name = procDefName;
+                });
+            }
+            return list;
         } catch (error) {
             // this.checkDBConnection();
             //@ts-ignore
@@ -704,11 +728,25 @@ class ProcessGPTBackend implements Backend {
 
             let result: any = null;
             const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
+
+            if (inputData.parameterValues && inputData.parameterValues["user_input_text"]) {
+                const newMessage = {
+                    "name": localStorage.getItem('userName'),
+                    "role": "user",
+                    "email": localStorage.getItem('email'),
+                    "image": "",
+                    "content": inputData.parameterValues["user_input_text"],
+                    "timeStamp": new Date().toISOString()
+                }
+                this.updateInstanceChat(workItem.proc_inst_id, newMessage);
+            }
+
             const input = {
                 answer: JSON.stringify(inputData),
                 process_instance_id: workItem.proc_inst_id,
                 process_definition_id: workItem.proc_def_id,
                 activity_id: workItem.activity_id,
+                chat_room_id: workItem.proc_inst_id
             };
             const req = {
                 input: input
@@ -843,7 +881,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getDryRunInstance(defPath: string) {
+    async dryRun(defPath: string) {
         try {
             return null;
         } catch (error) {
@@ -852,7 +890,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async startDryRun(command: object) {
+    async startAndComplete(command: object, isSimulate: boolean) {
         try {
             return null;
         } catch (error) {
@@ -945,6 +983,86 @@ class ProcessGPTBackend implements Backend {
                 throw new Error(error && error.detail ? error.detail : error);
             });
             return result;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getNotifications() {
+        try {
+            await storage.watch('notifications', async (data: any) => {
+                if(data && data.new) {
+                    await this.fetchNotifications();
+                }
+            });
+
+            return await this.fetchNotifications();
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    private async fetchNotifications() {
+        try {
+            let notifications: any[] = [];
+            const userId = localStorage.getItem('email');
+            const options = {
+                limit: 10,
+                orderBy: 'time_stamp',
+                sort: 'desc',
+                match: { user_id: userId, is_checked: false },
+            }
+            const list = await storage.list('notifications', options);
+            if (list.length > 0) {
+                notifications = Object.values(list.reduce((acc: any, item: any) => {
+                    const timeStamp = formatDistanceToNowStrict(new Date(item.time_stamp), {
+                        addSuffix: false
+                    });
+                    item.timeStamp = timeStamp;
+                    if (!acc[item.url]) {
+                        item.count = 1;
+                        acc[item.url] = item;
+                    } else if (new Date(item.time_stamp) > new Date(acc[item.url].time_stamp)) {
+                        item.count = acc[item.url].count + 1;
+                        acc[item.url] = item;
+                    } else {
+                        acc[item.url].count += 1;
+                    }
+                    return acc;
+                }, {}));
+            }
+            return notifications;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async setNotifications(value: any) {
+        try {
+            if (value.count > 1) {
+                const notifications = await this.getNotifications();
+                notifications.forEach(async (item: any) => {
+                    if (item.url === value.url && item.user_id === value.user_id) {
+                        const putObj = { id: item.id, is_checked: true };
+                        await storage.putObject('notifications', putObj);
+                    }
+                });
+            } else {
+                const putObj = { id: value.id, is_checked: true };
+                await storage.putObject('notifications', putObj);
+            }
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async search(keyword: string) {
+        try {
+            return await storage.search(keyword);
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);

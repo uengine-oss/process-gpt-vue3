@@ -16,138 +16,69 @@
         </template>
 
         <v-sheet rounded="lg" width="385" elevation="10" class="mt-5 dropdown-box">
-            <div class="px-8 pb-4 pt-6">
-                <div class="d-flex align-center">
-                    <h6 class="text-h5 font-weight-semibold">Notifications</h6>
-                    <v-chip color="primary" 
-                            variant="flat" 
-                            size="x-small" 
-                            class="text-white ml-4" 
-                            rounded="xl">
-                        {{ notiCount }} New
-                    </v-chip>
-                </div>
+            <div class="d-flex align-center pa-3">
+                <h6 class="text-h5 font-weight-semibold">Notifications</h6>
+                <v-chip color="primary" variant="flat" size="x-small" class="text-white ml-4" rounded="xl">
+                    {{ notiCount }} New
+                </v-chip>
             </div>
+            <v-divider></v-divider>
             <perfect-scrollbar style="height:300px">
-                <v-list class="py-0 theme-list" lines="two">
-                    <v-list-item v-for="item in filteredNotiList" 
-                            :key="item.id" 
-                            color="primary" 
-                            class="py-4 px-8"
-                            @click="checkNotification(item)"
-                    >
-                        <div>
-                            <h6 class="text-h6 font-weight-medium mb-1">{{ item.type.toUpperCase() }}</h6>
-                        </div>
-                        <p v-if="item.type =='todo'" class="text-subtitle-1 font-weight-medium text-grey100">
-                            {{ item.detail.activity_id }}
-                        </p>
-                        <p v-else-if="item.type =='instance'" class="text-subtitle-1 font-weight-medium text-grey100">
-                            {{ item.detail.proc_inst_name }}
-                        </p>
+                <v-list lines="one">
+                    <v-list-item v-for="item in notifications" :key="item.id" @click="checkNotification(item)">
+                        <template v-slot:prepend>
+                            <div class="mr-2">
+                                <v-chip color="primary" variant="tonal" size="x-small" label>
+                                    {{ item.type == 'workitem' ? 'To-Do' : 'Chat' }}
+                                </v-chip>
+                            </div>
+                        </template>
+                        <v-list-item-subtitle class="d-flex">
+                            <div>{{ item.description }}</div>
+                            <div class="ml-auto">{{ item.timeStamp }} ago</div>
+                        </v-list-item-subtitle>
+                        <v-list-item-title class="d-flex mt-1">
+                            <div>{{ item.title }}</div>
+                            <div class="ml-auto">
+                                <v-badge v-if="item.count > 1" color="primary" :content="item.count" inline></v-badge>
+                            </div>
+                        </v-list-item-title>
+                        <v-divider class="mt-1"></v-divider>
                     </v-list-item>
-                    <v-divider></v-divider>
                 </v-list>
             </perfect-scrollbar>
-            <!-- <div class="py-4 px-6 text-center">
-                <v-btn color="primary" size="large" rounded="pill" block>See all Notifications</v-btn>
-            </div> -->
         </v-sheet>
     </v-menu>
 </template>
 
 <script>
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
-import { Icon } from '@iconify/vue';
+import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
 
 export default {
-    components: {
-        Icon,
-    },
     data: () => ({
-        storage: null,
-        userInfo: null,
         notifications: [],
     }),
-    async created() {
-        if(window.$mode == "ProcessGPT"){
-            this.storage = StorageBaseFactory.getStorage("supabase");
-            this.userInfo = await this.storage.getUserInfo();
-            this.getNotifications();
-        }
-    },
     computed: {
-        filteredNotiList() {
-            var list = [];
-            if (this.notifications && this.notifications.length > 0) {
-                list = this.notifications.filter(item => !item.isChecked);
-                list = JSON.parse(JSON.stringify(list));
-                if (list.length > 0) {
-                    list.forEach(async item => {
-                        let result;
-                        if (item.type == 'todo') {
-                            const options = {
-                                match: {
-                                    id: item.id,
-                                }
-                            };
-                            result = await this.storage.getObject('todolist', options);
-
-                        } else if (item.type == 'instance') {
-                            const defId = item.id.split('.')[0];
-                            const options = {
-                                match: {
-                                    proc_inst_id: item.id,
-                                }
-                            };
-                            result = await this.storage.getObject(defId, options);
-                        }
-                        item['detail'] = result;
-                    });
-                }
-            }
-            return list;
-        },
         notiCount() {
-            if (this.filteredNotiList.length > 0) {
-                return this.filteredNotiList.length;
+            if (this.notifications.length > 0) {
+                return this.notifications.length;
             }
             return 0;
         },
     },
+    async created() {
+        await this.getNotifications();
+    },
     methods: {
         async getNotifications() {
-            const options = {
-                match: {
-                    id: this.userInfo.uid,
-                    email: this.userInfo.email,
-                }
-            };
-            const result = await this.storage.getObject('users', options);
-            this.notifications = result.notifications;
+            this.notifications = await backend.getNotifications();
         },
-        checkNotification(item) {
-            if (item.type == 'todo') {
-                this.$router.push(`/todolist`);
-            } else if (item.type == 'instance') {
-                this.$router.push(`/instances/chat?id=${item.id}`);
-            } else {
-                //
-            }
-
-            item.isChecked = true;
-            this.notifications.forEach(noti => {
-                if (item.id === noti.id) {
-                    noti.isChecked = true;
-                }
-            });
-
-            const obj = {
-                id: this.userInfo.uid,
-                notifications: this.notifications,
-            };
-            this.storage.putObject('users', obj);
-        },
+        async checkNotification(value) {
+            this.$router.push(value.url);
+            await backend.setNotifications(value);
+            await this.getNotifications();
+        }
     }
 }
 </script>

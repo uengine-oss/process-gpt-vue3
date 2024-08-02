@@ -26,11 +26,12 @@ body {
 /* ==================================================================================
    opened-keditor-sidebar
    ================================================================================== */
-body.opened-keditor-sidebar .keditor-content-area {
+/* body.opened-keditor-sidebar .keditor-content-area {
   margin-right: 260px;
-}
+} */
 body.opened-keditor-sidebar #keditor-sidebar {
   right: 0;
+  border-radius: 8px;
 }
 /* ==================================================================================
    highlighted-container-content
@@ -49,11 +50,12 @@ body.highlighted-container-content .keditor-container-content:before {
 /* ==================================================================================
    Content area
    ================================================================================== */
+
+/* 레이아웃을 끌어다 놓는 위치  */
 .keditor-content-area {
-  min-height: 100px;
+  height: calc(100vh - 300px);
   width: auto;
-  margin: 0;
-  padding: 80px 50px 30px;
+  margin:20px 0px 0px 0px;
 }
 /* ==================================================================================
    Sidebar
@@ -63,12 +65,10 @@ body.highlighted-container-content .keditor-container-content:before {
   z-index: 100;
   top: 123px;
   height:calc(100vh - 155px);
-  right: -255px;
+  right: -300px;
   bottom: 0;
-  background: #f0f0f0;
-  opacity: .9;
-  border-left: 1px solid #ddd;
-  width: 255px;
+  background: white;
+  width: 300px;
   box-shadow: -1px 0 5px rgba(0, 0, 0, 0.15);
   padding: 10px;
   -webkit-transition: all 0.3s;
@@ -86,14 +86,14 @@ body.highlighted-container-content .keditor-container-content:before {
   width: 25px;
   height: 30px;
   left: -25px;
-  background: #f0f0f0;
+  background: white;
   text-align: center;
   line-height: 30px;
-  border: 1px solid #ddd;
   border-right: 0;
   cursor: pointer;
-  border-radius: 3px 0 0 3px;
+  border-radius: 8px 0 0 8px;
   color: #666;
+  box-shadow: -1px 0 5px rgba(0, 0, 0, 0.15);
 }
 #keditor-sidebar-toggler > i.fa {
   line-height: inherit;
@@ -106,6 +106,7 @@ body.highlighted-container-content .keditor-container-content:before {
   padding: 0;
   margin: 0;
   width: 100%;
+  margin-bottom:10px;
 }
 .keditor-tabs .keditor-tab {
   display: table-cell;
@@ -114,20 +115,17 @@ body.highlighted-container-content .keditor-container-content:before {
 }
 .keditor-tabs .keditor-tab a {
   display: block;
-  border-radius: 3px 3px 0 0;
+  border-radius: 8px;
   height: 42px;
   padding: 10px 5px;
   text-align: center;
   border: 1px solid transparent;
-  border-bottom-color: #ddd;
   color: #aaa;
 }
 .keditor-tabs .keditor-tab.active a {
   font-weight: bold;
-  border-color: #ddd;
-  border-bottom-color: #fff;
-  background: #fff;
   color: #333;
+  background-color: rgb(230, 230, 230);
 }
 /* ==================================================================================
    KEditor Tab Contents
@@ -145,8 +143,8 @@ body.highlighted-container-content .keditor-container-content:before {
   height: 100%;
 }
 #keditor-snippets-list .keditor-snippet:hover {
-  opacity: .6;
   border-color: #ccc;
+  background-color: rgb(230, 230, 230);
 }
 #keditor-snippets-list .keditor-snippet.not-matched {
   display: none;
@@ -154,8 +152,6 @@ body.highlighted-container-content .keditor-container-content:before {
 #keditor-snippets-container {
   height: calc(100% - 42px);
   background: #fff;
-  padding: 10px 5px;
-  border: solid #ddd;
   border-width: 0 1px 1px;
 }
 #keditor-snippets-container > .keditor-tab-content {
@@ -174,9 +170,6 @@ body.highlighted-container-content .keditor-container-content:before {
 #keditor-snippets-container > .keditor-tab-content > .keditor-tab-content-inner:after {
   clear: both;
 }
-#keditor-snippets-container > .keditor-tab-content > .keditor-snippets-filter-wrapper {
-  margin: 0 5px;
-}
 #keditor-snippets-container > .keditor-tab-content > .keditor-snippets-filter-wrapper .keditor-snippets-filter,
 #keditor-snippets-container > .keditor-tab-content > .keditor-snippets-filter-wrapper .keditor-snippets-search {
   border: 1px solid #ddd;
@@ -188,23 +181,34 @@ body.highlighted-container-content .keditor-container-content:before {
   display: block;
   margin-bottom: 10px;
 }
+
 #keditor-snippets-container > .keditor-tab-content > .keditor-snippets-filter-wrapper + .keditor-tab-content-inner {
-  height: calc(100% - 88px);
+  height: calc(100% - 100px);
+  padding:0px 5px 15px 5px;
 }
+
+#keditor-snippets-container > .keditor-tab-content > .keditor-snippets-filter-wrapper {
+  padding: 0px 5px 0px 5px;
+}
+
 .keditor-snippet {
-  padding: 15px;
-  border: 1px solid #f0f0f0;
+  line-height: 1.5;
+  padding: 5px;
+  /* border: 1px solid rgba(0, 0, 0, 0.1); */
+  border-radius: 8px;
   cursor: move;
   -webkit-transition: all 0.3s;
   -o-transition: all 0.3s;
   transition: all 0.3s;
-  float: left;
   background: #fff;
-  margin: 0 5px 10px;
+  margin: 5px 0px 5px 0px;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* 그림자 추가 */
+  display: flex;
+  align-items: center; /* Y 축 기준으로 중앙 정렬 */
 }
 .keditor-snippet img {
   display: block;
@@ -298,12 +302,12 @@ body.highlighted-container-content .keditor-container-content:before {
 }
 .keditor-toolbar > a {
   padding: 1px 3px;
-  font-size: 12px;
-  width: 20px;
-  height: 20px;
+  font-size: 20px;
+  width: 30px;
+  height: 30px;
   display: block;
   text-align: center;
-  line-height: 20px;
+  line-height: 30px;
 }
 .keditor-toolbar > a .fa {
   line-height: inherit;
@@ -320,39 +324,44 @@ body.highlighted-container-content .keditor-container-content:before {
 }
 .keditor-container:before {
   position: absolute;
-  top: -3px;
-  right: -3px;
-  left: -3px;
-  bottom: -3px;
+  top: -5px;
+  right: 0px;
+  left: 0px;
+  bottom: -5px;
   border: 3px dashed transparent;
   content: " ";
   display: block;
+  padding:5px;
 }
 .keditor-container > .keditor-toolbar {
-  top: -3px;
-  left: -39px;
-  border: 1px solid #333;
   border-radius: 3px;
   overflow: hidden;
+  padding:4px;
+  left:-38px;
+  top:-10px;
 }
 .keditor-container > .keditor-toolbar > a {
-  background: #333;
-  color: #fff;
+  color: #666;
+  border-radius: 3px;
+  border: solid 0.5px rgba(0, 0, 0, 0.15);
+  display: flex; /* Flexbox 사용 */
+  align-items: center; /* Y 축 기준으로 중앙 정렬 */
+  justify-content: center; /* X 축 기준으로 중앙 정렬 */
 }
 .keditor-container > .keditor-toolbar > a:hover {
-  background: #2eb2e4;
+  background: rgb(var(--v-theme-primary), 0.15) !important;
 }
 .keditor-container:hover:before {
-  border-color: #b5e4f6;
+  border-color: rgb(var(--v-theme-primary));
 }
 .keditor-container.showed-keditor-toolbar:before {
-  border-color: #2eb2e4;
+  border:3px dashed rgb(var(--v-theme-primary)) !important;
 }
 .keditor-container.showed-keditor-toolbar > .keditor-toolbar {
   display: block;
 }
 .keditor-container-content {
-  min-height: 50px !important;
+  min-height: 40px !important;
   position: relative;
 }
 .keditor-container-content:before {
@@ -363,7 +372,13 @@ body.highlighted-container-content .keditor-container-content:before {
   bottom: -1px;
   content: " ";
   display: block;
-  border: 1px dashed #e0e0e0;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.keditor-container-content .keditor-component {
+  margin-bottom:10px;
+  padding:5px;
 }
 /* ==================================================================================
    Component
@@ -378,17 +393,17 @@ body.highlighted-container-content .keditor-container-content:before {
   left: -2px;
   bottom: -2px;
   content: " ";
-  border: 2px solid rgba(0, 0, 0, 0.5);
+  border: 2px solid rgb(var(--v-theme-primary));
   display: none;
   z-index: 1;
 }
 .keditor-component .keditor-toolbar {
-  top: -24px;
+  top: -30px;
   right: -2px;
   left: -2px;
-  background-color: rgba(0, 0, 0, 0.5);
-  padding: 2px 2px;
+  background: rgb(var(--v-theme-primary)) !important;
   text-align: right;
+  border-radius: 8px 8px 0px 0px;
 }
 .keditor-component .keditor-toolbar > a {
   border: 0;
@@ -434,15 +449,46 @@ body.highlighted-container-content .keditor-container-content:before {
   -o-transition: none !important;
   transition: none !important;
 }
+
+
+/* 화면정의 오른쪽 편집창에서 끌어다 넣을때 생기는 hover 영역 */
 .ui-sortable-placeholder {
-  background: #eee !important;
+  background: rgb(var(--v-theme-primary), 0.15) !important;
   visibility: visible !important;
-  height: 10px !important;
-  margin: 5px 0 !important;
+  height: 40px !important;
   float: none !important;
   outline: none !important;
 }
+
+
 .keditor-section.ui-sortable-helper {
   background: #fff !important;
   opacity: 0.5;
+}
+
+/* 이미지 우측에 설명을 넣기위해 추가 */
+.keditor-snippet-title {
+    display: inline-block; /* inline-block으로 설정 */
+    margin: 0px 0px 0px 5px;
+    vertical-align: middle; /* Align text vertically with the image */
+    font-size: 12px; /* Adjust font size as needed */
+    color: gray; /* Adjust text color as needed */
+    display: flex; /* Flexbox 사용 */
+    align-items: center; /* Y 축 기준으로 가운데 정렬 */
+}
+
+/* 화면정의 오른쪽 편집창에서 끌어다 넣는 영역 */
+.mashup-hover {
+  position: relative;
+  top: -65px;
+  margin:0px 40px;
+}
+
+.keditor-ui .v-text-field .v-input__details {
+  display: none;
+}
+
+.keditor-ui .v-text-field .v-field--no-label input, 
+.keditor-ui .v-text-field .v-field--active input {
+  border:none !important;
 }

@@ -31,7 +31,7 @@ export interface Backend {
     serviceMessage(requestPath: string): Promise<any>;
     getWorkItem(taskId: string): Promise<any>;
     putWorkItem(taskId: string, workItem: any): Promise<any>;
-    putWorkItemComplete(taskId: string, workItem: any): Promise<any>;
+    putWorkItemComplete(taskId: string, workItem: any, isSimulation:boolean): Promise<any>;
     postMessage(instanceId: string, message: any): Promise<any>;
     getWorkList(options?: any): Promise<any>;
     getProcessDefinitionMap(): Promise<any>;
@@ -41,13 +41,16 @@ export interface Backend {
     getInProgressList(): Promise<any>;
     putWorklist(taskId: string, workItem: any): Promise<any>;
     getEventList(instanceId: string): Promise<any>;
-    getDryRunInstance(defPath: string): Promise<any>;
-    startDryRun(command: object) : Promise<any>;
+    dryRun(defPath: string, isSimulate: boolean): Promise<any>;
+    startAndComplete(command: object, isSimulate: boolean) : Promise<any>;
     getSystemList(): Promise<any>;
     putSystem(system: any): Promise<any>;
     getSystem(systemId: String): Promise<any>;
     getCurrentWorkItemByCorrKey(corrKey: number): Promise<any>;
     deleteInstance(instanceId: string): Promise<any>;
+    getNotifications(): Promise<any>;
+    setNotifications(value: any): Promise<any>;
+    search(keyword: string): Promise<any>;
 }
 
 // export type { Backend }

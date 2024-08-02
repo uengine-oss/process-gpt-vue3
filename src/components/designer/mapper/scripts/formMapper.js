@@ -631,6 +631,7 @@ export default {
           "argument": {
             "text": argument
           },
+          "direction": "out",
           "variable": {
             "name": this.replaceFromRootName(conn.from[1]),
             "askWhenInit": false,
@@ -643,6 +644,7 @@ export default {
           "argument": {
             "text": argument
           },
+          "direction": "out",
           "transformerMapping": {
             "transformer": {
               "_type": blockData.class,

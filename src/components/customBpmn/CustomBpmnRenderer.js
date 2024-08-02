@@ -17,7 +17,7 @@ import { isAny } from 'bpmn-js/lib/features/modeling/util/ModelingUtil';
 const HIGH_PRIORITY = 1500,
   TASK_BORDER_RADIUS = 10,
   ERROR_COLOR = '#e53935',
-  WARNING_COLOR = '#fdd036',
+  WARNING_COLOR = '#FFA500',
   WARNING = 0,
   ERROR = 1;
 
@@ -231,7 +231,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
       strokColor = '#000000';
     }
     diamond.style.stroke = strokColor;
-
+    diamond.style.strokeWidth = strokColor === '#000000' ? '2' : '5';
 
     prependTo(diamond, parentNode);
 
@@ -354,9 +354,9 @@ function drawRect(parentNode, width, height, borderRadius, strokeColor, fillColo
     width: width,
     height: height,
     rx: borderRadius,
-    ry: borderRadius,
+    ry: borderRadius, 
     stroke: strokeColor || '#000',
-    strokeWidth: 2,
+    strokeWidth: strokeColor == '#000000' ? 2 : 5,
     fill: fillColor || '#fff',
     filter: filterId, // 필터 적용
   });

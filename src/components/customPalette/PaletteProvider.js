@@ -56,9 +56,9 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     function createListener(event) {
       var shape = elementFactory.createShape(assign({ type: type }, options));
 
-      if (options) {
-        shape.businessObject.di.isExpanded = options.isExpanded;
-      }
+      // if (options) {
+      //   shape.businessObject.di.isExpanded = options.isExpanded;
+      // }
 
       create.start(event, shape);
     }

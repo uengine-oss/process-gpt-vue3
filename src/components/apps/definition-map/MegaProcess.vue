@@ -1,5 +1,5 @@
 <template>
-    <div class="w-100" @mouseover="hover = true" @mouseleave="hover = false">
+    <div class="w-100 mega-hover">
         <v-card class="align-center pa-3 mb-3 cp-mega" color="primary" elevation="10" style="border-radius: 10px !important;"
             @click="goProcess(value.name, 'mega')">
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-h6 font-weight-semibold">
@@ -51,10 +51,11 @@
                 <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" />
             </div>
         </div>
-        <v-card v-if="!processDialogStatus && enableEdit && hover" 
+        <v-card v-if="!processDialogStatus && enableEdit" 
             @click="openProcessDialog('add')"
-            class="add-process-card-hover bg-lightsecondary cp-add-mega pa-2"
+            class="cp-add-mega pa-2 add-major-card"
             elevation="9" variant="outlined"
+            color="primary"
             style="display: flex;
                 justify-content: center;
                 align-items: center;
@@ -122,5 +123,18 @@ export default {
 <style>
 .mega-proc-btn button {
     color:white;
+}
+.add-major-card {
+    display: none !important;
+}
+
+.mega-hover:hover .add-major-card {
+    display: flex !important;
+}
+
+@media only screen and (max-width: 700px) {
+    .add-major-card {
+        display: flex !important;
+    }
 }
 </style>

@@ -7,10 +7,10 @@
                     <v-text-field v-model="value.url"></v-text-field>
                 </div>
 
-                <div style="font-size: medium;">Event Type</div>
-                <div>
+                <!-- <div style="font-size: medium;">Event Type</div> -->
+                <!-- <div>
                     <v-text-field v-model="value.eventSynchronization.eventType"></v-text-field>
-                </div>
+                </div> -->
 
                 <div style="font-size: medium;">Event Attributes</div>
                 <draggable v-model="attributes" :options="dragOptions" class="mb-6">
@@ -158,7 +158,6 @@
                 :activities="activities"
                 :formMapperJson="formMapperJson"
                 :name="taskName"
-
                 :expandableTrees="nodes"
                 :replaceFromExpandableNode="replaceFromExpandableNode"
                 :replaceToExpandableNode="replaceToExpandableNode"
@@ -256,7 +255,7 @@ export default {
             me.value = JSON.parse(JSON.stringify(me.modelValue));
             me.attributes = me.value.eventSynchronization.attributes.map(attribute => ({ ...attribute, isEdit: false }))
             if(me.attributes && me.attributes.length == 0){
-                me.attributes.push({name: 'id', className: 'Long', isKey: false, isCorrKey: true}) //init value.
+                // me.attributes.push({name: 'id', className: 'Long', isKey: false, isCorrKey: true}) //init value.
             }
             me.isLoading = false;
         },
@@ -264,7 +263,7 @@ export default {
             var me = this
        
             
-            let nodeName = me.value.eventSynchronization.eventType
+            let nodeName = "Arguments"
             let instanceNodes = me.value.eventSynchronization.attributes.map(attribute => attribute.name);
             if(!me.nodes) me.nodes = {}
             if(!me.nodes[nodeName]) me.nodes[nodeName] = {} 

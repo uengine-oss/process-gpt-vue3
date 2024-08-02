@@ -35,6 +35,12 @@ export default {
         },
         currentActivities: {
             type: Array
+        },
+        executionScopeActivities: {
+            type: Object
+        },
+        selectedExecutionScope: {
+            type: Object
         }
     },
     data: function () {
@@ -58,14 +64,15 @@ export default {
         var eventBus = this.bpmnViewer.get('eventBus');
         // eventBus.on('import.render.start', function (e) {
         //     // self.openPanel = true;
-        //     console.log("render  complete")
+        //     // console.log("render  complete")
         //     self.$emit('openPanel', e.element.id);
         // });
         eventBus.on('import.done', async function (evt) {
-            console.log('import.done');
+            // console.log('import.done');
             self.$emit('done');
         });
         eventBus.on('import.render.complete', async function (event) {
+            let startTime = performance.now();
             var error = event.error;
             var warnings = event.warnings;
             let def = self.bpmnViewer.getDefinitions();
@@ -77,7 +84,7 @@ export default {
                 self.$emit('shown', warnings);
             }
 
-            console.log(def);
+            // console..log(def);
             // self.bpmnViewer.get('canvas').zoom('fit-viewport');
             var canvas = self.bpmnViewer.get('canvas');
             canvas.zoom('fit-viewport');
@@ -94,51 +101,145 @@ export default {
             if (self.adminMode) {
                 var overlays = self.bpmnViewer.get('overlays');
                 // add marker to current activity elements
-                
-                if (self.currentActivities && self.currentActivities.length > 0) {
-                    
-                    self.currentActivities.forEach((actId) => {
-                        var overlayHtml = $(`<img src="/assets/images/icon/tdesign-rollback.svg" style="width: 20px; height: 20px;" alt="rollback">`);
 
-                        overlayHtml.click(function (e) {
-                            // alert('someone clicked ' + actId);
-                            self.$emit('rollback', actId);
-                        });
-                        console.log(actId)
-                        if (actId)
-                            overlays.add(actId, 'note', {
-                                position: {
-                                    bottom: 10,
-                                    right: 0
-                                },
-                                html: overlayHtml
+                if (self.currentActivities && self.currentActivities.length > 0) {
+                    self.currentActivities.forEach((actId) => {
+                        const elementRegistry = self.bpmnViewer.get('elementRegistry');
+                        const element = elementRegistry.get(actId);
+                        if (element.type != 'bpmn:SubProcess' && element.type != 'bpmn:CallActivity') {
+                            var overlayHtml = $(
+                                `<img src="/assets/images/icon/tdesign-rollback.svg" style="width: 20px; height: 20px;" alt="rollback">`
+                            );
+                            overlayHtml.click(function (e) {
+                                // alert('someone clicked ' + actId);
+                                self.$emit('rollback', element);
                             });
+                            if (actId)
+                                overlays.add(actId, 'note', {
+                                    position: {
+                                        bottom: 10,
+                                        right: 0
+                                    },
+                                    html: overlayHtml
+                                });
+                        }
+                    });
+                }
+                if (self.executionScopeActivities && Object.keys(self.executionScopeActivities).length > 0) {
+                    Object.keys(self.executionScopeActivities).forEach((activity) => {
+                        // console.log(activity);
+                        let idx = 0;
+                        Object.keys(self.executionScopeActivities[activity]).forEach((executionScope) => {
+                            if (self.executionScopeActivities[activity][executionScope].parent) {
+                                if (self.selectedExecutionScope) {
+                                    if (
+                                        self.selectedExecutionScope.executionScope ==
+                                        self.executionScopeActivities[activity][executionScope].parent
+                                    ) {
+                                        let list = `<button class="v-btn v-btn--block v-btn--elevated v-theme--light rounded-xl  v-btn--variant-elevated">${executionScope}</buton>\n`;
+                                        let overlayHtml = $(`<div >${list}</div>`);
+                                        overlayHtml.click(function (e) {
+                                            let obj = {
+                                                executionScope: executionScope,
+                                                parent: self.executionScopeActivities[activity][executionScope].parent
+                                            };
+                                            self.$emit('selectedExecutionScope', obj);
+                                        });
+                                        overlays.add(activity, 'note', {
+                                            position: {
+                                                bottom: 80 - idx * 30,
+                                                right: -10
+                                            },
+                                            html: overlayHtml
+                                        });
+                                        idx = idx + 1;
+                                    } else if (
+                                        self.selectedExecutionScope.parent == self.executionScopeActivities[activity][executionScope].parent
+                                    ) {
+                                        let list = `<button class="v-btn v-btn--block v-btn--elevated v-theme--light rounded-xl  v-btn--variant-elevated">${executionScope}</buton>\n`;
+                                        let overlayHtml = $(`<div >${list}</div>`);
+                                        overlayHtml.click(function (e) {
+                                            let obj = {
+                                                executionScope: executionScope,
+                                                parent: self.executionScopeActivities[activity][executionScope].parent
+                                            };
+                                            self.$emit('selectedExecutionScope', obj);
+                                        });
+                                        overlays.add(activity, 'note', {
+                                            position: {
+                                                bottom: 80 - idx * 30,
+                                                right: -10
+                                            },
+                                            html: overlayHtml
+                                        });
+                                        idx = idx + 1;
+                                    }
+                                }
+                            } else {
+                                let list = `<button class="v-btn v-btn--block v-btn--elevated v-theme--light rounded-xl  v-btn--variant-elevated">${executionScope}</buton>\n`;
+                                let overlayHtml = $(`<div >${list}</div>`);
+                                overlayHtml.click(function (e) {
+                                    let obj = {
+                                        executionScope: executionScope,
+                                        parent: null
+                                    };
+                                    self.$emit('selectedExecutionScope', obj);
+                                });
+                                overlays.add(activity, 'note', {
+                                    position: {
+                                        bottom: 80 - idx * 30,
+                                        right: -10
+                                    },
+                                    html: overlayHtml
+                                });
+                                idx = idx + 1;
+                            }
+                        });
+                        // var overlayHtml = $(`<div>
+                        //     <span>Execution Scope</span>
+                        //     <span>Execution Scope</span>
+                        //     <span>Execution Scope</span>
+                        // </div>`);
+                        // obj.executionScopes.split(',').forEach((scope, idx) => {
+
+                        // });
                     });
                 }
             }
 
-            console.log(eventBus);
+            // console..log(eventBus);
             eventBus.on('shape.added', async function (event) {
                 const element = event.element;
                 const businessObject = element.businessObject;
-                console.log(element);
-                console.log(businessObject);
+                // console..log(element);
+                // console..log(businessObject);
                 // 이미 extensionElements가 있는 경우, 초기화 하도록 처리
-                // if (businessObject.extensionElements) {
-                //     businessObject.extensionElements.values?.[0].json = '{}'
-                //     return;
+
+                if (businessObject.extensionElements) {
+                    businessObject.extensionElements.values[0].json = '{}';
+                }
+
+                // if (businessObject.$type == 'bpmn:Participant') {
+                //     setTimeout(() => {
+                //         const modeling = self.bpmnViewer.get('modeling');
+                //         const bpmnFactory = self.bpmnViewer.get('bpmnFactory');
+                //         const laneSet = bpmnFactory.create('bpmn:LaneSet');
+                //         laneSet.children = [];
+                //         businessObject.processRef.laneSet = laneSet;
+                //         const lane = modeling.addLane(businessObject, false);  
+                //     }, 0);
                 // }
 
                 try {
                     let xml = await self.getXML;
-                    console.log(xml);
+                    // console..log(xml);
                     self.extendUEngineProperties(element);
                 } catch (error) {
                     alert(error);
                 }
 
                 // const bpmnFactory = self.bpmnViewer.get('bpmnFactory');
-                // console.log(bpmnFactory)
+                // console..log(bpmnFactory)
                 // const processVariable = self.bpmnViewer.get('moddle').create('uengine:ProcessVariables', {
                 //     variables: [
                 //         { key: 'variable1', value: 'value1' }
@@ -152,7 +253,7 @@ export default {
             // })
             // eventBus.on('element.changed', function (e) {
             //     // self.$emit('changeShape', e.element)
-            //     console.log(e)
+            //     // console.log(e)
             // })
             // eventBus.on('connection.changed', function (e) {
             //     self.$emit('changeSequence', e.element)
@@ -178,27 +279,39 @@ export default {
             }
 
             eventBus.on('drag.end', function (e) {
-                self.$emit('change');
+                self.debounce(() => {
+                    self.$emit('change');
+                }, 100)
             });
 
             eventBus.on('shape.removed', function (e) {
-                self.$emit('change');
+                self.debounce(() => {
+                    self.$emit('change');
+                }, 100)
             });
 
             eventBus.on('connection.removed', function (e) {
-                self.$emit('change');
+                self.debounce(() => {
+                    self.$emit('change');
+                }, 100)
             });
 
             eventBus.on('connection.added', function (e) {
-                self.$emit('change');
+                self.debounce(() => {
+                    self.$emit('change');
+                }, 100)
             });
 
-            self.$emit('change');
+            self.debounce(() => {
+                    self.$emit('change');
+                }, 100)
 
             // var events = ['element.hover', 'element.out', 'element.click', 'element.dblclick', 'element.mousedown', 'element.mouseup'];
             // events.forEach(function (event) {
 
             // });
+            let endTime = performance.now();
+            console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
         });
         if (this.url) {
             this.fetchDiagram(this.url);
@@ -236,7 +349,7 @@ export default {
             });
         },
         diagramXML(val) {
-            console.log(val);
+            // console..log(val);
             // let obj = '<?xml version="1.0" encoding="UTF-8"?><bpmn2:definitions xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_vacationProcess" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Custom BPMN Modeler" exporterVersion="1.0"><bpmn2:collaboration id="Collaboration_1"><bpmn2:participant id="Participant" name="Participant" processRef="vacationProcess"/></bpmn2:collaboration><bpmn2:process id="vacationProcess" isExecutable="true"><bpmn2:laneSet id="LaneSet_1"><bpmn2:lane id="Lane_worker" name="직원"><bpmn2:flowNodeRef>requestVacation</bpmn2:flowNodeRef><bpmn2:flowNodeRef>returnVacation</bpmn2:flowNodeRef></bpmn2:lane><bpmn2:lane id="Lane_process_manager" name="프로세스 관리자"><bpmn2:flowNodeRef>approveVacation</bpmn2:flowNodeRef></bpmn2:lane></bpmn2:laneSet><bpmn2:userTask id="requestVacation" name="휴가 신청"/><bpmn2:userTask id="approveVacation" name="휴가 승인"/><bpmn2:userTask id="returnVacation" name="휴가 복귀"/><bpmn2:sequenceFlow id="SequenceFlow_requestVacation_approveVacation" sourceRef="requestVacation" targetRef="approveVacation"/><bpmn2:sequenceFlow id="SequenceFlow_approveVacation_returnVacation" sourceRef="approveVacation" targetRef="returnVacation"/></bpmn2:process><bpmndi:BPMNDiagram id="BPMNDiagram_1"><bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1"><bpmndi:BPMNShape id="BPMNShape_Worker" bpmnElement="Lane_worker" isHorizontal="true"><dc:Bounds x="100" y="100" width="600" height="100"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="BPMNShape_Process_Manager" bpmnElement="Lane_process_manager" isHorizontal="true"><dc:Bounds x="100" y="220" width="600" height="100"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="BPMNShape_requestVacation" bpmnElement="requestVacation"><dc:Bounds x="150" y="150" width="80" height="60"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="BPMNShape_approveVacation" bpmnElement="approveVacation"><dc:Bounds x="150" y="230" width="80" height="60"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="BPMNShape_returnVacation" bpmnElement="returnVacation"><dc:Bounds x="150" y="310" width="80" height="60"/></bpmndi:BPMNShape><bpmndi:BPMNEdge id="BPMNEdge_requestVacation_approveVacation" bpmnElement="SequenceFlow_requestVacation_approveVacation"><di:waypoint x="180" y="180"/><di:waypoint x="280" y="180"/></bpmndi:BPMNEdge><bpmndi:BPMNEdge id="BPMNEdge_approveVacation_returnVacation" bpmnElement="SequenceFlow_approveVacation_returnVacation"><di:waypoint x="180" y="180"/><di:waypoint x="280" y="180"/></bpmndi:BPMNEdge></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn2:definitions>'
             this.bpmnViewer.importXML(val);
         },
@@ -267,6 +380,15 @@ export default {
         }
     },
     methods: {
+        debounce(func, timeout) {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    func.apply(this, args);
+                }, timeout);
+            };
+        },
         initializeViewer() {
             var container = this.$refs.container;
             var self = this;
@@ -303,32 +425,11 @@ export default {
             if (self.diagramXML) {
                 self.bpmnViewer.importXML(self.diagramXML);
             }
-
-            
-
-            try {
-                const commandStack = self.bpmnViewer.get('commandStack');
-                document.addEventListener('keydown', (event) => {
-                    if ((event.metaKey || event.ctrlKey) && event.key === 'z') {
-                        event.preventDefault();
-                        commandStack.undo();
-                    } else if (event.ctrlKey && event.key === 'y') {
-                        event.preventDefault();
-                        commandStack.redo();
-                    } else if(event.metaKey && event.shiftKey && event.key ==='z') {
-                        event.preventDefault();
-                        commandStack.redo();
-                    }
-                });
-            }
-            catch(e) {
-
-            }
         },
         extendUEngineProperties(businessObject) {
             let self = this;
             //let businessObject = element.businessObject
-            if(businessObject?.businessObject?.extensionElements?.values) {
+            if (businessObject?.businessObject?.extensionElements?.values) {
                 return;
             }
             if (businessObject.extensionElements?.values) {
@@ -356,15 +457,6 @@ export default {
             if (businessObject.businessObject) {
                 if (businessObject.businessObject.$type == 'bpmn:Participant') businessObject.businessObject.processRef.isExecutable = true;
             }
-
-            //TODO: 불필요
-            // 요소 업데이트를 위해 모델링 컴포넌트 사용
-            // setTimeout(async () => {
-            //     const modeling = self.bpmnViewer.get('modeling');
-            //     modeling.updateProperties(businessObject, { extensionElements: extensionElements });
-            //     let xml = await self.bpmnViewer.saveXML({ format: true, preamble: true });
-            //     console.log(xml)
-            // }, 0);
         },
         updateElement(element, extensionElements) {
             const modeling = this.bpmnViewer.get('modeling');
@@ -442,7 +534,7 @@ export default {
             });
 
             obj.diagrams[0].plane.planeElement = this.sortByIdWithParticipantFirst(obj.diagrams[0].plane.planeElement);
-            console.log(obj);
+            // console.log(obj);
             this.bpmnViewer.importDefinitions(obj);
         },
         sortByIdWithParticipantFirst(array) {
@@ -530,16 +622,6 @@ export default {
                 .catch((err) => {
                     self.$emit('error', err);
                 });
-        },
-        undo() {
-            const self = this;
-            const commandStack = self.bpmnViewer.get('commandStack');
-            commandStack.undo();
-        },
-        redo() {
-            const self = this;
-            const commandStack = self.bpmnViewer.get('commandStack');
-            commandStack.redo();
         }
     }
 };

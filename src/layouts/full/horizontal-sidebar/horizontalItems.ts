@@ -134,11 +134,11 @@ const horizontalItems: menu[] = [
                 icon: CircleIcon,
                 to: '/apps/notes'
             },
-            {
-                title: 'Calendar',
-                icon: CircleIcon,
-                to: '/apps/calendar'
-            },
+            // {
+            //     title: 'Calendar',
+            //     icon: CircleIcon,
+            //     to: '/apps/calendar'
+            // },
             {
                 title: 'Kanban',
                 icon: CircleIcon,
