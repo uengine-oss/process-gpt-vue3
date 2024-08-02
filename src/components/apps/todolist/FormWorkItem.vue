@@ -270,9 +270,11 @@ export default {
             this.$emit('fail', msg)
         },
         executeProcess() {
-            if (!this.$refs.checkpoints.allChecked) {
-                this.$refs.checkpoints.snackbar = true;
-                return;
+            if($mode == 'ProcessGPT') {
+                if (!this.$refs.checkpoints.allChecked) {
+                    this.$refs.checkpoints.snackbar = true;
+                    return;
+                }
             }
             let value = {};
             if (this.newMessage && this.newMessage.length > 0) {
