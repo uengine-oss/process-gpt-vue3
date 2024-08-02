@@ -9,7 +9,7 @@
                             :class="{'active-slide': activeIndex === index + '_' + itemIndex}"
                             @click="scrollToSlide(index, itemIndex)"
                         >
-                            <v-list-item-title>{{ item.title }}</v-list-item-title>
+                            <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
                         </v-list-item>
                     </template>
                 </v-list>
@@ -20,7 +20,7 @@
             >
                 <template v-for="(guideSlide, index) in guideSlides" :key="index">
                     <div v-for="(item, itemIndex) in guideSlide.items" :key="itemIndex" class="mb-16">
-                        <h2 class="text-grey200" :ref="'slide' + index + '_' + itemIndex">{{ item.title }}</h2>
+                        <h2 class="text-grey200" :ref="'slide' + index + '_' + itemIndex">{{ $t(item.title) }}</h2>
                         <template v-for="(image, imageIndex) in item.images" :key="imageIndex">
                             <img :src="image" :class="image == '/src/assets/images/tenant/help/1.png' ? 'create-account-img' : 'tenant-info-image'"/>
                         </template>
@@ -109,11 +109,11 @@ export default {
         storage: null,
         activeIndex: 0,
         guideSlides: [
-            {
+            { 
                 step: 1,
                 items: [
                     {
-                        title: 'STEP 1. 계정 만들기',
+                        title: 'tenantInfoField.step1',
                         images: [
                             createAccount
                         ],
@@ -128,7 +128,7 @@ export default {
                 step: 2,
                 items: [
                     {
-                        title: 'STEP 2. 프로젝트 또는 조직 만들기',
+                        title: 'tenantInfoField.step2-1',
                         images: [
                             selectNewProject
                         ],
@@ -138,7 +138,7 @@ export default {
                         ]
                     },
                     {
-                        title: 'STEP 2. 신규 조직(New organization) 생성',
+                        title: 'tenantInfoField.step2-2',
                         images: [
                             createOrganization
                         ],
@@ -149,7 +149,7 @@ export default {
                         ]
                     },
                     {
-                        title: 'STEP 2. 새 프로젝트(New Project) 만들기',
+                        title: 'tenantInfoField.step2-3',
                         images: [
                             createProject
                         ],
@@ -175,7 +175,7 @@ export default {
                 step: 3,
                 items: [
                     {
-                        title: 'STEP 3. Project URL 연결하기',
+                        title: 'tenantInfoField.step3-1',
                         images: [
                             apiUrlCopy
                         ],
@@ -194,7 +194,7 @@ export default {
                         ]
                     },
                     {
-                        title: 'STEP 3. Secret API Key 연결',
+                        title: 'tenantInfoField.step3-2',
                         images: [
                             secretCopy
                         ],
@@ -212,7 +212,7 @@ export default {
                         ]
                     },
                     {
-                        title: 'STEP 3. DataBase 연결',
+                        title: 'tenantInfoField.step3-3',
                         images: [
                             databaseCopy
                         ],
@@ -253,7 +253,7 @@ export default {
                 step: 4,
                 items: [
                     {
-                        title: 'STEP 4. 사용할 회사명 입력하기',
+                        title: 'tenantInfoField.step4',
                         description: [
                             '1. 사용할 회사명을 아래의 ID 입력창에 입력하고 생성하기 버튼을 클릭해서 회사를 생성합니다.<br>',
                             '입력한 회사명은 서브도메인으로 사용됩니다.<br>',
@@ -274,7 +274,7 @@ export default {
                 step: 5,
                 items: [
                     {
-                        title: 'STEP 5. Supabase Site URL 설정하기',
+                        title: 'tenantInfoField.step5',
                         images: [
                             siteUrl
                         ],

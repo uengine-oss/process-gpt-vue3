@@ -5,11 +5,11 @@
         </v-row>
 
         <v-row no-gutters justify="center" class="mt-7">
-            <h1 class="text-grey200" style="font-size: 40px;">회사 관리</h1>
+            <h1 class="text-grey200" style="font-size: 40px;">{{ $t('tenantManagePage.title') }}</h1>
         </v-row>
         <v-row no-gutters justify="center">
             <p class="font-weight-semibold text-grey100 text-h5">
-                새로운 회사를 생성하거나 선택한 회사가 관리하는 페이지로 이동합니다.
+                {{ $t('tenantManagePage.subTitle') }}
             </p>
         </v-row>
 
@@ -29,7 +29,7 @@
                         <v-icon style="color: green;" size="24">mdi-plus</v-icon>
                     </v-col>
                     <v-col cols="11">
-                        새로운 회사 생성
+                        {{ $t('tenantManagePage.createCompany') }}
                     </v-col>
                 </v-row>
             </v-card>
@@ -37,7 +37,7 @@
 
         <div style="display: flex; justify-content: center; align-items: center;">
             <div style="height: 450px; width: 500px; overflow-y: auto;">
-                <v-row no-gutters justify="center" class="mt-3" v-for="tenantInfo in tenantInfos">
+                <v-row no-gutters justify="center" class="mt-3" v-for="(tenantInfo, index) in tenantInfos" :key="index">
                     <v-card @click="toSelectedTenantPage(tenantInfo.id)"
                         elevation="9" variant="outlined"
                         style="padding: 10px;

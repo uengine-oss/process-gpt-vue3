@@ -204,6 +204,22 @@
         "tenantID": "테넌트 ID *",
         "supabaseConnectionInfo": "Supabase 연결 정보"
     },
+    "tenantManagePage": {
+        "title": "회사 관리",
+        "subTitle": "새로운 회사를 생성하거나 선택한 회사가 관리하는 페이지로 이동합니다.",
+        "createCompany": "회사 생성"
+    },
+    "tenantInfoField": {
+        "step1": "STEP 1. 계정 만들기",
+        "step2-1": "STEP 2. 프로젝트 또는 조직 만들기",
+        "step2-2": "STEP 2. 신규 조직(New organization) 생성",
+        "step2-3": "STEP 2. 새 프로젝트(New Project) 만들기",
+        "step3-1": "STEP 3. Project URL 연결하기",
+        "step3-2": "STEP 3. Secret API Key 연결",
+        "step3-3": "STEP 3. DataBase 연결",
+        "step4": "STEP 4. 사용할 회사명 입력하기",
+        "step5": "STEP 5. Supabase Site URL 설정하기"        
+    },
     "forgotPassword": {
         "title": "비밀번호 찾기",
         "email": "이메일 주소",
