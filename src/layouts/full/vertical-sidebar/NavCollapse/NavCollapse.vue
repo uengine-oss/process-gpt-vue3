@@ -88,7 +88,7 @@ const backend = BackendFactory.createBackend();
                 </v-list-item>
             </template>
             <div class="mb-4 sublinks">
-                <!-- 정의목록 하위 내용 보여주는곳 -->
+                <!-- 정의목록 폴더 내부 내용 보여주는곳 -->
                 <template v-for="(subitem, i) in item.children" :key="i">
                     <template v-if="item.children">
                         <NavCollapse :item="subitem" v-if="subitem.directory" style="margin-left:20px;" :level="level + 1"/>

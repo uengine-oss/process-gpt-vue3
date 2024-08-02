@@ -7,6 +7,7 @@
                         label="프로세스 정의명" variant="underlined" hide-details class="pa-0 ma-0"></v-text-field>
                     <h5 v-else class="text-h5 mb-n1">{{ modelValue }}</h5>
                 </div>
+                <h5 v-else class="text-h5 mb-n1">프로세스 정의</h5>
                 
                 <div class="custom-tools">
                     <div class="d-flex mt-3">

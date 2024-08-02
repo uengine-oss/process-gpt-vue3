@@ -48,7 +48,9 @@ const customizer = useCustomizerStore();
         <!---Navigation -->
         <!-- ---------------------------------------------- -->
         <perfect-scrollbar class="scrollnavbar bg-containerBg overflow-y-hidden">
-            <v-list class="py-4 px-4 bg-containerBg">
+            <v-list class="py-4 px-4 bg-containerBg"
+                style="height: 100%;"
+            >
                 <!---Menu Loop -->
                 <template v-for="item in sidebarItem" :key="item.title">
                     <!---Item Sub Header -->
@@ -60,7 +62,7 @@ const customizer = useCustomizerStore();
                     <!---End Single Item-->
                 </template>
 
-                <ProcessInstanceList />
+                <ProcessInstanceList style="max-height:47%; overflow: auto;" />
 
                 <!-- definition menu item -->
                 <template v-for="item in definitionItem" :key="item.title">
@@ -88,20 +90,23 @@ const customizer = useCustomizerStore();
                     </v-row>
                     <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
                 </template>
-                <template v-if="definitionList">
-                    <!-- 정의 목록 리스트 -->
-                    <NavCollapse v-for="(definition, i) in definitionList.children" :key="i"
-                        :item="definition" 
-                        class="leftPadding"
-                        @update:item="(def) => (definitionList[i] = def)" 
-                        :level="0" 
-                        :type="'definition-list'" 
-                    />
-                </template>
+                <div style="max-height:47%; overflow: auto;">
+                    <template v-if="definitionList">
+                        <!-- 정의 목록 리스트 -->
+                        
+                            <NavCollapse v-for="(definition, i) in definitionList.children" :key="i"
+                                :item="definition" 
+                                class="leftPadding"
+                                @update:item="(def) => (definitionList[i] = def)" 
+                                :level="0" 
+                                :type="'definition-list'" 
+                            />
+                    </template>
+                </div>
             </v-list>
         </perfect-scrollbar>
 
-        <div class="pa-6 px-4 bg-containerBg">
+        <div class="pa-4 px-4 bg-containerBg">
             <ExtraBox />
         </div>
     </v-navigation-drawer>

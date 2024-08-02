@@ -135,6 +135,14 @@ export default {
             if (variable && variable.valueMap) {
                 me.formData = variable.valueMap;
             }
+
+            
+            if(me.workItem?.parameterValues){
+                const parameterValues = me.workItem.parameterValues[varName];
+                if(parameterValues && parameterValues.valueMap){
+                    me.formData = parameterValues.valueMap;
+                }
+            }
         },
         async saveTask() {
             var me = this;
@@ -176,8 +184,9 @@ export default {
             variable._type = 'org.uengine.contexts.HtmlFormContext';
             variable.valueMap = me.formData;
             Object.keys(variable.valueMap).forEach((key) => {
-                if (typeof variable.valueMap[key] == 'object') {
-                    variable.valueMap[key].forEach((item) => {
+                if (Array.isArray(variable.valueMap[key])) {
+                    if(!variable.valueMap[key]) return;
+                    variable.valueMap[key]?.forEach((item) => {
                         if(item && item._type){
                             item._type = 'java.util.HashMap';
                         }
@@ -229,7 +238,7 @@ export default {
                             processDefinitionId: me.definitionId
                         }
                                 
-                        await backend.startDryRun({
+                        await backend.startAndComplete({
                             processExecutionCommand: processExecutionCommand,
                             workItem: workItem,
                             variables: variables
