@@ -483,8 +483,10 @@ class UEngineBackend implements Backend {
     }
 
     async startAndComplete(command: object, isSimulate: boolean){
-        const headers = isSimulate ? { headers: { 'isSimulate': 'true' } } : {'isSimulate': 'false'};
-        const response = await axiosInstance.post(`/start-and-complete`,command,headers);
+        const headers = { 
+            'isSimulate': isSimulate ? 'true' : 'false'
+        };
+        const response = await axiosInstance.post(`/start-and-complete`,command, {headers});
 
         return response.data;
     }
