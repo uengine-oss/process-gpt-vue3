@@ -31,6 +31,7 @@
                         @updateCurrentActivities="updateCurrentActivities"
                         @close="close"
                         @executeProcess="executeProcess"
+                        :is-simulate="isSimulate"
                     ></component>
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
@@ -161,7 +162,11 @@ export default {
             type: Boolean,
             default: false
         },
-        dryRunWorkItem: Object
+        dryRunWorkItem: Object,
+        isSimulate:  {
+            type: Boolean,
+            default: false
+        }
     },
     components: {
         // ProcessDefinition,

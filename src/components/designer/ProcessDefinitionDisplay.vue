@@ -144,6 +144,9 @@ export default {
             var me = this
             let lists = await me.backend.listDefinition(path);
             let results = [];
+            if(!lists) {
+                return results
+            }
             for (const item of lists) {
                 if (item.directory) {
                     item.displayPath = `/${item.name}`;

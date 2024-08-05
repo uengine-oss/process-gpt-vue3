@@ -10,7 +10,7 @@
 import { useBpmnStore } from '@/stores/bpmn';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
-
+import _ from 'lodash';
 export default {
     name: 'text-annotation-panel',
     props: {
@@ -20,7 +20,8 @@ export default {
         isViewMode: Boolean
     },
     created() {
-        this.copyText = this.element.text
+        console.log(this.element.text);
+        this.copyText = this.element.text;
     },
     data() {
         return {
@@ -29,30 +30,24 @@ export default {
             calleeDefinitionRoles: [],
             copyUengineProperties: this.uengineProperties,
             name: '',
-            checkpoints: [],
-            editCheckpoint: false,
-            checkpointMessage: {
-                $type: 'uengine:Checkpoint',
-                checkpoint: ''
-            },
-            code: '',
-            description: '',
-            selectedDefinition: '',
             bpmnModeler: null,
             stroage: null,
             editParam: false,
             paramKey: '',
             paramValue: '',
             definitionCnt: 0,
-            type: 'None'
+            copyText: ''
         };
     },
     async mounted() {},
     computed: {},
     watch: {
-        copyText: _.debounce(function(newVal){
-            this.$emit("update:text", newVal)
-        }, 500)
+        "copyText": {
+            deep: true,
+            handler: _.debounce(function (newVal) {
+                    this.$emit("update:text", newVal)
+            }, 200)
+        },
     },
     methods: {}
 };

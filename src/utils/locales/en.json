@@ -175,7 +175,30 @@
         "password": "Password",
         "email": "Email",
         "google": "Sign in with Google",
-        "or": "or sign in with"
+        "or": "or sign in with",
+        "normalRegister": "Create a User",
+        "tenantRegister": "Create a Company"
+    },
+    "createAdminAccount": {
+        "createAccountHeader": "Admin Info",
+        "tenantID": "Company ID *",
+        "supabaseConnectionInfo": "Supabase Connection Information"
+    },
+    "tenantManagePage": {
+        "title": "Company Management",
+        "subTitle": "Create a new company or go to a page managed by the selected company.",
+        "createCompany": "Create a company"
+    },
+    "tenantInfoField": {
+        "step1": "STEP 1. Create an Account",
+        "step2-1": "STEP 2. Create a Project or Organization",
+        "step2-2": "STEP 2. Create a New Organization",
+        "step2-3": "STEP 2. Create a New Project",
+        "step3-1": "STEP 3. Project URL Connection",
+        "step3-2": "STEP 3. Secret API Key Connection",
+        "step3-3": "STEP 3. DataBase Connection",
+        "step4": "STEP 4. Enter the Company Name to Use",
+        "step5": "STEP 5. Setting up Supabase Site URL"
     },
     "forgotPassword": {
         "title": "Forgot your password?",

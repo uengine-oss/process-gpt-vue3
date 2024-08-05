@@ -73,7 +73,10 @@ export default {
                 json: "{}"
             };
         }
-
+        if(this.element) {
+            this.name = this.element.name;
+            this.text = this.element.text;
+        }
         this.uengineProperties = JSON.parse(this.element.extensionElements.values[0].json);
         if (this.element.lanes?.length > 0) {
             this.role = this.element.lanes[0];
@@ -123,10 +126,7 @@ export default {
 
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
-        if(this.element) {
-            this.name = this.element.name;
-            this.text = this.element.text;
-        }
+        
         this.$refs.cursor.focus();
     },
     computed: {
@@ -196,11 +196,24 @@ export default {
             const elementRegistry = this.bpmnModeler.get('elementRegistry');
             const task = elementRegistry.get(this.element.id);
             const name = this.name;
+            
             const json = JSON.stringify(this.uengineProperties);
-
+            const originTaskWidth = JSON.parse(JSON.stringify(task.width))
+            const originTaskHeight = JSON.parse(JSON.stringify(task.height))
+            const originTaskX = JSON.parse(JSON.stringify(task.x))
+            const originTaskY = JSON.parse(JSON.stringify(task.y))
             const elementCopyDeep = _.cloneDeep(this.elementCopy);
-
-            modeling.updateProperties(task, { name });
+            modeling.updateProperties(task, { name: name });
+            if(this.text) {
+                const text = this.text;
+                modeling.updateProperties(task, {text: text})
+            }
+            modeling.resizeShape(task, {
+                x: originTaskX,
+                y: originTaskY,
+                width: originTaskWidth,
+                height: originTaskHeight 
+            })
 
             if (elementCopyDeep.extensionElements && elementCopyDeep.extensionElements.values) {
                 elementCopyDeep.extensionElements.values[0].json = json;
@@ -213,8 +226,7 @@ export default {
             if (this.elementCopy.text) elementCopyDeep.text = this.text;
 
             modeling.updateProperties(task, {
-                extensionElements: elementCopyDeep.extensionElements,
-                text: elementCopyDeep.text
+                extensionElements: elementCopyDeep.extensionElements
             });
 
             this.$emit('close');
