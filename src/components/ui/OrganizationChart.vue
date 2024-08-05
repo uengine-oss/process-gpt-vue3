@@ -45,17 +45,20 @@
             </v-card>
 
             <v-card v-if="dialogType == 'edit'">
-                <v-card-title class="">수정</v-card-title>
+                <v-card-title class=""></v-card-title>
                 <v-card-text class="text-center">
-                    <v-avatar v-if="!editUser.data.isTeam" color="grey" rounded="0" size="100" class="mb-5">
-                        <v-img v-if="editUser.data.img" :src="editUser.data.img"></v-img>
-                    </v-avatar>
-
+                    <div class="d-flex mb-2">
+                        <v-avatar v-if="!editUser.data.isTeam" color="grey" rounded="0" size="100" class="mb-5">
+                            <v-img v-if="editUser.data.img" :src="editUser.data.img"></v-img>
+                        </v-avatar>
+                        <div class="text-start align-self-center ml-4">
+                            <h6 class="text-h6 font-weight-bold">{{ editUser.data.name }}</h6>
+                            <div class="text-body-1">{{ editUser.data.email }}</div>
+                        </div>
+                    </div>
+                    
                     <v-select v-if="!editUser.data.isTeam" v-model="editUser.data.pid" :items="allTeams" item-title="name"
                         item-value="id" label="팀"></v-select>
-                    
-                    <v-text-field v-model="editUser.data.name" label="이름"></v-text-field>
-                    
                     <v-text-field v-if="editUser.data.role" v-model="editUser.data.role" label="역할"></v-text-field>
                     
                     <v-autocomplete v-if="editUser.data.isTeam" v-model="editUser.children" :items="allUsers" chips 
