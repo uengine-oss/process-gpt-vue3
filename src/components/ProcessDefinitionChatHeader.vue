@@ -2,7 +2,7 @@
     <div>
         <div style="position: sticky; top:0px; z-index:1; background-color:white;">
             <div class="align-right gap-3 justify-space-between" 
-                :style="modelValueStyle ? 'padding: 16px 16px 0 16px;' : 'padding: 16px;'"
+                :style="modelValueStyle ? 'padding: 15.5px 16px 0 16px;' : 'padding: 16px;'"
             >
                 <div v-if="modelValue && modelValue !== ''" class="d-flex gap-2 align-center">
                     <v-text-field v-if="!lock && editUser != '' && editUser == userInfo.name" v-model="processName"
