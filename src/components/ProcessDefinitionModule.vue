@@ -617,7 +617,7 @@ export default {
                     dcBoundsLane.setAttribute('x', roleX ? roleX : 0);
                     dcBoundsLane.setAttribute('y', roleYResult);
 
-                    if(jsonModel.roles[lastKey].name == role.name && roleIndex != 0) {
+                    if(jsonModel.roles[lastKey] && jsonModel.roles[lastKey].name == role.name && roleIndex != 0) {
                         roleHeightResult -= 155;
                     } else {
                         roleHeightResult -= 5;
