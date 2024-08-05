@@ -203,15 +203,10 @@ class UEngineBackend implements Backend {
     }
 
     async putWorkItemComplete(taskId: string, workItem: any, isSimulate: boolean) {
-        let config = {};
-        if (isSimulate) {
-            config = {
-                headers: {
-                    'isSimulate': 'true'
-                }
-            };
-        }
-        const response = await axiosInstance.post(`/work-item/${taskId}/complete`, workItem, config);
+        const headers = { 
+            'isSimulate': isSimulate ? 'true' : 'false'
+        };
+        const response = await axiosInstance.post(`/work-item/${taskId}/complete`, workItem, {headers});
         return response.data;
     }
 
