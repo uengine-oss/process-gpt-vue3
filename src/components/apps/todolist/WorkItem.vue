@@ -252,6 +252,14 @@ export default {
             } else {
                 this.isMobile = false;
             }
+        },
+        "$route": {
+            handler(newVal, oldVal) {
+                if (newVal.params.taskId && newVal.params.taskId != oldVal.params.taskId) {
+                    this.init();
+                }
+            },
+            deep: true
         }
     },
     methods: {
