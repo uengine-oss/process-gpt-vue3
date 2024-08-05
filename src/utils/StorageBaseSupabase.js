@@ -341,53 +341,11 @@ export default class StorageBaseSupabase {
 
             const {error, status, statusText} = result
             if (status!=200 && error) {
-                if(error.code === 'PGRST204' && error.message.includes('does not exist')){
-                    try {
-                        const typeMapping = this.getTypeMapping(value);
-                        const regex = /relation '(\w+)'/;
-                        const match = error.message.match(regex);
-                        console.log(match[1])    
-                        const tableName = match ? match[1] : arguments[0]
-                        await axios.post(`/execution/add_table_columns`, {
-                            "tableName": tableName,
-                            "tableColumns": typeMapping      
-                        });
-                        // alert('DB 가 자동 업데이트 되었습니다. 다시 한번 시도해주세요.');
-                        // return;
-                        this.putObject(path, value, options)
-                    } catch (axiosError) {
-                        throw new StorageBaseError('error in putObject:' + status + " " + statusText + " " + error.message, error, arguments);
-                    }
-                } else {
-                    throw new StorageBaseError('error in putObject:' + status + " " + statusText + " " + error.message, error, arguments);
-                }
+                throw new StorageBaseError('error in putObject:' + status + " " + statusText + " " + error.message, error, arguments);
             }
         } catch (error) {
             throw new StorageBaseError('error in putObject', error, arguments);
         }
-    }
-
-    getTypeMapping(value) {
-        const typeMapping = {};
-        for (const key in value) {
-            if (value.hasOwnProperty(key)) {
-                const val = value[key];
-                if (typeof val === 'boolean') {
-                    typeMapping[key] = 'boolean';
-                } else if (typeof val === 'object' && val !== null) {
-                    typeMapping[key] = 'jsonb';
-                } 
-                // else if (!isNaN(Date.parse(val))) {
-                //     typeMapping[key] = 'timestamp with time zone';
-                // } 
-                else if (typeof val === 'string' && val.match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)) {
-                    typeMapping[key] = 'uuid';
-                } else {
-                    typeMapping[key] = 'text';
-                }
-            }
-        }
-        return typeMapping;
     }
 
     // PUSH
