@@ -1,15 +1,19 @@
 <template>
     <div>
         <div style="position: sticky; top:0px; z-index:1; background-color:white;">
-            <div class="align-right gap-3 pa-4 justify-space-between">
+            <div class="align-right gap-3 justify-space-between" 
+                :style="modelValueStyle ? 'padding: 15.5px 16px 0 16px;' : 'padding: 16px;'"
+            >
                 <div v-if="modelValue && modelValue !== ''" class="d-flex gap-2 align-center">
                     <v-text-field v-if="!lock && editUser != '' && editUser == userInfo.name" v-model="processName"
                         label="프로세스 정의명" variant="underlined" hide-details class="pa-0 ma-0"></v-text-field>
                     <h5 v-else class="text-h5 mb-n1">{{ modelValue }}</h5>
                 </div>
+                <h5 v-else class="text-h5 mb-n1">프로세스 정의</h5>
                 
                 <div class="custom-tools">
-                    <div class="d-flex mt-3">
+                    <div class="d-flex" 
+                        :style="modelValueStyle ? 'margin: 5px 0 5.5px 0;' : 'margin-top: 12px;'">
                         <v-tooltip location="bottom">
                             <template v-slot:activator="{ props }">
                                 <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
@@ -113,6 +117,15 @@ export default {
         },
         processName(newVal) {
             this.$emit('update:modelValue', newVal);
+        }
+    },
+    computed: {
+        modelValueStyle() {
+            if(this.modelValue && this.modelValue !== '' && !this.lock && this.editUser != '' && this.editUser == this.userInfo.name) {
+                return true
+            } else {
+                return false
+            }
         }
     },
     methods: {

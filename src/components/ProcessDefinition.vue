@@ -99,50 +99,44 @@
                     </v-btn>
                 </div>
 
-                <v-card-text style="overflow: auto; height: calc(100vh - 200px)">
+                <v-card-text style="overflow: auto; height: calc(100vh - 150px)">
                     <v-window v-model="processVariableTab">
                         <v-window-item value="variable">
-                            <VDataTable
-                                class="border rounded-md"
-                                :items-per-page="5"
-                                :items-per-page-text="$t('processDefinition.itemsPerPage')"
+                            <v-data-table
+                                :headers="processVariableHeaders"
+                                :items="processVariables"
+                                item-key="name"
+                                items-per-page="10"
+                                hide-default-header
+                                class="process-variable-tbody"
+                                height="200"
                             >
-                                <thead>
-                                    <tr>
-                                        <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.name') }}</th>
-                                        <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.type') }}</th>
-                                        <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.form') }}</th>
-                                        <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.description') }}</th>
-                                        <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.dataSource') }}</th>
-                                        <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.query') }}</th>
-                                        <th class="text-subtitle-1 font-weight-semibold">{{ $t('processDefinition.actions') }}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="item in processVariables" :key="item.name">
+                                <template v-for="header in processVariableHeaders" v-slot:[`header.${header.key}`]="{ column }">
+                                    <th class="text-subtitle-1 font-weight-semibold">
+                                        {{ $t(header.title) }}
+                                    </th>
+                                </template>
+                                <template v-slot:item="{ item }">
+                                    <tr :key="item.name">
                                         <td class="text-subtitle-1">{{ item.name }}</td>
-                                        <td class="cp-v-type">
-                                            {{ item.type }}
-                                        </td>
+                                        <td class="cp-v-type">{{ item.type }}</td>
                                         <td v-if="item.defaultValue" class="text-subtitle-1">{{ item.defaultValue.formDefId }}</td>
                                         <td v-else class="text-subtitle-1"></td>
                                         <td class="text-subtitle-1">{{ item.description }}</td>
                                         <td class="text-subtitle-1">{{ item.datasource ? item.datasource.type : 'None' }}</td>
-                                        <td>
-                                            {{ item.datasource ? item.datasource.query : 'None' }}
-                                        </td>
+                                        <td>{{ item.datasource ? item.datasource.query : 'None' }}</td>
                                         <td>
                                             <div class="d-flex align-center">
                                                 <v-tooltip :text="$t('processDefinition.edit')">
                                                     <template v-slot:activator="{ props }">
-                                                        <v-btn icon flat @click="editItem(item)" v-bind="props">
+                                                        <v-btn density="compact" icon flat @click="editItem(item)" v-bind="props" style="margin-right:5px;">
                                                             <PencilIcon stroke-width="1.5" size="20" class="text-primary" />
                                                         </v-btn>
                                                     </template>
                                                 </v-tooltip>
                                                 <v-tooltip :text="$t('processDefinition.delete')">
                                                     <template v-slot:activator="{ props }">
-                                                        <v-btn icon flat @click="deleteItem(item)" v-bind="props">
+                                                        <v-btn density="compact" icon flat @click="deleteItem(item)" v-bind="props">
                                                             <TrashIcon stroke-width="1.5" size="20" class="text-error" />
                                                         </v-btn>
                                                     </template>
@@ -150,8 +144,8 @@
                                             </div>
                                         </td>
                                     </tr>
-                                </tbody>
-                            </VDataTable>
+                                </template>
+                            </v-data-table>
                             <v-row class="ma-0" style="margin: 10px 0px 10px 0px !important">
                                 <v-card
                                     @click="addProcessVariables"
@@ -203,12 +197,12 @@
         </v-dialog>
 
         <v-dialog v-model="executeDialog" max-width="80%">
-            <process-execute-dialog
-                v-if="mode === 'LLM'"
-                :definitionId="definitionPath"
-                @close="executeDialog = false"
-            ></process-execute-dialog>
-            <dry-run-process v-else :definitionId="definitionPath" @close="executeDialog = false" :is-simulate="isViewMode"></dry-run-process>
+            <process-gpt-execute v-if="mode === 'LLM'" :definitionId="definitionPath" 
+                @close="executeDialog = false"></process-gpt-execute>
+            <div v-else>
+                <!-- <process-execute-dialog :definitionId="definitionPath" @close="executeDialog = false"></process-execute-dialog> -->
+                <dry-run-process :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
+            </div>
         </v-dialog>
 
         <!-- <v-navigation-drawer permanent location="right" :width="400"> {{ panelId }} </v-navigation-drawer> -->
@@ -277,7 +271,16 @@ export default {
         bpmnModeler: null,
         processVariables: [],
         instanceNamePattern: null,
-        executeDialog: false
+        executeDialog: false,
+        processVariableHeaders: [
+            { title: 'processDefinition.name', key: 'name' },
+            { title: 'processDefinition.type', key: 'type' },
+            { title: 'processDefinition.form', key: 'form' },
+            { title: 'processDefinition.description', key: 'description' },
+            { title: 'processDefinition.dataSource', key: 'dataSource' },
+            { title: 'processDefinition.query', key: 'query' },
+            { title: 'processDefinition.actions', key: 'actions' }
+        ],
         // definitionPath: null
     }),
     computed: {
@@ -430,6 +433,10 @@ export default {
         const store = useBpmnStore();
         store.setProcessDefinition(this);
         this.bpmnModeler = store.getModeler;
+
+        this.EventBus.on('process-definition-updated', (value) => {
+            this.copyProcessDefinition = value;
+        });
 
         // const def = this.bpmnModeler.getDefinitions();
         // console.log(this.definitions)
@@ -733,8 +740,8 @@ export default {
             if (val.type == 'Form') {
                 let defaultValue = {
                     _type: 'org.uengine.contexts.HtmlFormContext',
-                    formDefId: `${val.defaultValue}`,
-                    filePath: `${val.defaultValue}.form`
+                    formDefId: val.defaultValue.id,
+                    filePath: val.defaultValue.path
                 };
                 val.defaultValue = defaultValue;
             }

@@ -68,13 +68,13 @@ export default {
     computed:{
         bindOptions(){
             return {
-                color: this.options.color ? this.options.color : 'primary',
-                itemTitle: this.options.itemTitle ? this.options.itemTitle : 'name',
-                itemValue: this.options.itemValue ? this.options.itemValue : 'value',
-                label: this.options.label ? this.options.label : 'Select Definition',
-                variant: this.options.variant ? this.options.variant : 'outlined',
-                hideDetails: this.options.hideDetails ? this.options.hideDetails : false,
-                returnObject: this.options.returnObject ? this.options.returnObject : false
+                color: this.options.color || 'primary',
+                itemTitle: this.options.itemTitle || 'name',
+                itemValue: this.options.itemValue || 'value',
+                label: this.options.label || 'Select Definition',
+                variant: this.options.variant || 'outlined',
+                hideDetails: this.options.hideDetails || false,
+                returnObject: this.options.returnObject || false
             }
         },
         mode() {
@@ -132,14 +132,21 @@ export default {
                     
                     me.items = lists
                     me.loading = false
-
+                    const selectedItem = me.items.find(item => item.path === me.value.filePath);
+                    if(selectedItem) {
+                        me.value = selectedItem;
+                    }
                 }
             });
+
         },
         async retrieveFolder(path) {
             var me = this
             let lists = await me.backend.listDefinition(path);
             let results = [];
+            if(!lists) {
+                return results
+            }
             for (const item of lists) {
                 if (item.directory) {
                     item.displayPath = `/${item.name}`;

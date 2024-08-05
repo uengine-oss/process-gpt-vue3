@@ -161,6 +161,24 @@ hr {
     border-radius: 8px !important;
 }
 
+
+.process-variable-tbody tr td {
+    height:24px !important;
+}
+
+.process-variable-tbody .v-data-table-footer {
+    padding:0px !important;
+}
+
+#apexTreeWrapper {
+    height: 100% !important;
+}
+
+#apexTreeWrapper > svg{
+    height: 98% !important;
+    width: 100% !important;
+}
+
 @media only screen and (max-width:1450px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 375px !important;

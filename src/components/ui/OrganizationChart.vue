@@ -1,28 +1,31 @@
 <template>
-    <div>
+    <div style="height:100%;">
         <!-- buttons -->
-        <div v-if="openMenu" style="position: fixed; right: 40px; z-index: 1000; margin-top: 60px;">
-            <v-btn v-if="isRoot" color="primary" class="ml-2" variant="flat" density="comfortable"
-                @click="openDialog('addTeam')">
-                <template v-slot:prepend>
-                    <Icons :icon="'users-plus'" :size="20" />
-                </template>
-                팀 추가
-            </v-btn>
-            <div v-else class="d-flex">
-                <v-btn color="primary" class="ml-2" variant="flat" density="comfortable" @click="openDialog('edit')">
+        <div v-if="openMenu" style="position: absolute; right: 20px; z-index: 1000; top: 60px;">
+            <v-row class="ma-0 pa-0">
+                <v-spacer></v-spacer>
+                <v-btn v-if="isRoot" color="primary" class="ml-2" variant="flat" density="comfortable"
+                    @click="openDialog('addTeam')">
                     <template v-slot:prepend>
-                        <Icons :icon="'user-edit'" :size="20" />
+                        <Icons :icon="'users-plus'" :size="20" />
                     </template>
-                    수정
+                    팀 추가
                 </v-btn>
-                <v-btn color="error" class="ml-2" variant="flat" density="comfortable" @click="openDialog('delete')">
-                    <template v-slot:prepend>
-                        <Icons :icon="'user-minus'" :size="20" />
-                    </template>
-                    삭제
-                </v-btn>
-            </div>
+                <div v-else class="d-flex">
+                    <v-btn color="primary" class="ml-2" variant="flat" density="comfortable" @click="openDialog('edit')">
+                        <template v-slot:prepend>
+                            <Icons :icon="'user-edit'" :size="20" />
+                        </template>
+                        수정
+                    </v-btn>
+                    <v-btn color="error" class="ml-2" variant="flat" density="comfortable" @click="openDialog('delete')">
+                        <template v-slot:prepend>
+                            <Icons :icon="'user-minus'" :size="20" />
+                        </template>
+                        삭제
+                    </v-btn>
+                </div>
+            </v-row>
         </div>
         <!-- organization chart -->
         <div id="tree" ref="tree" class="h-100"></div>
@@ -42,17 +45,20 @@
             </v-card>
 
             <v-card v-if="dialogType == 'edit'">
-                <v-card-title class="">수정</v-card-title>
+                <v-card-title class=""></v-card-title>
                 <v-card-text class="text-center">
-                    <v-avatar v-if="!editUser.data.isTeam" color="grey" rounded="0" size="100" class="mb-5">
-                        <v-img v-if="editUser.data.img" :src="editUser.data.img"></v-img>
-                    </v-avatar>
-
+                    <div class="d-flex mb-2">
+                        <v-avatar v-if="!editUser.data.isTeam" color="grey" rounded="0" size="100" class="mb-5">
+                            <v-img v-if="editUser.data.img" :src="editUser.data.img"></v-img>
+                        </v-avatar>
+                        <div class="text-start align-self-center ml-4">
+                            <h6 class="text-h6 font-weight-bold">{{ editUser.data.name }}</h6>
+                            <div class="text-body-1">{{ editUser.data.email }}</div>
+                        </div>
+                    </div>
+                    
                     <v-select v-if="!editUser.data.isTeam" v-model="editUser.data.pid" :items="allTeams" item-title="name"
                         item-value="id" label="팀"></v-select>
-                    
-                    <v-text-field v-model="editUser.data.name" label="이름"></v-text-field>
-                    
                     <v-text-field v-if="editUser.data.role" v-model="editUser.data.role" label="역할"></v-text-field>
                     
                     <v-autocomplete v-if="editUser.data.isTeam" v-model="editUser.children" :items="allUsers" chips 
@@ -285,6 +291,7 @@ export default {
 <style scoped>
 #tree {
     width: 100%;
+    height:100%;
 }
 
 @media screen and (max-width: 1080px) {

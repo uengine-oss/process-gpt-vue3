@@ -26,7 +26,7 @@ class UEngineBackend implements Backend {
         if (basePath) url += `?basePath=${basePath}`;
 
         const response = await axiosInstance.get(url);
-        return response.data._embedded.definitions;
+        return response.data?._embedded?.definitions;
     }
     async listVersionDefinitions(version: string, basePath: string) {
         const response = await axiosInstance.get(`/version/${version}/definition/?basePath=${basePath}`);
@@ -70,15 +70,18 @@ class UEngineBackend implements Backend {
     }
     async putRawDefinition(definition: any, requestPath: string, options: any) {
         let req = {
-            definition: definition
+            definition: definition,
         };
         var config = {
             headers: {
-                'Content-Type': 'text/plain'
+                'Content-Type': 'application/json'
             },
             responseType: 'text' as const
         };
-        const response = await axiosInstance.put('/definition/raw/' + requestPath + '.' + options.type, definition, config);
+        if(requestPath.indexOf("@") == -1)
+            requestPath = requestPath + "@" + options.name
+        
+        const response = await axiosInstance.put('/definition/raw/' + requestPath + '.' + options.type, req, config);
         return response.data;
     }
     // @ts-ignore
@@ -200,15 +203,10 @@ class UEngineBackend implements Backend {
     }
 
     async putWorkItemComplete(taskId: string, workItem: any, isSimulate: boolean) {
-        let config = {};
-        if (isSimulate) {
-            config = {
-                headers: {
-                    'isSimulate': 'true'
-                }
-            };
-        }
-        const response = await axiosInstance.post(`/work-item/${taskId}/complete`, workItem, config);
+        const headers = { 
+            'isSimulate': isSimulate ? 'true' : 'false'
+        };
+        const response = await axiosInstance.post(`/work-item/${taskId}/complete`, workItem, {headers});
         return response.data;
     }
 
@@ -480,8 +478,10 @@ class UEngineBackend implements Backend {
     }
 
     async startAndComplete(command: object, isSimulate: boolean){
-        const headers = isSimulate ? { headers: { 'isSimulate': 'true' } } : {'isSimulate': 'false'};
-        const response = await axiosInstance.post(`/start-and-complete`,command,headers);
+        const headers = { 
+            'isSimulate': isSimulate ? 'true' : 'false'
+        };
+        const response = await axiosInstance.post(`/start-and-complete`,command, {headers});
 
         return response.data;
     }
