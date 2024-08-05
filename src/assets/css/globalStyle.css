@@ -170,6 +170,11 @@ hr {
     padding:0px !important;
 }
 
+.user-task-panel-check-points .check-points-field-box {
+    height: 300px;
+    overflow: auto;
+}
+
 #apexTreeWrapper {
     height: 100% !important;
 }

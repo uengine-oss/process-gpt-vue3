@@ -16,7 +16,9 @@
             <div v-else>
                 <DefaultArguments v-model="copyUengineProperties"></DefaultArguments>
                 <Instruction v-model="activity.instruction"></Instruction>
-                <Checkpoints v-model="activity.checkpoints"></Checkpoints>
+                <Checkpoints v-model="activity.checkpoints"
+                    class="user-task-panel-check-points" 
+                ></Checkpoints>
             </div>
         </div>
         <div v-else-if="!isLoading && selectedActivity == 'FormActivity'">
@@ -55,7 +57,9 @@
             ></EventSynchronizationForm>
             <div v-else>
                 <Instruction v-model="activity.instruction"></Instruction>
-                <Checkpoints v-model="activity.checkpoints"></Checkpoints>
+                <Checkpoints v-model="activity.checkpoints"
+                    class="user-task-panel-check-points"
+                ></Checkpoints>
             </div>
         </div>
         <div v-else-if="!isLoading && selectedActivity == 'URLActivity' && useEvent">
