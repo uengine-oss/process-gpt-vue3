@@ -59,7 +59,8 @@ export default {
     },
     computed: {
         id() {
-            return atob(this.$route.params.instId);
+            const route = window.$mode == 'ProcessGPT' ? atob(this.$route.params.instId) : this.$route.params.instId;
+            return route;
         },
     },
     watch: {

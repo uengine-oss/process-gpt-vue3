@@ -235,7 +235,8 @@ export default {
                     }
                     const data = await backend.start(input);
                     if (data.instanceId) {
-                        me.$router.push(`/instancelist/${btoa(data.instanceId)}`);
+                        const route = window.$mode == 'ProcessGPT' ? btoa(data.instanceId) : data.instanceId;
+                        me.$router.push(`/instancelist/${route}`);
                     }
                     me.EventBus.emit('instances-updated');
                 },
