@@ -893,7 +893,7 @@ export default {
                 if (this.userInfo.email != this.messages[this.messages.length - 1].email) {
                     this.lastMessage = {
                         name: this.messages[this.messages.length - 1].name,
-                        content: this.messages[this.messages.length - 1].content.length > 130 ? this.messages[this.messages.length - 1].content.substring(0, 130) + '...' : this.messages[this.messages.length - 1].content
+                        content: this.messages[this.messages.length - 1].content && this.messages[this.messages.length - 1].content.length > 130 ? this.messages[this.messages.length - 1].content.substring(0, 130) + '...' : this.messages[this.messages.length - 1].content
                     };
                     this.showNewMessageNoti = true;
 
@@ -941,12 +941,14 @@ export default {
             this.$emit('requestDraftAgent', this.newMessage);
         },
         setMessageForUser(content) {
-            if (content.includes(`"messageForUser":`)) {
-                let contentObj = partialParse(content);
-                let messageForUserContent = contentObj.messageForUser || content;
-                return this.linkify(messageForUserContent); // URL을 하이퍼링크로 변환
-            } else {
-                return this.linkify(content); // URL을 하이퍼링크로 변환
+            if(content){
+                if (content.includes(`"messageForUser":`)) {
+                    let contentObj = partialParse(content);
+                    let messageForUserContent = contentObj.messageForUser || content;
+                    return this.linkify(messageForUserContent); // URL을 하이퍼링크로 변환
+                } else {
+                    return this.linkify(content); // URL을 하이퍼링크로 변환
+                }
             }
         },
         setTableName(content) {
