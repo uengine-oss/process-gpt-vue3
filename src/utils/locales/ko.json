@@ -263,5 +263,12 @@
     },
     "NotificationDD": {
         "notification": "알림"
+    },
+    "Customizer": {
+        "settings": "레이아웃 설정",
+        "themeColor": "색상 테마",
+        "containerOption": "화면 크기",
+        "boxed": "박스형",
+        "full": "가득찬"
     }
 }
