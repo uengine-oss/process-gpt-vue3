@@ -594,6 +594,14 @@ export default {
         } else if (window.location.pathname && window.location.pathname.includes('/instancelist')) {
             this.chatHeight = 'height:calc(100vh - 350px)' // 원하는 height 값으로 변경
         }
+
+        this.EventBus.on('scroll_update', () => {
+            if (this.$refs && this.$refs.scrollContainer) {
+                setTimeout(() => {
+                    this.$refs.scrollContainer.update();
+                }, 1000);
+            }
+        });
     },
     watch: {
         prompt(newVal, oldVal) {
@@ -1053,6 +1061,9 @@ export default {
             } else {
                 this.isViewJSON = this.isViewJSON.filter((idx) => idx != index);
             }
+            this.$nextTick(() => {
+                this.$refs.scrollContainer.update(); 
+            });
         },
         uploadImage() {
             this.$refs.uploader.value = '';

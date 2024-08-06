@@ -634,6 +634,7 @@ export default {
                 } else {
                     this.afterGenerationFinished(response);
                 }
+                this.EventBus.emit('scroll_update');
             }
         },
         removeComments(text) {
