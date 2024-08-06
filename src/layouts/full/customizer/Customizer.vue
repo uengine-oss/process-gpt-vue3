@@ -84,12 +84,12 @@ watch(
 <!------------------------------------->
 <template>
     <div class="pa-6">
-        <h5 class="text-h5">Settings</h5>
+        <h5 class="text-h5">{{ $t('Customizer.settings') }}</h5>
     </div>
     <v-divider></v-divider>
     <perfect-scrollbar style="height: calc(100vh - 90px)">
         <div class="pa-6">
-            <h6 class="text-h6 mb-5">Theme Color</h6>
+            <h6 class="text-h6 mb-5">{{ $t('Customizer.themeColor') }}</h6>
             <v-item-group mandatory v-model="customizer.actTheme" class="ml-n2 v-row">
                 <v-col cols="4" v-for="theme in themeColors" :key="theme.name" class="pa-2">
                     <v-item v-slot="{ isSelected, toggle }" :value="theme.name">
@@ -106,31 +106,31 @@ watch(
                     </v-item>
                 </v-col>
             </v-item-group>
-            <h6 class="text-h6 mt-11 mb-2">Container Option</h6>
+            <h6 class="text-h6 mt-11 mb-2">{{ $t('Customizer.containerOption') }}</h6>
             <v-btn-toggle v-model="customizer.boxed" color="primary" class="my-2 btn-group-custom gap-3" rounded="0" group>
                 <v-btn :value="true" variant="text" elevation="10" class="rounded-xl">
                     <Icons :icon="'cardholder-linear'" :size="22" class="mr-2" />
-                    Boxed
+                    {{ $t('Customizer.boxed') }}
                 </v-btn>
                 <v-btn :value="false" variant="text" elevation="10" class="rounded-xl">
                     <Icons :icon="'scanner-linear'" :size="22" class="mr-2" />
-                    Full
+                    {{ $t('Customizer.full') }}
                 </v-btn>
             </v-btn-toggle>
-            <!---Horizontal demo hide this option --->
-            <v-sheet v-if="customizer.setHorizontalLayout != true">
-            <h6 class="text-h6 mt-11 mb-2">Sidebar Type</h6>
-            <v-btn-toggle v-model="customizer.mini_sidebar" color="primary" class="my-2 btn-group-custom gap-3" rounded="0" group>
-                <v-btn :value="false" variant="text" elevation="10" class="rounded-xl">
-                    <Icons :icon="'sidebar-minimalistic-outline'" :size="22" class="mr-2" />
-                    Full
-                </v-btn>
-                <v-btn :value="true" variant="text" elevation="10" class="rounded-xl">
-                    <Icons :icon="'siderbar-outline'" :size="22" class="mr-2" />
-                    Collapse
-                </v-btn>
-            </v-btn-toggle>
-            </v-sheet>
+            <!---  불필요하게 작아지는 사이드바 영역 타입을 설정하는 부분 --->
+            <!-- <v-sheet v-if="customizer.setHorizontalLayout != true">
+                <h6 class="text-h6 mt-11 mb-2">Sidebar Type</h6>
+                <v-btn-toggle v-model="customizer.mini_sidebar" color="primary" class="my-2 btn-group-custom gap-3" rounded="0" group>
+                    <v-btn :value="false" variant="text" elevation="10" class="rounded-xl">
+                        <Icons :icon="'sidebar-minimalistic-outline'" :size="22" class="mr-2" />
+                        Full
+                    </v-btn>
+                    <v-btn :value="true" variant="text" elevation="10" class="rounded-xl">
+                        <Icons :icon="'siderbar-outline'" :size="22" class="mr-2" />
+                        Collapse
+                    </v-btn>
+                </v-btn-toggle>
+            </v-sheet> -->
         </div>
     </perfect-scrollbar>
 </template>

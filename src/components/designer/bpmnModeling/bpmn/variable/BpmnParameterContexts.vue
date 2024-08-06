@@ -48,13 +48,10 @@
             </v-row>
         </div>
         <v-spacer></v-spacer>
-        <v-btn text color="primary" class="my-3" @click="addMapping">
+        <v-btn text color="primary" class="mb-3" @click="addMapping">
             Add Argument
         </v-btn>
     </div>
-
-
-
 </template>
 
 <script>
