@@ -112,7 +112,11 @@ export default {
                     if(!worklist) worklist = []
                     worklist.forEach(function(item) {
                         if (item.status == 'DONE' || item.status == 'COMPLETED') {
-                            me.todolist.find(x => x.id == 'DONE').tasks.push(item);
+                            var tasks = me.todolist.find(x => x.id == 'DONE').tasks
+                            var taskExist = tasks.find(task => task.taskId == item.taskId)
+                            if(!taskExist) {
+                                tasks.push(item);
+                            }
                         }
                     })
                 }

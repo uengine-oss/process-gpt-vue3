@@ -24,7 +24,7 @@
                         <template v-for="(image, imageIndex) in item.images" :key="imageIndex">
                             <img :src="image" :class="image == '/src/assets/images/tenant/help/1.png' ? 'create-account-img' : 'tenant-info-image'"/>
                         </template>
-                        <div style="font-size:18px;" v-for="(desc, descIndex) in item.description" :key="descIndex" v-html="desc"></div>
+                        <div style="font-size:18px;" v-for="(desc, descIndex) in item.description" :key="descIndex" v-html="$t(desc)"></div>
                         <template v-for="(textField, textFieldIndex) in item.textFields" :key="textFieldIndex">
                             <div v-if="textField.value" class="d-flex tenant-info-text-filed">
                                 <VTextField
@@ -118,8 +118,7 @@ export default {
                             createAccount
                         ],
                         description: [
-                            '( *암호는 대문자, 소문자, 숫자, 특수문자가 모두 포함돼야 합니다. )<br>',
-                            '1. <a href="https://supabase.com/dashboard/sign-up" target="_blank">Supabase 회원가입 페이지</a>로 들어가서 계정을 생성합니다.',
+                            'tenantInfoField.step1-text',
                         ]
                     }
                 ]
@@ -133,8 +132,7 @@ export default {
                             selectNewProject
                         ],
                         description: [
-                            '1. 계정 생성 이후 화면에서 새 프로젝트(New Project) 또는 신규 조직(New organization)을 선택합니다.<br>',
-                            '2. 선택 후 New Project를 클릭합니다.'
+                            'tenantInfoField.step2-1-text'
                         ]
                     },
                     {
@@ -143,9 +141,7 @@ export default {
                             createOrganization
                         ],
                         description: [
-                            '(*이미 조직(organization)이 있으면 이 단계는 건너뛰어도 괜찮습니다.)<br>',
-                            '1. 새롭게 생성할 조직(New organization)명을 Name 항목에 입력합니다.<br>',
-                            '2. Create organization 버튼을 클릭해서 새로운 기관을 생성합니다.'
+                            'tenantInfoField.step2-2-text'
                         ]
                     },
                     {
@@ -154,11 +150,7 @@ export default {
                             createProject
                         ],
                         description: [
-                            '1. 생성한 조직(organization)을 선택하고, 생성할 프로젝트명을 Project name 항목에 입력합니다.<br>',
-                            '2. 사용할 데이터베이스 비밀번호를 입력합니다.<br>',
-                            '(*입력한 비밀번호를 아래의 Database Password 입력창에 붙혀넣어줍니다.)<br>',
-                            '3. Region을 위의 스크린샷과 같이 Seoul로 선택합니다.<br>',
-                            '4. Create new project 버튼을 클릭해서 프로젝트를 생성합니다.<br>',
+                            'tenantInfoField.step2-3-text',
                         ],
                         textFields: [
                             {
@@ -180,9 +172,7 @@ export default {
                             apiUrlCopy
                         ],
                         description: [
-                            '1. 프로젝트 생성이 완료되면 왼쪽 최하단의 톱니바퀴 모양 아이콘을 클릭합니다.<br>',
-                            '2. 화면에 표시되는 Settings 메뉴리스트중 API 메뉴를 선택합니다.<br>',
-                            '3. (*Project URL 섹션에 있는 URL 항목을 복사하여 아래의 URL 입력창에 붙혀넣습니다.)'
+                            'tenantInfoField.step3-1-text'
                         ],
                         textFields: [
                             {
@@ -199,8 +189,7 @@ export default {
                             secretCopy
                         ],
                         description: [
-                            '1. Project API keys 섹션의 Reveal 버튼을 클릭하여 Secret 키 값을 확인할 수 있습니다.<br>',
-                            '(*Secret 키를 복사하여 아래의 Secret 입력창에 붙혀넣습니다.)'
+                            'tenantInfoField.step3-2-text'
                         ],
                         textFields: [
                             {
@@ -217,8 +206,7 @@ export default {
                             databaseCopy
                         ],
                         description: [
-                            '1. Settings 메뉴리스트중 Database 메뉴를 선택합니다.<br>',
-                            '2. Connection parameters 섹션에서 Host, Database name, Port, User 값을 복사하여 아래의 각 입력창에 붙혀넣습니다.'
+                            'tenantInfoField.step3-3-text'
                         ],
                         textFields: [
                             {
@@ -255,9 +243,7 @@ export default {
                     {
                         title: 'tenantInfoField.step4',
                         description: [
-                            '1. 사용할 회사명을 아래의 ID 입력창에 입력하고 생성하기 버튼을 클릭해서 회사를 생성합니다.<br>',
-                            '입력한 회사명은 서브도메인으로 사용됩니다.<br>',
-                            'e.g. { 입력한 회사명 }.process-gpt.io'
+                            'tenantInfoField.step4-text'
                         ],
                         textFields: [
                             {
@@ -279,10 +265,7 @@ export default {
                             siteUrl
                         ],
                         description: [
-                            '1. 왼쪽 메뉴 중 자물쇠 아이콘(Authentication) 메뉴를 선택합니다.<br>',
-                            '2. URL Configuration을 클릭합니다.<br>',
-                            '2. 아래 보이는 STEP 4에서 입력한 회사명이 포함된 Site URL을 복사 버튼을 눌러 복사 후 복사하여 Site URL 입력란에 입력합니다.<br>',
-                            '4. save 버튼을 눌러 저장합니다.'
+                            'tenantInfoField.step5-text'
                         ],
                         textFields: [
                             {
