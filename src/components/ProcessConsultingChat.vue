@@ -102,7 +102,7 @@ export default {
             isStream: true,
             preferredLanguage: "Korean"
         });
-
+        this.isConsultingMode = true
         this.userInfo = await this.storage.getUserInfo();
 
         this.EventBus.on('messages-updated', () => {
@@ -156,7 +156,7 @@ export default {
                 if(response.processDefinitionId){
                     this.bpmn = this.createBpmnXml(response); 
                     this.definitionChangeCount++;
-                    this.saveDefinition({
+                    await this.saveDefinition({
                         "arcv_id": `${response.processDefinitionId}_0.1`,
                         "name": response.processDefinitionName,
                         "prevDiff": null,
@@ -165,11 +165,11 @@ export default {
                         "type": "bpmn",
                         "version": "0.1"
                     }); 
-                    this.$emit("createdBPMN", response)
+                    await this.$emit("createdBPMN", response)
                     content = `요청하신 "${response.processDefinitionName}" 프로세스 정의를 생성했습니다. 생성된 BPMN 모델은 프로세스 정의 체계도 화면에서 확인하실 수 있습니다.`
                     this.waitForCustomer = true
-                    this.initConfetti();
-                    this.render();
+                    // this.initConfetti();
+                    // this.render();
                 } else {
                     this.showConfetti = false
                     this.initConfettiCnt = 0

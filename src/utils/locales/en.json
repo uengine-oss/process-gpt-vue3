@@ -239,5 +239,12 @@
     },
     "NotificationDD": {
         "notification": "Notifications"
+    },
+    "Customizer": {
+        "settings": "Layout settings",
+        "themeColor": "Theme Color",
+        "containerOption": "Container Option",
+        "boxed": "Boxed",
+        "full": "Full"
     }
 }

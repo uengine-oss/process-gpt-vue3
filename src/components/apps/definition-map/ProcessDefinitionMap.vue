@@ -207,14 +207,14 @@ export default {
                 return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
             };
 
-            const addSubProcess = (majorProc) => {
+            const addSubProcess = async (majorProc) => {
                 majorProc.sub_proc_list.push({
                     id: res.processDefinitionId,
                     name: res.processDefinitionName,
                     new: true
                 });
 
-                this.saveProcess();
+                await this.saveProcess();
             };
 
             if (res.megaProcessId === "") {

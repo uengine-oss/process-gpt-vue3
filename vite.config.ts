@@ -22,7 +22,8 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': fileURLToPath(new URL('./src', import.meta.url)),
-            'apextree': path.resolve(__dirname, 'node_modules/apextree/apextree.min.js')
+            'apextree': path.resolve(__dirname, 'node_modules/apextree/apextree.min.js'),
+            'vue': 'vue/dist/vue.esm-bundler.js'
         }
     },
     css: {
