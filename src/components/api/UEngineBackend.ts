@@ -7,6 +7,10 @@ class UEngineBackend implements Backend {
     //     super();
     // }
 
+    async getUserList() {
+        return [];
+    }
+
     async getNotifications() {
         // Placeholder implementation
         return [];

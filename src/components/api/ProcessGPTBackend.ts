@@ -1069,6 +1069,29 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getUserList() {
+        try {
+            const users = await storage.list('users');
+            return users
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async updateUserInfo(value: any) {
+        try {
+            if (value.type === 'update') {
+                await storage.putObject('users', value.user);
+            } else if (value.type === 'delete') {
+                await storage.delete('users', { match: { id: value.user.id } });
+            }
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
 }
 
 export default ProcessGPTBackend;

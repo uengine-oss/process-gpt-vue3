@@ -51,6 +51,7 @@ export interface Backend {
     getNotifications(): Promise<any>;
     setNotifications(value: any): Promise<any>;
     search(keyword: string): Promise<any>;
+    getUserList(): Promise<any>;
 }
 
 // export type { Backend }
