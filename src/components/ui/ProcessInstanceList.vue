@@ -49,6 +49,7 @@ export default {
                 };
                 return item;
             });
+            this.$emit('update:instanceList', this.instanceList);
         }
     }
 };

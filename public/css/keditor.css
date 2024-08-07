@@ -136,6 +136,10 @@ body.highlighted-container-content .keditor-container-content:before {
 .keditor-tabs-content .keditor-tab-content.active {
   display: block;
 }
+.keditor-tabs-content .keditor-tab-content #keditor-container-snippets-search, 
+.keditor-tabs-content .keditor-tab-content #keditor-container-snippets-filter {
+  border-radius: 8px;
+}
 /* ==================================================================================
    Snippets
    ================================================================================== */
@@ -341,9 +345,11 @@ body.highlighted-container-content .keditor-container-content:before {
   top:-10px;
 }
 .keditor-container > .keditor-toolbar > a {
-  color: #666;
+  color: black;
   border-radius: 3px;
-  border: solid 0.5px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.7);
+  margin:0 2px 2px 0;
+  border: none !important;
   display: flex; /* Flexbox 사용 */
   align-items: center; /* Y 축 기준으로 중앙 정렬 */
   justify-content: center; /* X 축 기준으로 중앙 정렬 */

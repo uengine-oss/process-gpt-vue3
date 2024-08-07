@@ -2,7 +2,7 @@
   <div>
     <div id="initGuide">
       <span style="font-size: 18px; font-weight: bold;">
-        여기에 레이아웃(Container)을 드래그해서 폼 편집을 시작하십시오.
+        {{ $t('Mashup.hoverText') }}
       </span>
     </div>
 

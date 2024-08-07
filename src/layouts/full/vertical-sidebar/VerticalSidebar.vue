@@ -33,8 +33,8 @@ const customizer = useCustomizerStore();
                     <v-btn icon variant="text"
                         v-bind="props"
                         class="text-medium-emphasis"
-                        density="comfortable"
                         :to="'/definition-map'"
+                        style="margin-top:-5px;"
                     >
                         <Icons :icon="'write'" />
                     </v-btn>
@@ -94,13 +94,13 @@ const customizer = useCustomizerStore();
                 <div :style="instanceList.length > 0 ? 'max-height: 47%; overflow: auto;' : 'max-height: 93%; overflow: auto;'">
                     <template v-if="definitionList">
                         <!-- 정의 목록 리스트 -->
-                            <NavCollapse v-for="(definition, i) in definitionList.children" :key="i"
-                                :item="definition" 
-                                class="leftPadding"
-                                @update:item="(def) => (definitionList[i] = def)" 
-                                :level="0" 
-                                :type="'definition-list'" 
-                            />
+                        <NavCollapse v-for="(definition, i) in definitionList.children" :key="i"
+                            :item="definition" 
+                            class="leftPadding"
+                            @update:item="(def) => (definitionList[i] = def)" 
+                            :level="0" 
+                            :type="'definition-list'" 
+                        />
                     </template>
                 </div>
             </v-list>
