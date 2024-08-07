@@ -198,22 +198,25 @@ export default {
             const name = this.name;
             
             const json = JSON.stringify(this.uengineProperties);
-            const originTaskWidth = JSON.parse(JSON.stringify(task.width))
-            const originTaskHeight = JSON.parse(JSON.stringify(task.height))
-            const originTaskX = JSON.parse(JSON.stringify(task.x))
-            const originTaskY = JSON.parse(JSON.stringify(task.y))
+            const originTaskWidth = task.width? JSON.parse(JSON.stringify(task.width)) : null;
+            const originTaskHeight = task.height? JSON.parse(JSON.stringify(task.height)) : null;
+            const originTaskX = task.x? JSON.parse(JSON.stringify(task.x)) : null;
+            const originTaskY = task.y? JSON.parse(JSON.stringify(task.y)) : null;
             const elementCopyDeep = _.cloneDeep(this.elementCopy);
             modeling.updateProperties(task, { name: name });
             if(this.text) {
                 const text = this.text;
                 modeling.updateProperties(task, {text: text})
             }
-            modeling.resizeShape(task, {
-                x: originTaskX,
-                y: originTaskY,
-                width: originTaskWidth,
-                height: originTaskHeight 
-            })
+
+            if(originTaskX && originTaskY && originTaskWidth && originTaskHeight) {
+                modeling.resizeShape(task, {
+                    x: originTaskX,
+                    y: originTaskY,
+                    width: originTaskWidth,
+                    height: originTaskHeight 
+                });
+            }
 
             if (elementCopyDeep.extensionElements && elementCopyDeep.extensionElements.values) {
                 elementCopyDeep.extensionElements.values[0].json = json;
