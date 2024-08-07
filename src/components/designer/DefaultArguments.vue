@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-if="inputData.length > 0" style="margin-bottom: 20px">
+        <div v-if="inputData.length > 0" class="mb-5">
             <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.inputData') }}</div>
             <v-row class="ma-0 pa-0">
                 <div v-for="(input, idx) in inputData" :key="idx" class="mr-2 mt-2">
@@ -17,7 +17,7 @@
             </v-row>
         </div>
         
-        <div v-if="outputData.length > 0" style="margin-bottom: 20px">
+        <div v-if="outputData.length > 0" class="mb-5">
             <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.outputData') }}</div>
             <v-row class="ma-0 pa-0">
                 <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
@@ -34,7 +34,7 @@
             </v-row>
         </div>
         <div>
-            <h6 class="text-h6 mb-4">Parameter Context</h6>
+            <h6 class="text-h6 text-left mb-4">Parameter Context</h6>
             <bpmn-parameter-contexts :parameter-contexts="properties.parameters"></bpmn-parameter-contexts>
         </div>
     </div>
