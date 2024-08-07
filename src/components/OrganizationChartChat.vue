@@ -1,7 +1,8 @@
 <template>
     <AppBaseCard>
         <template v-slot:leftpart>
-            <Chat :messages="messages"
+            <Chat :name="$t(chatInfo.title)"
+                :messages="messages"
                 :chatInfo="chatInfo"
                 :userInfo="userInfo" 
                 :disableChat="disableChat"
@@ -39,7 +40,8 @@
         </template>
 
         <template v-slot:mobileLeftContent>
-            <Chat :messages="messages"
+            <Chat :name="$t(chatInfo.title)"
+                :messages="messages"
                 :chatInfo="chatInfo"
                 :userInfo="userInfo" 
                 :disableChat="disableChat"
