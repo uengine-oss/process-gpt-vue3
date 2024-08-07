@@ -758,13 +758,16 @@ export default {
 .form-mapper .port > rect {
     fill: rgb(59, 0, 66);
 }
+.form-mapper .port > circle {
+    fill: rgb(var(--v-theme-primary)) !important;
+}
 .form-mapper .port > rect.background {
     fill: rgba(63, 63, 63, 0);
     width: 50px;
     height: 20px;
 }
 .form-mapper .port:hover > text {
-    fill: rgb(115, 0, 128);
+    fill: rgb(var(--v-theme-primary)) !important;
 }
 .form-mapper .port:hover > rect {
     fill: rgb(115, 0, 128);
@@ -777,7 +780,7 @@ export default {
 }
 
 .form-mapper .connector {
-    stroke: #888;
+    stroke: rgb(var(--v-theme-primary));
     stroke-width: 3;
     fill: none;
 }
@@ -787,7 +790,7 @@ export default {
 }
 .form-mapper .connector.isNew,
 .form-mapper .connector.isNew:hover {
-    stroke: rgb(115, 0, 128);
+    stroke: #f88;
     stroke-width: 3;
 }
 
