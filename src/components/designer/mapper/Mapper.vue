@@ -794,6 +794,7 @@ export default {
 .mapper-dialog .v-overlay__content{
     overflow: auto !important;
     scrollbar-width: none;
+    border-radius: 20px;
 }
 
 .form-mapper .treeviews-container {
