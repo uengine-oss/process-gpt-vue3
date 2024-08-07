@@ -465,7 +465,7 @@
             
             var filterHtml = '';
             filterHtml += '<div id="keditor-' + lowerCaseType + '-snippets-filter-wrapper" class="keditor-ui keditor-snippets-filter-wrapper">';
-            filterHtml += '     <input type="text" id="keditor-' + lowerCaseType + '-snippets-search" class="keditor-ui keditor-snippets-search" value="" placeholder="Type to search..." />';
+            filterHtml += '     <input type="text" id="keditor-' + lowerCaseType + '-snippets-search" class="keditor-ui keditor-snippets-search" value="" placeholder="Type to search" />';
             filterHtml += '     <select id="keditor-' + lowerCaseType + '-snippets-filter" class="keditor-ui keditor-snippets-filter" style="font-size: small; height: 40px;">';
             filterHtml += '         <option value="" selected="selected">All</option>';
             
@@ -598,6 +598,7 @@
                 var previewStyle = snippet.attr('data-preview-style');
                 var type = snippet.attr('data-type');
                 var title = snippet.attr('data-keditor-title');
+                var titleEn = snippet.attr('data-keditor-title-en'); // 영어 제목 속성 추가
                 var snippetHtml = '';
                 var categories = snippet.attr('data-categories') || '';
                 
@@ -606,9 +607,12 @@
                 
                 flog('Snippet #' + i + ' type=' + type + ' categories=' + categories, previewUrl, content);
                 
+                // 접속 국가가 한국이 아닐 때 영어 제목 사용
+                var displayTitle = (navigator.language !== 'ko' && titleEn) ? titleEn : title;
+                
                 snippetHtml += '<section class="keditor-ui keditor-snippet" data-snippet="#keditor-snippet-' + i + '" data-type="' + type + '" data-categories="' + categories + '">';
                 snippetHtml += '   <img class="keditor-ui keditor-snippet-preview" src="' + previewUrl + '" style="'+previewStyle+'"/>';
-                snippetHtml += '   <div class="keditor-snippet-title">' + title.replace(/\\n/g, '&#10;') + '</div>'; // Add title text
+                snippetHtml += '   <div class="keditor-snippet-title">' + displayTitle.replace(/\\n/g, '&#10;') + '</div>'; // Add title text
                 snippetHtml += '</section>';
                 
                 categories = categories.split(options.snippetsCategoriesSeparator);
@@ -621,7 +625,7 @@
                     self.snippetsComponentCategories = self.snippetsComponentCategories.concat(categories);
                 }
                 
-                var dataAttributes = self.getDataAttributes(snippet, ['data-preview', 'data-type', 'data-keditor-title', 'data-categories'], true);
+                var dataAttributes = self.getDataAttributes(snippet, ['data-preview', 'data-type', 'data-keditor-title', 'data-keditor-title-en', 'data-categories'], true);
                 snippetsContentHtml += '<script id="keditor-snippet-' + i + '" type="text/html" ' + dataAttributes.join(' ') + '>' + content + '</script>';
             });
             

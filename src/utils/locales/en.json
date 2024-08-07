@@ -90,6 +90,20 @@
         "addSub": "Sub Process",
         "save" : "Save"
     },
+    "uiDefinition": {
+        "title": "Screen Definition",
+        "cardTitle": "Screen Definition Management",
+        "uiDefinitionExplanation": "Manage screens interactively.\n For example, you can issue commands like 'I want to create a form to receive user information. The user information should include username, email, gender, and user profile image.'",
+        "add": "Add",
+        "edit": "Edit",
+        "delete": "Delete",
+        "cancel": "Cancel",
+        "save": "Save Screen",
+        "deleteForm": "Delete Form",
+        "deleteFormMessage": "Are you sure you want to delete the form?",
+        "redaction": "Edit",
+        "preview": "Preview"
+    },
     "processDefinition": {
         "title": "Process Definition",
         "cardTitle": "Process Definition Management",
@@ -246,5 +260,8 @@
         "containerOption": "Container Option",
         "boxed": "Boxed",
         "full": "Full"
+    },
+    "Mashup": {
+        "hoverText": "Drag a layout (Container) here to start editing the form."
     }
 }

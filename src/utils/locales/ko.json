@@ -109,7 +109,9 @@
         "cancel": "취소",
         "save": "화면 저장",
         "deleteForm": "폼 삭제",
-        "deleteFormMessage": "폼을 삭제하시겠습니까?"
+        "deleteFormMessage": "폼을 삭제하시겠습니까?",
+        "redaction": "편집",
+        "preview": "미리보기"
     },
     "processDefinition": {
         "title": "프로세스 정의",
@@ -270,5 +272,8 @@
         "containerOption": "화면 크기",
         "boxed": "박스형",
         "full": "가득찬"
+    },
+    "Mashup": {
+        "hoverText": "여기에 레이아웃(Container)을 드래그해서 폼 편집을 시작하십시오."
     }
 }

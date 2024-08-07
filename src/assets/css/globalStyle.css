@@ -79,10 +79,6 @@ hr {
     background-repeat: no-repeat !important; /* 이미지 반복 없음 */
     background-position: center !important;
 }
-
-.bpmn-icon-screw-wrench:hover {
-    background-color:rgba(0, 0, 0, 0.05) !important;
-}
 /* bpm .bpmn-icon-screw-wrench 아이콘 나타나지 않아 넣어둔 부분 */
 
 .vue-bpmn-diagram-container .djs-palette {
@@ -104,6 +100,10 @@ hr {
 
 .vue-bpmn-diagram-container .djs-context-pad .group {
     min-width: 100px;
+}
+
+.vue-bpmn-diagram-container .djs-context-pad .group > div:hover {
+    background-color: rgb(var(--v-theme-primary), 0.15) !important;
 }
 
 .chat-display-none {
@@ -182,6 +182,27 @@ hr {
 #apexTreeWrapper > svg{
     height: 98% !important;
     width: 100% !important;
+}
+
+#apexTreeWrapper #toolbar {
+    gap:0px !important;
+}
+
+#apexTreeWrapper #toolbar #zoom-in,
+#apexTreeWrapper #toolbar #zoom-out,
+#apexTreeWrapper #toolbar #fit-screen,
+#apexTreeWrapper #toolbar #export {
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.7);
+    border-radius: 3px;
+    margin:0 2px 2px 0;
+    border: none !important;
+}
+
+#apexTreeWrapper #toolbar #zoom-in:hover,
+#apexTreeWrapper #toolbar #zoom-out:hover,
+#apexTreeWrapper #toolbar #fit-screen:hover,
+#apexTreeWrapper #toolbar #export:hover {
+    background: rgb(var(--v-theme-primary), 0.15) !important;
 }
 
 @media only screen and (max-width:1450px) {
