@@ -11,6 +11,13 @@ enum ErrorCode {
 }
 
 class ProcessGPTBackend implements Backend {
+    
+    testList(path: string): Promise<any> {
+        throw new Error('Method not implemented.');
+    }
+    findCurrentWorkItemByInstId(instId: string): Promise<any> {
+        throw new Error('Method not implemented.');
+    }
 
     async checkDBConnection() {
         return await storage.isConnection();
@@ -886,7 +893,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async startAndComplete(command: object, isSimulate: boolean) {
+    async startAndComplete(command: object, isSimulate: string) {
         try {
             return null;
         } catch (error) {
