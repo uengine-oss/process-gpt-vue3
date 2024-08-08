@@ -4,6 +4,16 @@
             <v-col class="d-flex ma-0 pa-0" style="height: 100%">
                 <v-card style="border-radius: 0px !important; border: none; height: 100%" flat>
                     <v-row class="ma-0 pa-0 button-container">
+                        <v-tooltip v-if="executable" :text="'Simulate'">
+                            <template v-slot:activator="{ props }">
+                                <v-switch color="primary" v-bind="props" v-model="isSimulate" false-value="false" true-value="true"></v-switch>
+                            </template>
+                        </v-tooltip>
+                        <!-- <v-tooltip v-if="isSimulate == 'true' || isSimulate == 'record'" :text="'record'">
+                            <template v-slot:activator="{ props }">
+                                <v-checkbox v-model="record" ></v-checkbox>
+                            </template>
+                        </v-tooltip> -->
                         <!-- 프로세스 실행 버튼  -->
                         <v-tooltip v-if="executable" :text="$t('processDefinition.execution')">
                             <template v-slot:activator="{ props }">
@@ -29,6 +39,7 @@
                             </template>
                         </v-tooltip>
                     </v-row>
+
                     <div v-if="isXmlMode" style="height: calc(100% - 70px); margin-top: 70px; overflow: auto; padding: 10px">
                         <XmlViewer :xml="bpmn" />
                     </div>
@@ -48,9 +59,6 @@
                         v-on:definition="(def) => (definitions = def)"
                         v-on:add-shape="onAddShape"
                         v-on:done="setDefinition"
-                        v-on:change-sequence="onChangeSequence"
-                        v-on:remove-shape="onRemoveShape"
-                        v-on:change-shape="onChangeShape"
                         @change="changeElement"
                         style="height: 100%"
                     ></bpmnu-engine>
@@ -77,6 +85,9 @@
                         :processDefinitionId="definitionPath"
                         :processDefinition="processDefinition"
                         :validationList="validationList"
+                        v-on:change-sequence="onChangeSequence"
+                        v-on:remove-shape="onRemoveShape"
+                        v-on:change-shape="onChangeShape"
                         @addUengineVariable="addUengineVariable"
                     ></bpmn-property-panel>
                     <!-- {{ definition }} -->
@@ -200,8 +211,8 @@
             <process-gpt-execute v-if="mode === 'LLM'" :definitionId="definitionPath" 
                 @close="executeDialog = false"></process-gpt-execute>
             <div v-else>
-                <!-- <process-execute-dialog :definitionId="definitionPath" @close="executeDialog = false"></process-execute-dialog> -->
-                <dry-run-process :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
+                <test-process v-if="isSimulate" :definitionId="definitionPath" @close="executeDialog = false" />
+                <dry-run-process v-else :is-simulate="isSimulate" :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
             </div>
         </v-dialog>
 
@@ -226,7 +237,7 @@ import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecut
 import XmlViewer from 'vue3-xml-viewer'
 import InstanceNamePatternForm from '@/components/designer/InstanceNamePatternForm.vue'
 import BackendFactory from "@/components/api/BackendFactory";
-
+import TestProcess from "@/components/apps/definition-map/TestProcess.vue"
 export default {
     name: 'ProcessDefinition',
     components: {
@@ -240,7 +251,8 @@ export default {
         DryRunProcess,
         'process-gpt-execute': ProcessGPTExecute,
         XmlViewer,
-        InstanceNamePatternForm
+        InstanceNamePatternForm,
+        TestProcess
     },
     props: {
         processDefinition: Object,
@@ -272,6 +284,8 @@ export default {
         processVariables: [],
         instanceNamePattern: null,
         executeDialog: false,
+        isSimulate: "false",
+        record: false,
         processVariableHeaders: [
             { title: 'processDefinition.name', key: 'name' },
             { title: 'processDefinition.type', key: 'type' },
@@ -323,6 +337,9 @@ export default {
         }
     },
     watch: {
+        isSimulate(newVal) {
+            console.log(newVal)
+        },
         copyProcessDefinition: {
             deep: true,
             handler(newVal) {
@@ -620,13 +637,13 @@ export default {
             }
         },
         onChangeShape(e) {
-            console.log(e);
+            // console.log(e);
         },
         onChangeSequence(e) {
-            console.log(e);
+            // console.log(e);
         },
         onRemoveShape(e) {
-            console.log(e);
+            // console.log(e);
         },
         createParticipant(element) {
             let participant = {

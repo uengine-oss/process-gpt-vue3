@@ -2,11 +2,9 @@
     <div style="width: 100%">
         <div style="margin-right: 20px">
             <v-text-field
-                readonly
                 v-model="selectVal.name"
                 :items="processVariableDescriptors"
                 label="Process Data"
-                @update:modelValue="(val) => onChanged(val)"
                 variant="outlined"
             ></v-text-field>
         </div>
@@ -70,11 +68,17 @@ export default {
             processVariableDescriptors: []
         };
     },
-    watch: {},
+    watch: {
+        "selectVal.name": {
+            handler(newVal) {
+                this.$emit("update:name", newVal)
+            }
+        }
+    },
     methods: {
-        onChanged(val) {
-            this.$emit('input', val);
-        },
+        // onChanged(val) {
+        //     this.$emit('input', val);
+        // },
         getComponent(componentName) {
             let component = null;
             let parent = this.$parent;

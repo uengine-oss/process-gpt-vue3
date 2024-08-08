@@ -35,7 +35,7 @@
 
                 <v-col cols="3">
                     <bpmn-variable-selector v-model="parameterContext.variable"
-                        v-on:input="(val) => onVariableUpdated(val, idx)"></bpmn-variable-selector>
+                        v-on:name="(val) => onVariableUpdated(val, idx)"></bpmn-variable-selector>
                 </v-col>
                 <v-col>
                     <v-checkbox v-model="parameterContext.split">Split</v-checkbox>

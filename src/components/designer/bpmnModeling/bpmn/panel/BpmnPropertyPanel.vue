@@ -2,12 +2,8 @@
     <div style="height: calc(100vh - 155px)">
         <v-row class="pa-0 ma-0">
             <v-spacer></v-spacer>
-            <v-btn @click="save"
-                icon text
-                size="small"
-                class="mr-4 mt-4"
-            >
-                <Icons :icon="'close'"  class="cursor-pointer" :size="16"/>
+            <v-btn @click="save" icon text size="small" class="mr-4 mt-4">
+                <Icons :icon="'close'" class="cursor-pointer" :size="16" />
             </v-btn>
         </v-row>
         <v-card-text style="overflow: auto; height: calc(100% - 30px); width: 700px">
@@ -44,7 +40,7 @@
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
-import ValidationField from '@/components/designer/bpmnModeling/bpmn/panel/ValidationField.vue'
+import ValidationField from '@/components/designer/bpmnModeling/bpmn/panel/ValidationField.vue';
 import { Icon } from '@iconify/vue';
 const storage = StorageBaseFactory.getStorage();
 export default {
@@ -70,10 +66,10 @@ export default {
             this.element.extensionElements = {};
             this.element.extensionElements.values = [];
             this.element.extensionElements.values[0] = {
-                json: "{}"
+                json: '{}'
             };
         }
-        if(this.element) {
+        if (this.element) {
             this.name = this.element.name;
             this.text = this.element.text;
         }
@@ -126,7 +122,7 @@ export default {
 
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
-        
+
         this.$refs.cursor.focus();
     },
     computed: {
@@ -152,8 +148,7 @@ export default {
         //     return result;
         // }
     },
-    watch: {
-    },
+    watch: {},
     methods: {
         ensureKeyExists(obj, key, defaultValue) {
             if (!obj.hasOwnProperty(key)) {
@@ -196,30 +191,34 @@ export default {
             const elementRegistry = this.bpmnModeler.get('elementRegistry');
             const task = elementRegistry.get(this.element.id);
             const name = this.name;
-            
+
             const json = JSON.stringify(this.uengineProperties);
-            const originTaskWidth = JSON.parse(JSON.stringify(task.width))
-            const originTaskHeight = JSON.parse(JSON.stringify(task.height))
-            const originTaskX = JSON.parse(JSON.stringify(task.x))
-            const originTaskY = JSON.parse(JSON.stringify(task.y))
             const elementCopyDeep = _.cloneDeep(this.elementCopy);
-            modeling.updateProperties(task, { name: name });
-            if(this.text) {
-                const text = this.text;
-                modeling.updateProperties(task, {text: text})
+
+            if (task.type == 'bpmn:TextAnnotation') {
+                // TextAnnotation Size 깨지는 현상 해결
+                const originTaskWidth = JSON.parse(JSON.stringify(task.width));
+                const originTaskHeight = JSON.parse(JSON.stringify(task.height));
+                const originTaskX = JSON.parse(JSON.stringify(task.x));
+                const originTaskY = JSON.parse(JSON.stringify(task.y));
+                modeling.updateProperties(task, { name: name });
+                if (this.text) {
+                    const text = this.text;
+                    modeling.updateProperties(task, { text: text });
+                }
+                modeling.resizeShape(task, {
+                    x: originTaskX,
+                    y: originTaskY,
+                    width: originTaskWidth,
+                    height: originTaskHeight
+                });
             }
-            modeling.resizeShape(task, {
-                x: originTaskX,
-                y: originTaskY,
-                width: originTaskWidth,
-                height: originTaskHeight 
-            })
 
             if (elementCopyDeep.extensionElements && elementCopyDeep.extensionElements.values) {
                 elementCopyDeep.extensionElements.values[0].json = json;
             } else {
                 elementCopyDeep.extensionElements = {
-                values: [{ json }]
+                    values: [{ json }]
                 };
             }
 
@@ -233,9 +232,9 @@ export default {
 
             console.log(task.businessObject.extensionElements.values[0]);
         },
-        checkValidation(){
-            let key = Object.keys(this.validationList).filter(item => item === this.element.id);
-            if(key.length > 0) {
+        checkValidation() {
+            let key = Object.keys(this.validationList).filter((item) => item === this.element.id);
+            if (key.length > 0) {
                 return this.validationList[key];
             }
             return null;

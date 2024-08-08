@@ -64,6 +64,10 @@ export default {
             default: function () {
                 return [];
             }
+        },
+        isSimulate: {
+            type: String,
+            default: "false"
         }
     },
     data: () => ({
@@ -72,6 +76,9 @@ export default {
         newMessage: ''
     }),
     computed: {
+        simulate() {
+            return this.isSimulate === 'true' || this.isSimulate === 'false' ? this.isSimulate === 'true' : this.isSimulate;
+        },
         isCompleted() {
             return this.workItemStatus == 'COMPLETED' || this.workItemStatus == 'DONE';
         },
@@ -113,12 +120,12 @@ export default {
                                 processExecutionCommand: processExecutionCommand,
                                 workItem: value
                             },
-                            true
+                            me.isSimulate
                         );
                         me.close();
                     } else {
                         if (me.workItem.execScope) value.execScope = me.workItem.execScope;
-                        await backend.putWorkItemComplete(me.$route.params.taskId, value, true);
+                        await backend.putWorkItemComplete(me.$route.params.taskId, value, me.isSimulate);
                         me.$router.push(`/instancelist/${btoa(me.workItem.worklist.instId)}`);
                     }
                 },
