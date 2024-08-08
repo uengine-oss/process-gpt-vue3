@@ -24,8 +24,21 @@
             style="user-select: none; text-anchor: end"
             >{{ name }}</text
         >
+        
+        <circle cx="0" cy="0" r="5"></circle>
 
-        <rect x="-5" y="-5" width="10" height="10"></rect>
+        <!-- <rect x="-5" y="-5" width="10" height="10" ></rect> -->
+        
+       <!-- <text
+            :x="-250"
+            style="user-select: none;"
+            >{{ name }}</text
+        >
+        <text
+            :x="10"
+            style="user-select: none;"
+            >{{ name }}</text
+        > -->
     </g>
 </template>
 

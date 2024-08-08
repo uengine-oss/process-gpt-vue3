@@ -5,20 +5,17 @@ import { UserCircleIcon,BellIcon,ArticleIcon,LockIcon } from 'vue-tabler-icons';
 //components
 import AccountTab from '@/components/pages/account-settings/AccountTab.vue';
 import ManageAccessTab from '@/components/pages/account-settings/ManageAccessTab.vue';
-import NotificationTab from '@/components/pages/account-settings/NotificationTab.vue';
-import BillsTab from '@/components/pages/account-settings/BillsTab.vue';
-import SecurityTab from '@/components/pages/account-settings/SecurityTab.vue';
-// common components
-import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
+// import NotificationTab from '@/components/pages/account-settings/NotificationTab.vue';
+// import BillsTab from '@/components/pages/account-settings/BillsTab.vue';
+// import SecurityTab from '@/components/pages/account-settings/SecurityTab.vue';
 
 /*tab*/
-const tab = ref(null);
+const tab = ref('');
 
 const superAdmin = ref(localStorage.getItem('role') === 'superAdmin');
 </script>
 
 <template>
-    <!-- <BaseBreadcrumb :title="$t('accountTab.accountSetting')"></BaseBreadcrumb> -->
     <v-row class="justify-center">
         <!--Account Settings tabs-->
         <v-col cols="12" md="12">

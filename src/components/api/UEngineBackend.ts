@@ -7,6 +7,10 @@ class UEngineBackend implements Backend {
     //     super();
     // }
 
+    async getUserList() {
+        return [];
+    }
+
     async getNotifications() {
         // Placeholder implementation
         return [];
@@ -94,6 +98,11 @@ class UEngineBackend implements Backend {
     async start(command: object) {
         const response = await axiosInstance.post('/instance', command);
         return response.data;
+    }
+
+    async findCurrentWorkItemByInstId(instId: string) {
+        const response = await axiosInstance.get(`/instance/${instId}/running`)
+        return response.data
     }
 
     async stop(instanceId: string) {
@@ -202,11 +211,25 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
-    async putWorkItemComplete(taskId: string, workItem: any, isSimulate: boolean) {
-        const headers = { 
-            'isSimulate': isSimulate ? 'true' : 'false'
+    async putWorkItemComplete(taskId: string, workItem: any, isSimulate: string) {
+        let config = {
+            headers: {
+                'isSimulate': isSimulate
+            }
         };
-        const response = await axiosInstance.post(`/work-item/${taskId}/complete`, workItem, {headers});
+        const response = await axiosInstance.post(`/work-item/${taskId}/complete`, workItem, config);
+        return response.data;
+    }
+    // async putWorkItemComplete(taskId: string, workItem: any, isSimulate: boolean) {
+    //     const headers = { 
+    //         'isSimulate': isSimulate ? 'true' : 'false'
+    //     };
+    //     const response = await axiosInstance.post(`/work-item/${taskId}/complete`, workItem, {headers});
+    //     return response.data;
+    // }
+
+    async testList(path: string) {
+        const response = await axiosInstance.get(`/test/${path}`);
         return response.data;
     }
 
@@ -467,9 +490,13 @@ class UEngineBackend implements Backend {
         }));
     }
 
-    async dryRun(defPath: String, isSimulate: boolean){
-        const headers = isSimulate ? { headers: { 'isSimulate': 'true' } } : {};
-        const response = await axiosInstance.get(`/dry-run/${defPath}`, headers);
+    async dryRun(defPath: String, isSimulate: string){
+        let config = {
+                headers: {
+                    'isSimulate': isSimulate
+                }
+            };
+        const response = await axiosInstance.get(`/dry-run/${defPath}`, config);
         // const response = await axiosInstance.get(encodeURI(`/dry-run/${defPath}`));
         // const response = await axiosInstance.get(encodeURI(`/dry-run/${encodeURIComponent(defPath.toString())}`));
         
@@ -477,11 +504,13 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
-    async startAndComplete(command: object, isSimulate: boolean){
-        const headers = { 
-            'isSimulate': isSimulate ? 'true' : 'false'
+    async startAndComplete(command: object, isSimulate: string){
+        let config = {
+            headers: {
+                'isSimulate': isSimulate
+            }
         };
-        const response = await axiosInstance.post(`/start-and-complete`,command, {headers});
+        const response = await axiosInstance.post(`/start-and-complete`, command, config);
 
         return response.data;
     }

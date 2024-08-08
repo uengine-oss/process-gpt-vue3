@@ -597,7 +597,7 @@ export default {
             }
 
             dcBoundsParticipant.setAttribute('x', mainX - 30);
-            dcBoundsParticipant.setAttribute('y', mainY -275);
+            dcBoundsParticipant.setAttribute('y', mainY - 75);
 
             dcBoundsParticipant.setAttribute('width', mainWidth);
             dcBoundsParticipant.setAttribute('height', mainHeight + 45);
@@ -618,10 +618,8 @@ export default {
                     dcBoundsLane.setAttribute('x', roleX ? roleX : 0);
                     dcBoundsLane.setAttribute('y', roleYResult);
 
-                    if(jsonModel.roles[lastKey] && jsonModel.roles[lastKey].name == role.name && roleIndex != 0) {
+                    if(jsonModel.roles[lastKey].name == role.name) {
                         roleHeightResult -= 155;
-                    } else {
-                        roleHeightResult -= 5;
                     }
 
 

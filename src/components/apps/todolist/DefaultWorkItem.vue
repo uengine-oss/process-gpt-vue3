@@ -64,6 +64,10 @@ export default {
             default: function () {
                 return [];
             }
+        },
+        isSimulate: {
+            type: String,
+            default: "false"
         }
     },
     data: () => ({
@@ -72,6 +76,9 @@ export default {
         newMessage: ''
     }),
     computed: {
+        simulate() {
+            return this.isSimulate === 'true' || this.isSimulate === 'false' ? this.isSimulate === 'true' : this.isSimulate;
+        },
         isCompleted() {
             return this.workItemStatus == 'COMPLETED' || this.workItemStatus == 'DONE';
         },
@@ -113,7 +120,7 @@ export default {
                                 processExecutionCommand: processExecutionCommand,
                                 workItem: value
                             },
-                            true
+                            me.isSimulate
                         );
                         me.close();
                     } else {

@@ -32,7 +32,7 @@
         <!-- dialogs -->
         <v-dialog v-model="dialog" max-width="500">
             <v-card v-if="dialogType == 'addTeam'">
-                <v-row class="ma-0 pa-0">
+                <v-row class="ma-0 pa-4">
                     <v-card-title>{{ $t('organizationChartDefinition.addTeam') }}</v-card-title>
                     <v-spacer></v-spacer>
                     <v-btn @click="dialog = false"
@@ -52,30 +52,19 @@
                 </v-row>
             </v-card>
 
-            <v-card v-if="dialogType == 'edit'">
-                <v-row class="ma-0 pa-2">
-                    <div class="d-flex mb-2">
-                        <v-avatar v-if="!editUser.data.isTeam" color="grey" rounded="0" size="100" class="mb-5">
-                            <v-img v-if="editUser.data.img" :src="editUser.data.img"></v-img>
-                        </v-avatar>
-                        <div class="text-start align-self-center ml-4">
-                            <h6 class="text-h6 font-weight-bold">{{ editUser.data.name }}</h6>
-                            <div class="text-body-1">{{ editUser.data.email }}</div>
-                        </div>
-                    </div>
-                    <v-spacer></v-spacer>
-                    <v-btn @click="dialog = false"
-                        icon variant="text" density="comfortable"
-                    >
-                        <Icons :icon="'close'" :size="16" style="margin-top:-8px;"/>
-                    </v-btn>
-                </v-row>
-                <v-card-text class="text-center">
-                    <v-select v-if="!editUser.data.isTeam" v-model="editUser.data.pid" :items="allTeams" item-title="name"
-                        item-value="id" :label="$t('organizationChartDefinition.team')"></v-select>
-                    <v-text-field v-if="editUser.data.role" v-model="editUser.data.role" :label="$t('organizationChartDefinition.role')"></v-text-field>
-                    
-                    <v-autocomplete v-if="editUser.data.isTeam" v-model="editUser.children" :items="allUsers" chips 
+            <v-card v-if="dialogType == 'edit'" class="pa-4">
+                <template v-if="editUser.data.isTeam">
+                    <v-row class="ma-0 pa-0 mb-2">
+                        <v-spacer></v-spacer>
+                        <v-btn @click="dialog = false"
+                            icon variant="text" density="comfortable"
+                        >
+                            <Icons :icon="'close'" :size="16"/>
+                        </v-btn>
+                    </v-row>
+                    <v-text-field v-model="editUser.data.name" :label="$t('organizationChartDefinition.teamName')"></v-text-field>
+
+                    <v-autocomplete v-model="editUser.children" :items="allUsers" chips 
                         closable-chips color="blue-grey-lighten-2" item-title="data.name" :item-value="item => item" 
                         multiple :label="$t('organizationChartDefinition.selectTeamMember')" small-chips>
                         <template v-slot:chip="{ props, item }">
@@ -92,7 +81,24 @@
                             </v-list-item>
                         </template>
                     </v-autocomplete>
+                </template>
+                
+                <v-card-text v-else class="text-center mt-5">
+                    <div class="d-flex mb-2">
+                        <v-avatar v-if="!editUser.data.isTeam" color="grey" rounded="0" size="100" class="mb-5">
+                            <v-img v-if="editUser.data.img" :src="editUser.data.img"></v-img>
+                        </v-avatar>
+                        <div class="text-start align-self-center ml-4">
+                            <h6 class="text-h6 font-weight-bold">{{ editUser.data.name }}</h6>
+                            <div class="text-body-1">{{ editUser.data.email }}</div>
+                        </div>
+                    </div>
+                    
+                    <v-select v-model="editUser.data.pid" :items="allTeams" item-title="name"
+                        item-value="id" :label="$t('organizationChartDefinition.team')"></v-select>
+                    <v-text-field v-model="editUser.data.role" :label="$t('organizationChartDefinition.role')"></v-text-field>
                 </v-card-text>
+
                 <v-row class="ma-0 pa-4">
                     <v-spacer></v-spacer>
                     <v-btn color="primary" rounded @click="updateNode">{{ $t('organizationChartDefinition.edit') }}</v-btn>
