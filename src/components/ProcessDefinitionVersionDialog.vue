@@ -2,28 +2,34 @@
     <div>
         <v-dialog v-model="isOpen" max-width="400" @click:outside="close()">
             <v-card>
-                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important;">{{ isNew ? 'Save Definition' : 'Version Up'}}</v-card-title>
-                <v-btn icon style="position:absolute; right:5px; top:5px;" @click="close()">
-                    <v-icon>mdi-close</v-icon>
-                </v-btn>
+                <v-row class="ma-0 pa-2">
+                    <v-card-title>{{ isNew ? $t('ProcessDefinitionVersionDialog.title') : $t('ProcessDefinitionVersionDialog.title1')}}</v-card-title>
+                    <v-spacer></v-spacer>
+                    <v-btn @click="close()"
+                        icon variant="text" density="comfortable"
+                    >
+                        <Icons :icon="'close'" :size="16"/>
+                    </v-btn>
+                </v-row>
                 <v-card-text>
                     <v-switch v-model="isMajor"
-                        :label="this.isMajor ? `Major Update: ${newVersion}` : `Minor Update: ${newVersion}`"
+                        :label="this.isMajor ? `${$t('ProcessDefinitionVersionDialog.majorUpdate')}: ${newVersion}` : `${$t('ProcessDefinitionVersionDialog.minorUpdate')}: ${newVersion}`"
                         color="primary" :disabled="isNew" hide-details
                     ></v-switch>
                     <div v-if="isNew">
-                        <v-text-field v-model="information.proc_def_id" label="ID" :rules="[v => !!v || 'ID is required']" 
+                        <v-text-field v-model="information.proc_def_id" :label="$t('ProcessDefinitionVersionDialog.id')" :rules="[v => !!v || 'ID is required']" 
                             required class="pb-2"></v-text-field>
-                        <v-text-field  v-model="information.name" label="Name" :rules="[v => !!v || 'Name is required']" 
+                        <v-text-field  v-model="information.name" :label="$t('ProcessDefinitionVersionDialog.name')" :rules="[v => !!v || 'Name is required']" 
                             required class="pb-2"></v-text-field>
                     </div>
-                    <v-textarea v-model="information.message" label="Message" hide-details rows="3"></v-textarea>
+                    <v-textarea v-model="information.message" :label="$t('ProcessDefinitionVersionDialog.message')" hide-details rows="3"></v-textarea>
                 </v-card-text>
-                <v-card-actions style="justify-content: right;">
-                    <v-btn v-if="!loading" @click="save()" color="primary"> SAVE </v-btn>
+                <v-row class="ma-0 pa-4 pt-0 pr-5">
+                    <v-spacer></v-spacer>
+                    <v-btn v-if="!loading" @click="save()" color="primary" rounded>{{ $t('ProcessDefinitionVersionDialog.save') }}</v-btn>
                     <v-progress-circular v-if="loading" color="primary" :size="25" indeterminate
                         style="margin: 5px;"></v-progress-circular>
-                </v-card-actions>
+                </v-row>
             </v-card>
         </v-dialog>
     </div>

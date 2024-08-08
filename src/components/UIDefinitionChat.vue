@@ -192,7 +192,7 @@ export default {
         mashupKey: 0, // kEditorInput가 변경되었을 경우, Mashup 컴포넌트를 다시 렌더링하기 위해서
 
         prevFormOutput: '', // 폼 디자이너에게 이미 이전에 생성된 HTML 결과물을 전달하기 위해서
-        prevMessageFormat: '', // 사용자가 KEditor를 변경할때마다 해당 포맷을 기반으로 System 메세지를 재구축해서 보내기 위해서
+        prevMessageFormat: '', // 사용자가 KEditor를 변경할때마다 해당 포맷을 기반으로 System 메시지를 재구축해서 보내기 위해서
 
         storedFormDefHTML: "",
         isOpenSaveDialog: false,
@@ -655,7 +655,7 @@ export default {
         },
 
         /**
-         * AI에 메세지를 보내기 위해서 사용
+         * AI에 메시지를 보내기 위해서 사용
          * @param {*} newMessage
          */
         beforeSendMessage(newMessage) {
@@ -665,7 +665,7 @@ export default {
         },
 
         /**
-         * AI 메세지에서 실시간으로 JSON을 추출하기 위해서
+         * AI 메시지에서 실시간으로 JSON을 추출하기 위해서
          * @param {*} response
          */
         async afterModelCreated(response) {
@@ -673,7 +673,7 @@ export default {
         },
 
         /**
-         * 최종적인 AI 메세지에서 JSON을 추출하기 위해서
+         * 최종적인 AI 메시지에서 JSON을 추출하기 위해서
          * @param {*} response
          */
         afterGenerationFinished(response) {
@@ -690,7 +690,7 @@ export default {
                 messageWriting.jsonContent = this.extractLastJSON(response);
                 messageWriting.content = messageWriting.content.replace(messageWriting.jsonContent, '');
 
-                // messageWriting.jsonContent에 내용이 있어도, messageWriting.content에 내용이 없으면 메세지가 표시되지 않기때문에 추가함
+                // messageWriting.jsonContent에 내용이 있어도, messageWriting.content에 내용이 없으면 메시지가 표시되지 않기때문에 추가함
                 if(messageWriting.content.length == 0) messageWriting.content = " "
                 
 

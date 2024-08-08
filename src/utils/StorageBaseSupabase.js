@@ -913,7 +913,7 @@ export default class StorageBaseSupabase {
                 if (list.length > 0) {
                     return {
                         type: 'chat',
-                        header: '채팅 메세지',
+                        header: '채팅 메시지',
                         list: list
                     };
                 }

@@ -7,7 +7,7 @@
                 size="small"
                 class="mr-4 mt-4"
             >
-                <Icons :icon="'close'"  class="cursor-pointer" :size="16"/>
+                <Icons :icon="'close'" class="cursor-pointer" :size="16"/>
             </v-btn>
         </v-row>
         <v-card-text style="overflow: auto; height: calc(100% - 30px); width: 700px">
