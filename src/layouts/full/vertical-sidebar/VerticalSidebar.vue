@@ -30,11 +30,10 @@ const customizer = useCustomizerStore();
                 location="bottom"
             >
                 <template v-slot:activator="{ props }">
-                    <v-btn icon variant="text"
+                    <v-btn icon variant="text" density="comfortable"
                         v-bind="props"
                         class="text-medium-emphasis"
                         :to="'/definition-map'"
-                        style="margin-top:-5px;"
                     >
                         <Icons :icon="'write'" />
                     </v-btn>

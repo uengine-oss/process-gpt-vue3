@@ -82,12 +82,12 @@ hr {
 /* bpm .bpmn-icon-screw-wrench 아이콘 나타나지 않아 넣어둔 부분 */
 
 .vue-bpmn-diagram-container .djs-palette {
-    width: 695px !important;
+    width: 740px !important;
     height: 50px;
     left:5px; top:5px;
-    background-color: white;
     border: none;
     border-radius: 10px;
+    background-color: white;
     box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.1);
 }
 
@@ -175,6 +175,41 @@ hr {
     overflow: auto;
 }
 
+.icon-rotate-90 {
+    transform: rotate(90deg);
+}
+.icon-rotate-180 {
+    transform: rotate(180deg);
+}
+.icon-rotate-270 {
+    transform: rotate(270deg);
+}
+
+.node-content-text-box {
+    margin-top: 15px; 
+    text-align: center; 
+    padding: 10px; 
+    border-radius: 10px;
+    background-color: white;
+    box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.2);
+    border-top: 5px solid rgba(var(--v-theme-primary));
+    height: 80px;
+    width: 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.node-content-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    position:absolute;
+    top:0px;
+    background-color: #E0E0E0;
+}
+
 #apexTreeWrapper {
     height: 100% !important;
 }
@@ -205,6 +240,28 @@ hr {
     background: rgb(var(--v-theme-primary), 0.15) !important;
 }
 
+.apextree-node > div {
+    border: none !important;
+}
+
+.node-content-btn-box {
+    position: absolute;
+    right:5px;
+    top:32px;
+}
+
+.node-content-btn {
+    width:16px;
+    height:16px;
+    cursor: pointer;
+}
+.edit-team-btn {
+    width:13px;
+    height:13px;
+    position: relative;
+    top:-1px;
+}
+
 @media only screen and (max-width:1450px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 375px !important;
@@ -215,7 +272,7 @@ hr {
 @media only screen and (max-width:550px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 230px !important;
-        height:135px !important;
+        height:185px !important;
     }
 }
 

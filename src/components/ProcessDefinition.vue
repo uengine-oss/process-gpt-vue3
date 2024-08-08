@@ -17,7 +17,9 @@
                         <!-- 프로세스 실행 버튼  -->
                         <v-tooltip v-if="executable" :text="$t('processDefinition.execution')">
                             <template v-slot:activator="{ props }">
-                                <v-btn icon v-bind="props" @click="executeProcess" class="btn-execute">
+                                <v-btn v-bind="props" @click="executeProcess" class="btn-execute"
+                                    icon variant="text"
+                                >
                                     <Icons :icon="'play'" :width="32" :height="32" />
                                 </v-btn>
                             </template>
@@ -25,7 +27,9 @@
                         <!-- 프로세스 변수 추가 버튼 -->
                         <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
                             <template v-slot:activator="{ props }">
-                                <v-btn @click="openProcessVariables" icon v-bind="props" class="cp-process-variables btn-variables">
+                                <v-btn @click="openProcessVariables" v-bind="props" class="cp-process-variables btn-variables"
+                                    icon variant="text"
+                                >
                                     <Icons :icon="'variable'" :width="32" :height="32" />
                                 </v-btn>
                             </template>
@@ -33,7 +37,9 @@
                         <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
                         <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
                             <template v-slot:activator="{ props }">
-                                <v-btn icon v-bind="props" @click="$globalState.methods.toggleZoom()" class="btn-zoom">
+                                <v-btn v-bind="props" @click="$globalState.methods.toggleZoom()" class="btn-zoom"
+                                    icon variant="text"
+                                >
                                     <Icons :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'" :size="32" />
                                 </v-btn>
                             </template>
@@ -229,6 +235,7 @@ import BpmnLLM from './BpmnLLM.vue';
 import BpmnuEngine from './BpmnUengine.vue';
 import customBpmnModule from './customBpmn';
 import customPaletteModule from './customPalette';
+import customContextPadModule from './customContextPad';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
@@ -331,7 +338,7 @@ export default {
                 propertiesPanel: {
                     invalidationList: this.validationList
                 },
-                additionalModules: this.isViewMode ? [customBpmnModule] : [customBpmnModule, customPaletteModule]
+                additionalModules: this.isViewMode ? [customBpmnModule] : [customBpmnModule, customPaletteModule, customContextPadModule]
             };
             return result;
         }
