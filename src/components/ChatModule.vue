@@ -306,7 +306,7 @@ export default {
                         if (msg.content) {
                             chatMsgs.push({
                                 role: msg.role,
-                                content: msg.content
+                                content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
                             });
                         }
                     });
@@ -441,7 +441,7 @@ export default {
                     this.messages.forEach((msg) => {
                         chatMsgs.push({
                             role: msg.role,
-                            content: msg.content
+                            content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
                         });
                     });
                 }
@@ -634,6 +634,7 @@ export default {
                 } else {
                     this.afterGenerationFinished(response);
                 }
+                this.EventBus.emit('scroll_update');
             }
         },
         removeComments(text) {

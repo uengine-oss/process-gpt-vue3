@@ -40,14 +40,16 @@ export default {
             let result = await backend.getInstanceList();
             if (!result) result = [];
             this.instanceList = result.map((item) => {
+                const route = window.$mode == 'ProcessGPT' ? btoa(item.instId) : item.instId;
                 item = {
                     // icon: 'ph:cube',
                     title: item.instName,
-                    to: `/instancelist/${btoa(item.instId)}`,
+                    to: `/instancelist/${route}`,
                     BgColor:'primary'
                 };
                 return item;
             });
+            this.$emit('update:instanceList', this.instanceList);
         }
     }
 };

@@ -7,6 +7,10 @@ class UEngineBackend implements Backend {
     //     super();
     // }
 
+    async getUserList() {
+        return [];
+    }
+
     async getNotifications() {
         // Placeholder implementation
         return [];
@@ -216,6 +220,13 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.post(`/work-item/${taskId}/complete`, workItem, config);
         return response.data;
     }
+    // async putWorkItemComplete(taskId: string, workItem: any, isSimulate: boolean) {
+    //     const headers = { 
+    //         'isSimulate': isSimulate ? 'true' : 'false'
+    //     };
+    //     const response = await axiosInstance.post(`/work-item/${taskId}/complete`, workItem, {headers});
+    //     return response.data;
+    // }
 
     async testList(path: string) {
         const response = await axiosInstance.get(`/test/${path}`);

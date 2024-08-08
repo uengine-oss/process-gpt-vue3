@@ -43,7 +43,6 @@ export default {
         path: 'proc_inst',
         organizationChart: [],
         chatInfo: null,
-        // isReGen: false,
         imgKeyList: [],
         // bpmn
         onLoad: false,
@@ -143,7 +142,6 @@ export default {
         },
         reGenerateAgentAI(){
             this.messages = []
-            // this.isReGen = true
             this.handleDraftResponse()
         },
         async handleDraftResponse() {
@@ -161,7 +159,7 @@ export default {
                         this.imgKeyList.push(key)
                         this.isVisionMode = true
                         this.generator.previousMessages = []
-                        // const resizedImage = await this.resizeBase64Image(this.formData[key], 224, 224);
+                        const resizedImage = await this.resizeBase64Image(this.formData[key], 512, 512);
                         this.generator.previousMessages.push({
                             "content": [
                                 {
@@ -171,7 +169,7 @@ export default {
                                 {
                                     "type": "image_url",
                                     "image_url": {
-                                        "url": this.formData[key]
+                                        "url": resizedImage
                                     }
                                 }
                             ],
@@ -204,55 +202,53 @@ export default {
                     "role": "user"
                 })
             }
-            // if(!this.isReGen){
-                if(this.processInstance && this.processInstance.proc_inst_id){
-                    const options = {
-                        match: {
-                            id: this.processInstance.proc_inst_id
-                        }
-                    };
-                    const inst_data = await this.storage.list('proc_inst', options);
-                    this.generator.previousMessages.push({
-                        "content": "이전 작업 내역 리스트: " + JSON.stringify(inst_data),
-                        "role": "user"
-                    })
-                } else {
-                    this.generator.previousMessages.push({
-                        "content": "이전 작업 내역 리스트: null",
-                        "role": "user"
-                    })
-                }
+            if(this.processInstance && this.processInstance.proc_inst_id){
+                const options = {
+                    match: {
+                        id: this.processInstance.proc_inst_id
+                    }
+                };
+                const inst_data = await this.storage.list('proc_inst', options);
+                this.generator.previousMessages.push({
+                    "content": "이전 작업 내역 리스트: " + JSON.stringify(inst_data),
+                    "role": "user"
+                })
+            } else {
+                this.generator.previousMessages.push({
+                    "content": "이전 작업 내역 리스트: null",
+                    "role": "user"
+                })
+            }
 
-                this.generator.previousMessages.push({
-                    "content": "현재 작업 입력 양식: " + this.html,
-                    "role": "user"
-                })
+            this.generator.previousMessages.push({
+                "content": "현재 작업 입력 양식: " + this.html,
+                "role": "user"
+            })
 
-                let formData = JSON.parse(JSON.stringify(me.formData))
-                if(this.imgKeyList.length > 0){
-                    this.imgKeyList.forEach(function (key){
-                        delete formData[key]
-                    })
-                    me.imgKeyList = []
-                }
-                let formValues = {
-                    "formValues": formData
-                }
-                this.generator.previousMessages.push({
-                    "content": "생성해야할 답변 형식: " + JSON.stringify(formValues),
-                    "role": "user"
+            let formData = JSON.parse(JSON.stringify(me.formData))
+            if(this.imgKeyList.length > 0){
+                this.imgKeyList.forEach(function (key){
+                    delete formData[key]
                 })
-                let userList = await this.storage.list('users');
-                this.generator.previousMessages.push({
-                    "content": "유저 목록: " + JSON.stringify(userList),
-                    "role": "user"
-                })
-                const organization = await this.getData(`configuration/organization`, {key: 'key'});
-                this.generator.previousMessages.push({
-                    "content": "회사 조직도: " + JSON.stringify(organization.value),
-                    "role": "user"
-                })
-            // }
+                me.imgKeyList = []
+            }
+            let formValues = {
+                "formValues": formData
+            }
+            this.generator.previousMessages.push({
+                "content": "생성해야할 답변 형식: " + JSON.stringify(formValues),
+                "role": "user"
+            })
+            let userList = await this.storage.list('users');
+            this.generator.previousMessages.push({
+                "content": "유저 목록: " + JSON.stringify(userList),
+                "role": "user"
+            })
+            const organization = await this.getData(`configuration/organization`, {key: 'key'});
+            this.generator.previousMessages.push({
+                "content": "회사 조직도: " + JSON.stringify(organization.value),
+                "role": "user"
+            })
 
             this.generator.generate()
         },

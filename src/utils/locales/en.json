@@ -90,6 +90,20 @@
         "addSub": "Sub Process",
         "save" : "Save"
     },
+    "uiDefinition": {
+        "title": "Screen Definition",
+        "cardTitle": "Screen Definition Management",
+        "uiDefinitionExplanation": "Manage screens interactively.\n For example, you can issue commands like 'I want to create a form to receive user information. The user information should include username, email, gender, and user profile image.'",
+        "add": "Add",
+        "edit": "Edit",
+        "delete": "Delete",
+        "cancel": "Cancel",
+        "save": "Save Screen",
+        "deleteForm": "Delete Form",
+        "deleteFormMessage": "Are you sure you want to delete the form?",
+        "redaction": "Edit",
+        "preview": "Preview"
+    },
     "processDefinition": {
         "title": "Process Definition",
         "cardTitle": "Process Definition Management",
@@ -191,14 +205,23 @@
     },
     "tenantInfoField": {
         "step1": "STEP 1. Create an Account",
+        "step1-text": "(*The password must contain all of these : Uppercase and Lowercase letters, Number and Special characters.)<br>1. <a href='https://supabase.com/dashboard/sign-up' target='_blank'>Go to the Supabase registration page</a>and create an account.",
         "step2-1": "STEP 2. Create a Project or Organization",
+        "step2-1-text": "1. Select “New Project” or “New Organization” from the page after creating an account.<br>2. Click “New Project”.",
         "step2-2": "STEP 2. Create a New Organization",
+        "step2-2-text": "(*If you already have an organization, skip this step.)<br>1. Enter the name of the new organization you want to create in the “Name” field.<br>2. Click “Create organization” button.",
         "step2-3": "STEP 2. Create a New Project",
+        "step2-3-text": "1. Select “organization” and enter the name of the project you want to create in “Project name” field.<br>2. Enter the password of the database that you will use.<br>(*Paste the password you entered into the “Database Password” field below.<br>3. Select “Seoul” for the “Region” as the screenshot above.<br>4. Click “Create new project” button.",
         "step3-1": "STEP 3. Project URL Connection",
+        "step3-1-text": "1. If the project creation is done, click the gear icon at the bottom left.<br>2. Select “API Menu” from the menu list of “Settings”.<br>3. (*Copy the URL from “Project URL” section and paste it into the box below.)",
         "step3-2": "STEP 3. Secret API Key Connection",
+        "step3-2-text": "1. You can check the “Secret Key” by clicking the “Reveal” button from the “Project API Keys” section.<br>(*Copy the “Secret Key” and paste it into the box below.”",
         "step3-3": "STEP 3. DataBase Connection",
+        "step3-3-text": "1. Select “Database” from the menu list of “Settings”.<br>2. Copy “Host”, “Database name”, “Port”, “User” from the “Connection parameters” section and paste it into the each box below.",
         "step4": "STEP 4. Enter the Company Name to Use",
-        "step5": "STEP 5. Setting up Supabase Site URL"
+        "step4-text": "1. Enter the name of the company in the box below and click “Create” button to create a company.<br>The name of the company will be used as a sub-domain.<br>e.g. {Company Name}.process-gpt.io",
+        "step5": "STEP 5. Setting up Supabase Site URL",
+        "step5-text": "1. Select lock icon(Authentication) from the left menu.<br>2. Click “URL Configuration”.<br>3. Click copy button to copy the “Site URL” including the company name you entered from Step4 and paste it into the “Site URL” box.<br>4. Click “Save” button."
     },
     "forgotPassword": {
         "title": "Forgot your password?",
@@ -227,5 +250,18 @@
         "scriptPrompt": "Script Prompt",
         "scriptType": "Script Type",
         "add": "Add"
+    },
+    "NotificationDD": {
+        "notification": "Notifications"
+    },
+    "Customizer": {
+        "settings": "Layout settings",
+        "themeColor": "Theme Color",
+        "containerOption": "Container Option",
+        "boxed": "Boxed",
+        "full": "Full"
+    },
+    "Mashup": {
+        "hoverText": "Drag a layout (Container) here to start editing the form."
     }
 }

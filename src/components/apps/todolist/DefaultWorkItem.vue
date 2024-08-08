@@ -125,8 +125,9 @@ export default {
                         me.close();
                     } else {
                         if (me.workItem.execScope) value.execScope = me.workItem.execScope;
-                        await backend.putWorkItemComplete(me.$route.params.taskId, value, me.isSimulate);
-                        me.$router.push(`/instancelist/${btoa(me.workItem.worklist.instId)}`);
+                        await backend.putWorkItemComplete(me.$route.params.taskId, value, true);
+                        const route = window.$mode == 'ProcessGPT' ? btoa(me.workItem.worklist.instId) : me.workItem.worklist.instId;
+                        me.$router.push(`/instancelist/${route}`);
                     }
                 },
                 successMsg: '해당 업무 완료'

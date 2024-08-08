@@ -122,7 +122,7 @@ const deleteChatRoom = () => {
             <div class="d-flex">
                 <v-text-field variant="outlined" v-model="searchValue" append-inner-icon="mdi-magnify"
                     placeholder="Search Contact" hide-details density="compact"></v-text-field>
-                <v-btn icon @click="openDialog" style="margin-left: 10px;">
+                <v-btn density="comfortable" icon @click="openDialog" style="margin-left: 10px;">
                     <v-icon>mdi-chat-plus</v-icon>
                 </v-btn>
             </div>
@@ -194,7 +194,7 @@ const deleteChatRoom = () => {
     <perfect-scrollbar class="lgScroll">
         <v-list>
             <!---Single Item-->
-            <v-list-item :value="chat.id" color="secondary" class="text-no-wrap chatItem" v-for="chat in filteredChats"
+            <v-list-item :value="chat.id" color="primary" class="text-no-wrap chatItem" v-for="chat in filteredChats"
                 :key="chat.id" lines="two" @click="selectChatRoom(chat)">
                 <!---Avatar-->
                 <template v-slot:prepend>
@@ -274,6 +274,6 @@ const deleteChatRoom = () => {
 }
 
 .lgScroll {
-    height: calc(100vh - 365px);
+    height: calc(100vh - 310px);
 }
 </style>

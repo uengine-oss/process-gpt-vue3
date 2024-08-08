@@ -88,7 +88,7 @@
     "organizationChartDefinition": {
         "title": "조직도 정의",
         "cardTitle": "조직도 관리",
-        "organizationChartExplanation": "대화형으로 조직도를 관리하십시오.\n 팀(부서) 롤(역할), 직원들을 등록 수정 삭제할 수 있습니다. \n예를 들어, '개발팀, 관리팀을 등록하고, 홍길동님(gdhong@uengine.org)을 신입사원으로 관리팀에 등록해줘. 역할은 개발자로 들어오셨어. 관리팀의 팀장은 아무개 팀장님(amk@uengine.org)이야.' 와 같은 명령을 할 수 있습니다."
+        "organizationChartExplanation": "대화형으로 조직도를 관리하십시오.\n 팀(부서) 롤(역할), 직원들을 등록 수정 삭제할 수 있습니다. \n예를 들어, '개발팀, 관리팀을 등록하고, 홍길동님을 신입사원으로 관리팀에 등록해줘. 역할은 개발자로 들어오셨어. 관리팀의 팀장은 아무개 팀장님이야.' 와 같은 명령을 할 수 있습니다."
     },
     "processDefinitionMap": {
         "title": "프로세스 정의 체계도",
@@ -109,7 +109,9 @@
         "cancel": "취소",
         "save": "화면 저장",
         "deleteForm": "폼 삭제",
-        "deleteFormMessage": "폼을 삭제하시겠습니까?"
+        "deleteFormMessage": "폼을 삭제하시겠습니까?",
+        "redaction": "편집",
+        "preview": "미리보기"
     },
     "processDefinition": {
         "title": "프로세스 정의",
@@ -215,14 +217,23 @@
     },
     "tenantInfoField": {
         "step1": "STEP 1. 계정 만들기",
+        "step1-text": "( *암호는 대문자, 소문자, 숫자, 특수문자가 모두 포함돼야 합니다. )<br>1. <a href='https://supabase.com/dashboard/sign-up' target='_blank'>Supabase 회원가입 페이지</a>로 들어가서 계정을 생성합니다.",
         "step2-1": "STEP 2. 프로젝트 또는 조직 만들기",
+        "step2-1-text": "1. 계정 생성 이후 화면에서 새 프로젝트(New Project) 또는 신규 조직(New organization)을 선택합니다.<br>2. 선택 후 New Project를 클릭합니다.",
         "step2-2": "STEP 2. 신규 조직(New organization) 생성",
+        "step2-2-text": "(*이미 조직(organization)이 있으면 이 단계는 건너뛰어도 괜찮습니다.)<br>1. 새롭게 생성할 조직(New organization)명을 Name 항목에 입력합니다.<br>2. Create organization 버튼을 클릭해서 새로운 기관을 생성합니다.",
         "step2-3": "STEP 2. 새 프로젝트(New Project) 만들기",
+        "step2-3-text": "1. 생성한 조직(organization)을 선택하고, 생성할 프로젝트명을 Project name 항목에 입력합니다.<br>2. 사용할 데이터베이스 비밀번호를 입력합니다.<br>(*입력한 비밀번호를 아래의 Database Password 입력창에 붙혀넣어줍니다.)<br>3. Region을 위의 스크린샷과 같이 Seoul로 선택합니다.<br>4. Create new project 버튼을 클릭해서 프로젝트를 생성합니다.<br>",
         "step3-1": "STEP 3. Project URL 연결하기",
+        "step3-1-text": "1. 프로젝트 생성이 완료되면 왼쪽 최하단의 톱니바퀴 모양 아이콘을 클릭합니다.<br>2. 화면에 표시되는 Settings 메뉴리스트중 API 메뉴를 선택합니다.<br>3. (*Project URL 섹션에 있는 URL 항목을 복사하여 아래의 URL 입력창에 붙혀넣습니다.)",
         "step3-2": "STEP 3. Secret API Key 연결",
+        "step3-2-text": "1. Project API keys 섹션의 Reveal 버튼을 클릭하여 Secret 키 값을 확인할 수 있습니다.<br>(*Secret 키를 복사하여 아래의 Secret 입력창에 붙혀넣습니다.)",
         "step3-3": "STEP 3. DataBase 연결",
+        "step3-3-text": "1. Settings 메뉴리스트중 Database 메뉴를 선택합니다.<br>2. Connection parameters 섹션에서 Host, Database name, Port, User 값을 복사하여 아래의 각 입력창에 붙혀넣습니다.",
         "step4": "STEP 4. 사용할 회사명 입력하기",
-        "step5": "STEP 5. Supabase Site URL 설정하기"        
+        "step4-text": "1. 사용할 회사명을 아래의 ID 입력창에 입력하고 생성하기 버튼을 클릭해서 회사를 생성합니다.<br>입력한 회사명은 서브도메인으로 사용됩니다.<br>e.g. { 입력한 회사명 }.process-gpt.io",
+        "step5": "STEP 5. Supabase Site URL 설정하기",
+        "step5-text": "1. 왼쪽 메뉴 중 자물쇠 아이콘(Authentication) 메뉴를 선택합니다.<br>2. URL Configuration을 클릭합니다.<br>3. 아래 보이는 STEP 4에서 입력한 회사명이 포함된 Site URL을 복사 버튼을 눌러 복사 후 복사하여 Site URL 입력란에 입력합니다.<br>4. save 버튼을 눌러 저장합니다."
     },
     "forgotPassword": {
         "title": "비밀번호 찾기",
@@ -251,5 +262,18 @@
         "scriptPrompt": "프롬프트 입력",
         "scriptType": "스크립트 유형",
         "add": "추가"
+    },
+    "NotificationDD": {
+        "notification": "알림"
+    },
+    "Customizer": {
+        "settings": "레이아웃 설정",
+        "themeColor": "색상 테마",
+        "containerOption": "화면 크기",
+        "boxed": "박스형",
+        "full": "가득찬"
+    },
+    "Mashup": {
+        "hoverText": "여기에 레이아웃(Container)을 드래그해서 폼 편집을 시작하십시오."
     }
 }

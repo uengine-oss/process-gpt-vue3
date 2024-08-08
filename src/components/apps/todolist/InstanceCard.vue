@@ -90,7 +90,11 @@ export default {
     },
     computed: {
         id() {
-            return this.$route.params.instId
+            if ($mode == "ProcessGPT") {
+                return atob(this.$route.params.instId)
+            } else {
+                return this.$route.params.instId
+            }
         },
         isCompleted() {
             return this.instance.status == "COMPLETED"

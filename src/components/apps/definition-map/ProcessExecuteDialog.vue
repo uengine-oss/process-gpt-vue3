@@ -53,13 +53,15 @@ export default {
     created() {
         let me = this;
         this.uengine = BackendFactory.createBackend();
-        this.roles.forEach(function (role) {
-            me.roleMappings.push({
-                roleName: role,
-                roleEndpoint: '',
-                resourceNames: ''
+        if(this.roles){
+            this.roles.forEach(function (role) {
+                me.roleMappings.push({
+                    roleName: role,
+                    roleEndpoint: '',
+                    resourceNames: ''
+                });
             });
-        });
+        }
     },
     methods: {
         closeDialog() {

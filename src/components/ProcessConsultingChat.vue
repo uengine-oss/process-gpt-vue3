@@ -20,7 +20,7 @@
                     ></process-definition>
                 </div>
                 <div style="position: relative;">
-                    <canvas v-if="initConfettiCnt < 2" ref="canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;"></canvas>
+                    <canvas v-if="showConfetti && initConfettiCnt < 2" ref="canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;"></canvas>
                     <Chat
                         :messages="messages"
                         :userInfo="userInfo"
@@ -74,6 +74,7 @@ export default {
         processDefinitionMap: null,
 
         // confetti
+        showConfetti: false,
         initConfettiCnt: 0,
         canvas: null,
         ctx: null,
@@ -101,7 +102,7 @@ export default {
             isStream: true,
             preferredLanguage: "Korean"
         });
-
+        this.isConsultingMode = true
         this.userInfo = await this.storage.getUserInfo();
 
         this.EventBus.on('messages-updated', () => {
@@ -110,190 +111,9 @@ export default {
 
         this.processDefinitionMap = await backend.getProcessDefinitionMap();
 
-//      let res = {
-//     "megaProcessId": "MEGA_1",
-//     "majorProcessId": "Major_1.1",
-//     "processDefinitionName": "주문 처리 자동화 프로세스 03",
-//     "processDefinitionId": "order_processing_automation_03",
-//     "description": "이 프로세스는 의류 판매 주문의 재고 확인, 주문 수락/취소, 발송 신청 단계를 자동화합니다.",
-//     "data": [
-//         {
-//             "name": "Order ID",
-//             "description": "주문 번호",
-//             "type": "Text"
-//         },
-//         {
-//             "name": "Product ID",
-//             "description": "상품 번호",
-//             "type": "Text"
-//         },
-//         {
-//             "name": "Customer Info",
-//             "description": "고객 정보",
-//             "type": "Text"
-//         }
-//     ],
-//     "roles": [
-//         {
-//             "name": "Inventory Manager",
-//             "resolutionRule": "재고 관리를 담당하는 사용자"
-//         },
-//         {
-//             "name": "Shipping Manager",
-//             "resolutionRule": "배송 관리를 담당하는 사용자"
-//         }
-//     ],
-//     "events": [
-//         {
-//             "id": "start_event",
-//             "name": "Start Event",
-//             "type": "StartEvent",
-//             "description": "주문 접수 시작 이벤트",
-//             "trigger": ""
-//         },
-//         {
-//             "id": "end_event",
-//             "name": "End Event",
-//             "type": "EndEvent",
-//             "description": "주문 처리 종료 이벤트",
-//             "trigger": ""
-//         }
-//     ],
-//     "activities": [
-//         {
-//             "id": "email_filter",
-//             "name": "Email Filter",
-//             "type": "ScriptActivity",
-//             "description": "주문 이메일을 특정 폴더로 필터링",
-//             "instruction": "이메일 클라이언트에서 주문 이메일을 특정 폴더로 자동 정렬합니다.",
-//             "role": "Inventory Manager",
-//             "inputData": [
-//                 "Order ID",
-//                 "Product ID"
-//             ],
-//             "outputData": [],
-//             "checkpoints": []
-//         },
-//         {
-//             "id": "stock_check",
-//             "name": "Stock Check",
-//             "type": "ScriptActivity",
-//             "description": "엑셀 문서에서 재고 확인",
-//             "instruction": "엑셀 문서에서 상품 번호를 기준으로 자동 재고 확인 스크립트를 실행합니다.",
-//             "role": "Inventory Manager",
-//             "inputData": [
-//                 "Product ID"
-//             ],
-//             "outputData": [],
-//             "checkpoints": []
-//         },
-//         {
-//             "id": "accept_order",
-//             "name": "Accept Order",
-//             "type": "EMailActivity",
-//             "description": "주문 수락 이메일 발송",
-//             "instruction": "주문 수락 이메일을 고객에게 자동으로 발송합니다.",
-//             "role": "Shipping Manager",
-//             "inputData": [
-//                 "Customer Info"
-//             ],
-//             "outputData": [],
-//             "checkpoints": []
-//         },
-//         {
-//             "id": "decline_order",
-//             "name": "Decline Order",
-//             "type": "EMailActivity",
-//             "description": "주문 취소 이메일 발송",
-//             "instruction": "주문 취소 이메일을 고객에게 자동으로 발송합니다.",
-//             "role": "Shipping Manager",
-//             "inputData": [
-//                 "Customer Info"
-//             ],
-//             "outputData": [],
-//             "checkpoints": []
-//         },
-//         {
-//             "id": "shipping_request",
-//             "name": "Shipping Request",
-//             "type": "EMailActivity",
-//             "description": "배송 신청 이메일 발송",
-//             "instruction": "택배 회사에 발송 신청 이메일을 자동으로 보냅니다.",
-//             "role": "Shipping Manager",
-//             "inputData": [],
-//             "outputData": [],
-//             "checkpoints": []
-//         }
-//     ],
-//     "gateways": [
-//         {
-//             "id": "stock_check_gateway",
-//             "name": "Stock Check Gateway",
-//             "type": "ExclusiveGateway",
-//             "description": "재고 유무에 따른 주문 수락/취소 결정",
-//             "condition": "재고가 있을 경우 주문 수락, 없을 경우 주문 취소",
-//             "role": "Inventory Manager"
-//         }
-//     ],
-//     "sequences": [
-//         {
-//             "source": "start_event",
-//             "target": "email_filter",
-//             "condition": ""
-//         },
-//         {
-//             "source": "email_filter",
-//             "target": "stock_check",
-//             "condition": ""
-//         },
-//         {
-//             "source": "stock_check",
-//             "target": "stock_check_gateway",
-//             "condition": ""
-//         },
-//         {
-//             "source": "stock_check_gateway",
-//             "target": "accept_order",
-//             "condition": "재고가 있을 경우"
-//         },
-//         {
-//             "source": "stock_check_gateway",
-//             "target": "decline_order",
-//             "condition": "재고가 없을 경우"
-//         },
-//         {
-//             "source": "accept_order",
-//             "target": "shipping_request",
-//             "condition": ""
-//         },
-//         {
-//             "source": "shipping_request",
-//             "target": "end_event",
-//             "condition": ""
-//         },
-//         {
-//             "source": "decline_order",
-//             "target": "end_event",
-//             "condition": ""
-//         }
-//     ]
-// }
-//         this.bpmn = this.createBpmnXml(res); 
-//         this.definitionChangeCount++;
-//         this.saveDefinition({
-//             "arcv_id": `${res.processDefinitionId}_0.1`,
-//             "name": res.processDefinitionName,
-//             "prevDiff": null,
-//             "prevSnapshot": null,
-//             "proc_def_id": res.processDefinitionId,
-//             "type": "bpmn",
-//             "version": "0.1"
-//         }); 
-//         this.$emit("createdBPMN", res)
-
         this.messages.push({
             "role": "system",
-            "content": `안녕하세요! ${this.userInfo.name}님의 어떤 업종에 종사하시며, 어떤 문제를 겪고 계신가요? 말씀해주시면 도와드리겠습니다!`,
+            "content": `${this.userInfo.name}님 안녕하세요! 어떤 업무에 어떤 문제를 겪고 계신가요? 말씀해주시면 도와드리겠습니다!`,
             "timeStamp": Date.now(),
         })
     },
@@ -310,24 +130,6 @@ export default {
         },
 
         afterModelCreated(response) {
-            // if(response.includes('"megaProcessId":')){
-            //     let jsonProcess;
-            //     try {
-            //         jsonProcess = this.extractJSON(response);
-    
-            //         if (jsonProcess) {
-            //             let unknown = partialParse(jsonProcess);
-            //             if (unknown.processDefinitionId) {
-            //                 // this.processDefinition = unknown; 
-            //                 this.bpmn = this.createBpmnXml(unknown);
-            //                 this.definitionChangeCount++;
-            //             }
-            //         }
-            //     } catch (error) {
-            //         console.log(jsonProcess);
-            //         console.log(error);
-            //     }
-            // }
             if(this.isMentoMode){
                 this.messages[this.messages.length - 1].disableMsg = true
             } else {
@@ -344,7 +146,6 @@ export default {
         },
         afterModelStopped(response) {},
         async afterGenerationFinished(response) {
-            console.log(response)
             let content
             if(this.isMentoMode){
                 content = response
@@ -355,7 +156,7 @@ export default {
                 if(response.processDefinitionId){
                     this.bpmn = this.createBpmnXml(response); 
                     this.definitionChangeCount++;
-                    this.saveDefinition({
+                    await this.saveDefinition({
                         "arcv_id": `${response.processDefinitionId}_0.1`,
                         "name": response.processDefinitionName,
                         "prevDiff": null,
@@ -364,12 +165,14 @@ export default {
                         "type": "bpmn",
                         "version": "0.1"
                     }); 
-                    this.$emit("createdBPMN", response)
+                    await this.$emit("createdBPMN", response)
                     content = `요청하신 "${response.processDefinitionName}" 프로세스 정의를 생성했습니다. 생성된 BPMN 모델은 프로세스 정의 체계도 화면에서 확인하실 수 있습니다.`
                     this.waitForCustomer = true
-                    this.initConfetti();
-                    this.render();
+                    // this.initConfetti();
+                    // this.render();
                 } else {
+                    this.showConfetti = false
+                    this.initConfettiCnt = 0
                     content = response.content
                 }
             }
@@ -396,7 +199,7 @@ export default {
                         if (msg.content) {
                             chatMsgs.push({
                                 role: msg.role,
-                                content: msg.content
+                                content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
                             });
                         }
                     });
@@ -416,6 +219,7 @@ export default {
             return Math.random() * (max - min) + min;
         },
         initConfetti() {
+            this.showConfetti = true
             this.canvas = this.$refs.canvas;
             this.ctx = this.canvas.getContext('2d');
 

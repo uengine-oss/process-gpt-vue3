@@ -1,12 +1,14 @@
 <template>
     <div style="width: 100%">
         <div style="margin-right: 20px">
-            <v-text-field
+            <v-select
                 v-model="selectVal.name"
                 :items="processVariableDescriptors"
+                item-title="name"
+                item-value="name"
                 label="Process Data"
                 variant="outlined"
-            ></v-text-field>
+            ></v-select>
         </div>
 
         <div v-if="keys.length > 0">

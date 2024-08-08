@@ -53,6 +53,7 @@ export interface Backend {
     search(keyword: string): Promise<any>;
     testList(path: string): Promise<any>;
     findCurrentWorkItemByInstId(instId: string): Promise<any>;
+    getUserList(): Promise<any>;
 }
 
 // export type { Backend }
