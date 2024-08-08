@@ -45,23 +45,10 @@
             </v-card>
 
             <v-card v-if="dialogType == 'edit'">
-                <v-card-title class=""></v-card-title>
-                <v-card-text class="text-center">
-                    <div class="d-flex mb-2">
-                        <v-avatar v-if="!editUser.data.isTeam" color="grey" rounded="0" size="100" class="mb-5">
-                            <v-img v-if="editUser.data.img" :src="editUser.data.img"></v-img>
-                        </v-avatar>
-                        <div class="text-start align-self-center ml-4">
-                            <h6 class="text-h6 font-weight-bold">{{ editUser.data.name }}</h6>
-                            <div class="text-body-1">{{ editUser.data.email }}</div>
-                        </div>
-                    </div>
-                    
-                    <v-select v-if="!editUser.data.isTeam" v-model="editUser.data.pid" :items="allTeams" item-title="name"
-                        item-value="id" label="팀"></v-select>
-                    <v-text-field v-if="editUser.data.role" v-model="editUser.data.role" label="역할"></v-text-field>
-                    
-                    <v-autocomplete v-if="editUser.data.isTeam" v-model="editUser.children" :items="allUsers" chips 
+                <v-card-text v-if="editUser.data.isTeam" class="mt-5">
+                    <v-text-field v-model="editUser.data.name" label="팀명"></v-text-field>
+
+                    <v-autocomplete v-model="editUser.children" :items="allUsers" chips 
                         closable-chips color="blue-grey-lighten-2" item-title="data.name" :item-value="item => item" 
                         multiple label="팀원 선택" small-chips>
                         <template v-slot:chip="{ props, item }">
@@ -79,6 +66,23 @@
                         </template>
                     </v-autocomplete>
                 </v-card-text>
+                
+                <v-card-text v-else class="text-center mt-5">
+                    <div class="d-flex mb-2">
+                        <v-avatar v-if="!editUser.data.isTeam" color="grey" rounded="0" size="100" class="mb-5">
+                            <v-img v-if="editUser.data.img" :src="editUser.data.img"></v-img>
+                        </v-avatar>
+                        <div class="text-start align-self-center ml-4">
+                            <h6 class="text-h6 font-weight-bold">{{ editUser.data.name }}</h6>
+                            <div class="text-body-1">{{ editUser.data.email }}</div>
+                        </div>
+                    </div>
+                    
+                    <v-select v-model="editUser.data.pid" :items="allTeams" item-title="name"
+                        item-value="id" label="팀"></v-select>
+                    <v-text-field v-model="editUser.data.role" label="역할"></v-text-field>
+                </v-card-text>
+
                 <v-card-actions class="pt-0">
                     <v-spacer></v-spacer>
                     <v-btn color="primary" @click="updateNode">수정</v-btn>
