@@ -75,11 +75,16 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
       }
     };
   }
-
-  function createParticipant(event, collapsed) {
-    create.start(event, elementFactory.createParticipantShape(collapsed));
+  
+  
+  function createParticipant(event, collapsed, isHorizontal) {
+    var participantShape = elementFactory.createParticipantShape({
+      isHorizontal: isHorizontal,
+      width: isHorizontal ? 450 : 300,
+      height: isHorizontal ? 200 : 400
+    });
+    create.start(event, participantShape);
   }
-
   assign(actions, {
     'undo': {
       group: 'tools',
@@ -179,8 +184,25 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
       className: 'bpmn-icon-participant',
       title: 'Create Pool/Participant',
       action: {
-        dragstart: createParticipant,
-        click: createParticipant
+        dragstart: function(event) {
+          createParticipant(event, false, true);
+        },
+        click: function(event) {
+          createParticipant(event, false, true);
+        }
+      }
+    },
+    'create.participant-collapsed': {
+      group: 'collaboration',
+      className: 'bpmn-icon-participant icon-rotate-90',
+      title: 'Create Vertical Pool/Participant',
+      action: {
+        dragstart: function(event) {
+          createParticipant(event, true, false);
+        },
+        click: function(event) {
+          createParticipant(event, true, false);
+        }
       }
     }
   });
