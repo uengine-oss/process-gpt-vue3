@@ -84,7 +84,10 @@ export default {
                     const roleBindings = await backend.bindRole(me.definition.roles);
                     if (roleBindings && roleBindings.length > 0) {
                         roleBindings.forEach((roleBinding) => {
-                            me.roleMappings.find((role) => role.name === roleBinding.roleName).endpoint = roleBinding.userId;
+                            let role = me.roleMappings.find((role) => role.name === roleBinding.roleName);
+                            if(role) {
+                                role['endpoint'] = roleBinding.userId;
+                            }
                         })
                     }
                     

@@ -7,7 +7,7 @@
     <div class="pa-4" style="height: 100%">
         <div class="d-flex flex-column overflow-y-auto" style="height: 100%">
             <Instruction :workItem="workItem" />
-            <div v-if="isCompleted">
+            <div v-if="outputItems && outputItems.length > 0">
                 <v-row class="w-100" v-for="item in outputItems" :key="item.name">
                     <v-col cols="5">
                         <v-list-subheader>{{ item.key }}</v-list-subheader>
@@ -17,11 +17,13 @@
                     </v-col>
                 </v-row>
             </div>
-            <div v-else>
+            <div v-if="!isCompleted">
                 <DefaultForm v-if="inputItems && inputItems.length > 0" :inputItems="inputItems" />
-                <AudioTextarea v-model="newMessage" :workItem="workItem" />
+                <div v-if="mode == 'ProcessGPT'">
+                    <AudioTextarea v-model="newMessage" :workItem="workItem" />
+                    <Checkpoints ref="checkpoints" :workItem="workItem" />
+                </div>
             </div>
-            <Checkpoints v-if="mode == 'ProcessGPT'" ref="checkpoints" :workItem="workItem" />
         </div>
     </div>
 </template>
@@ -84,6 +86,31 @@ export default {
         },
         mode() {
             return window.$mode;
+        },
+        inputKeys() {
+            const parameters = this.workItem && this.workItem.activity && this.workItem.activity.parameters ? this.workItem.activity.parameters : [];
+            if (parameters.length > 0) {
+                const inputs = parameters.filter(parameter => parameter.direction.includes("IN"));
+                return inputs.map(input => input.argument.text);
+            }
+            return [];
+        },
+        outputKeys() {
+            const parameters = this.workItem && this.workItem.activity && this.workItem.activity.parameters ? this.workItem.activity.parameters : [];
+            if (parameters.length > 0) {
+                const outputs = parameters.filter(parameter => parameter.direction.includes("OUT"));
+                return outputs.map(output => output.argument.text);
+            }
+            return [];
+        }
+    },
+    watch: {
+        "$route.params.taskId": {
+            handler(newVal, oldVal) {
+                if (newVal && newVal != oldVal) {
+                    this.init();
+                }
+            },
         }
     },
     created() {
@@ -97,9 +124,17 @@ export default {
             var me = this;
             let workitem = me.workItem;
             let parameterValues = workitem.parameterValues;
-            me.inputItems = parameterValues ? Object.entries(parameterValues).map(([key, value]) => ({ name: key, key, value })) : [];
             if (me.isCompleted) {
                 me.outputItems = parameterValues ? Object.entries(parameterValues).map(([key, value]) => ({ name: key, key, value })) : [];
+            } else {
+                me.inputItems = parameterValues ? Object.entries(parameterValues).map(([key, value]) => ({ name: key, key, value })) : [];
+                if (me.inputKeys.length > 0) {
+                    me.inputItems = me.inputItems.filter(item => me.inputKeys.includes(item.key));
+                }
+                me.outputItems = parameterValues ? Object.entries(parameterValues).map(([key, value]) => ({ name: key, key, value })) : [];
+                if (me.outputKeys.length > 0) {
+                    me.outputItems = me.outputItems.filter(item => me.outputKeys.includes(item.key));
+                }
             }
         },
         completeTask(value) {
