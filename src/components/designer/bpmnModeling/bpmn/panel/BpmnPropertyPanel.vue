@@ -195,27 +195,19 @@ export default {
             const json = JSON.stringify(this.uengineProperties);
             
             const elementCopyDeep = _.cloneDeep(this.elementCopy);
-
+            modeling.updateProperties(task, { name: name });
             if (task.type == 'bpmn:TextAnnotation') {
                 // TextAnnotation Size 깨지는 현상 해결
                 const originTaskWidth = task.width? JSON.parse(JSON.stringify(task.width)) : null;
                 const originTaskHeight = task.height? JSON.parse(JSON.stringify(task.height)) : null;
                 const originTaskX = task.x? JSON.parse(JSON.stringify(task.x)) : null;
                 const originTaskY = task.y? JSON.parse(JSON.stringify(task.y)) : null;
-                modeling.updateProperties(task, { name: name });
+                
                 if (this.text) {
                     const text = this.text;
                     modeling.updateProperties(task, { text: text });
                 }
-                modeling.resizeShape(task, {
-                    x: originTaskX,
-                    y: originTaskY,
-                    width: originTaskWidth,
-                    height: originTaskHeight
-                });
-            }
-
-            if(originTaskX && originTaskY && originTaskWidth && originTaskHeight) {
+                if(originTaskX && originTaskY && originTaskWidth && originTaskHeight) {
                 modeling.resizeShape(task, {
                     x: originTaskX,
                     y: originTaskY,
@@ -223,6 +215,9 @@ export default {
                     height: originTaskHeight 
                 });
             }
+            }
+
+           
 
             if (elementCopyDeep.extensionElements && elementCopyDeep.extensionElements.values) {
                 elementCopyDeep.extensionElements.values[0].json = json;

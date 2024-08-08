@@ -70,7 +70,7 @@ export default {
                     window.$app_.snackbarSuccessStatus = true;
                 }
             } catch (e) {
-                if (options.onFail) {
+                if (options && options.onFail) {
                     options.onFail(e);
                 }
                 let errorMessage = e.message;
