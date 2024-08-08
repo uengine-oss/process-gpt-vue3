@@ -18,16 +18,16 @@
         "calendar" : "Calendar",
         "layoutSetting" : "Layout Setting"
     },
+    "DashboardTodoList": {
+        "todo": "Todo",
+        "inProgress": "In Progess",
+        "done": "Done"
+    },
     "DashboardUpcomingScheduls": {
         "title": "Upcoming Schedules",
         "schedule": "Schedule",
         "dateAndTime": "Date and Time",
         "category": "Category"
-    },
-    "DashboardTodoList": {
-        "todo": "Todo",
-        "inProgress": "In Progess",
-        "done": "Done"
     },
     "dashboard": {
         "title": "Dashboard"
@@ -79,7 +79,20 @@
     "organizationChartDefinition": {
         "title": "Org Chart Setup",
         "cardTitle": "Org Chart Management",
-        "organizationChartExplanation": "Manage the organization chart interactively.\nYou can register, modify, and delete teams (departments), roles, and employees.\nFor example, you can issue commands like: 'Register the development and management teams, and add Mr. Hong Gil-dong as a new employee to the management team. His role is a developer. The team leader of the management team is Team Leader Amuge.'"
+        "organizationChartExplanation": "Manage the organization chart interactively.\nYou can register, modify, and delete teams (departments), roles, and employees.\nFor example, you can issue commands like: 'Register the development and management teams, and add Mr. Hong Gil-dong as a new employee to the management team. His role is a developer. The team leader of the management team is Team Leader Amuge.'",
+        "addTeam": "Add Team",
+        "teamId": "Team ID",
+        "teamName": "Team Name",
+        "team": "Team",
+        "teamMember": "Team Member",
+        "role": "Role",
+        "selectTeamMember": "Select Team Member",
+        "deleteMessage": "Do you want to delete?",
+        "deleteMessage1": "Do you want to delete?",
+        "from": "From",
+        "add": "Add",
+        "edit": "Edit",
+        "delete": "Delete"
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",
@@ -263,5 +276,15 @@
     },
     "Mashup": {
         "hoverText": "Drag a layout (Container) here to start editing the form."
+    },
+    "ProcessDefinitionVersionDialog": {
+        "title": "Save Process",
+        "title2": "Version Up",
+        "minorUpdate": "Minor Update",
+        "majorUpdate": "Major Update",
+        "id": "ID",
+        "name": "Name",
+        "message": "Message",
+        "save": "Save"
     }
 }

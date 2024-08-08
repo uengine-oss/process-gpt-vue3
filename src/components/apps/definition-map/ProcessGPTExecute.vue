@@ -169,6 +169,7 @@ export default {
                     } else {
                         me.closeDialog();
                         me.EventBus.emit('instances-updated');
+                        me.$router.push(`/instancelist/${btoa(result.instanceId)}`);
                     }
                 },
                 successMsg: 'Process 실행 완료'

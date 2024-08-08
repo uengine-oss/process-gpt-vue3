@@ -67,7 +67,7 @@
             <bpmn:extensionElements>
                 <uengine:uengine-params>
                     <uengine:role>system</uengine:role>
-                    <uengine:description>지원자가 지원서를 정상적으로 제출하면, 시스템에서는 축하 메세지를 발송합니다.</uengine:description>
+                    <uengine:description>지원자가 지원서를 정상적으로 제출하면, 시스템에서는 축하 메시지를 발송합니다.</uengine:description>
                     <uengine:pythonCode />
                 </uengine:uengine-params>
             </bpmn:extensionElements>

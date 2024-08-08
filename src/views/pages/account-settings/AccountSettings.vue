@@ -10,7 +10,7 @@ import ManageAccessTab from '@/components/pages/account-settings/ManageAccessTab
 // import SecurityTab from '@/components/pages/account-settings/SecurityTab.vue';
 
 /*tab*/
-const tab = ref('ManageAccess');
+const tab = ref('');
 
 const superAdmin = ref(localStorage.getItem('role') === 'superAdmin');
 </script>

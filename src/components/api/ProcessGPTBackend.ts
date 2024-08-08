@@ -11,6 +11,13 @@ enum ErrorCode {
 }
 
 class ProcessGPTBackend implements Backend {
+    
+    testList(path: string): Promise<any> {
+        throw new Error('Method not implemented.');
+    }
+    findCurrentWorkItemByInstId(instId: string): Promise<any> {
+        throw new Error('Method not implemented.');
+    }
 
     async checkDBConnection() {
         return await storage.isConnection();
@@ -336,11 +343,7 @@ class ProcessGPTBackend implements Backend {
                 if (activityInfo && activityInfo.properties) {
                     const properties = JSON.parse(activityInfo.properties);
                     if (properties.parameters) {
-                        if (workitem.status != 'DONE') {
-                            parameters = properties.parameters.filter((item: any) => item.direction.includes('IN'));
-                        } else {
-                            parameters = properties.parameters
-                        }
+                        parameters = properties.parameters;
                         parameters.forEach((item: any) => {
                             item.variable.defaultValue = inst[item.variable.name.toLowerCase().replace(/ /g, '_')] || "";
                         })
@@ -890,7 +893,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async startAndComplete(command: object, isSimulate: boolean) {
+    async startAndComplete(command: object, isSimulate: string) {
         try {
             return null;
         } catch (error) {
@@ -1071,7 +1074,11 @@ class ProcessGPTBackend implements Backend {
 
     async getUserList() {
         try {
-            const users = await storage.list('users');
+            const options = {
+                orderBy: 'username',
+                sort: 'asc'
+            }
+            const users = await storage.list('users', options);
             return users
         } catch (error) {
             //@ts-ignore

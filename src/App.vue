@@ -73,20 +73,27 @@ export default {
                 if (options && options.onFail) {
                     options.onFail(e);
                 }
-                let errorMessage = e.message;
-                let currentException = e;
-                while (currentException.cause) {
-                    errorMessage += ' | Cause: ' + currentException.cause.message;
-                    currentException = currentException.cause;
-                }
-                if (errorMessage) {
-                    // alert(errorMessage)
-                    window.$app_.snackbarMessage = errorMessage;
+                if (options.errorMsg) {
+                    window.$app_.snackbarMessage = options.errorMsg;
                     window.$app_.snackbarColor = 'error';
                     window.$app_.snackbar = true;
                     window.$app_.snackbarSuccessStatus = false;
-                    if (e.response && e.response.data && e.response.data.message) {
-                        window.$app_.snackbarMessageDetail = e.response.data.message;
+                } else {
+                    let errorMessage = e.message;
+                    let currentException = e;
+                    while (currentException.cause) {
+                        errorMessage += ' | Cause: ' + currentException.cause.message;
+                        currentException = currentException.cause;
+                    }
+                    if (errorMessage) {
+                        // alert(errorMessage)
+                        window.$app_.snackbarMessage = errorMessage;
+                        window.$app_.snackbarColor = 'error';
+                        window.$app_.snackbar = true;
+                        window.$app_.snackbarSuccessStatus = false;
+                        if (e.response && e.response.data && e.response.data.message) {
+                            window.$app_.snackbarMessageDetail = e.response.data.message;
+                        }
                     }
                 }
                 console.log(e);

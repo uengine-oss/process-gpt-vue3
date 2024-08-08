@@ -1,7 +1,7 @@
 <template>
     <div style="height:100%;">
-        <!-- buttons -->
-        <div v-if="openMenu" style="position: absolute; right: 20px; z-index: 1000; top: 60px;">
+        <!-- 기존 조직도를 클릭하면 우측 상단에 나타나던 버튼 -->
+        <!-- <div v-if="openMenu" style="position: absolute; right: 20px; z-index: 1000; top: 60px;">
             <v-row class="ma-0 pa-0">
                 <v-spacer></v-spacer>
                 <v-btn v-if="isRoot" color="primary" class="ml-2" variant="flat" density="comfortable"
@@ -26,44 +26,47 @@
                     </v-btn>
                 </div>
             </v-row>
-        </div>
+        </div> -->
         <!-- organization chart -->
         <div id="tree" ref="tree" class="h-100"></div>
         <!-- dialogs -->
         <v-dialog v-model="dialog" max-width="500">
             <v-card v-if="dialogType == 'addTeam'">
-                <v-card-title>팀 추가</v-card-title>
-                <v-card-text class="text-center">
-                    <v-text-field v-model="newTeam.id" label="팀 ID"></v-text-field>
-                    <v-text-field v-model="newTeam.name" label="팀명"></v-text-field>
-                </v-card-text>
-                <v-card-actions class="pt-0">
+                <v-row class="ma-0 pa-4">
+                    <v-card-title>{{ $t('organizationChartDefinition.addTeam') }}</v-card-title>
                     <v-spacer></v-spacer>
-                    <v-btn color="primary" @click="updateNode">추가</v-btn>
-                    <v-btn color="error" @click="dialog = false">취소</v-btn>
-                </v-card-actions>
+                    <v-btn @click="dialog = false"
+                        icon variant="text" density="comfortable"
+                    >
+                        <Icons :icon="'close'" :size="16"/>
+                    </v-btn>
+                </v-row>
+                
+                <v-card-text class="text-center">
+                    <v-text-field v-model="newTeam.id" :label="$t('organizationChartDefinition.teamId')"></v-text-field>
+                    <v-text-field v-model="newTeam.name" :label="$t('organizationChartDefinition.teamName')"></v-text-field>
+                </v-card-text>
+                <v-row class="ma-0 pa-4">
+                    <v-spacer></v-spacer>
+                    <v-btn color="primary" rounded @click="updateNode">{{ $t('organizationChartDefinition.add') }}</v-btn>
+                </v-row>
             </v-card>
 
-            <v-card v-if="dialogType == 'edit'">
-                <v-card-title class=""></v-card-title>
-                <v-card-text class="text-center">
-                    <div class="d-flex mb-2">
-                        <v-avatar v-if="!editUser.data.isTeam" color="grey" rounded="0" size="100" class="mb-5">
-                            <v-img v-if="editUser.data.img" :src="editUser.data.img"></v-img>
-                        </v-avatar>
-                        <div class="text-start align-self-center ml-4">
-                            <h6 class="text-h6 font-weight-bold">{{ editUser.data.name }}</h6>
-                            <div class="text-body-1">{{ editUser.data.email }}</div>
-                        </div>
-                    </div>
-                    
-                    <v-select v-if="!editUser.data.isTeam" v-model="editUser.data.pid" :items="allTeams" item-title="name"
-                        item-value="id" label="팀"></v-select>
-                    <v-text-field v-if="editUser.data.role" v-model="editUser.data.role" label="역할"></v-text-field>
-                    
-                    <v-autocomplete v-if="editUser.data.isTeam" v-model="editUser.children" :items="allUsers" chips 
+            <v-card v-if="dialogType == 'edit'" class="pa-4">
+                <template v-if="editUser.data.isTeam">
+                    <v-row class="ma-0 pa-0 mb-2">
+                        <v-spacer></v-spacer>
+                        <v-btn @click="dialog = false"
+                            icon variant="text" density="comfortable"
+                        >
+                            <Icons :icon="'close'" :size="16"/>
+                        </v-btn>
+                    </v-row>
+                    <v-text-field v-model="editUser.data.name" :label="$t('organizationChartDefinition.teamName')"></v-text-field>
+
+                    <v-autocomplete v-model="editUser.children" :items="allUsers" chips 
                         closable-chips color="blue-grey-lighten-2" item-title="data.name" :item-value="item => item" 
-                        multiple label="팀원 선택" small-chips>
+                        multiple :label="$t('organizationChartDefinition.selectTeamMember')" small-chips>
                         <template v-slot:chip="{ props, item }">
                             <v-chip v-if="item.raw.data.img" v-bind="props" :prepend-avatar="item.raw.data.img" :text="item.raw.data.name"></v-chip>
                             <v-chip v-else v-bind="props" prepend-icon="mdi-account-circle" :text="item.raw.data.name"></v-chip>
@@ -78,32 +81,55 @@
                             </v-list-item>
                         </template>
                     </v-autocomplete>
+                </template>
+                
+                <v-card-text v-else class="text-center mt-5">
+                    <div class="d-flex mb-2">
+                        <v-avatar v-if="!editUser.data.isTeam" color="grey" rounded="0" size="100" class="mb-5">
+                            <v-img v-if="editUser.data.img" :src="editUser.data.img"></v-img>
+                        </v-avatar>
+                        <div class="text-start align-self-center ml-4">
+                            <h6 class="text-h6 font-weight-bold">{{ editUser.data.name }}</h6>
+                            <div class="text-body-1">{{ editUser.data.email }}</div>
+                        </div>
+                    </div>
+                    
+                    <v-select v-model="editUser.data.pid" :items="allTeams" item-title="name"
+                        item-value="id" :label="$t('organizationChartDefinition.team')"></v-select>
+                    <v-text-field v-model="editUser.data.role" :label="$t('organizationChartDefinition.role')"></v-text-field>
                 </v-card-text>
-                <v-card-actions class="pt-0">
+
+                <v-row class="ma-0 pa-4">
                     <v-spacer></v-spacer>
-                    <v-btn color="primary" @click="updateNode">수정</v-btn>
-                    <v-btn color="error" @click="dialog = false">취소</v-btn>
-                </v-card-actions>
+                    <v-btn color="primary" rounded @click="updateNode">{{ $t('organizationChartDefinition.edit') }}</v-btn>
+                </v-row>
             </v-card>
 
             <v-card v-if="dialogType == 'delete'">
-                <v-card-title>{{ editUser.data.isTeam ? '팀' : '팀원' }} 삭제</v-card-title>
-                <v-card-text>
-                    <div v-if="editUser.data.isTeam">'{{ editUser.data.name }}' 을/를 삭제하시겠습니까?</div>
-                    <div v-else>'{{ currentTeam.name }}' 에서 '{{ editUser.data.name }}' 님을 삭제하시겠습니까?</div>
-                </v-card-text>
-                <v-card-actions>
+                <v-row class="ma-0 pa-2">
+                    <v-card-title>{{ editUser.data.isTeam ? $t('organizationChartDefinition.team') : $t('organizationChartDefinition.teamMember') }} {{ $t('organizationChartDefinition.delete') }}</v-card-title>
                     <v-spacer></v-spacer>
-                    <v-btn color="primary" @click="updateNode">삭제</v-btn>
-                    <v-btn color="error" @click="dialog = false">취소</v-btn>
-                </v-card-actions>
+                    <v-btn @click="dialog = false"
+                        icon variant="text" density="comfortable"
+                    >
+                        <Icons :icon="'close'" :size="16"/>
+                    </v-btn>
+                </v-row>
+                <v-card-text>
+                    <div v-if="editUser.data.isTeam">'{{ editUser.data.name }}' {{ $t('organizationChartDefinition.deleteMessage') }}</div>
+                    <div v-else>'{{ currentTeam.name }}' {{ $t('organizationChartDefinition.from') }} '{{ editUser.data.name }}' {{ $t('organizationChartDefinition.deleteMessage1') }}</div>
+                </v-card-text>
+                <v-row class="ma-0 pa-4">
+                    <v-spacer></v-spacer>
+                    <v-btn color="primary" rounded  @click="updateNode">{{ $t('organizationChartDefinition.delete') }}</v-btn>
+                </v-row>
             </v-card>
         </v-dialog>
     </div>
 </template>
 
 <script>
-import ApexTree from 'apextree'
+import ApexTree from 'apextree';
 
 export default {
     props: {
@@ -169,19 +195,24 @@ export default {
                 contentKey: 'data',
                 width: 800,
                 height: 500,
-                nodeWidth: 200,
-                nodeHeight: 100,
+                nodeWidth: 155,
+                nodeHeight: 115,
                 childrenSpacing: 50,
                 siblingSpacing: 20,
                 direction: 'top',
                 enableExpandCollapse: true,
                 nodeTemplate: (content) =>`
-                <div class='node-content' id='${content.id}' style='display: flex; padding: 10px; flex-direction: row;justify-content: space-between; align-items: center; height: 100%;'>
-                    ${content.img ? `<img style='width: 45px; height: 45px; border-radius: 50%;' src='${content.img}' />` : ''}
-                    <div style='margin-left: 10px'>
+                <div class='node-content' id='${content.id}' style='display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%;'>
+                    ${content.id == 'root' ? '' : (content.img ? `<img class="node-content-img" src='${content.img}' />` : `<img class="node-content-img" src='src/assets/images/profile/defaultUser.png' />`)}
+                    <div class="node-content-text-box">
                         <div style="font-weight: bold; font-family: Arial; font-size: 14px;">${content.name}</div>
                         ${content.email ? `<div style="font-family: Arial; font-size: 12px">${content.email}</div>` : ''}
-                        ${content.role ? `<div style="font-family: Arial; font-size: 12px">${content.role}</div>` : ''}
+                        ${content.role ? `<div style="font-family: Arial; color:gray; font-size: 11px">${content.role}</div>` : ''}
+                        <div class="node-content-btn-box">
+                            ${content.id == 'root' ? `<img class="node-content-btn add-team-btn" src="/assets/images/icon/plus.svg" alt="Add Team">` : ''}
+                            ${content.isTeam == true ? `<img class="node-content-btn edit-team-btn" src="/assets/images/icon/pencil.svg" alt="Edit Team">` : ''}
+                            ${content.isTeam == true ? `<img class="node-content-btn delete-team-btn" src="/assets/images/icon/trash.svg" alt="Delete Team">` : ''}
+                        </div>
                     </div>
                 </div>
                 `,
@@ -189,6 +220,20 @@ export default {
             };
             this.tree = new ApexTree(document.getElementById('tree'), options);
             await this.drawTree()
+
+            document.addEventListener('click', (event) => {
+                if (event.target.classList.contains('add-team-btn')) {
+                    event.stopPropagation();
+                    this.openDialog('addTeam');
+                } else if (event.target.classList.contains('edit-team-btn')) {
+                    event.stopPropagation();
+                    this.openDialog('edit');
+                } else if (event.target.classList.contains('delete-team-btn')) {
+                    event.stopPropagation();
+                    this.openDialog('delete');
+                }
+            });
+
 
             this.allTeams = this.node.children.filter(c => c.data.isTeam).map(t => ({
                 id: t.id,
@@ -222,7 +267,10 @@ export default {
             const target = event.target.closest('.node-content');
             if (target) {
                 if (this.previousTarget && this.previousTarget !== target) {
-                    this.previousTarget.style.backgroundColor = '';
+                    const previousTextBox = this.previousTarget.querySelector('.node-content-text-box');
+                    if (previousTextBox) {
+                        previousTextBox.style.backgroundColor = '';
+                    }
                 }
                 const foundNode = this.findNodeById(this.node, target.id);
                 if (foundNode && foundNode.data) {
@@ -231,7 +279,10 @@ export default {
                         this.openMenu = true;
                     }
                 }
-                target.style.backgroundColor = '#d7d7d7';
+                const textBox = target.querySelector('.node-content-text-box');
+                if (textBox) {
+                    textBox.style.backgroundColor = `rgba(var(--v-theme-primary), 0.15)`;
+                }
                 this.previousTarget = target;
             } else {
                 if (this.previousTarget) {
