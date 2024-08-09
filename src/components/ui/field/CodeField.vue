@@ -53,15 +53,14 @@ export default {
                 {
                     dataToUse: "localEventType",
                     htmlAttribute: "event_type",
-                    settingLabel: "Event Type",
+                    settingLabel: "CodeField.eventType",
                     settingType: "select",
                     settingValue: ["click", "initialize", "validate", "watch"]
                 },
-
                 {
                     dataToUse: "localWatchName",
                     htmlAttribute: "watch_name",
-                    settingLabel: "Name to watch",
+                    settingLabel: "CodeField.nameToWatch",
                     settingType: "select",
                     settingValue: [],
                     isShowCheck: (props) => {
@@ -69,7 +68,6 @@ export default {
                     },
                     addOns: ["inputableNameItems"]
                 },
-
                 {
                     dataToUse: "localEncodedCode",
                     htmlAttribute: "encoded_code",

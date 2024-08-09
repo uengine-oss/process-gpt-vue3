@@ -1660,7 +1660,7 @@
                 var btn = $(this);
                 flog('Click on .btn-component-delete', btn);
                 
-                if (confirm('Are you sure that you want to delete this component? This action can not be undo!')) {
+                if (confirm('정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
                     var component = btn.closest('.keditor-component');
                     var contentArea = component.closest('.keditor-content-area');
                     

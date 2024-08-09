@@ -25,7 +25,7 @@ let commonSettingInfos = {
     "localName": {
         dataToUse: "localName",
         htmlAttribute: "name",
-        settingLabel: "Name",
+        settingLabel: "FormDefinitionPanel.id",
         settingType: "text",
         validCheck: (value) => {
             if (!value || value.length <= 0) return "Name 속성에 값을 입력해 주세요."
@@ -37,14 +37,14 @@ let commonSettingInfos = {
     "localAlias": {
         dataToUse: "localAlias",
         htmlAttribute: "alias",
-        settingLabel: "Label",
+        settingLabel: "FormDefinitionPanel.name",
         settingType: "text"
     },
 
     "localDisabled": {
         dataToUse: "localDisabled",
         htmlAttribute: "disabled",
-        settingLabel: "ReadOnly",
+        settingLabel: "FormDefinitionPanel.readOnly",
         settingType: "checkbox"
     },
 

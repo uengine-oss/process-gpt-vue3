@@ -42,7 +42,7 @@ export default {
                 {
                     dataToUse: "localType",
                     htmlAttribute: "type",
-                    settingLabel: "Type",
+                    settingLabel: "FormDefinitionPanel.type",
                     settingType: "select",
                     settingValue: ["text", "number", "email", "url", "date", "datetime-local", "month", "week", "time", "password", "tel", "color"]
                 },
