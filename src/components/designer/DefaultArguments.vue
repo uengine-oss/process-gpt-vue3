@@ -34,7 +34,7 @@
             </v-row>
         </div>
         <div>
-            <h6 class="text-h6 text-left mb-4">Parameter Context</h6>
+            <h6 class="text-h6 text-left mb-4">{{ $t('DefaultArguments.parameterContext') }}</h6>
             <bpmn-parameter-contexts :parameter-contexts="properties.parameters"></bpmn-parameter-contexts>
         </div>
     </div>

@@ -319,5 +319,15 @@
     "CodeField": {
         "eventType": "이벤트 타입",
         "nameToWatch": "감시 필드 명"
+    },
+    "BpmnParameterContexts": {
+        "addArgument": "아규먼트 추가"
+    },
+    "DefaultArguments": {
+        "parameterContext": "파라미터 컨텍스트"
+    },
+    "CallActivityPanel": {
+        "parameterContext": "파라미터 컨텍스트"
     }
+
 }

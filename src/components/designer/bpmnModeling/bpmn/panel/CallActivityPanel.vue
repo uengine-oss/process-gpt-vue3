@@ -12,7 +12,7 @@
         <div :key="definitionCnt" v-if="copyUengineProperties.definitionId">
             <div>
                 <v-row class="ma-0 pa-0">
-                    <div>Parameter Context</div>
+                    <div>{{ $t('CallActivityPanel.parameterContext') }}</div>
                     <v-spacer></v-spacer>
                 </v-row>
                 <v-row>

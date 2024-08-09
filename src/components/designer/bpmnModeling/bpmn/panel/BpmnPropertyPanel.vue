@@ -1,11 +1,9 @@
 <template>
     <div style="height: calc(100vh - 155px)">
-        <v-row class="pa-0 ma-0">
+        <v-row class="pa-2 ma-0">
             <v-spacer></v-spacer>
             <v-btn @click="save"
-                icon text
-                size="small"
-                class="mr-4 mt-4"
+                icon variant="text" density="comfortable"
             >
                 <Icons :icon="'close'" class="cursor-pointer" :size="16"/>
             </v-btn>
