@@ -10,14 +10,8 @@
         </v-row>
         <v-card-text style="overflow: auto; height: calc(100% - 30px); width: 700px">
             <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
-            <div style="float: right">Role: {{ role.name }}</div>
-            <div>{{ $t('BpnmPropertyPanel.name') }}</div>
-            <v-text-field v-model="name" :disabled="isViewMode" ref="cursor"></v-text-field>
-            <!-- <div>
-                <div>{{ $t('BpnmPropertyPanel.description') }}</div>
-                <v-textarea v-if="!elementCopy.$type.includes('Event')" :disabled="isViewMode"
-                    v-model="uengineProperties.description"></v-textarea>
-            </div> -->
+            <div style="margin:-20px 0px 10px 0px;">{{ $t('BpnmPropertyPanel.role') }}: {{ role.name }}</div>
+            <v-text-field v-model="name" label="이름" :disabled="isViewMode" ref="cursor"></v-text-field>
             <component
                 style="height: 100%"
                 :is="panelName"

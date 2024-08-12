@@ -274,7 +274,8 @@
         "generateScript": "Generate Script",
         "scriptPrompt": "Script Prompt",
         "scriptType": "Script Type",
-        "add": "Add"
+        "add": "Add",
+        "role": "Role"
     },
     "NotificationDD": {
         "notification": "Notifications"
@@ -319,5 +320,14 @@
     "CodeField": {
         "eventType": "Event Type",
         "nameToWatch": "Name to Watch"
+    },
+    "BpmnParameterContexts": {
+        "addArgument": "Add Argument"
+    },
+    "DefaultArguments": {
+        "parameterContext": "Parameter Context"
+    },
+    "CallActivityPanel": {
+        "parameterContext": "Parameter Context"
     }
 }
