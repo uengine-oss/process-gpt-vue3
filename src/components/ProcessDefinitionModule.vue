@@ -1558,6 +1558,10 @@ export default {
 
                     const store = useBpmnStore();
                     let modeler = store.getModeler;
+                    const definitions = modeler.getDefinitions();
+                    if (definitions) {
+                        definitions.name = info.name || 'Default Name';
+                    }
                     let xmlObj = await modeler.saveXML({ format: true, preamble: true });
                     let newProcessDefinition
 

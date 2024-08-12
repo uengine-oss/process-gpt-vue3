@@ -147,7 +147,7 @@ export default {
             if (this.newMessage && this.newMessage.length > 0) {
                 value.parameterValues['user_input_text'] = this.newMessage;
             }
-            if (this.isDryRun && this.mode == 'ProcessGPT') {
+            if (this.isDryRun && this.mode == 'ProcessGPT' || this.simulate) {
                 this.$emit('executeProcess', value);
             } else {
                 this.completeTask(value);

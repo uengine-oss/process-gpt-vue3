@@ -72,8 +72,8 @@ export default {
             }
         },
         isSimulate: {
-            type: Boolean,
-            default: false
+            type: String,
+            default: "false"
         }
     },
     data: () => ({
@@ -83,6 +83,9 @@ export default {
         newMessage: '',
     }),
     computed: {
+        simulate() {
+            return this.isSimulate === 'true' || this.isSimulate === 'false' ? this.isSimulate === 'true' : this.isSimulate;
+        },
         isCompleted(){
             return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
         },
@@ -280,8 +283,8 @@ export default {
             if (this.newMessage && this.newMessage.length > 0) {
                 value['user_input_text'] = this.newMessage;
             }
-
-            if(this.isDryRun && $mode == 'ProcessGPT') {
+            
+            if(this.isDryRun && $mode == 'ProcessGPT' || this.simulate) {
                 const formColumn = this.formDefId.replace(/\s+/g, '_').toLowerCase();
                 value[formColumn] = this.formData;
                 this.$emit('executeProcess', value);

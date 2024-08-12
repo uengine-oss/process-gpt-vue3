@@ -1,5 +1,5 @@
 <template>
-    <v-card style="width: 100%; height: 100%">
+    <v-card style="height: 100%;" variant="outlined">
         <!-- <v-card-title>  </v-card-title> -->
         <v-card-text>
             <div v-for="val, key in selectedTask" :key="key" >
@@ -27,7 +27,7 @@ export default {
         
     }),
     async created() {
-        
+        console.log(selectedTask)
     },
     methods: {
         executeProcess() {

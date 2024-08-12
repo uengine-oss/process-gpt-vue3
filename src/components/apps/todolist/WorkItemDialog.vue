@@ -30,7 +30,7 @@ export default {
         taskId: String,
         workItem: Object,
         isSimulate: {
-            type: Boolean,
+            type: String,
             default: false
         }
     },
