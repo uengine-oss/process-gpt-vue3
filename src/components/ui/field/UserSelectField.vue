@@ -4,9 +4,10 @@
             :items="usersToSelect" 
             :label="(localAlias && localAlias.length > 0) ? localAlias : localName" 
             :disabled="localDisabled"
-            item-title="id" 
+            item-title="username" 
             :item-value="itemValue" 
             chips closable-chips multiple small-chips
+            variant="outlined"
         >
             <template v-slot:chip="{ props, item }">
                 <v-chip v-bind="props" :text="item.raw.username ?? item.raw.email"></v-chip>

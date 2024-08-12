@@ -32,7 +32,7 @@
         <!-- dialogs -->
         <v-dialog v-model="dialog" max-width="500">
             <v-card v-if="dialogType == 'addTeam'">
-                <v-row class="ma-0 pa-4">
+                <v-row class="ma-0 pa-4 pb-0">
                     <v-card-title>{{ $t('organizationChartDefinition.addTeam') }}</v-card-title>
                     <v-spacer></v-spacer>
                     <v-btn @click="dialog = false"

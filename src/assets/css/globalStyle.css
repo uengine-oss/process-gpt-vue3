@@ -82,7 +82,7 @@ hr {
 /* bpm .bpmn-icon-screw-wrench 아이콘 나타나지 않아 넣어둔 부분 */
 
 .vue-bpmn-diagram-container .djs-palette {
-    width: 695px !important;
+    width: 740px !important;
     height: 50px;
     left:5px; top:5px;
     border: none;
@@ -175,6 +175,16 @@ hr {
     overflow: auto;
 }
 
+.icon-rotate-90 {
+    transform: rotate(90deg);
+}
+.icon-rotate-180 {
+    transform: rotate(180deg);
+}
+.icon-rotate-270 {
+    transform: rotate(270deg);
+}
+
 .node-content-text-box {
     margin-top: 15px; 
     text-align: center; 
@@ -262,7 +272,7 @@ hr {
 @media only screen and (max-width:550px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 230px !important;
-        height:135px !important;
+        height:185px !important;
     }
 }
 

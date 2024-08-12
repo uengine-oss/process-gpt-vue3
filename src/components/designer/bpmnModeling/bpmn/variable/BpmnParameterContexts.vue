@@ -48,8 +48,8 @@
             </v-row>
         </div>
         <v-spacer></v-spacer>
-        <v-btn text color="primary" class="mb-3" @click="addMapping">
-            Add Argument
+        <v-btn text color="primary" rounded class="mb-3" @click="addMapping">
+            {{ $t('BpmnParameterContexts.addArgument') }}
         </v-btn>
     </div>
 </template>

@@ -257,9 +257,14 @@ export default {
 
 
 
+            const checkedFormData = function(variables, variable) {
+                let formVars = variables.filter((data) => data.type == 'Form');
+                return formVars.some(form => form.name == variable);
+            }
+
                 
             const laneActivityMapping = {};
-            const createActivity = function(activity) {
+            const createActivity = function(activity, variables) {
                 const role = activity.role ? activity.role : null;
                 if(role) {
                     if (!laneActivityMapping[activity?.role]) {
@@ -292,12 +297,19 @@ export default {
                 //     "OUT"}
                 let inputDataList = [];
                 let outputDataList = [];
+                let variableForHtmlFormContext = null;
                 activity?.inputData?.forEach((data) => {
-                    inputDataList.push({
-                        argument: { text: data },
-                        variable: { name: data },
-                        direction: 'OUT'
-                    });
+                    if(checkedFormData(variables, data)) {
+                        variableForHtmlFormContext = {
+                            name: data
+                        }
+                    } else {
+                        inputDataList.push({
+                            argument: { text: data },
+                            variable: { name: data },
+                            direction: 'OUT'
+                        });
+                    }
                 });
                 activity?.outputData?.forEach((data) => {
                     outputDataList.push({
@@ -311,6 +323,10 @@ export default {
                     let activityData = {
                         parameters: [...inputDataList, ...outputDataList]
                     };
+                    if (variableForHtmlFormContext) {
+                        activityData['variableForHtmlFormContext'] = variableForHtmlFormContext;
+                        activityData['_type'] = 'org.uengine.kernel.FormActivity';
+                    }
                     params.textContent = JSON.stringify(activityData);
                     root.appendChild(params);
                 }
@@ -369,7 +385,7 @@ export default {
                 Object.keys(jsonModel.components).forEach((key) => {
                     const component = jsonModel.components[key];
                     if(component.componentType == 'Activity') {
-                        createActivity(component);
+                        createActivity(component, jsonModel.data);
                     } else if(component.componentType == 'Gateway') {
                         createGateway(component);
                     } else if(component.componentType == 'Event') {

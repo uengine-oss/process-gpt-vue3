@@ -46,7 +46,7 @@
                                     style="width: 30px" 
                                     v-model="attribute.className" 
                                     :items="entityTypeList"
-                                    label="ClassName"
+                                    label="Attribute Type"
                                     hide-details
                             ></v-select>
                             <v-text-field
@@ -114,7 +114,7 @@
                                 style="width: 30px" 
                                 v-model="newAttribute.className" 
                                 :items="entityTypeList"
-                                label="ClassName"
+                                label="Attribute Type"
                         ></v-select>
                         <v-text-field
                                 v-model="newAttribute.name" 

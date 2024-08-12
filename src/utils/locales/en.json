@@ -53,6 +53,9 @@
     "chats": {
         "title": "Chats"
     },
+    "proposals": {
+        "title": "Proposal"
+    },
     "instance": {
         "title": "Instance"
     },
@@ -70,11 +73,17 @@
     "runningInstance": {
         "title": "Running Instance"
     },
+    "admin": {
+        "title": "Administrator Menu"   
+    },
     "completeInstance": {
         "title": "Complete Instance"
     },
     "definitionManagement": {
         "title": "Definition Management"
+    },
+    "systemDefinition": {
+        "title": "System Definition"
     },
     "organizationChartDefinition": {
         "title": "Org Chart Setup",
@@ -123,6 +132,7 @@
         "processDefinitionExplanation": "Manage the process interactively. For example, you can issue commands like: \n'Register the sales management process as follows:\n1. Register sales opportunities including customer name, estimated business size, key person, requirements\n2. Proposal preparation: proposal contents, pricing\n3. Winning or losing an order\n4. If the order is won, proceed with contract execution'",
         "name": "Name",
         "type": "Type",
+        "form": "Form",
         "description": "Description",
         "dataSource": "DataSource",
         "query": "Query",
@@ -144,6 +154,7 @@
     "ProcessVariable": {
         "name": "Name",
         "type": "Type",
+        "defaultValue": "Form",
         "description": "Description",
         "dataSource": "DataSource",
         "add": "Add",
@@ -213,7 +224,8 @@
     },
     "tenantManagePage": {
         "title": "Company Management",
-        "subTitle": "Create a new company or go to a page managed by the selected company.",
+        "subTitle1": "Create a new company or go to a page managed by the selected company.",
+        "subTitle2": "(* Sign-up is not possible on mobile devices.)",
         "createCompany": "Create a company"
     },
     "tenantInfoField": {
@@ -262,7 +274,8 @@
         "generateScript": "Generate Script",
         "scriptPrompt": "Script Prompt",
         "scriptType": "Script Type",
-        "add": "Add"
+        "add": "Add",
+        "role": "Role"
     },
     "NotificationDD": {
         "notification": "Notifications"
@@ -286,5 +299,35 @@
         "name": "Name",
         "message": "Message",
         "save": "Save"
+    },
+    "FormDefinitionPanel": {
+        "editForm": "Edit Form Attribute",
+        "id": "ID",
+        "name": "Name",
+        "type": "Type",
+        "readOnly": "Read-Only Mode",
+        "save": "Save",
+        "fixed": "Fixed Options",
+        "dataBinding": "Data Binding"
+    },
+    "ContainerSettingPanel": {
+        "title": "Edit Container Attribute",
+        "id": "ID",
+        "name": "Name",
+        "save": "Save",
+        "multDataMode": "Multi-Data Mode"
+    },
+    "CodeField": {
+        "eventType": "Event Type",
+        "nameToWatch": "Name to Watch"
+    },
+    "BpmnParameterContexts": {
+        "addArgument": "Add Argument"
+    },
+    "DefaultArguments": {
+        "parameterContext": "Parameter Context"
+    },
+    "CallActivityPanel": {
+        "parameterContext": "Parameter Context"
     }
 }
