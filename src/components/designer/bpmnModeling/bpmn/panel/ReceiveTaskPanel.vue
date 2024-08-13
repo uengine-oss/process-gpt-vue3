@@ -80,7 +80,7 @@
                     <div>{{ $t('BpnmPropertyPanel.checkPoints') }}</div>
                     <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
                 </v-row> -->
-                <v-btn block text rounded color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper"> Field Mapping </v-btn>
+                <v-btn block text rounded color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ReceiveTaskPanel.mapping') }}</v-btn>
                 <v-row class="ma-0 pa-0">
                     <v-checkbox
                         v-model="copyUengineProperties.skipIfNotFound"
@@ -106,7 +106,7 @@
             <v-row class="ma-0 pa-0">
                 <v-text-field v-model="copyUengineProperties.from" label="Key"></v-text-field>
             </v-row>
-            <v-btn block text rounded color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper"> Field Mapping </v-btn>
+            <v-btn block text rounded color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ReceiveTaskPanel.mapping') }}</v-btn>
         </div>
 
         <v-dialog

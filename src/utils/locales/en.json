@@ -330,5 +330,14 @@
     },
     "CallActivityPanel": {
         "parameterContext": "Parameter Context"
+    },
+    "ReceiveTaskPanel": {
+        "dataMapping": "Data Mapping"
+    },
+    "ServiceTaskPanel": {
+        "dataMapping": "Data Mapping"
+    },
+    "EventSynchronizationForm": {
+        "dataMapping": "Data Mapping"
     }
 }

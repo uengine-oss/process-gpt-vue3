@@ -136,7 +136,7 @@
                     </v-row>
                 </v-col>
 
-                <v-btn block text rounded color="primary" class="my-3" @click="openMapperDialog()"> Mapping </v-btn>
+                <v-btn block text rounded color="primary" class="my-3" @click="openMapperDialog()">{{ $t('EventSynchronizationForm.dataMapping') }}</v-btn>
             </v-col>
         </div>
 

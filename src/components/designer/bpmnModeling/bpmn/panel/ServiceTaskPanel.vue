@@ -37,7 +37,7 @@
                 생성
             </v-btn>
         </div>
-        <v-btn block text rounded color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper"> Field Mapping </v-btn>
+        <v-btn block text rounded color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ServiceTaskPanel.dataMapping') }}</v-btn>
         <div>
             <!-- <div>Return 값을 저장 할 변수</div> -->
             <!-- <v-row class="ma-0 pa-0">
