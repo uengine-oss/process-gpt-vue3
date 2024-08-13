@@ -10,7 +10,7 @@
                 <div>
                     <v-btn @click="prevStep" small :disabled="currentStepIndex === 0" style="margin-right: 5px;">이전 단계</v-btn>
                     <v-btn @click="nextStep" :disabled="currentStepIndex === stepIds.length - 1" small>다음 단계</v-btn>
-                    <v-btn style="margin-left: 10px;" :disabled="!isChanged" :color="isChanged ? 'primary':''" @click="saveDef()" small>저장</v-btn>
+                    <v-btn style="margin-left: 15px;" :disabled="!isChanged" :color="isChanged ? 'primary':''" @click="saveDef()" small>저장</v-btn>
                     <v-icon @click="closeDialog()" small style="margin-left: 10px;">mdi-close</v-icon>
                 </div>
             </v-card-title>
@@ -191,7 +191,7 @@ export default {
             "timeStamp": Date.now(),
         })
 
-//         // 모델 생성 단계
+        // 모델 생성 단계
 //         this.messages = []
 //         this.messages.push({
 //             "role": "system",
@@ -201,191 +201,179 @@ export default {
 //         this.$emit("openProcessPreview")
         
 //         this.processDefinition = {
-//             "megaProcessId": "미분류",
-//             "majorProcessId": "미분류",
-//             "processDefinitionName": "온라인 의류 쇼핑몰 주문 처리 자동화",
-//             "processDefinitionId": "online_clothing_order_automation",
-//     "description": "온라인 의류 쇼핑몰에서 주문이 발생하면 재고를 확인하고, 재고 유무에 따라 이메일을 발송하며, 최종적으로 재고를 업데이트하거나 주문을 취소하는 프로세스",
+//     "megaProcessId": "미분류",
+//     "majorProcessId": "미분류",
+//     "processDefinitionName": "온라인 의류 쇼핑몰 주문 처리 자동화",
+//     "processDefinitionId": "online_clothing_order_automation",
+//     "description": "온라인 의류 쇼핑몰의 주문 발생 시 재고 확인 및 배송 신청 또는 주문 취소의 전 과정을 자동화하는 프로세스",
 //     "data": [
 //         {
-//             "name": "주문 정보",
-//             "description": "주문에 대한 세부 정보",
+//             "name": "주문 데이터",
+//             "description": "온라인 쇼핑몰에서 제공하는 주문 정보",
 //             "type": "Form"
 //         },
 //         {
-//             "name": "재고 정보",
-//             "description": "재고의 고유 번호, 이름, 수량을 포함한 정보",
-//             "type": "Text"
+//             "name": "재고 데이터",
+//             "description": "엑셀 파일에 기록된 물품 고유 번호, 이름, 수량에 관한 정보",
+//             "type": "Attachment"
+//         },
+//         {
+//             "name": "고객 데이터",
+//             "description": "택배회사에 제공할 고객 정보",
+//             "type": "Form"
 //         }
 //     ],
 //     "roles": [
 //         {
-//             "name": "주문 관리자",
-//             "resolutionRule": "시스템을 통해 자동화된 이메일 발송 수행"
+//             "name": "시스템",
+//             "resolutionRule": "자동화 프로세스의 백엔드 시스템"
+//         },
+//         {
+//             "name": "담당자",
+//             "resolutionRule": "이메일 발송을 담당하는 역할"
 //         }
 //     ],
 //     "components": [
 //         {
 //             "componentType": "Event",
-//             "id": "start_event_id",
-//             "name": "주문 접수",
-//             "role": "주문 관리자",
+//             "id": "start_event",
+//             "name": "주문 발생",
+//             "role": "시스템",
 //             "source": "",
 //             "type": "StartEvent",
-//             "description": "주문이 접수되었을 때 시작하는 이벤트"
+//             "description": "온라인 쇼핑몰에서 주문이 발생하는 이벤트"
 //         },
 //         {
 //             "componentType": "Activity",
-//             "id": "check_inventory_id",
-//             "name": "재고 파악",
-//             "role": "주문 관리자",
-//             "source": "start_event_id",
+//             "id": "check_inventory",
+//             "name": "재고 확인",
 //             "type": "UserActivity",
-//             "description": "엑셀 파일을 통해 재고 확인",
-//             "instruction": "엑셀 파일에서 물품 번호를 검색해 재고 수량을 확인합니다.",
+//             "source": "start_event",
+//             "description": "엑셀 파일을 통해 재고를 확인하는 작업",
+//             "instruction": "엑셀 파일을 열어 주문된 상품의 재고를 확인합니다.",
+//             "role": "시스템",
 //             "inputData": [
-//                 "주문 정보"
+//                 "주문 데이터",
+//                 "재고 데이터"
 //             ],
 //             "outputData": [
-//                 "재고 정보"
+//                 "재고 데이터"
 //             ],
-//             "checkpoints": [],
-//             "tool": "formHandler:휴가 신청서 제출폼",
-//             "properties": "{\"variableForHtmlFormContext\":{\"name\":\"휴가 신청서 제출폼\"},\"mappingContext\":{},\"_type\":\"org.uengine.kernel.FormActivity\"}"
+//             "checkpoints": []
 //         },
 //         {
 //             "componentType": "Gateway",
-//             "id": "gateway_inventory_check",
+//             "id": "inventory_gateway",
 //             "name": "재고 유무 확인",
-//             "role": "주문 관리자",
-//             "source": "check_inventory_id",
+//             "role": "시스템",
+//             "source": "check_inventory",
 //             "type": "ExclusiveGateway",
-//             "description": "재고 유무에 따라 경로 분기"
+//             "description": "재고가 있는지 없는지에 따라 프로세스를 분기"
 //         },
 //         {
 //             "componentType": "Activity",
-//             "id": "send_shipping_email_id",
+//             "id": "send_shipping_email",
 //             "name": "배송 신청 이메일 발송",
-//             "role": "주문 관리자",
-//             "source": "gateway_inventory_check",
 //             "type": "EMailActivity",
-//             "description": "택배회사에 배송 신청 이메일을 발송",
-//             "instruction": "택배회사에 고객 정보를 포함한 이메일을 자동 발송합니다.",
+//             "source": "inventory_gateway",
+//             "description": "택배회사에 고객 정보를 제공하여 배송 신청 이메일 발송",
+//             "instruction": "택배회사에 필요한 고객 정보를 이메일로 보냅니다.",
+//             "role": "담당자",
 //             "inputData": [
-//                 "주문 정보",
-//                 "재고 정보"
+//                 "고객 데이터"
 //             ],
 //             "outputData": [],
-//             "checkpoints": [],
-//             "tool": "formHandler:휴가 승인 폼",
-//             "properties": "{\"variableForHtmlFormContext\":{\"name\":\"휴가 승인 폼\"},\"mappingContext\":{},\"_type\":\"org.uengine.kernel.FormActivity\"}"
+//             "checkpoints": []
 //         },
 //         {
 //             "componentType": "Activity",
-//             "id": "update_inventory_id",
+//             "id": "decrement_inventory",
 //             "name": "재고 차감",
-//             "role": "주문 관리자",
-//             "source": "send_shipping_email_id",
-//             "type": "UserActivity",
-//             "description": "재고 수량을 감소시킵니다.",
-//             "instruction": "엑셀 파일에서 해당 품목의 재고 수량을 차감합니다.",
+//             "type": "ScriptActivity",
+//             "source": "send_shipping_email",
+//             "description": "엑셀 파일에서 해당 재고를 차감",
+//             "instruction": "엑셀 파일의 재고 수량을 업데이트합니다.",
+//             "role": "시스템",
 //             "inputData": [
-//                 "재고 정보"
+//                 "재고 데이터"
 //             ],
-//             "outputData": [],
+//             "outputData": [
+//                 "재고 데이터"
+//             ],
 //             "checkpoints": []
 //         },
 //         {
+//             "componentType": "Event",
+//             "id": "end_shipping_event",
+//             "name": "배송 완료",
+//             "role": "시스템",
+//             "source": "decrement_inventory",
+//             "type": "EndEvent",
+//             "description": "배송 완료 상태로 업데이트"
+//         },
+//         {
 //             "componentType": "Activity",
-//             "id": "send_cancel_email_id",
+//             "id": "send_cancellation_email",
 //             "name": "주문 취소 이메일 발송",
-//             "role": "주문 관리자",
-//             "source": "gateway_inventory_check",
 //             "type": "EMailActivity",
-//             "description": "고객에게 주문 취소 이메일을 발송",
-//             "instruction": "고객에게 재고 부족으로 인한 주문 취소 이메일을 자동 발송합니다.",
+//             "source": "inventory_gateway",
+//             "description": "재고 부족으로 인해 주문을 취소를 알리는 이메일 발송",
+//             "instruction": "고객에게 재고 부족으로 인해 주문이 취소되었음을 알립니다.",
+//             "role": "담당자",
 //             "inputData": [
-//                 "주문 정보"
-//             ],
-//             "outputData": [],
-//             "checkpoints": []
-//         },
-//         {
-//             "componentType": "Activity",
-//             "id": "cancel_order_id",
-//             "name": "주문 취소 처리",
-//             "role": "주문 관리자",
-//             "source": "send_cancel_email_id",
-//             "type": "UserActivity",
-//             "description": "주문을 취소 처리합니다.",
-//             "instruction": "주문 상태를 취소로 업데이트합니다.",
-//             "inputData": [
-//                 "주문 정보"
+//                 "고객 데이터"
 //             ],
 //             "outputData": [],
 //             "checkpoints": []
 //         },
 //         {
 //             "componentType": "Event",
-//             "id": "end_event_id",
-//             "name": "프로세스 종료",
-//             "role": "주문 관리자",
-//             "source": "update_inventory_id",
+//             "id": "end_cancellation_event",
+//             "name": "주문 취소",
+//             "role": "시스템",
+//             "source": "send_cancellation_email",
 //             "type": "EndEvent",
-//             "description": "프로세스가 종료됨"
-//         },
-//         {
-//             "componentType": "Event",
-//             "id": "end_event_cancel_id",
-//             "name": "프로세스 종료",
-//             "role": "주문 관리자",
-//             "source": "cancel_order_id",
-//             "type": "EndEvent",
-//             "description": "프로세스가 종료됨"
+//             "description": "주문을 취소 상태로 업데이트"
 //         }
 //     ],
 //     "sequences": [
 //         {
-//             "source": "start_event_id",
-//             "target": "check_inventory_id"
+//             "source": "start_event",
+//             "target": "check_inventory"
 //         },
 //         {
-//             "source": "check_inventory_id",
-//             "target": "gateway_inventory_check"
+//             "source": "check_inventory",
+//             "target": "inventory_gateway"
 //         },
 //         {
-//             "source": "gateway_inventory_check",
-//             "target": "send_shipping_email_id",
+//             "source": "inventory_gateway",
+//             "target": "send_shipping_email",
 //             "condition": {
-//                 "key": "재고 정보",
+//                 "key": "재고 데이터",
 //                 "condition": " > ",
 //                 "value": "0"
 //             }
 //         },
 //         {
-//             "source": "gateway_inventory_check",
-//             "target": "send_cancel_email_id",
+//             "source": "send_shipping_email",
+//             "target": "decrement_inventory"
+//         },
+//         {
+//             "source": "decrement_inventory",
+//             "target": "end_shipping_event"
+//         },
+//         {
+//             "source": "inventory_gateway",
+//             "target": "send_cancellation_email",
 //             "condition": {
-//                 "key": "재고 정보",
+//                 "key": "재고 데이터",
 //                 "condition": " <= ",
 //                 "value": "0"
 //             }
 //         },
 //         {
-//             "source": "send_shipping_email_id",
-//             "target": "update_inventory_id"
-//         },
-//         {
-//             "source": "update_inventory_id",
-//             "target": "end_event_id"
-//         },
-//         {
-//             "source": "send_cancel_email_id",
-//             "target": "cancel_order_id"
-//         },
-//         {
-//             "source": "cancel_order_id",
-//             "target": "end_event_cancel_id"
+//             "source": "send_cancellation_email",
+//             "target": "end_cancellation_event"
 //         }
 //     ],
 //     "participants": []
@@ -397,6 +385,9 @@ export default {
 //             "content": `컨설팅 내용을 기반으로한 모델 생성이 완료되었습니다. 생성된 모델을 리뷰하고 필요한 부분을 추가, 개선하는 단계입니다. 개선하고자하는 부분이 있으시다면 말씀해주세요!`,
 //             "timeStamp": Date.now(),
 //         })
+
+//         await this.checkedFormData();
+
 //         this.isPreviewMode = true
 //         this.generator = new ProcessPreviewGenerator(this, {
 //             isStream: true,
@@ -549,6 +540,7 @@ export default {
                         this.processDefinition = response
                         this.bpmn = this.createBpmnXml(response); 
                         this.definitionChangeCount++;
+                        await this.checkedFormData();
                         this.saveDef()
                         this.messages.push({
                             "role": "system",

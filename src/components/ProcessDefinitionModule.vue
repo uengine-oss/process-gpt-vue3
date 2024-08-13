@@ -2,6 +2,9 @@
 import xml2js from 'xml2js';
 import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
+import FormGenerator from './ai/FormDesignGenerator';
+import partialParse from "partial-json-parser";
+
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -22,6 +25,82 @@ export default {
     beforeUnmount() {},
     async created() {},
     methods: {
+        extractJSON(inputString, checkFunction) {
+            try {
+                JSON5.parse(inputString); // if no problem, just return the whole thing
+                return inputString;
+            } catch (e) {}
+
+            if (this.hasUnclosedTripleBackticks(inputString)) {
+                inputString = inputString + '\n```';
+            }
+
+            // 정규 표현식 정의
+            //const regex = /^.*?`{3}(?:json)?\n(.*?)`{3}.*?$/s;
+            const regex = /```(?:json)?\s*([\s\S]*?)\s*```/;
+
+
+            // 정규 표현식을 사용하여 입력 문자열에서 JSON 부분 추출
+            const match = inputString.match(regex);
+
+            // 매치된 결과가 있다면, 첫 번째 캡쳐 그룹(즉, JSON 부분)을 반환
+            if (match) {
+                if (checkFunction)
+                    match.forEach((shouldBeJson) => {
+                        const lastIndex = shouldBeJson.lastIndexOf('}');
+                        const result = shouldBeJson.slice(0, lastIndex + 1);
+                        if (checkFunction(result)) return result;
+                    });
+                else return match[1];
+            }
+
+            // 매치된 결과가 없으면 null 반환
+            return null;
+        },
+        checkedFormData() {
+            if (this.processDefinition.data) {
+                let formList = this.processDefinition.data.filter(data => data.type == 'Form');
+                if (formList && formList.length > 0) {
+                    formList.forEach(async (form) => {
+                        await this.generateForm(form, false);
+                    });
+                }
+            }
+        },
+        async generateForm(form, isGenStart) {
+            let formHtml = await backend.getRawDefinition(form.name, { type: 'form' }) || null;
+            if (formHtml == null) {
+                const formGenerator = new FormGenerator(this, {
+                    isStream: true,
+                    preferredLanguage: 'Korean',
+                });
+                formGenerator.client.onModelCreated = null;
+                formGenerator.client.onGenerationFinished = async (response) => {
+                    let jsonData = this.extractJSON(response);
+                    jsonData = jsonData.match(/\{[\s\S]*\}/)[0]
+                        .replaceAll('\n', '')
+                        .replaceAll('`', `"`);
+                    jsonData = partialParse(jsonData);
+                    if (jsonData.htmlOutput) {
+                        await backend.putRawDefinition(jsonData.htmlOutput, form.name, { type: 'form' });
+                    }
+                }
+
+                if (!isGenStart) {
+                    let newMessage = `'${form.name}' 폼을 생성해줘.`;
+                    formGenerator.previousMessages = [formGenerator.prevMessageFormat];
+                    formGenerator.previousMessages.push({
+                        role: 'user',
+                        content: newMessage
+                    });
+                    await formGenerator.generate();
+                    isGenStart = true;;
+                }
+                formHtml = await this.generateForm(form, isGenStart);
+            } else {
+                return formHtml;
+            }
+        },
         extractPropertyNameAndIndex(jsonPath) {
             let match;
             match = jsonPath.match(/^\$\.(\w+)\[(\d+)\]$/);

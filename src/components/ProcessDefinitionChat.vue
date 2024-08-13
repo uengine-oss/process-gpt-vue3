@@ -338,50 +338,6 @@ export default {
                 }
             });
         },
-        checkedFormData() {
-            if (this.processDefinition.data) {
-                let formList = this.processDefinition.data.filter(data => data.type == 'Form');
-                if (formList && formList.length > 0) {
-                    formList.forEach(async (form) => {
-                        await this.generateForm(form, false);
-                    });
-                }
-            }
-        },
-        async generateForm(form, isGenStart) {
-            let formHtml = await backend.getRawDefinition(form.name, { type: 'form' }) || null;
-            if (formHtml == null) {
-                const formGenerator = new FormGenerator(this, {
-                    isStream: true,
-                    preferredLanguage: 'Korean',
-                });
-                formGenerator.client.onModelCreated = null;
-                formGenerator.client.onGenerationFinished = async (response) => {
-                    let jsonData = this.extractJSON(response);
-                    jsonData = jsonData.match(/\{[\s\S]*\}/)[0]
-                        .replaceAll('\n', '')
-                        .replaceAll('`', `"`);
-                    jsonData = partialParse(jsonData);
-                    if (jsonData.htmlOutput) {
-                        await backend.putRawDefinition(jsonData.htmlOutput, form.name, { type: 'form' });
-                    }
-                }
-
-                if (!isGenStart) {
-                    let newMessage = `'${form.name}' 폼을 생성해줘.`;
-                    formGenerator.previousMessages = [formGenerator.prevMessageFormat];
-                    formGenerator.previousMessages.push({
-                        role: 'user',
-                        content: newMessage
-                    });
-                    await formGenerator.generate();
-                    isGenStart = true;;
-                }
-                formHtml = await this.generateForm(form, isGenStart);
-            } else {
-                return formHtml;
-            }
-        },
         toggleVerMangerDialog(open) {
             // Version Manager Dialog
             this.verMangerDialog = open;
