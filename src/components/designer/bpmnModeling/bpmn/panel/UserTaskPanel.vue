@@ -23,11 +23,11 @@
         </div>
         <div v-else-if="!isLoading && selectedActivity == 'FormActivity'">
             <div>
-                <v-row cclass="ma-0 pa-0">
+                <v-row class="ma-0 pa-0">
                     <!-- <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
                         <v-label class=" font-weight-medium" for="hcpm">{{ $t('ProcessVariable.defaultValue') }}</v-label>
                     </v-col> -->
-                    <v-col cols="12" sm="9">
+                    <v-col class="pa-0 pb-2">
                         <!-- <v-autocomplete 
                             v-model="selectedForm"
                             :items="definition.processVariables
@@ -38,6 +38,7 @@
                             hide-details>
                         </v-autocomplete> -->
                         <v-autocomplete
+                            label="Form"
                             v-model="selectedForm"
                             :items="definition.processVariables.filter((item) => item.type === 'Form').map((item) => item.name)"
                             color="primary"

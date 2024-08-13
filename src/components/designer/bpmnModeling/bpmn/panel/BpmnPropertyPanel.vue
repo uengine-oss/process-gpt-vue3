@@ -8,7 +8,7 @@
                 <Icons :icon="'close'" class="cursor-pointer" :size="16"/>
             </v-btn>
         </v-row>
-        <v-card-text style="overflow: auto; height: calc(100% - 30px); width: 700px">
+        <v-card-text style="overflow: auto; height: calc(100% - 50px); width: 700px">
             <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
             <div style="margin:-20px 0px 10px 0px;">{{ $t('BpnmPropertyPanel.role') }}: {{ role.name }}</div>
             <v-text-field v-model="name" label="이름" :disabled="isViewMode" ref="cursor"></v-text-field>
