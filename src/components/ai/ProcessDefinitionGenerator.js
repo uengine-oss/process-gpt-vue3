@@ -48,6 +48,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
 
 
             프로세스의 위치와 크기에 대한 설명:
+            isHorizontal은 프롬프트에 가로(true)와 세로(false)에 대한 언급이 있을 경우 반드시 설정해야함
             기본적으로 왼쪽에서 오른쪽으로 가로 배열임 
             기본적으로 이상한 모양이 되지 않도록 해야 함
             startEvent와 왼쪽 끝에 위치
@@ -71,6 +72,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
               "processDefinitionName": "프로세스 명",
               "processDefinitionId": "String-based unique id of the process definition in Snake case English without spaces",
               "description": "한글로 된 프로세스 설명",
+              "isHorizontal": "true | false", 
               "data": [{
                  "name": "한글로 된 프로세스 변수명",
                  "description": "한글로 된 프로세스 변수 설명",
@@ -156,6 +158,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                11. 중간에 액티비티가 추가된다면, 추가된 액티비티의 앞뒤 액티비티 간의 Sequence도 반드시 삭제해.
                12. Sequence는 replace가 없어. add 혹은 delete 해야해.
                13. id는 반드시 영어로 들어가야 함
+               14. 세로로 만들어 달라고 하면 반드시 isHorizontal을 false로 설정해줘.
             \`\`\`
               { 
                 "modifications": [
