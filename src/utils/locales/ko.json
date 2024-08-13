@@ -357,5 +357,24 @@
     },
     "Mapper" : {
         "mapper" : "매퍼"
+    },
+    "SubProcessPanel" : {
+        "forEachRole" : "반복 역할",
+        "role" : "역할",
+        "forEachVariable" : "반복 변수",
+        "variable" : "변수"
+    },
+    "ParticipantPanel" : {
+        "apiUrl" : "API URL",
+        "openAPISpec" : "Open API 스펙"
+    },
+    "LanePanel" : { 
+        "selectRoleType" : "역할 선택", 
+        "none" : "없음", 
+        "IAMScope" : "역할명으로 역할 선택",
+        "DirecUser": "직접 사용자 선택",
+        "resolutionRule": "역할 규칙",
+        "scopeName" : "역할 명", 
+        "userID": "유저 ID"
     }
 }

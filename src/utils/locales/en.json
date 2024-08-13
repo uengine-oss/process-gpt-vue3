@@ -357,5 +357,24 @@
     },
     "Mapper" : {
         "mapper" : "Mapper"
+    },
+    "SubProcessPanel" : {
+        "forEachRole" : "ForEach Role",
+        "role" : "Role",
+        "forEachVariable" : "ForEach Variable",
+        "variable" : "Variable"
+    },
+    "ParticipantPanel" : {
+        "apiUrl" : "API URL",
+        "openAPISpec" : "Open API Spec"
+    },
+    "LanePanel" : { 
+        "selectRoleType" : "Select Role Type", 
+        "none" : "None", 
+        "IAMScope" : "Role Resolution By IAM Scope",
+        "DirecUser": "Role Resolution By Direct user",
+        "resolutionRule": "Resolution Rule",
+        "scopeName" : "Scope Name", 
+        "userID": "User ID"
     }
 }
