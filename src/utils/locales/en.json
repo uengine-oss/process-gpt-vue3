@@ -338,6 +338,24 @@
         "dataMapping": "Data Mapping"
     },
     "EventSynchronizationForm": {
-        "dataMapping": "Data Mapping"
+        "dataMapping": "Data Mapping",
+        "eventAttributes": "Event Attributes",
+        "primaryKey": "Primary Key",
+        "correlationKey": "Correlation Key",
+        "attributeType" : "Attribute Type",
+        "name" : "Name",
+        "save" : "Save",
+        "add" : "Add"
+    },
+    "UserTaskPanel" : {
+        "default" : "Default", 
+        "form" : "Form", 
+        "external" : "External Application",
+        "formCreateDialog" : "Do you want to create a form?",
+        "yes" : "Yes",
+        "no" : "No"
+    },
+    "Mapper" : {
+        "mapper" : "Mapper"
     }
 }

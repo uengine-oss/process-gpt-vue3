@@ -9,7 +9,7 @@
                     <v-text-field v-model="value.eventSynchronization.eventType"></v-text-field>
                 </div> -->
 
-                <v-card-title class="pa-0">Event Attributes</v-card-title>
+                <v-card-title class="pa-0">{{$t('EventSynchronizationForm.eventAttributes')}}</v-card-title>
                 <draggable v-model="attributes" :options="dragOptions" class="mb-6" style="max-height:200px; overflow:auto;">
                     <div v-for="(attribute, idx) in attributes" :key="idx">
                         <div v-if="attribute.isEdit" style="display: flex; align-items: center; height: 10%;">
@@ -24,7 +24,7 @@
                                         <v-icon :style="attribute.isKey ? 'color: #0085db;' : ''">mdi-key</v-icon>
                                     </v-btn>
                                 </template>
-                                <span>Primary Key</span>
+                                <span>{{$t('EventSynchronizationForm.primaryKey')}}</span>
                             </v-tooltip>
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
@@ -37,18 +37,18 @@
                                         <v-icon :style="attribute.isCorrKey ? 'color: #0085db;' : ''">mdi-link-variant</v-icon>
                                     </v-btn>
                                 </template>
-                                <span>Correlation Key</span>
+                                <span>{{$t('EventSynchronizationForm.correlationKey')}}</span>
                             </v-tooltip>
                             <v-select 
                                     style="width: 30px" 
                                     v-model="attribute.className" 
                                     :items="entityTypeList"
-                                    label="Attribute Type"
+                                    :label="$t('EventSynchronizationForm.attributeType')"
                                     hide-details
                             ></v-select>
                             <v-text-field
                                     v-model="attribute.name" 
-                                    label="Name"
+                                    :label="$t('EventSynchronizationForm.name')"
                                     required
                                     hide-details
                             ></v-text-field>
@@ -62,7 +62,7 @@
                                         <v-icon>mdi-content-save</v-icon>
                                     </v-btn>
                                 </template>
-                                <span>Edit</span>
+                                <span>{{$t('EventSynchronizationForm.save')}}</span>
                             </v-tooltip>
                         </div> 
 
@@ -92,7 +92,7 @@
                                    <v-icon :style="newAttribute.isKey ? 'color: #0085db;' : ''">mdi-key</v-icon>
                                 </v-btn>
                             </template>
-                            <span>Primary Key</span>
+                            <span>{{$t('EventSynchronizationForm.primaryKey')}}</span>
                         </v-tooltip>
                         <v-tooltip location="bottom">
                             <template v-slot:activator="{ props }">
@@ -105,17 +105,17 @@
                                     <v-icon :style="newAttribute.isCorrKey ? 'color: #0085db;' : ''">mdi-link-variant</v-icon>
                                 </v-btn>
                             </template>
-                            <span>Correlation Key</span>
+                            <span>{{$t('EventSynchronizationForm.correlationKey')}}</span>
                         </v-tooltip>
                         <v-select 
                                 style="width: 30px" 
                                 v-model="newAttribute.className" 
                                 :items="entityTypeList"
-                                label="Attribute Type"
+                                :label="$t('EventSynchronizationForm.attributeType')"
                         ></v-select>
                         <v-text-field
                                 v-model="newAttribute.name" 
-                                label="Name"
+                                :label="$t('EventSynchronizationForm.name')"
                                 required
                                 v-on:keyup.enter="addAttribute()"
                         ></v-text-field>
@@ -131,7 +131,7 @@
                                     <v-icon>mdi-plus</v-icon>
                                 </v-btn>
                             </template>
-                            <span>Add</span>
+                            <span>{{$t('EventSynchronizationForm.add')}}</span>
                         </v-tooltip>
                     </v-row>
                 </v-col>
