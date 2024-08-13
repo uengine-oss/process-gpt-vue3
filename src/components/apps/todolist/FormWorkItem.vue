@@ -1,11 +1,11 @@
 <template>
     <v-row class="ma-0 pa-0 task-btn" style="right:50px; top:12px;">
         <v-spacer></v-spacer>
-        <div class="from-work-item-pc" v-if="!isCompleted">
+        <div class="from-work-item-pc" v-if="!isCompleted && !isPreviewMode">
             <v-btn v-if="!isDryRun" @click="saveTask" color="primary" class="mr-2" rounded>중간 저장</v-btn>
             <v-btn @click="executeProcess" color="primary" rounded>제출 완료</v-btn>
         </div>
-        <div class="from-work-item-mobile" v-if="!isCompleted">
+        <div class="from-work-item-mobile" v-if="!isCompleted && !isPreviewMode">
             <v-tooltip text="중간 저장">
                 <template v-slot:activator="{ props }">
                     <v-btn @click="saveTask" icon v-bind="props" density="comfortable">
@@ -23,7 +23,7 @@
             </v-tooltip>
         </div>
     </v-row>
-    <div class="pa-4">
+    <div class="pa-4" :style="isPreviewMode ? 'width: 100%; height: 100%;':''">
         <!-- <FormMapper></FormMapper> -->
         <Instruction :workItem="workItem" />
         <DynamicForm ref="dynamicForm" :formHTML="html" v-model="formData"></DynamicForm>
@@ -74,6 +74,11 @@ export default {
         isSimulate: {
             type: Boolean,
             default: false
+        },
+        formId: String,
+        isPreviewMode: {
+            type: Boolean,
+            default: false
         }
     },
     data: () => ({
@@ -109,7 +114,11 @@ export default {
             if(me.isDryRun) {
                 me.formDefId = me.dryRunWorkItem.activity.tool.split(':')[1];
             } else {
-                me.formDefId = me.workItem.worklist.tool.split(':')[1];
+                if(me.isPreviewMode){
+                    me.formDefId = me.formId
+                } else {
+                    me.formDefId = me.workItem.worklist.tool.split(':')[1];
+                }
             }
             if(!me.formDefId) return;
             me.html = await backend.getRawDefinition(me.formDefId, { type: 'form' });
@@ -128,7 +137,7 @@ export default {
         async loadForm(){
             var me = this;
 
-            if(!me.workItem.activity || !me.workItem.activity.variableForHtmlFormContext) return;
+            if(!me.workItem || !me.workItem.activity || !me.workItem.activity.variableForHtmlFormContext) return;
 
             let varName = me.workItem.activity.variableForHtmlFormContext.name;
             let variable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName);

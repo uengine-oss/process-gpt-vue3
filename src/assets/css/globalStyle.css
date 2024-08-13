@@ -79,19 +79,15 @@ hr {
     background-repeat: no-repeat !important; /* 이미지 반복 없음 */
     background-position: center !important;
 }
-
-.bpmn-icon-screw-wrench:hover {
-    background-color:rgba(0, 0, 0, 0.05) !important;
-}
 /* bpm .bpmn-icon-screw-wrench 아이콘 나타나지 않아 넣어둔 부분 */
 
 .vue-bpmn-diagram-container .djs-palette {
-    width: 695px !important;
+    width: 740px !important;
     height: 50px;
     left:5px; top:5px;
-    background-color: white;
     border: none;
     border-radius: 10px;
+    background-color: white;
     box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.1);
 }
 
@@ -104,6 +100,10 @@ hr {
 
 .vue-bpmn-diagram-container .djs-context-pad .group {
     min-width: 100px;
+}
+
+.vue-bpmn-diagram-container .djs-context-pad .group > div:hover {
+    background-color: rgb(var(--v-theme-primary), 0.15) !important;
 }
 
 .chat-display-none {
@@ -175,13 +175,104 @@ hr {
     overflow: auto;
 }
 
+.icon-rotate-90 {
+    transform: rotate(90deg);
+}
+.icon-rotate-180 {
+    transform: rotate(180deg);
+}
+.icon-rotate-270 {
+    transform: rotate(270deg);
+}
+
+.node-content-text-box {
+    margin-top: 15px; 
+    text-align: center; 
+    padding: 10px; 
+    border-radius: 10px;
+    background-color: white;
+    box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.2);
+    border-top: 5px solid rgba(var(--v-theme-primary));
+    height: 80px;
+    width: 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.node-content-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    position:absolute;
+    top:0px;
+    background-color: #E0E0E0;
+}
+
+.process-consulting-chat-layout-card {
+    height: 95vh;
+}
+
+.process-consulting-chat-layout-card .process-consulting-chat-components .chat-info-title {
+    display: none;
+}
+
+.process-consulting-chat-layout-card .chat-view-box {
+    height:200px !important;
+    overflow: auto;
+}
+
 #apexTreeWrapper {
     height: 100% !important;
 }
 
-#apexTreeWrapper > svg{
+#apexTreeWrapper > svg {
     height: 98% !important;
     width: 100% !important;
+}
+
+#apexTreeWrapper #toolbar {
+    gap:0px !important;
+}
+
+#apexTreeWrapper #toolbar #zoom-in,
+#apexTreeWrapper #toolbar #zoom-out,
+#apexTreeWrapper #toolbar #fit-screen,
+#apexTreeWrapper #toolbar #export {
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.7);
+    border-radius: 3px;
+    margin:0 2px 2px 0;
+    border: none !important;
+}
+
+#apexTreeWrapper #toolbar #zoom-in:hover,
+#apexTreeWrapper #toolbar #zoom-out:hover,
+#apexTreeWrapper #toolbar #fit-screen:hover,
+#apexTreeWrapper #toolbar #export:hover {
+    background: rgb(var(--v-theme-primary), 0.15) !important;
+}
+
+.apextree-node > div {
+    border: none !important;
+}
+
+.node-content-btn-box {
+    position: absolute;
+    right:5px;
+    top:32px;
+}
+
+.node-content-btn {
+    width:16px;
+    height:16px;
+    cursor: pointer;
+}
+.edit-team-btn {
+    width:13px;
+    height:13px;
+    position: relative;
+    top:-1px;
 }
 
 @media only screen and (max-width:1450px) {
@@ -194,7 +285,7 @@ hr {
 @media only screen and (max-width:550px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 230px !important;
-        height:135px !important;
+        height:185px !important;
     }
 }
 

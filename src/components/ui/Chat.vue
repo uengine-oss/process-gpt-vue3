@@ -4,7 +4,7 @@
             <div>
                 <div>
                     <slot name="custom-title">
-                        <div style="position: sticky; top:0px; z-index:1; background-color:white;">
+                        <div class="chat-info-title" style="position: sticky; top:0px; z-index:1; background-color:white;">
                             <div class="align-right gap-3 pa-4 justify-space-between">
                                 <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
                                     <div>
@@ -27,7 +27,7 @@
                     </slot>
 
                     <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                        <div class="d-flex w-100" :style="!$globalState.state.isRightZoomed ? chatHeight : 'height:100vh;'">
+                        <div class="d-flex w-100 chat-view-box" :style="!$globalState.state.isRightZoomed ? chatHeight : 'height:100vh;'">
                             <v-col>
                                 <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
                                     <template v-slot:title>
