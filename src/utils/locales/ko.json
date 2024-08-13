@@ -338,6 +338,24 @@
         "dataMapping": "데이터 매핑"
     },
     "EventSynchronizationForm": {
-        "dataMapping": "데이터 매핑"
+        "dataMapping": "데이터 매핑",
+        "eventAttributes": "이벤트 속성",
+        "primaryKey": "고유 키",
+        "correlationKey": "관계 키",
+        "attributeType" : "속성 유형",
+        "name" : "이름",
+        "save" : "저장",
+        "add" : "추가"
+    },
+    "UserTaskPanel" : {
+        "default" : "기본", 
+        "form" : "폼", 
+        "external" : "외부 어플리케이션",
+        "formCreateDialog" : "폼 생성을 하시겠습니까?",
+        "yes" : "예",
+        "no" : "아니오"
+    },
+    "Mapper" : {
+        "mapper" : "매퍼"
     }
 }
