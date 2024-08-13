@@ -11,12 +11,12 @@
         "title": "Easily initiate from AI-based process management to execution.",
         "subTitle": "Process definition, organizational chart management, To-Do management, process execution, process monitoring, process analysis."
     },
-    "headerMenu" : {
-        "sidebar" : "Sidebar",
-        "dashboard" : "Dashboard",
-        "todoList" : "Todo List",
-        "calendar" : "Calendar",
-        "layoutSetting" : "Layout Setting"
+    "headerMenu": {
+        "sidebar": "Sidebar",
+        "dashboard": "Dashboard",
+        "todoList": "Todo List",
+        "calendar": "Calendar",
+        "layoutSetting": "Layout Setting"
     },
     "DashboardTodoList": {
         "todo": "Todo",
@@ -74,7 +74,7 @@
         "title": "Running Instance"
     },
     "admin": {
-        "title": "Administrator Menu"   
+        "title": "Administrator Menu"
     },
     "completeInstance": {
         "title": "Complete Instance"
@@ -110,7 +110,7 @@
         "addMega": "Mega Process",
         "addMajor": "Major Process",
         "addSub": "Sub Process",
-        "save" : "Save"
+        "save": "Save"
     },
     "uiDefinition": {
         "title": "Screen Definition",
@@ -342,39 +342,39 @@
         "eventAttributes": "Event Attributes",
         "primaryKey": "Primary Key",
         "correlationKey": "Correlation Key",
-        "attributeType" : "Attribute Type",
-        "name" : "Name",
-        "save" : "Save",
-        "add" : "Add"
+        "attributeType": "Attribute Type",
+        "name": "Name",
+        "save": "Save",
+        "add": "Add"
     },
-    "UserTaskPanel" : {
-        "default" : "Default", 
-        "form" : "Form", 
-        "external" : "External Application",
-        "formCreateDialog" : "Do you want to create a form?",
-        "yes" : "Yes",
-        "no" : "No"
+    "UserTaskPanel": {
+        "default": "Default",
+        "form": "Form",
+        "external": "External Application",
+        "formCreateDialog": "Do you want to create a form?",
+        "yes": "Yes",
+        "no": "No"
     },
-    "Mapper" : {
-        "mapper" : "Mapper"
+    "Mapper": {
+        "mapper": "Mapper"
     },
-    "SubProcessPanel" : {
-        "forEachRole" : "ForEach Role",
-        "role" : "Role",
-        "forEachVariable" : "ForEach Variable",
-        "variable" : "Variable"
+    "SubProcessPanel": {
+        "forEachRole": "Role-based Multiple Creation",
+        "role": "Create multiple sub-processes based on roles",
+        "forEachVariable": "Variable-based Multiple Creation",
+        "variable": "Create multiple sub-processes based on variables"
     },
-    "ParticipantPanel" : {
-        "apiUrl" : "API URL",
-        "openAPISpec" : "Open API Spec"
+    "ParticipantPanel": {
+        "apiUrl": "API URL",
+        "openAPISpec": "Open API Spec"
     },
-    "LanePanel" : { 
-        "selectRoleType" : "Select Role Type", 
-        "none" : "None", 
-        "IAMScope" : "Role Resolution By IAM Scope",
+    "LanePanel": {
+        "selectRoleType": "Select Role Type",
+        "none": "None",
+        "IAMScope": "Role Resolution By IAM Scope",
         "DirecUser": "Role Resolution By Direct user",
         "resolutionRule": "Resolution Rule",
-        "scopeName" : "Scope Name", 
+        "scopeName": "Scope Name",
         "userID": "User ID"
     }
 }

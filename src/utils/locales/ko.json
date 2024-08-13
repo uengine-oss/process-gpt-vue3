@@ -359,10 +359,10 @@
         "mapper" : "매퍼"
     },
     "SubProcessPanel" : {
-        "forEachRole" : "반복 역할",
-        "role" : "역할",
-        "forEachVariable" : "반복 변수",
-        "variable" : "변수"
+        "forEachRole" : "역할 기반 다중 생성",
+        "role" : "역할로 서브프로세스를 여러 개 생성함",
+        "forEachVariable" : "변수 기반 다중 생성",
+        "variable" : "변수로 서브프로세스를 여러 개 생성함"
     },
     "ParticipantPanel" : {
         "apiUrl" : "API URL",
