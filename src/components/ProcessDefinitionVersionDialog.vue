@@ -3,7 +3,7 @@
         <v-dialog v-model="isOpen" max-width="400" @click:outside="close()">
             <v-card>
                 <v-row class="ma-0 pa-2">
-                    <v-card-title>{{ isNew ? $t('ProcessDefinitionVersionDialog.title') : $t('ProcessDefinitionVersionDialog.title1')}}</v-card-title>
+                    <v-card-title>{{ isNew ? $t('ProcessDefinitionVersionDialog.title') : $t('ProcessDefinitionVersionDialog.title2')}}</v-card-title>
                     <v-spacer></v-spacer>
                     <v-btn @click="close()"
                         icon variant="text" density="comfortable"

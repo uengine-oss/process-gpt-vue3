@@ -1,18 +1,15 @@
 <template>
     <div v-if="!isLoading">
-        <v-card flat>
-            <v-col>
-                <div style="font-size: medium;">URL</div>
-                <div>
-                    <v-text-field v-model="value.url"></v-text-field>
-                </div>
+        <div flat>
+            <v-col class="pa-0">
+                <v-text-field class="mb-8" label="URL" v-model="value.url"></v-text-field>
 
                 <!-- <div style="font-size: medium;">Event Type</div> -->
                 <!-- <div>
                     <v-text-field v-model="value.eventSynchronization.eventType"></v-text-field>
                 </div> -->
 
-                <div style="font-size: medium;">Event Attributes</div>
+                <v-card-title class="pa-0">Event Attributes</v-card-title>
                 <draggable v-model="attributes" :options="dragOptions" class="mb-6">
                     <div v-for="(attribute, idx) in attributes" :key="idx">
                         <div v-if="attribute.isEdit" style="display: flex; align-items: center; height: 10%;">
@@ -82,7 +79,7 @@
                     </div>
                 </draggable>
 
-                <v-col>
+                <v-col class="mb-8 pa-0">
                     <v-row justify="center" class="attribute-editor">
                         <v-tooltip location="bottom">
                             <template v-slot:activator="{ props }">
@@ -139,12 +136,11 @@
                     </v-row>
                 </v-col>
 
-                <div style="font-size: medium;">Event Mapping</div>
                 <div>
-                    <v-btn block text color="primary" class="my-3" @click="openMapperDialog()"> Mapping </v-btn>
+                    <v-btn block text rounded color="primary" class="my-3" @click="openMapperDialog()"> Mapping </v-btn>
                 </div>
             </v-col>
-        </v-card>
+        </div>
 
         <v-dialog
             v-model="mappingDialog"

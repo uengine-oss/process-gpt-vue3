@@ -72,6 +72,12 @@ hr {
     height:60px !important;
 } */
 
+.vue-bpmn-diagram-container .djs-direct-editing-parent {
+    background-color: inherit !important;
+    border: none !important;
+    border-radius: 8px;
+}
+
 /* bpm .bpmn-icon-screw-wrench 아이콘 나타나지 않아 넣어둔 부분 */
 .bpmn-icon-screw-wrench {
     background: url(../images/bpmn/icon/support.png) !important;
