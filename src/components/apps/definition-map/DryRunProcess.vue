@@ -3,7 +3,7 @@
         <v-card-title> Process 실행 </v-card-title>
         <v-card-text>
             <div v-if="dryRunWorkItem">
-                <WorkItem :definitionId="definitionId" :isDryRun="true" :dryRunWorkItem="dryRunWorkItem" @close="closeDialog"></WorkItem>
+                <WorkItem :definitionId="definitionId" :is-simulate="isSimulate" :isDryRun="true" :dryRunWorkItem="dryRunWorkItem" @close="closeDialog"></WorkItem>
             </div>
             <div v-else-if="dryRunWorkItem == undefined">
                 Loading...
@@ -28,6 +28,7 @@ export default {
     components: { WorkItem },
     props: {
         definitionId: String, // proceeName (proceeName.bpmn)
+        isSimulate: String
     },
     data: () => ({
         backend: null,
@@ -44,7 +45,8 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    me.dryRunWorkItem = await me.backend.dryRun(me.definitionId);
+                    console.log(me.isSimulate)
+                    me.dryRunWorkItem = await me.backend.dryRun(me.definitionId, me.isSimulate);
                 },
             });
         },

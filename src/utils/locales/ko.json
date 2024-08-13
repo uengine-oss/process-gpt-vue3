@@ -149,7 +149,8 @@
         "showModeling": "프로세스 보기",
         "deleteProcess": "프로세스 삭제",
         "deleteProcessMessage": "프로세스를 삭제하시겠습니까?",
-        "cancel": "취소"
+        "cancel": "취소",
+        "simulate": "시뮬레이션"
     },
     "ProcessVariable": {
         "name": "이름",
@@ -274,7 +275,8 @@
         "generateScript": "스크립트 생성",
         "scriptPrompt": "프롬프트 입력",
         "scriptType": "스크립트 타입",
-        "add": "추가"
+        "add": "추가",
+        "role": "역할"
     },
     "NotificationDD": {
         "notification": "알림"
@@ -328,6 +330,14 @@
     },
     "CallActivityPanel": {
         "parameterContext": "파라미터 컨텍스트"
+    },
+    "ReceiveTaskPanel": {
+        "dataMapping": "데이터 매핑"
+    },
+    "ServiceTaskPanel": {
+        "dataMapping": "데이터 매핑"
+    },
+    "EventSynchronizationForm": {
+        "dataMapping": "데이터 매핑"
     }
-
 }

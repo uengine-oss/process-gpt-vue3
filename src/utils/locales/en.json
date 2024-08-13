@@ -149,7 +149,8 @@
         "showXML": "Show XML",
         "showModeling": "Show Modeling",
         "deleteProcessMessage": "Are you sure you want to delete this process?",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "simulate": "Simulate"
     },
     "ProcessVariable": {
         "name": "Name",
@@ -274,7 +275,8 @@
         "generateScript": "Generate Script",
         "scriptPrompt": "Script Prompt",
         "scriptType": "Script Type",
-        "add": "Add"
+        "add": "Add",
+        "role": "Role"
     },
     "NotificationDD": {
         "notification": "Notifications"
@@ -319,5 +321,23 @@
     "CodeField": {
         "eventType": "Event Type",
         "nameToWatch": "Name to Watch"
+    },
+    "BpmnParameterContexts": {
+        "addArgument": "Add Argument"
+    },
+    "DefaultArguments": {
+        "parameterContext": "Parameter Context"
+    },
+    "CallActivityPanel": {
+        "parameterContext": "Parameter Context"
+    },
+    "ReceiveTaskPanel": {
+        "dataMapping": "Data Mapping"
+    },
+    "ServiceTaskPanel": {
+        "dataMapping": "Data Mapping"
+    },
+    "EventSynchronizationForm": {
+        "dataMapping": "Data Mapping"
     }
 }

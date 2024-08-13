@@ -72,12 +72,19 @@ hr {
     height:60px !important;
 } */
 
+.vue-bpmn-diagram-container .djs-direct-editing-parent {
+    background-color: inherit !important;
+    border: none !important;
+    border-radius: 8px;
+}
+
 /* bpm .bpmn-icon-screw-wrench 아이콘 나타나지 않아 넣어둔 부분 */
 .bpmn-icon-screw-wrench {
     background: url(../images/bpmn/icon/support.png) !important;
     background-size: 20px 20px !important; /* 이미지를 요소 안에 맞춤, 이미지가 잘릴 수 있음 */
     background-repeat: no-repeat !important; /* 이미지 반복 없음 */
     background-position: center !important;
+    background-color:white !important;
 }
 /* bpm .bpmn-icon-screw-wrench 아이콘 나타나지 않아 넣어둔 부분 */
 
@@ -208,6 +215,10 @@ hr {
     position:absolute;
     top:0px;
     background-color: #E0E0E0;
+}
+
+.bpmn-property-panel-name .v-input__details {
+    display: none;
 }
 
 #apexTreeWrapper {

@@ -73,19 +73,13 @@ class UEngineBackend implements Backend {
         return response.data;
     }
     async putRawDefinition(definition: any, requestPath: string, options: any) {
-        let req = {
-            definition: definition,
-        };
         var config = {
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'text/plain'
             },
             responseType: 'text' as const
         };
-        if(requestPath.indexOf("@") == -1)
-            requestPath = requestPath + "@" + options.name
-        
-        const response = await axiosInstance.put('/definition/raw/' + requestPath + '.' + options.type, req, config);
+        const response = await axiosInstance.put('/definition/raw/' + requestPath + '.' + options.type, definition, config);
         return response.data;
     }
     // @ts-ignore

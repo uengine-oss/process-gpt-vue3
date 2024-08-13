@@ -473,6 +473,7 @@ export default {
         },
         async loadData(path) {
             const me = this;
+            
             try {
                 const externalSystems = await backend.getSystemList();
                 if (externalSystems) {
@@ -489,8 +490,12 @@ export default {
                 let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
                 if (fullPath && lastPath != 'chat') {
                     let bpmn = await backend.getRawDefinition(fullPath, { type: 'bpmn' });
+                    const store = useBpmnStore();
+                    let modeler = store.getModeler;
+                    let definitions;
                     if (bpmn) {
-                        me.bpmn = bpmn;
+                        me.bpmn = bpmn;            
+                        definitions = modeler.getDefinitions();   
                         me.definitionChangeCount++;
                     }
                     if (me.useLock) {
@@ -499,13 +504,14 @@ export default {
                             me.processDefinition = value.definition;
                             me.processDefinition.processDefinitionId = value.id;
                             me.processDefinition.processDefinitionName = value.name;
-                            me.projectName = me.processDefinition.processDefinitionName;
+                            me.projectName = definitions.name ? definitions.name : me.processDefinition.processDefinitionName;
                         }
                         me.checkedLock(lastPath);
                     } else {
                         me.processDefinition = await me.convertXMLToJSON(me.bpmn);
                         me.processDefinition.processDefinitionId = fullPath;
                         me.processDefinition.processDefinitionName = fullPath;
+                        me.projectName = definitions.name ? definitions.name : me.processDefinition.processDefinitionName;
                     }
                 } else if (lastPath == 'chat') {
                     // me.processDefinition = null;

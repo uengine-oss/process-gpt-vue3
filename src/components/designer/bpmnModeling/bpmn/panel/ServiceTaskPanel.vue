@@ -3,18 +3,17 @@
         <div>
             Method Type & URL
             <v-row class="ma-0 pa-0">
-                <v-col cols="4">
+                <v-col cols="3" class="pa-0 pr-2">
                     <v-autocomplete
                         labels="Methods Type"
                         :items="methodList"
                         theme="light"
-                        rounded
                         density="comfortable"
-                        variant="solo"
+                        variant="outlined"
                         v-model="copyUengineProperties.method"
                     ></v-autocomplete>
                 </v-col>
-                <v-col cols="8">
+                <v-col cols="9" class="pa-0">
                     <v-text-field label="API URL" v-model="copyUengineProperties.uriTemplate"></v-text-field>
                 </v-col>
             </v-row>
@@ -31,16 +30,14 @@
             </v-row>
         </div>
         <div align="right" @click="generateAPI">
-            <v-btn prepend-icon color="primary">
+            <v-btn prepend-icon rounded color="primary">
                 <template v-slot:prepend>
-                    <Icons :icon="'wand'"  />
+                    <Icons :icon="'magic'"  />
                 </template>
                 생성
             </v-btn>
         </div>
-        <v-row class="ma-0 pa-0">
-                    <v-btn text color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper"> Field Mapping </v-btn>
-                </v-row>
+        <v-btn block text rounded color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ServiceTaskPanel.dataMapping') }}</v-btn>
         <div>
             <!-- <div>Return 값을 저장 할 변수</div> -->
             <!-- <v-row class="ma-0 pa-0">
