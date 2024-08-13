@@ -4,9 +4,9 @@
             <v-col class="d-flex ma-0 pa-0" style="height: 100%">
                 <v-card style="border-radius: 0px !important; border: none; height: 100%" flat>
                     <v-row class="ma-0 pa-0 button-container">
-                        <v-tooltip v-if="executable" :text="'Simulate'">
+                        <v-tooltip v-if="executable" :text="$t('processDefinition.simulate')">
                             <template v-slot:activator="{ props }">
-                                <v-switch color="primary" v-bind="props" v-model="isSimulate" false-value="false" true-value="true"></v-switch>
+                                <v-switch color="primary" v-bind="props" v-model="isSimulate" false-value="false" true-value="true" class="btn-simulate"></v-switch>
                             </template>
                         </v-tooltip>
                         <!-- <v-tooltip v-if="isSimulate == 'true' || isSimulate == 'record'" :text="'record'">
@@ -910,11 +910,18 @@ export default {
     flex-direction: row;
 }
 
+.btn-simulate {
+    margin-top:-3px;
+}
+
 @media only screen and (max-width: 550px) {
     .button-container {
         position: absolute;
         flex-direction: column;
         align-items: flex-end;
+    }
+    .btn-simulate {
+        order: 4;
     }
     .btn-execute {
         order: 3;

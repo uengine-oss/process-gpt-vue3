@@ -11,7 +11,15 @@
         <v-card-text style="overflow: auto; height: calc(100% - 50px); width: 700px">
             <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
             <div style="margin:-20px 0px 10px 0px;">{{ $t('BpnmPropertyPanel.role') }}: {{ role.name }}</div>
-            <v-text-field v-model="name" label="이름" :disabled="isViewMode" ref="cursor"></v-text-field>
+            <v-text-field v-model="name" label="이름" :disabled="isViewMode" ref="cursor" class="bpmn-property-panel-name"></v-text-field>
+            <v-alert
+                color="#757575"
+                type="info"
+                variant="tonal"
+                class="pa-2 mt-1 mb-4"
+            >
+                Task 스티커의 이름이 될 필드입니다.
+            </v-alert>
             <component
                 style="height: 100%"
                 :is="panelName"

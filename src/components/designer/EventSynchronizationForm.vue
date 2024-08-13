@@ -2,7 +2,7 @@
     <div v-if="!isLoading">
         <div flat>
             <v-col class="pa-0">
-                <v-text-field class="mb-8" label="URL" v-model="value.url"></v-text-field>
+                <v-text-field class="mb-4" label="URL" v-model="value.url"></v-text-field>
 
                 <!-- <div style="font-size: medium;">Event Type</div> -->
                 <!-- <div>
@@ -10,7 +10,7 @@
                 </div> -->
 
                 <v-card-title class="pa-0">Event Attributes</v-card-title>
-                <draggable v-model="attributes" :options="dragOptions" class="mb-6">
+                <draggable v-model="attributes" :options="dragOptions" class="mb-6" style="max-height:200px; overflow:auto;">
                     <div v-for="(attribute, idx) in attributes" :key="idx">
                         <div v-if="attribute.isEdit" style="display: flex; align-items: center; height: 10%;">
                             <v-tooltip location="bottom">
@@ -136,9 +136,7 @@
                     </v-row>
                 </v-col>
 
-                <div>
-                    <v-btn block text rounded color="primary" class="my-3" @click="openMapperDialog()"> Mapping </v-btn>
-                </div>
+                <v-btn block text rounded color="primary" class="my-3" @click="openMapperDialog()"> Mapping </v-btn>
             </v-col>
         </div>
 
