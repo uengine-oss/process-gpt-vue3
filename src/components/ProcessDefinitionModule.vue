@@ -299,24 +299,24 @@ export default {
                 let outputDataList = [];
                 let variableForHtmlFormContext = null;
                 activity?.inputData?.forEach((data) => {
+                    inputDataList.push({
+                        argument: { text: data },
+                        variable: { name: data },
+                        direction: 'OUT'
+                    });
+                });
+                activity?.outputData?.forEach((data) => {
                     if(checkedFormData(variables, data)) {
                         variableForHtmlFormContext = {
                             name: data
                         }
                     } else {
-                        inputDataList.push({
+                        outputDataList.push({
                             argument: { text: data },
                             variable: { name: data },
-                            direction: 'OUT'
+                            direction: 'IN'
                         });
                     }
-                });
-                activity?.outputData?.forEach((data) => {
-                    outputDataList.push({
-                        argument: { text: data },
-                        variable: { name: data },
-                        direction: 'IN'
-                    });
                 });
 
                 if(role) {

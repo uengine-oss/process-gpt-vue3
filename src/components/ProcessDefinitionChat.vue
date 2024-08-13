@@ -123,6 +123,8 @@ import ProcessDefinitionModule from './ProcessDefinitionModule.vue';
 import ChatGenerator from './ai/ProcessDefinitionGenerator';
 import Chat from './ui/Chat.vue';
 
+import FormGenerator from './ai/FormDesignGenerator';
+
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
@@ -147,7 +149,8 @@ export default {
         ProcessDefinitionVersionDialog,
         ProcessDefinitionVersionManager,
         ProcessDefinitionChatHeader,
-        ProcessDefinitionConvertModule
+        ProcessDefinitionConvertModule,
+        FormGenerator
     },
     data: () => ({
         isXmlMode: false,
@@ -334,6 +337,76 @@ export default {
                     }
                 }
             });
+        },
+        createForm() {
+            if (this.processDefinition.data) {
+                let formList = this.processDefinition.data.filter(data => data.type == 'Form');
+                if (formList && formList.length > 0) {
+                    formList.forEach(async (form) => {
+                        await this.checkedFormData(form, false);
+                    });
+                }
+            }
+        },
+        async checkedFormData(form, isGenStart) {
+            let formHtml = await backend.getRawDefinition(form.name, { type: 'form' }) || null;
+            if (formHtml == null) {
+                const formGenerator = new FormGenerator(this, {
+                    isStream: true,
+                    preferredLanguage: 'Korean',
+                });
+                formGenerator.client.onModelCreated = null;
+                formGenerator.client.onGenerationFinished = async (response) => {
+                    let jsonData = this.extractJSON(response);
+                    jsonData = jsonData.match(/\{[\s\S]*\}/)[0]
+                        .replaceAll('\n', '')
+                        .replaceAll('`', `"`);
+                    jsonData = partialParse(jsonData);
+                    if (jsonData.htmlOutput) {
+                        await backend.putRawDefinition(jsonData.htmlOutput, form.name, { type: 'form' });
+                    }
+                }
+
+                if (!isGenStart) {
+                    let newMessage = `'${form.name}' 폼을 생성해줘.`;
+                    formGenerator.previousMessages = [formGenerator.prevMessageFormat];
+                    formGenerator.previousMessages.push({
+                        role: 'user',
+                        content: newMessage
+                    });
+                    await formGenerator.generate();
+                    isGenStart = true;
+                    // await this.generateForm(form, isGenStart);
+                }
+                formHtml = await this.checkedFormData(form, isGenStart);
+            } else {
+                return formHtml;
+            }
+        },
+        async generateForm(form, isGenStart) {
+            let newMessage = `'${form.name}' 폼을 생성해줘.`;
+            const formGenerator = new FormGenerator(this, {
+                isStream: true,
+                preferredLanguage: 'Korean',
+            });
+            formGenerator.previousMessages = [formGenerator.prevMessageFormat];
+            formGenerator.previousMessages.push({
+                role: 'user',
+                content: newMessage
+            });
+            formGenerator.client.onModelCreated = null;
+            formGenerator.client.onGenerationFinished = async (response) => {
+                let jsonData = this.extractJSON(response);
+                jsonData = jsonData.match(/\{[\s\S]*\}/)[0]
+                    .replaceAll('\n', '')
+                    .replaceAll('`', `"`);
+                jsonData = partialParse(jsonData);
+                if (jsonData.htmlOutput) {
+                    await backend.putRawDefinition(jsonData.htmlOutput, form.name, { type: 'form' });
+                }
+            }
+            await formGenerator.generate();
+            isGenStart = true;
         },
         toggleVerMangerDialog(open) {
             // Version Manager Dialog
@@ -623,6 +696,8 @@ export default {
                     this.definitionChangeCount++;
                 }
             }
+
+            await this.createForm();
 
             this.isChanged = true;
         },

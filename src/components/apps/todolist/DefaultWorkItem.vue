@@ -131,8 +131,9 @@ export default {
                 if (me.inputKeys.length > 0) {
                     me.inputItems = me.inputItems.filter(item => me.inputKeys.includes(item.key));
                 }
-                me.outputItems = parameterValues ? Object.entries(parameterValues).map(([key, value]) => ({ name: key, key, value })) : [];
+                
                 if (me.outputKeys.length > 0) {
+                    me.outputItems = parameterValues ? Object.entries(parameterValues).map(([key, value]) => ({ name: key, key, value })) : [];
                     me.outputItems = me.outputItems.filter(item => me.outputKeys.includes(item.key));
                 }
             }
