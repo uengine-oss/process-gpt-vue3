@@ -266,6 +266,7 @@ export default {
                 'application/xml'
             );
             const bpmnDefinitions = xmlDoc.documentElement;
+            var isHorizontal = jsonModel.isHorizontal;
 
             bpmnDefinitions.setAttribute('id', 'Definitions_' + jsonModel.processDefinitionId);
             bpmnDefinitions.setAttribute('targetNamespace', 'http://bpmn.io/schema/bpmn');
@@ -373,9 +374,14 @@ export default {
 
 
 
+            const checkedFormData = function(variables, variable) {
+                let formVars = variables.filter((data) => data.type == 'Form');
+                return formVars.some(form => form.name == variable);
+            }
+
                 
             const laneActivityMapping = {};
-            const createActivity = function(activity) {
+            const createActivity = function(activity, variables) {
                 const role = activity.role ? activity.role : null;
                 if(role) {
                     if (!laneActivityMapping[activity?.role]) {
@@ -408,6 +414,7 @@ export default {
                 //     "OUT"}
                 let inputDataList = [];
                 let outputDataList = [];
+                let variableForHtmlFormContext = null;
                 activity?.inputData?.forEach((data) => {
                     inputDataList.push({
                         argument: { text: data },
@@ -416,17 +423,27 @@ export default {
                     });
                 });
                 activity?.outputData?.forEach((data) => {
-                    outputDataList.push({
-                        argument: { text: data },
-                        variable: { name: data },
-                        direction: 'IN'
-                    });
+                    if(checkedFormData(variables, data)) {
+                        variableForHtmlFormContext = {
+                            name: data
+                        }
+                    } else {
+                        outputDataList.push({
+                            argument: { text: data },
+                            variable: { name: data },
+                            direction: 'IN'
+                        });
+                    }
                 });
 
                 if(role) {
                     let activityData = {
                         parameters: [...inputDataList, ...outputDataList]
                     };
+                    if (variableForHtmlFormContext) {
+                        activityData['variableForHtmlFormContext'] = variableForHtmlFormContext;
+                        activityData['_type'] = 'org.uengine.kernel.FormActivity';
+                    }
                     params.textContent = JSON.stringify(activityData);
                     root.appendChild(params);
                 }
@@ -485,7 +502,7 @@ export default {
                 Object.keys(jsonModel.components).forEach((key) => {
                     const component = jsonModel.components[key];
                     if(component.componentType == 'Activity') {
-                        createActivity(component);
+                        createActivity(component, jsonModel.data);
                     } else if(component.componentType == 'Gateway') {
                         createGateway(component);
                     } else if(component.componentType == 'Event') {
@@ -510,6 +527,7 @@ export default {
             const participantShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
             participantShape.setAttribute('id', 'Participant_1');
             participantShape.setAttribute('bpmnElement', 'Participant');
+            participantShape.setAttribute('isHorizontal', isHorizontal);
             const dcBoundsParticipant = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
            
             participantShape.appendChild(dcBoundsParticipant);
@@ -561,20 +579,20 @@ export default {
                         const lastSameSource = findLastSameSource(activityPos, component)
                         const source = activityPos[component.source?component.source:currentSource];
                         if (lastSameSource) {
-                            componentX = lastSameSource.x;
-                            componentY = lastSameSource.y + 100;
+                            componentX = lastSameSource.x + (isHorizontal ? 0 : 200);
+                            componentY = lastSameSource.y + (isHorizontal ? 100 : 0);
                             if(lastSameSource.type.indexOf("Gateway") != -1) {
-                                componentX += 150;
-                                componentY += 100;
+                                componentX += (isHorizontal ? 150 : 0);
                             } else if(lastSameSource.type.indexOf("Activity") != -1) {
                             } else if(lastSameSource.type.indexOf("Event") != -1) {
                             }
                         } else {
-                            componentX = source? source.x + 150 : 150;
-                            componentY = source? source.y : 0;
+                            componentX = source? source.x + (isHorizontal ? 150 : 0) : isHorizontal ? 150 : 0;
+                            componentY = source? source.y + (isHorizontal ? 0 : 100) : isHorizontal ? 0 : 150;
                             if(source) {
                                 if (source.role != component.role) {
-                                    componentY += 150;
+                                    componentX += isHorizontal ? 0 : 150;
+                                    componentY += isHorizontal ? 100 : 0;
                                 } else {
                                 }
                             }
@@ -606,15 +624,24 @@ export default {
                         height = 34;
                     }
 
-                    if(component.componentType != 'Event') {
-                        if(componentX > 1100) {
-                            componentX = 100;
-                            componentY += 150;
+                    if(isHorizontal) {
+                        if(component.componentType != 'Event') {
+                            if(componentX > 1100) {
+                                componentX = 100;
+                                componentY += 150;
+                            }
+                        } else if(component.type == 'EndEvent') {
+                            componentX = 1200;
+                            if(startY > componentY) {
+                                componentY = startY;
+                            }
                         }
-                    } else if(component.type == 'EndEvent') {
-                        componentX = 1200;
-                        if(startY > componentY) {
-                            componentY = startY;
+                    } else {
+                        if(component.type == 'EndEvent') {
+                            componentY = 900;
+                            if(startX > componentX) {
+                                componentX = startX;
+                            }
                         }
                     }
 
@@ -670,53 +697,82 @@ export default {
 
 
                     
-                    if(roleX > 0) {
-                        roleX = componentX;
-                    }
-                
-                    if(roleWidth < componentX) {
-                        roleWidth = componentX;
-                    }
+                    if(isHorizontal) {
+                        if(roleX > 0) {
+                            roleX = componentX;
+                        }
                     
-                    if(!roleY[component.role]) {
-                        roleY[component.role] = componentY;
-                    } else {
-                        if(roleY[component.role] > componentY) {
+                        if(roleWidth < componentX) {
+                            roleWidth = componentX;
+                        }
+                        
+                        if(!roleY[component.role]) {
                             roleY[component.role] = componentY;
+                        } else {
+                            if(roleY[component.role] > componentY) {
+                                roleY[component.role] = componentY;
+                            }
                         }
-                    }
-
-                    
-                    if(roleHeight[component.role]) {
-                        if(roleHeight[component.role] < componentY) {
-                            roleHeight[component.role] = componentY
+                
+                        if(roleHeight[component.role]) {
+                            if(roleHeight[component.role] < componentY) {
+                                roleHeight[component.role] = componentY
+                            }
+                        } else {
+                            roleHeight[component.role] = componentY;
                         }
                     } else {
-                        roleHeight[component.role] = componentY;
+                        if(roleX > 0) {
+                            roleX = componentY;
+                        }
+                    
+                        if(roleWidth < componentY) {
+                            roleWidth = componentY;
+                        }
+                        
+                        if(!roleY[component.role]) {
+                            roleY[component.role] = componentX;
+                        } else {
+                            if(roleY[component.role] > componentX) {
+                                roleY[component.role] = componentX;
+                            }
+                        }
+                
+                        if(roleHeight[component.role]) {
+                            if(roleHeight[component.role] < componentX) {
+                                roleHeight[component.role] = componentX
+                            }
+                        } else {
+                            roleHeight[component.role] = componentX;
+                        }
                     }
                 });
                 
             }
 
             
-            const mainX = roleX? roleX: 0; 
-            let mainY = 0;
-            const mainWidth = roleWidth + 115;
-            let mainHeight = 300;
+            let mainX = isHorizontal ? (roleX? roleX: 0) : 0; 
+            let mainY = isHorizontal ? 0 : (roleX? roleX: 0);
+            let mainWidth = isHorizontal ? (roleWidth + 115) : 300;
+            let mainHeight = isHorizontal ? 300 : (roleWidth + 115);
             let lastKey = "default";
             if(Object.keys(roleHeight).length > 0) {
                 mainY = Object.values(roleHeight)[0];
                 if(jsonModel.roles) {
                     lastKey = Object.keys(jsonModel.roles).pop();
-                    mainHeight = roleHeight[jsonModel.roles[lastKey].name]? roleHeight[jsonModel.roles[lastKey].name] : 300;
+                    if(isHorizontal) {
+                        mainHeight = roleHeight[jsonModel.roles[lastKey].name]? roleHeight[jsonModel.roles[lastKey].name] : 300;
+                    } else {
+                        mainWidth = roleHeight[jsonModel.roles[lastKey].name]? roleHeight[jsonModel.roles[lastKey].name] : 300;
+                    }
                 }
             }
 
-            dcBoundsParticipant.setAttribute('x', mainX - 30);
-            dcBoundsParticipant.setAttribute('y', mainY -275);
+            dcBoundsParticipant.setAttribute('x', mainX + (isHorizontal ? -30 : 25));
+            dcBoundsParticipant.setAttribute('y', mainY + (isHorizontal ? -75 : -100));
 
-            dcBoundsParticipant.setAttribute('width', mainWidth);
-            dcBoundsParticipant.setAttribute('height', mainHeight + 45);
+            dcBoundsParticipant.setAttribute('width', mainWidth + (isHorizontal ? 0 : 50));
+            dcBoundsParticipant.setAttribute('height', mainHeight + (isHorizontal ? 45 : 0));
             
 
 
@@ -726,24 +782,33 @@ export default {
                     const laneShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
                     laneShape.setAttribute('id', `BPMNShape_${roleIndex}`);
                     laneShape.setAttribute('bpmnElement', `Lane_${roleIndex}`);
-                    laneShape.setAttribute('isHorizontal', true);
+                    laneShape.setAttribute('isHorizontal', isHorizontal);
                     const dcBoundsLane = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
-                    const roleYResult = roleY[role.name]? roleY[role.name] - 75: 0;
+                    let roleYResult = roleY[role.name]? roleY[role.name] - 75: 0;
                     let roleHeightResult = roleHeight[role.name]?roleHeight[role.name] + 50 : 0;
                     
-                    dcBoundsLane.setAttribute('x', roleX ? roleX : 0);
-                    dcBoundsLane.setAttribute('y', roleYResult);
-
-                    if(jsonModel.roles[lastKey] && jsonModel.roles[lastKey].name == role.name && roleIndex != 0) {
-                        roleHeightResult -= 155;
+                    if(isHorizontal) {
+                        dcBoundsLane.setAttribute('x', roleX ? roleX : 0);
+                        dcBoundsLane.setAttribute('y', roleYResult);
                     } else {
-                        roleHeightResult -= 5;
+                        dcBoundsLane.setAttribute('x', roleYResult);
+                        dcBoundsLane.setAttribute('y', (roleX ? roleX : 0) + 30);
+                    }
+
+                    if(jsonModel.roles[lastKey].name == role.name) {
+                        roleHeightResult += (isHorizontal ? -155 : 0);
                     }
 
 
                     // 가장 바깥 라인 안쪽의 스윔라인 자체 길이
-                    dcBoundsLane.setAttribute('width', roleWidth + 85);
-                    dcBoundsLane.setAttribute('height', roleHeightResult);
+                    
+                    if(isHorizontal) {
+                        dcBoundsLane.setAttribute('width', roleWidth + 85);
+                        dcBoundsLane.setAttribute('height', roleHeightResult);
+                    } else {
+                        dcBoundsLane.setAttribute('width', roleHeightResult);
+                        dcBoundsLane.setAttribute('height', roleWidth + 85);
+                    }
                     laneShape.appendChild(dcBoundsLane);
                     bpmnPlane.appendChild(laneShape);
                     rolePos[role.name] = {
@@ -776,8 +841,8 @@ export default {
                     let endX = parseInt(targetPos.x) || 0;
                     let endY = (parseInt(targetPos.y) || 0) + (parseInt(targetPos.height) || 0) / 2;
 
-                    const distanceX = endX - startX;
-                    const distanceY = endY - startY;
+                    let distanceX = endX - startX;
+                    let distanceY = endY - startY;
 
                     if(distanceY > distanceX) {
                         startX = (parseInt(sourcePos.x) || 0) + (parseInt(sourcePos.width) || 0) / 2;
@@ -797,74 +862,174 @@ export default {
                         endY = (parseInt(targetPos.y) || 0) + (parseInt(targetPos.height) || 0);
                     }
 
+                    if(!isHorizontal) {
+                        startX = (parseInt(sourcePos.x) || 0) + (parseInt(sourcePos.width) || 0) / 2;
+                        startY = (parseInt(sourcePos.y) || 0) + (parseInt(sourcePos.height) || 0);
+
+                        endX = (parseInt(targetPos.x) || 0) + (parseInt(targetPos.width) || 0) / 2;
+                        endY = parseInt(targetPos.y) || 0;
+
+                        distanceX = endX - startX;
+                        distanceY = endY - startY;
+
+                        if(Math.abs(distanceX) > Math.abs(distanceY)) {
+                            startX = (parseInt(sourcePos.x) || 0) + (parseInt(sourcePos.width) || 0);
+                            startY = (parseInt(sourcePos.y) || 0) + (parseInt(sourcePos.height) || 0) / 2;
+
+                            endX = parseInt(targetPos.x) || 0;
+                            endY = (parseInt(targetPos.y) || 0) + (parseInt(targetPos.height) || 0) / 2;
+                        }
+
+                        if(startY > endY) {
+                            endX = (parseInt(targetPos.x) || 0) + (parseInt(targetPos.width) || 0) / 2;
+                            endY = (parseInt(targetPos.y) || 0) + (parseInt(targetPos.height) || 0);
+                        }
+
+                        if(distanceX < 0) {
+                            startX = parseInt(sourcePos.x) || 0;
+                            startY = (parseInt(sourcePos.y) || 0) + (parseInt(sourcePos.height) || 0) / 2;
+                        }
+                    }
+
                     // 첫 번째 waypoint (시작점)
-                    const waypoint1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                    waypoint1.setAttribute('x', startX);
-                    waypoint1.setAttribute('y', startY);
-                    bpmnEdge.appendChild(waypoint1);
+                    if(isHorizontal) {
+                        const waypoint1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                        waypoint1.setAttribute('x', startX);
+                        waypoint1.setAttribute('y', startY);
+                        bpmnEdge.appendChild(waypoint1);
 
-                    if (startY === endY) {
-                        const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                        waypoint2.setAttribute('x', endX);
-                        waypoint2.setAttribute('y', endY);
-                        bpmnEdge.appendChild(waypoint2);
-                    } else if(startX > endX) {
-                        const waypointMiddle1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                        waypointMiddle1.setAttribute('x', startX);
-                        waypointMiddle1.setAttribute('y', startY);
-                        bpmnEdge.appendChild(waypointMiddle1);
+                        if (startY === endY) {
+                            const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                            waypoint2.setAttribute('x', endX);
+                            waypoint2.setAttribute('y', endY);
+                            bpmnEdge.appendChild(waypoint2);
+                        } else if(startX > endX) {
+                            const waypointMiddle1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                            waypointMiddle1.setAttribute('x', startX);
+                            waypointMiddle1.setAttribute('y', startY);
+                            bpmnEdge.appendChild(waypointMiddle1);
 
-                        const waypointMiddle2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                        waypointMiddle2.setAttribute('x', startX);
-                        waypointMiddle2.setAttribute('y', startY + (endY - startY)/2);
-                        bpmnEdge.appendChild(waypointMiddle2);
-
-                        const waypointMiddle3 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                        waypointMiddle3.setAttribute('x', endX - 60);
-                        waypointMiddle3.setAttribute('y', endY - (endY - startY)/2);
-                        bpmnEdge.appendChild(waypointMiddle3);
-
-                        const waypointMiddle4 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                        waypointMiddle4.setAttribute('x', endX - 60);
-                        waypointMiddle4.setAttribute('y', endY);
-                        bpmnEdge.appendChild(waypointMiddle4);
-
-                        const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                        waypoint2.setAttribute('x', endX);
-                        waypoint2.setAttribute('y', endY);
-                        bpmnEdge.appendChild(waypoint2);
-                    } else {
-                        const waypointMiddle1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                        waypointMiddle1.setAttribute('x', startX);
-                        waypointMiddle1.setAttribute('y', startY);
-                        bpmnEdge.appendChild(waypointMiddle1);
-
-                        if(distanceY >= 0) {
                             const waypointMiddle2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
                             waypointMiddle2.setAttribute('x', startX);
-                            waypointMiddle2.setAttribute('y', endY);
+                            waypointMiddle2.setAttribute('y', startY + (endY - startY)/2);
                             bpmnEdge.appendChild(waypointMiddle2);
 
                             const waypointMiddle3 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                            waypointMiddle3.setAttribute('x', endX);
-                            waypointMiddle3.setAttribute('y', endY);
+                            waypointMiddle3.setAttribute('x', endX - 60);
+                            waypointMiddle3.setAttribute('y', endY - (endY - startY)/2);
                             bpmnEdge.appendChild(waypointMiddle3);
+
+                            const waypointMiddle4 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                            waypointMiddle4.setAttribute('x', endX - 60);
+                            waypointMiddle4.setAttribute('y', endY);
+                            bpmnEdge.appendChild(waypointMiddle4);
+
+                            const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                            waypoint2.setAttribute('x', endX);
+                            waypoint2.setAttribute('y', endY);
+                            bpmnEdge.appendChild(waypoint2);
                         } else {
+                            const waypointMiddle1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                            waypointMiddle1.setAttribute('x', startX);
+                            waypointMiddle1.setAttribute('y', startY);
+                            bpmnEdge.appendChild(waypointMiddle1);
+
+                            if(distanceY >= 0) {
+                                const waypointMiddle2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                                waypointMiddle2.setAttribute('x', startX);
+                                waypointMiddle2.setAttribute('y', endY);
+                                bpmnEdge.appendChild(waypointMiddle2);
+
+                                const waypointMiddle3 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                                waypointMiddle3.setAttribute('x', endX);
+                                waypointMiddle3.setAttribute('y', endY);
+                                bpmnEdge.appendChild(waypointMiddle3);
+                            } else {
+                                const waypointMiddle2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                                waypointMiddle2.setAttribute('x', endX);
+                                waypointMiddle2.setAttribute('y', startY);
+                                bpmnEdge.appendChild(waypointMiddle2);
+
+                                const waypointMiddle3 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                                waypointMiddle3.setAttribute('x', endX);
+                                waypointMiddle3.setAttribute('y', endY);
+                                bpmnEdge.appendChild(waypointMiddle3);
+                            }
+
+                            const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                            waypoint2.setAttribute('x', endX);
+                            waypoint2.setAttribute('y', endY);
+                            bpmnEdge.appendChild(waypoint2);
+                        }
+                    } else {
+                        const waypoint1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                        waypoint1.setAttribute('x', startX);
+                        waypoint1.setAttribute('y', startY);
+                        bpmnEdge.appendChild(waypoint1);
+
+                        if (startX === endX) {
+                            const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                            waypoint2.setAttribute('x', endX);
+                            waypoint2.setAttribute('y', endY);
+                            bpmnEdge.appendChild(waypoint2);
+                        } else if(startY > endY) {
+                            const waypointMiddle1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                            waypointMiddle1.setAttribute('x', startX);
+                            waypointMiddle1.setAttribute('y', startY);
+                            bpmnEdge.appendChild(waypointMiddle1);
+
                             const waypointMiddle2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                            waypointMiddle2.setAttribute('x', endX);
+                            waypointMiddle2.setAttribute('x', startX + (endX - startX)/2);
                             waypointMiddle2.setAttribute('y', startY);
                             bpmnEdge.appendChild(waypointMiddle2);
 
                             const waypointMiddle3 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                            waypointMiddle3.setAttribute('x', endX);
-                            waypointMiddle3.setAttribute('y', endY);
+                            waypointMiddle3.setAttribute('x', endX - (endX - startX)/2);
+                            waypointMiddle3.setAttribute('y', endY + 60);
                             bpmnEdge.appendChild(waypointMiddle3);
-                        }
 
-                        const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                        waypoint2.setAttribute('x', endX);
-                        waypoint2.setAttribute('y', endY);
-                        bpmnEdge.appendChild(waypoint2);
+                            const waypointMiddle4 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                            waypointMiddle4.setAttribute('x', endX);
+                            waypointMiddle4.setAttribute('y', endY + 60);
+                            bpmnEdge.appendChild(waypointMiddle4);
+
+                            const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                            waypoint2.setAttribute('x', endX);
+                            waypoint2.setAttribute('y', endY);
+                            bpmnEdge.appendChild(waypoint2);
+                        } else {
+                            const waypointMiddle1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                            waypointMiddle1.setAttribute('x', startX);
+                            waypointMiddle1.setAttribute('y', startY);
+                            bpmnEdge.appendChild(waypointMiddle1);
+
+                            if(distanceX >= 0) {
+                                const waypointMiddle2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                                waypointMiddle2.setAttribute('x', endX);
+                                waypointMiddle2.setAttribute('y', startY);
+                                bpmnEdge.appendChild(waypointMiddle2);
+
+                                const waypointMiddle3 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                                waypointMiddle3.setAttribute('x', endX);
+                                waypointMiddle3.setAttribute('y', endY);
+                                bpmnEdge.appendChild(waypointMiddle3);
+                            } else {
+                                const waypointMiddle2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                                waypointMiddle2.setAttribute('x', startX);
+                                waypointMiddle2.setAttribute('y', endY);
+                                bpmnEdge.appendChild(waypointMiddle2);
+
+                                const waypointMiddle3 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                                waypointMiddle3.setAttribute('x', endX);
+                                waypointMiddle3.setAttribute('y', endY);
+                                bpmnEdge.appendChild(waypointMiddle3);
+                            }
+
+                            const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                            waypoint2.setAttribute('x', endX);
+                            waypoint2.setAttribute('y', endY);
+                            bpmnEdge.appendChild(waypoint2);
+                        }
                     }
 
 
@@ -1676,6 +1841,10 @@ export default {
 
                     const store = useBpmnStore();
                     let modeler = store.getModeler;
+                    const definitions = modeler.getDefinitions();
+                    if (definitions) {
+                        definitions.name = info.name || 'Default Name';
+                    }
                     let xmlObj = await modeler.saveXML({ format: true, preamble: true });
                     let newProcessDefinition
 

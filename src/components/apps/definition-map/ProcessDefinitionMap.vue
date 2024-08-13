@@ -5,7 +5,8 @@
             <div v-if="componentName != 'SubProcessDetail'" class="pa-3 d-flex align-center"
                 style="position: sticky; top: 0; z-index:2; background-color:white">
                 <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
-                <v-btn v-if="$route.path !== '/definition-map'" style="margin-left: 3px; margin-top: 1px;" icon variant="text" size="24">
+                <v-btn v-if="$route.path !== '/definition-map'" style="margin-left: 3px; margin-top: 1px;" icon variant="text" 
+                    size="24" @click="goProcessMap">
                     <Icons :icon="'arrow-go-back'" />
                 </v-btn>
                 

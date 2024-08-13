@@ -7,7 +7,6 @@
                 item-title="name"
                 item-value="name"
                 label="Process Data"
-                @update:modelValue="(val) => onChanged(val)"
                 variant="outlined"
             ></v-select>
         </div>
@@ -71,11 +70,17 @@ export default {
             processVariableDescriptors: []
         };
     },
-    watch: {},
+    watch: {
+        "selectVal.name": {
+            handler(newVal) {
+                this.$emit("update:name", newVal)
+            }
+        }
+    },
     methods: {
-        onChanged(val) {
-            this.$emit('input', val);
-        },
+        // onChanged(val) {
+        //     this.$emit('input', val);
+        // },
         getComponent(componentName) {
             let component = null;
             let parent = this.$parent;

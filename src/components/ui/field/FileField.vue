@@ -4,6 +4,7 @@
             :label="(localAlias && localAlias.length > 0) ? localAlias : localName"
             v-model="selectedFiles"
             :disabled="localDisabled"
+            variant="outlined"
         ></v-file-input>
         <div v-if="selectedFiles && selectedFiles.length > 0 && imgBaseUrl && imgBaseUrl.includes('data:image/')">
             <p style="margin-top: -10px; margin-bottom: 10px;">* 해상도가 낮거나 이미지가 너무 작은 경우 GPT 모델이 인식하지 못할 수 있습니다.</p>

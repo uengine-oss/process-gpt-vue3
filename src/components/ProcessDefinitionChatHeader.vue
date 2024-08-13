@@ -25,7 +25,7 @@
                         </v-tooltip>
                         <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn ,.jsonold" style="display: none" />
                 
-                        <div v-if="bpmn && fullPath != ''">
+                        <div v-if="bpmn && fullPath != 'chat'">
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 

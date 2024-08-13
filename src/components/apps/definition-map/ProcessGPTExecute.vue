@@ -84,7 +84,10 @@ export default {
                     const roleBindings = await backend.bindRole(me.definition.roles);
                     if (roleBindings && roleBindings.length > 0) {
                         roleBindings.forEach((roleBinding) => {
-                            me.roleMappings.find((role) => role.name === roleBinding.roleName).endpoint = roleBinding.userId;
+                            let role = me.roleMappings.find((role) => role.name === roleBinding.roleName);
+                            if(role) {
+                                role['endpoint'] = roleBinding.userId;
+                            }
                         })
                     }
                     
@@ -97,14 +100,10 @@ export default {
                             if (properties.parameters) {
                                 parameters = properties.parameters;
                                 parameters.forEach((item) => {
-                                    if (item.direction == 'OUT') {
-                                        item.direction = 'IN';
-                                    } else if (item.direction == 'IN') {
-                                        item.direction = 'OUT';
-                                    }
                                     item.variable.defaultValue = "";
                                 })
-                            } else if (properties.variableForHtmlFormContext) {
+                            }
+                            if (properties.variableForHtmlFormContext) {
                                 variableForHtmlFormContext = properties.variableForHtmlFormContext;
                             }
                         }
@@ -169,6 +168,7 @@ export default {
                     } else {
                         me.closeDialog();
                         me.EventBus.emit('instances-updated');
+                        me.$router.push(`/instancelist/${btoa(result.instanceId)}`);
                     }
                 },
                 successMsg: 'Process 실행 완료'

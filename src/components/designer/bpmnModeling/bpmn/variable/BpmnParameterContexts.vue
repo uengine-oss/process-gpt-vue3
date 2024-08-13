@@ -35,7 +35,7 @@
 
                 <v-col cols="3">
                     <bpmn-variable-selector v-model="parameterContext.variable"
-                        v-on:input="(val) => onVariableUpdated(val, idx)"></bpmn-variable-selector>
+                        v-on:name="(val) => onVariableUpdated(val, idx)"></bpmn-variable-selector>
                 </v-col>
                 <v-col>
                     <v-checkbox v-model="parameterContext.split">Split</v-checkbox>
@@ -48,8 +48,8 @@
             </v-row>
         </div>
         <v-spacer></v-spacer>
-        <v-btn text color="primary" class="mb-3" @click="addMapping">
-            Add Argument
+        <v-btn text color="primary" rounded class="mb-3" @click="addMapping">
+            {{ $t('BpmnParameterContexts.addArgument') }}
         </v-btn>
     </div>
 </template>

@@ -1,21 +1,29 @@
 <template>
   <v-card class="mx-auto my-8 pb-10 form-definition-panel-box" elevation="16" max-width="600">
-    <v-card-item>
-      <v-card-title>
-          Edit Form Attribute
-      </v-card-title>
+    <v-row class="ma-0 pa-2">
+      <v-col class="ma-0 pa-0">
+        <v-card-title class="pb-0">
+          {{ $t('FormDefinitionPanel.editForm') }}
+        </v-card-title>
 
-      <v-card-subtitle style="color:#666E7A;">
-          type: {{ componentRef.tagName }}
-      </v-card-subtitle>
+        <v-card-subtitle style="color:#666E7A;">
+            {{ $t('FormDefinitionPanel.type') }}: {{ componentRef.tagName }}
+        </v-card-subtitle>
+      </v-col>
+
+      <v-btn @click="$emit('onClose')"
+          icon variant="text" density="comfortable"
+      >
+          <Icons :icon="'close'" :size="16"/>
+      </v-btn>
       
-      <v-icon @click="$emit('onClose')" class="form-dialog-close-btn">mdi-close</v-icon>
-    </v-card-item>
+      <!-- <v-icon  class="form-dialog-close-btn">mdi-close</v-icon> -->
+    </v-row>
 
     <v-card-text style="overflow: auto;">
       <template v-for="(settingInfo, index) in componentRef.settingInfos" :key="index">  
         <v-text-field v-if="(settingInfo.settingType === 'text') && isShowCheck(settingInfo)" :ref="settingInfo.dataToUse" 
-                      :label="settingInfo.settingLabel" v-model.trim="componentProps[settingInfo.dataToUse]"
+                      :label="$t(settingInfo.settingLabel)" v-model.trim="componentProps[settingInfo.dataToUse]"
                       @keyup.enter="save" persistent-placeholder></v-text-field>
         
         <v-text-field v-else-if="(settingInfo.settingType === 'number') && isShowCheck(settingInfo)" type="number" :ref="settingInfo.dataToUse" 
@@ -43,13 +51,13 @@
                       :rows="settingInfo.rows ?? 5" persistent-placeholder></v-textarea>
 
         <v-select v-else-if="(settingInfo.settingType === 'select') && isShowCheck(settingInfo)" :ref="settingInfo.dataToUse" 
-                  :label="settingInfo.settingLabel" v-model="componentProps[settingInfo.dataToUse]"
+                  :label="$t(settingInfo.settingLabel)" v-model="componentProps[settingInfo.dataToUse]"
                   :items="settingInfo.settingValue" @keyup.enter="save" persistent-placeholder></v-select>
         
         <template v-else-if="(settingInfo.settingType === 'items') && isShowCheck(settingInfo)">
           <v-tabs v-model="componentProps['localIsDynamicLoad']" color="primary" fixed-tabs>
-              <v-tab :value="false">Fixed Options</v-tab>
-              <v-tab :value="true">Data Binding</v-tab>
+              <v-tab :value="false">{{ $t('FormDefinitionPanel.fixed') }}</v-tab>
+              <v-tab :value="true">{{ $t('FormDefinitionPanel.dataBinding') }}</v-tab>
           </v-tabs>
           <v-window v-model="componentProps['localIsDynamicLoad']" class="fill-height">
               <v-window-item :value="false" class="fill-height" style="overflow-y: auto; padding:5px;">
@@ -65,12 +73,12 @@
         </template>
         
         <v-checkbox v-else-if="(settingInfo.settingType === 'checkbox') && isShowCheck(settingInfo)" :ref="settingInfo.dataToUse" 
-                    :label="settingInfo.settingLabel" v-model="componentProps[settingInfo.dataToUse]"
+                    :label="$t(settingInfo.settingLabel)" v-model="componentProps[settingInfo.dataToUse]"
                     @keyup.enter="save"></v-checkbox>
       </template>
     </v-card-text>
 
-    <v-btn @click="save" color="primary" class="form-apply-btn">Apply</v-btn>
+    <v-btn @click="save" color="primary" rounded class="form-apply-btn">{{ $t('FormDefinitionPanel.save') }}</v-btn>
   </v-card>
 </template>
   

@@ -1,25 +1,29 @@
 <template>
   <v-card class="mx-auto my-8 container-setting-box" elevation="16" max-width="600">
-    <v-card-item>
-      <v-card-title>
-          Edit Container Attribute
+    <v-row class="ma-0 pa-2">
+      <v-card-title class="pb-0">
+          {{ $t('ContainerSettingPanel.title') }}
       </v-card-title>
-      
-      <v-icon @click="$emit('onClose')" class="form-dialog-close-btn">mdi-close</v-icon>
-    </v-card-item>
+      <v-spacer></v-spacer>
+      <v-btn @click="$emit('onClose')"
+          icon variant="text" density="comfortable"
+      >
+          <Icons :icon="'close'" :size="16"/>
+      </v-btn>
+    </v-row>
 
     <v-card-text>
-      <v-text-field ref="name" label="Name" v-model.trim="localContainerProps.name"
+      <v-text-field ref="name" :label="$t('ContainerSettingPanel.id')" v-model.trim="localContainerProps.name"
                       @keyup.enter="save" persistent-placeholder></v-text-field>
       
-      <v-text-field label="Label" v-model.trim="localContainerProps.alias"
+      <v-text-field :label="$t('ContainerSettingPanel.name')" v-model.trim="localContainerProps.alias"
                       @keyup.enter="save" persistent-placeholder></v-text-field>
         
-      <v-checkbox label="MultiDataMode" v-model="localContainerProps.isMultiDataMode"
+      <v-checkbox :label="$t('ContainerSettingPanel.multDataMode')" v-model="localContainerProps.isMultiDataMode"
                   @keyup.enter="save"></v-checkbox>
     </v-card-text>
 
-    <v-btn @click="save" color="primary" class="form-apply-btn">Apply</v-btn>
+    <v-btn @click="save" color="primary" rounded class="form-apply-btn">{{ $t('ContainerSettingPanel.save') }}</v-btn>
   </v-card>
 </template>
   

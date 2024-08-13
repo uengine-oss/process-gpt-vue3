@@ -1,0 +1,104 @@
+<template>
+    <v-card class="h-100" style="width: 100%; height: 100%;  overflow: auto" variant="outlined">
+        <v-card-text v-if="selectedTask">
+            <v-row>
+                <v-col v-for="val,idx in selectedTask" :key="idx" :cols="6">
+                    <test-variable :idx="idx" :selected-task="val" @execute="e => runExistingTest(e)"></test-variable>
+                </v-col>
+            </v-row>
+        </v-card-text>
+        <v-card-text v-else>
+            No Data
+        </v-card-text>
+        <v-card-actions>
+            <v-btn @click="workItemDialog = !workItemDialog">ADD</v-btn>
+        </v-card-actions>
+        <!-- <v-card-actions class="justify-center" v-if="tool == 'DefaultWorkItem'">
+            <v-btn color="primary" variant="flat" class="cp-process-save" @click="executeProcess">실행</v-btn>
+            <v-btn color="error" variant="flat" @click="closeDialog()">닫기</v-btn>
+        </v-card-actions> -->
+        <v-dialog v-model="workItemDialog" style="width: 30%">
+            <v-card v-if="currentComponent">
+                <component 
+                    :is="currentComponent" 
+                    :definitionId="definitionId"
+                    :work-item="workItem" 
+                    :workItemStatus="workItemStatus" 
+                    :isDryRun="false" 
+                    :dryRunWorkItem="dryRunWorkItem"
+                    :currentActivities="currentActivities"
+                    @updateCurrentActivities="updateCurrentActivities"
+                    @close="close"
+                    @executeProcess="runNewTest"
+                    :is-simulate="'true'"
+                ></component>
+            </v-card>
+        </v-dialog>
+    </v-card>
+</template>
+
+<script>
+import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
+import TestVariable from './TestVariable.vue';
+import DefaultWorkItem from '@/components/apps/todolist/DefaultWorkItem.vue';
+import FormWorkItem from '@/components/apps/todolist//FormWorkItem.vue'; // FormWorkItem 컴포넌트 임포트
+import URLWorkItem from '@/components/apps/todolist//URLWorkItem.vue';
+export default {
+    components: {
+        TestVariable,
+        DefaultWorkItem,
+        FormWorkItem,
+        URLWorkItem
+    },
+    watch: {
+        task(newVal) {
+            if (this.testList[newVal]) this.selectedTask = JSON.parse(this.testList[newVal]);
+        }
+    },
+    props: {
+        definitionId: String,
+        task: String,
+        taskId: String  
+    },
+    data: () => ({
+        testList: {},
+        selectedTask: null,
+        workItemDialog: false,
+        workItem: null,
+        currentComponent: null
+    }),
+    async created() {
+        await this.init()
+        const list = await backend.testList(this.definitionId);
+        this.testList = list;
+        console.log(this.task)
+        if (this.testList[this.task]) this.selectedTask = JSON.parse(this.testList[this.task]);
+    },
+    methods: {
+        runNewTest(e) {
+            // File 추가 API를 따로 생성해서 파일 업데이트 하는 방식으로 해야 할 지 고민 필요.
+            // 우선 화면에만 추가 이후, InstanceServiceImpl에서 실행하여 파일에도 저장하는 Logic으로
+            this.$emit('executeTest', e)
+        },
+        runExistingTest(e) {
+            console.log(this.selectedTask[e])
+            delete this.selectedTask[e]["_type"];
+            this.$emit('executeTest', this.selectedTask[e])
+        },
+        async init() {
+            let me = this
+            me.workItem = await backend.getWorkItem(me.taskId);
+            if (me.workItem.worklist.execScope) me.workItem.execScope = me.workItem.worklist.execScope;
+            me.workListByInstId = await backend.getWorkListByInstId(me.workItem.worklist.instId);
+            me.currentComponent = me.workItem.worklist.tool.includes('urlHandler')
+                ? 'URLWorkItem'
+                : me.workItem.worklist.tool.includes('formHandler')
+                ? 'FormWorkItem'
+                : 'DefaultWorkItem';
+            
+            
+        }
+    }
+};
+</script>

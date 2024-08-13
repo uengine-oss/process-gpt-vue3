@@ -138,7 +138,7 @@ export default class FormDesignGenerator extends AIGenerator{
     }
 
     /**
-     * 이전에 이미 만들어 놓은 HTML 폼 데이터가 있을 경우, 이 데이터를 System 메세지에 포함시키기 위해서
+     * 이전에 이미 만들어 놓은 HTML 폼 데이터가 있을 경우, 이 데이터를 System 메시지에 포함시키기 위해서
      */
     sendMessageWithPrevFormOutput(newMessage) {
           const prevFormOutput = ((this.client.prevFormOutput !== '<section></section>') ? (

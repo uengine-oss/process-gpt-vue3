@@ -4,10 +4,22 @@
             <v-col class="d-flex ma-0 pa-0" style="height: 100%">
                 <v-card style="border-radius: 0px !important; border: none; height: 100%" flat>
                     <v-row class="ma-0 pa-0 button-container">
+                        <v-tooltip v-if="executable" :text="$t('processDefinition.simulate')">
+                            <template v-slot:activator="{ props }">
+                                <v-switch color="primary" v-bind="props" v-model="isSimulate" false-value="false" true-value="true" class="btn-simulate"></v-switch>
+                            </template>
+                        </v-tooltip>
+                        <!-- <v-tooltip v-if="isSimulate == 'true' || isSimulate == 'record'" :text="'record'">
+                            <template v-slot:activator="{ props }">
+                                <v-checkbox v-model="record" ></v-checkbox>
+                            </template>
+                        </v-tooltip> -->
                         <!-- 프로세스 실행 버튼  -->
                         <v-tooltip v-if="executable" :text="$t('processDefinition.execution')">
                             <template v-slot:activator="{ props }">
-                                <v-btn icon v-bind="props" @click="executeProcess" class="btn-execute">
+                                <v-btn v-bind="props" @click="executeProcess" class="btn-execute"
+                                    icon variant="text"
+                                >
                                     <Icons :icon="'play'" :width="32" :height="32" />
                                 </v-btn>
                             </template>
@@ -15,7 +27,9 @@
                         <!-- 프로세스 변수 추가 버튼 -->
                         <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
                             <template v-slot:activator="{ props }">
-                                <v-btn @click="openProcessVariables" icon v-bind="props" class="cp-process-variables btn-variables">
+                                <v-btn @click="openProcessVariables" v-bind="props" class="cp-process-variables btn-variables"
+                                    icon variant="text"
+                                >
                                     <Icons :icon="'variable'" :width="32" :height="32" />
                                 </v-btn>
                             </template>
@@ -23,12 +37,15 @@
                         <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
                         <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
                             <template v-slot:activator="{ props }">
-                                <v-btn icon v-bind="props" @click="$globalState.methods.toggleZoom()" class="btn-zoom">
+                                <v-btn v-bind="props" @click="$globalState.methods.toggleZoom()" class="btn-zoom"
+                                    icon variant="text"
+                                >
                                     <Icons :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'" :size="32" />
                                 </v-btn>
                             </template>
                         </v-tooltip>
                     </v-row>
+
                     <div v-if="isXmlMode" style="height: calc(100% - 70px); margin-top: 70px; overflow: auto; padding: 10px">
                         <XmlViewer :xml="bpmn" />
                     </div>
@@ -48,9 +65,6 @@
                         v-on:definition="(def) => (definitions = def)"
                         v-on:add-shape="onAddShape"
                         v-on:done="setDefinition"
-                        v-on:change-sequence="onChangeSequence"
-                        v-on:remove-shape="onRemoveShape"
-                        v-on:change-shape="onChangeShape"
                         @change="changeElement"
                         style="height: 100%"
                     ></BpmnuEngine>
@@ -77,6 +91,9 @@
                         :processDefinitionId="definitionPath"
                         :processDefinition="processDefinition"
                         :validationList="validationList"
+                        v-on:change-sequence="onChangeSequence"
+                        v-on:remove-shape="onRemoveShape"
+                        v-on:change-shape="onChangeShape"
                         @addUengineVariable="addUengineVariable"
                     ></bpmn-property-panel>
                     <!-- {{ definition }} -->
@@ -200,8 +217,8 @@
             <process-gpt-execute v-if="mode === 'LLM'" :definitionId="definitionPath" 
                 @close="executeDialog = false"></process-gpt-execute>
             <div v-else>
-                <!-- <process-execute-dialog :definitionId="definitionPath" @close="executeDialog = false"></process-execute-dialog> -->
-                <dry-run-process :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
+                <test-process v-if="isSimulate == 'true'" :definitionId="definitionPath" @close="executeDialog = false" />
+                <dry-run-process v-else :is-simulate="isSimulate" :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
             </div>
         </v-dialog>
 
@@ -218,6 +235,7 @@ import BpmnLLM from './BpmnLLM.vue';
 import BpmnuEngine from './BpmnUengine.vue';
 import customBpmnModule from './customBpmn';
 import customPaletteModule from './customPalette';
+import customContextPadModule from './customContextPad';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
@@ -226,7 +244,7 @@ import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecut
 import XmlViewer from 'vue3-xml-viewer'
 import InstanceNamePatternForm from '@/components/designer/InstanceNamePatternForm.vue'
 import BackendFactory from "@/components/api/BackendFactory";
-
+import TestProcess from "@/components/apps/definition-map/TestProcess.vue"
 export default {
     name: 'ProcessDefinition',
     components: {
@@ -240,7 +258,8 @@ export default {
         DryRunProcess,
         'process-gpt-execute': ProcessGPTExecute,
         XmlViewer,
-        InstanceNamePatternForm
+        InstanceNamePatternForm,
+        TestProcess
     },
     props: {
         processDefinition: Object,
@@ -272,6 +291,8 @@ export default {
         processVariables: [],
         instanceNamePattern: null,
         executeDialog: false,
+        isSimulate: "false",
+        record: false,
         processVariableHeaders: [
             { title: 'processDefinition.name', key: 'name' },
             { title: 'processDefinition.type', key: 'type' },
@@ -317,12 +338,15 @@ export default {
                 propertiesPanel: {
                     invalidationList: this.validationList
                 },
-                additionalModules: this.isViewMode ? [customBpmnModule] : [customBpmnModule, customPaletteModule]
+                additionalModules: this.isViewMode ? [customBpmnModule] : [customBpmnModule, customPaletteModule, customContextPadModule]
             };
             return result;
         }
     },
     watch: {
+        isSimulate(newVal) {
+            console.log(newVal)
+        },
         copyProcessDefinition: {
             deep: true,
             handler(newVal) {
@@ -621,13 +645,13 @@ export default {
             }
         },
         onChangeShape(e) {
-            console.log(e);
+            // console.log(e);
         },
         onChangeSequence(e) {
-            console.log(e);
+            // console.log(e);
         },
         onRemoveShape(e) {
-            console.log(e);
+            // console.log(e);
         },
         createParticipant(element) {
             let participant = {
@@ -886,11 +910,18 @@ export default {
     flex-direction: row;
 }
 
+.btn-simulate {
+    margin-top:-3px;
+}
+
 @media only screen and (max-width: 550px) {
     .button-container {
         position: absolute;
         flex-direction: column;
         align-items: flex-end;
+    }
+    .btn-simulate {
+        order: 4;
     }
     .btn-execute {
         order: 3;

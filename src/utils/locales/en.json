@@ -18,16 +18,16 @@
         "calendar" : "Calendar",
         "layoutSetting" : "Layout Setting"
     },
+    "DashboardTodoList": {
+        "todo": "Todo",
+        "inProgress": "In Progess",
+        "done": "Done"
+    },
     "DashboardUpcomingScheduls": {
         "title": "Upcoming Schedules",
         "schedule": "Schedule",
         "dateAndTime": "Date and Time",
         "category": "Category"
-    },
-    "DashboardTodoList": {
-        "todo": "Todo",
-        "inProgress": "In Progess",
-        "done": "Done"
     },
     "dashboard": {
         "title": "Dashboard"
@@ -53,6 +53,9 @@
     "chats": {
         "title": "Chats"
     },
+    "proposals": {
+        "title": "Proposal"
+    },
     "instance": {
         "title": "Instance"
     },
@@ -70,16 +73,35 @@
     "runningInstance": {
         "title": "Running Instance"
     },
+    "admin": {
+        "title": "Administrator Menu"   
+    },
     "completeInstance": {
         "title": "Complete Instance"
     },
     "definitionManagement": {
         "title": "Definition Management"
     },
+    "systemDefinition": {
+        "title": "System Definition"
+    },
     "organizationChartDefinition": {
         "title": "Org Chart Setup",
         "cardTitle": "Org Chart Management",
-        "organizationChartExplanation": "Manage the organization chart interactively.\nYou can register, modify, and delete teams (departments), roles, and employees.\nFor example, you can issue commands like: 'Register the development and management teams, and add Mr. Hong Gil-dong as a new employee to the management team. His role is a developer. The team leader of the management team is Team Leader Amuge.'"
+        "organizationChartExplanation": "Manage the organization chart interactively.\nYou can register, modify, and delete teams (departments), roles, and employees.\nFor example, you can issue commands like: 'Register the development and management teams, and add Mr. Hong Gil-dong as a new employee to the management team. His role is a developer. The team leader of the management team is Team Leader Amuge.'",
+        "addTeam": "Add Team",
+        "teamId": "Team ID",
+        "teamName": "Team Name",
+        "team": "Team",
+        "teamMember": "Team Member",
+        "role": "Role",
+        "selectTeamMember": "Select Team Member",
+        "deleteMessage": "Do you want to delete?",
+        "deleteMessage1": "Do you want to delete?",
+        "from": "From",
+        "add": "Add",
+        "edit": "Edit",
+        "delete": "Delete"
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",
@@ -90,12 +112,27 @@
         "addSub": "Sub Process",
         "save" : "Save"
     },
+    "uiDefinition": {
+        "title": "Screen Definition",
+        "cardTitle": "Screen Definition Management",
+        "uiDefinitionExplanation": "Manage screens interactively.\n For example, you can issue commands like 'I want to create a form to receive user information. The user information should include username, email, gender, and user profile image.'",
+        "add": "Add",
+        "edit": "Edit",
+        "delete": "Delete",
+        "cancel": "Cancel",
+        "save": "Save Screen",
+        "deleteForm": "Delete Form",
+        "deleteFormMessage": "Are you sure you want to delete the form?",
+        "redaction": "Edit",
+        "preview": "Preview"
+    },
     "processDefinition": {
         "title": "Process Definition",
         "cardTitle": "Process Definition Management",
         "processDefinitionExplanation": "Manage the process interactively. For example, you can issue commands like: \n'Register the sales management process as follows:\n1. Register sales opportunities including customer name, estimated business size, key person, requirements\n2. Proposal preparation: proposal contents, pricing\n3. Winning or losing an order\n4. If the order is won, proceed with contract execution'",
         "name": "Name",
         "type": "Type",
+        "form": "Form",
         "description": "Description",
         "dataSource": "DataSource",
         "query": "Query",
@@ -112,11 +149,13 @@
         "showXML": "Show XML",
         "showModeling": "Show Modeling",
         "deleteProcessMessage": "Are you sure you want to delete this process?",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "simulate": "Simulate"
     },
     "ProcessVariable": {
         "name": "Name",
         "type": "Type",
+        "defaultValue": "Form",
         "description": "Description",
         "dataSource": "DataSource",
         "add": "Add",
@@ -186,7 +225,8 @@
     },
     "tenantManagePage": {
         "title": "Company Management",
-        "subTitle": "Create a new company or go to a page managed by the selected company.",
+        "subTitle1": "Create a new company or go to a page managed by the selected company.",
+        "subTitle2": "(* Sign-up is not possible on mobile devices.)",
         "createCompany": "Create a company"
     },
     "tenantInfoField": {
@@ -235,7 +275,8 @@
         "generateScript": "Generate Script",
         "scriptPrompt": "Script Prompt",
         "scriptType": "Script Type",
-        "add": "Add"
+        "add": "Add",
+        "role": "Role"
     },
     "NotificationDD": {
         "notification": "Notifications"
@@ -246,5 +287,57 @@
         "containerOption": "Container Option",
         "boxed": "Boxed",
         "full": "Full"
+    },
+    "Mashup": {
+        "hoverText": "Drag a layout (Container) here to start editing the form."
+    },
+    "ProcessDefinitionVersionDialog": {
+        "title": "Save Process",
+        "title2": "Version Up",
+        "minorUpdate": "Minor Update",
+        "majorUpdate": "Major Update",
+        "id": "ID",
+        "name": "Name",
+        "message": "Message",
+        "save": "Save"
+    },
+    "FormDefinitionPanel": {
+        "editForm": "Edit Form Attribute",
+        "id": "ID",
+        "name": "Name",
+        "type": "Type",
+        "readOnly": "Read-Only Mode",
+        "save": "Save",
+        "fixed": "Fixed Options",
+        "dataBinding": "Data Binding"
+    },
+    "ContainerSettingPanel": {
+        "title": "Edit Container Attribute",
+        "id": "ID",
+        "name": "Name",
+        "save": "Save",
+        "multDataMode": "Multi-Data Mode"
+    },
+    "CodeField": {
+        "eventType": "Event Type",
+        "nameToWatch": "Name to Watch"
+    },
+    "BpmnParameterContexts": {
+        "addArgument": "Add Argument"
+    },
+    "DefaultArguments": {
+        "parameterContext": "Parameter Context"
+    },
+    "CallActivityPanel": {
+        "parameterContext": "Parameter Context"
+    },
+    "ReceiveTaskPanel": {
+        "dataMapping": "Data Mapping"
+    },
+    "ServiceTaskPanel": {
+        "dataMapping": "Data Mapping"
+    },
+    "EventSynchronizationForm": {
+        "dataMapping": "Data Mapping"
     }
 }

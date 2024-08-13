@@ -11,6 +11,13 @@ enum ErrorCode {
 }
 
 class ProcessGPTBackend implements Backend {
+    
+    testList(path: string): Promise<any> {
+        throw new Error('Method not implemented.');
+    }
+    findCurrentWorkItemByInstId(instId: string): Promise<any> {
+        throw new Error('Method not implemented.');
+    }
 
     async checkDBConnection() {
         return await storage.isConnection();
@@ -170,7 +177,8 @@ class ProcessGPTBackend implements Backend {
                     if (defId.includes('/')) defId = defId.replace(/\//g, "#")
                     const data = await storage.getString(`form_def/${defId}`, { key: 'id', column: 'html' });
                     if(!data) {
-                        throw new Error('no such form definition');
+                        return null;
+                        // throw new Error('no such form definition');
                     }
                     return data;
                 } else if(options.type === "bpmn") {
@@ -336,11 +344,7 @@ class ProcessGPTBackend implements Backend {
                 if (activityInfo && activityInfo.properties) {
                     const properties = JSON.parse(activityInfo.properties);
                     if (properties.parameters) {
-                        if (workitem.status != 'DONE') {
-                            parameters = properties.parameters.filter((item: any) => item.direction.includes('IN'));
-                        } else {
-                            parameters = properties.parameters
-                        }
+                        parameters = properties.parameters;
                         parameters.forEach((item: any) => {
                             item.variable.defaultValue = inst[item.variable.name.toLowerCase().replace(/ /g, '_')] || "";
                         })
@@ -890,7 +894,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async startAndComplete(command: object, isSimulate: boolean) {
+    async startAndComplete(command: object, isSimulate: string) {
         try {
             return null;
         } catch (error) {
@@ -1063,6 +1067,33 @@ class ProcessGPTBackend implements Backend {
     async search(keyword: string) {
         try {
             return await storage.search(keyword);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getUserList() {
+        try {
+            const options = {
+                orderBy: 'username',
+                sort: 'asc'
+            }
+            const users = await storage.list('users', options);
+            return users
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async updateUserInfo(value: any) {
+        try {
+            if (value.type === 'update') {
+                await storage.putObject('users', value.user);
+            } else if (value.type === 'delete') {
+                await storage.delete('users', { match: { id: value.user.id } });
+            }
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
