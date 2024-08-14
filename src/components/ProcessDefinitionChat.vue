@@ -198,6 +198,7 @@ export default {
             if (this.fullPath && this.fullPath != '') {
                 this.chatRoomId = this.fullPath;
             }
+            this.validate();
         });
     },
     watch: {
@@ -360,6 +361,9 @@ export default {
             me.toggleVerMangerDialog(false);
         },
         async changeElement() {
+            await this.validate();
+        },
+        async validate() {
             this.$nextTick(async () => {
                 const store = useBpmnStore();
                 const modeler = store.getModeler;
