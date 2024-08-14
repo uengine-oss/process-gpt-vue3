@@ -395,5 +395,10 @@
         "resolutionRule": "Resolution Rule",
         "scopeName": "Scope Name",
         "userID": "User ID"
+    },
+    "MessageEventDefinitionPanel": {
+        "correlationKey": "Correlation Key",
+        "servicePath": "Service Path",
+        "operationRef": "Operation Ref"
     }
 }
