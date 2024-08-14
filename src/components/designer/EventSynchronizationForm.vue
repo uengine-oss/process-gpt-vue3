@@ -62,7 +62,7 @@
                                         <v-icon>mdi-content-save</v-icon>
                                     </v-btn>
                                 </template>
-                                <span>{{ $t('EventSynchronizationForm.edit') }}</span>
+                                <span>{{$t('EventSynchronizationForm.save')}}</span>
                             </v-tooltip>
                         </div> 
 
@@ -112,7 +112,7 @@
                                     <v-icon :style="newAttribute.isCorrKey ? 'color: #0085db;' : ''">mdi-link-variant</v-icon>
                                 </v-btn>
                             </template>
-                            <span>{{ $t('EventSynchronizationForm.correlationKey') }}</span>
+                            <span>{{$t('EventSynchronizationForm.correlationKey')}}</span>
                         </v-tooltip>
                         <v-select class="delete-input-details" 
                                 style="width: 30px" 

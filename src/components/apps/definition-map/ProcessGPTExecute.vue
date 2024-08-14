@@ -100,14 +100,10 @@ export default {
                             if (properties.parameters) {
                                 parameters = properties.parameters;
                                 parameters.forEach((item) => {
-                                    if (item.direction == 'OUT') {
-                                        item.direction = 'IN';
-                                    } else if (item.direction == 'IN') {
-                                        item.direction = 'OUT';
-                                    }
                                     item.variable.defaultValue = "";
                                 })
-                            } else if (properties.variableForHtmlFormContext) {
+                            }
+                            if (properties.variableForHtmlFormContext) {
                                 variableForHtmlFormContext = properties.variableForHtmlFormContext;
                             }
                         }

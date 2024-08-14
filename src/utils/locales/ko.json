@@ -263,7 +263,7 @@
     "ExtraBox": {
         "logOut": "로그아웃"
     },
-    "BpnmPropertyPanel": {
+    "BpmnPropertyPanel": {
         "name": "이름",
         "condition": "조건",
         "priority": "우선순위",
@@ -276,7 +276,9 @@
         "scriptPrompt": "프롬프트 입력",
         "scriptType": "스크립트 타입",
         "add": "추가",
-        "role": "역할"
+        "role": "역할",
+        "methodTypeUrl": "메소드 타입 URL",
+        "apiUrl": "API URL"
     },
     "NotificationDD": {
         "notification": "알림"
@@ -329,10 +331,27 @@
         "parameterContext": "파라미터 컨텍스트"
     },
     "CallActivityPanel": {
-        "parameterContext": "파라미터 컨텍스트"
+        "parameterContext": "파라미터 컨텍스트",
+        "selectDefinition": "프로세스 정의 선택",
+        "noDefinitionSelected": "프로세스 정의가 선택되지 않았습니다.",
+        "roleMapping": "역할 매핑"
     },
     "ReceiveTaskPanel": {
-        "dataMapping": "데이터 매핑"
+        "dataMapping": "데이터 매핑",
+        "inputData": "입력 데이터",
+        "selectService": "호출 서비스 선택",
+        "callUri": "호출 URI 패턴",
+        "noValidationForSSL": "SSL 인증서 검증 안함",
+        "skipIfNotFound": "리소스 없을 경우 (404) 오류 처리 하지 않음",
+        "title": "제목",
+        "content": "내용",
+        "to": "받는 사람",
+        "from": "보낸 사람",
+        "descriptionTitle": "제목 입력",
+        "descriptionContent": "내용 입력",
+        "descriptionTo": "받는 사람 입력",
+        "descriptionFrom": "보낸 사람 입력",
+        "emailActivity": "이메일 형식"
     },
     "ServiceTaskPanel": {
         "dataMapping": "데이터 매핑"
@@ -340,11 +359,46 @@
     "EventSynchronizationForm": {
         "dataMapping": "데이터 매핑",
         "eventAttributes": "이벤트 속성",
-        "primaryKey": "기본 키",
-        "correlationKey": "연관 키",
-        "edit": "수정",
-        "attributeType": "속성 유형",
-        "name": "이름",
-        "add": "추가"
+        "primaryKey": "고유 키",
+        "correlationKey": "관계 키",
+        "attributeType" : "속성 유형",
+        "name" : "이름",
+        "save" : "저장",
+        "add" : "추가"
+    },
+    "UserTaskPanel" : {
+        "default" : "기본", 
+        "form" : "폼", 
+        "external" : "외부 어플리케이션",
+        "formCreateDialog" : "폼 생성을 하시겠습니까?",
+        "yes" : "예",
+        "no" : "아니오"
+    },
+    "Mapper" : {
+        "mapper" : "매퍼"
+    },
+    "SubProcessPanel" : {
+        "forEachRole" : "역할 기반 다중 생성",
+        "role" : "역할로 서브프로세스를 여러 개 생성함",
+        "forEachVariable" : "변수 기반 다중 생성",
+        "variable" : "변수로 서브프로세스를 여러 개 생성함"
+    },
+    "ParticipantPanel" : {
+        "apiUrl" : "API URL",
+        "openAPISpec" : "Open API 스펙"
+    },
+    "LanePanel" : { 
+        "selectRoleType" : "역할 선택", 
+        "none" : "없음", 
+        "IAMScope" : "역할명으로 역할 선택",
+        "DirecUser": "직접 사용자 선택",
+        "resolutionRule": "역할 규칙",
+        "scopeName" : "역할 명", 
+        "userID": "유저 ID"
+    },
+    "MessageEventDefinitionPanel": {
+        "correlationKey": "관계 키",
+        "servicePath": "서비스 경로",
+        "operationRef": "연산 참조"
     }
 }

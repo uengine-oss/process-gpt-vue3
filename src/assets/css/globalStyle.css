@@ -217,6 +217,19 @@ hr {
     background-color: #E0E0E0;
 }
 
+.process-consulting-chat-layout-card {
+    height: 95vh;
+}
+
+.process-consulting-chat-layout-card .process-consulting-chat-components .chat-info-title {
+    display: none;
+}
+
+.process-consulting-chat-layout-card .chat-view-box {
+    height:200px !important;
+    overflow: auto;
+}
+
 .bpmn-property-panel-name .v-input__details {
     display: none;
 }
@@ -229,7 +242,7 @@ hr {
     height: 100% !important;
 }
 
-#apexTreeWrapper > svg{
+#apexTreeWrapper > svg {
     height: 98% !important;
     width: 100% !important;
 }

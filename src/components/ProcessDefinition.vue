@@ -49,7 +49,7 @@
                     <div v-if="isXmlMode" style="height: calc(100% - 70px); margin-top: 70px; overflow: auto; padding: 10px">
                         <XmlViewer :xml="bpmn" />
                     </div>
-                    <bpmnu-engine
+                    <BpmnuEngine
                         v-else
                         ref="bpmnVue"
                         :bpmn="bpmn"
@@ -67,7 +67,7 @@
                         v-on:done="setDefinition"
                         @change="changeElement"
                         style="height: 100%"
-                    ></bpmnu-engine>
+                    ></BpmnuEngine>
                     <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
                         :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
                         v-on:openDefinition="ele => openSubProcess(ele)" v-on:loading="handleLoading"

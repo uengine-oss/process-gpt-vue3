@@ -177,7 +177,8 @@ class ProcessGPTBackend implements Backend {
                     if (defId.includes('/')) defId = defId.replace(/\//g, "#")
                     const data = await storage.getString(`form_def/${defId}`, { key: 'id', column: 'html' });
                     if(!data) {
-                        throw new Error('no such form definition');
+                        return null;
+                        // throw new Error('no such form definition');
                     }
                     return data;
                 } else if(options.type === "bpmn") {
