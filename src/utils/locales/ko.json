@@ -338,6 +338,13 @@
         "dataMapping": "데이터 매핑"
     },
     "EventSynchronizationForm": {
-        "dataMapping": "데이터 매핑"
+        "dataMapping": "데이터 매핑",
+        "eventAttributes": "이벤트 속성",
+        "primaryKey": "기본 키",
+        "correlationKey": "연관 키",
+        "edit": "수정",
+        "attributeType": "속성 유형",
+        "name": "이름",
+        "add": "추가"
     }
 }

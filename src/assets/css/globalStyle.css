@@ -221,6 +221,10 @@ hr {
     display: none;
 }
 
+.delete-input-details .v-input__details {
+    display: none !important;
+}
+
 #apexTreeWrapper {
     height: 100% !important;
 }

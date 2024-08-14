@@ -338,6 +338,13 @@
         "dataMapping": "Data Mapping"
     },
     "EventSynchronizationForm": {
-        "dataMapping": "Data Mapping"
+        "dataMapping": "Data Mapping",
+        "eventAttributes": "Event Attributes",
+        "primaryKey": "Primary Key",
+        "correlationKey": "Correlation Key",
+        "edit": "Edit",
+        "attributeType": "Attribute Type",
+        "name": "Name",
+        "add": "Add"
     }
 }
