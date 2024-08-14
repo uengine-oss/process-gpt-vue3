@@ -3,7 +3,7 @@
         <v-checkbox v-model="isEmailActivity" label="EmailActivity"></v-checkbox>
         <div v-if="!isEmailActivity">
             <div v-if="inputData.length > 0" style="margin-bottom: 20px">
-                <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.inputData') }}</div>
+                <div style="margin-bottom: -8px">{{ $t('BpmnPropertyPanel.inputData') }}</div>
                 <v-row class="ma-0 pa-0">
                     <div v-for="(inputData, idx) in inputData" :key="idx" class="mr-2 mt-2">
                         <v-chip
@@ -24,7 +24,7 @@
                 </v-row>
             </div>
             <div v-if="outputData.length > 0" style="margin-bottom: 20px">
-                <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.outputData') }}</div>
+                <div style="margin-bottom: -8px">{{ $t('BpmnPropertyPanel.outputData') }}</div>
                 <v-row class="ma-0 pa-0">
                     <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
                         <v-chip
@@ -77,7 +77,7 @@
                     ></v-textarea>
                 </v-row>
                 <!-- <v-row class="ma-0 pa-0">
-                    <div>{{ $t('BpnmPropertyPanel.checkPoints') }}</div>
+                    <div>{{ $t('BpmnPropertyPanel.checkPoints') }}</div>
                     <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
                 </v-row> -->
                 <v-btn block text rounded color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ReceiveTaskPanel.mapping') }}</v-btn>

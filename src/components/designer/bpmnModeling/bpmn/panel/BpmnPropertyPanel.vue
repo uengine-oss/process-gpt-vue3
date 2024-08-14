@@ -10,7 +10,7 @@
         </v-row>
         <v-card-text style="overflow: auto; height: calc(100% - 50px); width: 700px">
             <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
-            <div style="margin:-20px 0px 10px 0px;">{{ $t('BpnmPropertyPanel.role') }}: {{ role.name }}</div>
+            <div style="margin:-20px 0px 10px 0px;">{{ $t('BpmnPropertyPanel.role') }}: {{ role.name }}</div>
             <v-text-field v-model="name" label="이름" :disabled="isViewMode" ref="cursor" class="bpmn-property-panel-name"></v-text-field>
             <v-alert
                 color="#757575"

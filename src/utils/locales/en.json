@@ -263,7 +263,7 @@
     "ExtraBox": {
         "logOut": "log out"
     },
-    "BpnmPropertyPanel": {
+    "BpmnPropertyPanel": {
         "name": "Name",
         "condition": "Condition",
         "priority": "Priority",

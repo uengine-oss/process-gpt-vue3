@@ -263,7 +263,7 @@
     "ExtraBox": {
         "logOut": "로그아웃"
     },
-    "BpnmPropertyPanel": {
+    "BpmnPropertyPanel": {
         "name": "이름",
         "condition": "조건",
         "priority": "우선순위",
