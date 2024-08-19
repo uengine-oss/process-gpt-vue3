@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h6 class="text-h6 mb-2">Checkpoints</h6>
+        <h6 class="text-body-1 ml-2">체크포인트</h6>
         <div class="check-points-field-box">
             <div v-for="(checkpoint, idx) in checkpoints" :key="idx">
                 <v-text-field v-model="checkpoints[idx]">
