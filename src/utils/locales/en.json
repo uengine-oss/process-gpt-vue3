@@ -364,7 +364,10 @@
         "attributeType": "Attribute Type",
         "name": "Name",
         "save": "Save",
-        "add": "Add"
+        "add": "Add",
+        "mapperDescriptionTitle": "Data mapping is a function that passes variables to the next task",
+        "mapperDescriptionSubTitle1": "1. Variables: Values added to the variable section \n2. Roles: Roles (names) registered in the swimlane \n3. Instance: Stores the end date of the next task to be executed \n4. Activities: Roles (names) registered in the task \n5. Arguments: Names (values) registered in the attributes",
+        "mapperDescriptionSubTitle2": "How to use \n- Drag and drop while holding the mouse to connect \n- Click the line to delete"
     },
     "UserTaskPanel": {
         "default": "Default",
@@ -372,7 +375,11 @@
         "external": "External Application",
         "formCreateDialog": "Do you want to create a form?",
         "yes": "Yes",
-        "no": "No"
+        "no": "No",
+        "radioSelectDescriptionTitle": "데이터 처리 방식 선택: 기본 데이터 처리, 커스텀 화면 생성, 외부 시스템 연동.",
+        "radioSelectDescriptionSubTitle1": "1. 기본 : 기본적인 데이터 사용 \n2. 폼 : 화면 정의에서 생성한 화면 \n3. 외부 어플리케이션 : 업무 화면 URL 입력 필드 생성",
+        "typeDescriptionTitle": "Attribute: Defines the data to be stored for the corresponding item.",
+        "typeDescriptionSubTitle1": "1. Primary Key: A key that uniquely identifies each record and does not allow duplicates within the database. \n2. Correlation Key: A key used to establish and track relationships between different data, maintaining data correlations."
     },
     "Mapper": {
         "mapper": "Mapper"
@@ -400,5 +407,6 @@
         "correlationKey": "Correlation Key",
         "servicePath": "Service Path",
         "operationRef": "Operation Ref"
-    }
+    },
+    "details": "Details"
 }

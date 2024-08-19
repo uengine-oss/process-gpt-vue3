@@ -1,20 +1,19 @@
 <template>
     <div>
-        <div>
+        <div class="mb-2 mt-4">
             <span>{{ $t('BpmnPropertyPanel.methodTypeUrl') }}</span>
             <v-row class="ma-0 pa-0">
-                <v-col cols="4">
+                <v-col cols="3" class="pa-0 pr-2">
                     <v-autocomplete
                         labels="Methods Type"
                         :items="methodList"
                         theme="light"
-                        rounded
                         density="comfortable"
-                        variant="solo"
+                        variant="outlined"
                         v-model="copyUengineProperties.httpMethods"
                     ></v-autocomplete>
                 </v-col>
-                <v-col cols="8">
+                <v-col cols="9" class="pa-0">
                     <v-text-field :label="$t('BpmnPropertyPanel.apiUrl')" v-model="copyUengineProperties.API"></v-text-field>
                 </v-col>
             </v-row>
@@ -31,7 +30,7 @@
             </v-row>
         </div>
         <div align="right" @click="generateAPI">
-            <v-btn prepend-icon color="primary">
+            <v-btn prepend-icon rounded color="primary">
                 <template v-slot:prepend>
                     <Icons :icon="'magic'"  />
                 </template>
@@ -47,6 +46,8 @@
                     :item-value="item"
                     :item-title="(item) => item.name"
                     v-model="copyUengineProperties.selectedOut"
+                    density="comfortable"
+                    variant="outlined"
                 ></v-autocomplete>
                 <!-- <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts> -->
             </v-row>
