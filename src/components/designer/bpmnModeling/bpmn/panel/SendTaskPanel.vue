@@ -1,7 +1,7 @@
 <template>
     <div>
         <div>
-            Method Type & URL
+            <span>{{ $t('BpmnPropertyPanel.methodTypeUrl') }}</span>
             <v-row class="ma-0 pa-0">
                 <v-col cols="4">
                     <v-autocomplete
@@ -15,7 +15,7 @@
                     ></v-autocomplete>
                 </v-col>
                 <v-col cols="8">
-                    <v-text-field label="API URL" v-model="copyUengineProperties.API"></v-text-field>
+                    <v-text-field :label="$t('BpmnPropertyPanel.apiUrl')" v-model="copyUengineProperties.API"></v-text-field>
                 </v-col>
             </v-row>
         </div>

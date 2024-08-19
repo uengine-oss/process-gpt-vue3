@@ -1,7 +1,7 @@
 <template>
     <div>
         <div v-if="inputData.length > 0" style="margin-bottom: 20px">
-            <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.inputData') }}</div>
+            <div style="margin-bottom: -8px">{{ $t('BpmnPropertyPanel.inputData') }}</div>
             <v-row class="ma-0 pa-0">
                 <div v-for="(inputData, idx) in inputData" :key="idx" class="mr-2 mt-2">
                     <v-chip
@@ -22,7 +22,7 @@
             </v-row>
         </div>
         <div v-if="outputData.length > 0" style="margin-bottom: 20px">
-            <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.outputData') }}</div>
+            <div style="margin-bottom: -8px">{{ $t('BpmnPropertyPanel.outputData') }}</div>
             <v-row class="ma-0 pa-0">
                 <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
                     <v-chip
@@ -53,7 +53,7 @@
 
         <!-- <div>
             <v-row class="ma-0 pa-0">
-                <div>{{ $t('BpnmPropertyPanel.checkPoints') }}</div>
+                <div>{{ $t('BpmnPropertyPanel.checkPoints') }}</div>
                 <v-spacer></v-spacer>
                 <v-icon v-if="editCheckpoint" @click="editCheckpoint = false" style="margin-top: 2px">mdi-close</v-icon>
             </v-row>
@@ -75,7 +75,7 @@
             <v-row class="ma-0 pa-0" v-if="!isViewMode">
                 <v-spacer></v-spacer>
                 <v-btn v-if="editCheckpoint" @click="addCheckpoint" color="primary" rounded="pill" size="small">{{
-                    $t('BpnmPropertyPanel.add')
+                    $t('BpmnPropertyPanel.add')
                 }}</v-btn>
                 <v-card
                     v-else

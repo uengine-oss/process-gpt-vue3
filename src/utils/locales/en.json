@@ -263,7 +263,7 @@
     "ExtraBox": {
         "logOut": "log out"
     },
-    "BpnmPropertyPanel": {
+    "BpmnPropertyPanel": {
         "name": "Name",
         "condition": "Condition",
         "priority": "Priority",
@@ -276,7 +276,9 @@
         "scriptPrompt": "Script Prompt",
         "scriptType": "Script Type",
         "add": "Add",
-        "role": "Role"
+        "role": "Role",
+        "methodTypeUrl": "Method Type URL",
+        "apiUrl": "API URL"
     },
     "NotificationDD": {
         "notification": "Notifications"
@@ -329,10 +331,27 @@
         "parameterContext": "Parameter Context"
     },
     "CallActivityPanel": {
-        "parameterContext": "Parameter Context"
+        "parameterContext": "Parameter Context",
+        "selectDefinition": "Select Definition",
+        "noDefinitionSelected": "No definition selected.",
+        "roleMapping": "Role Mapping"
     },
     "ReceiveTaskPanel": {
-        "dataMapping": "Data Mapping"
+        "dataMapping": "Data Mapping",
+        "inputData": "Input Data",
+        "selectService": "Select Service",
+        "callUri": "Call URI Pattern",
+        "noValidationForSSL": "Don't validate the certificate",
+        "skipIfNotFound": "Skip if not found (404 error handling)",
+        "title": "Title",
+        "content": "Content",
+        "to": "To",
+        "from": "From",
+        "descriptionTitle": "Write Title",
+        "descriptionContent": "Write Content",
+        "descriptionTo": "Write To",
+        "descriptionFrom": "Write From",
+        "emailActivity": "Email Activity"
     },
     "ServiceTaskPanel": {
         "dataMapping": "Data Mapping"
@@ -376,5 +395,10 @@
         "resolutionRule": "Resolution Rule",
         "scopeName": "Scope Name",
         "userID": "User ID"
+    },
+    "MessageEventDefinitionPanel": {
+        "correlationKey": "Correlation Key",
+        "servicePath": "Service Path",
+        "operationRef": "Operation Ref"
     }
 }
