@@ -11,6 +11,7 @@
         <v-card-text style="overflow: auto; height: calc(100% - 50px); width: 700px">
             <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')">
                 <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
+                <div style="margin:-20px 0px 10px 0px;">{{ $t('BpmnPropertyPanel.role') }}: {{ role.name }}</div>
                 <v-text-field v-model="name" :label="$t('BpmnPropertyPanel.role')" :disabled="isViewMode" ref="cursor" class="bpmn-property-panel-name"></v-text-field>
             </div>
             <component
