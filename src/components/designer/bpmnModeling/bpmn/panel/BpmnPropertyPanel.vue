@@ -1,25 +1,18 @@
 <template>
-    <div style="height: calc(100vh - 155px)">
-        <v-row class="pa-2 ma-0">
-            <v-spacer></v-spacer>
-            <v-btn @click="save"
-                icon variant="text" density="comfortable"
-            >
-                <Icons :icon="'close'" class="cursor-pointer" :size="16"/>
-            </v-btn>
-        </v-row>
-        <v-card-text style="overflow: auto; height: calc(100% - 50px); width: 700px">
-            <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
-            <div style="margin:-20px 0px 10px 0px;">{{ $t('BpnmPropertyPanel.role') }}: {{ role.name }}</div>
-            <v-text-field v-model="name" label="이름" :disabled="isViewMode" ref="cursor" class="bpmn-property-panel-name"></v-text-field>
-            <v-alert
-                color="#757575"
-                type="info"
-                variant="tonal"
-                class="pa-2 mt-1 mb-4"
-            >
-                Task 스티커의 이름이 될 필드입니다.
-            </v-alert>
+    <div style="height: calc(100vh - 155px); position: relative;">
+        <v-btn @click="save" icon variant="text" density="comfortable" style="position: absolute; top: 12px; right: 12px;">
+            <Icons :icon="'close'" class="cursor-pointer" :size="16"/>
+        </v-btn>
+        <v-card-text style="overflow: auto; height: 100%; width: 700px" class="pa-4">
+            <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')">
+                <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
+                <div style="margin:0px 0px 10px 0px;">{{ $t('BpnmPropertyPanel.role') }}: {{ role.name }}</div>
+                <v-text-field v-model="name" label="이름" :disabled="isViewMode" autofocus
+                    class="bpmn-property-panel-name"></v-text-field>
+                <v-alert color="#757575" type="info" variant="tonal" class="pa-2 mt-1 mb-4">
+                    Task 스티커의 이름이 될 필드입니다.
+                </v-alert>
+            </div>
             <component
                 style="height: 100%"
                 :is="panelName"
@@ -43,10 +36,9 @@
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import ValidationField from '@/components/designer/bpmnModeling/bpmn/panel/ValidationField.vue';
 import { Icon } from '@iconify/vue';
-const storage = StorageBaseFactory.getStorage();
+
 export default {
     name: 'bpmn-property-panel',
     props: {
@@ -127,11 +119,21 @@ export default {
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
 
-        this.$refs.cursor.focus();
+        // this.$refs.cursor.focus();
     },
     computed: {
+        mode() {
+            return window.$mode;
+        },
+        isGPTMode() {
+            return this.mode == 'ProcessGPT';
+        },
         panelName() {
-            return _.kebabCase(this.element.$type.split(':')[1]) + '-panel';
+            var type = _.kebabCase(this.element.$type.split(':')[1])
+            if (type == 'user-task' && this.isGPTMode) {
+                type = 'gpt-user-task';
+            }
+            return type + '-panel';
         }
         // inputData() {
         //     let params = this.uengineProperties.parameters;

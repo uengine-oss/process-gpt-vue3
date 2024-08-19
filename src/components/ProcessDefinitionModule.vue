@@ -453,7 +453,7 @@ export default {
 
 
 
-            const checkedFormData = function(variables, variable) {
+            const checkForm = function(variables, variable) {
                 let formVars = variables.filter((data) => data.type == 'Form');
                 return formVars.some(form => form.name == variable);
             }
@@ -502,7 +502,7 @@ export default {
                     });
                 });
                 activity?.outputData?.forEach((data) => {
-                    if(checkedFormData(variables, data)) {
+                    if(checkForm(variables, data)) {
                         variableForHtmlFormContext = {
                             name: data
                         }
