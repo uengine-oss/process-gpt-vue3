@@ -25,6 +25,8 @@
                     :item-value="item"
                     :item-title="(item) => item.name"
                     v-model="selectedOut"
+                    density="comfortable"
+                    variant="outlined"
                 ></v-autocomplete>
             </v-row>
         </div>

@@ -2,7 +2,8 @@
     <div v-if="!isLoading">
         <div flat>
             <v-col class="pa-0">
-                <v-text-field class="mb-4" label="URL" v-model="value.url"></v-text-field>
+                <v-text-field class="mb-4" label="URL" v-model="value.url" v-if="selectedActivity === 'URLActivity'"></v-text-field>
+                
 
                 <!-- <div style="font-size: medium;">Event Type</div> -->
                 <!-- <div>
@@ -141,9 +142,17 @@
                             <span>{{ $t('EventSynchronizationForm.add') }}</span>
                         </v-tooltip>
                     </v-row>
+                    <DetailComponent
+                        :title="$t('EventSynchronizationForm.typeDescriptionTitle')"
+                        :details="typeDescription"
+                    />
                 </v-col>
 
                 <v-btn block text rounded color="primary" class="my-3" @click="openMapperDialog()">{{ $t('EventSynchronizationForm.dataMapping') }}</v-btn>
+                <DetailComponent
+                    :title="$t('BpmnPropertyPanel.mapperDescriptionTitle')"
+                    :details="mapperDescription"
+                />
             </v-col>
         </div>
 
@@ -187,7 +196,8 @@ export default {
         },
         roles: Array,
         taskName: String,
-        definition: Object
+        definition: Object,
+        selectedActivity: String
     },
     components:{
         Mapper,
@@ -214,6 +224,20 @@ export default {
         nodes: null,
         replaceFromExpandableNode: null,
         replaceToExpandableNode: null,
+        mapperDescription: [
+            {
+                title: 'BpmnPropertyPanel.mapperDescriptionSubTitle1'
+            },
+            {
+                title: 'BpmnPropertyPanel.mapperDescriptionSubTitle2',
+                image: "EventSynchronizationFomVariablesHowToUse.gif"
+            },
+        ],
+        typeDescription: [
+            {
+                title: 'EventSynchronizationForm.typeDescriptionSubTitle1'
+            },
+        ]
     }),
     created(){
         this.init()

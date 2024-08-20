@@ -80,7 +80,8 @@ export default {
     },
     props: {
         open: Boolean,
-        process: Object
+        process: Object,
+        type: String
     },
     data: () => ({
         basePath: 'proc_def_arcv',
@@ -89,7 +90,6 @@ export default {
         // xml
         showXML: false, // xml or bpmn
         key: 0, // update component
-
         // slider
         currentIndex: 0,
         lists: [],
@@ -147,6 +147,7 @@ export default {
                 key: 'version, message',
                 sort: 'asc',
                 orderBy: 'timeStamp',
+                type: me.type
             });
             me.lists = result.map(item => ({ ...item, xml: null }));
             me.lists[0].xml = await me.loadXMLOfVer(me.lists[0].version)
@@ -184,6 +185,7 @@ export default {
                 key: 'snapshot',
                 sort: 'asc',
                 size: 1,
+                type: me.type,
                 match: { 'version': version }
             });
             if (result[0]) {

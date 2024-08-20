@@ -1,17 +1,18 @@
 <template>
-    <div style="height: calc(100vh - 155px); position: relative;">
-        <v-btn @click="save" icon variant="text" style="position: absolute; top: 10px; right: 20px; z-index: 1000;">
-            <Icons :icon="'close'" class="cursor-pointer" :size="16"/>
-        </v-btn>
-        <v-card-text style="overflow: auto; height: 100%; width: 700px" class="px-5 py-2">
-            <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')" class="mt-5">
+    <div style="height: calc(100vh - 155px)">
+        <v-row class="pa-2 ma-0">
+            <v-spacer></v-spacer>
+            <v-btn @click="save"
+                icon variant="text" density="comfortable"
+            >
+                <Icons :icon="'close'" class="cursor-pointer" :size="16"/>
+            </v-btn>
+        </v-row>
+        <v-card-text class="delete-input-details" style="overflow: auto; height: calc(100% - 52px); width: 700px;">
+            <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')">
                 <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
-                <div style="margin:0px 0px 10px 0px;">{{ $t('BpmnPropertyPanel.role') }}: {{ role.name }}</div>
-                <v-text-field v-model="name" label="이름" :disabled="isViewMode" autofocus
-                    class="bpmn-property-panel-name"></v-text-field>
-                <v-alert color="#757575" type="info" variant="tonal" class="pa-2 mt-1 mb-4">
-                    Task 스티커의 이름이 될 필드입니다.
-                </v-alert>
+                <div style="margin:-20px 0px 10px 0px;">{{ $t('BpmnPropertyPanel.role') }}: {{ role.name }}</div>
+                <v-text-field v-model="name" :label="$t('BpmnPropertyPanel.role')" :disabled="isViewMode" ref="cursor" class="bpmn-property-panel-name "></v-text-field>
             </div>
             <component
                 style="height: 100%"

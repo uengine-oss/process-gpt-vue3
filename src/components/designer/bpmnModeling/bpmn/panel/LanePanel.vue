@@ -65,14 +65,14 @@ export default {
         // Object.keys(this.requiredKeyLists).forEach((key) => {
         //     this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
         // });
-        if(this.processDefinition && this.processDefinition.roles && this.processDefinition.roles.length > 0){
-            const role = this.processDefinition.roles.find(role => role.name === this.element.name);
-            if (role) {
-                this.role = role
-            } else {
-                console.log('Role not found');
-            }
-        }
+        // if(this.processDefinition && this.processDefinition.roles && this.processDefinition.roles.length > 0){
+        //     const role = this.processDefinition.roles.find(role => role.name === this.element.name);
+        //     if (role) {
+        //         this.role = role
+        //     } else {
+        //         console.log('Role not found');
+        //     }
+        // }
 
     },
     data() {

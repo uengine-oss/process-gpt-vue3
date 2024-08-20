@@ -4,7 +4,7 @@
         <v-tooltip>
             <template v-slot:activator="{ props }">
                 <v-btn v-bind="props"
-                    icon variant="text"
+                    icon variant="text" color="primary" rounded
                     class="text-medium-emphasis"
                     @click="promptInput.isVisible = !promptInput.isVisible"
                 >
