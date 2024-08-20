@@ -15,7 +15,7 @@
                 </v-card-title>
 
                 <!-- 오른쪽의 토글 아이콘 -->
-                <v-tooltip v-if="details" :text="$t('details')">
+                <v-tooltip v-if="details" :text="$t('DetailComponent.details')">
                     <template v-slot:activator="{ props }">
                         <v-icon v-bind="props"
                             @click="extendedStatus = !extendedStatus" 

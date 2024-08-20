@@ -408,5 +408,16 @@
         "servicePath": "Service Path",
         "operationRef": "Operation Ref"
     },
-    "details": "Details"
+    "DetailComponent" : {
+        "details": "Details"
+    },
+    "SendTaskPanel" : {
+        "apiUrl": "API URL"
+    },
+    "ServiceTaskPanel": {
+        "apiUrl": "API URL"
+    },
+    "MessageEventDefinitionPanel": {
+        "apiUrl": "API URL"
+    }
 }

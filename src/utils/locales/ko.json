@@ -277,8 +277,6 @@
         "scriptType": "스크립트 타입",
         "add": "추가",
         "role": "역할",
-        "methodTypeUrl": "메소드 타입 URL",
-        "apiUrl": "API URL"
     },
     "NotificationDD": {
         "notification": "알림"
@@ -408,5 +406,19 @@
         "servicePath": "서비스 경로",
         "operationRef": "연산 참조"
     },
-    "details": "상세보기"
+    "DetailComponent" : {
+        "details": "상세보기"
+    },
+    "SendTaskPanel" : {
+        "apiUrl": "API URL",
+        "methodTypeUrl": "메소드 타입 URL"
+    },
+    "ServiceTaskPanel": {
+        "apiUrl": "API URL",
+        "methodTypeUrl": "메소드 타입 URL"
+    },
+    "MessageEventDefinitionPanel": {
+        "apiUrl": "API URL",
+        "methodTypeUrl": "메소드 타입 URL"
+    }
 }

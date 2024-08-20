@@ -2,7 +2,7 @@
     <div>
         <div style="height: 100%" v-if="element.$type === 'bpmn:IntermediateThrowEvent'">
             <div class="mb-2 mt-4">
-                <span>{{ $t('BpmnPropertyPanel.methodTypeUrl') }}</span>
+                <span>{{ $t('MessageEventDefinitionPanel.methodTypeUrl') }}</span>
                 <v-row class="ma-0 pa-0">
                     <v-col cols="3" class="pa-0 pr-2">
                         <v-autocomplete
@@ -15,7 +15,7 @@
                         ></v-autocomplete>
                     </v-col>
                     <v-col cols="9" class="pa-0">
-                        <v-text-field :label="$t('BpmnPropertyPanel.apiUrl')" v-model="copyUengineProperties.uriTemplate"></v-text-field>
+                        <v-text-field :label="$t('MessageEventDefinitionPanel.apiUrl')" v-model="copyUengineProperties.uriTemplate"></v-text-field>
                     </v-col>
                 </v-row>
             </div>
