@@ -29,12 +29,14 @@
                     :open="versionDialog"
                     :definitionPath="fullPath"
                     :processName="projectName"
+                    :type="'bpmn'"
                     @close="toggleVersionDialog"
                     @save="saveDefinition"
                 ></process-definition-version-dialog>
                 <ProcessDefinitionVersionManager
                     :process="processDefinition"
                     :open="verMangerDialog"
+                    :type="'bpmn'"
                     @close="toggleVerMangerDialog"
                     @changeXML="changeXML"
                 ></ProcessDefinitionVersionManager>
