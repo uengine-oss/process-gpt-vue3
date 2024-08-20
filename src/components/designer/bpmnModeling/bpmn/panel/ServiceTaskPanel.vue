@@ -17,6 +17,10 @@
                     <v-text-field :label="$t('BpmnPropertyPanel.apiUrl')" v-model="copyUengineProperties.uriTemplate"></v-text-field>
                 </v-col>
             </v-row>
+            <DetailComponent
+                :title="$t('ServiceTaskPanel.methodTypeDescriptionTitle')"
+                :details="methodTypeDescription"
+            />
         </div>
         <div style="height: 40%" v-if="copyUengineProperties.httpMethods != 'GET'">
             <v-row class="ma-0 pa-0" style="height: 100%">
@@ -34,10 +38,14 @@
                 <template v-slot:prepend>
                     <Icons :icon="'magic'"  />
                 </template>
-                생성
+                {{ $t('ServiceTaskPanel.generation') }}
             </v-btn>
         </div>
         <v-btn block text rounded color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ServiceTaskPanel.dataMapping') }}</v-btn>
+        <DetailComponent
+            :title="$t('BpmnPropertyPanel.mapperDescriptionTitle')"
+            :details="mapperDescription"
+        />
         <div>
             <!-- <div>Return 값을 저장 할 변수</div> -->
             <!-- <v-row class="ma-0 pa-0">
@@ -142,7 +150,21 @@ export default {
             replaceToExpandableNode: null,
             nodes: {},
             openAPI: '',
-            isOpenFieldMapper: false
+            isOpenFieldMapper: false,
+            methodTypeDescription: [
+                {
+                    title: 'SendTaskPanel.methodTypeDescriptionSubTitle1',
+                },
+            ],
+            mapperDescription: [
+                {
+                    title: 'BpmnPropertyPanel.mapperDescriptionSubTitle1'
+                },
+                {
+                    title: 'BpmnPropertyPanel.mapperDescriptionSubTitle2',
+                    image: "EventSynchronizationFomVariablesHowToUse.gif"
+                },
+            ],
         };
     },
     async mounted() {

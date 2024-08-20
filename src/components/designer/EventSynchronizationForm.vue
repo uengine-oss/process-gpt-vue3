@@ -150,10 +150,9 @@
 
                 <v-btn block text rounded color="primary" class="my-3" @click="openMapperDialog()">{{ $t('EventSynchronizationForm.dataMapping') }}</v-btn>
                 <DetailComponent
-                    :title="$t('EventSynchronizationForm.mapperDescriptionTitle')"
+                    :title="$t('BpmnPropertyPanel.mapperDescriptionTitle')"
                     :details="mapperDescription"
                 />
-                
             </v-col>
         </div>
 
@@ -227,10 +226,10 @@ export default {
         replaceToExpandableNode: null,
         mapperDescription: [
             {
-                title: 'EventSynchronizationForm.mapperDescriptionSubTitle1'
+                title: 'BpmnPropertyPanel.mapperDescriptionSubTitle1'
             },
             {
-                title: 'EventSynchronizationForm.mapperDescriptionSubTitle2',
+                title: 'BpmnPropertyPanel.mapperDescriptionSubTitle2',
                 image: "EventSynchronizationFomVariablesHowToUse.gif"
             },
         ],

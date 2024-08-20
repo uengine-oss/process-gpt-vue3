@@ -17,6 +17,10 @@
                     <v-text-field :label="$t('BpmnPropertyPanel.apiUrl')" v-model="copyUengineProperties.API"></v-text-field>
                 </v-col>
             </v-row>
+            <DetailComponent
+                :title="$t('SendTaskPanel.methodTypeDescriptionTitle')"
+                :details="methodTypeDescription"
+            />
         </div>
         <div style="height: 70%">
             <v-row class="ma-0 pa-0" style="height: 100%">
@@ -34,11 +38,11 @@
                 <template v-slot:prepend>
                     <Icons :icon="'magic'"  />
                 </template>
-                생성
+                {{ $t('SendTaskPanel.generation') }}
             </v-btn>
         </div>
         <div>
-            <div>Return 값을 저장 할 변수</div>
+            <div>{{ $t('SendTaskPanel.return') }}</div>
             <v-row class="ma-0 pa-0">
                 <v-autocomplete
                     :items="processVariables"
@@ -51,6 +55,9 @@
                 ></v-autocomplete>
                 <!-- <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts> -->
             </v-row>
+            <DetailComponent
+                :title="$t('SendTaskPanel.returnTitle')"
+            />
         </div>
     </div>
 </template>
@@ -110,7 +117,12 @@ export default {
             httpMethods: null,
             copyDefinition: this.definition,
             processVariables: [],
-            apiServiceURL: ''
+            apiServiceURL: '',
+            methodTypeDescription: [
+                {
+                    title: 'SendTaskPanel.methodTypeDescriptionSubTitle1',
+                },
+            ]
         };
     },
     async mounted() {

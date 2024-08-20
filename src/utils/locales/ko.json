@@ -278,7 +278,10 @@
         "add": "추가",
         "role": "역할",
         "methodTypeUrl": "메소드 타입 URL",
-        "apiUrl": "API URL"
+        "apiUrl": "API URL",
+        "mapperDescriptionTitle": "데이터 매핑이란 다음 작업으로 변수들을 전달하는 기능",
+        "mapperDescriptionSubTitle1": "1. Variables : 변수항목에 추가한 값들 \n2. Roles : 스윔 레인에 등록한 역할(이름) \n3. Instance : 다음 실행될 task 작업의 종료일 등을 저장하는 곳 \n4. Activities : task에 등록한 역할(이름) \n5. Arguments : 속성에 등록한 이름(값)",
+        "mapperDescriptionSubTitle2": "사용 방법 \n- 마우스를 누른 상태로 연결할 곳에 끌어다 놓으면 연결\n- 선을 클릭하면 삭제"
     },
     "NotificationDD": {
         "notification": "알림"
@@ -354,7 +357,10 @@
         "emailActivity": "이메일 형식"
     },
     "ServiceTaskPanel": {
-        "dataMapping": "데이터 매핑"
+        "dataMapping": "데이터 매핑",
+        "generation": "생성",
+        "methodTypeDescriptionTitle": "API 요청을 보낼 때 사용할 메서드(GET, POST, PUT, PATCH)와 요청을 처리할 서버의 엔드포인트 URL을 설정",
+        "methodTypeDescriptionSubTitle1": "1.GET : 서버로부터 데이터를 조회하는 요청 \n2.POST : 서버에 새 데이터를 생성하여 전송하는 요청 \n3.PUT : 기존 데이터를 업데이트하거나 전체를 대체하는 요청 \n4.PATCH : 기존 데이터의 일부를 수정하는 요청 \n5.API URL : 요청이 전송될 서버의 엔드포인트 주소\n"
     },
     "EventSynchronizationForm": {
         "dataMapping": "데이터 매핑",
@@ -365,9 +371,6 @@
         "name" : "이름",
         "save" : "저장",
         "add" : "추가",
-        "mapperDescriptionTitle": "데이터 매핑이란 다음 작업으로 변수들을 전달하는 기능",
-        "mapperDescriptionSubTitle1": "1. Variables : 변수항목에 추가한 값들 \n2. Roles : 스윔 레인에 등록한 역할(이름) \n3. Instance : 다음 실행될 task 작업의 종료일 등을 저장하는 곳 \n4. Activities : task에 등록한 역할(이름) \n5. Arguments : 속성에 등록한 이름(값)",
-        "mapperDescriptionSubTitle2": "사용 방법 \n- 마우스를 누른 상태로 연결할 곳에 끌어다 놓으면 연결\n- 선을 클릭하면 삭제",
         "typeDescriptionTitle": "속성: 해당 항목에 대해 저장할 데이터를 정의",
         "typeDescriptionSubTitle1": "1. 고유 키 : 각 레코드를 고유하게 식별하는 키로, 데이터베이스 내에서 중복을 허용하지 않습니다. \n2. 관계 키 : 서로 다른 데이터 간의 관계를 설정하고 추적하는 데 사용되는 키로, 데이터의 연관성을 유지합니다."
     },
@@ -403,12 +406,20 @@
         "scopeName" : "역할 명", 
         "userID": "유저 ID"
     },
-    "MessageEventDefinitionPanel": {
+    "MessageEventDefinitionPanel" : {
         "correlationKey": "관계 키",
         "servicePath": "서비스 경로",
         "operationRef": "연산 참조"
     },
     "DetailComponent" : {
-        "details": "상세보기"
+        "details": "상세보기",
+        "allDetails": "전체 설명 보기"
+    },
+    "SendTaskPanel" : {
+        "generation": "생성",
+        "return": "Return 값을 저장 할 변수",
+        "methodTypeDescriptionTitle": "API 요청을 보낼 때 사용할 메서드(GET, POST, PUT, PATCH)와 요청을 처리할 서버의 엔드포인트 URL을 설정",
+        "methodTypeDescriptionSubTitle1": "1.GET : 서버로부터 데이터를 조회하는 요청 \n2.POST : 서버에 새 데이터를 생성하여 전송하는 요청 \n3.PUT : 기존 데이터를 업데이트하거나 전체를 대체하는 요청 \n4.PATCH : 기존 데이터의 일부를 수정하는 요청 \n5.API URL : 요청이 전송될 서버의 엔드포인트 주소\n",
+        "returnTitle": "드롭다운 메뉴는 프로세스 변수에서 등록된 변수 이름을 리스트로 출력합니다. \n사용자는 이 리스트에서 원하는 변수를 선택할 수 있습니다"
     }
 }
