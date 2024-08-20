@@ -276,7 +276,9 @@
         "scriptPrompt": "프롬프트 입력",
         "scriptType": "스크립트 타입",
         "add": "추가",
-        "role": "역할"
+        "role": "역할",
+        "methodTypeUrl": "메소드 타입 URL",
+        "apiUrl": "API URL"
     },
     "NotificationDD": {
         "notification": "알림"
@@ -293,11 +295,9 @@
     },
     "ProcessDefinitionVersionDialog": {
         "title": "프로세스 저장",
-        "title2": "프로세스 저장",
+        "title2": "버전 업",
         "minorUpdate": "소규모 업데이트",
         "majorUpdate": "주요 업데이트",
-        "update": "업데이트",
-        "release": "릴리즈",
         "id": "아이디",
         "name": "이름",
         "message": "메시지",
@@ -410,17 +410,5 @@
     },
     "DetailComponent" : {
         "details": "상세보기"
-    },
-    "SendTaskPanel" : {
-        "apiUrl": "API URL",
-        "methodTypeUrl": "메소드 타입 URL"
-    },
-    "ServiceTaskPanel": {
-        "apiUrl": "API URL",
-        "methodTypeUrl": "메소드 타입 URL"
-    },
-    "MessageEventDefinitionPanel": {
-        "apiUrl": "API URL",
-        "methodTypeUrl": "메소드 타입 URL"
     }
 }

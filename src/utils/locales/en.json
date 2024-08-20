@@ -410,14 +410,5 @@
     },
     "DetailComponent" : {
         "details": "Details"
-    },
-    "SendTaskPanel" : {
-        "apiUrl": "API URL"
-    },
-    "ServiceTaskPanel": {
-        "apiUrl": "API URL"
-    },
-    "MessageEventDefinitionPanel": {
-        "apiUrl": "API URL"
     }
 }
