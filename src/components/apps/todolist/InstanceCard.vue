@@ -52,12 +52,14 @@ const backend = BackendFactory.createBackend();
 import InstanceProgress from './InstanceProgress.vue';
 import InstanceTodo from './InstanceTodo.vue';
 import InstanceWorkHistory from './InstanceWorkHistory.vue';
+import InstanceGantt from './InstanceGantt.vue';
 
 export default {
     components: {
         InstanceProgress,
         InstanceTodo,
         InstanceWorkHistory,
+        InstanceGantt
     },
     data: () => ({
         instance: null,
@@ -67,7 +69,8 @@ export default {
         tabItems: [
             { value: 'progress', label: '진행 상황', component: 'InstanceProgress' },
             { value: 'todo', label: '워크 아이템', component: 'InstanceTodo' },
-            { value: 'workhistory', label: '워크 히스토리', component: 'InstanceWorkHistory' }
+            { value: 'workhistory', label: '워크 히스토리', component: 'InstanceWorkHistory' },
+            { value: 'gantt', label: '간트 차트', component: 'InstanceGantt' }
         ]
     }),
     watch: {

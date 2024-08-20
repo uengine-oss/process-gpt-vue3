@@ -54,6 +54,11 @@ import Keycloak from 'keycloak-js';
 import loadbpmnComponents from './components/designer/bpmnModeling/bpmn';
 import loadOpengraphComponents from './opengraph';
 
+// vue-
+import dayjs from 'dayjs';
+import 'dayjs/locale/ko';
+import ganttastic from '@infectoone/vue-ganttastic'
+
 const i18n = createI18n({
     locale: 'ko',
     fallbackLocale: 'en',
@@ -288,6 +293,9 @@ async function initializeApp() {
         easing: 'ease',
         offset: -50
     });
+    // vue-ganttastic
+    dayjs.locale('ko');
+    app.use(ganttastic);
 
     // 전역으로 복사 가능하게 추가
     document.addEventListener('keydown', function (event) {

@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <v-dialog v-model="isOpen" max-width="500">
         <v-card v-if="type == 'view'">
             <v-card-title class="d-flex align-center justify-space-between pt-3 pl-5">
                 <h4 class="text-h4">할 일</h4>
@@ -8,7 +8,7 @@
                 </v-btn>
             </v-card-title>
 
-            <v-card-text class="mt-3 px-6">
+            <v-card-text class="px-6">
                 <div class="mb-3">
                     <span class="text-h6 font-weight-semibold">제목: </span>
                     <span class="text-h6">{{ task.title }}</span>
@@ -45,24 +45,23 @@
             </v-card-title>
 
             <v-card-title v-else class="pt-5 pl-5">
-                <h4 class="text-h4 mb-5">할 일 등록</h4>
+                <h4 class="text-h4">할 일 등록</h4>
             </v-card-title>
 
-            <v-card-text class="mt-3">
+            <v-card-text>
                 <v-text-field v-model="newTask.title" label="할일명" outlined></v-text-field>
                 <v-text-field v-model="newTask.startDate" label="시작일" outlined type="datetime-local"></v-text-field>
-                <v-text-field v-model="newTask.dueDate" label="종료일" outlined type="datetime-local"></v-text-field>
-                <v-select v-model="newTask.status" :items="['TODO', 'IN_PROGRESS', 'PENDING', 'DONE']" label="진행 상태"
-                    variant="outlined"></v-select>
+                <v-text-field v-model="newTask.dueDate" label="마감일" outlined type="datetime-local"></v-text-field>
+                <!-- <v-select v-model="newTask.status" :items="statusList" item-title="text" item-value="value" label="진행 상태" variant="outlined"></v-select> -->
                 <v-textarea v-model="newTask.description" label="설명" outlined></v-textarea>
             </v-card-text>
 
             <v-card-actions class="justify-center pt-0">
-                <v-btn :disabled="newTask.title == ''" color="success" variant="flat" @click="save">저장</v-btn>
+                <v-btn :disabled="newTask.title == ''" color="primary" variant="flat" @click="save">저장</v-btn>
                 <v-btn color="error" variant="flat" @click="close">닫기</v-btn>
             </v-card-actions>
         </v-card>
-    </div>
+    </v-dialog>
 </template>
 
 <script>
@@ -73,6 +72,9 @@ export default {
         type: String,
         task: Object,
         todolist: Array,
+        isOpen: Boolean,
+        instId: { type: String, default: '' },
+        defId: { type: String, default: '' },
     },
     data: () => ({
         newTask: {
@@ -82,8 +84,17 @@ export default {
             description: '',
             status: 'TODO',
             startDate: null,
+            endDate: null,
             dueDate: null,
+            instId: '',
+            defId: '',
         },
+        statusList: [
+            { text: '할 일', value: 'TODO' },
+            { text: '진행 중', value: 'IN_PROGRESS' },
+            { text: '보류 중', value: 'PENDING' },
+            { text: '완료됨', value: 'DONE' },
+        ],
     }),
     async created() {
         if (this.task && this.task.taskId) {
@@ -96,7 +107,10 @@ export default {
                 description: '',
                 status: 'TODO',
                 startDate: null,
+                endDate: null,
                 dueDate: null,
+                instId: this.instId,
+                defId: this.defId,
             };
         }
     },

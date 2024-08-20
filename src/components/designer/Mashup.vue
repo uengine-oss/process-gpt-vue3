@@ -1,33 +1,30 @@
 <template>
-  <div>
-    <div id="initGuide">
-      <span style="font-size: 18px; font-weight: bold;">
-        {{ $t('Mashup.hoverText') }}
-      </span>
+    <div>
+        <div id="initGuide">
+            <span style="font-size: 18px; font-weight: bold;">
+                {{ $t('Mashup.hoverText') }}
+            </span>
+        </div>
+
+        <div id="kEditor1" class="mashup-hover"></div>
+      
+        <v-dialog v-model="isOpenComponentSettingDialog">
+            <form-definition-panel
+                :componentRef="componentRefForSetting"
+                @onSave="editFormDefinition"
+                @onClose="isOpenComponentSettingDialog = false"
+            ></form-definition-panel>
+        </v-dialog>
+
+        <v-dialog v-model="isOpenContainerSettingDialog">
+            <container-setting-panel
+                :sectionId="containerSectionId"
+                :containerProps="containerProps"
+                @onSave="editContainerDefinition"
+                @onClose="isOpenContainerSettingDialog = false"
+            ></container-setting-panel>
+        </v-dialog>
     </div>
-
-    <div id="kEditor1" class="mashup-hover"></div>
-    
-    
-    <v-dialog v-model="isOpenComponentSettingDialog">
-        <form-definition-panel
-          :componentRef="componentRefForSetting"
-          @onSave="editFormDefinition"
-          @onClose="isOpenComponentSettingDialog = false"
-        >
-        </form-definition-panel>
-    </v-dialog>
-
-    <v-dialog v-model="isOpenContainerSettingDialog">
-      <container-setting-panel
-        :sectionId="containerSectionId"
-        :containerProps="containerProps"
-        @onSave="editContainerDefinition"
-        @onClose="isOpenContainerSettingDialog = false"
-      >
-      </container-setting-panel>
-    </v-dialog>
-  </div>
 </template>
 
 <script>
