@@ -1,10 +1,14 @@
 <template>
     <div>
-        <v-radio-group v-model="selectedActivity" inline>
-            <v-radio label="Default" value="HumanActivity"></v-radio>
-            <v-radio label="Form" value="FormActivity"></v-radio>
-            <v-radio v-if="useEvent" label="외부 어플리케이션" value="URLActivity"></v-radio>
+        <v-radio-group v-model="selectedActivity" inline class="delete-input-details">
+            <v-radio :label="$t('UserTaskPanel.default')" value="HumanActivity"></v-radio>
+            <v-radio :label="$t('UserTaskPanel.form')" value="FormActivity"></v-radio>
+            <v-radio v-if="useEvent" :label="$t('UserTaskPanel.external')" value="URLActivity"></v-radio>
         </v-radio-group>
+        <DetailComponent
+            :title="$t('UserTaskPanel.radioSelectDescriptionTitle')"
+            :details="radioSelectDescription"
+        />
         <div v-if="!isLoading && selectedActivity == 'HumanActivity'">
             <EventSynchronizationForm
                 v-if="useEvent"
@@ -12,6 +16,7 @@
                 :roles="roles"
                 :taskName="name"
                 :definition="copyDefinition"
+                :selectedActivity="selectedActivity"
             ></EventSynchronizationForm>
             <div v-else>
                 <DefaultArguments v-model="copyUengineProperties"></DefaultArguments>
@@ -38,7 +43,7 @@
                             hide-details>
                         </v-autocomplete> -->
                         <v-autocomplete
-                            label="Form"
+                            :label="$t('UserTaskPanel.form')" 
                             v-model="selectedForm"
                             :items="definition.processVariables.filter((item) => item.type === 'Form').map((item) => item.name)"
                             color="primary"
@@ -55,6 +60,7 @@
                 :roles="roles"
                 :taskName="name"
                 :definition="copyDefinition"
+                :selectedActivity="selectedActivity"
             ></EventSynchronizationForm>
             <div v-else>
                 <Instruction v-model="activity.instruction"></Instruction>
@@ -69,6 +75,7 @@
                 :roles="roles"
                 :taskName="name"
                 :definition="copyDefinition"
+                :selectedActivity="selectedActivity"
             ></EventSynchronizationForm>
         </div>
     </div>
@@ -96,18 +103,18 @@
     <v-dialog v-model="isOpenFormCreateDialog" max-width="500">
         <v-card>
             <v-card-text>
-                {{ '폼 생성을 하시겠습니까?' }}
+                {{ $t('UserTaskPanel.formCreateDialog') }}
             </v-card-text>
             <v-card-actions>
                 <v-spacer></v-spacer>
-                <v-btn color="error" @click="isOpenFormCreateDialog = false">아니오</v-btn>
+                <v-btn color="error" @click="isOpenFormCreateDialog = false">{{ $t('UserTaskPanel.no') }}</v-btn>
                 <v-btn
                     color="primary"
                     @click="
                         isOpenFormCreateDialog = false;
                         createForm();
                     "
-                    >예</v-btn
+                    >{{ $t('UserTaskPanel.yes') }}</v-btn
                 >
             </v-card-actions>
         </v-card>
@@ -185,7 +192,12 @@ export default {
             activity: {
                 instruction: '',
                 checkpoints: ['']
-            }
+            },
+            radioSelectDescription: [
+                {
+                    title: 'UserTaskPanel.radioSelectDescriptionSubTitle1'
+                },
+            ]
         };
     },
     created() {

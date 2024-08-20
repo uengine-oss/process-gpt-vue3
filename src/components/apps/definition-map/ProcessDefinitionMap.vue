@@ -83,14 +83,19 @@
             </div>
 
             <v-btn v-if="componentName == 'DefinitionMapList'"
-                @click="openConsultingDialog = true"
-                style="margin-left: 20px;" color="primary"
+                @click="openConsultingDialog = true, ProcessPreviewMode = false"
+                style="margin-left: 20px;" color="primary" rounded
             >
                 <Icons :icon="'magic'" :size="18"  style="margin-right: 10px;" />프로세스 컨설팅 시작하기
             </v-btn>
         </v-card>
-        <v-dialog style="max-width: 1000px;" v-model="openConsultingDialog" persistent>
-            <ProcessConsultingChat @closeConsultingDialog="closeConsultingDialog" @createdBPMN="createdBPMN" />
+        <v-dialog :style="ProcessPreviewMode ? '' : 'max-width: 1000px;'" v-model="openConsultingDialog" persistent>
+            <ProcessConsultingChat 
+                :ProcessPreviewMode="ProcessPreviewMode"
+                @closeConsultingDialog="closeConsultingDialog" 
+                @createdBPMN="createdBPMN" 
+                @openProcessPreview="openProcessPreview" 
+            />
         </v-dialog>
         <v-dialog v-model="alertDialog" max-width="500" persistent>
             <v-card>
@@ -156,6 +161,7 @@ export default {
         isAdmin: false,
         versionHistory: [],
         openConsultingDialog: false,
+        ProcessPreviewMode: false,
     }),
     computed: {
         useLock() {
@@ -196,6 +202,9 @@ export default {
         }
     },
     methods: {
+        openProcessPreview(){
+            this.ProcessPreviewMode = true
+        },
         createdBPMN(res){
             const generateUniqueMegaProcessId = () => {
                 function s4() {

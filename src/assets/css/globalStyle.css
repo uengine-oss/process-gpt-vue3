@@ -42,10 +42,6 @@ hr {
     width: 100%;
 }
 
-.edit-process-text-field .v-input__details{
-    display: none;
-}
-
 .highlight:not(.djs-connection) .djs-visual> :nth-child(1) {
     stroke-width: 5px !important;
     stroke: #68369A !important;
@@ -84,6 +80,7 @@ hr {
     background-size: 20px 20px !important; /* 이미지를 요소 안에 맞춤, 이미지가 잘릴 수 있음 */
     background-repeat: no-repeat !important; /* 이미지 반복 없음 */
     background-position: center !important;
+    background-color:white !important;
 }
 /* bpm .bpmn-icon-screw-wrench 아이콘 나타나지 않아 넣어둔 부분 */
 
@@ -216,11 +213,28 @@ hr {
     background-color: #E0E0E0;
 }
 
+.process-consulting-chat-layout-card {
+    height: 95vh;
+}
+
+.process-consulting-chat-layout-card .process-consulting-chat-components .chat-info-title {
+    display: none;
+}
+
+.process-consulting-chat-layout-card .chat-view-box {
+    height:200px !important;
+    overflow: auto;
+}
+
+.delete-input-details .v-input__details {
+    display: none !important;
+}
+
 #apexTreeWrapper {
     height: 100% !important;
 }
 
-#apexTreeWrapper > svg{
+#apexTreeWrapper > svg {
     height: 98% !important;
     width: 100% !important;
 }

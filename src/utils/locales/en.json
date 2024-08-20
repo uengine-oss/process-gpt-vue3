@@ -11,12 +11,12 @@
         "title": "Easily initiate from AI-based process management to execution.",
         "subTitle": "Process definition, organizational chart management, To-Do management, process execution, process monitoring, process analysis."
     },
-    "headerMenu" : {
-        "sidebar" : "Sidebar",
-        "dashboard" : "Dashboard",
-        "todoList" : "Todo List",
-        "calendar" : "Calendar",
-        "layoutSetting" : "Layout Setting"
+    "headerMenu": {
+        "sidebar": "Sidebar",
+        "dashboard": "Dashboard",
+        "todoList": "Todo List",
+        "calendar": "Calendar",
+        "layoutSetting": "Layout Setting"
     },
     "DashboardTodoList": {
         "todo": "Todo",
@@ -74,7 +74,7 @@
         "title": "Running Instance"
     },
     "admin": {
-        "title": "Administrator Menu"   
+        "title": "Administrator Menu"
     },
     "completeInstance": {
         "title": "Complete Instance"
@@ -110,7 +110,7 @@
         "addMega": "Mega Process",
         "addMajor": "Major Process",
         "addSub": "Sub Process",
-        "save" : "Save"
+        "save": "Save"
     },
     "uiDefinition": {
         "title": "Screen Definition",
@@ -149,7 +149,8 @@
         "showXML": "Show XML",
         "showModeling": "Show Modeling",
         "deleteProcessMessage": "Are you sure you want to delete this process?",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "simulate": "Simulate"
     },
     "ProcessVariable": {
         "name": "Name",
@@ -262,7 +263,7 @@
     "ExtraBox": {
         "logOut": "log out"
     },
-    "BpnmPropertyPanel": {
+    "BpmnPropertyPanel": {
         "name": "Name",
         "condition": "Condition",
         "priority": "Priority",
@@ -275,7 +276,9 @@
         "scriptPrompt": "Script Prompt",
         "scriptType": "Script Type",
         "add": "Add",
-        "role": "Role"
+        "role": "Role",
+        "methodTypeUrl": "Method Type URL",
+        "apiUrl": "API URL"
     },
     "NotificationDD": {
         "notification": "Notifications"
@@ -328,6 +331,82 @@
         "parameterContext": "Parameter Context"
     },
     "CallActivityPanel": {
-        "parameterContext": "Parameter Context"
-    }
+        "parameterContext": "Parameter Context",
+        "selectDefinition": "Select Definition",
+        "noDefinitionSelected": "No definition selected.",
+        "roleMapping": "Role Mapping"
+    },
+    "ReceiveTaskPanel": {
+        "dataMapping": "Data Mapping",
+        "inputData": "Input Data",
+        "selectService": "Select Service",
+        "callUri": "Call URI Pattern",
+        "noValidationForSSL": "Don't validate the certificate",
+        "skipIfNotFound": "Skip if not found (404 error handling)",
+        "title": "Title",
+        "content": "Content",
+        "to": "To",
+        "from": "From",
+        "descriptionTitle": "Write Title",
+        "descriptionContent": "Write Content",
+        "descriptionTo": "Write To",
+        "descriptionFrom": "Write From",
+        "emailActivity": "Email Activity"
+    },
+    "ServiceTaskPanel": {
+        "dataMapping": "Data Mapping"
+    },
+    "EventSynchronizationForm": {
+        "dataMapping": "Data Mapping",
+        "eventAttributes": "Event Attributes",
+        "primaryKey": "Primary Key",
+        "correlationKey": "Correlation Key",
+        "attributeType": "Attribute Type",
+        "name": "Name",
+        "save": "Save",
+        "add": "Add",
+        "mapperDescriptionTitle": "Data mapping is a function that passes variables to the next task",
+        "mapperDescriptionSubTitle1": "1. Variables: Values added to the variable section \n2. Roles: Roles (names) registered in the swimlane \n3. Instance: Stores the end date of the next task to be executed \n4. Activities: Roles (names) registered in the task \n5. Arguments: Names (values) registered in the attributes",
+        "mapperDescriptionSubTitle2": "How to use \n- Drag and drop while holding the mouse to connect \n- Click the line to delete"
+    },
+    "UserTaskPanel": {
+        "default": "Default",
+        "form": "Form",
+        "external": "External Application",
+        "formCreateDialog": "Do you want to create a form?",
+        "yes": "Yes",
+        "no": "No",
+        "radioSelectDescriptionTitle": "데이터 처리 방식 선택: 기본 데이터 처리, 커스텀 화면 생성, 외부 시스템 연동.",
+        "radioSelectDescriptionSubTitle1": "1. 기본 : 기본적인 데이터 사용 \n2. 폼 : 화면 정의에서 생성한 화면 \n3. 외부 어플리케이션 : 업무 화면 URL 입력 필드 생성",
+        "typeDescriptionTitle": "Attribute: Defines the data to be stored for the corresponding item.",
+        "typeDescriptionSubTitle1": "1. Primary Key: A key that uniquely identifies each record and does not allow duplicates within the database. \n2. Correlation Key: A key used to establish and track relationships between different data, maintaining data correlations."
+    },
+    "Mapper": {
+        "mapper": "Mapper"
+    },
+    "SubProcessPanel": {
+        "forEachRole": "Role-based Multiple Creation",
+        "role": "Create multiple sub-processes based on roles",
+        "forEachVariable": "Variable-based Multiple Creation",
+        "variable": "Create multiple sub-processes based on variables"
+    },
+    "ParticipantPanel": {
+        "apiUrl": "API URL",
+        "openAPISpec": "Open API Spec"
+    },
+    "LanePanel": {
+        "selectRoleType": "Select Role Type",
+        "none": "None",
+        "IAMScope": "Role Resolution By IAM Scope",
+        "DirecUser": "Role Resolution By Direct user",
+        "resolutionRule": "Resolution Rule",
+        "scopeName": "Scope Name",
+        "userID": "User ID"
+    },
+    "MessageEventDefinitionPanel": {
+        "correlationKey": "Correlation Key",
+        "servicePath": "Service Path",
+        "operationRef": "Operation Ref"
+    },
+    "details": "Details"
 }

@@ -4,9 +4,9 @@
             <v-col class="d-flex ma-0 pa-0" style="height: 100%">
                 <v-card style="border-radius: 0px !important; border: none; height: 100%" flat>
                     <v-row class="ma-0 pa-0 button-container">
-                        <v-tooltip v-if="executable" :text="'Simulate'">
+                        <v-tooltip v-if="executable" :text="$t('processDefinition.simulate')">
                             <template v-slot:activator="{ props }">
-                                <v-switch color="primary" v-bind="props" v-model="isSimulate" false-value="false" true-value="true"></v-switch>
+                                <v-switch color="primary" v-bind="props" v-model="isSimulate" false-value="false" true-value="true" class="btn-simulate"></v-switch>
                             </template>
                         </v-tooltip>
                         <!-- <v-tooltip v-if="isSimulate == 'true' || isSimulate == 'record'" :text="'record'">
@@ -49,7 +49,7 @@
                     <div v-if="isXmlMode" style="height: calc(100% - 70px); margin-top: 70px; overflow: auto; padding: 10px">
                         <XmlViewer :xml="bpmn" />
                     </div>
-                    <bpmnu-engine
+                    <BpmnuEngine
                         v-else
                         ref="bpmnVue"
                         :bpmn="bpmn"
@@ -67,7 +67,7 @@
                         v-on:done="setDefinition"
                         @change="changeElement"
                         style="height: 100%"
-                    ></bpmnu-engine>
+                    ></BpmnuEngine>
                     <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
                         :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
                         v-on:openDefinition="ele => openSubProcess(ele)" v-on:loading="handleLoading"
@@ -217,7 +217,7 @@
             <process-gpt-execute v-if="mode === 'LLM'" :definitionId="definitionPath" 
                 @close="executeDialog = false"></process-gpt-execute>
             <div v-else>
-                <test-process v-if="isSimulate" :definitionId="definitionPath" @close="executeDialog = false" />
+                <test-process v-if="isSimulate == 'true'" :definitionId="definitionPath" @close="executeDialog = false" />
                 <dry-run-process v-else :is-simulate="isSimulate" :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
             </div>
         </v-dialog>
@@ -910,11 +910,18 @@ export default {
     flex-direction: row;
 }
 
+.btn-simulate {
+    margin-top:-3px;
+}
+
 @media only screen and (max-width: 550px) {
     .button-container {
         position: absolute;
         flex-direction: column;
         align-items: flex-end;
+    }
+    .btn-simulate {
+        order: 4;
     }
     .btn-execute {
         order: 3;

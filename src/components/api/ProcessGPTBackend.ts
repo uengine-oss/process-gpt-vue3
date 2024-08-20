@@ -31,16 +31,7 @@ class ProcessGPTBackend implements Backend {
                 item.path = `${item.id}.bpmn`
                 item.name = item.name || item.path 
             });
-            
-            let formDefs = await storage.list('form_def', (path ? { like: `${path.replace(/\//g, "#")}%` } : undefined));
-            formDefs.map((item: any) => {
-                item.id = item.id.replace(/#/g, "/")
-                item.path = `${item.id}.form`
-                item.name = item.path
-            });
-            
-            return [...procDefs, ...formDefs]
-
+            return procDefs
         } catch (e) {
             // this.checkDBConnection();
             //@ts-ignore
@@ -177,7 +168,8 @@ class ProcessGPTBackend implements Backend {
                     if (defId.includes('/')) defId = defId.replace(/\//g, "#")
                     const data = await storage.getString(`form_def/${defId}`, { key: 'id', column: 'html' });
                     if(!data) {
-                        throw new Error('no such form definition');
+                        return null;
+                        // throw new Error('no such form definition');
                     }
                     return data;
                 } else if(options.type === "bpmn") {

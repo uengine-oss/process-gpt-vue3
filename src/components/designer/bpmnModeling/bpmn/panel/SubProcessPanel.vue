@@ -7,7 +7,7 @@
         </div> -->
         <div style="margin-bottom: 22px">
             <v-row class="ma-0 pa-0">
-                <div>ForEach Role</div>
+                <div>{{$t('SubProcessPanel.forEachRole')}}</div>
                 <v-spacer></v-spacer>
             </v-row>
             <v-row>
@@ -15,7 +15,7 @@
                     :items="roles"
                     v-model="selectedRole"
                     color="primary"
-                    label="Role"
+                    :label="$t('SubProcessPanel.role')"
                     variant="outlined"
                     hide-details
                 ></v-autocomplete>
@@ -29,7 +29,7 @@
         </div>
         <div style="margin-bottom: 22px">
             <v-row class="ma-0 pa-0">
-                <div>ForEach Variable</div>
+                <div>{{$t('SubProcessPanel.forEachVariable')}}</div>
                 <v-spacer></v-spacer>
             </v-row>
             <v-row>
@@ -40,7 +40,7 @@
                     item-title="name"
                     color="primary"
                     v-model="selectedVariable"
-                    label="Variable"
+                    :label="$t('SubProcessPanel.variable')"
                     variant="outlined"
                 ></v-autocomplete>
                 <!-- <bpmn-parameter-contexts

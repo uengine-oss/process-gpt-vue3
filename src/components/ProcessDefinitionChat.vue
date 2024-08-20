@@ -125,6 +125,8 @@ import ProcessDefinitionModule from './ProcessDefinitionModule.vue';
 import ChatGenerator from './ai/ProcessDefinitionGenerator';
 import Chat from './ui/Chat.vue';
 
+import FormGenerator from './ai/FormDesignGenerator';
+
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
@@ -149,7 +151,8 @@ export default {
         ProcessDefinitionVersionDialog,
         ProcessDefinitionVersionManager,
         ProcessDefinitionChatHeader,
-        ProcessDefinitionConvertModule
+        ProcessDefinitionConvertModule,
+        FormGenerator
     },
     data: () => ({
         isXmlMode: false,
@@ -197,6 +200,7 @@ export default {
             if (this.fullPath && this.fullPath != '') {
                 this.chatRoomId = this.fullPath;
             }
+            this.validate();
         });
     },
     watch: {
@@ -359,6 +363,9 @@ export default {
             me.toggleVerMangerDialog(false);
         },
         async changeElement() {
+            await this.validate();
+        },
+        async validate() {
             this.$nextTick(async () => {
                 const store = useBpmnStore();
                 const modeler = store.getModeler;
@@ -484,45 +491,6 @@ export default {
             }
             this.sendMessage(newMessage);
         },
-        extractPropertyNameAndIndex(jsonPath) {
-            let match;
-            match = jsonPath.match(/^\$\.(\w+)\[(\d+)\]$/);
-            if (!match) {
-                match = jsonPath.match(/^\$\.(\w+)\[\?(.*)\]$/);
-                return match ? { propertyName: match[1], index: match.index } : null;
-            } else {
-                return { propertyName: match[1], index: parseInt(match[2], 10) };
-            }
-        },
-        modificationAdd(modification) {
-            let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath);
-            if (obj) {
-                this.processDefinition[obj.propertyName].splice(obj.index, 0, modification.value);
-            } else if (this.processDefinition[modification.targetJsonPath.replace('$.', '')]) {
-                this.processDefinition[modification.targetJsonPath.replace('$.', '')].push(modification.value);
-            }
-        },
-        modificationReplace(modification) {
-            let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath);
-            // const updateAtIndex = (array, index, newValue) => (array[index] = newValue, array);
-            this.processDefinition[obj.propertyName][obj.index] = modification.value;
-            // this.processDefinition[obj.propertyName].splice(obj.index, 0, modification.value)
-        },
-        modificationRemove(modification, modeler) {
-            if (modification.value) {
-                const modeling = modeler.get('modeling');
-                const elementRegistry = modeler.get('elementRegistry');
-                console.log('********');
-                console.log(modification);
-                console.log('********');
-                // elementRegistry.get()
-                // let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath);
-                var sequence = elementRegistry.get(modification.value.id);
-                modeling.removeElements([sequence]);
-            }
-
-            
-        },
         async afterModelCreated(response) {
             let jsonProcess;
             try {
@@ -632,86 +600,9 @@ export default {
                 }
             }
 
+            await this.checkedFormData();
+
             this.isChanged = true;
-        },
-        modificationElement(modification, modeler) {
-            console.log(modification);
-            const moddle = modeler.get('bpmnFactory');
-            const elementFactory = modeler.get('elementFactory');
-            const canvas = modeler.get('canvas');
-            const modeling = modeler.get('modeling');
-            const elementRegistry = modeler.get('elementRegistry');
-            if (modification.targetJsonPath.includes('components')) {
-                // var newElementDi = moddle.create(`bpmn:${modification.value.componentType}`, { text: modification.value.name })
-                // var newElementShape = moddle.create(`bpmndi:BPMNShape`, { text: '' })
-                // newElementShape.bpmnElement = newElementDi
-                // newElementShape.dc = moddle.create(`dc:Bounds`, { x: 0, y: 0, width: 100, height: 100 })
-                // elementFactory
-                var rootElement = canvas.getRootElement();
-                var newElement = elementFactory.createShape({
-                    type: `bpmn:${modification.value.componentType}`,
-                    id: modification.value.id,
-                    x: 0,
-                    y: 0
-                });
-                newElement.businessObject.set('name', modification.value.name);
-                newElement.businessObject.set('id', modification.value.id);
-                modeling.createShape(
-                    newElement,
-                    {
-                        id: modification.value.id,
-                        x: modification.value.x ? modification.value.x : 0,
-                        y: modification.value.y ? modification.value.y : 0
-                    },
-                    rootElement.children[0]
-                );
-
-                this.extendUEngineProperties(newElement.businessObject, modification, modeler);
-            }
-            if (modification.targetJsonPath.includes('sequences')) {
-                var sourceElement = elementRegistry.get(modification.value.source);
-                var targetElement = elementRegistry.get(modification.value.target);
-                var sequenceFlow = elementFactory.createConnection({
-                    type: 'bpmn:SequenceFlow',
-                    source: sourceElement,
-                    target: targetElement
-                });
-                modeling.connect(sourceElement, targetElement);
-            }
-
-            // let result = { element: null, di: null };
-            // const parser = new DOMParser();
-            // let elementXML = '<bpmn:userTask id="" name="" role=""></bpmn:userTask>';
-            // let element = parser.parseFromString(elementXML, 'application/xml');
-            // // const userTask = parser.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'userTask');
-            // element.documentElement.setAttribute('id', modification.value.id);
-            // element.documentElement.setAttribute('name', modification.value.name);
-            // element.documentElement.setAttribute('role', modification.value.role);
-
-            // let diXML =
-            //     '<bpmndi:BPMNShape id="" bpmnElement=""><dc:Bounds x="790" y="140" width="100" height="80" /><bpmndi:BPMNLabel /></bpmndi:BPMNShape>';
-            // result.element = tmp;
-            // result.diagram = tmp.di;
-            // return result;
-        },
-        extendUEngineProperties(businessObject, modification, modeler) {
-            //let businessObject = element.businessObject
-
-            if (businessObject.extensionElements?.values) {
-                return;
-            }
-
-            const bpmnFactory = modeler.get('bpmnFactory');
-
-            const uengineParams = bpmnFactory.create('uengine:Properties', {
-                json: ''
-            });
-
-            uengineParams.json = JSON.stringify(modification.value.spec);
-            const extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
-            extensionElements.get('values').push(uengineParams);
-
-            businessObject.set('extensionElements', extensionElements);
         },
         afterModelStopped(response) {},
         async saveToVectorStore(definition) {

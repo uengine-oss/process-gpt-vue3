@@ -2,6 +2,9 @@
 import xml2js from 'xml2js';
 import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
+import FormGenerator from './ai/FormDesignGenerator';
+import partialParse from "partial-json-parser";
+
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -22,6 +25,198 @@ export default {
     beforeUnmount() {},
     async created() {},
     methods: {
+        extractJSON(inputString, checkFunction) {
+            try {
+                JSON5.parse(inputString); // if no problem, just return the whole thing
+                return inputString;
+            } catch (e) {}
+
+            if (this.hasUnclosedTripleBackticks(inputString)) {
+                inputString = inputString + '\n```';
+            }
+
+            // 정규 표현식 정의
+            //const regex = /^.*?`{3}(?:json)?\n(.*?)`{3}.*?$/s;
+            const regex = /```(?:json)?\s*([\s\S]*?)\s*```/;
+
+
+            // 정규 표현식을 사용하여 입력 문자열에서 JSON 부분 추출
+            const match = inputString.match(regex);
+
+            // 매치된 결과가 있다면, 첫 번째 캡쳐 그룹(즉, JSON 부분)을 반환
+            if (match) {
+                if (checkFunction)
+                    match.forEach((shouldBeJson) => {
+                        const lastIndex = shouldBeJson.lastIndexOf('}');
+                        const result = shouldBeJson.slice(0, lastIndex + 1);
+                        if (checkFunction(result)) return result;
+                    });
+                else return match[1];
+            }
+
+            // 매치된 결과가 없으면 null 반환
+            return null;
+        },
+        checkedFormData() {
+            if (this.processDefinition.data) {
+                let formList = this.processDefinition.data.filter(data => data.type == 'Form');
+                if (formList && formList.length > 0) {
+                    formList.forEach(async (form) => {
+                        await this.generateForm(form, false);
+                    });
+                }
+            }
+        },
+        async generateForm(form, isGenStart) {
+            let formHtml = await backend.getRawDefinition(form.name, { type: 'form' }) || null;
+            if (formHtml == null) {
+                const formGenerator = new FormGenerator(this, {
+                    isStream: true,
+                    preferredLanguage: 'Korean',
+                });
+                formGenerator.client.onModelCreated = null;
+                formGenerator.client.onGenerationFinished = async (response) => {
+                    let jsonData = this.extractJSON(response);
+                    jsonData = jsonData.match(/\{[\s\S]*\}/)[0]
+                        .replaceAll('\n', '')
+                        .replaceAll('`', `"`);
+                    jsonData = partialParse(jsonData);
+                    if (jsonData.htmlOutput) {
+                        await backend.putRawDefinition(jsonData.htmlOutput, form.name, { type: 'form' });
+                    }
+                }
+
+                if (!isGenStart) {
+                    let newMessage = `'${form.name}' 폼을 생성해줘.`;
+                    formGenerator.previousMessages = [formGenerator.prevMessageFormat];
+                    formGenerator.previousMessages.push({
+                        role: 'user',
+                        content: newMessage
+                    });
+                    await formGenerator.generate();
+                    isGenStart = true;;
+                }
+                formHtml = await this.generateForm(form, isGenStart);
+            } else {
+                return formHtml;
+            }
+        },
+        extractPropertyNameAndIndex(jsonPath) {
+            let match;
+            match = jsonPath.match(/^\$\.(\w+)\[(\d+)\]$/);
+            if (!match) {
+                match = jsonPath.match(/^\$\.(\w+)\[\?(.*)\]$/);
+                return match ? { propertyName: match[1], index: match.index } : null;
+            } else {
+                return { propertyName: match[1], index: parseInt(match[2], 10) };
+            }
+        },
+        extendUEngineProperties(businessObject, modification, modeler) {
+            //let businessObject = element.businessObject
+
+            if (businessObject.extensionElements?.values) {
+                return;
+            }
+
+            const bpmnFactory = modeler.get('bpmnFactory');
+
+            const uengineParams = bpmnFactory.create('uengine:Properties', {
+                json: ''
+            });
+
+            uengineParams.json = JSON.stringify(modification.value.spec);
+            const extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
+            extensionElements.get('values').push(uengineParams);
+
+            businessObject.set('extensionElements', extensionElements);
+        },
+        modificationElement(modification, modeler) {
+            console.log(modification);
+            const moddle = modeler.get('bpmnFactory');
+            const elementFactory = modeler.get('elementFactory');
+            const canvas = modeler.get('canvas');
+            const modeling = modeler.get('modeling');
+            const elementRegistry = modeler.get('elementRegistry');
+            if (modification.targetJsonPath.includes('components')) {
+                // var newElementDi = moddle.create(`bpmn:${modification.value.componentType}`, { text: modification.value.name })
+                // var newElementShape = moddle.create(`bpmndi:BPMNShape`, { text: '' })
+                // newElementShape.bpmnElement = newElementDi
+                // newElementShape.dc = moddle.create(`dc:Bounds`, { x: 0, y: 0, width: 100, height: 100 })
+                // elementFactory
+                var rootElement = canvas.getRootElement();
+                var newElement = elementFactory.createShape({
+                    type: `bpmn:${modification.value.componentType}`,
+                    id: modification.value.id,
+                    x: 0,
+                    y: 0
+                });
+                newElement.businessObject.set('name', modification.value.name);
+                newElement.businessObject.set('id', modification.value.id);
+                modeling.createShape(
+                    newElement,
+                    {
+                        id: modification.value.id,
+                        x: modification.value.x ? modification.value.x : 0,
+                        y: modification.value.y ? modification.value.y : 0
+                    },
+                    rootElement.children[0]
+                );
+
+                this.extendUEngineProperties(newElement.businessObject, modification, modeler);
+            }
+            if (modification.targetJsonPath.includes('sequences')) {
+                var sourceElement = elementRegistry.get(modification.value.source);
+                var targetElement = elementRegistry.get(modification.value.target);
+                var sequenceFlow = elementFactory.createConnection({
+                    type: 'bpmn:SequenceFlow',
+                    source: sourceElement,
+                    target: targetElement
+                });
+                modeling.connect(sourceElement, targetElement);
+            }
+
+            // let result = { element: null, di: null };
+            // const parser = new DOMParser();
+            // let elementXML = '<bpmn:userTask id="" name="" role=""></bpmn:userTask>';
+            // let element = parser.parseFromString(elementXML, 'application/xml');
+            // // const userTask = parser.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'userTask');
+            // element.documentElement.setAttribute('id', modification.value.id);
+            // element.documentElement.setAttribute('name', modification.value.name);
+            // element.documentElement.setAttribute('role', modification.value.role);
+
+            // let diXML =
+            //     '<bpmndi:BPMNShape id="" bpmnElement=""><dc:Bounds x="790" y="140" width="100" height="80" /><bpmndi:BPMNLabel /></bpmndi:BPMNShape>';
+            // result.element = tmp;
+            // result.diagram = tmp.di;
+            // return result;
+        },
+        modificationAdd(modification) {
+            let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath);
+            if (obj) {
+                this.processDefinition[obj.propertyName].splice(obj.index, 0, modification.value);
+            } else if (this.processDefinition[modification.targetJsonPath.replace('$.', '')]) {
+                this.processDefinition[modification.targetJsonPath.replace('$.', '')].push(modification.value);
+            }
+        },
+        modificationReplace(modification) {
+            let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath);
+            // const updateAtIndex = (array, index, newValue) => (array[index] = newValue, array);
+            this.processDefinition[obj.propertyName][obj.index] = modification.value;
+            // this.processDefinition[obj.propertyName].splice(obj.index, 0, modification.value)
+        },
+        modificationRemove(modification, modeler) {
+            if (modification.value) {
+                const modeling = modeler.get('modeling');
+                const elementRegistry = modeler.get('elementRegistry');
+                console.log('********');
+                console.log(modification);
+                console.log('********');
+                // elementRegistry.get()
+                // let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath);
+                var sequence = elementRegistry.get(modification.value.id);
+                modeling.removeElements([sequence]);
+            }
+        },
         toggleVersionDialog(open) {
             // Version Dialog
             this.versionDialog = open;
@@ -258,7 +453,7 @@ export default {
 
 
 
-            const checkedFormData = function(variables, variable) {
+            const checkForm = function(variables, variable) {
                 let formVars = variables.filter((data) => data.type == 'Form');
                 return formVars.some(form => form.name == variable);
             }
@@ -300,24 +495,24 @@ export default {
                 let outputDataList = [];
                 let variableForHtmlFormContext = null;
                 activity?.inputData?.forEach((data) => {
-                    if(checkedFormData(variables, data)) {
+                    inputDataList.push({
+                        argument: { text: data },
+                        variable: { name: data },
+                        direction: 'OUT'
+                    });
+                });
+                activity?.outputData?.forEach((data) => {
+                    if(checkForm(variables, data)) {
                         variableForHtmlFormContext = {
                             name: data
                         }
                     } else {
-                        inputDataList.push({
+                        outputDataList.push({
                             argument: { text: data },
                             variable: { name: data },
-                            direction: 'OUT'
+                            direction: 'IN'
                         });
                     }
-                });
-                activity?.outputData?.forEach((data) => {
-                    outputDataList.push({
-                        argument: { text: data },
-                        variable: { name: data },
-                        direction: 'IN'
-                    });
                 });
 
                 if(role) {

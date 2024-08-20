@@ -1,22 +1,21 @@
 <template>
     <div>
         <div style="height: 100%" v-if="element.$type === 'bpmn:IntermediateThrowEvent'">
-            <div>
-                Method Type & URL
+            <div class="mb-2 mt-4">
+                <span>{{ $t('BpmnPropertyPanel.methodTypeUrl') }}</span>
                 <v-row class="ma-0 pa-0">
-                    <v-col cols="4">
+                    <v-col cols="3" class="pa-0 pr-2">
                         <v-autocomplete
                             labels="Methods Type"
                             :items="methodList"
                             theme="light"
-                            rounded
                             density="comfortable"
-                            variant="solo"
+                            variant="outlined"
                             v-model="copyUengineProperties.method"
                         ></v-autocomplete>
                     </v-col>
-                    <v-col cols="8">
-                        <v-text-field label="API URL" v-model="copyUengineProperties.uriTemplate"></v-text-field>
+                    <v-col cols="9" class="pa-0">
+                        <v-text-field :label="$t('BpmnPropertyPanel.apiUrl')" v-model="copyUengineProperties.uriTemplate"></v-text-field>
                     </v-col>
                 </v-row>
             </div>
@@ -40,6 +39,8 @@
                         :item-value="item"
                         :item-title="(item) => item.name"
                         v-model="copyUengineProperties.selectedOut"
+                        density="comfortable"
+                        variant="outlined"
                     ></v-autocomplete>
                     <!-- <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts> -->
                 </v-row>
@@ -47,9 +48,9 @@
         </div>
         <div v-else-if="this.element.$type === 'bpmn:IntermediateCatchEvent' || this.element.$type === 'bpmn:StartEvent'">
             <div>
-                <v-text-field label="Correlation Key" v-model="copyUengineProperties.correlationKey"></v-text-field>
-                <v-text-field label="Service Path" v-model="copyUengineProperties.servicePath"></v-text-field>
-                <v-text-field label="Operation Ref" v-model="copyUengineProperties.operationRef"></v-text-field>
+                <v-text-field :label="$t('MessageEventDefinitionPanel.correlationKey')" v-model="copyUengineProperties.correlationKey"></v-text-field>
+                <v-text-field :label="$t('MessageEventDefinitionPanel.servicePath')" v-model="copyUengineProperties.servicePath"></v-text-field>
+                <v-text-field :label="$t('MessageEventDefinitionPanel.operationRef')" v-model="copyUengineProperties.operationRef"></v-text-field>
             </div>
         </div>
     </div>

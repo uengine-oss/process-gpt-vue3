@@ -107,7 +107,7 @@
             <v-col cols="12"  class="ma-0 pa-0">
                 <div max-width="500">
                     <v-text-field
-                        class="edit-process-text-field"
+                        class="delete-input-details"
                         v-model="newProcess.name"
                         autofocus
                         label="프로세스 수정"

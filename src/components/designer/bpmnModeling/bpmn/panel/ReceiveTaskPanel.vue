@@ -1,9 +1,9 @@
 <template>
     <div>
-        <v-checkbox v-model="isEmailActivity" label="EmailActivity"></v-checkbox>
+        <v-checkbox v-model="isEmailActivity" :label="$t('ReceiveTaskPanel.emailActivity')"></v-checkbox>
         <div v-if="!isEmailActivity">
             <div v-if="inputData.length > 0" style="margin-bottom: 20px">
-                <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.inputData') }}</div>
+                <div style="margin-bottom: -8px">{{ $t('BpmnPropertyPanel.inputData') }}</div>
                 <v-row class="ma-0 pa-0">
                     <div v-for="(inputData, idx) in inputData" :key="idx" class="mr-2 mt-2">
                         <v-chip
@@ -24,7 +24,7 @@
                 </v-row>
             </div>
             <div v-if="outputData.length > 0" style="margin-bottom: 20px">
-                <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.outputData') }}</div>
+                <div style="margin-bottom: -8px">{{ $t('BpmnPropertyPanel.outputData') }}</div>
                 <v-row class="ma-0 pa-0">
                     <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
                         <v-chip
@@ -46,13 +46,13 @@
             </div>
             <div>
                 <v-row class="ma-0 pa-0">
-                    <v-text-field v-model="copyUengineProperties.uriTemplate" label="호출 URI 패턴"></v-text-field>
+                    <v-text-field v-model="copyUengineProperties.uriTemplate" :label="$t('ReceiveTaskPanel.callUri')"></v-text-field>
                 </v-row>
                 <v-row class="ma-0 pa-0">
                     <v-checkbox
                         v-if="copyUengineProperties.uriTemplate && copyUengineProperties.uriTemplate.indexOf('https://') == 0"
                         v-model="copyUengineProperties.noValidationForSSL"
-                        label="Don't validate the certificate"
+                        :label="$t('ReceiveTaskPanel.noValidationForSSL')"
                     ></v-checkbox>
                 </v-row>
                 <v-row class="ma-0 pa-0">
@@ -62,7 +62,7 @@
                         :items="links"
                         item-text="link.link"
                         item-value="link.href"
-                        label="호출 서비스 선택"
+                        :label="$t('ReceiveTaskPanel.selectService')"
                     ></v-select>
                 </v-row>
                 <v-row class="ma-0 pa-0">
@@ -72,45 +72,41 @@
                     <v-textarea
                         v-if="'GET,DELETE'.indexOf(copyUengineProperties.method) == -1"
                         v-model="copyUengineProperties.inputPayloadTemplate"
-                        label="입력 데이터 (JSON template)"
+                        :label="$t('ReceiveTaskPanel.inputData')"
                         dense
                     ></v-textarea>
                 </v-row>
                 <!-- <v-row class="ma-0 pa-0">
-                    <div>{{ $t('BpnmPropertyPanel.checkPoints') }}</div>
+                    <div>{{ $t('BpmnPropertyPanel.checkPoints') }}</div>
                     <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
                 </v-row> -->
-                <v-row class="ma-0 pa-0">
-                    <v-btn text color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper"> Field Mapping </v-btn>
-                </v-row>
+                <v-btn block text rounded color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ReceiveTaskPanel.dataMapping') }}</v-btn>
                 <v-row class="ma-0 pa-0">
                     <v-checkbox
                         v-model="copyUengineProperties.skipIfNotFound"
-                        label="리소스 없을 경우 (404) 오류 처리 하지 않음"
+                        :label="$t('ReceiveTaskPanel.skipIfNotFound')"
                     ></v-checkbox>
                 </v-row>
             </div>
         </div>
         <div v-else>
-            <div>title</div>
+            <div>{{ $t('ReceiveTaskPanel.title') }}</div>
             <v-row class="ma-0 pa-0">
-                <v-text-field v-model="copyUengineProperties.title" label="Key"></v-text-field>
+                <v-text-field v-model="copyUengineProperties.title" :label="$t('ReceiveTaskPanel.descriptionTitle')"></v-text-field>
             </v-row>
-            <div>contents</div>
+            <div>{{ $t('ReceiveTaskPanel.content') }}</div>
             <v-row class="ma-0 pa-0">
-                <v-textarea v-model="copyUengineProperties.contents" label="Key"></v-textarea>
+                <v-textarea v-model="copyUengineProperties.contents" :label="$t('ReceiveTaskPanel.descriptionContent')"></v-textarea>
             </v-row>
-            <div>to</div>
+            <div>{{ $t('ReceiveTaskPanel.to') }}</div>
             <v-row class="ma-0 pa-0">
-                <v-text-field v-model="copyUengineProperties.to" label="Key"></v-text-field>
+                <v-text-field v-model="copyUengineProperties.to" :label="$t('ReceiveTaskPanel.descriptionTo')"></v-text-field>
             </v-row>
-            <div>from</div>
+            <div>{{ $t('ReceiveTaskPanel.from') }}</div>
             <v-row class="ma-0 pa-0">
-                <v-text-field v-model="copyUengineProperties.from" label="Key"></v-text-field>
+                <v-text-field v-model="copyUengineProperties.from" :label="$t('ReceiveTaskPanel.descriptionFrom')"></v-text-field>
             </v-row>
-            <v-row class="ma-0 pa-0">
-                <v-btn text color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper"> Field Mapping </v-btn>
-            </v-row>
+            <v-btn block text rounded color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ReceiveTaskPanel.dataMapping') }}</v-btn>
         </div>
 
         <v-dialog

@@ -1,7 +1,7 @@
 <template>
     <div>
         <div v-if="inputData.length > 0" class="mb-5">
-            <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.inputData') }}</div>
+            <div style="margin-bottom: -8px">{{ $t('BpmnPropertyPanel.inputData') }}</div>
             <v-row class="ma-0 pa-0">
                 <div v-for="(input, idx) in inputData" :key="idx" class="mr-2 mt-2">
                     <v-chip v-if="input.mandatory" color="primary" variant="outlined" class="text-body-2" 
@@ -18,7 +18,7 @@
         </div>
         
         <div v-if="outputData.length > 0" class="mb-5">
-            <div style="margin-bottom: -8px">{{ $t('BpnmPropertyPanel.outputData') }}</div>
+            <div style="margin-bottom: -8px">{{ $t('BpmnPropertyPanel.outputData') }}</div>
             <v-row class="ma-0 pa-0">
                 <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
                     <v-chip v-if="output.mandatory" color="primary" class="text-body-2" variant="outlined" 

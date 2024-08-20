@@ -1,7 +1,6 @@
 <template>
-    <div class="mt-4">
-        <h6 class="text-h6 mb-2">Instruction</h6>
-        <v-text-field v-model="instruction" v-bind="$attrs"></v-text-field>
+    <div>
+        <v-text-field v-model="instruction" label="설명"></v-text-field>
     </div>
 </template>
 
