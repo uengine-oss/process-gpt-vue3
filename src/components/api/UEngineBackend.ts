@@ -52,9 +52,18 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.get('/version/production');
         return response.data;
     }
+
     async getDefinitionVersions(defId: string, options: any) {
-        // const response = await axiosInstance.get(`/version`, options);
-        return []
+        if(options.key.includes("version")) {
+            const response = await axiosInstance.get(`/definition/${defId}.${options.type}/versions`, options);
+            console.log(response)
+            return response.data?._embedded?.definitions
+        }
+        else if(options.key == 'snapshot') {
+            const response = await this.getRawDefinition(`archive/${defId}.${options.type}/${options.match.version}` , options)
+            return [{snapshot: response}]
+
+        }
     }
     async getVersion(version: string) {
         const response = await axiosInstance.get(`/version/${version}`);
@@ -73,13 +82,17 @@ class UEngineBackend implements Backend {
         return response.data;
     }
     async putRawDefinition(definition: any, requestPath: string, options: any) {
+        console.log(options)
         var config = {
             headers: {
-                'Content-Type': 'text/plain'
+                'Content-Type': 'application/json'
             },
-            responseType: 'text' as const
         };
-        const response = await axiosInstance.put('/definition/raw/' + requestPath + '.' + options.type, definition, config);
+        let body = {
+            definition: definition,
+            version: options.version
+        }
+        const response = await axiosInstance.put('/definition/raw/' + requestPath + '.' + options.type, body, config);
         return response.data;
     }
     // @ts-ignore
