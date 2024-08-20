@@ -292,9 +292,11 @@
     },
     "ProcessDefinitionVersionDialog": {
         "title": "프로세스 저장",
-        "title2": "버전 업",
+        "title2": "프로세스 저장",
         "minorUpdate": "소규모 업데이트",
         "majorUpdate": "주요 업데이트",
+        "update": "업데이트",
+        "release": "릴리즈",
         "id": "아이디",
         "name": "이름",
         "message": "메시지",
