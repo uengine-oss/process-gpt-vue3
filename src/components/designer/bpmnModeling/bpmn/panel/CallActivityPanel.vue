@@ -1,7 +1,7 @@
 <template>
     <div>
         <div class="included" style="margin-bottom: 22px">
-            <div style="margin-bottom: 8px">Select Definition</div>
+            <div style="margin-bottom: 8px">{{ $t('CallActivityPanel.selectDefinition') }}</div>
             <ProcessDefinitionDisplay 
                 v-model="copyUengineProperties.definitionId" 
                 :disabled="isViewMode"
@@ -26,7 +26,7 @@
             </div>
             <div>
                 <v-row class="ma-0 pa-0">
-                    <div>Role Mapping</div>
+                    <div>{{ $t('CallActivityPanel.roleMapping') }}</div>
                 </v-row>
                 <v-row>
                     <bpmn-role-parameter-contexts
@@ -39,7 +39,7 @@
             </div>
         </div>
         <div v-else>
-            <v-row> Process Definition이 선택되지 않았습니다. </v-row>
+            <v-row> {{ $t('CallActivityPanel.noDefinitionSelected') }} </v-row>
         </div>
     </div>
 </template>

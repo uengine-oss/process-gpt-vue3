@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div>{{ $t('BpnmPropertyPanel.condition') }}</div>
+        <div>{{ $t('BpmnPropertyPanel.condition') }}</div>
         <div>
             <ConditionField :value="copyUengineProperties.condition"
                 @update:value="updateCondition"
@@ -8,7 +8,7 @@
             <!-- {{ copyUengineProperties.condition }} -->
         </div>
         <br>
-        <div>{{ $t('BpnmPropertyPanel.priority') }}</div>
+        <div>{{ $t('BpmnPropertyPanel.priority') }}</div>
         <div>
             <v-text-field 
                 v-model="copyUengineProperties.priority" 

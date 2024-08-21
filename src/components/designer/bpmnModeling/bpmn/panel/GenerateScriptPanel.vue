@@ -4,23 +4,23 @@
         <v-tooltip>
             <template v-slot:activator="{ props }">
                 <v-btn v-bind="props"
-                    icon variant="text"
+                    icon variant="text" color="primary" rounded
                     class="text-medium-emphasis"
                     @click="promptInput.isVisible = !promptInput.isVisible"
                 >
                     <Icons :icon="'magic'"  />
                 </v-btn>
             </template>
-            <span>{{ $t('BpnmPropertyPanel.generateScript') }}</span>
+            <span>{{ $t('BpmnPropertyPanel.generateScript') }}</span>
         </v-tooltip>
     </div>
     <!-- #endregion -->
 
     <!-- #region 프롬프트 입력 항목 -->
     <div v-if="promptInput.isVisible">
-        <div>{{ $t('BpnmPropertyPanel.scriptPrompt') }}</div>
+        <div>{{ $t('BpmnPropertyPanel.scriptPrompt') }}</div>
         <v-textarea v-model="promptInput.prompt" style="width:100%" :disabled="disabled.promptTextarea"></v-textarea>
-        <v-btn @click="generateScript" class="w-100" :disabled="disabled.generateScriptBtn"> {{ $t('BpnmPropertyPanel.generateScript') }} </v-btn>
+        <v-btn @click="generateScript" class="w-100" :disabled="disabled.generateScriptBtn"> {{ $t('BpmnPropertyPanel.generateScript') }} </v-btn>
     </div>
     <!-- #endregion -->
 </template>

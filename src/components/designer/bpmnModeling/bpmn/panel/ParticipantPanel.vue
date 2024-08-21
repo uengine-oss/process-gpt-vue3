@@ -1,12 +1,20 @@
 <template>
     <div>
         <div class="included" style="margin-bottom: 22px; height: 100%">
-            <v-autocomplete v-model="copyUengineProperties.selectedSystem" :items="systemList" @input="$evt => selectSystem($evt)" />
-            <div style="margin-bottom: 8px">API URL</div>
+            <div class="mb-1 mt-4">{{$t('ParticipantPanel.system')}}</div>
+            <v-autocomplete v-model="copyUengineProperties.selectedSystem" :items="systemList" @input="$evt => selectSystem($evt)" 
+                density="comfortable"
+                variant="outlined"
+            />
+            <DetailComponent
+                :title="$t('ParticipantPanel.systemDefinitionDescriptionTitle')"
+                :details="methodTypeDescription"
+            />
+            <div class="mb-1 mt-4">{{$t('ParticipantPanel.apiUrl')}}</div>
             <v-row class="ma-0 pa-0">
                 <v-text-field v-model="copyUengineProperties.serviceURL"></v-text-field>
             </v-row>
-            <div style="margin-bottom: 8px">Open API 스펙</div>
+            <div class="mb-1 mt-4">{{$t('ParticipantPanel.openAPISpec')}}</div>
             <v-row class="ma-0 pa-0" style="height: 50vh">
                 <vue-monaco-editor
                     v-model:value="copyUengineProperties.openAPI"
@@ -64,7 +72,12 @@ export default {
             editorRef: {},
             systemList: [],
             selectedSystem: '',
-            backend: null
+            backend: null,
+            methodTypeDescription: [
+                {
+                    image: 'systemDefinition.gif',
+                },
+            ]
         };
     },
     async mounted() {

@@ -1,7 +1,7 @@
 <template>
     <div>
         <div style="margin-bottom: 20px">
-            <div>{{ $t('BpnmPropertyPanel.scriptType') }}</div>
+            <div>{{ $t('BpmnPropertyPanel.scriptType') }}</div>
             <v-radio-group v-model="copyUengineProperties.language">
                 <v-radio
                     id="Javascript"
@@ -12,7 +12,7 @@
                 ></v-radio>
                 <v-radio id="Java" name="Java" value="1" label="Java" style="margin-right: 8px !important; font-size: 15px"></v-radio>
             </v-radio-group>
-            <div>{{ $t('BpnmPropertyPanel.script') }}</div>
+            <div>{{ $t('BpmnPropertyPanel.script') }}</div>
             <v-textarea v-model="copyUengineProperties.script" :disabled="isViewMode" style="width: 100%"></v-textarea>
             <GenerateScriptPanel v-model="copyUengineProperties.script" :language="languageLabel" />
         </div>
@@ -25,6 +25,8 @@
                     :item-value="item"
                     :item-title="(item) => item.name"
                     v-model="selectedOut"
+                    density="comfortable"
+                    variant="outlined"
                 ></v-autocomplete>
             </v-row>
         </div>

@@ -1,10 +1,15 @@
 <template>
     <div>
-        <v-radio-group v-model="selectedActivity" inline>
+        <v-radio-group v-model="selectedActivity" inline class="delete-input-details">
             <v-radio :label="$t('UserTaskPanel.default')" value="HumanActivity"></v-radio>
             <v-radio :label="$t('UserTaskPanel.form')" value="FormActivity"></v-radio>
             <v-radio v-if="useEvent" :label="$t('UserTaskPanel.external')" value="URLActivity"></v-radio>
         </v-radio-group>
+        <DetailComponent
+            :title="$t('UserTaskPanel.radioSelectDescriptionTitle')"
+            :details="radioSelectDescription"
+            :detailUrl="'https://www.youtube.com/watch?v=E-tjj20-xxI&t'"
+        />
         <div v-if="!isLoading && selectedActivity == 'HumanActivity'">
             <EventSynchronizationForm
                 v-if="useEvent"
@@ -12,6 +17,7 @@
                 :roles="roles"
                 :taskName="name"
                 :definition="copyDefinition"
+                :selectedActivity="selectedActivity"
             ></EventSynchronizationForm>
             <div v-else>
                 <DefaultArguments v-model="copyUengineProperties"></DefaultArguments>
@@ -55,6 +61,7 @@
                 :roles="roles"
                 :taskName="name"
                 :definition="copyDefinition"
+                :selectedActivity="selectedActivity"
             ></EventSynchronizationForm>
             <div v-else>
                 <Instruction v-model="activity.instruction"></Instruction>
@@ -69,6 +76,7 @@
                 :roles="roles"
                 :taskName="name"
                 :definition="copyDefinition"
+                :selectedActivity="selectedActivity"
             ></EventSynchronizationForm>
         </div>
     </div>
@@ -185,7 +193,12 @@ export default {
             activity: {
                 instruction: '',
                 checkpoints: ['']
-            }
+            },
+            radioSelectDescription: [
+                {
+                    title: 'UserTaskPanel.radioSelectDescriptionSubTitle1'
+                },
+            ]
         };
     },
     created() {

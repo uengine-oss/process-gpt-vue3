@@ -57,7 +57,7 @@
 </template>
 
 <script>
-    //이것은, 클래스 임포트인테 임포트 개념과 살짝 다른점이 믹신 이라고 하고, 상속 구조는 아니고, 공통 메소드 공유 개념이다.
+    //이것은, 클래스 임포트인테 임포트 개념과 살짝 다른점이 믹신 이라고 하고, 상속 구조는 아니고, 공통 메서드 공유 개념이다.
     import IBpmn from '../../IBpmn.vue'
     import BpmnPropertyPanel from './StartEventPanel.vue'
 

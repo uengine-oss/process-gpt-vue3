@@ -515,7 +515,7 @@ export default {
 
 
 
-            const checkedFormData = function(variables, variable) {
+            const checkForm = function(variables, variable) {
                 let formVars = variables.filter((data) => data.type == 'Form');
                 return formVars.some(form => form.name == variable);
             }
@@ -564,7 +564,7 @@ export default {
                     });
                 });
                 activity?.outputData?.forEach((data) => {
-                    if(checkedFormData(variables, data)) {
+                    if(checkForm(variables, data)) {
                         variableForHtmlFormContext = {
                             name: data
                         }
@@ -581,6 +581,7 @@ export default {
                     let activityData = {
                         parameters: [...inputDataList, ...outputDataList]
                     };
+                    activityData['duration'] = activity?.duration ? activity?.duration : 5;
                     if (variableForHtmlFormContext) {
                         activityData['variableForHtmlFormContext'] = variableForHtmlFormContext;
                         activityData['_type'] = 'org.uengine.kernel.FormActivity';
@@ -941,7 +942,7 @@ export default {
                     }
 
 
-                    // 가장 바깥 라인 안쪽의 스윔라인 자체 길이
+                    // 가장 바깥 라인 안쪽의 스윔레인 자체 길이
                     
                     if(isHorizontal) {
                         dcBoundsLane.setAttribute('width', roleWidth + 85);
@@ -1540,7 +1541,7 @@ export default {
             const dcBoundsParticipant = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
             dcBoundsParticipant.setAttribute('x', '70');
             dcBoundsParticipant.setAttribute('y', `100`);
-            // 스윔라인을 감싸고있는 가장 바깥 라인의 길이
+            // 스윔레인을 감싸고있는 가장 바깥 라인의 길이
             dcBoundsParticipant.setAttribute('width', `${lastXPos + 30}`);
             dcBoundsParticipant.setAttribute('height', participantHeight);
             participantShape.appendChild(dcBoundsParticipant);
@@ -1564,7 +1565,7 @@ export default {
                     const dcBoundsLane = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
                     dcBoundsLane.setAttribute('x', '100');
                     dcBoundsLane.setAttribute('y', `${100 + roleIndex * 100}`);
-                    // 가장 바깥 라인 안쪽의 스윔라인 자체 길이
+                    // 가장 바깥 라인 안쪽의 스윔레인 자체 길이
                     dcBoundsLane.setAttribute('width', `${lastXPos}`);
                     dcBoundsLane.setAttribute('height', '100');
                     laneShape.appendChild(dcBoundsLane);
@@ -1993,6 +1994,7 @@ export default {
                             if (definitions) {
                                 definitions.name = info.name || 'Default Name';
                             }
+                            me.setDefinitionInfo(info.name, info.version)
                             xmlObj = await modeler.saveXML({ format: true, preamble: true });
                             return true;
                         } catch (error) {
@@ -2075,7 +2077,7 @@ export default {
                         }
                         info.definition = me.processDefinition;
                     }
-
+                    
                     await me.saveModel(info, xmlObj.xml);
                     me.bpmn = xmlObj.xml;
 
@@ -2249,6 +2251,7 @@ export default {
                                                   .map((param) => param.variable.name)
                                             : [];
                                     task.properties = activity['bpmn:extensionElements']['uengine:properties']['uengine:json'];
+                                    task.duration = activity['bpmn:extensionElements']['uengine:properties']['uengine:json'].duration ? activity['bpmn:extensionElements']['uengine:properties']['uengine:json'].duration : 5;
                                 } else {
                                     task.inputData = [];
                                     task.outputData = [];
@@ -2447,6 +2450,51 @@ export default {
 
         //     return processDefinition;
         // },
+        setDefinitionInfo(name, version) {
+            
+            const store = useBpmnStore();
+            let modeler = store.getModeler;
+            const definitions = modeler.getDefinitions();
+
+            let bpmnFactory = modeler.get('bpmnFactory');
+            const processElement = definitions.rootElements.find((element) => element.$type === 'bpmn:Process');
+            if (!processElement) {
+                console.error('bpmn:Process element not found');
+                return;
+            }
+
+            // // bpmn2:process 요소 내의 bpmn2:extensionElements 요소를 찾거나 새로 생성합니다.
+            let extensionElements = processElement.extensionElements;
+            if (!extensionElements) {
+                extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
+                processElement.extensionElements = extensionElements;
+            }
+
+            // // uengine:properties 요소를 찾거나 새로 생성합니다.
+            let uengineProperties;
+            if (extensionElements.values) {
+                uengineProperties = extensionElements.values.find((val) => val.$type === 'uengine:Properties');
+            }
+
+            if (!uengineProperties) {
+                uengineProperties = bpmnFactory.create('uengine:Properties');
+                extensionElements.get('values').push(uengineProperties);
+            }
+
+            let processJson;
+            if (uengineProperties.json) {
+                processJson = JSON.parse(uengineProperties.json);    
+            } else {
+                processJson = {};
+            }
+            processJson.definitionName = name;
+            processJson.version = version
+
+            uengineProperties.json = JSON.stringify(processJson)
+            // processJson.instanceNamePattern ? processJson.instanceNamePattern : '';
+
+            
+        },
         async saveModel(info, xml) {
             var me = this;
             me.$try({
@@ -2454,7 +2502,11 @@ export default {
                 action: async () => {
                     if (window.$mode == 'uEngine') {
                         // uEngine
+                        console.log(info)
                         await backend.putRawDefinition(xml, info.proc_def_id, info);
+                        if(info.release) {
+                            await backend.releaseVersion(info.releaseName);
+                        }
                     } else {
                         // GPT
                         if (!me.processDefinition) me.processDefinition = {};

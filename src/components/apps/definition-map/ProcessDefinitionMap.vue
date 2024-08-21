@@ -84,7 +84,7 @@
 
             <v-btn v-if="componentName == 'DefinitionMapList'"
                 @click="openConsultingDialog = true, ProcessPreviewMode = false"
-                style="margin-left: 20px;" color="primary"
+                style="margin-left: 20px;" color="primary" rounded
             >
                 <Icons :icon="'magic'" :size="18"  style="margin-right: 10px;" />프로세스 컨설팅 시작하기
             </v-btn>

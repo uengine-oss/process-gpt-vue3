@@ -837,7 +837,7 @@
             },
             /**
              * 도형 이벤트 프로퍼티를 등록한다.
-             * TODO 컴포넌트 등록된 도형이 아닌경우, props 로 표현하여 리턴하는 메소드가 필요하다.
+             * TODO 컴포넌트 등록된 도형이 아닌경우, props 로 표현하여 리턴하는 메서드가 필요하다.
              * @param shape
              */
             bindShapeEvents: function (shape) {

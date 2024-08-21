@@ -29,12 +29,14 @@
                     :open="versionDialog"
                     :definitionPath="fullPath"
                     :processName="projectName"
+                    :type="'bpmn'"
                     @close="toggleVersionDialog"
                     @save="saveDefinition"
                 ></process-definition-version-dialog>
                 <ProcessDefinitionVersionManager
                     :process="processDefinition"
                     :open="verMangerDialog"
+                    :type="'bpmn'"
                     @close="toggleVerMangerDialog"
                     @changeXML="changeXML"
                 ></ProcessDefinitionVersionManager>
@@ -198,6 +200,7 @@ export default {
             if (this.fullPath && this.fullPath != '') {
                 this.chatRoomId = this.fullPath;
             }
+            this.validate();
         });
     },
     watch: {
@@ -360,6 +363,9 @@ export default {
             me.toggleVerMangerDialog(false);
         },
         async changeElement() {
+            await this.validate();
+        },
+        async validate() {
             this.$nextTick(async () => {
                 const store = useBpmnStore();
                 const modeler = store.getModeler;

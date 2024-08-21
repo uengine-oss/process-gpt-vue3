@@ -11,12 +11,12 @@
         "title": "Easily initiate from AI-based process management to execution.",
         "subTitle": "Process definition, organizational chart management, To-Do management, process execution, process monitoring, process analysis."
     },
-    "headerMenu" : {
-        "sidebar" : "Sidebar",
-        "dashboard" : "Dashboard",
-        "todoList" : "Todo List",
-        "calendar" : "Calendar",
-        "layoutSetting" : "Layout Setting"
+    "headerMenu": {
+        "sidebar": "Sidebar",
+        "dashboard": "Dashboard",
+        "todoList": "Todo List",
+        "calendar": "Calendar",
+        "layoutSetting": "Layout Setting"
     },
     "DashboardTodoList": {
         "todo": "Todo",
@@ -74,13 +74,14 @@
         "title": "Running Instance"
     },
     "admin": {
-        "title": "Administrator Menu"   
+        "title": "Administrator Menu"
     },
     "completeInstance": {
         "title": "Complete Instance"
     },
     "definitionManagement": {
-        "title": "Definition Management"
+        "title": "Definition Management",
+        "upload": "Definition Upload"
     },
     "systemDefinition": {
         "title": "System Definition"
@@ -110,7 +111,7 @@
         "addMega": "Mega Process",
         "addMajor": "Major Process",
         "addSub": "Sub Process",
-        "save" : "Save"
+        "save": "Save"
     },
     "uiDefinition": {
         "title": "Screen Definition",
@@ -264,7 +265,7 @@
     "ExtraBox": {
         "logOut": "log out"
     },
-    "BpnmPropertyPanel": {
+    "BpmnPropertyPanel": {
         "name": "Name",
         "condition": "Condition",
         "priority": "Priority",
@@ -277,7 +278,12 @@
         "scriptPrompt": "Script Prompt",
         "scriptType": "Script Type",
         "add": "Add",
-        "role": "Role"
+        "role": "Role",
+        "methodTypeUrl": "Method Type",
+        "apiUrl": "API URL",
+        "mapperDescriptionTitle": "Data mapping is a function that passes variables to the next task",
+        "mapperDescriptionSubTitle1": "1. Variables: Values added to the variable section \n2. Roles: Roles (names) registered in the swimlane \n3. Instance: Stores the end date of the next task to be executed \n4. Activities: Roles (names) registered in the task \n5. Arguments: Names (values) registered in the attributes",
+        "mapperDescriptionSubTitle2": "How to use \n- Drag and drop while holding the mouse to connect\n- Click the line to delete"
     },
     "NotificationDD": {
         "notification": "Notifications"
@@ -330,33 +336,97 @@
         "parameterContext": "Parameter Context"
     },
     "CallActivityPanel": {
-        "parameterContext": "Parameter Context"
+        "parameterContext": "Parameter Context",
+        "selectDefinition": "Select Definition",
+        "noDefinitionSelected": "No definition selected.",
+        "roleMapping": "Role Mapping"
     },
     "ReceiveTaskPanel": {
-        "dataMapping": "Data Mapping"
+        "dataMapping": "Data Mapping",
+        "inputData": "Input Data",
+        "selectService": "Select Service",
+        "callUri": "Call URI Pattern",
+        "noValidationForSSL": "Don't validate the certificate",
+        "skipIfNotFound": "Skip if not found (404 error handling)",
+        "title": "Title",
+        "content": "Content",
+        "to": "To",
+        "from": "From",
+        "descriptionTitle": "Write Title",
+        "descriptionContent": "Write Content",
+        "descriptionTo": "Write To",
+        "descriptionFrom": "Write From",
+        "emailActivity": "Email Activity"
     },
     "ServiceTaskPanel": {
-        "dataMapping": "Data Mapping"
+        "dataMapping": "Data Mapping",
+        "generation": "Generation",
+        "methodTypeDescriptionTitle": "Set the method (GET, POST, PUT, PATCH) to use when sending an API request and the server's endpoint URL to process the request.",
+        "methodTypeDescriptionSubTitle1": "1. GET: A request to retrieve data from the server \n2. POST: A request to create and send new data to the server \n3. PUT: A request to update or replace existing data entirely \n4. PATCH: A request to partially modify existing data \n5. API URL: The endpoint URL of the server where the request will be sent\n"
     },
     "EventSynchronizationForm": {
         "dataMapping": "Data Mapping",
         "eventAttributes": "Event Attributes",
         "primaryKey": "Primary Key",
         "correlationKey": "Correlation Key",
-        "attributeType" : "Attribute Type",
-        "name" : "Name",
-        "save" : "Save",
-        "add" : "Add"
+        "attributeType": "Attribute Type",
+        "name": "Name",
+        "save": "Save",
+        "add": "Add",
+        "typeDescriptionTitle": "Attribute: Defines the data to be stored for the corresponding item",
+        "typeDescriptionSubTitle1": "1. Unique Key: A key that uniquely identifies each record and does not allow duplicates within the database. \n2. Correlation Key: A key used to establish and track relationships between different data, maintaining data correlations."
     },
-    "UserTaskPanel" : {
-        "default" : "Default", 
-        "form" : "Form", 
-        "external" : "External Application",
-        "formCreateDialog" : "Do you want to create a form?",
-        "yes" : "Yes",
-        "no" : "No"
+    "UserTaskPanel": {
+        "default": "Default",
+        "form": "Form",
+        "external": "External Application",
+        "formCreateDialog": "Do you want to create a form?",
+        "yes": "Yes",
+        "no": "No",
+        "radioSelectDescriptionTitle": "Select data processing method: Basic data processing, Custom screen creation, External system integration.",
+        "radioSelectDescriptionSubTitle1": "1. Basic: Use basic data \n2. Form: Screen created in screen definition \n3. External Application: Generates a field for entering a business screen URL"
     },
-    "Mapper" : {
-        "mapper" : "Mapper"
+    "Mapper": {
+        "mapper": "Mapper"
+    },
+    "SubProcessPanel": {
+        "forEachRole": "Role-based Multiple Creation",
+        "role": "Create multiple sub-processes based on roles",
+        "forEachVariable": "Variable-based Multiple Creation",
+        "variable": "Create multiple sub-processes based on variables",
+        "forEachVariableDescriptionTitle": "When multi-data is inserted by data mapping with the data registered in the process variables, multiple sub-processes are created based on the generated data during process execution.",
+        "forEachVariableDescriptionSubTitle1": "1. Check multi-data mode through edit mode in screen definition management",
+        "forEachVariableDescriptionSubTitle2": "2. Perform data mapping in the panel of the previous task to be executed"
+    },
+    "ParticipantPanel": {
+        "apiUrl": "API URL",
+        "openAPISpec": "Open API Spec",
+        "system": "Load from system definition",
+        "systemDefinitionDescriptionTitle": "Load and apply items registered in the system definition from the left-side management button"
+    },
+    "LanePanel": {
+        "selectRoleType": "Select Role Type",
+        "none": "None",
+        "IAMScope": "Role Resolution By IAM Scope",
+        "DirecUser": "Role Resolution By Direct user",
+        "resolutionRule": "Resolution Rule",
+        "scopeName": "Scope Name",
+        "userID": "User ID"
+    },
+    "MessageEventDefinitionPanel": {
+        "correlationKey": "Correlation Key",
+        "servicePath": "Service Path",
+        "operationRef": "Operation Ref"
+    },
+    "DetailComponent" : {
+        "details": "Details",
+        "allDetails": "View full description"
+    },
+    "SendTaskPanel" : {
+        "generation": "Generation",
+        "return": "Variable to store the return value",
+        "methodTypeDescriptionTitle": "Set the method (GET, POST, PUT, PATCH) to use when sending an API request and the server's endpoint URL to process the request.",
+        "methodTypeDescriptionSubTitle1": "1.GET: A request to retrieve data from the server \n2.POST: A request to create and send new data to the server \n3.PUT: A request to update or replace existing data entirely \n4.PATCH: A request to partially modify existing data \n5.API URL: The endpoint URL of the server where the request will be sent",
+        "returnTitle": "The dropdown menu displays a list of variable names registered in the process variables. \nUsers can select the desired variable from this list."
     }
 }

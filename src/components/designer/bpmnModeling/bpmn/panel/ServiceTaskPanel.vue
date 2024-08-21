@@ -1,11 +1,11 @@
 <template>
     <div>
-        <div>
-            Method Type & URL
+        <div class="mb-2 mt-4">
+            <span>{{ $t('BpmnPropertyPanel.methodTypeUrl') }}</span>
             <v-row class="ma-0 pa-0">
                 <v-col cols="3" class="pa-0 pr-2">
                     <v-autocomplete
-                        labels="Methods Type"
+                        :label="$t('BpmnPropertyPanel.methodTypeUrl')"
                         :items="methodList"
                         theme="light"
                         density="comfortable"
@@ -14,9 +14,13 @@
                     ></v-autocomplete>
                 </v-col>
                 <v-col cols="9" class="pa-0">
-                    <v-text-field label="API URL" v-model="copyUengineProperties.uriTemplate"></v-text-field>
+                    <v-text-field :label="$t('BpmnPropertyPanel.apiUrl')" v-model="copyUengineProperties.uriTemplate"></v-text-field>
                 </v-col>
             </v-row>
+            <DetailComponent
+                :title="$t('ServiceTaskPanel.methodTypeDescriptionTitle')"
+                :details="methodTypeDescription"
+            />
         </div>
         <div style="height: 40%" v-if="copyUengineProperties.httpMethods != 'GET'">
             <v-row class="ma-0 pa-0" style="height: 100%">
@@ -34,10 +38,15 @@
                 <template v-slot:prepend>
                     <Icons :icon="'magic'"  />
                 </template>
-                생성
+                {{ $t('ServiceTaskPanel.generation') }}
             </v-btn>
         </div>
         <v-btn block text rounded color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ServiceTaskPanel.dataMapping') }}</v-btn>
+        <DetailComponent
+            :title="$t('BpmnPropertyPanel.mapperDescriptionTitle')"
+            :details="mapperDescription"
+            :detailUrl="'https://www.youtube.com/watch?v=1tCKnzck2-c'"
+        />
         <div>
             <!-- <div>Return 값을 저장 할 변수</div> -->
             <!-- <v-row class="ma-0 pa-0">
@@ -142,7 +151,21 @@ export default {
             replaceToExpandableNode: null,
             nodes: {},
             openAPI: '',
-            isOpenFieldMapper: false
+            isOpenFieldMapper: false,
+            methodTypeDescription: [
+                {
+                    title: 'SendTaskPanel.methodTypeDescriptionSubTitle1',
+                },
+            ],
+            mapperDescription: [
+                {
+                    title: 'BpmnPropertyPanel.mapperDescriptionSubTitle1'
+                },
+                {
+                    title: 'BpmnPropertyPanel.mapperDescriptionSubTitle2',
+                    image: "EventSynchronizationFomVariablesHowToUse.gif"
+                },
+            ],
         };
     },
     async mounted() {
