@@ -2408,6 +2408,9 @@ export default {
                         // uEngine
                         console.log(info)
                         await backend.putRawDefinition(xml, info.proc_def_id, info);
+                        if(info.release) {
+                            await backend.releaseVersion(info.releaseName);
+                        }
                     } else {
                         // GPT
                         if (!me.processDefinition) me.processDefinition = {};

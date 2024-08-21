@@ -300,9 +300,10 @@
         "majorUpdate": "주요 업데이트",
         "update": "업데이트",
         "release": "릴리즈",
+        "releaseName": "릴리즈 명",
         "id": "아이디",
         "name": "이름",
-        "message": "메시지",
+        "message": "설명",
         "save": "저장"
     },
     "FormDefinitionPanel": {

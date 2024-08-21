@@ -230,7 +230,7 @@ export default {
                 };
                 list.forEach((item) => {
                     if (item.directory) {
-                        if (item.name != 'instances') {
+                        if (item.name != 'instances'  || item.name != 'archive') {
                             var obj = {
                                 title: item.name,
                                 icon: 'outline-folder',

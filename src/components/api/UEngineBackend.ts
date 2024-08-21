@@ -81,6 +81,18 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.delete(`/instance/${instanceId}`);
         return response.data;
     }
+    async releaseVersion(releaseName: string): Promise<any> {
+        const response = await axiosInstance.get(`/definition/release/${releaseName}`, {
+            responseType: "blob",
+        });
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `${releaseName}.zip`); // or any other extension
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
     async putRawDefinition(definition: any, requestPath: string, options: any) {
         console.log(options)
         var config = {
@@ -90,7 +102,7 @@ class UEngineBackend implements Backend {
         };
         let body = {
             definition: definition,
-            version: options.version
+            version: options.releaseName ? options.releaseName : options.version
         }
         const response = await axiosInstance.put('/definition/raw/' + requestPath + '.' + options.type, body, config);
         return response.data;
