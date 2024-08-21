@@ -80,7 +80,8 @@
         "title": "종료된 인스턴스"
     },
     "definitionManagement": {
-        "title": "정의 관리"
+        "title": "정의 관리",
+        "upload": "정의 업로드"
     },
     "systemDefinition": {
         "title": "시스템 정의"

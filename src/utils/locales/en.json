@@ -80,7 +80,8 @@
         "title": "Complete Instance"
     },
     "definitionManagement": {
-        "title": "Definition Management"
+        "title": "Definition Management",
+        "upload": "Definition Upload"
     },
     "systemDefinition": {
         "title": "System Definition"

@@ -1097,6 +1097,9 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async uploadDefinition(file: File, path: string) {
+    }
+
 }
 
 export default ProcessGPTBackend;

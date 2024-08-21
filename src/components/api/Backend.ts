@@ -54,6 +54,7 @@ export interface Backend {
     testList(path: string): Promise<any>;
     findCurrentWorkItemByInstId(instId: string): Promise<any>;
     getUserList(): Promise<any>;
+    uploadDefinition(file: File, path: string): Promise<any>;
 }
 
 // export type { Backend }
