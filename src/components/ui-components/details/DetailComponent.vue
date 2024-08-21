@@ -5,21 +5,23 @@
             variant="tonal"
             class="pa-2 mt-1 mb-4"
         >
-            <v-row class="ma-0 pa-0" align="center">
+            <v-row class="ma-0 pa-0">
                 <!-- 왼쪽의 info 아이콘 -->
-                <v-icon color="black" class="mr-2">mdi-information</v-icon>
+                <v-icon color="black" class="mr-2 mt-1">mdi-information</v-icon>
                 
                 <!-- 접혀진 상태에서 기본으로 보이는 텍스트 -->
-                <v-card-title class="pa-0" style="flex: 1;">
+                <v-card-title class="pa-0" style="flex: 1; white-space: pre-wrap; overflow: visible;">
                     {{ title }}
+                    <a v-if="detailUrl" :href="detailUrl" target="_blank" class="detail-link">{{ $t('DetailComponent.allDetails') }}</a>
                 </v-card-title>
 
                 <!-- 오른쪽의 토글 아이콘 -->
-                <v-tooltip v-if="details" :text="$t('details')">
+                <v-tooltip v-if="details" :text="$t('DetailComponent.details')">
                     <template v-slot:activator="{ props }">
                         <v-icon v-bind="props"
                             @click="extendedStatus = !extendedStatus" 
-                            color="black" 
+                            color="black"
+                            class="mt-1"
                         >
                             {{ extendedStatus ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
                         </v-icon>
@@ -47,6 +49,7 @@ export default {
     name: 'detail-component',
     props: {
         title: String,
+        detailUrl: String,
         details: Array
     },
     created() {
@@ -71,3 +74,11 @@ export default {
     }
 };
 </script>
+
+<style scoped>
+.detail-link {
+    font-size: 16px; 
+    font-weight: 900;
+    color: gray;
+}
+</style>

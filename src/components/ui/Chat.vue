@@ -673,7 +673,7 @@ export default {
             },
             set(val) {
                 if (!val) {
-                    // isLoading이 false로 변경되면 animateBorder 메소드를 호출합니다.
+                    // isLoading이 false로 변경되면 animateBorder 메서드를 호출합니다.
                     this.animateBorder();
                     this.$emit("stopMessage");
                 }

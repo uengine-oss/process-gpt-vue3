@@ -18922,7 +18922,7 @@ OG.shape.component.DataTable.prototype.drawCell = function (cellView, ignoreRend
     var useRenderData = false;
 
     //ignoreRenderer 를 없애라.
-    //한번 렌더링 된 녀석은 draw 메소드가 오기 전까지 그대로 간다.
+    //한번 렌더링 된 녀석은 draw 메서드가 오기 전까지 그대로 간다.
     //updateCell 로 오게될 경우 컨텐트가 없어도 렌더링을 사용하지 않는다.
     //텍스트, 컨텐트는 별개인데, 강제로 업데이트 시킬경우 표식이 필요.
 
@@ -20865,7 +20865,7 @@ OG.renderer.RaphaelRenderer.prototype._getREleById = function (id) {
 };
 
 OG.renderer.RaphaelRenderer.prototype._drawSubShape = function (groupElement) {
-    //그룹 엘리먼트에 createSubShape 메소드를 확인한다.
+    //그룹 엘리먼트에 createSubShape 메서드를 확인한다.
     var me = this, subShapeNodes, subShapeNode, width, height,
         left, top, right, bottom, align, verticalAlign,
         subVertices, subStyle, subShape, subShapeId, tempNode, zIndex,

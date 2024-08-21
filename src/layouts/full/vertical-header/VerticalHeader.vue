@@ -47,20 +47,20 @@ const sidebarItems = ref<SidebarItem[]>([
         to: '/todolist',
         disable: false
     },
-    // full calendar 메뉴 제거
-    // {
-    //     title: 'headerMenu.calendar',
-    //     icon: 'calendar-line-duotone',
-    //     to: '/calendar',
-    //     disable: false
-    // }
+    // 240819 캘린더 복구
+    {
+        title: 'headerMenu.calendar',
+        icon: 'calendar-line-duotone',
+        to: '/calendar',
+        disable: false
+    }
 ]);
 
 // 생명주기 훅 사용
 onBeforeMount(() => {
     // window.mode 값에 따라 sidebarItems 수정
     if (window.$mode === 'ProcessGPT') {
-        sidebarItems.value = sidebarItems.value.filter(item => item.to !== '/calendar');
+        // sidebarItems.value = sidebarItems.value.filter(item => item.to !== '/calendar');
     }
     window.addEventListener('scroll', handleScroll);
 });

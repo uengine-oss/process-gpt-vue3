@@ -103,7 +103,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   "role": "role name", // You must use the name among the created "roles".
                   "inputData": ["name of data for input"],
                   "outputData": ["name of data for output"],
-                  "checkpoints":["checkpoint 1", "checkpoint 2"]
+                  "checkpoints":["checkpoint 1", "checkpoint 2"],
+                  "duration": "5"
                  },
                  {
                   "componentType" :"Event",

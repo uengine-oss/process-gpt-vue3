@@ -1,11 +1,11 @@
 <template>
     <div>
-        <div class="mb-2 mt-4">
+        <div class="mb-1 mt-4">
             <span>{{ $t('BpmnPropertyPanel.methodTypeUrl') }}</span>
             <v-row class="ma-0 pa-0">
                 <v-col cols="3" class="pa-0 pr-2">
                     <v-autocomplete
-                        labels="Methods Type"
+                        :label="$t('BpmnPropertyPanel.methodTypeUrl')"
                         :items="methodList"
                         theme="light"
                         density="comfortable"
@@ -17,6 +17,11 @@
                     <v-text-field :label="$t('BpmnPropertyPanel.apiUrl')" v-model="copyUengineProperties.API"></v-text-field>
                 </v-col>
             </v-row>
+            <DetailComponent
+                :title="$t('SendTaskPanel.methodTypeDescriptionTitle')"
+                :details="methodTypeDescription"
+                :detailUrl="'https://www.youtube.com/watch?v=bxkB-pkOpTQ'"
+            />
         </div>
         <div style="height: 70%">
             <v-row class="ma-0 pa-0" style="height: 100%">
@@ -34,11 +39,11 @@
                 <template v-slot:prepend>
                     <Icons :icon="'magic'"  />
                 </template>
-                생성
+                {{ $t('SendTaskPanel.generation') }}
             </v-btn>
         </div>
         <div>
-            <div>Return 값을 저장 할 변수</div>
+            <div>{{ $t('SendTaskPanel.return') }}</div>
             <v-row class="ma-0 pa-0">
                 <v-autocomplete
                     :items="processVariables"
@@ -52,6 +57,10 @@
                 <!-- <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts> -->
             </v-row>
         </div>
+        <DetailComponent
+            style="margin-bottom:40px;"
+            :title="$t('SendTaskPanel.returnTitle')"
+        />
     </div>
 </template>
 <script>
@@ -110,7 +119,12 @@ export default {
             httpMethods: null,
             copyDefinition: this.definition,
             processVariables: [],
-            apiServiceURL: ''
+            apiServiceURL: '',
+            methodTypeDescription: [
+                {
+                    title: 'SendTaskPanel.methodTypeDescriptionSubTitle1',
+                },
+            ]
         };
     },
     async mounted() {

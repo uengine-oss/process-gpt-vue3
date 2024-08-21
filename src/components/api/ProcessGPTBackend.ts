@@ -359,7 +359,8 @@ class ProcessGPTBackend implements Backend {
                     rootInstId: null,
                     taskId: workitem.id,
                     startDate: workitem.start_date,
-                    dueDate: workitem.end_date,
+                    endDate: workitem.end_date,
+                    dueDate: workitem.due_date,
                     status: workitem.status === 'TODO' ? 'NEW' : workitem.status === 'DONE' ? 'COMPLETED' : workitem.status,
                     description: workitem.description || "",
                     tool: workitem.tool || "",
@@ -405,7 +406,8 @@ class ProcessGPTBackend implements Backend {
                         rootInstId: null,
                         taskId: item.id,
                         startDate: item.start_date,
-                        dueDate: item.end_date,
+                        endDate: item.end_date,
+                        dueDate: item.due_date,
                         status: item.status,
                         title: item.activity_name || "",
                         tracingTag: item.activity_id || "",
@@ -438,14 +440,17 @@ class ProcessGPTBackend implements Backend {
             if (!workItem.instId || workItem.status != "DONE") {
                 const putObj = {
                     id: taskId,
-                    proc_def_id: workItem.defId,
-                    user_id: workItem.endpoint,
-                    proc_inst_id: workItem.instId,
-                    start_date: workItem.startDate,
-                    end_date: workItem.dueDate,
-                    status: workItem.status,
+                    proc_def_id: workItem.defId || workItem.defId,
+                    user_id: workItem.endpoint || workItem.endpoint,
+                    proc_inst_id: workItem.instId || workItem.instId,
+                    start_date: workItem.startDate || workItem.startDate,
+                    end_date: workItem.endDate || workItem.endDate,
+                    due_date: workItem.dueDate || workItem.dueDate,
+                    status: workItem.status || workItem.status,
                     activity_id: workItem.tracingTag || workItem.title,
-                    activity_name: workItem.title,
+                    activity_name: workItem.title || workItem.title,
+                    description: workItem.description || workItem.description,
+                    tool: workItem.tool || workItem.tool
                 }
                 await storage.putObject('todolist', putObj);
 
@@ -850,7 +855,8 @@ class ProcessGPTBackend implements Backend {
                     rootInstId: item.proc_inst_id,
                     taskId: item.id,
                     startDate: item.start_date,
-                    dueDate: item.end_date,
+                    endDate: item.end_date,
+                    dueDate: item.due_date,
                     status: item.status,
                     title: item.activity_name,
                     tool: item.tool || '',
@@ -1089,6 +1095,9 @@ class ProcessGPTBackend implements Backend {
             //@ts-ignore
             throw new Error(error.message);
         }
+    }
+
+    async uploadDefinition(file: File, path: string) {
     }
 
 }

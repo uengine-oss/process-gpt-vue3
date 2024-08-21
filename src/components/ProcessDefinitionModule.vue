@@ -519,6 +519,7 @@ export default {
                     let activityData = {
                         parameters: [...inputDataList, ...outputDataList]
                     };
+                    activityData['duration'] = activity?.duration ? activity?.duration : 5;
                     if (variableForHtmlFormContext) {
                         activityData['variableForHtmlFormContext'] = variableForHtmlFormContext;
                         activityData['_type'] = 'org.uengine.kernel.FormActivity';
@@ -879,7 +880,7 @@ export default {
                     }
 
 
-                    // 가장 바깥 라인 안쪽의 스윔라인 자체 길이
+                    // 가장 바깥 라인 안쪽의 스윔레인 자체 길이
                     
                     if(isHorizontal) {
                         dcBoundsLane.setAttribute('width', roleWidth + 85);
@@ -1478,7 +1479,7 @@ export default {
             const dcBoundsParticipant = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
             dcBoundsParticipant.setAttribute('x', '70');
             dcBoundsParticipant.setAttribute('y', `100`);
-            // 스윔라인을 감싸고있는 가장 바깥 라인의 길이
+            // 스윔레인을 감싸고있는 가장 바깥 라인의 길이
             dcBoundsParticipant.setAttribute('width', `${lastXPos + 30}`);
             dcBoundsParticipant.setAttribute('height', participantHeight);
             participantShape.appendChild(dcBoundsParticipant);
@@ -1502,7 +1503,7 @@ export default {
                     const dcBoundsLane = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
                     dcBoundsLane.setAttribute('x', '100');
                     dcBoundsLane.setAttribute('y', `${100 + roleIndex * 100}`);
-                    // 가장 바깥 라인 안쪽의 스윔라인 자체 길이
+                    // 가장 바깥 라인 안쪽의 스윔레인 자체 길이
                     dcBoundsLane.setAttribute('width', `${lastXPos}`);
                     dcBoundsLane.setAttribute('height', '100');
                     laneShape.appendChild(dcBoundsLane);
@@ -2156,6 +2157,7 @@ export default {
                                                   .map((param) => param.variable.name)
                                             : [];
                                     task.properties = activity['bpmn:extensionElements']['uengine:properties']['uengine:json'];
+                                    task.duration = activity['bpmn:extensionElements']['uengine:properties']['uengine:json'].duration ? activity['bpmn:extensionElements']['uengine:properties']['uengine:json'].duration : 5;
                                 } else {
                                     task.inputData = [];
                                     task.outputData = [];

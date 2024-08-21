@@ -1,64 +1,21 @@
 <template>
-    <v-card elevation="10">
-        <AppBaseCard>
-            <template v-slot:leftpart>
-                <div class="no-scrollbar">
-                    <Chat
-                        :chatInfo="chatInfo"
-                        :messages="messages"
-                        :userInfo="userInfo"
-                        type="form"
-                        @sendMessage="beforeSendMessage"
-                        @sendEditedMessage="sendEditedMessage"
-                        @stopMessage="stopMessage"
-                    >
-                        <template v-slot:custom-tools>
-                            <div class="d-flex flex-row-reverse" style="height: 0px; position: relative; bottom: 35px; left: 10px">
-                                <v-tooltip>
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn v-bind="props"
-                                            icon variant="text"
-                                            class="text-medium-emphasis"
-                                            @click="openSaveDialog"
-                                        >
-                                            <Icons :icon="'save'" />
-                                        </v-btn>
-                                    </template>
-                                    <span>{{ $t('uiDefinition.save') }}</span>
-                                </v-tooltip>
-
-                                <v-tooltip>
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn v-if="isLoadedForm" 
-                                            v-bind="props" 
-                                            icon  variant="text" 
-                                            class="text-medium-emphasis"
-                                            @click="openDeleteDialog">
-                                            <TrashIcon size="24" />
-                                        </v-btn>
-                                    </template>
-                                    <span>{{ $t('uiDefinition.deleteForm') }}</span>
-                                </v-tooltip>
-                            </div>
-                        </template>
-                    </Chat>
-                </div>
-            </template>
-            <template v-slot:rightpart>
+    <v-card flat class="w-100">
+        <div :class="{'d-flex': !isMobile}">
+            <div :style="!isMobile ? 'max-width: 300px;' : ''">
+                <Chat :chatInfo="chatInfo" :messages="messages" :userInfo="userInfo" type="form"
+                    @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage">
+                    <template v-slot:custom-tools></template>
+                </Chat>
+            </div>
+            <div>
                 <v-tabs v-model="currentTabName" style="position: fixed; z-index: 999" color="primary" fixed-tabs>
                     <v-tab value="edit">{{ $t('uiDefinition.redaction') }}</v-tab>
                     <v-tab value="preview">{{ $t('uiDefinition.preview') }}</v-tab>
                 </v-tabs>
                 <v-window v-model="currentTabName" class="fill-height">
                     <v-window-item value="edit" class="fill-height mt-12" style="overflow-y: auto;">
-                        <mashup
-                            v-if="isShowMashup"
-                            ref="mashup"
-                            v-model="kEditorInput"
-                            :key="mashupKey"
-                            @onSaveFormDefinition="saveFormDefinition"
-                            @onInitKEditorContent="updateKEditorContentBeforeSave"
-                        />
+                        <mashup v-if="isShowMashup" ref="mashup" v-model="kEditorInput" :key="mashupKey" 
+                            @onSaveFormDefinition="saveFormDefinition" @onInitKEditorContent="updateKEditorContentBeforeSave"/>
                         <div v-else class="d-flex align-center justify-center fill-height">
                             <v-progress-circular color="primary" indeterminate></v-progress-circular>
                         </div>
@@ -83,50 +40,8 @@
                         </div>
                     </v-window-item>
                 </v-window>
-            </template>
-
-            <template v-slot:mobileLeftContent>
-                <Chat
-                    :chatInfo="chatInfo"
-                    :messages="messages"
-                    :userInfo="userInfo"
-                    type="form"
-                    @sendMessage="beforeSendMessage"
-                    @sendEditedMessage="sendEditedMessage"
-                    @stopMessage="stopMessage"
-                >
-                    <template v-slot:custom-tools>
-                        <div class="d-flex flex-row-reverse" style="height: 0px; position: relative; bottom: 35px; left: 10px">
-                            <v-tooltip>
-                                <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props"
-                                        icon variant="text"
-                                        class="text-medium-emphasis"
-                                        @click="openSaveDialog"
-                                    >
-                                        <Icons :icon="'save'" />
-                                    </v-btn>
-                                </template>
-                                <span>{{ $t('uiDefinition.save') }}</span>
-                            </v-tooltip>
-
-                            <v-tooltip location="bottom">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn v-if="isLoadedForm" 
-                                        v-bind="props" 
-                                        icon  variant="text" 
-                                        class="text-medium-emphasis"
-                                        @click="openDeleteDialog">
-                                        <TrashIcon size="24" />
-                                    </v-btn>
-                                </template>
-                                <span>{{ $t('uiDefinition.deleteForm') }}</span>
-                            </v-tooltip>
-                        </div>
-                    </template>
-                </Chat>
-            </template>
-        </AppBaseCard>
+            </div>
+        </div>
     </v-card>
 
     <v-dialog v-model="isOpenSaveDialog">
@@ -149,33 +64,19 @@
 </template>
 
 <script>
-import * as jsondiff from 'jsondiffpatch';
-import ChatDetail from '@/components/apps/chats/ChatDetail.vue';
-import ChatListing from '@/components/apps/chats/ChatListing.vue';
-import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import Mashup from '@/components/designer/Mashup.vue';
-import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import FormDesignSavePanel from '@/components/designer/FormDesignSavePanel.vue';
 import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/FormDesignGenerator';
 import Chat from './ui/Chat.vue';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 
-var jsondiffpatch = jsondiff.create({
-    objectHash: function (obj, index) {
-        return '$$index:' + index;
-    }
-});
 
 export default {
     mixins: [ChatModule],
     name: 'UIDefinitionChat',
     components: {
         Chat,
-        AppBaseCard,
-        ChatListing,
-        ChatDetail,
-        ChatProfile,
         Mashup,
         ChatGenerator,
         FormDesignSavePanel,
@@ -254,6 +155,11 @@ export default {
             this.formNameByUrl = this.processDefUrlData.formName;
         }
         // #endregion
+    },
+    computed: {
+        isMobile() {
+            return window.innerWidth <= 1080;
+        },
     },
     watch: {
         /**

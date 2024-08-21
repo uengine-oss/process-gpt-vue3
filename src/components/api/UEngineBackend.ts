@@ -563,6 +563,44 @@ class UEngineBackend implements Backend {
         if (!response.data) return {};
         return response.data;
     }
+
+    async uploadDefinition(file: File, path: string) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const config = {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        };
+
+        try {
+            const response = await axiosInstance.post('/definition/upload', formData, config);
+            return response.data;
+        } catch (error) {
+            console.error('파일 업로드 중 오류 발생:', error);
+            throw error;
+        }
+    }
+
+    async downloadFile(filePath: string) {
+        try {
+            const response = await axiosInstance.get(`/download?path=${encodeURIComponent(filePath)}`, {
+                responseType: 'blob'
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', filePath.split('/').pop() || 'downloaded_file');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            console.error('파일 다운로드 중 오류 발생:', error);
+            throw error;
+        }
+    }
 }
 
 export default UEngineBackend;
