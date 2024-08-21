@@ -19,6 +19,7 @@ export default {
         lock: false,
         loading: false,
         isConsultingMode: false,
+        isChanged: false,
     }),
     computed: {},
     mounted() {},
@@ -344,13 +345,13 @@ export default {
                 processDefinitionName: jsonModel.processDefinitionName || "Unknown",
                 processDefinitionId: jsonModel.processDefinitionId || "Unknown",
                 description: jsonModel.description || "",
-                roles: jsonModel.roles.map(role => ({
+                roles: (jsonModel.roles || []).map(role => ({
                     name: role.name,
                     resolutionRule: "실제 " + role.name + "을(를) 매핑"
                 })),
                 components: [],
-                data: jsonModel.data,
-                sequences: jsonModel.sequences.map(seq => ({
+                data: jsonModel.data || [],
+                sequences: (jsonModel.sequences || []).map(seq => ({
                     source: seq.source,
                     target: seq.target,
                     condition: {}
@@ -359,40 +360,46 @@ export default {
             };
 
             // Transform events and activities into components
-            jsonModel.events.forEach(event => {
-                transformedModel.components.push({
-                    componentType: "Event",
-                    id: event.id,
-                    name: event.name,
-                    role: event.role,
-                    source: event.type === "startEvent" ? "none" : jsonModel.sequences.find(seq => seq.target === event.id)?.source,
-                    type: event.type === "startEvent" ? "StartEvent" : "EndEvent",
-                    description: event.description
+            if (Array.isArray(jsonModel.events)) {
+                jsonModel.events.forEach(event => {
+                    transformedModel.components.push({
+                        componentType: "Event",
+                        id: event.id,
+                        name: event.name,
+                        role: event.role,
+                        source: event.type === "startEvent" ? "none" : jsonModel.sequences?.find(seq => seq.target === event.id)?.source,
+                        type: event.type === "startEvent" ? "StartEvent" : "EndEvent",
+                        description: event.description
+                    });
                 });
-            });
+            }
 
-            jsonModel.activities.forEach(activity => {
-                transformedModel.components.push({
-                    componentType: "Activity",
-                    id: activity.id,
-                    name: activity.name,
-                    type: "UserActivity",
-                    source: jsonModel.sequences.find(seq => seq.target === activity.id)?.source,
-                    description: activity.description,
-                    instruction: activity.instruction,
-                    role: activity.role,
-                    inputData: activity.inputData,
-                    outputData: activity.outputData,
-                    checkpoints: []
+            if (Array.isArray(jsonModel.activities)) {
+                jsonModel.activities.forEach(activity => {
+                    transformedModel.components.push({
+                        componentType: "Activity",
+                        id: activity.id,
+                        name: activity.name,
+                        type: "UserActivity",
+                        source: jsonModel.sequences?.find(seq => seq.target === activity.id)?.source,
+                        description: activity.description,
+                        instruction: activity.instruction,
+                        role: activity.role,
+                        inputData: activity.inputData,
+                        outputData: activity.outputData,
+                        checkpoints: []
+                    });
                 });
-            });
+            }
 
             // Sort components based on the sequence
-            transformedModel.components.sort((a, b) => {
-                const aIndex = transformedModel.sequences.findIndex(seq => seq.target === a.id);
-                const bIndex = transformedModel.sequences.findIndex(seq => seq.target === b.id);
-                return aIndex - bIndex;
-            });
+            if (transformedModel.components.length > 0 && transformedModel.sequences.length > 0) {
+                transformedModel.components.sort((a, b) => {
+                    const aIndex = transformedModel.sequences.findIndex(seq => seq.target === a.id);
+                    const bIndex = transformedModel.sequences.findIndex(seq => seq.target === b.id);
+                    return aIndex - bIndex;
+                });
+            }
 
             return transformedModel;
         },
@@ -516,7 +523,7 @@ export default {
 
 
             const checkForm = function(variables, variable) {
-                let formVars = variables.filter((data) => data.type == 'Form');
+                let formVars = Array.isArray(variables) ? variables.filter((data) => data && data.type === 'Form') : [];
                 return formVars.some(form => form.name == variable);
             }
 
@@ -937,7 +944,7 @@ export default {
                         dcBoundsLane.setAttribute('y', (roleX ? roleX : 0) + 30);
                     }
 
-                    if(jsonModel.roles[lastKey].name == role.name) {
+                    if (jsonModel.roles && jsonModel.roles[lastKey] && jsonModel.roles[lastKey].name === role.name) {
                         roleHeightResult += (isHorizontal ? -155 : 0);
                     }
 
@@ -1994,7 +2001,6 @@ export default {
                             if (definitions) {
                                 definitions.name = info.name || 'Default Name';
                             }
-                            me.setDefinitionInfo(info.name, info.version)
                             xmlObj = await modeler.saveXML({ format: true, preamble: true });
                             return true;
                         } catch (error) {
@@ -2018,6 +2024,7 @@ export default {
                         }
                     }
 
+                    me.setDefinitionInfo(info.name, info.version)
                     let newProcessDefinition
 
                     // if (me.processDefinition) {
@@ -2081,6 +2088,12 @@ export default {
                     await me.saveModel(info, xmlObj.xml);
                     me.bpmn = xmlObj.xml;
 
+                    let processInfo = {
+                        bpmn: me.bpmn,
+                        def: me.processDefinition
+                    };
+                    this.$emit("modelCreated", processInfo);
+
                     me.disableChat = true;
                     me.isViewMode = true;
                     me.lock = true; // 잠금처리 ( 수정 불가 )
@@ -2092,6 +2105,7 @@ export default {
                 onFail: (e) => {
                     console.log(e);
                     me.loading = false;
+                    me.isChanged = true;
                 },
                 successMsg: '저장되었습니다.'
             });
@@ -2106,6 +2120,8 @@ export default {
                 var processDefinitionId = 'Unknown';
                 if(this.fullPath) {
                     processDefinitionId = this.fullPath;
+                } else {
+                    processDefinitionId = this.$route.params.id;
                 }
 
                 function ensureArray(item) {
@@ -2456,7 +2472,14 @@ export default {
             let modeler = store.getModeler;
             const definitions = modeler.getDefinitions();
 
-            let bpmnFactory = modeler.get('bpmnFactory');
+            let bpmnFactory;
+            try {
+                bpmnFactory = modeler.get('bpmnFactory');
+            } catch (error) {
+                console.warn('bpmnFactory not available:', error);
+                return;
+            }
+
             const processElement = definitions.rootElements.find((element) => element.$type === 'bpmn:Process');
             if (!processElement) {
                 console.error('bpmn:Process element not found');

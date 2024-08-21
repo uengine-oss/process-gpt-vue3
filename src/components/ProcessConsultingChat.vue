@@ -137,7 +137,8 @@ export default {
     },
     props: {
         ProcessPreviewMode: Boolean,
-        proc_bpmn: String
+        proc_bpmn: String,
+        proc_def: Object
     },
     data: () => ({
         chatRenderKey: 0,
@@ -149,7 +150,6 @@ export default {
         currentStepIndex: 0,
         isPreviewMode: false,
         currentFormId: null,
-        isChanged: false,
         currentFormData: null,
         editMode: null,
 
@@ -192,8 +192,18 @@ export default {
         if(this.proc_bpmn){
             this.messages = []
             this.$emit("openProcessPreview")
+
             this.bpmn = this.proc_bpmn
-            this.processDefinition = await this.convertXMLToJSON(this.bpmn);
+
+            if(this.$route.params.id){
+                let processInfo = await backend.getRawDefinition(this.$route.params.id);
+                this.processDefinition = processInfo.definition
+            } else if(this.proc_def) {
+                this.processDefinition = this.proc_def
+            } else {
+                this.processDefinition = await this.convertXMLToJSON(this.bpmn);
+            }
+
             this.definitionChangeCount++;
             this.messages.push({
                 "role": "system",
@@ -226,7 +236,7 @@ export default {
 
     },
     methods: {
-        async saveDef(){
+        async saveDef() {
             await this.saveDefinition({
                 "arcv_id": `${this.processDefinition.processDefinitionId}_0.1`,
                 "name": this.processDefinition.processDefinitionName,
@@ -235,9 +245,8 @@ export default {
                 "proc_def_id": this.processDefinition.processDefinitionId,
                 "type": "bpmn",
                 "version": "0.1"
-            }); 
-            await this.$emit("createdBPMN", this.processDefinition)
-            this.isChanged = false
+            });
+            this.isChanged = false;
         },
         initializeSteps() {
             this.stepIds = this.getUniqueSequenceIds();
@@ -439,8 +448,7 @@ export default {
                                 this.bpmn = this.createBpmnXml(response); 
                                 this.definitionChangeCount++;
                                 await this.checkedFormData();
-                                this.saveDef()
-                                this.$emit("modelCreated", this.bpmn)
+                                await this.saveDef();
                                 // this.initConfetti();
                                 // this.render();
                             } else {
