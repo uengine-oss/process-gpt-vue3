@@ -277,7 +277,7 @@
         "scriptType": "Script Type",
         "add": "Add",
         "role": "Role",
-        "methodTypeUrl": "Method Type URL",
+        "methodTypeUrl": "Method Type",
         "apiUrl": "API URL",
         "mapperDescriptionTitle": "Data mapping is a function that passes variables to the next task",
         "mapperDescriptionSubTitle1": "1. Variables: Values added to the variable section \n2. Roles: Roles (names) registered in the swimlane \n3. Instance: Stores the end date of the next task to be executed \n4. Activities: Roles (names) registered in the task \n5. Arguments: Names (values) registered in the attributes",
@@ -391,11 +391,16 @@
         "forEachRole": "Role-based Multiple Creation",
         "role": "Create multiple sub-processes based on roles",
         "forEachVariable": "Variable-based Multiple Creation",
-        "variable": "Create multiple sub-processes based on variables"
+        "variable": "Create multiple sub-processes based on variables",
+        "forEachVariableDescriptionTitle": "When multi-data is inserted by data mapping with the data registered in the process variables, multiple sub-processes are created based on the generated data during process execution.",
+        "forEachVariableDescriptionSubTitle1": "1. Check multi-data mode through edit mode in screen definition management",
+        "forEachVariableDescriptionSubTitle2": "2. Perform data mapping in the panel of the previous task to be executed"
     },
     "ParticipantPanel": {
         "apiUrl": "API URL",
-        "openAPISpec": "Open API Spec"
+        "openAPISpec": "Open API Spec",
+        "system": "Load from system definition",
+        "systemDefinitionDescriptionTitle": "Load and apply items registered in the system definition from the left-side management button"
     },
     "LanePanel": {
         "selectRoleType": "Select Role Type",
