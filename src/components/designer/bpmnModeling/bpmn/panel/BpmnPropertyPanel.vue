@@ -38,7 +38,6 @@
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import ValidationField from '@/components/designer/bpmnModeling/bpmn/panel/ValidationField.vue';
-import { Icon } from '@iconify/vue';
 
 export default {
     name: 'bpmn-property-panel',

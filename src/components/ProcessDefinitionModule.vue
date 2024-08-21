@@ -519,6 +519,7 @@ export default {
                     let activityData = {
                         parameters: [...inputDataList, ...outputDataList]
                     };
+                    activityData['duration'] = activity?.duration ? activity?.duration : 5;
                     if (variableForHtmlFormContext) {
                         activityData['variableForHtmlFormContext'] = variableForHtmlFormContext;
                         activityData['_type'] = 'org.uengine.kernel.FormActivity';
@@ -2156,6 +2157,7 @@ export default {
                                                   .map((param) => param.variable.name)
                                             : [];
                                     task.properties = activity['bpmn:extensionElements']['uengine:properties']['uengine:json'];
+                                    task.duration = activity['bpmn:extensionElements']['uengine:properties']['uengine:json'].duration ? activity['bpmn:extensionElements']['uengine:properties']['uengine:json'].duration : 5;
                                 } else {
                                     task.inputData = [];
                                     task.outputData = [];

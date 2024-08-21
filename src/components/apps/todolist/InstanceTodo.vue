@@ -2,15 +2,23 @@
     <v-card elevation="10">
         <v-row class="ma-0 pa-0" style="height:calc(100vh - 270px); overflow:auto;">
             <v-col v-for="column in todolist" :key="column.id" cols="12" lg="3" md="3" sm="6">
-                <TodoTaskColumn :column="column" :loading="loading" :isNotAll="true" 
+                <TodoTaskColumn :column="column" :loading="loading" :isNotAll="true"
                     @executeTask="executeTask" @scrollBottom="handleScrollBottom" @updateStatus="updateStatus"  />
             </v-col>
         </v-row>
+
+        <v-btn v-if="mode === 'ProcessGPT'" icon color="primary" size="40" elevation="10" class="todo-add-btn" @click="openDialog">
+            <v-tooltip activator="parent" location="right">할 일 등록</v-tooltip>
+            <PlusIcon size="24" stroke-width="2" />
+        </v-btn>
+
+        <TodoDialog v-if="dialog" :isOpen="dialog" :todolist="todolist" :instId="id" :defId="defId" @close="closeDialog" />
     </v-card>
 </template>
 
 <script>
 import TodoTaskColumn from './TodoTaskColumn.vue';
+import TodoDialog from './TodoDialog.vue';
 
 import BackendFactory from "@/components/api/BackendFactory";
 const backend = BackendFactory.createBackend();
@@ -18,6 +26,7 @@ const backend = BackendFactory.createBackend();
 export default {
     components: {
         TodoTaskColumn,
+        TodoDialog,
     },
     props: {
         instance: Object,
@@ -52,16 +61,25 @@ export default {
         loading: false,
         offset: 10,
         currentPage: 0,
+        dialog: false,
+        defId: '',
     }),
     created() {
         this.loadToDo();
         this.loadCompletedWorkList();
+        if (this.mode === 'ProcessGPT') {
+            this.defId = this.id.split('.')[0];
+            console.log(this.defId);
+        }
     },
     computed: {
-        id() {
-            const route = window.$mode == 'ProcessGPT' ? atob(this.$route.params.instId) : this.$route.params.instId;
-            return route;
+        mode() {
+            return window.$mode;
         },
+        id() {
+            const route = this.mode == 'ProcessGPT' ? atob(this.$route.params.instId) : this.$route.params.instId;
+            return route;
+        },        
     },
     watch: {
         $route: {
@@ -144,6 +162,22 @@ export default {
             }
             this.EventBus.emit('instances-updated');
         },
+        openDialog() {
+            this.dialog = true;
+        },
+        closeDialog() {
+            this.dialog = false;
+        },
     },
 }
 </script>
+
+<style>
+.todo-add-btn {
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    z-index: 1000;
+}
+</style>
+
