@@ -337,7 +337,69 @@ export default {
                     return 'bpmn:userTask';
             }
         },
+        transformJsonModel(jsonModel) {
+            const transformedModel = {
+                megaProcessId: "미분류",
+                majorProcessId: "미분류",
+                processDefinitionName: jsonModel.processDefinitionName || "Unknown",
+                processDefinitionId: jsonModel.processDefinitionId || "Unknown",
+                description: jsonModel.description || "",
+                roles: jsonModel.roles.map(role => ({
+                    name: role.name,
+                    resolutionRule: "실제 " + role.name + "을(를) 매핑"
+                })),
+                components: [],
+                data: jsonModel.data,
+                sequences: jsonModel.sequences.map(seq => ({
+                    source: seq.source,
+                    target: seq.target,
+                    condition: {}
+                })),
+                participants: []
+            };
+
+            // Transform events and activities into components
+            jsonModel.events.forEach(event => {
+                transformedModel.components.push({
+                    componentType: "Event",
+                    id: event.id,
+                    name: event.name,
+                    role: event.role,
+                    source: event.type === "startEvent" ? "none" : jsonModel.sequences.find(seq => seq.target === event.id)?.source,
+                    type: event.type === "startEvent" ? "StartEvent" : "EndEvent",
+                    description: event.description
+                });
+            });
+
+            jsonModel.activities.forEach(activity => {
+                transformedModel.components.push({
+                    componentType: "Activity",
+                    id: activity.id,
+                    name: activity.name,
+                    type: "UserActivity",
+                    source: jsonModel.sequences.find(seq => seq.target === activity.id)?.source,
+                    description: activity.description,
+                    instruction: activity.instruction,
+                    role: activity.role,
+                    inputData: activity.inputData,
+                    outputData: activity.outputData,
+                    checkpoints: []
+                });
+            });
+
+            // Sort components based on the sequence
+            transformedModel.components.sort((a, b) => {
+                const aIndex = transformedModel.sequences.findIndex(seq => seq.target === a.id);
+                const bIndex = transformedModel.sequences.findIndex(seq => seq.target === b.id);
+                return aIndex - bIndex;
+            });
+
+            return transformedModel;
+        },
         createBpmnXml(jsonModel) {
+            if(jsonModel && !jsonModel.components){
+                jsonModel = this.transformJsonModel(jsonModel)
+            }
             let me = this;
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(
@@ -1920,11 +1982,40 @@ export default {
 
                     const store = useBpmnStore();
                     let modeler = store.getModeler;
-                    const definitions = modeler.getDefinitions();
-                    if (definitions) {
-                        definitions.name = info.name || 'Default Name';
+                    let xmlObj;
+                    let retryCount = 0;
+                    const maxRetries = 3;
+                    const retryDelay = 1000; // 1초
+
+                    async function saveXML() {
+                        try {
+                            const definitions = modeler.getDefinitions();
+                            if (definitions) {
+                                definitions.name = info.name || 'Default Name';
+                            }
+                            xmlObj = await modeler.saveXML({ format: true, preamble: true });
+                            return true;
+                        } catch (error) {
+                            console.error('XML 저장 중 오류 발생:', error);
+                            return false;
+                        }
                     }
-                    let xmlObj = await modeler.saveXML({ format: true, preamble: true });
+
+                    while (retryCount < maxRetries) {
+                        if (await saveXML()) {
+                            break;
+                        } else {
+                            retryCount++;
+                            if (retryCount < maxRetries) {
+                                console.log(`XML 저장 재시도 중... (${retryCount}/${maxRetries})`);
+                                await new Promise(resolve => setTimeout(resolve, retryDelay));
+                            } else {
+                                console.error('최대 재시도 횟수 초과. XML 저장 실패.');
+                                throw new Error('XML 저장 실패');
+                            }
+                        }
+                    }
+
                     let newProcessDefinition
 
                     // if (me.processDefinition) {
