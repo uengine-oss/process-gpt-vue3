@@ -436,5 +436,11 @@
         "return": "Return 값을 저장 할 변수",
         "scriptDescriptionTitle": "Script Task 는 Javascript 나 Java 언어를 직접 액티비티에 설정하여 프로세스 설정만으로 처리하기 힘든 마이크로한 설정이나 액션을 실행가능하게 합니다.",
         "returnTitle": "드롭다운 메뉴는 프로세스 변수에서 등록된 변수 이름을 리스트로 출력합니다. \n위 작성된 내용을 저장할 변수를 선택합니다."
+    },
+    "MessageEventDefinitionPanel" : {
+        "return": "Return 값을 저장 할 변수",
+        "methodTypeDescriptionTitle": "API 요청을 보낼 때 사용할 메서드(GET, POST, PUT, PATCH)와 요청을 처리할 서버의 엔드포인트 URL을 설정",
+        "methodTypeDescriptionSubTitle1": "1.GET : 서버로부터 데이터를 조회하는 요청 \n2.POST : 서버에 새 데이터를 생성하여 전송하는 요청 \n3.PUT : 기존 데이터를 업데이트하거나 전체를 대체하는 요청 \n4.PATCH : 기존 데이터의 일부를 수정하는 요청 \n5.API URL : 요청이 전송될 서버의 엔드포인트 주소\n",
+        "returnTitle": "드롭다운 메뉴는 프로세스 변수에서 등록된 변수 이름을 리스트로 출력합니다. \n위 작성된 내용을 저장할 변수를 선택합니다."
     }
 }

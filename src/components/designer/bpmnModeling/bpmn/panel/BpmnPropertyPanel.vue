@@ -8,7 +8,7 @@
                 <Icons :icon="'close'" class="cursor-pointer" :size="16"/>
             </v-btn>
         </v-row>
-        <v-card-text class="delete-input-details" style="overflow: auto; height: calc(100% - 52px); width: 700px;">
+        <v-card-text class="delete-input-details" style="overflow: auto; height: calc(100% - 52px); width: 700px; padding:16px;">
             <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')">
                 <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
                 <div style="margin:-20px 0px 10px 0px;">{{ $t('BpmnPropertyPanel.role') }}: {{ role.name }}</div>

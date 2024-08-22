@@ -1,7 +1,6 @@
 <template>
     <div>
         <div class="mb-1 mt-4">
-            
             <v-row class="ma-0 pa-0">
                 <v-col cols="3" class="pa-0 pr-2">
                     <v-autocomplete
@@ -18,7 +17,7 @@
                 </v-col>
             </v-row>
             <DetailComponent
-                :title="$t('SendTaskPanel.methodTypeDescriptionTitle')"
+                :title="$t('MessageEventDefinitionPanel.methodTypeDescriptionTitle')"
                 :details="methodTypeDescription"
                 :detailUrl="'https://www.youtube.com/watch?v=bxkB-pkOpTQ'"
             />

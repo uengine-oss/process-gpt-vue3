@@ -1,7 +1,7 @@
 <template>
     <div>
         <!-- <cron-vuetify v-model="cron" :chip-props="{ color: 'success', textColor: 'white' }" @error="error = $event" /> -->
-        <v-text-field v-model="copyUengineProperties.expression"></v-text-field>
+        <v-text-field class="mt-4" v-model="copyUengineProperties.expression" label="시간 입력(Cron)"></v-text-field>
         <!-- editable cron expression -->
     </div>
 </template>
