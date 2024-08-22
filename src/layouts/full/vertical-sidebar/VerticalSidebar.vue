@@ -169,6 +169,24 @@ export default {
                     to: '/system',
                     disable: true
                 },
+                {
+                    title: 'definitionManagement.upload',
+                    icon: 'upload',
+                    BgColor: 'primary',
+                    to: function() {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = '.zip';
+                        input.onchange = (event) => {
+                            const file = event.target.files[0];
+                            if (file) {
+                                backend.uploadDefinition(file);
+                            }
+                        };
+                        input.click();
+                    },
+                    disable: true
+                },
             ]
             this.getDefinitionList();
         }
@@ -230,7 +248,7 @@ export default {
                 };
                 list.forEach((item) => {
                     if (item.directory) {
-                        if (item.name != 'instances') {
+                        if (item.name != 'instances'  || item.name != 'archive') {
                             var obj = {
                                 title: item.name,
                                 icon: 'outline-folder',
@@ -274,7 +292,11 @@ export default {
             }
         },
         navigateTo(path) {
-            this.$router.push(path);
+            if (typeof path === 'function') {
+                path();
+            } else {
+                this.$router.push(path);
+            }
         },
         handleInstanceListUpdate(instanceList) {
             this.instanceList = instanceList;

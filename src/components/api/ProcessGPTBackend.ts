@@ -12,6 +12,9 @@ enum ErrorCode {
 
 class ProcessGPTBackend implements Backend {
     
+    async releaseVersion(releaseName: string): Promise<any> {
+        
+    }
     testList(path: string): Promise<any> {
         throw new Error('Method not implemented.');
     }
@@ -1095,6 +1098,9 @@ class ProcessGPTBackend implements Backend {
             //@ts-ignore
             throw new Error(error.message);
         }
+    }
+
+    async uploadDefinition(file: File, path: string) {
     }
 
 }

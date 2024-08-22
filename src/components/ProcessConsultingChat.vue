@@ -35,6 +35,7 @@
                                 :key="definitionChangeCount" 
                                 :formId="currentFormId"
                                 :isPreviewMode="true" 
+                                :currentFormData="currentFormData"
                             />
                         </v-card>
                         <v-card class="process-consulting-chat-components" elevation="1" style="flex: 0 0 40%; display: flex; flex-direction: column; width: 98%;">
@@ -111,6 +112,8 @@ import FormWorkItem from './apps/todolist/FormWorkItem.vue';
 import { useBpmnStore } from '@/stores/bpmn';
 import ChatModule from "@/components/ChatModule.vue";
 import ConsultingGenerator from "@/components/ai/ProcessConsultingGenerator.js";
+import FormDesignGenerator from "@/components/ai/FormDesignGenerator.js";
+import ProcessDefinitionGenerator from "@/components/ai/ProcessDefinitionGenerator.js";
 import ConsultingMentoGenerator from "@/components/ai/ProcessConsultingMentoGenerator.js";
 import ProcessPreviewGenerator from "@/components/ai/ProcessPreviewGenerator.js";
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
@@ -134,6 +137,8 @@ export default {
     },
     props: {
         ProcessPreviewMode: Boolean,
+        proc_bpmn: String,
+        proc_def: Object
     },
     data: () => ({
         chatRenderKey: 0,
@@ -145,7 +150,8 @@ export default {
         currentStepIndex: 0,
         isPreviewMode: false,
         currentFormId: null,
-        isChanged: false,
+        currentFormData: null,
+        editMode: null,
 
         // confetti
         showConfetti: false,
@@ -172,16 +178,8 @@ export default {
     watch: {},  
     async created() {
         this.init();
-        this.generator = new ConsultingGenerator(this, {
-            isStream: true,
-            preferredLanguage: "Korean"
-        });
         this.isConsultingMode = true
         this.userInfo = await this.storage.getUserInfo();
-
-        this.EventBus.on('messages-updated', () => {
-            this.chatRenderKey++;
-        });
 
         this.processDefinitionMap = await backend.getProcessDefinitionMap();
 
@@ -191,213 +189,54 @@ export default {
             "timeStamp": Date.now(),
         })
 
-        // 모델 생성 단계
-//         this.messages = []
-//         this.messages.push({
-//             "role": "system",
-//             "content": `컨설팅 내용을 기반으로 모델 생성중입니다. 잠시만 기다려주세요!`,
-//             "timeStamp": Date.now(),
-//         })
-//         this.$emit("openProcessPreview")
-        
-//         this.processDefinition = {
-//     "megaProcessId": "미분류",
-//     "majorProcessId": "미분류",
-//     "processDefinitionName": "온라인 의류 쇼핑몰 주문 처리 자동화",
-//     "processDefinitionId": "online_clothing_order_automation",
-//     "description": "온라인 의류 쇼핑몰의 주문 발생 시 재고 확인 및 배송 신청 또는 주문 취소의 전 과정을 자동화하는 프로세스",
-//     "data": [
-//         {
-//             "name": "주문 데이터",
-//             "description": "온라인 쇼핑몰에서 제공하는 주문 정보",
-//             "type": "Form"
-//         },
-//         {
-//             "name": "재고 데이터",
-//             "description": "엑셀 파일에 기록된 물품 고유 번호, 이름, 수량에 관한 정보",
-//             "type": "Attachment"
-//         },
-//         {
-//             "name": "고객 데이터",
-//             "description": "택배회사에 제공할 고객 정보",
-//             "type": "Form"
-//         }
-//     ],
-//     "roles": [
-//         {
-//             "name": "시스템",
-//             "resolutionRule": "자동화 프로세스의 백엔드 시스템"
-//         },
-//         {
-//             "name": "담당자",
-//             "resolutionRule": "이메일 발송을 담당하는 역할"
-//         }
-//     ],
-//     "components": [
-//         {
-//             "componentType": "Event",
-//             "id": "start_event",
-//             "name": "주문 발생",
-//             "role": "시스템",
-//             "source": "",
-//             "type": "StartEvent",
-//             "description": "온라인 쇼핑몰에서 주문이 발생하는 이벤트"
-//         },
-//         {
-//             "componentType": "Activity",
-//             "id": "check_inventory",
-//             "name": "재고 확인",
-//             "type": "UserActivity",
-//             "source": "start_event",
-//             "description": "엑셀 파일을 통해 재고를 확인하는 작업",
-//             "instruction": "엑셀 파일을 열어 주문된 상품의 재고를 확인합니다.",
-//             "role": "시스템",
-//             "inputData": [
-//                 "주문 데이터",
-//                 "재고 데이터"
-//             ],
-//             "outputData": [
-//                 "재고 데이터"
-//             ],
-//             "checkpoints": []
-//         },
-//         {
-//             "componentType": "Gateway",
-//             "id": "inventory_gateway",
-//             "name": "재고 유무 확인",
-//             "role": "시스템",
-//             "source": "check_inventory",
-//             "type": "ExclusiveGateway",
-//             "description": "재고가 있는지 없는지에 따라 프로세스를 분기"
-//         },
-//         {
-//             "componentType": "Activity",
-//             "id": "send_shipping_email",
-//             "name": "배송 신청 이메일 발송",
-//             "type": "EMailActivity",
-//             "source": "inventory_gateway",
-//             "description": "택배회사에 고객 정보를 제공하여 배송 신청 이메일 발송",
-//             "instruction": "택배회사에 필요한 고객 정보를 이메일로 보냅니다.",
-//             "role": "담당자",
-//             "inputData": [
-//                 "고객 데이터"
-//             ],
-//             "outputData": [],
-//             "checkpoints": []
-//         },
-//         {
-//             "componentType": "Activity",
-//             "id": "decrement_inventory",
-//             "name": "재고 차감",
-//             "type": "ScriptActivity",
-//             "source": "send_shipping_email",
-//             "description": "엑셀 파일에서 해당 재고를 차감",
-//             "instruction": "엑셀 파일의 재고 수량을 업데이트합니다.",
-//             "role": "시스템",
-//             "inputData": [
-//                 "재고 데이터"
-//             ],
-//             "outputData": [
-//                 "재고 데이터"
-//             ],
-//             "checkpoints": []
-//         },
-//         {
-//             "componentType": "Event",
-//             "id": "end_shipping_event",
-//             "name": "배송 완료",
-//             "role": "시스템",
-//             "source": "decrement_inventory",
-//             "type": "EndEvent",
-//             "description": "배송 완료 상태로 업데이트"
-//         },
-//         {
-//             "componentType": "Activity",
-//             "id": "send_cancellation_email",
-//             "name": "주문 취소 이메일 발송",
-//             "type": "EMailActivity",
-//             "source": "inventory_gateway",
-//             "description": "재고 부족으로 인해 주문을 취소를 알리는 이메일 발송",
-//             "instruction": "고객에게 재고 부족으로 인해 주문이 취소되었음을 알립니다.",
-//             "role": "담당자",
-//             "inputData": [
-//                 "고객 데이터"
-//             ],
-//             "outputData": [],
-//             "checkpoints": []
-//         },
-//         {
-//             "componentType": "Event",
-//             "id": "end_cancellation_event",
-//             "name": "주문 취소",
-//             "role": "시스템",
-//             "source": "send_cancellation_email",
-//             "type": "EndEvent",
-//             "description": "주문을 취소 상태로 업데이트"
-//         }
-//     ],
-//     "sequences": [
-//         {
-//             "source": "start_event",
-//             "target": "check_inventory"
-//         },
-//         {
-//             "source": "check_inventory",
-//             "target": "inventory_gateway"
-//         },
-//         {
-//             "source": "inventory_gateway",
-//             "target": "send_shipping_email",
-//             "condition": {
-//                 "key": "재고 데이터",
-//                 "condition": " > ",
-//                 "value": "0"
-//             }
-//         },
-//         {
-//             "source": "send_shipping_email",
-//             "target": "decrement_inventory"
-//         },
-//         {
-//             "source": "decrement_inventory",
-//             "target": "end_shipping_event"
-//         },
-//         {
-//             "source": "inventory_gateway",
-//             "target": "send_cancellation_email",
-//             "condition": {
-//                 "key": "재고 데이터",
-//                 "condition": " <= ",
-//                 "value": "0"
-//             }
-//         },
-//         {
-//             "source": "send_cancellation_email",
-//             "target": "end_cancellation_event"
-//         }
-//     ],
-//     "participants": []
-// }
-//         this.bpmn = this.createBpmnXml(this.processDefinition); 
-//         this.definitionChangeCount++;
-//         this.messages.push({
-//             "role": "system",
-//             "content": `컨설팅 내용을 기반으로한 모델 생성이 완료되었습니다. 생성된 모델을 리뷰하고 필요한 부분을 추가, 개선하는 단계입니다. 개선하고자하는 부분이 있으시다면 말씀해주세요!`,
-//             "timeStamp": Date.now(),
-//         })
+        if(this.proc_bpmn){
+            this.messages = []
+            this.$emit("openProcessPreview")
 
-//         await this.checkedFormData();
+            this.bpmn = this.proc_bpmn
 
-//         this.isPreviewMode = true
-//         this.generator = new ProcessPreviewGenerator(this, {
-//             isStream: true,
-//             preferredLanguage: "Korean"
-//         });
-       
-//         this.initializeSteps();
+            if(this.$route.params.id){
+                let processInfo = await backend.getRawDefinition(this.$route.params.id);
+                this.processDefinition = processInfo.definition
+            } else if(this.proc_def) {
+                this.processDefinition = this.proc_def
+            } else {
+                this.processDefinition = await this.convertXMLToJSON(this.bpmn);
+            }
+
+            this.definitionChangeCount++;
+            this.messages.push({
+                "role": "system",
+                "content": `컨설팅 내용을 기반으로한 모델 생성이 완료되었습니다. 생성된 모델을 리뷰하고 필요한 부분을 추가, 개선하는 단계입니다. 개선하고자하는 부분이 있으시다면 말씀해주세요!`,
+                "timeStamp": Date.now(),
+            })
+
+            this.isPreviewMode = true
+            this.generator = new ProcessPreviewGenerator(this, {
+                isStream: true,
+                preferredLanguage: "Korean"
+            });
+           
+            this.initializeSteps();
+        } else {
+            this.generator = new ConsultingGenerator(this, {
+                isStream: true,
+                preferredLanguage: "Korean"
+            });
+        }
+
+        this.EventBus.on('messages-updated', () => {
+            this.chatRenderKey++;
+        });
+
+        this.EventBus.on('html-updated', (newformData) => {
+            this.currentFormData = newformData
+            if(this.generator.setFormData) this.generator.setFormData(newformData);
+        });
+
     },
     methods: {
-        async saveDef(){
+        async saveDef() {
             await this.saveDefinition({
                 "arcv_id": `${this.processDefinition.processDefinitionId}_0.1`,
                 "name": this.processDefinition.processDefinitionName,
@@ -406,9 +245,8 @@ export default {
                 "proc_def_id": this.processDefinition.processDefinitionId,
                 "type": "bpmn",
                 "version": "0.1"
-            }); 
-            await this.$emit("createdBPMN", this.processDefinition)
-            this.isChanged = false
+            });
+            this.isChanged = false;
         },
         initializeSteps() {
             this.stepIds = this.getUniqueSequenceIds();
@@ -432,12 +270,15 @@ export default {
             this.updateCurrentFormId()
         },
         updateCurrentFormId(){
-            let currentComponent = this.processDefinition.components.find(x => x.id == this.currentStepId)
-            this.currentFormId = null
-            if(currentComponent && currentComponent.tool){
-                this.currentFormId = currentComponent.tool.split(':')[1];
+            let currentComponent
+            if(this.processDefinition && this.processDefinition.activities){
+                currentComponent = this.processDefinition.activities.find(x => x.id == this.currentStepId)
+                this.currentFormId = null
+                if(currentComponent && currentComponent.tool){
+                    this.currentFormId = currentComponent.tool.split(':')[1];
+                }
+                this.definitionChangeCount++;
             }
-            this.definitionChangeCount++;
         },
         getUniqueSequenceIds() {
             return [...new Set(this.processDefinition.sequences.map(seq => seq.source))];
@@ -465,28 +306,34 @@ export default {
                 if(this.isMentoMode){
                     this.messages[this.messages.length - 1].disableMsg = true
                 } else {
-                    if(response.includes('"queryFor"') || response.includes('"processDefinitionId":')){
-                        let jsonData = this.extractJSON(response);
-                        if(jsonData && jsonData.includes('{')){
+                    try {
+                        response = JSON.parse(response);
+                    } catch(e){
+                        try {
+                            response = partialParse(response);
+                        } catch(e){
+                            response = this.extractJSON(response);
                             try {
-                                jsonData = JSON.parse(jsonData);
+                                response = JSON.parse(response);
                             } catch(e){
-                                jsonData = partialParse(jsonData)
+                                response = partialParse(response)
                             }
-                            if(jsonData.processDefinitionId){
-                                this.bpmn = this.createBpmnXml(response); 
-                                this.definitionChangeCount++;
-                                this.messages = []
-                                this.messages.push({
-                                    "role": "system",
-                                    "content": `컨설팅 내용을 기반으로 모델 생성중입니다. 잠시만 기다려주세요!`,
-                                    "timeStamp": Date.now(),
-                                })
-                                this.$emit("openProcessPreview")
-                            } else if(jsonData.queryFor && jsonData.queryFor != 'customer'){
-                                this.messages[this.messages.length - 1].disableMsg = true
-                            }
-                        } 
+                        }
+                    }
+                    if(response){
+                        if(response.processDefinitionId){
+                            this.bpmn = this.createBpmnXml(response); 
+                            this.definitionChangeCount++;
+                            this.messages = []
+                            this.messages.push({
+                                "role": "system",
+                                "content": `컨설팅 내용을 기반으로 모델 생성중입니다. 잠시만 기다려주세요!`,
+                                "timeStamp": Date.now(),
+                            })
+                            this.$emit("openProcessPreview")
+                        } else if(response.queryFor && response.queryFor != 'customer'){
+                            this.messages[this.messages.length - 1].disableMsg = true
+                        }
                     }
                 }
             }
@@ -495,110 +342,168 @@ export default {
         async afterGenerationFinished(response) {
             let content
             if(this.isPreviewMode){
-                console.log(response)
-                const store = useBpmnStore();
-                const modeler = store.getModeler;
-                if (response.modifications) {
-                    this.isChanged = true
-                    for (let modification of response.modifications) {
-                        if(modification.tagValue){
-
-                        } else {
-                            if (modification.action == 'replace') {
-                                this.jsonPathReplace(this.processDefinition, modification.targetJsonPath, modification.value);
-                                this.bpmn = this.createBpmnXml(this.processDefinition);
-                            } else if (modification.action == 'add') {
-                                this.modificationAdd(modification);
-                                this.modificationElement(modification, modeler);
-                                let xml = await modeler.saveXML({ format: true, preamble: true });
-                                this.bpmn = xml.xml;
-                            } else if (modification.action == 'delete') {
-                                this.modificationRemove(modification, modeler);
-                                let xml = await modeler.saveXML({ format: true, preamble: true });
-                                this.bpmn = xml.xml;
+                try {
+                    if(this.editMode){
+                        const store = useBpmnStore();
+                        const modeler = store.getModeler;
+                        this.isChanged = true
+                        if(response.modifications){
+                            if(this.editMode == 'form'){
+                                let formData = await this.getModifiedPrevFormOutput(response.modifications, this.currentFormData)
+                                    formData = formData.replace("<body>", "")
+                                    formData = formData.replace("</body>", "")
+                                    this.currentFormData = formData
+                                    await this.backend.putRawDefinition(formData, this.currentFormId, { type: 'form' });
+                                    this.messages[this.messages.length - 1].content = '요청하신 폼 수정이 완료되었습니다.'
+                            } else {
+                                for (let modification of response.modifications) {
+                                    if (modification.action == 'replace') {
+                                        this.jsonPathReplace(this.processDefinition, modification.targetJsonPath, modification.value);
+                                        this.bpmn = this.createBpmnXml(this.processDefinition);
+                                    } else if (modification.action == 'add') {
+                                        this.modificationAdd(modification);
+                                        this.modificationElement(modification, modeler);
+                                        let xml = await modeler.saveXML({ format: true, preamble: true });
+                                        this.bpmn = xml.xml;
+                                    } else if (modification.action == 'delete') {
+                                        this.modificationRemove(modification, modeler);
+                                        let xml = await modeler.saveXML({ format: true, preamble: true });
+                                        this.bpmn = xml.xml;
+                                    }
+                                    
+                                    if(modification.messageForUser){
+                                        this.messages.push({
+                                            "role": "system",
+                                            "content": modification.messageForUser,
+                                            "timeStamp": Date.now(),
+                                        })
+                                    }
+                                }
                             }
                         }
-                        if(modification.messageForUser){
-                            this.messages.push({
-                                "role": "system",
-                                "content": modification.messageForUser,
-                                "timeStamp": Date.now(),
-                            })
-                        }
-                    }
-
-                    this.definitionChangeCount++;
-                }
-            } else {
-                if(this.isMentoMode){
-                    content = response
-                } else {
-                    if(response.queryFor == 'customer'){
-                        this.waitForCustomer = true
-                    }
-                    if(response.processDefinitionId){
-                        this.processDefinition = response
-                        this.bpmn = this.createBpmnXml(response); 
-                        this.definitionChangeCount++;
-                        await this.checkedFormData();
-                        this.saveDef()
-                        this.messages.push({
-                            "role": "system",
-                            "content": `컨설팅 내용을 기반으로한 모델 생성이 완료되었습니다. 생성된 모델을 리뷰하고 필요한 부분을 추가, 개선하는 단계입니다. 개선하고자하는 부분이 있으시다면 말씀해주세요!`,
-                            "timeStamp": Date.now(),
-                        })
-                        this.isPreviewMode = true
+                        this.editMode = null
                         this.generator = new ProcessPreviewGenerator(this, {
                             isStream: true,
                             preferredLanguage: "Korean"
                         });
-                        this.initializeSteps();
-                        this.waitForCustomer = true
-                        // this.initConfetti();
-                        // this.render();
+                        this.definitionChangeCount++;
                     } else {
-                        this.showConfetti = false
-                        this.initConfettiCnt = 0
-                        content = response.content
-                    }
-                }
-
-                this.messages[this.messages.length - 1].content = content
-
-                if(!this.waitForCustomer){
-                    if(this.isMentoMode){
-                        this.generator = new ConsultingGenerator(this, {
-                            isStream: true,
-                            preferredLanguage: "Korean"
-                        });
-                        this.isMentoMode = false
-                    } else {
-                        this.generator = new ConsultingMentoGenerator(this, {
-                            isStream: true,
-                            preferredLanguage: "Korean"
-                        });
-                        this.isMentoMode = true
-                    }
-                    let chatMsgs = [];
-                    if (this.messages && this.messages.length > 0) {
-                        this.messages.forEach((msg) => {
-                            if (msg.content) {
-                                chatMsgs.push({
-                                    role: msg.role,
-                                    content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
-                                });
+                        if(this.messages[this.messages.length - 1].role == 'system'){
+                            this.messages.pop()
+                        }
+                        if(response.type == 'form' || (typeof response == 'string' && response.includes('form'))){
+                            this.editMode = 'form'
+                            this.generator = new FormDesignGenerator(this, {
+                                isStream: true,
+                                preferredLanguage: "Korean"
+                            });
+                            if (this.currentFormData) {
+                                this.generator.setFormData(this.currentFormData);
                             }
-                        });
+                        } else {
+                            this.editMode = 'proc_def'
+                            this.generator = new ProcessDefinitionGenerator(this, {
+                                isStream: true,
+                                preferredLanguage: "Korean"
+                            });
+                            if (this.processDefinition) {
+                                this.generator.setProcessDefinition(this.processDefinition);
+                            }
+                        }
+                        let msg = [{
+                            role: this.messages[this.messages.length - 1].role,
+                            content: this.messages[this.messages.length - 1].content
+                        }]
+                        this.generator.previousMessages = [this.generator.previousMessages[0], ...msg];
+                        this.startGenerate();
                     }
+                } catch(e) {
+                    console.log(e)
+                    this.editMode = null
+                    this.generator = new ProcessPreviewGenerator(this, {
+                        isStream: true,
+                        preferredLanguage: "Korean"
+                    });
+                }
+            } else {
+                try {
+                    if(this.isMentoMode){
+                        content = response
+                    } else {
+                        if(typeof response == 'string'){
+                            try {
+                                response = JSON.parse(response)
+                            } catch(e){
+                                response = partialParse(response)
+                            }
+                        }
+                        if(response){
+                            if(response.queryFor == 'customer'){
+                                this.waitForCustomer = true
+                            }
         
-                    if(this.generator){
-                        this.generator.model = "gpt-4o";
+                            if(response.processDefinitionId){
+                                this.waitForCustomer = true
+                                this.processDefinition = response
+                                this.bpmn = this.createBpmnXml(response); 
+                                this.definitionChangeCount++;
+                                await this.checkedFormData();
+                                await this.saveDef();
+                                // this.initConfetti();
+                                // this.render();
+                            } else {
+                                this.showConfetti = false
+                                this.initConfettiCnt = 0
+                                content = response.content
+                                this.messages[this.messages.length - 1].content = content
+                            }
+                        }
                     }
-                    this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs];
-                    if(!this.isMentoMode){
-                        this.setPrompt('consulting')
+    
+    
+                    if(!this.waitForCustomer){
+                        if(this.isMentoMode){
+                            this.generator = new ConsultingGenerator(this, {
+                                isStream: true,
+                                preferredLanguage: "Korean"
+                            });
+                            this.isMentoMode = false
+                        } else {
+                            this.generator = new ConsultingMentoGenerator(this, {
+                                isStream: true,
+                                preferredLanguage: "Korean"
+                            });
+                            this.isMentoMode = true
+                        }
+                        let chatMsgs = [];
+                        if (this.messages && this.messages.length > 0) {
+                            this.messages.forEach((msg) => {
+                                if (msg.content) {
+                                    chatMsgs.push({
+                                        role: msg.role,
+                                        content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
+                                    });
+                                }
+                            });
+                        }
+            
+                        if(this.generator){
+                            this.generator.model = "gpt-4o";
+                        }
+                        this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs];
+                        if(!this.isMentoMode){
+                            this.setPrompt('consulting')
+                        }
+                        this.startGenerate();
                     }
-                    this.startGenerate();
+                } catch(e) {
+                    console.log(e)
+                    this.waitForCustomer = true
+                    this.generator = new ConsultingGenerator(this, {
+                        isStream: true,
+                        preferredLanguage: "Korean"
+                    });
+                    this.isMentoMode = false
                 }
             }
         },

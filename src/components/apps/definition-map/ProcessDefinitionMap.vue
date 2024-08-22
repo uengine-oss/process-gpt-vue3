@@ -91,9 +91,13 @@
         </v-card>
         <v-dialog :style="ProcessPreviewMode ? '' : 'max-width: 1000px;'" v-model="openConsultingDialog" persistent>
             <ProcessConsultingChat 
+                :key="consultingChatKey"
+                :proc_bpmn="proc_bpmn"
+                :proc_def="proc_def"
                 :ProcessPreviewMode="ProcessPreviewMode"
                 @closeConsultingDialog="closeConsultingDialog" 
                 @createdBPMN="createdBPMN" 
+                @modelCreated="bpmnModelCreated"
                 @openProcessPreview="openProcessPreview" 
             />
         </v-dialog>
@@ -162,6 +166,10 @@ export default {
         versionHistory: [],
         openConsultingDialog: false,
         ProcessPreviewMode: false,
+        proc_bpmn: null,
+        proc_def: null,
+        consultingChatKey: 0,
+        firstUpdate: true,
     }),
     computed: {
         useLock() {
@@ -202,6 +210,14 @@ export default {
         }
     },
     methods: {
+        bpmnModelCreated(processInfo){
+            if(this.firstUpdate){
+                this.proc_bpmn=processInfo.bpmn
+                this.proc_def=processInfo.def
+                this.consultingChatKey++;
+                this.firstUpdate = false
+            }
+        },
         openProcessPreview(){
             this.ProcessPreviewMode = true
         },
@@ -268,6 +284,10 @@ export default {
             addSubProcess(majorProc);
         },
         closeConsultingDialog(){
+            this.proc_bpmn = null
+            this.proc_def = null
+            this.firstUpdate = true
+            this.ProcessPreviewMode = false
             this.openConsultingDialog = false
         },
         async checkedLock() {

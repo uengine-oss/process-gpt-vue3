@@ -80,7 +80,8 @@
         "title": "종료된 인스턴스"
     },
     "definitionManagement": {
-        "title": "정의 관리"
+        "title": "정의 관리",
+        "upload": "정의 업로드"
     },
     "systemDefinition": {
         "title": "시스템 정의"
@@ -144,6 +145,7 @@
         "edit": "수정",
         "delete": "삭제",
         "zoom": "캔버스 확대/축소",
+        "preview": "미리보기",
         "execution": "프로세스 실행",
         "showXML": "XML 보기",
         "showModeling": "프로세스 보기",
@@ -301,9 +303,12 @@
         "title2": "버전 업",
         "minorUpdate": "소규모 업데이트",
         "majorUpdate": "주요 업데이트",
+        "update": "업데이트",
+        "release": "릴리즈",
+        "releaseName": "릴리즈 명",
         "id": "아이디",
         "name": "이름",
-        "message": "메시지",
+        "message": "설명",
         "save": "저장"
     },
     "FormDefinitionPanel": {
