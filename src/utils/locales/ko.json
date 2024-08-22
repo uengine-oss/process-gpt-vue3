@@ -145,6 +145,7 @@
         "edit": "수정",
         "delete": "삭제",
         "zoom": "캔버스 확대/축소",
+        "preview": "미리보기",
         "execution": "프로세스 실행",
         "showXML": "XML 보기",
         "showModeling": "프로세스 보기",

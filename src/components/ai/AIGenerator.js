@@ -259,6 +259,9 @@ export default class AIGenerator {
 
         if (this.model.includes('vision')) data.max_tokens = 4096;
 
+        if (me.stopSignaled) {
+            me.stopSignaled = false;
+        }
         xhr.send(JSON.stringify(data));
     }
 

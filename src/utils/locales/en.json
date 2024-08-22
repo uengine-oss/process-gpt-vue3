@@ -145,6 +145,7 @@
         "edit": "Edit",
         "delete": "Delete",
         "zoom": "Canvas Zoom in/Zoom out",
+        "preview": "Process Preview",
         "execution": "Start Process",
         "deleteProcess": "Delete Process",
         "showXML": "Show XML",
