@@ -2,52 +2,70 @@
     <div>
         <draggable class="list-group cursor-pointer" :list="condition" :animation="0" ghost-class="ghost-card" group="condition">
             <template v-for="(item, idx) in getConditions(condition)" :key="idx">
-                <div v-if="checkCondition(item)" class="d-flex">
+                <div v-if="checkCondition(item)" class="d-flex condition-box mt-2">
                     <v-combobox
+                        :label="item.key"
                         v-model="item.key"
                         :items="varItems"
                         variant="outlined"
-                        style="max-width: 100px; overflow-x: hidden"
+                        density="comfortable"
+                        style="max-width: 120px;"
                     ></v-combobox>
 
                     <v-select
+                        :label="item.condition"
                         v-model="item.condition"
                         :items="conditionList"
                         class="mx-1"
-                        style="max-width: 100px; overflow-x: hidden"
+                        style="max-width: 100px;"
                     ></v-select>
 
                     <v-combobox
+                        :label="item.value"
                         v-model="item.value"
                         :items="varItems"
                         variant="outlined"
-                        style="max-width: 100px; overflow-x: hidden"
+                        density="comfortable"
+                        style="max-width: 120px;"
                     ></v-combobox>
 
-                    <v-btn icon variant="text">
-                        <DotsVerticalIcon />
-                        <v-menu activator="parent">
-                            <v-list>
-                                <v-list-item v-for="menu in menuList" :key="menu" @click="changeCondition(item, menu)">
-                                    <v-list-item-title>{{ menu }}</v-list-item-title>
-                                </v-list-item>
-                            </v-list>
-                        </v-menu>
-                    </v-btn>
+                    <div class="mt-1">
+                        <v-btn icon variant="text"
+                            density="comfortable"
+                            class="ml-1"
+                        >
+                            <DotsVerticalIcon />
+                            <v-menu activator="parent">
+                                <v-list>
+                                    <v-list-item v-for="menu in menuList" :key="menu" @click="changeCondition(item, menu)">
+                                        <v-list-item-title>{{ menu }}</v-list-item-title>
+                                    </v-list-item>
+                                </v-list>
+                            </v-menu>
+                        </v-btn>
 
-                    <v-btn v-if="idx == getConditions(condition).length - 1" icon variant="text" @click="addCondition(item)">
-                        <v-icon>mdi-plus</v-icon>
-                    </v-btn>
-                    <v-btn v-if="getConditions(condition).length > 1" icon variant="text" @click="deleteCondition(item, idx)">
-                        <Icons :icon="'trash'" />
-                    </v-btn>
+                        <v-btn v-if="idx == getConditions(condition).length - 1" icon variant="text" @click="addCondition(item)"
+                            density="comfortable"
+                            class="ml-1"
+                        >
+                            <v-icon>mdi-plus</v-icon>
+                        </v-btn>
+                        <v-btn v-if="getConditions(condition).length > 1" icon variant="text" @click="deleteCondition(item, idx)"
+                            density="comfortable"    
+                            class="ml-1"
+                        >
+                            <Icons :icon="'trash'" />
+                        </v-btn>
+                    </div>
                 </div>
-                <div v-else class="pa-3 border">
+                <div v-else class="pa-3 border" style="border-radius:8px;">
                     <div class="d-flex">
                         <v-chip>
-                            {{ item._type }}
+                            {{ getTypeShortName(item._type) }}
                         </v-chip>
-                        <v-btn icon variant="text" class="ml-auto" @click="deleteCondition(item, idx)">
+                        <v-btn icon variant="text" class="ml-auto" @click="deleteCondition(item, idx)"
+                            density="comfortable"
+                        >
                             <Icons :icon="'trash'" />
                         </v-btn>
                     </div>
@@ -210,7 +228,11 @@ export default {
                 result.push(item);
             }
             return result;
-        }
+        },
+        getTypeShortName(type) {
+            const parts = type.split('.');
+            return parts[parts.length - 1];
+        },
     }
 };
 </script>
