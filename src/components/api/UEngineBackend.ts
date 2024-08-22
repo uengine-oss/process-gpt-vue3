@@ -233,7 +233,7 @@ class UEngineBackend implements Backend {
     async putWorkItemComplete(taskId: string, workItem: any, isSimulate: string) {
         let config = {
             headers: {
-                'isSimulate': isSimulate
+                'isSimulate': isSimulate ? isSimulate : 'false'
             }
         };
         const response = await axiosInstance.post(`/work-item/${taskId}/complete`, workItem, config);
@@ -512,7 +512,7 @@ class UEngineBackend implements Backend {
     async dryRun(defPath: String, isSimulate: string){
         let config = {
                 headers: {
-                    'isSimulate': isSimulate
+                    'isSimulate': isSimulate ? isSimulate : 'false'
                 }
             };
         const response = await axiosInstance.get(`/dry-run/${defPath}`, config);
@@ -526,7 +526,7 @@ class UEngineBackend implements Backend {
     async startAndComplete(command: object, isSimulate: string){
         let config = {
             headers: {
-                'isSimulate': isSimulate
+                'isSimulate': isSimulate ? isSimulate : 'false'
             }
         };
         const response = await axiosInstance.post(`/start-and-complete`, command, config);
