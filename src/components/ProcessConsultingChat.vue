@@ -152,6 +152,7 @@ export default {
         currentFormId: null,
         currentFormData: null,
         editMode: null,
+        currentComponent: null,
 
         // confetti
         showConfetti: false,
@@ -236,7 +237,7 @@ export default {
 
     },
     methods: {
-        async saveDef() {
+        async saveDef(option) {
             await this.saveDefinition({
                 "arcv_id": `${this.processDefinition.processDefinitionId}_0.1`,
                 "name": this.processDefinition.processDefinitionName,
@@ -246,11 +247,15 @@ export default {
                 "type": "bpmn",
                 "version": "0.1"
             });
+            if(option){
+                await this.$emit("createdBPMN", this.processDefinition)
+            }
             this.isChanged = false;
         },
         initializeSteps() {
             this.stepIds = this.getUniqueSequenceIds();
             this.currentStepIndex = 0;
+            this.currentComponent = null
             this.updateCurrentStepId();
         },
         prevStep() {
@@ -275,13 +280,15 @@ export default {
                 currentComponent = this.processDefinition.activities.find(x => x.id == this.currentStepId)
                 this.currentFormId = null
                 if(currentComponent && currentComponent.tool){
+                    this.currentComponent = currentComponent
                     this.currentFormId = currentComponent.tool.split(':')[1];
                 }
                 this.definitionChangeCount++;
             }
         },
         getUniqueSequenceIds() {
-            return [...new Set(this.processDefinition.sequences.map(seq => seq.source))];
+            const allIds = this.processDefinition.sequences.flatMap(seq => [seq.source, seq.target]);
+            return [...new Set(allIds)];
         },
         closeDialog(){
             this.isPreviewMode = false
@@ -379,6 +386,8 @@ export default {
                                         })
                                     }
                                 }
+                                await this.checkedFormData();
+                                await this.saveDef();
                             }
                         }
                         this.editMode = null
@@ -388,34 +397,48 @@ export default {
                         });
                         this.definitionChangeCount++;
                     } else {
-                        if(this.messages[this.messages.length - 1].role == 'system'){
-                            this.messages.pop()
-                        }
+                        let startGen = true
                         if(response.type == 'form' || (typeof response == 'string' && response.includes('form'))){
                             this.editMode = 'form'
                             this.generator = new FormDesignGenerator(this, {
                                 isStream: true,
                                 preferredLanguage: "Korean"
                             });
-                            if (this.currentFormData) {
-                                this.generator.setFormData(this.currentFormData);
-                            }
+                            this.generator.setFormData(this.currentFormData);
                         } else {
-                            this.editMode = 'proc_def'
-                            this.generator = new ProcessDefinitionGenerator(this, {
-                                isStream: true,
-                                preferredLanguage: "Korean"
-                            });
-                            if (this.processDefinition) {
-                                this.generator.setProcessDefinition(this.processDefinition);
+                            if(response.type == 'proc_def' || (typeof response == 'string' && response.includes('proc_def'))){
+                                this.editMode = 'proc_def'
+                                this.generator = new ProcessDefinitionGenerator(this, {
+                                    isStream: true,
+                                    preferredLanguage: "Korean"
+                                });
+                                if (this.processDefinition) {
+                                    this.generator.setProcessDefinition(this.processDefinition);
+                                    this.generator.setCurrentComponent(this.currentComponent)
+                                }
+                            } else {
+                                this.messages[this.messages.length - 1].content = response.content
+                                startGen = false
                             }
                         }
-                        let msg = [{
-                            role: this.messages[this.messages.length - 1].role,
-                            content: this.messages[this.messages.length - 1].content
-                        }]
-                        this.generator.previousMessages = [this.generator.previousMessages[0], ...msg];
-                        this.startGenerate();
+                        if(startGen){
+                            if(this.messages[this.messages.length - 1].role == 'system'){
+                                this.messages.pop();
+                            }
+                            let chatMsgs = []
+                            if (this.messages && this.messages.length > 0) {
+                                this.messages.forEach((msg) => {
+                                    if (msg.content) {
+                                        chatMsgs.push({
+                                            role: msg.role,
+                                            content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
+                                        });
+                                    }
+                                });
+                            }
+                            this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs];
+                            this.startGenerate();
+                        }
                     }
                 } catch(e) {
                     console.log(e)
@@ -448,7 +471,7 @@ export default {
                                 this.bpmn = this.createBpmnXml(response); 
                                 this.definitionChangeCount++;
                                 await this.checkedFormData();
-                                await this.saveDef();
+                                await this.saveDef(true);
                                 // this.initConfetti();
                                 // this.render();
                             } else {

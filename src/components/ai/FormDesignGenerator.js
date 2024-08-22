@@ -181,7 +181,11 @@ export default class FormDesignGenerator extends AIGenerator{
 
     setFormData(form) {
       this.previousMessages.push(this.prevMessageFormat)
-      this.previousMessages[0].content = this.previousMessages[0].content.replace(`{{ 기존 폼 정보 }}`, form);
+      if(form) {
+        this.previousMessages[0].content = this.previousMessages[0].content.replace(`{{ 기존 폼 정보 }}`, form);
+      } else {
+        this.previousMessages[0].content = this.previousMessages[0].content.replace(`{{ 기존 폼 정보 }}`, 'null');
+      }
     }
 
 }

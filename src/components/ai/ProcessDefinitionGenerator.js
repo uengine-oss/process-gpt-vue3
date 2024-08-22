@@ -145,6 +145,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
 
             - 프로세스 변경: 프로세스 정의의 일 부분이 변경될 때는 다음과 같이 변경된 부분만 리턴해줘:
 
+              프로세스 단계 중 현재 단계: {{ 프로세스 현재 단계 }}
+
               이때 지킬 사항:
                1.  {modifications: [..]} 내에 여러개의 항목으로 넣어줘.
                2.  액티비티, 게이트웨이, 이벤트 추가인 경우는 시퀀스도 꼭 연결해줘.
@@ -160,6 +162,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                12. Sequence는 replace가 없어. add 혹은 delete 해야해.
                13. id는 반드시 영어로 들어가야 함
                14. 세로로 만들어 달라고 하면 반드시 isHorizontal을 false로 설정해줘.
+               15. 폼 추가 요청이 들어온 경우 data 에 요청받은 form type 의 data 를 생성하고 생성된 data 의 name 이 알맞은 component 의 inputData, outputData 에 추가되어야한다. 이때 "프로세스 단계 중 현재 단계" 정보가 있고 유저가 어느 활동 또는 단계에 폼을 추가해달라는 요청이 없는 경우 현재 단계를 수정해야한다.
+               16. 폼 추가 요청은 항상 "action": "replace" 이여야 한다.
             \`\`\`
               { 
                 "modifications": [
@@ -217,6 +221,14 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
 
     createPrompt(){
        return this.client.newMessage
+    }
+
+    setCurrentComponent(component) {
+        if(component){
+            this.previousMessages[0].content = this.previousMessages[0].content.replace(`{{ 프로세스 현재 단계 }}`, component);
+        } else {
+            this.previousMessages[0].content = this.previousMessages[0].content.replace(`{{ 프로세스 현재 단계 }}`, 'null');
+        }
     }
 
     setProcessDefinitionMap(processDefinitionMap) {
