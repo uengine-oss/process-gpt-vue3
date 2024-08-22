@@ -2073,7 +2073,7 @@ export default {
                     let sequenceFlowsTmp = ensureArray(process['bpmn:sequenceFlow'] || []);
                     sequenceFlows = sequenceFlows.concat(sequenceFlowsTmp);
                     let dataTmp =
-                        process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties']
+                        process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] && process['bpmn:extensionElements']['uengine:properties']['uengine:variable']
                             ? (Array.isArray(process['bpmn:extensionElements']['uengine:properties']['uengine:variable'])
                                   ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable']
                                   : [process['bpmn:extensionElements']['uengine:properties']['uengine:variable']]
