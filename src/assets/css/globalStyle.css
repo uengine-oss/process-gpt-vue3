@@ -230,6 +230,10 @@ hr {
     display: none !important;
 }
 
+.condition-box {
+    
+}
+
 #apexTreeWrapper {
     height: 100% !important;
 }
