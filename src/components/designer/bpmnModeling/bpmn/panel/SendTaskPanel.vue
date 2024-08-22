@@ -1,7 +1,7 @@
 <template>
     <div>
         <div class="mb-1 mt-4">
-            <span>{{ $t('BpmnPropertyPanel.methodTypeUrl') }}</span>
+            
             <v-row class="ma-0 pa-0">
                 <v-col cols="3" class="pa-0 pr-2">
                     <v-autocomplete
@@ -42,10 +42,10 @@
                 {{ $t('SendTaskPanel.generation') }}
             </v-btn>
         </div>
-        <div>
-            <div>{{ $t('SendTaskPanel.return') }}</div>
+        <div class="mt-4">
             <v-row class="ma-0 pa-0">
                 <v-autocomplete
+                    :label="$t('SendTaskPanel.return')"
                     :items="processVariables"
                     item-props
                     :item-value="item"
@@ -58,7 +58,7 @@
             </v-row>
         </div>
         <DetailComponent
-            style="margin-bottom:40px;"
+            style="padding-bottom:20px;"
             :title="$t('SendTaskPanel.returnTitle')"
         />
     </div>

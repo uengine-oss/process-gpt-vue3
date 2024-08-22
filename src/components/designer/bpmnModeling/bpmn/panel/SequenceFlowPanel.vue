@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div>{{ $t('BpmnPropertyPanel.condition') }}</div>
+        <div class="mb-1 mt-4">{{ $t('BpmnPropertyPanel.condition') }}</div>
         <div>
             <ConditionField :value="copyUengineProperties.condition"
                 @update:value="updateCondition"

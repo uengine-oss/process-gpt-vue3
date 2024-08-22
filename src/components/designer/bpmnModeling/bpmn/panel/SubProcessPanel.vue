@@ -51,6 +51,7 @@
             <DetailComponent
                 :title="$t('SubProcessPanel.forEachVariableDescriptionTitle')"
                 :details="SubProcessDescription"
+                :detailUrl="'https://www.youtube.com/watch?v=nhQCDfYa6Gk'"
             />
             <!-- <div>
                 <v-row class="ma-0 pa-0">

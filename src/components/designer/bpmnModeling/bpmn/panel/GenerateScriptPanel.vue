@@ -1,26 +1,39 @@
 <template>
     <!-- #region 프롬프트 입력 항목 토글 버튼 -->
-    <div class="d-flex justify-end">
-        <v-tooltip>
-            <template v-slot:activator="{ props }">
-                <v-btn v-bind="props"
-                    icon variant="text" color="primary" rounded
-                    class="text-medium-emphasis"
-                    @click="promptInput.isVisible = !promptInput.isVisible"
-                >
-                    <Icons :icon="'magic'"  />
-                </v-btn>
-            </template>
-            <span>{{ $t('BpmnPropertyPanel.generateScript') }}</span>
-        </v-tooltip>
-    </div>
+    <!-- <v-btn block text rounded color="primary" class="my-3" @click="promptInput.isVisible = !promptInput.isVisible">{{ $t('BpmnPropertyPanel.generateScript') }}</v-btn> -->
+    <v-row class="ma-0" style="margin: 10px 0px 10px 0px !important">
+        <v-card
+            @click="promptInput.isVisible = !promptInput.isVisible"
+            elevation="9"
+            variant="outlined"
+            style="
+                padding: 10px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                border-radius: 10px !important;
+            "
+        >
+            <div style="display: flex; justify-content: center; align-items: center">
+                <Icons class="cp-variables-add" :icon="'plus'" :color="'#5eb2e8'" />
+                <v-card-title class="pa-0 pl-4" style="color: #5eb2e8">{{ $t('BpmnPropertyPanel.generateScript') }}</v-card-title>
+            </div>
+        </v-card>
+    </v-row>
     <!-- #endregion -->
 
     <!-- #region 프롬프트 입력 항목 -->
-    <div v-if="promptInput.isVisible">
-        <div>{{ $t('BpmnPropertyPanel.scriptPrompt') }}</div>
-        <v-textarea v-model="promptInput.prompt" style="width:100%" :disabled="disabled.promptTextarea"></v-textarea>
-        <v-btn @click="generateScript" class="w-100" :disabled="disabled.generateScriptBtn"> {{ $t('BpmnPropertyPanel.generateScript') }} </v-btn>
+    <div v-if="promptInput.isVisible" class="mt-2">
+        <v-textarea v-model="promptInput.prompt" style="width:100%" :disabled="disabled.promptTextarea" :label="$t('BpmnPropertyPanel.scriptPrompt')"></v-textarea>
+        <div class="d-flex justify-end mt-2">
+            <v-btn @click="generateScript"
+                prepend-icon rounded color="primary"
+                :disabled="disabled.generateScriptBtn"
+            >
+                <Icons :icon="'magic'" style="margin-right:5px;"  />
+                {{ $t('BpmnPropertyPanel.generateScript') }}
+            </v-btn>
+        </div>
     </div>
     <!-- #endregion -->
 </template>
