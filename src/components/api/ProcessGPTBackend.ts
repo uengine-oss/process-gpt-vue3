@@ -102,7 +102,9 @@ class ProcessGPTBackend implements Backend {
             if(options && options.type === "form") {
                 await storage.putObject('form_def', {
                     id: defId.replace(/\//g, "#"),
-                    html: xml
+                    html: xml,
+                    proc_def_id: options.proc_def_id,
+                    activity_id: options.activity_id
                 });
                 return
             }

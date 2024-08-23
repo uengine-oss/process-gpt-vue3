@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="overflow-y-auto" style="height: 100%;">
         <g-gantt-chart :chart-start="chartStartDate" :chart-end="chartEndDate" precision="month" 
             bar-start="startDate" bar-end="endDate" push-on-overlap color-scheme="sky" @dragend-bar="onDragEnd">
             <g-gantt-row v-for="(item, index) in workItems" :key="index" :bars="[item]" />
@@ -41,8 +41,9 @@ export default {
 
         const init = async () => {
             if (props.instance && props.instance.instanceId) {
-                const items = await backend.getWorkListByInstId(props.instance.instanceId);
+                var items = await backend.getWorkListByInstId(props.instance.instanceId);
                 if (items && items.length > 0) {
+                    items = items.filter(item => item.startDate && item.dueDate);
                     let earliestStart = new Date(items[0].startDate);
                     let latestEnd = new Date(items[0].dueDate || items[0].startDate);
 
@@ -50,7 +51,7 @@ export default {
 
                     workItems.value = items.map(item => {
                         const startDate = new Date(item.startDate);
-                        const endDate = new Date(item.dueDate || item.startDate);
+                        const endDate = new Date(item.dueDate);
 
                         if (startDate < earliestStart) earliestStart = startDate;
                         if (endDate > latestEnd) latestEnd = endDate;

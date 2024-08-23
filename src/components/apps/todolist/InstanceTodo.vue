@@ -65,8 +65,7 @@ export default {
         defId: '',
     }),
     created() {
-        this.loadToDo();
-        this.loadCompletedWorkList();
+        this.init();
         if (this.mode === 'ProcessGPT') {
             this.defId = this.id.split('.')[0];
             console.log(this.defId);
@@ -96,6 +95,10 @@ export default {
         },
     },
     methods: {
+        init() {
+            this.loadToDo();
+            this.loadCompletedWorkList();
+        },
         executeTask(item) {
             var me = this
             me.$router.push(`/todolist/${item.taskId}`)
