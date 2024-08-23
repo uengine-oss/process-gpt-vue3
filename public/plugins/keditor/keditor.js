@@ -917,9 +917,9 @@
                 settingForm.addClass('active');
             }
 
-            // 오른쪽 레이아웃 추가 를 위한 판넬 는 부분 (시작)
+            // 오른쪽 레이아웃 추가 를 위한 패널 는 부분 (시작)
             // self.toggleSidebar(true);
-            // 오른쪽 레이아웃 추가 를 위한 판넬 는 부분 (끝)
+            // 오른쪽 레이아웃 추가 를 위한 패널 는 부분 (끝)
             
             // body.addClass('opened-keditor-setting');
         },

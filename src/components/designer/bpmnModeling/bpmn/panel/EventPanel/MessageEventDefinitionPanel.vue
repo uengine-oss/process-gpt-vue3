@@ -2,11 +2,11 @@
     <div>
         <div style="height: 100%" v-if="element.$type === 'bpmn:IntermediateThrowEvent'">
             <div class="mb-2 mt-4">
-                <span>{{ $t('BpmnPropertyPanel.methodTypeUrl') }}</span>
+                
                 <v-row class="ma-0 pa-0">
                     <v-col cols="3" class="pa-0 pr-2">
                         <v-autocomplete
-                            labels="Methods Type"
+                            :label="$t('BpmnPropertyPanel.methodTypeUrl')"
                             :items="methodList"
                             theme="light"
                             density="comfortable"
@@ -18,6 +18,11 @@
                         <v-text-field :label="$t('BpmnPropertyPanel.apiUrl')" v-model="copyUengineProperties.uriTemplate"></v-text-field>
                     </v-col>
                 </v-row>
+                <DetailComponent
+                    :title="$t('SendTaskPanel.methodTypeDescriptionTitle')"
+                    :details="methodTypeDescription"
+                    :detailUrl="'https://www.youtube.com/watch?v=bxkB-pkOpTQ'"
+                />
             </div>
             <div style="height: 70%">
                 <v-row class="ma-0 pa-0" style="height: 100%">
@@ -31,9 +36,9 @@
                 </v-row>
             </div>
             <div>
-                <div>Return 값을 저장 할 변수</div>
-                <v-row class="ma-0 pa-0">
+                <v-row class="ma-0 pa-0 mt-4">
                     <v-autocomplete
+                        :label="$t('ScriptTaskPanel.return')"
                         :items="processVariables"
                         item-props
                         :item-value="item"
@@ -45,12 +50,16 @@
                     <!-- <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts> -->
                 </v-row>
             </div>
+            <DetailComponent
+                style="padding-bottom:20px;"
+                :title="$t('SendTaskPanel.returnTitle')"
+            />
         </div>
         <div v-else-if="this.element.$type === 'bpmn:IntermediateCatchEvent' || this.element.$type === 'bpmn:StartEvent'">
             <div>
-                <v-text-field :label="$t('MessageEventDefinitionPanel.correlationKey')" v-model="copyUengineProperties.correlationKey"></v-text-field>
-                <v-text-field :label="$t('MessageEventDefinitionPanel.servicePath')" v-model="copyUengineProperties.servicePath"></v-text-field>
-                <v-text-field :label="$t('MessageEventDefinitionPanel.operationRef')" v-model="copyUengineProperties.operationRef"></v-text-field>
+                <v-text-field class="mt-4" :label="$t('MessageEventDefinitionPanel.correlationKey')" v-model="copyUengineProperties.correlationKey"></v-text-field>
+                <v-text-field class="mt-4" :label="$t('MessageEventDefinitionPanel.servicePath')" v-model="copyUengineProperties.servicePath"></v-text-field>
+                <v-text-field class="mt-4" :label="$t('MessageEventDefinitionPanel.operationRef')" v-model="copyUengineProperties.operationRef"></v-text-field>
             </div>
         </div>
     </div>
@@ -109,7 +118,12 @@ export default {
             openAI: null,
             copyDefinition: this.definition,
             processVariables: [],
-            apiServiceURL: ''
+            apiServiceURL: '',
+            methodTypeDescription: [
+                {
+                    title: 'MessageEventDefinitionPanel.methodTypeDescriptionSubTitle1',
+                },
+            ]
         };
     },
     async mounted() {

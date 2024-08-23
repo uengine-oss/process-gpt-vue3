@@ -1,46 +1,52 @@
 <template>
     <div>
         <div class="included" style="margin-bottom: 22px">
-            <div style="margin-bottom: 8px">{{$t('LanePanel.selectRoleType')}}</div>
-            <v-radio-group v-model="type" row style="margin-top: 0px !important">
-                <v-radio
-                    id="roleResolution"
-                    name="roleResolution"
-                    value="None"
-                    :label="$t('LanePanel.none')"
-                    style="margin-right: 8px !important; font-size: 15px"
-                ></v-radio>
-                <v-radio
-                    id="roleResolution"
-                    name="roleResolution"
-                    value="org.uengine.five.overriding.IAMRoleResolutionContext"
-                    :label="$t('LanePanel.IAMScope')"
-                    style="margin-right: 8px !important; font-size: 15px"
-                ></v-radio>
-                <v-radio
-                    id="roleResolution"
-                    name="roleResolution"
-                    value="org.uengine.kernel.DirectRoleResolutionContext"
-                    :label="$t('LanePanel.DirecUser')"
-                    style="margin-right: 8px !important; font-size: 15px"
-                ></v-radio>
-            </v-radio-group>
-            <div style="margin-top: 10px;">{{$t('LanePanel.resolutionRule')}}</div>
-            <v-text-field
-                v-if="role && role.resolutionRule"
-                v-model="role.resolutionRule"
-            ></v-text-field>
-            <v-text-field
-                v-if="type == 'org.uengine.five.overriding.IAMRoleResolutionContext'"
-                v-model="copyUengineProperties.roleResolutionContext.scope"
-                :label="$t('LanePanel.scopeName')"
-            ></v-text-field>
+            <div class="mt-4">{{$t('LanePanel.selectRoleType')}}</div>
+            <v-card variant="outlined" class="pa-2" style="border-radius:8px !important;">
+                <v-radio-group v-model="type" row style="margin-top: 0px !important">
+                    <v-radio
+                        id="roleResolution"
+                        name="roleResolution"
+                        value="None"
+                        :label="$t('LanePanel.none')"
+                        style="margin-right: 8px !important; font-size: 15px"
+                    ></v-radio>
+                    <v-radio
+                        id="roleResolution"
+                        name="roleResolution"
+                        value="org.uengine.five.overriding.IAMRoleResolutionContext"
+                        :label="$t('LanePanel.IAMScope')"
+                        style="margin-right: 8px !important; font-size: 15px"
+                    ></v-radio>
+                    <v-radio
+                        id="roleResolution"
+                        name="roleResolution"
+                        value="org.uengine.kernel.DirectRoleResolutionContext"
+                        :label="$t('LanePanel.DirecUser')"
+                        style="margin-right: 8px !important; font-size: 15px"
+                    ></v-radio>
+                </v-radio-group>
+                <v-text-field
+                    v-if="role && role.resolutionRule"
+                    v-model="role.resolutionRule"
+                    :label="$t('LanePanel.resolutionRule')"
+                    class="mt-4"
+                ></v-text-field>
 
-            <v-text-field
-                v-if="type == 'org.uengine.kernel.DirectRoleResolutionContext'"
-                v-model="copyUengineProperties.roleResolutionContext.endpoint"
-                :label="$t('LanePanel.userID')"
-            ></v-text-field>
+                <v-text-field
+                    v-if="type == 'org.uengine.five.overriding.IAMRoleResolutionContext'"
+                    v-model="copyUengineProperties.roleResolutionContext.scope"
+                    :label="$t('LanePanel.scopeName')"
+                    class="mt-4"
+                ></v-text-field>
+
+                <v-text-field
+                    v-if="type == 'org.uengine.kernel.DirectRoleResolutionContext'"
+                    v-model="copyUengineProperties.roleResolutionContext.endpoint"
+                    :label="$t('LanePanel.userID')"
+                    class="mt-4"
+                ></v-text-field>
+            </v-card>
         </div>
     </div>
 </template>

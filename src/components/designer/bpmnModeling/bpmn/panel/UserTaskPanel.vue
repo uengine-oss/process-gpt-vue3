@@ -8,6 +8,7 @@
         <DetailComponent
             :title="$t('UserTaskPanel.radioSelectDescriptionTitle')"
             :details="radioSelectDescription"
+            :detailUrl="'https://www.youtube.com/watch?v=E-tjj20-xxI&t'"
         />
         <div v-if="!isLoading && selectedActivity == 'HumanActivity'">
             <EventSynchronizationForm

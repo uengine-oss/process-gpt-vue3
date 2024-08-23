@@ -152,6 +152,7 @@
                 <DetailComponent
                     :title="$t('BpmnPropertyPanel.mapperDescriptionTitle')"
                     :details="mapperDescription"
+                    :detailUrl="'https://www.youtube.com/watch?v=1tCKnzck2-c'"
                 />
             </v-col>
         </div>
@@ -226,16 +227,16 @@ export default {
         replaceToExpandableNode: null,
         mapperDescription: [
             {
-                title: 'BpmnPropertyPanel.mapperDescriptionSubTitle1'
+                title: "BpmnPropertyPanel.mapperDescriptionSubTitle1"
             },
             {
-                title: 'BpmnPropertyPanel.mapperDescriptionSubTitle2',
+                title: "BpmnPropertyPanel.mapperDescriptionSubTitle2",
                 image: "EventSynchronizationFomVariablesHowToUse.gif"
             },
         ],
         typeDescription: [
             {
-                title: 'EventSynchronizationForm.typeDescriptionSubTitle1'
+                title: "EventSynchronizationForm.typeDescriptionSubTitle1"
             },
         ]
     }),

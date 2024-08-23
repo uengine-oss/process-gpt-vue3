@@ -131,7 +131,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     });
   }
 
-  // 스윔라인 배경 색상 및 선 색상 bpmn:Lane, (stroke : 선 색상, fill: 배경 색상)
+  // 스윔레인 배경 색상 및 선 색상 bpmn:Lane, (stroke : 선 색상, fill: 배경 색상)
   drawCustomLane(parentNode, shape, element) {
     svgAttr(shape, {
       stroke: '#4e72be',

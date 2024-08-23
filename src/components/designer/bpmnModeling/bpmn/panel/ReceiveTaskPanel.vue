@@ -48,14 +48,14 @@
                 <v-row class="ma-0 pa-0">
                     <v-text-field v-model="copyUengineProperties.uriTemplate" :label="$t('ReceiveTaskPanel.callUri')"></v-text-field>
                 </v-row>
-                <v-row class="ma-0 pa-0">
+                <v-row class="ma-0 pa-0 mb-4">
                     <v-checkbox
                         v-if="copyUengineProperties.uriTemplate && copyUengineProperties.uriTemplate.indexOf('https://') == 0"
                         v-model="copyUengineProperties.noValidationForSSL"
                         :label="$t('ReceiveTaskPanel.noValidationForSSL')"
                     ></v-checkbox>
                 </v-row>
-                <v-row class="ma-0 pa-0">
+                <v-row class="ma-0 pa-0 mb-4">
                     <v-select
                         v-if="links"
                         v-model="copyUengineProperties.uriTemplate"
@@ -65,10 +65,10 @@
                         :label="$t('ReceiveTaskPanel.selectService')"
                     ></v-select>
                 </v-row>
-                <v-row class="ma-0 pa-0">
+                <v-row class="ma-0 pa-0 mb-4">
                     <v-select v-model="copyUengineProperties.method" :items="methodList" label="호출 메서드"></v-select>
                 </v-row>
-                <v-row class="ma-0 pa-0">
+                <v-row class="ma-0 pa-0 mb-4">
                     <v-textarea
                         v-if="'GET,DELETE'.indexOf(copyUengineProperties.method) == -1"
                         v-model="copyUengineProperties.inputPayloadTemplate"
@@ -81,7 +81,7 @@
                     <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
                 </v-row> -->
                 <v-btn block text rounded color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ReceiveTaskPanel.dataMapping') }}</v-btn>
-                <v-row class="ma-0 pa-0">
+                <v-row class="ma-0 pa-0 mb-4">
                     <v-checkbox
                         v-model="copyUengineProperties.skipIfNotFound"
                         :label="$t('ReceiveTaskPanel.skipIfNotFound')"
@@ -91,19 +91,19 @@
         </div>
         <div v-else>
             <div>{{ $t('ReceiveTaskPanel.title') }}</div>
-            <v-row class="ma-0 pa-0">
+            <v-row class="ma-0 pa-0 mb-2 mb-4">
                 <v-text-field v-model="copyUengineProperties.title" :label="$t('ReceiveTaskPanel.descriptionTitle')"></v-text-field>
             </v-row>
             <div>{{ $t('ReceiveTaskPanel.content') }}</div>
-            <v-row class="ma-0 pa-0">
+            <v-row class="ma-0 pa-0 mb-4">
                 <v-textarea v-model="copyUengineProperties.contents" :label="$t('ReceiveTaskPanel.descriptionContent')"></v-textarea>
             </v-row>
             <div>{{ $t('ReceiveTaskPanel.to') }}</div>
-            <v-row class="ma-0 pa-0">
+            <v-row class="ma-0 pa-0 mb-4">
                 <v-text-field v-model="copyUengineProperties.to" :label="$t('ReceiveTaskPanel.descriptionTo')"></v-text-field>
             </v-row>
             <div>{{ $t('ReceiveTaskPanel.from') }}</div>
-            <v-row class="ma-0 pa-0">
+            <v-row class="ma-0 pa-0 mb-4">
                 <v-text-field v-model="copyUengineProperties.from" :label="$t('ReceiveTaskPanel.descriptionFrom')"></v-text-field>
             </v-row>
             <v-btn block text rounded color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ReceiveTaskPanel.dataMapping') }}</v-btn>

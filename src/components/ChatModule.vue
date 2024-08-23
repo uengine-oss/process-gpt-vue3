@@ -92,6 +92,38 @@ export default {
         this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
     },
     methods: {
+        getModifiedPrevFormOutput(modifications, currentFormData) {
+            let dom
+            if(currentFormData){
+                dom = new DOMParser().parseFromString(currentFormData, 'text/html');
+            } else {
+                dom = new DOMParser().parseFromString(this.prevFormOutput, 'text/html');
+            }
+
+            modifications.forEach((modification) => {
+                if (modification.action === 'addAsChild') {
+                    const parent = dom.querySelector(modification.targetCSSSelector);
+                    const domToInsert = new DOMParser().parseFromString(modification.tagValue, 'text/html');
+                    parent.appendChild(domToInsert.body.firstChild);
+                } else if (modification.action === 'addAfter') {
+                    const target = dom.querySelector(modification.targetCSSSelector);
+                    const domToInsert = new DOMParser().parseFromString(modification.tagValue, 'text/html');
+                    target.parentNode.insertBefore(domToInsert.body.firstChild, target.nextSibling);
+                } else if (modification.action == 'replace') {
+                    const target = dom.querySelector(modification.targetCSSSelector);
+                    const domToReplace = new DOMParser().parseFromString(modification.tagValue, 'text/html');
+                    target.parentNode.replaceChild(domToReplace.body.firstChild, target);
+                } else if (modification.action === 'delete') {
+                    const target = dom.querySelector(modification.targetCSSSelector);
+                    target.parentNode.removeChild(target);
+                }
+            });
+
+            const modifiedPrevFormOutput = dom.body.outerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n");
+            console.log('### 수정된 이전 폼 출력 ###');
+            console.log(modifiedPrevFormOutput);
+            return modifiedPrevFormOutput;
+        },
         requestDraftAgent(newVal) {
             var me = this
             me.$try({

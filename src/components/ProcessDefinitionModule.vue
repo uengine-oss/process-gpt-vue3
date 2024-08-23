@@ -19,6 +19,7 @@ export default {
         lock: false,
         loading: false,
         isConsultingMode: false,
+        isChanged: false,
     }),
     computed: {},
     mounted() {},
@@ -337,7 +338,75 @@ export default {
                     return 'bpmn:userTask';
             }
         },
+        transformJsonModel(jsonModel) {
+            const transformedModel = {
+                megaProcessId: "미분류",
+                majorProcessId: "미분류",
+                processDefinitionName: jsonModel.processDefinitionName || "Unknown",
+                processDefinitionId: jsonModel.processDefinitionId || "Unknown",
+                description: jsonModel.description || "",
+                roles: (jsonModel.roles || []).map(role => ({
+                    name: role.name,
+                    resolutionRule: "실제 " + role.name + "을(를) 매핑"
+                })),
+                components: [],
+                data: jsonModel.data || [],
+                sequences: (jsonModel.sequences || []).map(seq => ({
+                    source: seq.source,
+                    target: seq.target,
+                    condition: {}
+                })),
+                participants: []
+            };
+
+            // Transform events and activities into components
+            if (Array.isArray(jsonModel.events)) {
+                jsonModel.events.forEach(event => {
+                    transformedModel.components.push({
+                        componentType: "Event",
+                        id: event.id,
+                        name: event.name,
+                        role: event.role,
+                        source: event.type === "startEvent" ? "none" : jsonModel.sequences?.find(seq => seq.target === event.id)?.source,
+                        type: event.type === "startEvent" ? "StartEvent" : "EndEvent",
+                        description: event.description
+                    });
+                });
+            }
+
+            if (Array.isArray(jsonModel.activities)) {
+                jsonModel.activities.forEach(activity => {
+                    transformedModel.components.push({
+                        componentType: "Activity",
+                        id: activity.id,
+                        name: activity.name,
+                        type: "UserActivity",
+                        source: jsonModel.sequences?.find(seq => seq.target === activity.id)?.source,
+                        description: activity.description,
+                        instruction: activity.instruction,
+                        role: activity.role,
+                        inputData: activity.inputData,
+                        outputData: activity.outputData,
+                        checkpoints: []
+                    });
+                });
+            }
+
+            // Sort components based on the sequence
+            if (transformedModel.components.length > 0 && transformedModel.sequences.length > 0) {
+                transformedModel.components.sort((a, b) => {
+                    const aIndex = transformedModel.sequences.findIndex(seq => seq.target === a.id);
+                    const bIndex = transformedModel.sequences.findIndex(seq => seq.target === b.id);
+                    return aIndex - bIndex;
+                });
+            }
+
+            return transformedModel;
+        },
         createBpmnXml(jsonModel) {
+            if(jsonModel && !jsonModel.components){
+                jsonModel = this.transformJsonModel(jsonModel)
+            }
             let me = this;
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(
@@ -454,7 +523,7 @@ export default {
 
 
             const checkForm = function(variables, variable) {
-                let formVars = variables.filter((data) => data.type == 'Form');
+                let formVars = Array.isArray(variables) ? variables.filter((data) => data && data.type === 'Form') : [];
                 return formVars.some(form => form.name == variable);
             }
 
@@ -875,12 +944,12 @@ export default {
                         dcBoundsLane.setAttribute('y', (roleX ? roleX : 0) + 30);
                     }
 
-                    if(jsonModel.roles[lastKey].name == role.name) {
+                    if (jsonModel.roles && jsonModel.roles[lastKey] && jsonModel.roles[lastKey].name === role.name) {
                         roleHeightResult += (isHorizontal ? -155 : 0);
                     }
 
 
-                    // 가장 바깥 라인 안쪽의 스윔라인 자체 길이
+                    // 가장 바깥 라인 안쪽의 스윔레인 자체 길이
                     
                     if(isHorizontal) {
                         dcBoundsLane.setAttribute('width', roleWidth + 85);
@@ -1479,7 +1548,7 @@ export default {
             const dcBoundsParticipant = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
             dcBoundsParticipant.setAttribute('x', '70');
             dcBoundsParticipant.setAttribute('y', `100`);
-            // 스윔라인을 감싸고있는 가장 바깥 라인의 길이
+            // 스윔레인을 감싸고있는 가장 바깥 라인의 길이
             dcBoundsParticipant.setAttribute('width', `${lastXPos + 30}`);
             dcBoundsParticipant.setAttribute('height', participantHeight);
             participantShape.appendChild(dcBoundsParticipant);
@@ -1503,7 +1572,7 @@ export default {
                     const dcBoundsLane = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
                     dcBoundsLane.setAttribute('x', '100');
                     dcBoundsLane.setAttribute('y', `${100 + roleIndex * 100}`);
-                    // 가장 바깥 라인 안쪽의 스윔라인 자체 길이
+                    // 가장 바깥 라인 안쪽의 스윔레인 자체 길이
                     dcBoundsLane.setAttribute('width', `${lastXPos}`);
                     dcBoundsLane.setAttribute('height', '100');
                     laneShape.appendChild(dcBoundsLane);
@@ -1921,9 +1990,41 @@ export default {
 
                     const store = useBpmnStore();
                     let modeler = store.getModeler;
+                    let xmlObj;
+                    let retryCount = 0;
+                    const maxRetries = 3;
+                    const retryDelay = 1000; // 1초
+
+                    async function saveXML() {
+                        try {
+                            const definitions = modeler.getDefinitions();
+                            if (definitions) {
+                                definitions.name = info.name || 'Default Name';
+                            }
+                            xmlObj = await modeler.saveXML({ format: true, preamble: true });
+                            return true;
+                        } catch (error) {
+                            console.error('XML 저장 중 오류 발생:', error);
+                            return false;
+                        }
+                    }
+
+                    while (retryCount < maxRetries) {
+                        if (await saveXML()) {
+                            break;
+                        } else {
+                            retryCount++;
+                            if (retryCount < maxRetries) {
+                                console.log(`XML 저장 재시도 중... (${retryCount}/${maxRetries})`);
+                                await new Promise(resolve => setTimeout(resolve, retryDelay));
+                            } else {
+                                console.error('최대 재시도 횟수 초과. XML 저장 실패.');
+                                throw new Error('XML 저장 실패');
+                            }
+                        }
+                    }
+
                     me.setDefinitionInfo(info.name, info.version)
-                    
-                    let xmlObj = await modeler.saveXML({ format: true, preamble: true });
                     let newProcessDefinition
 
                     // if (me.processDefinition) {
@@ -1987,6 +2088,12 @@ export default {
                     await me.saveModel(info, xmlObj.xml);
                     me.bpmn = xmlObj.xml;
 
+                    let processInfo = {
+                        bpmn: me.bpmn,
+                        def: me.processDefinition
+                    };
+                    this.$emit("modelCreated", processInfo);
+
                     me.disableChat = true;
                     me.isViewMode = true;
                     me.lock = true; // 잠금처리 ( 수정 불가 )
@@ -1998,6 +2105,7 @@ export default {
                 onFail: (e) => {
                     console.log(e);
                     me.loading = false;
+                    me.isChanged = true;
                 },
                 successMsg: '저장되었습니다.'
             });
@@ -2012,6 +2120,8 @@ export default {
                 var processDefinitionId = 'Unknown';
                 if(this.fullPath) {
                     processDefinitionId = this.fullPath;
+                } else {
+                    processDefinitionId = this.$route.params.id;
                 }
 
                 function ensureArray(item) {
@@ -2073,7 +2183,7 @@ export default {
                     let sequenceFlowsTmp = ensureArray(process['bpmn:sequenceFlow'] || []);
                     sequenceFlows = sequenceFlows.concat(sequenceFlowsTmp);
                     let dataTmp =
-                        process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties']
+                        process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] && process['bpmn:extensionElements']['uengine:properties']['uengine:variable']
                             ? (Array.isArray(process['bpmn:extensionElements']['uengine:properties']['uengine:variable'])
                                   ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable']
                                   : [process['bpmn:extensionElements']['uengine:properties']['uengine:variable']]
@@ -2362,7 +2472,14 @@ export default {
             let modeler = store.getModeler;
             const definitions = modeler.getDefinitions();
 
-            let bpmnFactory = modeler.get('bpmnFactory');
+            let bpmnFactory;
+            try {
+                bpmnFactory = modeler.get('bpmnFactory');
+            } catch (error) {
+                console.warn('bpmnFactory not available:', error);
+                return;
+            }
+
             const processElement = definitions.rootElements.find((element) => element.$type === 'bpmn:Process');
             if (!processElement) {
                 console.error('bpmn:Process element not found');
@@ -2410,6 +2527,9 @@ export default {
                         // uEngine
                         console.log(info)
                         await backend.putRawDefinition(xml, info.proc_def_id, info);
+                        if(info.release) {
+                            await backend.releaseVersion(info.releaseName);
+                        }
                     } else {
                         // GPT
                         if (!me.processDefinition) me.processDefinition = {};

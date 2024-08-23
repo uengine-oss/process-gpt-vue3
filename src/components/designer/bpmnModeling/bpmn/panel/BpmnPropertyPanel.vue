@@ -4,10 +4,10 @@
             <Icons :icon="'close'" class="cursor-pointer" :size="16"/>
         </v-btn>
         <v-card-text class="delete-input-details pt-3" style="overflow: auto; width: 700px; height: 100%;">
-            <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')">
+            <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')" class="mt-4">
                 <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
                 <div class="mb-3">{{ $t('BpmnPropertyPanel.role') }}: {{ role.name }}</div>
-                <v-text-field v-model="name" :label="$t('BpmnPropertyPanel.role')" :disabled="isViewMode" ref="cursor" class="bpmn-property-panel-name mb-3"></v-text-field>
+                <v-text-field v-model="name" :label="$t('BpmnPropertyPanel.name')" :disabled="isViewMode" ref="cursor" class="bpmn-property-panel-name mb-3"></v-text-field>
             </div>
             <component
                 style="height: 100%"

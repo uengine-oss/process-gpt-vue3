@@ -1,5 +1,5 @@
 <template>
-    <v-card flat class="py-2" >
+    <v-card flat>
         <div :class="{'d-flex': !isMobile}">
             <div v-if="type === 'edit'" class="w-100 d-flex justify-center">
                 <div v-if="isShowMashup">
@@ -12,7 +12,7 @@
                 </div>
             </div>
 
-            <div v-if="type === 'preview'" class="w-100 mt-2">
+            <div v-if="type === 'preview'" class="w-100 mt-5">
                 <template v-if="isShowPreview">
                     <DynamicForm ref="dynamicForm" :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
                     <!-- <template v-if="dev.isDevMode">
@@ -32,7 +32,9 @@
             <div v-if="!isMobile" class="ml-auto" style="max-width: 250px;">
                 <Chat :chatInfo="chatInfo" :messages="messages" :userInfo="userInfo" type="form"
                     @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage">
-                    <template v-slot:custom-tools></template>
+                    <template v-slot:custom-title>
+                        <div></div>
+                    </template>
                 </Chat>
             </div>
         </div>

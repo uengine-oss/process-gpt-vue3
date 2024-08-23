@@ -1,11 +1,10 @@
 <template>
     <div>
-        <div class="mb-2 mt-4">
-            <span>{{ $t('BpmnPropertyPanel.methodTypeUrl') }}</span>
+        <div class="mb-1 mt-4">
             <v-row class="ma-0 pa-0">
                 <v-col cols="3" class="pa-0 pr-2">
                     <v-autocomplete
-                        labels="Methods Type"
+                        :label="$t('BpmnPropertyPanel.methodTypeUrl')"
                         :items="methodList"
                         theme="light"
                         density="comfortable"
@@ -18,8 +17,9 @@
                 </v-col>
             </v-row>
             <DetailComponent
-                :title="$t('SendTaskPanel.methodTypeDescriptionTitle')"
+                :title="$t('MessageEventDefinitionPanel.methodTypeDescriptionTitle')"
                 :details="methodTypeDescription"
+                :detailUrl="'https://www.youtube.com/watch?v=bxkB-pkOpTQ'"
             />
         </div>
         <div style="height: 70%">
@@ -41,10 +41,10 @@
                 {{ $t('SendTaskPanel.generation') }}
             </v-btn>
         </div>
-        <div>
-            <div>{{ $t('SendTaskPanel.return') }}</div>
+        <div class="mt-4">
             <v-row class="ma-0 pa-0">
                 <v-autocomplete
+                    :label="$t('SendTaskPanel.return')"
                     :items="processVariables"
                     item-props
                     :item-value="item"
@@ -55,10 +55,11 @@
                 ></v-autocomplete>
                 <!-- <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts> -->
             </v-row>
-            <DetailComponent
-                :title="$t('SendTaskPanel.returnTitle')"
-            />
         </div>
+        <DetailComponent
+            style="padding-bottom:20px;"
+            :title="$t('SendTaskPanel.returnTitle')"
+        />
     </div>
 </template>
 <script>

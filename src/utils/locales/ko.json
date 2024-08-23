@@ -80,7 +80,8 @@
         "title": "종료된 인스턴스"
     },
     "definitionManagement": {
-        "title": "정의 관리"
+        "title": "정의 관리",
+        "upload": "정의 업로드"
     },
     "systemDefinition": {
         "title": "시스템 정의"
@@ -144,6 +145,7 @@
         "edit": "수정",
         "delete": "삭제",
         "zoom": "캔버스 확대/축소",
+        "preview": "미리보기",
         "execution": "프로세스 실행",
         "showXML": "XML 보기",
         "showModeling": "프로세스 보기",
@@ -277,7 +279,7 @@
         "scriptType": "스크립트 타입",
         "add": "추가",
         "role": "역할",
-        "methodTypeUrl": "메소드 타입 URL",
+        "methodTypeUrl": "메서드 타입",
         "apiUrl": "API URL",
         "mapperDescriptionTitle": "데이터 매핑이란 다음 작업으로 변수들을 전달하는 기능",
         "mapperDescriptionSubTitle1": "1. Variables : 변수항목에 추가한 값들 \n2. Roles : 스윔 레인에 등록한 역할(이름) \n3. Instance : 다음 실행될 task 작업의 종료일 등을 저장하는 곳 \n4. Activities : task에 등록한 역할(이름) \n5. Arguments : 속성에 등록한 이름(값)",
@@ -301,9 +303,12 @@
         "title2": "버전 업",
         "minorUpdate": "소규모 업데이트",
         "majorUpdate": "주요 업데이트",
+        "update": "업데이트",
+        "release": "릴리즈",
+        "releaseName": "릴리즈 명",
         "id": "아이디",
         "name": "이름",
-        "message": "메시지",
+        "message": "설명",
         "save": "저장"
     },
     "FormDefinitionPanel": {
@@ -391,11 +396,16 @@
         "forEachRole" : "역할 기반 다중 생성",
         "role" : "역할로 서브프로세스를 여러 개 생성함",
         "forEachVariable" : "변수 기반 다중 생성",
-        "variable" : "변수로 서브프로세스를 여러 개 생성함"
+        "variable" : "변수로 서브프로세스를 여러 개 생성함",
+        "forEachVariableDescriptionTitle": "프로세스 변수에 등록된 데이터에 데이터 매핑을 해서 멀티 데이터를 삽입하면 프로세스 실행시 여러개 생성된 데이터를 기반으로 서브프로세스를 다중 생성",
+        "forEachVariableDescriptionSubTitle1": "1. 화면 정의 관리에서 편집모드를 통해 다중 데이터 모드 체크",
+        "forEachVariableDescriptionSubTitle2": "2. sub 프로세스가 실행될 이전 Task 패널에서 데이터 매핑 진행"
     },
     "ParticipantPanel" : {
         "apiUrl" : "API URL",
-        "openAPISpec" : "Open API 스펙"
+        "openAPISpec" : "Open API 스펙",
+        "system": "시스템 정의에서 불러오기",
+        "systemDefinitionDescriptionTitle": "왼쪽 정의 관리 버튼 중 시스템 정의에 등록된 항목을 불러와 사용"
     },
     "LanePanel" : { 
         "selectRoleType" : "역할 선택", 
@@ -413,13 +423,24 @@
     },
     "DetailComponent" : {
         "details": "상세보기",
-        "allDetails": "전체 설명 보기"
+        "allDetails": "가이드 보기"
     },
     "SendTaskPanel" : {
         "generation": "생성",
         "return": "Return 값을 저장 할 변수",
         "methodTypeDescriptionTitle": "API 요청을 보낼 때 사용할 메서드(GET, POST, PUT, PATCH)와 요청을 처리할 서버의 엔드포인트 URL을 설정",
         "methodTypeDescriptionSubTitle1": "1.GET : 서버로부터 데이터를 조회하는 요청 \n2.POST : 서버에 새 데이터를 생성하여 전송하는 요청 \n3.PUT : 기존 데이터를 업데이트하거나 전체를 대체하는 요청 \n4.PATCH : 기존 데이터의 일부를 수정하는 요청 \n5.API URL : 요청이 전송될 서버의 엔드포인트 주소\n",
-        "returnTitle": "드롭다운 메뉴는 프로세스 변수에서 등록된 변수 이름을 리스트로 출력합니다. \n사용자는 이 리스트에서 원하는 변수를 선택할 수 있습니다"
+        "returnTitle": "드롭다운 메뉴는 프로세스 변수에서 등록된 변수 이름을 리스트로 출력합니다. \n위 작성된 내용을 저장할 변수를 선택합니다."
+    },
+    "ScriptTaskPanel" : {
+        "return": "Return 값을 저장 할 변수",
+        "scriptDescriptionTitle": "Script Task 는 Javascript 나 Java 언어를 직접 액티비티에 설정하여 프로세스 설정만으로 처리하기 힘든 마이크로한 설정이나 액션을 실행가능하게 합니다.",
+        "returnTitle": "드롭다운 메뉴는 프로세스 변수에서 등록된 변수 이름을 리스트로 출력합니다. \n위 작성된 내용을 저장할 변수를 선택합니다."
+    },
+    "MessageEventDefinitionPanel" : {
+        "return": "Return 값을 저장 할 변수",
+        "methodTypeDescriptionTitle": "API 요청을 보낼 때 사용할 메서드(GET, POST, PUT, PATCH)와 요청을 처리할 서버의 엔드포인트 URL을 설정",
+        "methodTypeDescriptionSubTitle1": "1.GET : 서버로부터 데이터를 조회하는 요청 \n2.POST : 서버에 새 데이터를 생성하여 전송하는 요청 \n3.PUT : 기존 데이터를 업데이트하거나 전체를 대체하는 요청 \n4.PATCH : 기존 데이터의 일부를 수정하는 요청 \n5.API URL : 요청이 전송될 서버의 엔드포인트 주소\n",
+        "returnTitle": "드롭다운 메뉴는 프로세스 변수에서 등록된 변수 이름을 리스트로 출력합니다. \n위 작성된 내용을 저장할 변수를 선택합니다."
     }
 }

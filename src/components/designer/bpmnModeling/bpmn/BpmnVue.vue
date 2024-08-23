@@ -477,7 +477,7 @@ export default {
             //여기서 문제: 오픈그래프 객체를 제대로 삭제 안하면 이상해짐.
             //아마도 더블클릭은 먹히지만, shape 이 먹히지 않는걸로 보아,
             //drawshape 시에 id 를 재사용하여 그리는 방식에서 shape 가 동작을 잘 안하는 모양.
-            //해당 코드를 봐서, shape 의 각종 메소드를 완전히 오버라이딩 하는 법을 찾자.
+            //해당 코드를 봐서, shape 의 각종 메서드를 완전히 오버라이딩 하는 법을 찾자.
             //해결 => 오픈그래프 라이브러리 drawShape 에서, element node 에 shape 재등록을 실시함.
 
             var activityOrRelation = this.getActAndRelByOpengraphId(id);

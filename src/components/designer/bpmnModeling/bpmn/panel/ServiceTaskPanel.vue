@@ -1,11 +1,11 @@
 <template>
     <div>
         <div class="mb-2 mt-4">
-            <span>{{ $t('BpmnPropertyPanel.methodTypeUrl') }}</span>
+            
             <v-row class="ma-0 pa-0">
                 <v-col cols="3" class="pa-0 pr-2">
                     <v-autocomplete
-                        labels="Methods Type"
+                        :label="$t('BpmnPropertyPanel.methodTypeUrl')"
                         :items="methodList"
                         theme="light"
                         density="comfortable"
@@ -45,6 +45,7 @@
         <DetailComponent
             :title="$t('BpmnPropertyPanel.mapperDescriptionTitle')"
             :details="mapperDescription"
+            :detailUrl="'https://www.youtube.com/watch?v=1tCKnzck2-c'"
         />
         <div>
             <!-- <div>Return 값을 저장 할 변수</div> -->

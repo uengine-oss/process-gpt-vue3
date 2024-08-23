@@ -81,6 +81,18 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.delete(`/instance/${instanceId}`);
         return response.data;
     }
+    async releaseVersion(releaseName: string): Promise<any> {
+        const response = await axiosInstance.get(`/definition/release/${releaseName}`, {
+            responseType: "blob",
+        });
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `${releaseName}.zip`); // or any other extension
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
     async putRawDefinition(definition: any, requestPath: string, options: any) {
         console.log(options)
         var config = {
@@ -90,7 +102,7 @@ class UEngineBackend implements Backend {
         };
         let body = {
             definition: definition,
-            version: options.version
+            version: options.releaseName ? options.releaseName : options.version
         }
         const response = await axiosInstance.put('/definition/raw/' + requestPath + '.' + options.type, body, config);
         return response.data;
@@ -221,7 +233,7 @@ class UEngineBackend implements Backend {
     async putWorkItemComplete(taskId: string, workItem: any, isSimulate: string) {
         let config = {
             headers: {
-                'isSimulate': isSimulate
+                'isSimulate': isSimulate ? isSimulate : 'false'
             }
         };
         const response = await axiosInstance.post(`/work-item/${taskId}/complete`, workItem, config);
@@ -500,7 +512,7 @@ class UEngineBackend implements Backend {
     async dryRun(defPath: String, isSimulate: string){
         let config = {
                 headers: {
-                    'isSimulate': isSimulate
+                    'isSimulate': isSimulate ? isSimulate : 'false'
                 }
             };
         const response = await axiosInstance.get(`/dry-run/${defPath}`, config);
@@ -514,7 +526,7 @@ class UEngineBackend implements Backend {
     async startAndComplete(command: object, isSimulate: string){
         let config = {
             headers: {
-                'isSimulate': isSimulate
+                'isSimulate': isSimulate ? isSimulate : 'false'
             }
         };
         const response = await axiosInstance.post(`/start-and-complete`, command, config);
@@ -550,6 +562,44 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.post(`/validate`, xml);
         if (!response.data) return {};
         return response.data;
+    }
+
+    async uploadDefinition(file: File, path: string) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const config = {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        };
+
+        try {
+            const response = await axiosInstance.post('/definition/upload', formData, config);
+            return response.data;
+        } catch (error) {
+            console.error('파일 업로드 중 오류 발생:', error);
+            throw error;
+        }
+    }
+
+    async downloadFile(filePath: string) {
+        try {
+            const response = await axiosInstance.get(`/download?path=${encodeURIComponent(filePath)}`, {
+                responseType: 'blob'
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', filePath.split('/').pop() || 'downloaded_file');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            console.error('파일 다운로드 중 오류 발생:', error);
+            throw error;
+        }
     }
 }
 

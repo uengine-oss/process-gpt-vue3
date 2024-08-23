@@ -1,25 +1,30 @@
 <template>
     <div>
-        <div style="margin-bottom: 20px">
+        <div class="mb-6 mt-6">
             <div>{{ $t('BpmnPropertyPanel.scriptType') }}</div>
-            <v-radio-group v-model="copyUengineProperties.language">
-                <v-radio
-                    id="Javascript"
-                    name="Javascript"
-                    value="0"
-                    label="Javascript"
-                    style="margin-right: 8px !important; font-size: 15px"
-                ></v-radio>
-                <v-radio id="Java" name="Java" value="1" label="Java" style="margin-right: 8px !important; font-size: 15px"></v-radio>
-            </v-radio-group>
-            <div>{{ $t('BpmnPropertyPanel.script') }}</div>
-            <v-textarea v-model="copyUengineProperties.script" :disabled="isViewMode" style="width: 100%"></v-textarea>
-            <GenerateScriptPanel v-model="copyUengineProperties.script" :language="languageLabel" />
+            <v-card variant="outlined" class="pa-2" style="border-radius:8px !important;">
+                <v-radio-group v-model="copyUengineProperties.language">
+                    <v-radio
+                        id="Javascript"
+                        name="Javascript"
+                        value="0"
+                        label="Javascript"
+                        style="margin-right: 8px !important; font-size: 15px"
+                    ></v-radio>
+                    <v-radio id="Java" name="Java" value="1" label="Java" style="margin-right: 8px !important; font-size: 15px"></v-radio>
+                </v-radio-group>
+                <v-textarea :label="$t('BpmnPropertyPanel.script')" v-model="copyUengineProperties.script" :disabled="isViewMode" style="width: 100%"></v-textarea>
+                <GenerateScriptPanel v-model="copyUengineProperties.script" :language="languageLabel" />
+                <DetailComponent
+                    :title="$t('ScriptTaskPanel.scriptDescriptionTitle')"
+                    :detailUrl="'https://bpm-intro.uengine.io/api-customizing/script-task/'"
+                />
+            </v-card>
         </div>
         <div>
-            <div>Return 값을 저장 할 변수</div>
             <v-row class="ma-0 pa-0">
                 <v-autocomplete
+                    :label="$t('ScriptTaskPanel.return')"
                     :items="processVariables"
                     item-props
                     :item-value="item"
@@ -30,6 +35,10 @@
                 ></v-autocomplete>
             </v-row>
         </div>
+        <DetailComponent
+            style="padding-bottom:20px;"
+            :title="$t('ScriptTaskPanel.returnTitle')"
+        />
     </div>
 </template>
 <script>

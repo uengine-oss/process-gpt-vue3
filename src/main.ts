@@ -53,6 +53,7 @@ import type { KeycloakOnLoad } from 'keycloak-js';
 import Keycloak from 'keycloak-js';
 import loadbpmnComponents from './components/designer/bpmnModeling/bpmn';
 import loadOpengraphComponents from './opengraph';
+import DetailComponent from './components/ui-components/details/DetailComponent.vue'
 
 // vue-
 import dayjs from 'dayjs';
@@ -276,6 +277,7 @@ async function initializeApp() {
     app.use(VueTablerIcons);
     app.component('Icon', Icon);
     app.component('Icons', Icons)
+    app.component('DetailComponent', DetailComponent);
     // app.use(print);
     app.use(VueRecaptcha, {
         siteKey: '6LdzqbcaAAAAALrGEZWQHIHUhzJZc8O-KSTdTTh_',

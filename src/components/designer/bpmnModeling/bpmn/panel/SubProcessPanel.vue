@@ -5,12 +5,11 @@
             <v-autocomplete v-model="copyUengineProperties.definitionId" :items="definitions" :disabled="isViewMode"
                 item-title="name" color="primary" label="Definition" variant="outlined" hide-details></v-autocomplete>
         </div> -->
-        <div style="margin-bottom: 22px">
+        <div>
             <v-row class="ma-0 pa-0">
-                <div>{{$t('SubProcessPanel.forEachRole')}}</div>
-                <v-spacer></v-spacer>
+                <div class="mb-1 mt-4">{{$t('SubProcessPanel.forEachRole')}}</div>
             </v-row>
-            <v-row>
+            <v-row class="ma-0 pa-0">
                 <v-autocomplete
                     :items="roles"
                     v-model="selectedRole"
@@ -27,12 +26,11 @@
                 ></bpmn-parameter-contexts> -->
             </v-row>
         </div>
-        <div style="margin-bottom: 22px">
+        <div>
             <v-row class="ma-0 pa-0">
-                <div>{{$t('SubProcessPanel.forEachVariable')}}</div>
-                <v-spacer></v-spacer>
+                <div class="mb-1 mt-4">{{$t('SubProcessPanel.forEachVariable')}}</div>
             </v-row>
-            <v-row>
+            <v-row class="ma-0 pa-0">
                 <v-autocomplete
                     :items="processVariables"
                     :item-props="true"
@@ -50,6 +48,11 @@
                     :parameter-contexts="copyUengineProperties.variableBindings"
                 ></bpmn-parameter-contexts> -->
             </v-row>
+            <DetailComponent
+                :title="$t('SubProcessPanel.forEachVariableDescriptionTitle')"
+                :details="SubProcessDescription"
+                :detailUrl="'https://www.youtube.com/watch?v=nhQCDfYa6Gk'"
+            />
             <!-- <div>
                 <v-row class="ma-0 pa-0">
                     <div>Parameter Context</div>
@@ -137,7 +140,17 @@ export default {
             paramValue: '',
             definitionCnt: 0,
             selectedRole: null,
-            selectedVariable: null
+            selectedVariable: null,
+            SubProcessDescription: [
+                {   
+                    title: "SubProcessPanel.forEachVariableDescriptionSubTitle1",
+                    image: "CreateMultidataForm.gif"
+                },
+                {
+                    title: "SubProcessPanel.forEachVariableDescriptionSubTitle2",
+                    image: "typeFormMapping.gif"
+                }
+            ],
         };
     },
     async mounted() {

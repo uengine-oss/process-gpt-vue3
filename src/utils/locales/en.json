@@ -80,7 +80,8 @@
         "title": "Complete Instance"
     },
     "definitionManagement": {
-        "title": "Definition Management"
+        "title": "Definition Management",
+        "upload": "Definition Upload"
     },
     "systemDefinition": {
         "title": "System Definition"
@@ -144,6 +145,7 @@
         "edit": "Edit",
         "delete": "Delete",
         "zoom": "Canvas Zoom in/Zoom out",
+        "preview": "Process Preview",
         "execution": "Start Process",
         "deleteProcess": "Delete Process",
         "showXML": "Show XML",
@@ -277,7 +279,7 @@
         "scriptType": "Script Type",
         "add": "Add",
         "role": "Role",
-        "methodTypeUrl": "Method Type URL",
+        "methodTypeUrl": "Method Type",
         "apiUrl": "API URL",
         "mapperDescriptionTitle": "Data mapping is a function that passes variables to the next task",
         "mapperDescriptionSubTitle1": "1. Variables: Values added to the variable section \n2. Roles: Roles (names) registered in the swimlane \n3. Instance: Stores the end date of the next task to be executed \n4. Activities: Roles (names) registered in the task \n5. Arguments: Names (values) registered in the attributes",
@@ -391,11 +393,16 @@
         "forEachRole": "Role-based Multiple Creation",
         "role": "Create multiple sub-processes based on roles",
         "forEachVariable": "Variable-based Multiple Creation",
-        "variable": "Create multiple sub-processes based on variables"
+        "variable": "Create multiple sub-processes based on variables",
+        "forEachVariableDescriptionTitle": "When multi-data is inserted by data mapping with the data registered in the process variables, multiple sub-processes are created based on the generated data during process execution.",
+        "forEachVariableDescriptionSubTitle1": "1. Check multi-data mode through edit mode in screen definition management",
+        "forEachVariableDescriptionSubTitle2": "2. Perform data mapping in the panel of the previous task to be executed"
     },
     "ParticipantPanel": {
         "apiUrl": "API URL",
-        "openAPISpec": "Open API Spec"
+        "openAPISpec": "Open API Spec",
+        "system": "Load from system definition",
+        "systemDefinitionDescriptionTitle": "Load and apply items registered in the system definition from the left-side management button"
     },
     "LanePanel": {
         "selectRoleType": "Select Role Type",
@@ -420,6 +427,11 @@
         "return": "Variable to store the return value",
         "methodTypeDescriptionTitle": "Set the method (GET, POST, PUT, PATCH) to use when sending an API request and the server's endpoint URL to process the request.",
         "methodTypeDescriptionSubTitle1": "1.GET: A request to retrieve data from the server \n2.POST: A request to create and send new data to the server \n3.PUT: A request to update or replace existing data entirely \n4.PATCH: A request to partially modify existing data \n5.API URL: The endpoint URL of the server where the request will be sent",
+        "returnTitle": "The dropdown menu displays a list of variable names registered in the process variables. \nUsers can select the desired variable from this list."
+    },
+    "ScriptTaskPanel" : {
+        "return": "Variable to store the return value",
+        "scriptDescriptionTitle": "Script Task enables the execution of micro-level configurations or actions that are difficult to handle solely through process configuration by directly setting activities using JavaScript or Java.",
         "returnTitle": "The dropdown menu displays a list of variable names registered in the process variables. \nUsers can select the desired variable from this list."
     }
 }

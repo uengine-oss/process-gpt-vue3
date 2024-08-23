@@ -10,8 +10,9 @@
                 <v-icon color="black" class="mr-2 mt-1">mdi-information</v-icon>
                 
                 <!-- 접혀진 상태에서 기본으로 보이는 텍스트 -->
-                <v-card-title class="pa-0" style="flex: 1; white-space: normal; overflow: visible;">
+                <v-card-title class="pa-0" style="flex: 1; white-space: pre-wrap; overflow: visible;">
                     {{ title }}
+                    <a v-if="detailUrl" :href="detailUrl" target="_blank" class="detail-link">{{ $t('DetailComponent.allDetails') }}</a>
                 </v-card-title>
 
                 <!-- 오른쪽의 토글 아이콘 -->
@@ -33,7 +34,6 @@
                 <div v-for="(item, index) in details" :key="index">
                     <div class="mb-4">
                         <div v-if="item.title" style="font-size:16px; white-space: pre-wrap; margin: 20px 0px 5px 0px;">{{ $t(item.title) }}</div>
-                        <a v-if="item.url" :href="item.url" target="_blank" class="detail-link">{{ $t('DetailComponent.allDetails') }}</a>
                         <v-img v-if="item.image"
                             :src="getImagePath(item.image)" 
                             style="border: solid 1px gray; border-radius: 8px;" 
@@ -49,6 +49,7 @@ export default {
     name: 'detail-component',
     props: {
         title: String,
+        detailUrl: String,
         details: Array
     },
     created() {
@@ -77,7 +78,7 @@ export default {
 <style scoped>
 .detail-link {
     font-size: 16px; 
-    font-weight: 700;
+    font-weight: 900;
     color: gray;
 }
 </style>

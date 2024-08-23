@@ -103,6 +103,7 @@ export default class FormDesignGenerator extends AIGenerator{
           \`\`\`
           
           - 기존의 폼 변경
+          기존 폼 정보: {{ 기존 폼 정보 }}
           이미 만들어진 폼이 있는 경우에는 변경을 하기위한 지시사항들을 생성해줘야 해.
           변경인 경우도 변경된 최종 결과가 '처음으로 폼 생성'에서 했던 주의 사항을 지켜줘야 한다는 점을 명심해야 해.
 
@@ -152,7 +153,7 @@ export default class FormDesignGenerator extends AIGenerator{
           const copiedPrevMessageFormat = {...this.prevMessageFormat}
           copiedPrevMessageFormat.content = copiedPrevMessageFormat.content.replace("{{prevMessageFormat}}", prevFormOutput)
           this.previousMessages = [copiedPrevMessageFormat];
-          
+          this.previousMessages[0].content = this.previousMessages[0].content.replace(`기존 폼 정보: {{ 기존 폼 정보 }}`, "");
           
           console.log("### 전달되는 시스템상 AI 메시지 ###")
           console.log(this.previousMessages)
@@ -176,6 +177,15 @@ export default class FormDesignGenerator extends AIGenerator{
 
     createPrompt(){
        return this.client.newMessage
+    }
+
+    setFormData(form) {
+      this.previousMessages.push(this.prevMessageFormat)
+      if(form) {
+        this.previousMessages[0].content = this.previousMessages[0].content.replace(`{{ 기존 폼 정보 }}`, form);
+      } else {
+        this.previousMessages[0].content = this.previousMessages[0].content.replace(`{{ 기존 폼 정보 }}`, 'null');
+      }
     }
 
 }
