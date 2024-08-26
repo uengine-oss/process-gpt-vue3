@@ -279,7 +279,7 @@ export default {
                 const content = e.target.result;
 
                 let jsonContent = content;
-                let convertedBpmn = '';
+                let convertedBpmn = jsonContent;
 
                 if(file.name.indexOf('.jsonold') != -1) {
                     jsonContent = me.convertOldJson(JSON.parse(content));

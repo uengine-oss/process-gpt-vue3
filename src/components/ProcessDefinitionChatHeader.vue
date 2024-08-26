@@ -132,8 +132,8 @@ export default {
         triggerFileInput() {
             this.$refs.fileInput.click();
         },
-        handleFileChange() {
-            this.$emit('handleFileChange');
+        handleFileChange(event) {
+            this.$emit('handleFileChange', event);
         },
         toggleLock() {
             this.$emit('toggleLock');
