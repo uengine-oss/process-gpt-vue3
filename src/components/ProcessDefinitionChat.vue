@@ -440,7 +440,7 @@ export default {
                             me.processDefinition = value.definition;
                             me.processDefinition.processDefinitionId = value.id;
                             me.processDefinition.processDefinitionName = value.name;
-                            me.projectName = definitions.name ? definitions.name : me.processDefinition.processDefinitionName;
+                            me.projectName = value.name ? value.name : me.processDefinition.processDefinitionName;
                         }
                         me.checkedLock(lastPath);
                     } else {

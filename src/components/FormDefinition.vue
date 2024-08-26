@@ -142,8 +142,8 @@ export default {
     },
     methods: {
         changedKEditorContent(value) {
-            this.formHTML = value.html;
-            this.$emit('update:modelValue', value.html);
+            this.formHTML = this.keditorContentHTMLToDynamicFormHTML(value.html);
+            this.$emit('update:modelValue', this.formHTML);
         },
         updateKEditorContentBeforeSave(kEditorContent) {
             // this.kEditorContentBeforeSave = kEditorContent;

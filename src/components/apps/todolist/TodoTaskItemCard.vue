@@ -96,12 +96,11 @@ export default {
         managed: false,
         dialog: false,
         dialogType: '',
-        mode: window.$mode,
     }),
-    mounted() {
-        this.mode = window.$mode; // 클라이언트 사이드에서 확실하게 설정
-    },
     computed: {
+        mode() {
+            return window.$mode;
+        },
         remainingDays() {
             const today = new Date();
             today.setHours(0, 0, 0, 0);

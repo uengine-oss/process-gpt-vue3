@@ -7,7 +7,7 @@
         </v-tabs>
         <v-window v-model="activeTab">
             <v-window-item value="setting" class="pt-4">
-                <div class="mb-4">{{ $t('BpmnPropertyPanel.role') }}: {{ copyUengineProperties.role.name }}</div>
+                <div class="mb-4">{{ $t('BpmnPropertyPanel.role') }}: {{ copyUengineProperties.role ? copyUengineProperties.role.name : '' }}</div>
                 <v-text-field v-model="name" label="이름" autofocus class="mb-4"></v-text-field>
                 <v-text-field v-model="activity.duration" label="소요시간" suffix="일" type="number" class="mb-4"></v-text-field>
                 <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
@@ -52,7 +52,6 @@ export default {
         definition: Object,
         name: String
     },
-    emits: [ 'update:uengineProperties', 'update:name' ],
     data() {
         return {
             copyUengineProperties: JSON.parse(JSON.stringify(this.uengineProperties)),
@@ -86,23 +85,13 @@ export default {
         activity: {
             deep: true,
             handler(newVal, oldVal) {
-                if (!this.useEvent && (newVal.checkpoints || newVal.instruction) ) {
-                    this.EventBus.emit('process-definition-updated', this.processDefinition);
-                }
+                this.EventBus.emit('process-definition-updated', this.processDefinition);
             }
         }
     },
     methods: {
         async init() {
             var me = this;
-            if (me.roles.length > 0) {
-                me.copyUengineProperties.role = { name: me.role };
-            }
-
-            me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
-            if (!me.copyUengineProperties.variableForHtmlFormContext) {
-                me.copyUengineProperties.variableForHtmlFormContext = {};
-            }
             me.formId = me.copyUengineProperties.variableForHtmlFormContext.name;
             if (me.formId && me.formId != '') {
                 me.tempFormHtml = await me.backend.getRawDefinition(me.formId, { type: 'form' });
@@ -117,21 +106,55 @@ export default {
                 }
                 me.tempFormHtml = await me.backend.getRawDefinition(me.formId, options);
             }
+            me.copyUengineProperties = {
+                _type: 'org.uengine.kernel.FormActivity',
+                role: {
+                    name: me.role || ''
+                },
+                variableForHtmlFormContext: {
+                    name: me.formId
+                },
+                parameters: []
+            };
             me.copyDefinition = me.definition;
         },
         async beforeSave() {
             var me = this;
             if (me.formId == '' || me.formId == null) {
-                me.formId = me.processDefinitionId + '_' + me.activity.id + '_form';
-                me.copyUengineProperties.variableForHtmlFormContext = { name: me.formId };
+                me.formId = me.processDefinitionId + '_' + me.element.id + '_form';
             }
+            me.copyUengineProperties = {
+                _type: 'org.uengine.kernel.FormActivity',
+                role: {
+                    name: me.role
+                },
+                variableForHtmlFormContext: {
+                    name: me.formId
+                },
+                parameters: []
+            };
             const options = {
                 type: 'form',
                 proc_def_id: me.processDefinitionId,
-                activity_id: me.activity.id
+                activity_id: me.element.id
             }
             if (me.tempFormHtml != '') {
-                await me.backend.putRawDefinition(me.tempFormHtml, me.formId, options);
+                me.$emit('addUengineVariable', {
+                    name: me.formId,
+                    type: 'Form',
+                    defaultValue: me.formId,
+                    description: '',
+                    datasource: {
+                        type: '',
+                        sql: ''
+                    },
+                    table: '',
+                    backend: null
+                });
+
+                if (options && options.proc_def_id && options.activity_id) {
+                    await me.backend.putRawDefinition(me.tempFormHtml, me.formId, options);
+                }
             }
             me.$emit('update:uengineProperties', me.copyUengineProperties);
         },

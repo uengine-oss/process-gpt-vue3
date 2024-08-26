@@ -9,7 +9,7 @@
                         label="프로세스 정의명" variant="underlined" hide-details class="pa-0 ma-0"></v-text-field>
                     <h5 v-else class="text-h5 mb-n1">{{ modelValue }}</h5>
                 </div>
-                <h5 v-else class="text-h5 mb-n1">프로세스 정의</h5>
+                <h5 v-else class="text-h5 mb-n1">{{ $t('processDefinition.title') }}</h5>
                 
                 <div class="custom-tools">
                     <div class="d-flex" 
@@ -73,7 +73,7 @@
                         </div>
                 
                         <div v-else>
-                            <v-tooltip location="bottom">
+                            <v-tooltip location="bottom">   
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
                                         density="comfortable" @click="toggleLock">

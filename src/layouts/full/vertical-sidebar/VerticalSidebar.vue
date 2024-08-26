@@ -131,7 +131,10 @@ export default {
     computed: {
         JMS() {
             return window.$jms;
-        }
+        },
+        mode() {
+            return window.$mode;
+        }    
     },
     async created() {
         const isAdmin = localStorage.getItem('isAdmin');
@@ -188,6 +191,10 @@ export default {
                     disable: true
                 },
             ]
+            if (this.mode === 'ProcessGPT') {
+                this.definitionItem = this.definitionItem.filter((item) => 
+                    item.title !== 'uiDefinition.title' && item.title !== 'systemDefinition.title');
+            }
             this.getDefinitionList();
         }
 

@@ -15,6 +15,7 @@ class ProcessGPTBackend implements Backend {
     async releaseVersion(releaseName: string): Promise<any> {
         
     }
+    
     testList(path: string): Promise<any> {
         throw new Error('Method not implemented.');
     }
@@ -52,10 +53,17 @@ class ProcessGPTBackend implements Backend {
 
     async deleteDefinition(defId: string, options: any) {
         try {
-            if(options && options.type === "form") {
-                await storage.delete(`form_def/${defId.replace(/\//g, "#")}`, { key: 'id' });
-                return
+            if (options && options.type === "form") {
+                return await storage.delete(`form_def/${defId.replace(/\//g, "#")}`, { key: 'id' });
             } else {
+                const form = await storage.list('form_def', {
+                    sort: 'desc',
+                    match: { 'proc_def_id': defId }
+                });
+                if (form && form.length > 0) {
+                    await storage.delete(`form_def/${defId}`, { key: 'proc_def_id' });
+                }
+                
                 const arcv = await storage.list('proc_def_arcv', {
                     sort: 'desc',
                     orderBy: 'timeStamp',
@@ -120,16 +128,18 @@ class ProcessGPTBackend implements Backend {
             }
             await storage.putObject('proc_def', procDef);
 
-            const procDefArcv: any = {
-                arcv_id: options.arcv_id,
-                proc_def_id: defId,
-                version: options.version,
-                snapshot: xml,
-                diff: options.diff,
-                message: options.message
+            if (options.version) {
+                const procDefArcv: any = {
+                    arcv_id: options.arcv_id,
+                    proc_def_id: defId,
+                    version: options.version,
+                    snapshot: xml,
+                    diff: options.diff,
+                    message: options.message
+                }
+                await storage.putObject('proc_def_arcv', procDefArcv);
             }
-            await storage.putObject('proc_def_arcv', procDefArcv);
-            
+
             try {
                 const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
                 if (isLocked) {
@@ -400,7 +410,7 @@ class ProcessGPTBackend implements Backend {
                 const email = localStorage.getItem("email");
                 filter.match.user_id = email;
             }
-            const list = await storage.list('todolist', filter);
+            const list = await storage.list('worklist', filter);
             const worklist: any[] = [];
             if (list && list.length > 0) {
                 for (const item of list) {

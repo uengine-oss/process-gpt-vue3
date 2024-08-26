@@ -298,7 +298,7 @@ export default {
                     }
                     me.updatedDefKey++;
                 },
-                errorMsg: '워크아이템을 불러 올 수 없습니다.'
+                errorMsg: '워크아이템을 찾을 수 없습니다.'
             });
         },
         handleResize() {

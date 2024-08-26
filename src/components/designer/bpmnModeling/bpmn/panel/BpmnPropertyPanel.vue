@@ -183,9 +183,10 @@ export default {
         addCheckpoint() {
             this.uengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
         },
-        save() {
+        async save() {
             if (this.$refs.panelComponent && this.$refs.panelComponent.beforeSave) {
-                this.$refs.panelComponent.beforeSave();
+                await this.$refs.panelComponent.beforeSave();
+                console.log(this.uengineProperties)
             }
 
             const modeling = this.bpmnModeler.get('modeling');
