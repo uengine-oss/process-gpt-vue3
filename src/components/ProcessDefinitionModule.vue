@@ -859,8 +859,8 @@ export default {
 
             let mainX = 0;
             let mainY = 0;
-            let mainWidth = isHorizontal ? 0: 300;
-            let mainHeight = isHorizontal ? 300 : 0;
+            let mainWidth = isHorizontal ? 0: 0;
+            let mainHeight = isHorizontal ? 0 : 0;
             Object.keys(roleVector).forEach((key) => {
                 const role = roleVector[key];
                 Object.keys(role).forEach((roleKey) => { 
@@ -871,7 +871,7 @@ export default {
                         mainY = role[roleKey].y;
                     }
                     if(mainWidth < role[roleKey].x) {
-                        mainWidth = role[roleKey].x + (isHorizontal ? 0 : + 50);
+                        mainWidth = role[roleKey].x + (isHorizontal ? 0 : 0);
                     }
                     
                     if(mainHeight < role[roleKey].y) {
@@ -883,7 +883,7 @@ export default {
             dcBoundsParticipant.setAttribute('x', mainX + (isHorizontal ? -80 : -70));
             dcBoundsParticipant.setAttribute('y', mainY + (isHorizontal ? -50 : -70));
 
-            dcBoundsParticipant.setAttribute('width', mainWidth + (isHorizontal ? 0 : 0));
+            dcBoundsParticipant.setAttribute('width', mainWidth + (isHorizontal ? 0 : 50));
             dcBoundsParticipant.setAttribute('height', mainHeight + (isHorizontal ? 0 : 0));
             
 
