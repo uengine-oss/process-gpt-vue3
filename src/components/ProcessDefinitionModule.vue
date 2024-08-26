@@ -640,12 +640,10 @@ export default {
 
             
 
-            var roleX = 0;
-            var roleY  = {};
-            var roleWidth = 0;
-            var roleHeight = {};
             var startX = 0;
             var startY = 0;
+
+            var roleVector = {};
 
             if(jsonModel.components) {
                 Object.keys(jsonModel.components).forEach((key) => {
@@ -839,136 +837,118 @@ export default {
                         source: component.source? component.source: currentSource
                     };
 
+                    if(!roleVector[component.role]) {
+                        roleVector[component.role] = {};
+                    }
+
+                    roleVector[component.role][component.id] = {
+                        x: componentX,
+                        y: componentY,
+                    }
+
                     if(component.type == 'StartEvent') {
                         startX = componentX;
                         startY = componentY;
                     }
 
-
-                    
-                    if(isHorizontal) {
-                        if(roleX > 0) {
-                            roleX = componentX;
-                        }
-                    
-                        if(roleWidth < componentX) {
-                            roleWidth = componentX;
-                        }
-                        
-                        if(!roleY[component.role]) {
-                            roleY[component.role] = componentY;
-                        } else {
-                            if(roleY[component.role] > componentY) {
-                                roleY[component.role] = componentY;
-                            }
-                        }
-                
-                        if(roleHeight[component.role]) {
-                            if(roleHeight[component.role] < componentY) {
-                                roleHeight[component.role] = componentY
-                            }
-                        } else {
-                            roleHeight[component.role] = componentY;
-                        }
-                    } else {
-                        if(roleX > 0) {
-                            roleX = componentY;
-                        }
-                    
-                        if(roleWidth < componentY) {
-                            roleWidth = componentY;
-                        }
-                        
-                        if(!roleY[component.role]) {
-                            roleY[component.role] = componentX;
-                        } else {
-                            if(roleY[component.role] > componentX) {
-                                roleY[component.role] = componentX;
-                            }
-                        }
-                
-                        if(roleHeight[component.role]) {
-                            if(roleHeight[component.role] < componentX) {
-                                roleHeight[component.role] = componentX
-                            }
-                        } else {
-                            roleHeight[component.role] = componentX;
-                        }
-                    }
                 });
                 
             }
 
             
-            let mainX = isHorizontal ? (roleX? roleX: 0) : 0; 
-            let mainY = isHorizontal ? 0 : (roleX? roleX: 0);
-            let mainWidth = isHorizontal ? (roleWidth + 115) : 300;
-            let mainHeight = isHorizontal ? 300 : (roleWidth + 115);
-            let lastKey = "default";
-            if(Object.keys(roleHeight).length > 0) {
-                mainY = Object.values(roleHeight)[0];
-                if(jsonModel.roles) {
-                    lastKey = Object.keys(jsonModel.roles).pop();
-                    if(isHorizontal) {
-                        mainHeight = roleHeight[jsonModel.roles[lastKey].name]? roleHeight[jsonModel.roles[lastKey].name] : 300;
-                    } else {
-                        mainWidth = roleHeight[jsonModel.roles[lastKey].name]? roleHeight[jsonModel.roles[lastKey].name] : 300;
-                    }
-                }
-            }
 
-            dcBoundsParticipant.setAttribute('x', mainX + (isHorizontal ? -30 : 25));
-            dcBoundsParticipant.setAttribute('y', mainY + (isHorizontal ? -75 : -100));
+            let mainX = 0;
+            let mainY = 0;
+            let mainWidth = isHorizontal ? 0: 0;
+            let mainHeight = isHorizontal ? 0 : 0;
+            Object.keys(roleVector).forEach((key) => {
+                const role = roleVector[key];
+                Object.keys(role).forEach((roleKey) => { 
+                    if(mainX == 0) {
+                        mainX = role[roleKey].x;
+                    }
+                    if(mainY == 0) {
+                        mainY = role[roleKey].y;
+                    }
+                    if(mainWidth < role[roleKey].x) {
+                        mainWidth = role[roleKey].x + (isHorizontal ? 0 : 0);
+                    }
+                    
+                    if(mainHeight < role[roleKey].y) {
+                        mainHeight = role[roleKey].y + (isHorizontal ? 0 : 0);
+                    }
+                });
+            });
+
+            dcBoundsParticipant.setAttribute('x', mainX + (isHorizontal ? -80 : -70));
+            dcBoundsParticipant.setAttribute('y', mainY + (isHorizontal ? -50 : -70));
 
             dcBoundsParticipant.setAttribute('width', mainWidth + (isHorizontal ? 0 : 50));
-            dcBoundsParticipant.setAttribute('height', mainHeight + (isHorizontal ? 45 : 0));
+            dcBoundsParticipant.setAttribute('height', mainHeight + (isHorizontal ? 0 : 0));
             
 
-
-            // Lane 및 Activity에 대한 시각적 표현 추가
-            if (jsonModel.roles) {
-                jsonModel.roles.forEach((role, roleIndex) => {
-                    const laneShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
-                    laneShape.setAttribute('id', `BPMNShape_${roleIndex}`);
-                    laneShape.setAttribute('bpmnElement', `Lane_${roleIndex}`);
-                    laneShape.setAttribute('isHorizontal', isHorizontal);
-                    const dcBoundsLane = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
-                    let roleYResult = roleY[role.name]? roleY[role.name] - 75: 0;
-                    let roleHeightResult = roleHeight[role.name]?roleHeight[role.name] + 50 : 0;
-                    
+            console.log(roleVector);
+            let roleWidth = isHorizontal ? (mainWidth - 30) : 0;
+            let roleHeight = isHorizontal ? 0 : (mainHeight - 30);
+            
+            let roleX = 0;
+            let roleY = 0;
+            Object.keys(roleVector).forEach((key, index) => {
+                const role = roleVector[key];
+                if(isHorizontal) {
+                    roleY = 0;
+                } else {
+                    roleX = 0;
+                }
+                Object.keys(role).forEach((roleKey) => { 
                     if(isHorizontal) {
-                        dcBoundsLane.setAttribute('x', roleX ? roleX : 0);
-                        dcBoundsLane.setAttribute('y', roleYResult);
+                        if(roleX == 0) {
+                            roleX = role[roleKey].x;
+                        }
+                        if(roleY == 0) {
+                            roleY = role[roleKey].y;
+                        }
+                        if(roleHeight < role[roleKey].y) {
+                            roleHeight = role[roleKey].y - roleY + 100;
+                        }
                     } else {
-                        dcBoundsLane.setAttribute('x', roleYResult);
-                        dcBoundsLane.setAttribute('y', (roleX ? roleX : 0) + 30);
+                        if(roleX == 0) {
+                            roleX = role[roleKey].x;
+                        }
+                        if(roleY == 0) {
+                            roleY = role[roleKey].y;
+                        }
+                        if(roleWidth < role[roleKey].x) {
+                            roleWidth = role[roleKey].x - roleX + 150;
+                        }
                     }
-
-                    if (jsonModel.roles && jsonModel.roles[lastKey] && jsonModel.roles[lastKey].name === role.name) {
-                        roleHeightResult += (isHorizontal ? -155 : 0);
-                    }
-
-
-                    // 가장 바깥 라인 안쪽의 스윔레인 자체 길이
-                    
-                    if(isHorizontal) {
-                        dcBoundsLane.setAttribute('width', roleWidth + 85);
-                        dcBoundsLane.setAttribute('height', roleHeightResult);
-                    } else {
-                        dcBoundsLane.setAttribute('width', roleHeightResult);
-                        dcBoundsLane.setAttribute('height', roleWidth + 85);
-                    }
-                    laneShape.appendChild(dcBoundsLane);
-                    bpmnPlane.appendChild(laneShape);
-                    rolePos[role.name] = {
-                        x: dcBoundsLane.getAttribute('x'),
-                        y: dcBoundsLane.getAttribute('y')
-                    };
                 });
-            }
+                    
+                const laneShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
+                laneShape.setAttribute('id', `BPMNShape_${index}`);
+                laneShape.setAttribute('bpmnElement', `Lane_${index}`);
+                laneShape.setAttribute('isHorizontal', isHorizontal);
+                const dcBoundsLane = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
+                
+                dcBoundsLane.setAttribute('x', roleX + (isHorizontal ? -50 : -70));
+                dcBoundsLane.setAttribute('y', roleY + (isHorizontal ? -50 : -40));
 
 
-            
+                dcBoundsLane.setAttribute('width', roleWidth);
+                dcBoundsLane.setAttribute('height', roleHeight);
+
+                console.log('role_', key);
+                console.log('x', roleX);
+                console.log('y', roleY);
+                console.log('width', roleWidth);
+                console.log('height', roleHeight);
+
+                laneShape.appendChild(dcBoundsLane);
+                bpmnPlane.appendChild(laneShape);
+            });
+
+
+
 
              // 서로간의 선위치를 설정하는 부분
              if (jsonModel.sequences) {

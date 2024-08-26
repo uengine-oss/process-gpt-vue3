@@ -10,6 +10,28 @@
             ></ProcessDefinitionDisplay>
         </div>
         <div :key="definitionCnt" v-if="copyUengineProperties.definitionId">
+            
+            <div>
+                <v-row class="ma-0 pa-0">
+                    <div class="mb-1 mt-4">{{$t('SubProcessPanel.forEachVariable')}}</div>
+                </v-row>
+                <v-row class="ma-0 pa-0">
+                    <v-autocomplete
+                        :items="processVariables"
+                        :item-props="true"
+                        item-value
+                        item-title="name"
+                        color="primary"
+                        v-model="selectedVariable"
+                        :label="$t('SubProcessPanel.variable')"
+                        variant="outlined"
+                    ></v-autocomplete>
+                </v-row>
+                <DetailComponent
+                    :title="$t('SubProcessPanel.forEachVariableDescriptionTitle')"
+                    :details="SubProcessDescription"
+                />
+            </div>
             <div>
                 <v-row class="ma-0 pa-0">
                     <div>{{ $t('CallActivityPanel.parameterContext') }}</div>
@@ -58,7 +80,8 @@ export default {
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
-        isViewMode: Boolean
+        isViewMode: Boolean,
+        processVariables: Array
     },
     created() {
         // console.log(this.element)
@@ -94,7 +117,8 @@ export default {
             editParam: false,
             paramKey: '',
             paramValue: '',
-            definitionCnt: 0
+            definitionCnt: 0,
+            selectedVariable: null
         };
     },
     async mounted() {
@@ -108,6 +132,10 @@ export default {
         if (!processElement) {
             console.error('bpmn:Process element not found');
             return;
+        }
+        
+        if (this.copyUengineProperties.forEachVariable) {
+            this.selectedVariable = this.copyUengineProperties.forEachVariable.name;
         }
         processElement.forEach((process) => {
             (process.laneSets || []).forEach((laneSet) => {
@@ -148,9 +176,31 @@ export default {
     watch: {
         'copyUengineProperties.definitionId'(after, before) {
             this.setDefinitionInfo(after);
+        },
+        selectedVariable(after, before) {
+            if (after) {
+                const variableObject = this.processVariables.find((variable) => variable.name === after);
+                if (variableObject) {
+                    let DuplicateVo = JSON.parse(JSON.stringify(variableObject));
+                    DuplicateVo.type = this.parseType(variableObject.type);
+                    this.copyUengineProperties.forEachVariable = DuplicateVo;
+                }
+            }
         }
     },
     methods: {
+        parseType(type) {
+            switch (type) {
+                case 'Text':
+                    return 'java.lang.String';
+                case 'Number':
+                    return 'java.lang.Number';
+                case 'Date':
+                    return 'java.util.Date';
+                case 'Form':
+                    return 'org.uengine.kernel.FormActivity';
+            }
+        },
         async setDefinitionInfo(definitionId) {
             if(!definitionId) return;
             // definition 정보 호출

@@ -209,7 +209,7 @@ export default {
         drag: false,
         value: null, // temp value (copy)
         attributes: [], // temp attributes (add edit .. for Function)
-        entityTypeList: ['Integer', 'String', 'Boolean', 'Float', 'Double', 'Long', 'Date', 'BigDecimal'],
+        entityTypeList: ['Integer', 'String', 'Boolean', 'Float', 'Double', 'Long', 'Date', 'BigDecimal', 'Array'],
         newAttribute: {
             name: '',
             className: 'String',

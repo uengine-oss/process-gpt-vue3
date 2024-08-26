@@ -2,18 +2,23 @@
     <div>
         <v-tabs v-model="activeTab">
             <v-tab value="setting">설정</v-tab>
-            <v-tab value="form">폼 편집</v-tab>
+            <v-tab value="edit">폼 편집</v-tab>
+            <v-tab value="preview">폼 미리보기</v-tab>
         </v-tabs>
         <v-window v-model="activeTab">
             <v-window-item value="setting" class="pt-4">
-                <div class="mb-4">{{ $t('BpmnPropertyPanel.role') }}: {{ copyUengineProperties.role.name }}</div>
-                <v-text-field v-model="name" label="이름" autofocus></v-text-field>
-                <v-text-field v-model="activity.duration" label="소요시간" suffix="일" type="number"></v-text-field>
-                <Instruction v-model="activity.instruction"></Instruction>
-                <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points"></Checkpoints>
+                <div class="mb-4">{{ $t('BpmnPropertyPanel.role') }}: {{ copyUengineProperties.role ? copyUengineProperties.role.name : '' }}</div>
+                <v-text-field v-model="name" label="이름" autofocus class="mb-4"></v-text-field>
+                <v-text-field v-model="activity.duration" label="소요시간" suffix="일" type="number" class="mb-4"></v-text-field>
+                <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
+                <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4"></Checkpoints>
             </v-window-item>
-            <v-window-item value="form">
-                <!-- <UIDefinitionChat></UIDefinitionChat> -->
+            <v-window-item v-for="tab in ['edit', 'preview']" :key="tab" :value="tab">
+                <FormDefinition
+                    :type="tab"
+                    :formId="formId"
+                    v-model="tempFormHtml"
+                />
             </v-window-item>
         </v-window>
     </div>
@@ -24,7 +29,7 @@ import Instruction from '@/components/designer/InstructionField.vue';
 import Checkpoints from '@/components/designer/CheckpointsField.vue';
 
 import { defineAsyncComponent } from 'vue';
-const UIDefinitionChat = defineAsyncComponent(() => import('@/components/UIDefinitionChat.vue'));
+const FormDefinition = defineAsyncComponent(() => import('@/components/FormDefinition.vue'));
 
 import BackendFactory from '@/components/api/BackendFactory';
 
@@ -33,7 +38,7 @@ export default {
     components: {
         Instruction,
         Checkpoints,
-        UIDefinitionChat
+        FormDefinition
     },
     props: {
         uengineProperties: Object,
@@ -47,7 +52,6 @@ export default {
         definition: Object,
         name: String
     },
-    emits: [ 'update:uengineProperties', 'update:name' ],
     data() {
         return {
             copyUengineProperties: JSON.parse(JSON.stringify(this.uengineProperties)),
@@ -58,9 +62,8 @@ export default {
                 checkpoints: ['']
             },
             formId: '',
-            formHtml: '',
-            formValues: {},
-            activeTab: null
+            tempFormHtml: '',
+            activeTab: 'setting'
         };
     },
     created() {
@@ -82,31 +85,77 @@ export default {
         activity: {
             deep: true,
             handler(newVal, oldVal) {
-                if (!this.useEvent && (newVal.checkpoints || newVal.instruction) ) {
-                    this.EventBus.emit('process-definition-updated', this.processDefinition);
-                }
+                this.EventBus.emit('process-definition-updated', this.processDefinition);
             }
         }
     },
     methods: {
         async init() {
             var me = this;
-            if (me.roles.length > 0) {
-                me.copyUengineProperties.role = { name: me.role };
-            }
-
-            me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
-            if (!me.copyUengineProperties.variableForHtmlFormContext) {
-                me.copyUengineProperties.variableForHtmlFormContext = {};
-            }
             me.formId = me.copyUengineProperties.variableForHtmlFormContext.name;
             if (me.formId && me.formId != '') {
-                me.formHtml = await me.backend.getRawDefinition(me.formId, { type: 'form' });
+                me.tempFormHtml = await me.backend.getRawDefinition(me.formId, { type: 'form' });
+            } else {
+                me.formId = me.processDefinitionId + '_' + me.activity.id + '_form';
+                const options = {
+                    type: 'form',
+                    match: {
+                        proc_def_id: me.processDefinitionId,
+                        activity_id: me.activity.id
+                    }
+                }
+                me.tempFormHtml = await me.backend.getRawDefinition(me.formId, options);
             }
+            me.copyUengineProperties = {
+                _type: 'org.uengine.kernel.FormActivity',
+                role: {
+                    name: me.role || ''
+                },
+                variableForHtmlFormContext: {
+                    name: me.formId
+                },
+                parameters: []
+            };
             me.copyDefinition = me.definition;
         },
-        beforeSave() {
+        async beforeSave() {
             var me = this;
+            if (me.formId == '' || me.formId == null) {
+                me.formId = me.processDefinitionId + '_' + me.element.id + '_form';
+            }
+            me.copyUengineProperties = {
+                _type: 'org.uengine.kernel.FormActivity',
+                role: {
+                    name: me.role
+                },
+                variableForHtmlFormContext: {
+                    name: me.formId
+                },
+                parameters: []
+            };
+            const options = {
+                type: 'form',
+                proc_def_id: me.processDefinitionId,
+                activity_id: me.element.id
+            }
+            if (me.tempFormHtml != '') {
+                me.$emit('addUengineVariable', {
+                    name: me.formId,
+                    type: 'Form',
+                    defaultValue: me.formId,
+                    description: '',
+                    datasource: {
+                        type: '',
+                        sql: ''
+                    },
+                    table: '',
+                    backend: null
+                });
+
+                if (options && options.proc_def_id && options.activity_id) {
+                    await me.backend.putRawDefinition(me.tempFormHtml, me.formId, options);
+                }
+            }
             me.$emit('update:uengineProperties', me.copyUengineProperties);
         },
     }
