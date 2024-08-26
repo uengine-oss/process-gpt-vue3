@@ -871,17 +871,17 @@ export default {
                         mainY = role[roleKey].y;
                     }
                     if(mainWidth < role[roleKey].x) {
-                        mainWidth = role[roleKey].x + (isHorizontal ? 40 : 50);
+                        mainWidth = role[roleKey].x + (isHorizontal ? 0 : + 50);
                     }
                     
                     if(mainHeight < role[roleKey].y) {
-                        mainHeight = role[roleKey].y + (isHorizontal ? 0 : 40);
+                        mainHeight = role[roleKey].y + (isHorizontal ? 0 : 0);
                     }
                 });
             });
 
-            dcBoundsParticipant.setAttribute('x', mainX + (isHorizontal ? -100 : -70));
-            dcBoundsParticipant.setAttribute('y', mainY + (isHorizontal ? -50 : -80));
+            dcBoundsParticipant.setAttribute('x', mainX + (isHorizontal ? -80 : -70));
+            dcBoundsParticipant.setAttribute('y', mainY + (isHorizontal ? -50 : -70));
 
             dcBoundsParticipant.setAttribute('width', mainWidth + (isHorizontal ? 0 : 0));
             dcBoundsParticipant.setAttribute('height', mainHeight + (isHorizontal ? 0 : 0));
@@ -906,10 +906,10 @@ export default {
                             roleX = role[roleKey].x;
                         }
                         if(roleY == 0) {
-                            roleY = role[roleKey].y - 10;
+                            roleY = role[roleKey].y;
                         }
                         if(roleHeight < role[roleKey].y) {
-                            roleHeight = role[roleKey].y - roleY + 90;
+                            roleHeight = role[roleKey].y - roleY + 100;
                         }
                     } else {
                         if(roleX == 0) {
@@ -930,8 +930,9 @@ export default {
                 laneShape.setAttribute('isHorizontal', isHorizontal);
                 const dcBoundsLane = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
                 
-                dcBoundsLane.setAttribute('x', roleX + (isHorizontal ? -70 : -70));
-                dcBoundsLane.setAttribute('y', roleY + (isHorizontal ? -40 : -50));
+                dcBoundsLane.setAttribute('x', roleX + (isHorizontal ? -50 : -70));
+                dcBoundsLane.setAttribute('y', roleY + (isHorizontal ? -50 : -40));
+
 
                 dcBoundsLane.setAttribute('width', roleWidth);
                 dcBoundsLane.setAttribute('height', roleHeight);
