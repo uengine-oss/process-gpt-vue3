@@ -399,7 +399,9 @@
         "variable" : "변수로 서브프로세스를 여러 개 생성함",
         "forEachVariableDescriptionTitle": "프로세스 변수에 등록된 데이터에 데이터 매핑을 해서 멀티 데이터를 삽입하면 프로세스 실행시 여러개 생성된 데이터를 기반으로 서브프로세스를 다중 생성",
         "forEachVariableDescriptionSubTitle1": "1. 화면 정의 관리에서 편집모드를 통해 다중 데이터 모드 체크",
-        "forEachVariableDescriptionSubTitle2": "2. sub 프로세스가 실행될 이전 Task 패널에서 데이터 매핑 진행"
+        "forEachVariableDescriptionSubTitle2": "2. sub 프로세스가 실행될 이전 Task 패널에서 데이터 매핑 진행",
+        "forEachRoleDescriptionTitle" : "선택된 역할(role)을 가진 모든 사람에게 Sub Process 생성",
+        "forEachRoleDescriptionSubTitle1" : "적용 시나리오: \n다수의 팀원이 동일한 작업을 수행해야 하는 경우, 역할 기반 다중 생성을 통해 각 팀원에게 서브 프로세스를 개별적으로 할당할 수 있습니다. \n이를 통해 각 팀원이 독립적으로 작업을 진행하면서도 전체 프로세스는 중앙에서 관리될 수 있습니다. \n\n아래는 이미지의 강조된 박스 부분이 역할(role)에 해당합니다."
     },
     "ParticipantPanel" : {
         "apiUrl" : "API URL",
@@ -419,7 +421,17 @@
     "MessageEventDefinitionPanel" : {
         "correlationKey": "관계 키",
         "servicePath": "서비스 경로",
-        "operationRef": "연산 참조"
+        "operationRef": "연산 참조",
+        "return": "Return 값을 저장 할 변수",
+        "methodTypeDescriptionTitle": "API 요청을 보낼 때 사용할 메서드(GET, POST, PUT, PATCH)와 요청을 처리할 서버의 엔드포인트 URL을 설정",
+        "methodTypeDescriptionSubTitle1": "1.GET : 서버로부터 데이터를 조회하는 요청 \n2.POST : 서버에 새 데이터를 생성하여 전송하는 요청 \n3.PUT : 기존 데이터를 업데이트하거나 전체를 대체하는 요청 \n4.PATCH : 기존 데이터의 일부를 수정하는 요청 \n5.API URL : 요청이 전송될 서버의 엔드포인트 주소\n",
+        "returnTitle": "드롭다운 메뉴는 프로세스 변수에서 등록된 변수 이름을 리스트로 출력합니다. \n위 작성된 내용을 저장할 변수를 선택합니다.",
+        "correlationKeyTitle": "관계 키는 특정 메시지를 식별하기 위해 사용하는 고유한 값입니다.",
+        "correlationKeySubTitle": " Message Intermediate Catch Event가 메시지를 수신할 때, 여러 메시지 중에서 올바른 메시지를 식별하고 처리하기 위해 관계 키를 사용합니다. 이 키는 메시지를 송신하는 엔티티와 수신하는 엔티티 간에 공유되어, 메시지가 특정 비즈니스 프로세스 인스턴스에 속하는지 식별할 수 있게 합니다. \n예를 들어, 주문 번호나 고객 ID가 관계 키로 사용될 수 있습니다.",
+        "servicePathTitle": "서비스 경로는 메시지가 전달될 서비스의 위치나 주소를 나타냅니다.",
+        "servicePathSubTitle": "이는 메시지가 어느 서비스 엔드포인트로 보내져야 하는지를 정의하며, 메시지 기반의 통신을 통해 프로세스가 다른 시스템 또는 서비스와 상호작용할 때 사용됩니다. BPMN에서, 서비스 경로는 주로 메시지를 라우팅하거나 특정 서비스로 전달하기 위해 설정됩니다. 서비스 경로를 통해 메시지가 적절한 서비스를 호출하게 됩니다.",
+        "operationReferenceTitle": "연산 참조는 특정 메시지를 처리하기 위한 연산(Operation)을 지정하는 참조입니다.",
+        "operationReferenceSubTitle": "이는 메시지가 도착했을 때 수행될 작업이나 비즈니스 로직을 정의합니다. BPMN에서 연산 참조는 메시지의 내용과 이 메시지가 트리거할 작업을 명확히 하도록 돕습니다. \n예를 들어, 특정 연산 참조는 메시지를 받았을 때 데이터베이스 업데이트 또는 외부 서비스 호출을 수행할 수 있습니다."
     },
     "DetailComponent" : {
         "details": "상세보기",
@@ -437,10 +449,9 @@
         "scriptDescriptionTitle": "Script Task 는 Javascript 나 Java 언어를 직접 액티비티에 설정하여 프로세스 설정만으로 처리하기 힘든 마이크로한 설정이나 액션을 실행가능하게 합니다.",
         "returnTitle": "드롭다운 메뉴는 프로세스 변수에서 등록된 변수 이름을 리스트로 출력합니다. \n위 작성된 내용을 저장할 변수를 선택합니다."
     },
-    "MessageEventDefinitionPanel" : {
-        "return": "Return 값을 저장 할 변수",
-        "methodTypeDescriptionTitle": "API 요청을 보낼 때 사용할 메서드(GET, POST, PUT, PATCH)와 요청을 처리할 서버의 엔드포인트 URL을 설정",
-        "methodTypeDescriptionSubTitle1": "1.GET : 서버로부터 데이터를 조회하는 요청 \n2.POST : 서버에 새 데이터를 생성하여 전송하는 요청 \n3.PUT : 기존 데이터를 업데이트하거나 전체를 대체하는 요청 \n4.PATCH : 기존 데이터의 일부를 수정하는 요청 \n5.API URL : 요청이 전송될 서버의 엔드포인트 주소\n",
-        "returnTitle": "드롭다운 메뉴는 프로세스 변수에서 등록된 변수 이름을 리스트로 출력합니다. \n위 작성된 내용을 저장할 변수를 선택합니다."
+    "TimerEventDefinitionPanel" : {
+        "cron": "시간 입력(Cron)",
+        "cronDescriptionTitle": "Cron 표현식을 사용하여 Timer Intermediate Catch Event가 트리거될 시간을 정밀하게 설정할 수 있습니다.",
+        "cronDescriptionSubTitle": "형식: Cron 표현식은 다섯 개의 필드로 구성되며, 각 필드는 분, 시간, 일, 월, 요일을 나타냅니다. \n예시: \n0 0 * * * : 매일 자정 (00:00)에 이벤트가 트리거됩니다. \n15 10 * * * : 매일 10:15 AM에 이벤트가 트리거됩니다. \n0 9 1 * * : 매월 1일 9:00 AM에 이벤트가 트리거됩니다. \n0 0 * * 1 : 매주 월요일 자정 (00:00)에 이벤트가 트리거됩니다. \n*/10 * * * * : 매 10분마다 이벤트가 트리거됩니다."
     }
 }

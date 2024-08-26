@@ -1,7 +1,11 @@
 <template>
     <div>
         <!-- <cron-vuetify v-model="cron" :chip-props="{ color: 'success', textColor: 'white' }" @error="error = $event" /> -->
-        <v-text-field class="mt-4" v-model="copyUengineProperties.expression" label="시간 입력(Cron)"></v-text-field>
+        <v-text-field class="mt-4" v-model="copyUengineProperties.expression" :label="$t('TimerEventDefinitionPanel.cron')"></v-text-field>
+        <DetailComponent
+            :title="$t('TimerEventDefinitionPanel.cronDescriptionTitle')"
+            :details="cronDescription"
+        />
         <!-- editable cron expression -->
     </div>
 </template>
@@ -52,7 +56,12 @@ export default {
             eventType: null,
             cron: '* * * * *',
             nextCron: '* * * * *',
-            error: ''
+            error: '',
+            cronDescription: [
+                {
+                    title: 'TimerEventDefinitionPanel.cronDescriptionSubTitle',
+                },
+            ],
         };
     },
     async mounted() {

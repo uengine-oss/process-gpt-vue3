@@ -58,8 +58,23 @@
         <div v-else-if="this.element.$type === 'bpmn:IntermediateCatchEvent' || this.element.$type === 'bpmn:StartEvent'">
             <div>
                 <v-text-field class="mt-4" :label="$t('MessageEventDefinitionPanel.correlationKey')" v-model="copyUengineProperties.correlationKey"></v-text-field>
+                <DetailComponent
+                    :title="$t('MessageEventDefinitionPanel.correlationKeyTitle')"
+                    :details="correlationKeyDescription"
+                    :detailUrl="'https://www.youtube.com/watch?v=bxkB-pkOpTQ'"
+                />
+
                 <v-text-field class="mt-4" :label="$t('MessageEventDefinitionPanel.servicePath')" v-model="copyUengineProperties.servicePath"></v-text-field>
+                <DetailComponent
+                    :title="$t('MessageEventDefinitionPanel.servicePathTitle')"
+                    :details="servicePathDescription"
+                />
+
                 <v-text-field class="mt-4" :label="$t('MessageEventDefinitionPanel.operationRef')" v-model="copyUengineProperties.operationRef"></v-text-field>
+                <DetailComponent
+                    :title="$t('MessageEventDefinitionPanel.operationReferenceTitle')"
+                    :details="operationReferenceDescription"
+                />
             </div>
         </div>
     </div>
@@ -123,6 +138,21 @@ export default {
                 {
                     title: 'MessageEventDefinitionPanel.methodTypeDescriptionSubTitle1',
                 },
+            ],
+            correlationKeyDescription: [
+                {
+                    title: 'MessageEventDefinitionPanel.correlationKeySubTitle',
+                }
+            ],
+            servicePathDescription: [
+                {
+                    title: 'MessageEventDefinitionPanel.servicePathSubTitle',
+                }
+            ],
+            operationReferenceDescription: [
+                {
+                    title: 'MessageEventDefinitionPanel.operationReferenceSubTitle',
+                }
             ]
         };
     },
