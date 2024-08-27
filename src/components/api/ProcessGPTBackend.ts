@@ -121,9 +121,9 @@ class ProcessGPTBackend implements Backend {
             const procDefArcv: any = {
                 arcv_id: options.arcv_id,
                 proc_def_id: defId,
-                version: options.version,
+                version: options.version || '1.0',
                 snapshot: xml,
-                diff: options.diff,
+                diff: options.diff ? options.diff : null,
                 message: options.message
             }
             await storage.putObject('proc_def_arcv', procDefArcv);

@@ -46,7 +46,7 @@
                             <v-btn :size="30"
                                 icon variant="text" class="ml-2"
                                 v-bind="props"
-                                @click="openPreviewDialog = true"
+                                @click="jumpToProcessDefintionChat()"
                             >
                                 <v-icon>mdi-auto-fix</v-icon>
                             </v-btn>
@@ -99,18 +99,18 @@
                 <dry-run-process :definitionId="processDefinition.id"  @close="executeDialog = false"></dry-run-process>
             </div>
         </v-dialog>
-        <v-dialog v-model="openPreviewDialog" persistent>
+        <!-- <v-dialog v-model="openPreviewDialog" persistent>
             <ProcessConsultingChat 
                 :proc_bpmn="bpmn"
                 :ProcessPreviewMode="true"
                 @closeConsultingDialog="openPreviewDialog = false" 
             />
-        </v-dialog>
+        </v-dialog> -->
     </v-card>
 </template>
 
 <script>
-import ProcessConsultingChat from '@/components/ProcessConsultingChat.vue';
+// import ProcessConsultingChat from '@/components/ProcessConsultingChat.vue';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import ProcessExecuteDialog from '@/components/apps/definition-map/ProcessExecuteDialog.vue';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
@@ -123,7 +123,7 @@ export default {
     components: {
         ProcessDefinition,
         ProcessExecuteDialog,
-        ProcessConsultingChat,
+        // ProcessConsultingChat,
         'dry-run-process': DryRunProcess,
         'process-gpt-execute': ProcessGPTExecute
     },
@@ -145,7 +145,7 @@ export default {
         defCnt: 0,
         isViewMode: true,
         executeDialog: false,
-        openPreviewDialog: false
+        // openPreviewDialog: false
     }),
     computed: {
         mode() {
@@ -168,6 +168,9 @@ export default {
         this.init(this.$route.params);
     },
     methods: {
+        jumpToProcessDefintionChat(){
+            this.$router.push(`/definitions/${this.processDefinition.id}`);
+        },
         goHistory(idx) {
             this.updateBpmn(this.subProcessBreadCrumb[idx].xml);
             this.removeHistoryAfterIndex(idx)

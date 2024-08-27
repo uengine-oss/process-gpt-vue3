@@ -18,8 +18,8 @@ export default {
         isViewMode: false,
         lock: false,
         loading: false,
-        isConsultingMode: false,
         isChanged: false,
+        skipSaveProcMap: false,
     }),
     computed: {},
     mounted() {},
@@ -38,12 +38,10 @@ export default {
 
             // 정규 표현식 정의
             //const regex = /^.*?`{3}(?:json)?\n(.*?)`{3}.*?$/s;
-            const regex = /```(?:json)?\s*([\s\S]*?)\s*```/;
-
-
+            let regex = /```(?:json)?\s*([\s\S]*?)\s*```/;
+            
             // 정규 표현식을 사용하여 입력 문자열에서 JSON 부분 추출
-            const match = inputString.match(regex);
-
+            let match = inputString.match(regex);
             // 매치된 결과가 있다면, 첫 번째 캡쳐 그룹(즉, JSON 부분)을 반환
             if (match) {
                 if (checkFunction)
@@ -53,13 +51,17 @@ export default {
                         if (checkFunction(result)) return result;
                     });
                 else return match[1];
+            } else {
+                regex = /\{[\s\S]*\}/
+                match = inputString.match(regex);
+                return match && match[0] ? match[0] : null;
             }
 
             // 매치된 결과가 없으면 null 반환
             return null;
         },
         checkedFormData() {
-            if (this.processDefinition.data) {
+            if (this.processDefinition && this.processDefinition.data) {
                 let formList = this.processDefinition.data.filter(data => data.type == 'Form');
                 if (formList && formList.length > 0) {
                     formList.forEach(async (form) => {
@@ -2559,7 +2561,7 @@ export default {
                     }
                     me.EventBus.emit('definitions-updated');
 
-                    if(!this.isConsultingMode){
+                    if(!this.skipSaveProcMap){
                         await backend.putProcessDefinitionMap(me.processDefinitionMap);
                     }
 

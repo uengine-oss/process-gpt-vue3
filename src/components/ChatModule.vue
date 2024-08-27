@@ -32,6 +32,9 @@ export default {
         processInstanceId: null,
         chatRoomId: '',
         isVisionMode: false,
+
+        // consulting
+        isMentoMode: false,
     }),
     computed: {
         useLock() {
@@ -587,7 +590,13 @@ export default {
                             }
                             let messageWriting = this.messages[this.messages.length - 1];
                             messageWriting.content = response;
-                            messageWriting.jsonContent = this.extractJSON(response);
+                            if(!this.isMentoMode){
+                                if(!response.includes("}")){
+                                    messageWriting.jsonContent = this.extractJSON(response + "}");
+                                } else {
+                                    messageWriting.jsonContent = this.extractJSON(response);
+                                }
+                            }
         
                             if (messageWriting.jsonContent) {
                                 let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
@@ -647,7 +656,7 @@ export default {
                 }
     
                 let jsonData = response;
-                if (typeof response == 'string') {
+                if (typeof response == 'string' && !this.isMentoMode) {
                     jsonData = this.extractJSON(response);
                     if(jsonData && jsonData.includes('{')){
                         jsonData = JSON.parse(jsonData);
@@ -743,12 +752,10 @@ export default {
 
             // 정규 표현식 정의
             //const regex = /^.*?`{3}(?:json)?\n(.*?)`{3}.*?$/s;
-            const regex = /```(?:json)?\s*([\s\S]*?)\s*```/;
-
-
+            let regex = /```(?:json)?\s*([\s\S]*?)\s*```/;
+            
             // 정규 표현식을 사용하여 입력 문자열에서 JSON 부분 추출
-            const match = inputString.match(regex);
-
+            let match = inputString.match(regex);
             // 매치된 결과가 있다면, 첫 번째 캡쳐 그룹(즉, JSON 부분)을 반환
             if (match) {
                 if (checkFunction)
@@ -758,6 +765,10 @@ export default {
                         if (checkFunction(result)) return result;
                     });
                 else return match[1];
+            } else {
+                regex = /\{[\s\S]*\}/
+                match = inputString.match(regex);
+                return match && match[0] ? match[0] : null;
             }
 
             // 매치된 결과가 없으면 null 반환
