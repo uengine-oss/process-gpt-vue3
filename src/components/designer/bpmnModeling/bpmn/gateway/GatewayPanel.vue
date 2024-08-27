@@ -1,28 +1,13 @@
 <template>
-    <bpmn-common-panel
-            v-model="value"
-            :image="image"
-            :is-read-only="readOnly"
-            :width-style="widthStyle"
-            @close="closePanel"
-    >
-        <template slot="edit-property">
-            <v-text-field
-                    v-model="value.retryDelay"
-                    label="retryDelay"
-                    type="number"
-            ></v-text-field>
-        </template>
-    </bpmn-common-panel>
+    {{element.$type}}
 </template>
 
 <script>
-    import BpmnPropertyPanel from '../panel/BpmnPropertyPanel.vue'
 
     export default {
-        mixins: [BpmnPropertyPanel],
-        name: 'bpmn-gateway-panel',
+        name: 'gateway-panel',
         props: {
+            element: Object,
         },
         data() {
             return {
@@ -31,6 +16,7 @@
         created: function () {
         },
         mounted: function () {
+            console.log('gatewayType: ', this.element.$type);
         },
         computed: {},
         watch: {},
