@@ -455,5 +455,13 @@
         "cron": "Time Input (Cron)",
         "cronDescriptionTitle": "You can use a Cron expression to precisely set the time at which the Timer Intermediate Catch Event will be triggered.",
         "cronDescriptionSubTitle": "Format: A Cron expression consists of five fields, each representing minutes, hours, day of the month, month, and day of the week. \nExamples: \n0 0 * * * : Triggers the event every day at midnight (00:00). \n15 10 * * * : Triggers the event every day at 10:15 AM. \n0 9 1 * * : Triggers the event on the 1st of every month at 9:00 AM. \n0 0 * * 1 : Triggers the event every Monday at midnight (00:00). \n*/10 * * * * : Triggers the event every 10 minutes."
+    },
+    "GatewayPanel": {
+        "gatewayDescriptionTitle": "Used when selecting to proceed to the next task through Gateway condition processing.",
+        "gatewayDescriptionSubTitle": "Exclusive Gateway: When exiting, it moves to one task that matches the condition applied to the line. When entering, it proceeds to the next task if any of the multiple tasks are completed, and the existing task is terminated.",
+        "gatewayDescriptionSubTitle1": "Parallel Gateway: When exiting, it proceeds to all subsequent tasks in parallel if the condition applied to the line is met. When entering, it proceeds to the next task only when all tasks are completed.",
+        "gatewayDescriptionSubTitle2": "Inclusive Gateway: When exiting, it moves to one task that matches the condition applied to the line. When entering, it proceeds to the next task only when all tasks are completed.",
+        "gatewayDescriptionSubTitle3": "Event-based gateway: It can only proceed to the next task when a specific event occurs.",
+        "gatewayDescriptionSubTitle4": "Complex Gateway (Not Implemented): Users can add arbitrary conditions to select the next task."
     }
 }

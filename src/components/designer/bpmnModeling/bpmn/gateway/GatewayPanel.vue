@@ -1,5 +1,10 @@
 <template>
-    {{element.$type}}
+    <div>
+        <DetailComponent
+            :title="$t('GatewayPanel.gatewayDescriptionTitle')"
+            :details="gatewayDescription"
+        />
+    </div>
 </template>
 
 <script>
@@ -11,6 +16,24 @@
         },
         data() {
             return {
+                gatewayDescription: [
+                    {
+                        title: 'GatewayPanel.gatewayDescriptionSubTitle',
+                    },
+                    {
+                        title: 'GatewayPanel.gatewayDescriptionSubTitle1'
+                    },
+                    {
+                        title: 'GatewayPanel.gatewayDescriptionSubTitle2'
+                    },
+                    {
+                        title: 'GatewayPanel.gatewayDescriptionSubTitle3'
+                    },
+                    {
+                        title: 'GatewayPanel.gatewayDescriptionSubTitle4',
+                        image: 'gatewayChange.gif'
+                    }
+                ]
             }
         },
         created: function () {

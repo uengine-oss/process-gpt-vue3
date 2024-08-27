@@ -418,7 +418,7 @@
         "scopeName" : "역할 명", 
         "userID": "유저 ID",
         "radioDescriptionTitle": "추가하고 싶은 역할을 선택합니다.",
-        "radioDescriptionSubTitle": "없음 : 이 옵션을 선택하면 해당 작업에 대해 특정 역할이 할당되지 않습니다. 모든 사용자가 이 작업을 수행할 수 있습니다. \n역할명으로 역할 선택 : 이 옵션을 선택하면 미리 정의된 역할 목록에서 역할을 선택할 수 있습니다. 선택된 역할에 속한 사용자만 이 작업을 수행할 수 있습니다. \n직접 사용자 선택 : 이 옵션을 선택하면 특정 사용자를 직접 지정할 수 있습니다. 지정된 사용자만 이 작업을 수행할 수 있습니다."
+        "radioDescriptionSubTitle": "없음 : 이 옵션을 선택하면 해당 작업에 대해 특정 역할이 할당되지 않습니다. 모든 사용자가 이 작업을 수행할 수 있습니다. \n\n역할명으로 역할 선택 : 이 옵션을 선택하면 미리 정의된 역할 목록에서 역할을 선택할 수 있습니다. 선택된 역할에 속한 사용자만 이 작업을 수행할 수 있습니다. \n\n직접 사용자 선택 : 이 옵션을 선택하면 특정 사용자를 직접 지정할 수 있습니다. 지정된 사용자만 이 작업을 수행할 수 있습니다."
     },
     "MessageEventDefinitionPanel" : {
         "correlationKey": "관계 키",
@@ -455,5 +455,13 @@
         "cron": "시간 입력(Cron)",
         "cronDescriptionTitle": "Cron 표현식을 사용하여 Timer Intermediate Catch Event가 트리거될 시간을 정밀하게 설정할 수 있습니다.",
         "cronDescriptionSubTitle": "형식: Cron 표현식은 다섯 개의 필드로 구성되며, 각 필드는 분, 시간, 일, 월, 요일을 나타냅니다. \n예시: \n0 0 * * * : 매일 자정 (00:00)에 이벤트가 트리거됩니다. \n15 10 * * * : 매일 10:15 AM에 이벤트가 트리거됩니다. \n0 9 1 * * : 매월 1일 9:00 AM에 이벤트가 트리거됩니다. \n0 0 * * 1 : 매주 월요일 자정 (00:00)에 이벤트가 트리거됩니다. \n*/10 * * * * : 매 10분마다 이벤트가 트리거됩니다."
+    },
+    "GatewayPanel" : {
+        "gatewayDescriptionTitle" : "Gateway 조건처리를 통해 다음 작업으로 넘어가는 것을 선택할 때 사용함",
+        "gatewayDescriptionSubTitle" : "Exclusive Gateway : 나갈 때는 선에 적용된 조건에 맞는 하나의 작업으로 넘어감 들어올 때는 여러 작업 중 하나라도 들어오면 다음 작업으로 넘어가며 기존 작업은 종료됨",
+        "gatewayDescriptionSubTitle1" : "Pararell Gateway : 나갈 때는 선에 적용된 조건이 맞기만 하면 전부 병렬로 다음 작업을 진행함 들어올 때는 여러 작업이 있으면 모든 작업이 완료되어야 다음 작업으로 넘어갈 수 있음",
+        "gatewayDescriptionSubTitle2" : "Inclusive Gateway : 나갈 때는 선에 적용된 조건에 맞는 하나의 작업으로 넘어감 들어올 때는 여러 작업이 있으면 모든 작업이 완료되어야 다음 작업으로 넘어갈 수 있음",
+        "gatewayDescriptionSubTitle3" : "Event-based gateway : 특정 이벤트가 들어왔을 경우에만 다음 작업으로 넘어갈 수 있음",
+        "gatewayDescriptionSubTitle4" : "Complex Gateway(미구현) : 사용자가 임의의 조건을 추가하여 다음 작업으로 넘어가는 것을 선택할 수 있음"
     }
 }
