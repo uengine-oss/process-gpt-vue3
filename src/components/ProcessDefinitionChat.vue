@@ -228,7 +228,6 @@ export default {
             // Issue: init Methods가 종료되기전에, ChatGenerator를 생성하면서 this로 넘겨주는 Client 정보가 누락되는 현상 발생.
             if(this.mode == 'consulting'){
                 this.isConsultingMode = true
-                this.skipSaveProcMap = true
             } 
             if(this.isConsultingMode){
                 this.userInfo = await this.storage.getUserInfo();
@@ -329,6 +328,7 @@ export default {
         async beforeSaveDefinition(info){
             if(this.mode == 'consulting'){
                 await this.$emit("createdBPMN", this.processDefinition)
+                info.skipSaveProcMap = true
             } 
             this.saveDefinition(info);
         },
@@ -570,6 +570,11 @@ export default {
         beforeSendMessage(newMessage) {
             this.waitForCustomer = false
             if(!this.isConsultingMode){
+                this.generator = new ChatGenerator(this, {
+                    isStream: true,
+                    preferredLanguage: 'Korean'
+                });
+                this.generator.client.genType = 'proc_def'
                 if (this.processDefinitionMap) {
                     this.generator.setProcessDefinitionMap(this.processDefinitionMap);
                 }
@@ -824,12 +829,6 @@ export default {
                         this.definitionChangeCount++;
                     }
                     await this.checkedFormData();
-
-                    this.messages.push({
-                        "role": "system",
-                        "content": `컨설팅 내용을 기반으로한 모델 생성이 완료되었습니다. 생성된 모델을 리뷰하고 필요한 부분을 추가, 개선하는 단계입니다. 개선하고자하는 부분이 있으시다면 말씀해주세요!`,
-                        "timeStamp": Date.now(),
-                    })
         
                     this.isChanged = true;
                 }
