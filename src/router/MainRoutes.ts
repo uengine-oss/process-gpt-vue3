@@ -105,6 +105,11 @@ const MainRoutes = {
             path: '/dashboard2',
             component: () => import('@/views/dashboard/dashboard2.vue')
         },
+        {
+            name: 'Account Setting',
+            path: '/account-settings',
+            component: () => import('@/views/pages/account-settings/AccountSettings.vue')
+        },
 
         // {
         //     name: 'Email',
@@ -161,11 +166,6 @@ const MainRoutes = {
         //     name: 'Kanban',
         //     path: '/apps/kanban',
         //     component: () => import('@/views/apps/kanban/Kanban.vue')
-        // },
-        // {
-        //     name: 'Account Setting',
-        //     path: '/pages/account-settings',
-        //     component: () => import('@/views/pages/account-settings/AccountSettings.vue')
         // },
         // {
         //     name: 'Alert',

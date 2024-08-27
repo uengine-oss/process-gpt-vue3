@@ -261,7 +261,14 @@ export default {
                             workItem['user_input_text'] = this.newMessage;
                         }
                         await backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate);
-                        me.$router.push('/todolist');
+                        
+                        let path = ''
+                        if ($mode == 'ProcessGPT') {
+                            path = btoa(me.workItem.worklist.instId)
+                        } else {
+                            path = me.workItem.worklist.instId
+                        }
+                        me.$router.push(`/instancelist/${path}`);
                     }
                 }
             })

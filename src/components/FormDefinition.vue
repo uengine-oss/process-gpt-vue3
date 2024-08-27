@@ -1,204 +1,95 @@
 <template>
-    <v-card elevation="10">
-        <AppBaseCard>
-            <template v-slot:leftpart>
-                <div class="no-scrollbar">
-                    <Chat
-                        :chatInfo="chatInfo"
-                        :messages="messages"
-                        :userInfo="userInfo"
-                        type="form"
-                        @sendMessage="beforeSendMessage"
-                        @sendEditedMessage="sendEditedMessage"
-                        @stopMessage="stopMessage"
-                    >
-                        <template v-slot:custom-tools>
-                            <div class="d-flex flex-row-reverse" style="height: 0px; position: relative; bottom: 35px; left: 10px">
-                                <v-tooltip>
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn v-bind="props"
-                                            icon variant="text"
-                                            class="text-medium-emphasis"
-                                            @click="openSaveDialog"
-                                        >
-                                            <Icons :icon="'save'" />
-                                        </v-btn>
-                                    </template>
-                                    <span>{{ $t('uiDefinition.save') }}</span>
-                                </v-tooltip>
-
-                                <v-tooltip>
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn v-if="isLoadedForm" 
-                                            v-bind="props" 
-                                            icon  variant="text" 
-                                            class="text-medium-emphasis"
-                                            @click="openDeleteDialog">
-                                            <TrashIcon size="24" />
-                                        </v-btn>
-                                    </template>
-                                    <span>{{ $t('uiDefinition.deleteForm') }}</span>
-                                </v-tooltip>
-                            </div>
-                        </template>
-                    </Chat>
+    <v-card flat>
+        <div :class="{'d-flex': !isMobile}">
+            <div v-if="type === 'edit'" class="w-100 d-flex justify-center">
+                <div v-if="isShowMashup">
+                    <mashup ref="mashup" v-model="kEditorInput" :key="mashupKey"  
+                        @onInitKEditorContent="updateKEditorContentBeforeSave"
+                        @onChangeKEditorContent="changedKEditorContent"/>
                 </div>
-            </template>
-            <template v-slot:rightpart>
-                <v-tabs v-model="currentTabName" style="position: fixed; z-index: 999" color="primary" fixed-tabs>
-                    <v-tab value="edit">{{ $t('uiDefinition.redaction') }}</v-tab>
-                    <v-tab value="preview">{{ $t('uiDefinition.preview') }}</v-tab>
-                </v-tabs>
-                <v-window v-model="currentTabName" class="fill-height">
-                    <v-window-item value="edit" class="fill-height mt-12" style="overflow-y: auto;">
-                        <mashup
-                            v-if="isShowMashup"
-                            ref="mashup"
-                            v-model="kEditorInput"
-                            :key="mashupKey"
-                            @onSaveFormDefinition="saveFormDefinition"
-                            @onInitKEditorContent="updateKEditorContentBeforeSave"
-                        />
-                        <div v-else class="d-flex align-center justify-center fill-height">
-                            <v-progress-circular color="primary" indeterminate></v-progress-circular>
-                        </div>
-                    </v-window-item>
+                <div v-else class="align-self-center">
+                    <v-progress-circular color="primary" indeterminate></v-progress-circular>
+                </div>
+            </div>
 
-                    <v-window-item value="preview" class="fill-height mt-10 pa-5" style="overflow-y: auto">
-                        <template v-if="isShowPreview">
-                            <DynamicForm ref="dynamicForm" :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
+            <div v-if="type === 'preview'" class="w-100 mt-5">
+                <template v-if="isShowPreview">
+                    <DynamicForm ref="dynamicForm" :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
+                    <!-- <template v-if="dev.isDevMode">
+                        <v-textarea label="previewFormValuesToTest" rows="10" v-model="dev.previewFormValues"></v-textarea>
+                        <v-btn color="primary" class="full-width my-5" @click="onClickPreviewApplyButton">적용</v-btn>
+                    </template>
 
-                            <template v-if="dev.isDevMode">
-                                <v-textarea label="previewFormValuesToTest" rows="10" v-model="dev.previewFormValues"></v-textarea>
-                                <v-btn color="primary" class="full-width my-5" @click="onClickPreviewApplyButton">적용</v-btn>
-                            </template>
-
-                            <v-row class="ma-0 pa-0">
-                                <v-spacer></v-spacer>
-                                <v-btn color="primary" @click="onClickPreviewSubmitButton">제출</v-btn>
-                            </v-row>
-                        </template>
-                        <div v-else class="d-flex align-center justify-center fill-height">
-                            <v-progress-circular color="primary" indeterminate></v-progress-circular>
-                        </div>
-                    </v-window-item>
-                </v-window>
-            </template>
-
-            <template v-slot:mobileLeftContent>
-                <Chat
-                    :chatInfo="chatInfo"
-                    :messages="messages"
-                    :userInfo="userInfo"
-                    type="form"
-                    @sendMessage="beforeSendMessage"
-                    @sendEditedMessage="sendEditedMessage"
-                    @stopMessage="stopMessage"
-                >
-                    <template v-slot:custom-tools>
-                        <div class="d-flex flex-row-reverse" style="height: 0px; position: relative; bottom: 35px; left: 10px">
-                            <v-tooltip>
-                                <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props"
-                                        icon variant="text"
-                                        class="text-medium-emphasis"
-                                        @click="openSaveDialog"
-                                    >
-                                        <Icons :icon="'save'" />
-                                    </v-btn>
-                                </template>
-                                <span>{{ $t('uiDefinition.save') }}</span>
-                            </v-tooltip>
-
-                            <v-tooltip location="bottom">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn v-if="isLoadedForm" 
-                                        v-bind="props" 
-                                        icon  variant="text" 
-                                        class="text-medium-emphasis"
-                                        @click="openDeleteDialog">
-                                        <TrashIcon size="24" />
-                                    </v-btn>
-                                </template>
-                                <span>{{ $t('uiDefinition.deleteForm') }}</span>
-                            </v-tooltip>
-                        </div>
+                    <v-row class="ma-0 pa-0">
+                        <v-spacer></v-spacer>
+                        <v-btn color="primary" @click="onClickPreviewSubmitButton">제출</v-btn>
+                    </v-row> -->
+                </template>
+                <div v-else class="align-self-center">
+                    <v-progress-circular color="primary" indeterminate></v-progress-circular>
+                </div>
+            </div>
+            <div v-if="!isMobile" class="ml-auto" style="max-width: 250px;">
+                <Chat :chatInfo="chatInfo" :messages="messages" :userInfo="userInfo" type="form"
+                    @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage">
+                    <template v-slot:custom-title>
+                        <div></div>
                     </template>
                 </Chat>
-            </template>
-        </AppBaseCard>
+            </div>
+        </div>
     </v-card>
-
-    <v-dialog v-model="isOpenSaveDialog">
-        <form-design-save-panel @onClose="isOpenSaveDialog = false" @onSave="tryToSaveFormDefinition" :savedId="(loadFormId === 'chat') ? null : loadFormId"
-            :formNameByUrl="formNameByUrl">
-        </form-design-save-panel>
-    </v-dialog>
-
-    <v-dialog v-model="isOpenDeleteDialog" max-width="500">
-        <v-card>
-            <v-card-text>
-                {{ $t('uiDefinition.deleteFormMessage') }}
-            </v-card-text>
-            <v-card-actions class="justify-center pt-0">
-                <v-btn color="primary" variant="flat" @click="deleteForm">{{ $t('uiDefinition.delete') }}</v-btn>
-                <v-btn color="error" variant="flat" @click="isOpenDeleteDialog = false">{{ $t('uiDefinition.cancel') }}</v-btn>
-            </v-card-actions>
-        </v-card>
-    </v-dialog>
 </template>
 
 <script>
-import * as jsondiff from 'jsondiffpatch';
-import ChatDetail from '@/components/apps/chats/ChatDetail.vue';
-import ChatListing from '@/components/apps/chats/ChatListing.vue';
-import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import Mashup from '@/components/designer/Mashup.vue';
-import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import FormDesignSavePanel from '@/components/designer/FormDesignSavePanel.vue';
 import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/FormDesignGenerator';
 import Chat from './ui/Chat.vue';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 
-var jsondiffpatch = jsondiff.create({
-    objectHash: function (obj, index) {
-        return '$$index:' + index;
-    }
-});
 
 export default {
     mixins: [ChatModule],
-    name: 'UIDefinitionChat',
+    props: {
+        type: {
+            type: String,
+            default: 'edit'
+        },
+        formId: {
+            type: String,
+            default: ''
+        },
+        modelValue: {
+            type: String,
+            default: ''
+        }
+    },
     components: {
         Chat,
-        AppBaseCard,
-        ChatListing,
-        ChatDetail,
-        ChatProfile,
         Mashup,
         ChatGenerator,
         FormDesignSavePanel,
         DynamicForm
     },
     data: () => ({
-        path: 'form_def',
         chatInfo: {
-            title: 'uiDefinition.cardTitle',
+            title: '',
             text: 'uiDefinition.uiDefinitionExplanation'
         },
 
         kEditorInput: ``, // Mashup 컴포넌트의 KEditor을 업데이트하기 위해서 전달되는 값
         mashupKey: 0, // kEditorInput가 변경되었을 경우, Mashup 컴포넌트를 다시 렌더링하기 위해서
 
+        kEditorContent: '',
+
         prevFormOutput: '', // 폼 디자이너에게 이미 이전에 생성된 HTML 결과물을 전달하기 위해서
         prevMessageFormat: '', // 사용자가 KEditor를 변경할때마다 해당 포맷을 기반으로 System 메시지를 재구축해서 보내기 위해서
 
-        storedFormDefHTML: "",
-        isOpenSaveDialog: false,
-        currentTabName: '',
+        formHTML: "",
         isShowMashup: false,
-
+        
         previewHTML: '',
         previewFormValues: {},
         isShowPreview: false,
@@ -207,22 +98,13 @@ export default {
             isDevMode: window.localStorage.getItem('isDevMode') === 'true',
             previewFormValues: ''
         },
-        loadFormId: '',
-        isLoadedForm: false,
 
-        kEditorContentBeforeSave: "",
         isAIUpdated: false,
         isRoutedWithUnsaved: false,
-
-        processDefUrlData: null,
-        formNameByUrl: null,
-
-        isOpenDeleteDialog: false
     }),
     async created() {
         const reloadOnConnectionFailure = async () => {
-            if(!(await this.storage.isConnection()))
-            {
+            if (!(await this.storage.isConnection())) {
                 const reloadOnConnectionSuccess = async () => {
                     if(await this.storage.isConnection())
                         this.$router.go(0);
@@ -234,104 +116,37 @@ export default {
         }
         reloadOnConnectionFailure()
 
+        if (this.modelValue != '') {
+            this.kEditorInput = this.dynamicFormHTMLToKeditorContentHTML(this.modelValue);
+        }
+
         this.generator = new ChatGenerator(this, {
             isStream: true,
             preferredLanguage: 'Korean'
         });
         await this.init();
-
-        // #region 프로세스 정의에서 폼 생성 요청으로 새 탭을 열었을 경우, 이를 적절하게 처리
-        const urlParams = new URLSearchParams(window.location.search);
-        const processDefUrlData = urlParams.get('process_def_url_data');
-        if(processDefUrlData) {
-            this.processDefUrlData = JSON.parse(decodeURIComponent(atob(processDefUrlData)));
-            this.beforeSendMessage({
-                "image": null,
-                "text": this.processDefUrlData.initPrompt,
-                "mentionedUsers": []
-            });
-
-            this.formNameByUrl = this.processDefUrlData.formName;
-        }
-        // #endregion
+    },
+    computed: {
+        isMobile() {
+            return window.innerWidth <= 1080;
+        },
     },
     watch: {
-        /**
-         * URL에서 폼을 가리키는 ID가 변경되었을 경우, 재업데이트를 위해서
-         */
-        $route: {
-            deep: true,
-            handler(newVal, oldVal) {
-                if (!newVal.path.startsWith('/ui-definitions')) return;
-
-                if(this.isRoutedWithUnsaved) {
-                    this.isRoutedWithUnsaved = false;
-                    return;
-                }
-
-                if (newVal.path !== oldVal.path) {
-                    if(this.$refs.mashup) {
-                        if(this.isAIUpdated || (this.$refs.mashup.getKEditorContentHtml() != this.kEditorContentBeforeSave)) {
-                            const answer = window.confirm('You have unsaved changes. Are you sure you want to leave?');
-                            if (answer)
-                                this.loadData();
-                            else {
-                                this.isRoutedWithUnsaved = true;
-                                this.$router.push(oldVal.path);
-                            }
-                        }
-                        else
-                            this.loadData();
-                    }
-                    else
-                        this.loadData();
-                }
-                else this.isShowMashup = true;
-            }
-        },
-
-        currentTabName: {
-            handler() {
-                if (this.currentTabName === 'edit') $("div[id^='keditor-content-area-']").css('display', 'block');
-                // 미리보기에 KEditor에서 편집한 HTML을 로드시키기 위해서
-                else {
-                    $("div[id^='keditor-content-area-']").css('display', 'none');
-                    this.applyToPreviewTab();
-                }
+        type(newVal, oldVal) {
+            if (newVal === 'edit') {
+                this.applyNewSrcToMashup(this.modelValue);
+            } else {
+                this.applyToPreviewTab();
             }
         }
     },
     methods: {
+        changedKEditorContent(value) {
+            this.formHTML = this.keditorContentHTMLToDynamicFormHTML(value.html);
+            this.$emit('update:modelValue', this.formHTML);
+        },
         updateKEditorContentBeforeSave(kEditorContent) {
-            this.kEditorContentBeforeSave = kEditorContent;
-        },
-
-        openSaveDialog() {
-            this.isOpenSaveDialog = true;
-        },
-
-        openDeleteDialog() {
-            this.isOpenDeleteDialog = true;
-        },
-
-        /**
-         * ID 정보를 제공하고, 'Save' 버튼을 누를 경우, 최종 결과를 DB에 저장시키기 위해서
-         */
-        async tryToSaveFormDefinition({ id }) {
-            var me = this;
-            me.$try({
-                context: me,
-                action: async () => {
-                    const kEditorContentHTML = me.$refs.mashup.getKEditorContentHtml();
-                    const DynamicFormHTML = me.keditorContentHTMLToDynamicFormHTML(kEditorContentHTML);
-
-                    await me.saveFormDefinition({
-                        id: id,
-                        html: DynamicFormHTML
-                    });
-                },
-                successMsg: '저장되었습니다.'
-            });
+            // this.kEditorContentBeforeSave = kEditorContent;
         },
 
         /**
@@ -571,40 +386,16 @@ export default {
         /**
          * 'Save' 버튼을 누를 경우, 최종 결과를 DB에 저장하기 위해서
          */
-        async saveFormDefinition({ id, html }) {
-            const isNewSave = this.loadFormId !== id;
+        async saveFormDefinition() {
+            const DynamicFormHTML = this.keditorContentHTMLToDynamicFormHTML(this.modelValue);
 
-            if (isNewSave) {
-                try {
-                    const isFormAlreadyExist = await this.backend.getRawDefinition(id, { type: 'form' });
-                    if (isFormAlreadyExist) {
-                        if (!confirm(`'${id}'는 이미 존재하는 폼 디자인 ID 입니다! 그래도 저장하시겠습니까?`)) return;
-                    }
-                } catch (error) {
-
+            if (this.formId !== '' && this.formId !== null) {
+                const options = {
+                    type: 'form',
                 }
-            }
-
-            await this.backend.putRawDefinition(html, id, { type: 'form' });
-            this.isOpenSaveDialog = false;
-
-            this.kEditorContentBeforeSave = this.$refs.mashup.getKEditorContentHtml();
-            this.isAIUpdated = false
-
-            if (isNewSave) {
-                await this.$router.push(`/ui-definitions/${id}`);
-                window.location.reload();
-            }
-
-
-            if(this.processDefUrlData) {
-                const channel = new BroadcastChannel(this.processDefUrlData.channelId);
-                channel.postMessage({
-                    "name": this.processDefUrlData.formName,
-                    "id": id
-                })
-
-                window.close();
+                await this.backend.putRawDefinition(DynamicFormHTML, this.formId, options);
+            } else {
+                //
             }
         },
 
@@ -625,33 +416,20 @@ export default {
          * @param {*} path
          */
         async loadData(path) {
-            this.loadFormId = this.$route.params.pathMatch.join('/');
-            if (this.loadFormId.startsWith('/')) {
-                this.loadFormId = this.loadFormId.substring(1);
-            } 
-            this.isLoadedForm = (this.loadFormId && this.loadFormId != 'chat')
+            this.isShowMashup = false;
+            this.formHTML = (await this.backend.getRawDefinition(this.formId, { type: 'form' }));
 
-            this.isAIUpdated = false;
-            this.messages = [];
-            if (this.isLoadedForm) {
-                try {
-                    this.storedFormDefHTML = (await this.backend.getRawDefinition(this.loadFormId, { type: 'form' }));
-                } catch(error) {
-                    alert(`'${this.loadFormId}' ID 를 가지는 폼 디자인 정보가 없습니다! 새 폼 만들기 화면으로 이동됩니다.`);
-                    this.$router.push(`/ui-definitions/chat`);
-                    this.isShowMashup = true;
-                    return;
-                }
-
-                const kEditorContentHTML = this.dynamicFormHTMLToKeditorContentHTML(this.storedFormDefHTML);
-                const kEditorContent = this.loadHTMLToKEditorContent(kEditorContentHTML);
-                this.applyNewSrcToMashup(kEditorContent);
-
-                this.isShowMashup = true;
+            let tempHTML = ''
+            if (this.formHTML) {
+                tempHTML = this.dynamicFormHTMLToKeditorContentHTML(this.formHTML);
             } else {
-                if(this.$refs.mashup) this.$refs.mashup.clearStat();
-                this.isShowMashup = true;
+                tempHTML = this.dynamicFormHTMLToKeditorContentHTML(this.modelValue);
             }
+            const kEditorContent = this.loadHTMLToKEditorContent(tempHTML);
+            this.applyNewSrcToMashup(kEditorContent);
+            this.isShowMashup = true;
+
+            this.applyToPreviewTab();
         },
 
         /**
@@ -697,6 +475,7 @@ export default {
                 // 생성된 HTML을 보여주기 위해서
                 if (messageWriting.jsonContent) {
                     if (messageWriting.jsonContent.htmlOutput) {
+                        this.$emit('update:modelValue', messageWriting.jsonContent.htmlOutput);
                         this.applyNewSrcToMashup(this.loadHTMLToKEditorContent(messageWriting.jsonContent.htmlOutput));
                     } else if (messageWriting.jsonContent.modifications) {
                         const modifiedPrevFormOutput = this.getModifiedPrevFormOutput(messageWriting.jsonContent.modifications);
@@ -807,6 +586,8 @@ export default {
          * @param {*} htmlTextToLoad KEditor에 적합하게 변환시킬 로드된 HTML 코드
          */
         loadHTMLToKEditorContent(htmlTextToLoad) {
+            if (!htmlTextToLoad) return '';
+
             const getUUID = () => {
                 const s4 = () => {
                     return Math.floor((1 + Math.random()) * 0x10000)
@@ -817,8 +598,8 @@ export default {
                 return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4()
             }
 
-            console.log('### 로드시킬 HTML 텍스트 ###');
-            console.log(htmlTextToLoad);
+            // console.log('### 로드시킬 HTML 텍스트 ###');
+            // console.log(htmlTextToLoad);
 
             const dom = new DOMParser().parseFromString(htmlTextToLoad, 'text/html');
 
@@ -892,7 +673,6 @@ export default {
                     section.appendChild(row);
                 });
             }
-
 
             // 컨테이너인 경우, data-type 속성을 추가해서 KEditor에서 인식할 수 있도록 만들기 위해서서
             const nodes = dom.querySelectorAll('[class^="col-sm-"]');
@@ -988,7 +768,6 @@ export default {
                 }
             });
 
-
             // Section이 없는 경우, Section으로 감싸서 새로 생성하고, 있는 경우 그대로 사용함
             if(dom.body.querySelectorAll("section").length == 0) {
                 const rows = Array.from(dom.body.querySelectorAll('.row'));
@@ -998,7 +777,6 @@ export default {
                     return section.outerHTML;
                 }).join('').replace(/&quot;/g, `'`);
             }
-            
 
             // KEdtior에서 인식할 수 있도록 클래스 추가하기
             Array.from(dom.body.querySelectorAll("section")).forEach(section => {
@@ -1006,9 +784,8 @@ export default {
             });
             const loadedValidHTML = Array.from(dom.body.children).map(section => section.outerHTML).join('').replace(/&quot;/g, `'`).replace("<br>", "\n")
 
-
-            console.log('### 로드된 유효 HTML 텍스트 ###');
-            console.log(loadedValidHTML);
+            // console.log('### 로드된 유효 HTML 텍스트 ###');
+            // console.log(loadedValidHTML);
             return loadedValidHTML;
         },
 
@@ -1018,11 +795,6 @@ export default {
         applyNewSrcToMashup(kEditorInput) {
             this.kEditorInput = kEditorInput;
             this.mashupKey += 1;
-
-            if (this.currentTabName === 'preview')
-                this.$nextTick(() => {
-                    this.applyToPreviewTab();
-                });
         },
 
         /**
@@ -1061,13 +833,17 @@ export default {
          */
         applyToPreviewTab() {
             var me = this;
-
             me.isShowPreview = false;
-
             me.$try({
                 context: me,
                 action: async () => {
-                    me.previewHTML = me.keditorContentHTMLToDynamicFormHTML(me.$refs.mashup.getKEditorContentHtml());
+                    if (me.formHTML) {
+                        me.previewHTML = me.keditorContentHTMLToDynamicFormHTML(me.formHTML);
+                    } else {
+                        me.previewHTML = me.keditorContentHTMLToDynamicFormHTML(me.modelValue);
+                    }
+                    console.log('### 프리뷰 HTML ###');
+                    console.log(me.previewHTML);
                 },
                 onFail: () => {
                     me.previewHTML = '';
@@ -1080,31 +856,14 @@ export default {
                 me.dev.previewFormValues = JSON.stringify(me.previewFormValues);
             });
         },
-
-        async deleteForm() {
-            var me = this;
-            me.$try({
-                context: me,
-                action: async () => {
-                    await this.backend.deleteDefinition(this.loadFormId, {type: 'form'});
-                    this.isOpenDeleteDialog = false;
-                    await this.$router.push('/ui-definitions/chat');
-                    window.location.reload();
-                },
-                successMsg: '삭제되었습니다.'
-            });
-        }
-    },
-
-    beforeDestroy() {
-        this.kEditorInput = null;
+        
     },
 
     async beforeRouteLeave(to, from, next) {
         // 에러로 인해서 로드가 되지 않을 경우, 별도의 검사를 수행하지 않음
         if(!(this.$refs.mashup)) return next();
 
-        if(this.isAIUpdated || (this.$refs.mashup.getKEditorContentHtml() != this.kEditorContentBeforeSave)) {
+        if(this.isAIUpdated || (this.$refs.mashup.getKEditorContentHtml() != this.kEditorContent)) {
             const answer = window.confirm('You have unsaved changes. Are you sure you want to leave?');
             if (answer) {
                 next();

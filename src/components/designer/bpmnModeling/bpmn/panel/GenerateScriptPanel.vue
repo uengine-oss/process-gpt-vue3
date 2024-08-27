@@ -4,8 +4,7 @@
     <v-row class="ma-0" style="margin: 10px 0px 10px 0px !important">
         <v-card
             @click="promptInput.isVisible = !promptInput.isVisible"
-            elevation="9"
-            variant="outlined"
+            elevation="10"
             style="
                 padding: 10px;
                 display: flex;

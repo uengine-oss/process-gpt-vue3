@@ -31,10 +31,10 @@
                 </v-tab>
             </v-tabs>
             <v-divider></v-divider>
-            <v-card-text style="height: 100%;" class="pa-0">
+            <v-card-text style="height: calc(100vh - 260px);" class="pa-0">
                 <v-window style="height: 100%;" v-model="tab">
                     <v-window-item style="height: 100%;" v-for="tabItem in tabItems" :key="tabItem.value" :value="tabItem.value">
-                        <component :is="tabItem.component" :instance="instance" />
+                        <component :is="tabItem.component" :instance="instance" :ref="tabItem.value" />
                     </v-window-item>
                 </v-window>
             </v-card-text>
@@ -84,7 +84,11 @@ export default {
         },
         async tab(newVal, oldVal) {
             if (newVal !== oldVal) {
-                await this.init();
+                await this.$nextTick();
+                const activeComponent = this.$refs[newVal];
+                if (activeComponent && typeof activeComponent.init === 'function') {
+                    await activeComponent.init();
+                }
             }
         }
     },

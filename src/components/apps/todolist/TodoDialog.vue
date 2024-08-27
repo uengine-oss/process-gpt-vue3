@@ -49,9 +49,9 @@
             </v-card-title>
 
             <v-card-text>
-                <v-text-field v-model="newTask.title" label="할일명" outlined></v-text-field>
-                <v-text-field v-model="newTask.startDate" label="시작일" outlined type="datetime-local"></v-text-field>
-                <v-text-field v-model="newTask.dueDate" label="마감일" outlined type="datetime-local"></v-text-field>
+                <v-text-field v-model="newTask.title" label="할일명" autofocus></v-text-field>
+                <v-text-field v-model="newTask.startDate" label="시작일" type="datetime-local"></v-text-field>
+                <v-text-field v-model="newTask.dueDate" label="마감일" type="datetime-local"></v-text-field>
                 <!-- <v-select v-model="newTask.status" :items="statusList" item-title="text" item-value="value" label="진행 상태" variant="outlined"></v-select> -->
                 <v-textarea v-model="newTask.description" label="설명" outlined></v-textarea>
             </v-card-text>

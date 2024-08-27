@@ -303,9 +303,12 @@
         "title2": "Version Up",
         "minorUpdate": "Minor Update",
         "majorUpdate": "Major Update",
+        "update": "Update",
+        "release": "Release",
+        "releaseName": "Release Name",
         "id": "ID",
         "name": "Name",
-        "message": "Message",
+        "message": "Description",
         "save": "Save"
     },
     "FormDefinitionPanel": {
@@ -396,7 +399,9 @@
         "variable": "Create multiple sub-processes based on variables",
         "forEachVariableDescriptionTitle": "When multi-data is inserted by data mapping with the data registered in the process variables, multiple sub-processes are created based on the generated data during process execution.",
         "forEachVariableDescriptionSubTitle1": "1. Check multi-data mode through edit mode in screen definition management",
-        "forEachVariableDescriptionSubTitle2": "2. Perform data mapping in the panel of the previous task to be executed"
+        "forEachVariableDescriptionSubTitle2": "2. Perform data mapping in the panel of the previous task to be executed",
+        "forEachRoleDescriptionTitle": "Create a Sub Process for every person with the selected role",
+        "forEachRoleDescriptionSubTitle1": "Use Case: \nWhen multiple team members need to perform the same task, you can assign Sub Processes individually to each team member through role-based multi-instance generation. \nThis allows each team member to work independently while the overall process is centrally managed. \n\nBelow, the box in the image corresponds to the role field."
     },
     "ParticipantPanel": {
         "apiUrl": "API URL",
@@ -411,12 +416,24 @@
         "DirecUser": "Role Resolution By Direct user",
         "resolutionRule": "Resolution Rule",
         "scopeName": "Scope Name",
-        "userID": "User ID"
+        "userID": "User ID",
+        "radioDescriptionTitle": "Select the role you want to add.",
+        "radioDescriptionSubTitle": "None: Selecting this option does not assign a specific role to the task. All users can perform this task.\nSelect by Role Name: Selecting this option allows you to choose from a predefined list of roles. Only users belonging to the selected role can perform this task.\nSelect Users Directly: Selecting this option allows you to designate specific users. Only designated users can perform this task."
     },
     "MessageEventDefinitionPanel": {
         "correlationKey": "Correlation Key",
         "servicePath": "Service Path",
-        "operationRef": "Operation Ref"
+        "operationRef": "Operation Ref",
+        "return": "Variable to store the return value",
+        "methodTypeDescriptionTitle": "Set the method (GET, POST, PUT, PATCH) to use for the API request and the endpoint URL of the server to handle the request",
+        "methodTypeDescriptionSubTitle1": "1. GET: Request to retrieve data from the server \n2. POST: Request to create and send new data to the server \n3. PUT: Request to update or replace existing data entirely \n4. PATCH: Request to partially modify existing data \n5. API URL: The endpoint address of the server to which the request will be sent",
+        "returnTitle": "The dropdown menu displays a list of variable names registered in the process variables. \nSelect the variable to store the content written above.",
+        "correlationKeyTitle": "A correlation key is a unique value used to identify a specific message.",
+        "correlationKeySubTitle": "When a Message Intermediate Catch Event receives a message, the correlation key is used to identify and process the correct message among many. This key is shared between the entity sending the message and the entity receiving it, allowing the message to be associated with a specific business process instance. \nFor example, an order number or customer ID can be used as a correlation key.",
+        "servicePathTitle": "The service path represents the location or address of the service where the message will be delivered.",
+        "servicePathSubTitle": "It defines where the message should be sent within the service endpoint, and is used to enable communication between the process and other systems or services through message-based interactions. In BPMN, the service path is primarily configured to route messages or direct them to a specific service. Through the service path, the message is routed to the appropriate service.",
+        "operationReferenceTitle": "An operation reference is a reference that designates the operation to be performed to process a specific message.",
+        "operationReferenceSubTitle": "It defines the actions or business logic that should be executed when the message arrives. In BPMN, an operation reference helps clarify the content of the message and the task it triggers. \nFor example, a specific operation reference may perform a database update or call an external service upon receiving the message."
     },
     "DetailComponent" : {
         "details": "Details",
@@ -433,5 +450,18 @@
         "return": "Variable to store the return value",
         "scriptDescriptionTitle": "Script Task enables the execution of micro-level configurations or actions that are difficult to handle solely through process configuration by directly setting activities using JavaScript or Java.",
         "returnTitle": "The dropdown menu displays a list of variable names registered in the process variables. \nUsers can select the desired variable from this list."
+    },
+    "TimerEventDefinitionPanel": {
+        "cron": "Time Input (Cron)",
+        "cronDescriptionTitle": "You can use a Cron expression to precisely set the time at which the Timer Intermediate Catch Event will be triggered.",
+        "cronDescriptionSubTitle": "Format: A Cron expression consists of five fields, each representing minutes, hours, day of the month, month, and day of the week. \nExamples: \n0 0 * * * : Triggers the event every day at midnight (00:00). \n15 10 * * * : Triggers the event every day at 10:15 AM. \n0 9 1 * * : Triggers the event on the 1st of every month at 9:00 AM. \n0 0 * * 1 : Triggers the event every Monday at midnight (00:00). \n*/10 * * * * : Triggers the event every 10 minutes."
+    },
+    "GatewayPanel": {
+        "gatewayDescriptionTitle": "Used when selecting to proceed to the next task through Gateway condition processing.",
+        "gatewayDescriptionSubTitle": "Exclusive Gateway: When exiting, it moves to one task that matches the condition applied to the line. When entering, it proceeds to the next task if any of the multiple tasks are completed, and the existing task is terminated.",
+        "gatewayDescriptionSubTitle1": "Parallel Gateway: When exiting, it proceeds to all subsequent tasks in parallel if the condition applied to the line is met. When entering, it proceeds to the next task only when all tasks are completed.",
+        "gatewayDescriptionSubTitle2": "Inclusive Gateway: When exiting, it moves to one task that matches the condition applied to the line. When entering, it proceeds to the next task only when all tasks are completed.",
+        "gatewayDescriptionSubTitle3": "Event-based gateway: It can only proceed to the next task when a specific event occurs.",
+        "gatewayDescriptionSubTitle4": "Complex Gateway (Not Implemented): Users can add arbitrary conditions to select the next task."
     }
 }

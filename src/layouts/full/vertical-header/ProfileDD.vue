@@ -20,7 +20,7 @@ const isAdmin = localStorage.getItem("isAdmin");
 </script>
 
 <template>
-    <router-link class="custom-hover-primary text-left px-0 cursor-pointer text-decoration-none" variant="text" :to="`/pages/account-settings`">
+    <router-link class="custom-hover-primary text-left px-0 cursor-pointer text-decoration-none" variant="text" :to="`/account-settings`">
         <div class="d-flex align-center">
             <!-- user profile -->
             <v-avatar size="50">

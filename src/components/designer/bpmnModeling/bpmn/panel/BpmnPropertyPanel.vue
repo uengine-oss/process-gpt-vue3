@@ -1,18 +1,13 @@
 <template>
     <div style="height: calc(100vh - 155px)">
-        <v-row class="pa-2 ma-0">
-            <v-spacer></v-spacer>
-            <v-btn @click="save"
-                icon variant="text" density="comfortable"
-            >
-                <Icons :icon="'close'" class="cursor-pointer" :size="16"/>
-            </v-btn>
-        </v-row>
-        <v-card-text class="delete-input-details" style="overflow: auto; height: calc(100% - 52px); width: 700px;">
-            <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')">
+        <v-btn @click="save" icon variant="text" density="comfortable" class="panel-close-btn">
+            <Icons :icon="'close'" class="cursor-pointer" :size="16"/>
+        </v-btn>
+        <v-card-text class="delete-input-details pt-3" style="overflow: auto; width: 700px; height: 100%;">
+            <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')" class="mt-4">
                 <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
-                <div style="margin:-20px 0px 10px 0px;">{{ $t('BpmnPropertyPanel.role') }}: {{ role.name }}</div>
-                <v-text-field v-model="name" :label="$t('BpmnPropertyPanel.name')" :disabled="isViewMode" ref="cursor" class="bpmn-property-panel-name "></v-text-field>
+                <div class="mb-3">{{ $t('BpmnPropertyPanel.role') }}: {{ role.name }}</div>
+                <v-text-field v-model="name" :label="$t('BpmnPropertyPanel.name')" :disabled="isViewMode" ref="cursor" class="bpmn-property-panel-name mb-3"></v-text-field>
             </div>
             <component
                 style="height: 100%"
@@ -133,6 +128,9 @@ export default {
             if (type == 'user-task' && this.isGPTMode) {
                 type = 'gpt-user-task';
             }
+            if(type.indexOf('gateway') > -1) {
+                type = 'gateway';
+            }
             return type + '-panel';
         }
         // inputData() {
@@ -188,9 +186,10 @@ export default {
         addCheckpoint() {
             this.uengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
         },
-        save() {
+        async save() {
             if (this.$refs.panelComponent && this.$refs.panelComponent.beforeSave) {
-                this.$refs.panelComponent.beforeSave();
+                await this.$refs.panelComponent.beforeSave();
+                console.log(this.uengineProperties)
             }
 
             const modeling = this.bpmnModeler.get('modeling');
@@ -253,3 +252,13 @@ export default {
     }
 };
 </script>
+
+<style>
+.panel-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    z-index: 1000;
+}
+</style>
+

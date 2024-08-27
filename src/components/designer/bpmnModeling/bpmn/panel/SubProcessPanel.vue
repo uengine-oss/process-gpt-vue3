@@ -25,6 +25,10 @@
                     :parameter-contexts="copyUengineProperties.variableBindings"
                 ></bpmn-parameter-contexts> -->
             </v-row>
+            <DetailComponent
+                :title="$t('SubProcessPanel.forEachRoleDescriptionTitle')"
+                :details="forEachRoleDescription"
+            />
         </div>
         <div>
             <v-row class="ma-0 pa-0">
@@ -151,6 +155,12 @@ export default {
                     image: "typeFormMapping.gif"
                 }
             ],
+            forEachRoleDescription: [
+                {
+                    title: "SubProcessPanel.forEachRoleDescriptionSubTitle1",
+                    image: "forEachRoleDescriptionSubTitle1.png"
+                }
+            ],
         };
     },
     async mounted() {
@@ -229,6 +239,8 @@ export default {
                     DuplicateVo.type = this.parseType(variableObject.type);
                     this.copyUengineProperties.forEachVariable = DuplicateVo;
                 }
+            } else {
+                delete this.copyUengineProperties.forEachVariable;
             }
         }
     },
