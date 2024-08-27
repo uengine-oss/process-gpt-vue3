@@ -32,6 +32,14 @@
                             :disabled="isNew"
                             hide-details
                         ></v-switch>
+                        <v-text-field
+                                v-if="isRelease"
+                                v-model="information.releaseName"
+                                :label="$t('ProcessDefinitionVersionDialog.releaseName')"
+                                :rules="[(v) => !!v || 'Name is required']"
+                                required
+                                class="pb-2"
+                            ></v-text-field>
                         <div v-if="isNew">
                             <v-text-field
                                 v-model="information.proc_def_id"
@@ -94,7 +102,8 @@ export default {
             snapshot: null,
             diff: null,
             timeStamp: null,
-            message: null
+            message: null,
+            releaseName: null
         },
         isOpen: false // inner var
     }),
@@ -217,7 +226,9 @@ export default {
                         prevSnapshot: me.information.snapshot,
                         prevDiff: me.information.diff,
                         type: 'bpmn',
-                        message: me.information.message
+                        message: me.information.message,
+                        release: me.isRelease,
+                        releaseName: me.information.releaseName
                     });
                 }
             });
