@@ -128,6 +128,9 @@ export default {
             if (type == 'user-task' && this.isGPTMode) {
                 type = 'gpt-user-task';
             }
+            if(type.indexOf('gateway') > -1) {
+                type = 'gateway';
+            }
             return type + '-panel';
         }
         // inputData() {
