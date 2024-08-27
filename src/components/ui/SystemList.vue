@@ -1,11 +1,23 @@
 <template>
     <div>
-        <v-row v-if="systemList">
-            <System v-for="system in systemList" :system="system.name" v-on:edit-system="$evt => editSystem($evt)" />
+        <v-row class="ma-0 pa-0">
+            <v-col v-for="system in systemList" :key="system.name" 
+                cols="12" sm="6" md="4" lg="3"
+            >
+                <template v-if="systemList">
+                    <System :system="system.name" v-on:edit-system="$evt => editSystem($evt)" />
+                </template>
+            </v-col>
+            <v-col cols="12" sm="6" md="4" lg="3">
+                <v-card elevation="10" 
+                    @click="openDialog = !openDialog"
+                    style="height:300px;
+                    display: flex; justify-content: center; align-items: center;"
+                >
+                    <Icons :icon="'plus'"/>
+                </v-card>
+            </v-col>
         </v-row>
-        <v-btn @click="openDialog = !openDialog" style="float: right; position: absolute; bottom: 10px; right: 10px" icon>
-            <v-icon>mdi-plus</v-icon>
-        </v-btn>
         <v-dialog v-model="openDialog" width="auto">
             <v-card style="width: 70vh; height: 80vh">
                 <v-card-title> Add System </v-card-title>

@@ -46,6 +46,10 @@
                     :label="$t('LanePanel.userID')"
                     class="mt-4"
                 ></v-text-field>
+                <DetailComponent
+                    :title="$t('LanePanel.radioDescriptionTitle')"
+                    :details="radioDescription"
+                />
             </v-card>
         </div>
     </div>
@@ -105,6 +109,11 @@ export default {
             definitionCnt: 0,
             type: 'None',
             role: null,
+            radioDescription: [
+                {
+                    title: 'LanePanel.radioDescriptionSubTitle'
+                }
+            ]
         };
     },
     async mounted() {

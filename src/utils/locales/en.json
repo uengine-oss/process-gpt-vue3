@@ -416,7 +416,9 @@
         "DirecUser": "Role Resolution By Direct user",
         "resolutionRule": "Resolution Rule",
         "scopeName": "Scope Name",
-        "userID": "User ID"
+        "userID": "User ID",
+        "radioDescriptionTitle": "Select the role you want to add.",
+        "radioDescriptionSubTitle": "None: Selecting this option does not assign a specific role to the task. All users can perform this task.\nSelect by Role Name: Selecting this option allows you to choose from a predefined list of roles. Only users belonging to the selected role can perform this task.\nSelect Users Directly: Selecting this option allows you to designate specific users. Only designated users can perform this task."
     },
     "MessageEventDefinitionPanel": {
         "correlationKey": "Correlation Key",
