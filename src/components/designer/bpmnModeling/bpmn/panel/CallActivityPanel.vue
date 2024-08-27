@@ -185,6 +185,8 @@ export default {
                     DuplicateVo.type = this.parseType(variableObject.type);
                     this.copyUengineProperties.forEachVariable = DuplicateVo;
                 }
+            } else {
+                delete this.copyUengineProperties.forEachVariable;
             }
         }
     },
