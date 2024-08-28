@@ -20,11 +20,11 @@
         </v-row>
         <v-dialog v-model="openDialog" width="auto">
             <v-card style="width: 70vh; height: 80vh">
-                <v-card-title> Add System </v-card-title>
+                <v-card-title>{{ $t('SystemList.dialogTitle') }}</v-card-title>
                 <v-card-item>
-                    <v-text-field v-model="addSystem.name" style="margin-top: 10px" label="Name" />
-                    <v-text-field v-model="addSystem.description" label="Description" />
-                    <v-text-field v-model="addSystem.url" label="API URL" />
+                    <v-text-field v-model="addSystem.name" style="margin-top: 10px" :label="$t('SystemList.name')" />
+                    <v-text-field v-model="addSystem.description" :label="$t('SystemList.description')" />
+                    <v-text-field v-model="addSystem.url" :label="$t('SystemList.apiUrl')" />
                     Open API Spec
                     <vue-monaco-editor
                         style="width: 100%; height: 100%; min-height: 300px"
@@ -34,9 +34,13 @@
                         :options="MONACO_EDITOR_OPTIONS"
                     />
                 </v-card-item>
-                <v-card-actions>
-                    <v-btn @click="putSystem"> Add </v-btn>
-                </v-card-actions>
+                <v-row class="ma-0 pa-0 pt-2 pr-5">
+                    <v-spacer></v-spacer>
+                    <v-btn @click="putSystem"
+                        color="primary"
+                        rounded
+                    > {{ $t('SystemList.add') }} </v-btn>
+                </v-row>
             </v-card>
         </v-dialog>
         <!-- </v-card> -->

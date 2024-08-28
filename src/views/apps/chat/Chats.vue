@@ -3,15 +3,15 @@
         <AppBaseCard>
             <template v-slot:leftpart>
                 <div class="no-scrollbar">
-                <ChatProfile />
-                <ChatListing 
-                    :chatRoomList="filteredChatRoomList" 
-                    :userList="userList" 
-                    :userInfo="userInfo"
-                    @chat-selected="chatRoomSelected" 
-                    @create-chat-room="createChatRoom"
-                    @delete-chat-room="deleteChatRoom"
-                />
+                    <ChatProfile />
+                    <ChatListing 
+                        :chatRoomList="filteredChatRoomList" 
+                        :userList="userList" 
+                        :userInfo="userInfo"
+                        @chat-selected="chatRoomSelected" 
+                        @create-chat-room="createChatRoom"
+                        @delete-chat-room="deleteChatRoom"
+                    />
                 </div>
             </template>
             <template v-slot:rightpart>
