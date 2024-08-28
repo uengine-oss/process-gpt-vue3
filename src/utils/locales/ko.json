@@ -463,5 +463,16 @@
         "gatewayDescriptionSubTitle2" : "Inclusive Gateway : 나갈 때는 선에 적용된 조건에 맞는 하나의 작업으로 넘어감 들어올 때는 여러 작업이 있으면 모든 작업이 완료되어야 다음 작업으로 넘어갈 수 있음",
         "gatewayDescriptionSubTitle3" : "Event-based gateway : 특정 이벤트가 들어왔을 경우에만 다음 작업으로 넘어갈 수 있음",
         "gatewayDescriptionSubTitle4" : "Complex Gateway(미구현) : 사용자가 임의의 조건을 추가하여 다음 작업으로 넘어가는 것을 선택할 수 있음"
+    },
+    "SystemList" : {
+        "dialogTitle" : "시스템 추가",
+        "name" : "이름",
+        "description" : "설명",
+        "apiUrl" : "API URL",
+        "add" : "추가"
+    },
+    "System" : {
+        "description" : "설명",
+        "edit" : "수정"
     }
 }

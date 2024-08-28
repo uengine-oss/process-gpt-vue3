@@ -221,28 +221,31 @@ export default {
         async getChild(subitem) {
             let res = await backend.listDefinition(subitem.path);
             let menu = [];
-            const me = this
-            res.forEach((el) => {
-                var obj = {
-                    title: el.name.split('.')[0],
-                    type: el.name.split('.')[1],
-                    BgColor : 'primary'
-                };
+            const me = this;
 
-                if (el.directory) {                 
-                    obj.directory = true;
-                    obj.children = [];
-                    obj.path = el.path
-                    me.getChild(obj)
-                } else {
-                    if (el.name.split('.')[1] == 'form') {
-                        obj.to = `/ui-definitions/${el.path.split('.')[0]}`;
+            if (Array.isArray(res)) {
+                res.forEach((el) => {
+                    var obj = {
+                        title: el.name.split('.')[0],
+                        type: el.name.split('.')[1],
+                        BgColor: 'primary'
+                    };
+
+                    if (el.directory) {                 
+                        obj.directory = true;
+                        obj.children = [];
+                        obj.path = el.path;
+                        me.getChild(obj);
                     } else {
-                        obj.to = `/definitions/${el.path.split('.')[0]}`;
+                        if (el.name.split('.')[1] == 'form') {
+                            obj.to = `/ui-definitions/${el.path.split('.')[0]}`;
+                        } else {
+                            obj.to = `/definitions/${el.path.split('.')[0]}`;
+                        }
                     }
-                }
-                menu.push(obj);
-            });
+                    menu.push(obj);
+                });
+            }
             subitem.children = menu;
         },
         async getDefinitionList() {

@@ -463,5 +463,16 @@
         "gatewayDescriptionSubTitle2": "Inclusive Gateway: When exiting, it moves to one task that matches the condition applied to the line. When entering, it proceeds to the next task only when all tasks are completed.",
         "gatewayDescriptionSubTitle3": "Event-based gateway: It can only proceed to the next task when a specific event occurs.",
         "gatewayDescriptionSubTitle4": "Complex Gateway (Not Implemented): Users can add arbitrary conditions to select the next task."
+    },
+    "SystemList": {
+        "dialogTitle": "Add System",
+        "name": "Name",
+        "description": "Description",
+        "apiUrl": "API URL",
+        "add": "Add"
+    },
+    "System" : {
+        "description" : "Description",
+        "edit" : "Edit"
     }
 }
