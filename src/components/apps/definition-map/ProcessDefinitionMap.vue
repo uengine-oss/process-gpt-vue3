@@ -90,16 +90,6 @@
             </v-btn>
         </v-card>
         <v-dialog :style="ProcessPreviewMode ? '' : 'max-width: 1000px;'" v-model="openConsultingDialog" persistent>
-            <!-- <ProcessConsultingChat 
-                :key="consultingChatKey"
-                :proc_bpmn="proc_bpmn"
-                :proc_def="proc_def"
-                :ProcessPreviewMode="ProcessPreviewMode"
-                @closeConsultingDialog="closeConsultingDialog" 
-                @createdBPMN="createdBPMN" 
-                @modelCreated="bpmnModelCreated"
-                @openProcessPreview="openProcessPreview" 
-            /> -->
             <v-card>
                 <v-card-title style="height: 55px; background-color: rgb(227, 240, 250); align-content: center;">
                     <v-icon small style="margin-right: 10px;">mdi-auto-fix</v-icon>
@@ -142,7 +132,6 @@ import DefinitionMapList from './DefinitionMapList.vue';
 import ProcessMenu from './ProcessMenu.vue';
 import SubProcessDetail from './SubProcessDetail.vue';
 import ViewProcessDetails from './ViewProcessDetails.vue';
-// import ProcessConsultingChat from '@/components/ProcessConsultingChat.vue';
 import ProcessDefinitionChat from '@/components/ProcessDefinitionChat.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
@@ -154,7 +143,6 @@ export default {
         ViewProcessDetails,
         SubProcessDetail,
         DefinitionMapList,
-        // ProcessConsultingChat,
         ProcessDefinitionChat
     },
     props: {
@@ -180,10 +168,6 @@ export default {
         versionHistory: [],
         openConsultingDialog: false,
         ProcessPreviewMode: false,
-        proc_bpmn: null,
-        proc_def: null,
-        consultingChatKey: 0,
-        firstUpdate: true,
     }),
     computed: {
         useLock() {
@@ -224,14 +208,6 @@ export default {
         }
     },
     methods: {
-        bpmnModelCreated(processInfo){
-            if(this.firstUpdate){
-                this.proc_bpmn=processInfo.bpmn
-                this.proc_def=processInfo.def
-                this.consultingChatKey++;
-                this.firstUpdate = false
-            }
-        },
         openProcessPreview(){
             this.ProcessPreviewMode = true
         },
@@ -300,9 +276,6 @@ export default {
         closeConsultingDialog(){
             const answer = window.confirm('저장하지 않은 정보는 모두 유실됩니다. 컨설팅을 종료하시겠습니까 ?');
             if (answer) {
-                this.proc_bpmn = null
-                this.proc_def = null
-                this.firstUpdate = true
                 this.ProcessPreviewMode = false
                 this.openConsultingDialog = false
             } 

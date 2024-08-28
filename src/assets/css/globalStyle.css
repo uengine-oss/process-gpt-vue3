@@ -84,6 +84,10 @@ hr {
 }
 /* bpm .bpmn-icon-screw-wrench 아이콘 나타나지 않아 넣어둔 부분 */
 
+.djs-palette .djs-palette-entries .group .entry:hover {
+    color: rgb(var(--v-theme-primary)) !important;
+}
+
 .vue-bpmn-diagram-container .djs-palette {
     width: 740px !important;
     height: 50px;
@@ -230,9 +234,10 @@ hr {
     display: none !important;
 }
 
-.condition-box {
-    
+.message-input-box .v-field__prepend-inner {
+    height:40px;
 }
+
 
 #apexTreeWrapper {
     height: 100% !important;
