@@ -41,6 +41,9 @@
 
             <div class="ml-auto d-flex">
                 <div v-if="onLoad && bpmn">
+                    <v-btn v-if="!JMS" color="primary" rounded density="comfortable" class="ml-3" @click="executeProcess">
+                        실행
+                    </v-btn>
                     <v-tooltip :text="$t('processDefinition.preview')">
                         <template v-slot:activator="{ props }">
                             <v-btn :size="30"
@@ -52,12 +55,16 @@
                             </v-btn>
                         </template>
                     </v-tooltip>
-                    <v-btn v-if="!JMS" color="#1976D2" density="comfortable" class="ml-3" @click="executeProcess">
-                        실행
-                    </v-btn>
-                    <v-btn icon variant="text" class="ml-3" :size="24" @click="capture">
-                        <Icons :icon="'image-download'"  />
-                    </v-btn>
+                    
+                    <v-tooltip :text="$t('processDefinition.capture')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn icon variant="text" class="ml-3" :size="24" @click="capture"
+                                v-bind="props"
+                            >
+                                <Icons :icon="'image-download'"  />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
                             <v-btn :size="30"
@@ -73,7 +80,6 @@
                             </v-btn>
                         </template>
                     </v-tooltip>
-                    
                 </div>
             </div>
         </div>

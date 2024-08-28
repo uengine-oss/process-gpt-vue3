@@ -152,7 +152,8 @@
         "deleteProcess": "프로세스 삭제",
         "deleteProcessMessage": "프로세스를 삭제하시겠습니까?",
         "cancel": "취소",
-        "simulate": "시뮬레이션"
+        "simulate": "시뮬레이션",
+        "capture": "프로세스 이미지 다운로드"
     },
     "ProcessVariable": {
         "name": "이름",
@@ -407,7 +408,9 @@
         "apiUrl" : "API URL",
         "openAPISpec" : "Open API 스펙",
         "system": "시스템 정의에서 불러오기",
-        "systemDefinitionDescriptionTitle": "왼쪽 정의 관리 버튼 중 시스템 정의에 등록된 항목을 불러와 사용"
+        "systemDefinitionDescriptionTitle": "왼쪽 정의 관리 버튼 중 시스템 정의에 등록된 항목을 불러와 사용",
+        "apiUrlDescriptionTitle": "API 요청을 보낼 때 사용할 메서드(GET, POST, PUT, PATCH)와 요청을 처리할 서버의 엔드포인트 URL을 설정",
+        "apiUrlDescriptionSubTitle1": "1.GET : 서버로부터 데이터를 조회하는 요청 \n2.POST : 서버에 새 데이터를 생성하여 전송하는 요청 \n3.PUT : 기존 데이터를 업데이트하거나 전체를 대체하는 요청 \n4.PATCH : 기존 데이터의 일부를 수정하는 요청 \n5.API URL : 요청이 전송될 서버의 엔드포인트 주소\n"
     },
     "LanePanel" : { 
         "selectRoleType" : "역할 선택", 
