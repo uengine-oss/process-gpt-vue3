@@ -27,7 +27,6 @@ export default {
         
     }),
     async created() {
-        console.log(selectedTask)
     },
     methods: {
         executeProcess() {

@@ -15,7 +15,8 @@
                                 "
                             >
                                 <div class="pa-0 pl-2" style="height: 100%" :key="updatedDefKey">
-                                    <div v-if="bpmn" style="height: 100%">
+                                    <div v-if="bpmn">
+                                        Main - InstanceId - {{ instanceId }}
                                         <BpmnUengine
                                             ref="bpmnVue"
                                             :bpmn="bpmn"
@@ -27,6 +28,20 @@
                                         ></BpmnUengine>
                                     </div>
                                     <div v-else class="no-bpmn-found-text">No BPMN found</div>
+                                    <div v-if="subBpmn">
+                                        <div v-for="(sub, key) in subBpmn">
+                                            Sub - InstanceId - {{ key }}
+                                            <BpmnUengine
+                                                ref="bpmnVue"
+                                                :bpmn="sub"
+                                                :options="options"
+                                                :isViewMode="true"
+                                                :currentActivities="subCurrentActivities[key]"
+                                                v-on:openDefinition="(ele) => openSubProcess(ele)"
+                                                style="height: 100%"
+                                            ></BpmnUengine>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </v-alert>
@@ -36,6 +51,21 @@
                             <v-card variant="outlined" color="black" style="height: 600px; overflow: auto">
                                 <v-card-title>worklist</v-card-title>
                                 <v-card-item>
+                                    <div v-if="eventList">
+                                        <div v-for="event in eventList" :key="event">
+                                            <v-btn
+                                                @click="
+                                                    $try({
+                                                        context: this,
+                                                        action: () => fireMessage(event.tracingTag),
+                                                        successMsg: `${event.name} 실행 완료`
+                                                    })
+                                                "
+                                                v-if="event.name"
+                                                >{{ event.name }}</v-btn
+                                            >
+                                        </div>
+                                    </div>
                                     <div v-if="taskList">
                                         <v-card
                                             v-for="task in taskList"
@@ -60,6 +90,8 @@
                                                     :task="task.trcTag"
                                                     :task-id="task.taskId"
                                                     @executeTest="(e) => executeTestProcess(e, task)"
+                                                    @type="(e) => (tool = e)"
+                                                    @work-item="(e) => addWorkItem(e, task.taskId)"
                                                 ></test-variables>
                                             </v-card-actions>
                                         </v-card>
@@ -102,11 +134,15 @@ export default {
             propertiesPanel: {},
             additionalModules: [customBpmnModule]
         },
+        eventList: [],
         workListByInstId: null,
         currentActivities: [],
-        workItem: null,
+        workItem: {},
         taskList: null,
-        instanceId: null
+        instanceId: null,
+        tool: null,
+        subBpmn: null,
+        subCurrentActivities: null
     }),
     created() {
         let me = this;
@@ -121,12 +157,36 @@ export default {
         // }
     },
     methods: {
+        async addWorkItem(item, taskId) {
+            let me = this;
+            this.workItem[taskId] = item;
+            console.log(item);
+            if (item.worklist.instId != item.worklist.rootInstId) {
+                let tasks = await me.backend.getActivitiesStatus(item.worklist.instId);
+                if (!me.subCurrentActivities) me.subCurrentActivities = {};
+                Object.keys(tasks).forEach(function (task) {
+                    if(!me.subCurrentActivities[item.worklist.instId]) me.subCurrentActivities[item.worklist.instId] = []
+                    // me.workItem = await me.backend.getWorkItem(task.taskId);
+                    me.subCurrentActivities[item.worklist.instId].push(task);
+                });
+                // me.subCurrentActivities[item.worklist.instId] = tasks;
+
+                if (me.subBpmn == null) me.subBpmn = {};
+                me.subBpmn[item.worklist.instId] = await me.backend.getRawDefinition(item.worklist.defId, { type: 'bpmn' });
+                me.updatedDefKey++;
+                // me.subCurrentActivities ?  : me.subCurrentActivities
+            }
+        },
         executeTestProcess(testData, task) {
             var me = this;
             me.$try({
                 context: me,
                 action: async () => {
+                    // Form은 Variable부터 Set
                     let value;
+                    if (this.tool == 'FormWorkItem') {
+                        me.saveForm(testData, task);
+                    }
                     if (testData.parameterValues) value = testData;
                     else value = { parameterValues: testData };
 
@@ -138,6 +198,38 @@ export default {
                 },
                 successMsg: '해당 업무 완료'
             });
+        },
+        async saveForm(testData, task) {
+            let me = this;
+
+            let varName = me.workItem[task.taskId].activity.variableForHtmlFormContext.name;
+            let variable = {};
+
+            variable._type = 'org.uengine.contexts.HtmlFormContext';
+            let tmp;
+            Object.keys(testData).forEach(function (key) {
+                tmp = testData[key];
+            });
+
+            variable.valueMap = tmp;
+            Object.keys(variable.valueMap).forEach((key) => {
+                if (Array.isArray(variable.valueMap[key])) {
+                    if (!variable.valueMap[key]) return;
+                    variable.valueMap[key]?.forEach((item) => {
+                        if (item && item._type) {
+                            item._type = 'java.util.HashMap';
+                        }
+                    });
+                }
+            });
+            // variable.valueMap._type = 'java.util.HashMap';
+
+            await me.backend.setVariableWithTaskId(me.instanceId, task.taskId, varName, variable);
+            // Delete a specific key from the JSON object
+            const keyToDelete = 'specificKey'; // Replace 'specificKey' with the actual key you want to delete
+            if (me.workItem.hasOwnProperty(task.taskId)) {
+                delete me.workItem[task.taskId];
+            }
         },
         startProcess() {
             var me = this;
@@ -157,21 +249,40 @@ export default {
                 }
             });
         },
+        async setEventList() {
+            let me = this;
+            this.eventList = await me.backend.getEventList(this.instanceId);
+        },
         async setTaskInfo() {
             let me = this;
 
             me.workListByInstId = await me.backend.getWorkListByInstId(me.instanceId);
             // me.updatedDefKey++;
-            me.taskList.forEach(function (task) {
+            // me.taskList.forEach(function (task) {
+            //     console.log(task);
+            //     // me.workItem = await me.backend.getWorkItem(task.taskId);
+            //     me.currentActivities.push(task.trcTag);
+            // });
+            me.setEventList();
+            let tasks = await me.backend.getActivitiesStatus(me.instanceId);
+            console.log(tasks);
+            Object.keys(tasks).forEach(function (task) {
                 console.log(task);
                 // me.workItem = await me.backend.getWorkItem(task.taskId);
-                me.currentActivities.push(task.trcTag);
+                me.currentActivities.push(task);
             });
             // let me = this;
             // me.currentActivities = [];
             // me.workItem = await me.backend.getWorkItem(me.taskId);
 
             me.updatedDefKey++;
+        },
+        async fireMessage(event) {
+            let me = this;
+            await me.backend.fireMessage(me.instanceId, event);
+            let taskInfo = await me.backend.findCurrentWorkItemByInstId(me.instanceId);
+            me.taskList = taskInfo;
+            me.setTaskInfo();
         }
     }
 };

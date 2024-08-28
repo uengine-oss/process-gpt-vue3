@@ -56,6 +56,9 @@ export interface Backend {
     getUserList(): Promise<any>;
     releaseVersion(releaseName: string) : Promise<any>;
     uploadDefinition(file: File, path: string): Promise<any>;
+    getCompletedTaskId(instId: string): Promise<any>;
+    getActivitiesStatus(instId: string): Promise<any>;
+    
 }
 
 // export type { Backend }

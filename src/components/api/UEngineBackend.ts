@@ -509,6 +509,20 @@ class UEngineBackend implements Backend {
         }));
     }
 
+    async getCompletedTaskId(instId: string) {
+        // instance/{instanceId}/completed
+        const response = await axiosInstance.get(`/instance/${instId}/completed`)
+
+        return response.data
+    }
+
+    async getActivitiesStatus(instId: string) {
+        // instance/{instanceId}/completed
+        const response = await axiosInstance.get(`/instance/${instId}/status`)
+
+        return response.data
+    }
+
     async dryRun(defPath: String, isSimulate: string){
         let config = {
                 headers: {

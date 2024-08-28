@@ -97,7 +97,8 @@ export default {
                 ? 'FormWorkItem'
                 : 'DefaultWorkItem';
             
-            
+            this.$emit('type', me.currentComponent)
+            this.$emit('workItem', me.workItem)
         }
     }
 };

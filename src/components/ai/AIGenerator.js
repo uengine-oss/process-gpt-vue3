@@ -229,11 +229,17 @@ export default class AIGenerator {
                 let model = me.createModel(me.modelJson);
 
                 if (!me.stopSignaled) {
-                    if (me.client.onModelCreated) {
-                        me.client.onModelCreated(model);
-                    }
-                    if (me.client.onGenerationFinished) {
-                        me.client.onGenerationFinished(model);
+                    if(me.client.genType && me.client.genType == 'form'){
+                        if (me.client.onFormGenerationFinished) {
+                            me.client.onFormGenerationFinished(model);
+                        }
+                    } else {
+                        if (me.client.onModelCreated) {
+                            me.client.onModelCreated(model);
+                        }
+                        if (me.client.onGenerationFinished) {
+                            me.client.onGenerationFinished(model);
+                        }
                     }
                 }
 
