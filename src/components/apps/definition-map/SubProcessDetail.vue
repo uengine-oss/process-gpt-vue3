@@ -41,7 +41,7 @@
 
             <div class="ml-auto d-flex">
                 <div v-if="onLoad && bpmn">
-                    <v-tooltip :text="$t('processDefinition.preview')">
+                    <v-tooltip :text="$t('processDefinition.edit')">
                         <template v-slot:activator="{ props }">
                             <v-btn :size="30"
                                 icon variant="text" class="ml-2"
@@ -99,18 +99,10 @@
                 <dry-run-process :definitionId="processDefinition.id"  @close="executeDialog = false"></dry-run-process>
             </div>
         </v-dialog>
-        <!-- <v-dialog v-model="openPreviewDialog" persistent>
-            <ProcessConsultingChat 
-                :proc_bpmn="bpmn"
-                :ProcessPreviewMode="true"
-                @closeConsultingDialog="openPreviewDialog = false" 
-            />
-        </v-dialog> -->
     </v-card>
 </template>
 
 <script>
-// import ProcessConsultingChat from '@/components/ProcessConsultingChat.vue';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import ProcessExecuteDialog from '@/components/apps/definition-map/ProcessExecuteDialog.vue';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
@@ -123,7 +115,6 @@ export default {
     components: {
         ProcessDefinition,
         ProcessExecuteDialog,
-        // ProcessConsultingChat,
         'dry-run-process': DryRunProcess,
         'process-gpt-execute': ProcessGPTExecute
     },
@@ -145,7 +136,6 @@ export default {
         defCnt: 0,
         isViewMode: true,
         executeDialog: false,
-        // openPreviewDialog: false
     }),
     computed: {
         mode() {
