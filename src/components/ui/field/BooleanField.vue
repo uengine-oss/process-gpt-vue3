@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="form-boolean-field">
         <v-checkbox 
             :label="(localAlias && localAlias.length > 0) ? localAlias : localName" 
             v-model="localModelValue"

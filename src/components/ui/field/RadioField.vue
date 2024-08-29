@@ -1,5 +1,5 @@
 <template>
-    <div class="form-radio-box">
+    <div class="form-radio-field">
         <label class="form-radio-label">{{(localAlias && localAlias.length > 0) ? localAlias : localName}}</label>
         <v-radio-group v-model="localModelValue">
             <div v-for="(item, index) in controlItems" :key="index">

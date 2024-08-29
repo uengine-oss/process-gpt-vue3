@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="form-code-field">
         <div style="display: none;">
             <slot></slot>
         </div>

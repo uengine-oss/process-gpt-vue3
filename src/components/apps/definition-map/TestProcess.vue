@@ -48,7 +48,7 @@
                     </v-col>
                     <v-col class="pa-0" :cols="6" style="height: 30%">
                         <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
-                            <v-card variant="outlined" color="black" style="height: 600px; overflow: auto">
+                            <v-card variant="outlined" color="black" style="height: 100%; overflow: auto">
                                 <v-card-title>worklist</v-card-title>
                                 <v-card-item>
                                     <div v-if="eventList">

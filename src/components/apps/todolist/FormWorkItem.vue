@@ -25,7 +25,7 @@
     </v-row>
     <div class="pa-4" :style="isPreviewMode ? 'width: 100%; height: 100%;':''">
         <!-- <FormMapper></FormMapper> -->
-        <Instruction :workItem="workItem" />
+        <!-- <Instruction :workItem="workItem" /> -->
         <DynamicForm ref="dynamicForm" :formHTML="html" v-model="formData"></DynamicForm>
         <AudioTextarea v-if="!isCompleted" v-model="newMessage" :workItem="workItem" @close="close" />
         <Checkpoints ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />

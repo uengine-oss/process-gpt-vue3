@@ -1,5 +1,5 @@
 <template>
-    <div class="form-label-box">
+    <div class="form-label-field">
         <label class="form-label">{{localLabel}}</label>
     </div>
 </template>

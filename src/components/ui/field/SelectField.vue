@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="form-select-field">
         <v-select
             :items="selectItems"
             :item-title="item => item.value"

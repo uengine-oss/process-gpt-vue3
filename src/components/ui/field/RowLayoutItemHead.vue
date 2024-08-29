@@ -1,9 +1,16 @@
 <template>
-    <v-sheet class="d-flex justify-space-between" style="background-color: transparent;">
-        <span>{{ "#" + (index+1) }}</span>
-
-        <v-btn @click="$emit('on_delete_item', index)" density="compact" icon="mdi-delete" style="background-color: transparent;"></v-btn>
-    </v-sheet>
+    <div>
+        <v-row class="ma-0 pa-0 pl-4 pr-4 pt-2">
+            <div>{{ "#" + (index+1) }}</div>
+            <v-spacer></v-spacer>
+            <v-btn @click="$emit('on_delete_item', index)" 
+                density="compact" 
+                icon="mdi-delete" 
+                style="background-color: transparent;"
+                variant="text"
+            ></v-btn>
+        </v-row>
+    </div>
 </template>
 
 <script>

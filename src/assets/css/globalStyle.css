@@ -143,6 +143,12 @@ hr {
     right: 5px
 }
 
+.work-item-dialog-card .task-btn {
+    position: relative;
+    top: 12px !important;
+    right: 18px !important;
+}
+
 .centered-input:deep(input) {
     text-align: center;
 }
@@ -234,10 +240,57 @@ hr {
     display: none !important;
 }
 
+.delete-input-details .form-text-field .v-input__details {
+    display: block !important;
+}
+
 .message-input-box .v-field__prepend-inner {
     height:40px;
 }
 
+.row-layout-box {
+    max-height:320px;
+    overflow: auto;
+}
+
+.row-layout-box > div{
+    border:solid 1px #D1D1D1;
+    margin-bottom:10px;
+    border-radius: 8px;
+}
+
+.work-itme-current-component .v-checkbox .v-input__details {
+    display: none;
+}
+.work-itme-current-component .v-checkbox {
+    height: 40px;
+}
+.work-itme-current-component .v-checkbox label {
+    opacity: 0.6 !important;
+}
+.work-itme-current-component .form-checkbox-label {
+    font-size: 20px;
+    font-weight: 500;
+}
+.work-itme-current-component .form-radio-field .v-radio-group {
+    margin-top: 8px;
+}
+.work-itme-current-component .form-radio-field .form-radio-label {
+    font-size: 20px;
+    font-weight: 500;
+}
+
+.work-itme-current-component .form-label {
+    font-size: 20px;
+    font-weight: 500;
+}
+
+.processExecute {
+    position: absolute;
+    right: 80px;
+    top: 20px;
+    z-index: 1;
+}
 
 #apexTreeWrapper {
     height: 100% !important;
