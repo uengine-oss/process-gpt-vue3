@@ -888,6 +888,21 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    
+    async getCompletedTaskId(instId: string) {
+        // instance/{instanceId}/completed
+        //TODO: 현재 완료된 태스크 ID 가져오기
+
+        return null;
+    }
+    
+    async getActivitiesStatus(instId: string) {
+        // instance/{instanceId}/completed
+        //TODO: 현재 프로세스 진행상태 추가
+
+        return null;
+    }
+
     async getEventList(instanceId: string) {
         try {
             return null;

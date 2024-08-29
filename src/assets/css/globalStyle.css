@@ -48,6 +48,43 @@ hr {
     /* fill: #68369A !important; */
 }
 
+@keyframes running-animation {
+    0% {
+        stroke-dashoffset: 80;
+        stroke: #68369A;
+    }
+    50% {
+        stroke-dashoffset: 40;
+        stroke: #68369A;
+    }
+    100% {
+        stroke-dashoffset: 0;
+        stroke: #68369A;
+    }
+}
+
+.running:not(.djs-connection) .djs-visual > :nth-child(2) {
+    stroke-width: 5px !important;
+    stroke-dasharray: 20, 20;
+    animation: running-animation 1.5s linear infinite;
+}
+
+.completed:not(.djs-connection) .djs-visual > :nth-child(1) {
+    stroke-width: 5px !important;
+    stroke: #68369A !important;
+}
+
+.stopped:not(.djs-connection) .djs-visual> :nth-child(1) {
+    stroke-width: 5px !important;
+    stroke: #e53935 !important;
+}
+
+.cancelled:not(.djs-connection) .djs-visual> :nth-child(1) {
+    stroke-width: 5px !important;
+    stroke: #e53935 !important;
+}
+
+
 .highlight:not(.djs-connection) .djs-visual> :nth-child(2) {
     /* fill: #ffffff !important; */
 }
