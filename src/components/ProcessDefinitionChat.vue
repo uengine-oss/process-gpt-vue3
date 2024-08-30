@@ -325,6 +325,28 @@ export default {
         }
     },
     methods: {
+        beforeStartGenerate(){
+            let chatMsgs = [];
+            if (this.messages && this.messages.length > 0) {
+                this.messages.forEach((msg) => {
+                    if (msg.content) {
+                        chatMsgs.push({
+                            role: msg.role,
+                            content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
+                        });
+                    }
+                });
+            }
+
+            if(this.generator){
+                this.generator.model = "gpt-4o";
+            }
+            this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs];
+            if(!this.isMentoMode){
+                this.setPrompt('consulting')
+            }
+            this.startGenerate();
+        },
         async beforeSaveDefinition(info){
             if(this.mode == 'consulting'){
                 await this.$emit("createdBPMN", this.processDefinition)
@@ -618,19 +640,20 @@ export default {
                             this.messages[this.messages.length - 1].disableMsg = true
                         } else {
                             if(unknown){
-                                if(unknown.processDefinitionId){
-                                    this.waitForCustomer = true
-                                    this.isConsultingMode = false
-                                    this.bpmn = this.createBpmnXml(unknown); 
-                                    this.definitionChangeCount++;
-                                    this.messages = []
-                                    this.messages.push({
-                                        "role": "system",
-                                        "content": `컨설팅 내용을 기반으로 모델 생성중입니다. 잠시만 기다려주세요!`,
-                                        "timeStamp": Date.now(),
-                                    })
-                                    this.$emit("openProcessPreview")
-                                } else if(unknown.queryFor && unknown.queryFor != 'customer'){
+                                // if(unknown.processDefinitionId){
+                                //     this.waitForCustomer = true
+                                //     this.isConsultingMode = false
+                                //     this.bpmn = this.createBpmnXml(unknown); 
+                                //     this.definitionChangeCount++;
+                                //     this.messages = []
+                                //     this.messages.push({
+                                //         "role": "system",
+                                //         "content": `컨설팅 내용을 기반으로 모델 생성중입니다. 잠시만 기다려주세요!`,
+                                //         "timeStamp": Date.now(),
+                                //     })
+                                //     this.$emit("openProcessPreview")
+                                // } else 
+                                if(unknown.queryFor && unknown.queryFor != 'customer'){
                                     this.messages[this.messages.length - 1].disableMsg = true
                                 }
                             }
@@ -683,7 +706,7 @@ export default {
                             content = unknown
                         } else {
                             if(unknown){
-                                if(unknown.queryFor == 'customer'){
+                                if(unknown.queryFor == 'customer' && unknown.answerType == 'consulting'){
                                     this.waitForCustomer = true
                                 }
             
@@ -705,48 +728,44 @@ export default {
         
         
                         if(!this.waitForCustomer){
-                            if(this.isMentoMode){
-                                this.generator = new ConsultingGenerator(this, {
+                            if(unknown.answerType && unknown.answerType == 'generateProcessDef'){
+                                this.generator = new ChatGenerator(this, {
                                     isStream: true,
-                                    preferredLanguage: "Korean"
+                                    preferredLanguage: 'Korean'
                                 });
                                 this.isMentoMode = false
+                                this.isConsultingMode = false
+                                this.waitForCustomer = true
+                                this.$emit("openProcessPreview")
                             } else {
-                                this.generator = new ConsultingMentoGenerator(this, {
-                                    isStream: true,
-                                    preferredLanguage: "Korean"
-                                });
-                                this.isMentoMode = true
+                                if(this.isMentoMode){
+                                    this.generator = new ConsultingGenerator(this, {
+                                        isStream: true,
+                                        preferredLanguage: "Korean"
+                                    });
+                                    this.isMentoMode = false
+                                } else {
+                                    this.generator = new ConsultingMentoGenerator(this, {
+                                        isStream: true,
+                                        preferredLanguage: "Korean"
+                                    });
+                                    this.isMentoMode = true
+                                }
                             }
-                            let chatMsgs = [];
-                            if (this.messages && this.messages.length > 0) {
-                                this.messages.forEach((msg) => {
-                                    if (msg.content) {
-                                        chatMsgs.push({
-                                            role: msg.role,
-                                            content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
-                                        });
-                                    }
-                                });
-                            }
-                
-                            if(this.generator){
-                                this.generator.model = "gpt-4o";
-                            }
-                            this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs];
-                            if(!this.isMentoMode){
-                                this.setPrompt('consulting')
-                            }
-                            this.startGenerate();
+                            this.beforeStartGenerate()
                         }
                     } catch(e) {
                         console.log(e)
-                        this.waitForCustomer = true
+                        if(this.messages[this.messages.length - 1].role == 'system'){
+                            this.messages.pop()
+                        }
+                        this.waitForCustomer = false
                         this.generator = new ConsultingGenerator(this, {
                             isStream: true,
                             preferredLanguage: "Korean"
                         });
                         this.isMentoMode = false
+                        this.beforeStartGenerate()
                     }
                 } 
 
