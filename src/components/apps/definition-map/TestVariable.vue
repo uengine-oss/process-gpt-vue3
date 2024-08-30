@@ -1,16 +1,23 @@
 <template>
-    <v-card style="height: 100%;" variant="outlined">
+    <v-card style="height: 100%;" variant="outlined" class="pa-4">
         <!-- <v-card-title>  </v-card-title> -->
-        <v-card-text>
+        <v-card-text class="pa-0">
             <div v-for="val, key in selectedTask" :key="key" >
-                <div v-if="key != '_type'">
+                <div v-if="key != '_type'"
+                    style="color:black;"
+                >
                     {{ key }} : {{ val }}
                 </div>
             </div>
         </v-card-text>
-        <v-card-actions class="justify-center">
-            <v-btn color="primary" variant="flat" class="cp-process-save" @click="executeProcess">실행</v-btn>
-        </v-card-actions>
+        <v-row class="ma-0 pa-0">
+            <v-spacer></v-spacer>
+            <v-btn @click="executeProcess"
+                class="cp-process-save"
+                color="primary"
+                rounded
+            >실행</v-btn>
+        </v-row>
     </v-card>
 </template>
 

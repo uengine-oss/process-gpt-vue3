@@ -1,109 +1,104 @@
 <template>
     <v-card style="width: 100%; height: 100%">
-        <v-card-title> Testing Process </v-card-title>
-        <v-card-text>
-            <div>
-                <v-row :class="isMobile ? 'ma-0 pa-2 mt-2' : 'ma-0 pa-2'">
-                    <v-col class="pa-0" :cols="isMobile ? 12 : isSimulate ? 6 : 6">
-                        <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
-                            <div
-                                class="pa-2"
-                                :style="
-                                    $globalState.state.isZoomed
-                                        ? 'height: calc(100vh - 130px); overflow: auto'
-                                        : 'height: calc(100vh - 280px); color: black; overflow: auto'
-                                "
-                            >
-                                <div class="pa-0 pl-2" style="height: 100%" :key="updatedDefKey">
-                                    <div v-if="bpmn">
-                                        Main - InstanceId - {{ instanceId }}
+        <v-card-title class="pb-0"> Testing Process </v-card-title>
+        <div>
+            <v-row :class="isMobile ? 'ma-0 pa-2 mt-2' : 'ma-0 pa-4 pt-0'">
+                <v-col class="pa-0" :cols="isMobile ? 12 : isSimulate ? 6 : 6">
+                    <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
+                        <div
+                            class="pa-2"
+                            :style="
+                                $globalState.state.isZoomed
+                                    ? 'height: calc(100vh - 130px); overflow: auto'
+                                    : 'height: calc(100vh - 240px); color: black; overflow: auto'
+                            "
+                        >
+                            <div class="pa-0" style="height: 100%;" :key="updatedDefKey">
+                                <div v-if="bpmn" style="border-bottom: 1px solid #E0E0E0;">
+                                    Main - InstanceId - {{ instanceId }}
+                                    <BpmnUengine
+                                        ref="bpmnVue"
+                                        :bpmn="bpmn"
+                                        :options="options"
+                                        :isViewMode="true"
+                                        :currentActivities="currentActivities"
+                                        v-on:openDefinition="(ele) => openSubProcess(ele)"
+                                        style="height: 100%;"
+                                    ></BpmnUengine>
+                                </div>
+                                <div v-else class="no-bpmn-found-text">No BPMN found</div>
+                                <div v-if="subBpmn">
+                                    <div v-for="(sub, key) in subBpmn"
+                                         style="border-bottom: 1px solid #E0E0E0;"
+                                    >
+                                        Sub - InstanceId - {{ key }}
                                         <BpmnUengine
                                             ref="bpmnVue"
-                                            :bpmn="bpmn"
+                                            :bpmn="sub"
                                             :options="options"
                                             :isViewMode="true"
-                                            :currentActivities="currentActivities"
+                                            :currentActivities="subCurrentActivities[key]"
                                             v-on:openDefinition="(ele) => openSubProcess(ele)"
                                             style="height: 100%"
                                         ></BpmnUengine>
                                     </div>
-                                    <div v-else class="no-bpmn-found-text">No BPMN found</div>
-                                    <div v-if="subBpmn">
-                                        <div v-for="(sub, key) in subBpmn">
-                                            Sub - InstanceId - {{ key }}
-                                            <BpmnUengine
-                                                ref="bpmnVue"
-                                                :bpmn="sub"
-                                                :options="options"
-                                                :isViewMode="true"
-                                                :currentActivities="subCurrentActivities[key]"
-                                                v-on:openDefinition="(ele) => openSubProcess(ele)"
-                                                style="height: 100%"
-                                            ></BpmnUengine>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
-                        </v-alert>
-                    </v-col>
-                    <v-col class="pa-0" :cols="6" style="height: 30%">
-                        <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
-                            <v-card variant="outlined" color="black" style="height: 100%; overflow: auto">
-                                <v-card-title>worklist</v-card-title>
-                                <v-card-item>
-                                    <div v-if="eventList">
-                                        <div v-for="event in eventList" :key="event">
-                                            <v-btn
-                                                @click="
-                                                    $try({
-                                                        context: this,
-                                                        action: () => fireMessage(event.tracingTag),
-                                                        successMsg: `${event.name} 실행 완료`
-                                                    })
-                                                "
-                                                v-if="event.name"
-                                                >{{ event.name }}</v-btn
-                                            >
-                                        </div>
+                        </div>
+                    </v-alert>
+                </v-col>
+                <v-col class="pa-4" :cols="6">
+                    <v-card-title class="pa-0">Worklist</v-card-title>
+                    <div
+                        style="height: calc(-270px + 100vh);
+                        color: black;
+                        overflow: auto;"
+                    >
+                        <div v-if="eventList">
+                            <div v-for="event in eventList" :key="event">
+                                <v-btn
+                                    @click="
+                                        $try({
+                                            context: this,
+                                            action: () => fireMessage(event.tracingTag),
+                                            successMsg: `${event.name} 실행 완료`
+                                        })
+                                    "
+                                    v-if="event.name"
+                                    >{{ event.name }}</v-btn
+                                >
+                            </div>
+                        </div>
+                        <div v-if="taskList">
+                            <v-card
+                                v-for="task in taskList"
+                                variant="outlined"
+                                class="pa-4 mb-2"
+                                :key="task.taskId"
+                            >
+                                <div>
+                                    <div class="text-h6 mb-1">
+                                        {{ task.title }}
                                     </div>
-                                    <div v-if="taskList">
-                                        <v-card
-                                            v-for="task in taskList"
-                                            color="primary"
-                                            variant="outlined"
-                                            class="mx-auto"
-                                            :key="task.taskId"
-                                        >
-                                            <v-card-item>
-                                                <div>
-                                                    <div class="text-h6 mb-1">
-                                                        {{ task.title }}
-                                                    </div>
-                                                    <div class="text-caption">Task ID: {{ task.taskId }}</div>
-                                                    <div class="text-caption">Instance ID: {{ task.instId }}</div>
-                                                </div>
-                                            </v-card-item>
-                                            <v-card-actions>
-                                                <test-variables
-                                                    style="height: 100%"
-                                                    :definition-id="definitionId"
-                                                    :task="task.trcTag"
-                                                    :task-id="task.taskId"
-                                                    @executeTest="(e) => executeTestProcess(e, task)"
-                                                    @type="(e) => (tool = e)"
-                                                    @work-item="(e) => addWorkItem(e, task.taskId)"
-                                                ></test-variables>
-                                            </v-card-actions>
-                                        </v-card>
-                                    </div>
-                                    <div v-else>Loading...</div>
-                                </v-card-item>
+                                    <div class="text-caption">Task ID: {{ task.taskId }}</div>
+                                    <div class="text-caption">Instance ID: {{ task.instId }}</div>
+                                </div>
+                                <test-variables
+                                    style="height: 100%"
+                                    :definition-id="definitionId"
+                                    :task="task.trcTag"
+                                    :task-id="task.taskId"
+                                    @executeTest="(e) => executeTestProcess(e, task)"
+                                    @type="(e) => (tool = e)"
+                                    @work-item="(e) => addWorkItem(e, task.taskId)"
+                                ></test-variables>
                             </v-card>
-                        </v-alert>
-                    </v-col>
-                </v-row>
-            </div>
-        </v-card-text>
+                        </div>
+                        <div v-else>Loading...</div>
+                    </div>
+                </v-col>
+            </v-row>
+        </div>
 
         <!-- <v-card-actions class="justify-center" v-if="tool == 'DefaultWorkItem'">
             <v-btn color="primary" variant="flat" class="cp-process-save" @click="executeProcess">실행</v-btn>
