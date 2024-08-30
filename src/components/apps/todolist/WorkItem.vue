@@ -333,39 +333,4 @@ export default {
 };
 </script>
 <style>
-.work-itme-current-component .v-checkbox .v-input__details {
-    display: none;
-}
-.work-itme-current-component .v-checkbox {
-    height: 40px;
-}
-.work-itme-current-component .v-checkbox label {
-    opacity: 0.6 !important;
-}
-.work-itme-current-component .form-checkbox-label {
-    font-size: 20px;
-    font-weight: 500;
-}
-.work-itme-current-component .form-radio-box {
-    margin-top: 25px;
-}
-.work-itme-current-component .form-radio-box .v-radio-group {
-    margin-top: 8px;
-}
-.work-itme-current-component .form-radio-box .form-radio-label {
-    font-size: 20px;
-    font-weight: 500;
-}
-
-.work-itme-current-component .form-label {
-    font-size: 20px;
-    font-weight: 500;
-}
-
-.processExecute {
-    position: absolute;
-    right: 80px;
-    top: 20px;
-    z-index: 1;
-}
 </style>

@@ -88,7 +88,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
 
   canRender(element) {
     // only render tasks and events (ignore labels)
-    return isAny(element, ['bpmn:Task', "bpmn:Lane", "bpmn:Participant", "bpmn:SequenceFlow", "bpmn:StartEvent", "bpmn:EndEvent", "bpmn2:outgoing", "label", "bpmn:Gateway", "bpmn:SubProcess"]) && !element.labelTarget;
+    return isAny(element, ['bpmn:Task', "bpmn:Lane", "bpmn:Participant", "bpmn:SequenceFlow", "bpmn:StartEvent", "bpmn:EndEvent", "bpmn2:outgoing", "label", "bpmn:Gateway", "bpmn:SubProcess", "bpmn:CallActivity"]) && !element.labelTarget;
   }
 
 
@@ -118,7 +118,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
       this.drawCustomGateway(parentNode, shape, element);
     } else if (is(element, 'bpmn:SequenceFlow')) {
       this.drawConnection(parentNode, element);
-    } else if (is(element, 'bpmn:SubProcess')) {
+    } else if (is(element, 'bpmn:SubProcess') || is(element, 'bpmn:CallActivity')) {
       this.drawCustomSubProcess(parentNode, shape, element);
     }
     return shape;
@@ -153,13 +153,15 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     const existingWidth = shape.width.baseVal.value;
     const existingHeight = shape.height.baseVal.value
 
-    // 기존 크기를 사용하여 새로운 사각형을 그립니다.
-    //#e53935
+    var strokColor = 'none';
+
     var strokColor = this.getValidateColor(this.validate(element.id));
     if (strokColor == null) {
       strokColor = 'none';
     }
-    const rect = drawRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, strokColor, '#fdf2d0');
+    const borderRect = drawBorderRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, strokColor);
+    prependTo(borderRect, parentNode);
+    const rect = drawRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, 'none', '#fdf2d0', shape.style);
     prependTo(rect, parentNode);
     svgRemove(shape);
   }
@@ -172,7 +174,10 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     if (strokColor == null) {
       strokColor = 'none';
     }
-    const rect = drawRect(parentNode, size, size, radius, strokColor, '#f6c745');
+    
+    const borderRect = drawBorderRect(parentNode, size, size, radius, strokColor);
+    prependTo(borderRect, parentNode);
+    const rect = drawRect(parentNode, size, size, radius, 'none', '#f6c745');
     prependTo(rect, parentNode);
     svgRemove(shape);
   }
@@ -185,7 +190,10 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     if (strokColor == null) {
       strokColor = 'none';
     }
-    const rect = drawRect(parentNode, size, size, radius, strokColor, '#f6c745');
+    
+    const borderRect = drawBorderRect(parentNode, size, size, radius, strokColor);
+    prependTo(borderRect, parentNode);
+    const rect = drawRect(parentNode, size, size, radius, 'none', '#f6c745');
     prependTo(rect, parentNode);
     svgRemove(shape);
   }
@@ -232,6 +240,9 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     }
     diamond.style.stroke = strokColor;
     diamond.style.strokeWidth = strokColor === '#000000' ? '2' : '5';
+    if(strokColor != '#000000' ) {
+      diamond.style.strokeDasharray = '10, 10';
+    }
 
     prependTo(diamond, parentNode);
 
@@ -247,7 +258,9 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     if (strokColor == null) {
       strokColor = '#000000';
     }
-    const rect = drawRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, strokColor, '#ffffff');
+    const borderRect = drawBorderRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, strokColor);
+    prependTo(borderRect, parentNode);
+    const rect = drawRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, '#000000', '#ffffff');
     prependTo(rect, parentNode);
     svgRemove(shape);
   }
@@ -343,11 +356,9 @@ function addShadowFilter(parentNode) {
   return 'url(#dropshadow)';
 }
 
-// 정보, 가로길이, 세로길이, 외부 선, 선 색상, 배경 색상
 function drawRect(parentNode, width, height, borderRadius, strokeColor, fillColor) {
   const rect = svgCreate('rect');
 
-  // 필터를 추가하고, 필터 ID를 가져옴
   const filterId = addShadowFilter(parentNode);
 
   svgAttr(rect, {
@@ -355,15 +366,37 @@ function drawRect(parentNode, width, height, borderRadius, strokeColor, fillColo
     height: height,
     rx: borderRadius,
     ry: borderRadius, 
-    stroke: strokeColor || '#000',
-    strokeWidth: strokeColor == '#000000' ? 2 : 5,
+    stroke: strokeColor,
+    strokeWidth: 2,
     fill: fillColor || '#fff',
-    filter: filterId, // 필터 적용
+    filter: filterId,
   });
 
   svgAppend(parentNode, rect);
 
+
   return rect;
+}
+
+function drawBorderRect(parentNode, width, height, borderRadius, strokeColor) {
+  const borderRect = svgCreate('rect');
+  
+  if (strokeColor !== '#000000') {
+    svgAttr(borderRect, {
+      'stroke-dasharray': '10, 10'
+    });
+  }
+  svgAttr(borderRect, {
+    width: width,
+    height: height,
+    rx: borderRadius,
+    ry: borderRadius,
+    stroke: strokeColor == '#000000'? 'none' : strokeColor,
+    strokeWidth: 5,
+    fill: 'none'
+  });
+  svgAppend(parentNode, borderRect);
+  return borderRect;
 }
 
 

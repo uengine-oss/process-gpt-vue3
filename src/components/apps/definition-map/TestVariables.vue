@@ -18,7 +18,7 @@
             <v-btn color="error" variant="flat" @click="closeDialog()">닫기</v-btn>
         </v-card-actions> -->
         <v-dialog v-model="workItemDialog" style="width: 30%">
-            <v-card v-if="currentComponent">
+            <v-card v-if="currentComponent" class="work-item-dialog-card">
                 <component 
                     :is="currentComponent" 
                     :definitionId="definitionId"

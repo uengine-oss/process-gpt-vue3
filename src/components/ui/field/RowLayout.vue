@@ -1,26 +1,27 @@
 <template>
     <template v-if="is_multidata_mode === 'true'">
-        <v-card class="pa-0 form-layout-card" variant="outlined">           
-            <v-card-title class="mb-3 d-flex justify-space-between">
-                <div class="mt-2">{{(alias && alias.length > 0) ? alias : name}}</div>
+        <v-card-title class="d-flex justify-space-between pa-0">
+            <div class="mt-2">{{(alias && alias.length > 0) ? alias : name}}</div>
 
-                <v-btn @click="addItem" style="background-color: transparent; width: 50px; height: 50px;">
-                    <v-icon style="color: green;" size="50">mdi-plus</v-icon>
-                </v-btn>
-            </v-card-title>
-            
-            <div>
-                <slot :modelValue="localModelValue[name]" :deleteItem="deleteItem"></slot>
-            </div>
-        </v-card>
+            <v-btn @click="addItem" color="primary"
+                variant="text"
+                icon
+            >
+                <Icons :icon="'plus'" />
+            </v-btn>
+        </v-card-title>
+        
+        <div class="row-layout-box pa-0 delete-input-details">
+            <slot :modelValue="localModelValue[name]" :deleteItem="deleteItem"></slot>
+        </div>
     </template>
     <template v-else>
         <v-card class="pa-0 form-layout-card" variant="outlined">           
-            <v-card-title v-if="alias && alias.length" class="mb-3 d-flex justify-space-between">
+            <v-card-title v-if="alias && alias.length" class="d-flex justify-space-between">
                 <div>{{(alias && alias.length > 0) ? alias : name}}</div>
             </v-card-title>
             
-            <div>
+            <div class="delete-input-details">
                 <slot :modelValue="localModelValue"></slot>
             </div>
         </v-card>
