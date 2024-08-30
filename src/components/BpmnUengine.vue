@@ -322,6 +322,18 @@ export default {
                 });
             });
 
+            eventBus.on('undo', function (e) {
+                self.$nextTick(async () => {
+                    self.$emit('change');
+                });
+            });
+
+            eventBus.on('redo', function (e) {
+                self.$nextTick(async () => {
+                    self.$emit('change');
+                });
+            });
+
             self.debounce(() => {
                     self.$emit('change');
                 }, 100)

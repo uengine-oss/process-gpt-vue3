@@ -65,7 +65,7 @@ hr {
 
 .running:not(.djs-connection) .djs-visual > :nth-child(2) {
     stroke-width: 5px !important;
-    stroke-dasharray: 20, 20;
+    stroke-dasharray: 20, 20 !important;
     animation: running-animation 1.5s linear infinite;
 }
 
