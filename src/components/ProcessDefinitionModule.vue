@@ -86,12 +86,16 @@ export default {
                         .replaceAll('`', `"`);
                     jsonData = partialParse(jsonData);
                     if (jsonData.htmlOutput) {
-                        await backend.putRawDefinition(jsonData.htmlOutput, form.name, { type: 'form' });
+                        const formData = {
+                            html: jsonData.htmlOutput,
+                            name: form.name,
+                        };
+                        await this.saveFormData(formData);
+                        // await backend.putRawDefinition(jsonData.htmlOutput, form.name, { type: 'form' });
                         formHtml = jsonData.htmlOutput; // 생성된 HTML을 formHtml에 할당
                     }
                 }
-
-                let newMessage = `'${form.name}' 폼을 생성해줘.`;
+                let newMessage = `'${form.name}' 폼을 생성해줘. ${form.description}`;
                 formGenerator.previousMessages = [formGenerator.prevMessageFormat];
                 formGenerator.previousMessages.push({
                     role: 'user',
@@ -100,6 +104,16 @@ export default {
                 await formGenerator.generate();
             }
             return formHtml; // 생성된 또는 기존의 formHtml 반환
+        },
+        async saveFormData(formData) {
+            const activities = this.processDefinition.components.filter(component => component.componentType === 'Activity');
+            const activity = activities.find(activity => activity.inputData.includes(formData.name));
+            const options = {
+                type: 'form',
+                proc_def_id: this.processDefinition.processDefinitionId,
+                activity_id: activity.id
+            };
+            await backend.putRawDefinition(formData.html, formData.name, options);
         },
         extractPropertyNameAndIndex(jsonPath) {
             let match;
