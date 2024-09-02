@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="form-user-select-field">
         <v-autocomplete v-model="localModelValue" 
             :items="usersToSelect" 
             :label="(localAlias && localAlias.length > 0) ? localAlias : localName" 

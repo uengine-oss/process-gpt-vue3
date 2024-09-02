@@ -2,7 +2,7 @@
     <v-card flat>
         <div :class="{'d-flex': !isMobile}">
             <div v-if="type === 'edit'" class="w-100 d-flex justify-center">
-                <div v-if="isShowMashup">
+                <div v-if="isShowMashup" class="overflow-y-auto">
                     <mashup ref="mashup" v-model="kEditorInput" :key="mashupKey"  
                         @onInitKEditorContent="updateKEditorContentBeforeSave"
                         @onChangeKEditorContent="changedKEditorContent"/>

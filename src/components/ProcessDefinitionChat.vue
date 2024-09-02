@@ -4,7 +4,43 @@
         style="background-color: rgba(255, 255, 255, 0)"
         :class="{ 'is-deleted': isDeleted, 'user-left-part': !isAdmin }"
     >
-        <AppBaseCard>
+        <v-card v-if="isConsultingMode">
+            <div :key="chatRenderKey">
+                <div style="display: none;">
+                    <process-definition
+                        class="process-definition-resize"
+                        :bpmn="bpmn"
+                        :key="definitionChangeCount"
+                        :isViewMode="true"
+                        :isXmlMode="isXmlMode"
+                        :definitionPath="fullPath"
+                        :definitionChat="this"
+                        @update="updateDefinition"
+                    ></process-definition>
+                </div>
+                <div style="position: relative;">
+                    <Chat
+                        :messages="messages"
+                        :userInfo="userInfo"
+                        :agentInfo="agentInfo"
+                        :type="'consulting'"
+                        :ProcessGPTActive="ProcessGPTActive"
+                        @requestDraftAgent="requestDraftAgent"
+                        @requestFile="requestFile"
+                        @beforeReply="beforeReply"
+                        @sendMessage="beforeSendMessage"
+                        @startProcess="startProcess"
+                        @cancelProcess="cancelProcess"
+                        @deleteWorkList="deleteWorkList"
+                        @deleteAllWorkList="deleteAllWorkList"
+                        @sendEditedMessage="sendEditedMessage"
+                        @stopMessage="stopMessage"
+                        @toggleProcessGPTActive="toggleProcessGPTActive"
+                    ></Chat>
+                </div>
+            </div>
+        </v-card>
+        <AppBaseCard v-else>
             <template v-slot:leftpart>
                 <h5 v-if="!isAdmin" class="text-h5 font-weight-semibold pa-3" style="background-color: white;">
                     {{ projectName }}
@@ -31,7 +67,7 @@
                     :processName="projectName"
                     :type="'bpmn'"
                     @close="toggleVersionDialog"
-                    @save="saveDefinition"
+                    @save="beforeSaveDefinition"
                 ></process-definition-version-dialog>
                 <ProcessDefinitionVersionManager
                     :process="processDefinition"
@@ -123,6 +159,8 @@ import * as jsondiff from 'jsondiffpatch';
 import ChatModule from './ChatModule.vue';
 import ProcessDefinitionModule from './ProcessDefinitionModule.vue';
 import ChatGenerator from './ai/ProcessDefinitionGenerator';
+import ConsultingGenerator from "@/components/ai/ProcessConsultingGenerator.js";
+import ConsultingMentoGenerator from "@/components/ai/ProcessConsultingMentoGenerator.js";
 import Chat from './ui/Chat.vue';
 
 import FormGenerator from './ai/FormDesignGenerator';
@@ -154,6 +192,12 @@ export default {
         ProcessDefinitionConvertModule,
         FormGenerator
     },
+    props: {
+        mode: {
+            type: String,
+            default: ""
+        },
+    },
     data: () => ({
         isXmlMode: false,
         prompt: '',
@@ -174,33 +218,62 @@ export default {
         deleteDialog: false,
         isDeleted: false,
         externalSystems: [],
-        validationList: {}
+        validationList: {},
+
+        waitForCustomer: false,
+        isConsultingMode: false,
     }),
     async created() {
         $try(async () => {
             // Issue: init Methods가 종료되기전에, ChatGenerator를 생성하면서 this로 넘겨주는 Client 정보가 누락되는 현상 발생.
-            await this.init();
-            this.generator = new ChatGenerator(this, {
-                isStream: true,
-                preferredLanguage: 'Korean'
-            });
-            if (this.$store.state.messages) {
-                const messagesString = JSON.stringify(this.$store.state.messages);
-                this.prompt = `아래 대화 내용에서 프로세스를 유추하여 프로세스 정의를 생성해주세요. 이때 가능한 프로세스를 일반화하여 작성:
-                ${messagesString}.`;
-                this.$store.commit('clearMessages');
-            }
-            if (this.$store.state.editMessages) {
-                const messagesString = JSON.stringify(this.$store.state.editMessages);
-                this.prompt = `아래 대화 내용을 보고 기존 프로세스에서 수정 가능한 부분을 유추하여 프로세스 정의를 수정해주세요.
-                ${messagesString}.`;
-                this.$store.commit('clearMessages');
-            }
+            if(this.mode == 'consulting'){
+                this.isConsultingMode = true
+            } 
+            if(this.isConsultingMode){
+                this.userInfo = await this.storage.getUserInfo();
 
-            if (this.fullPath && this.fullPath != '') {
-                this.chatRoomId = this.fullPath;
+                this.processDefinitionMap = await backend.getProcessDefinitionMap();
+
+                this.messages.push({
+                    "role": "system",
+                    "content": `${this.userInfo.name}님 안녕하세요! 어떤 업무에 어떤 문제를 겪고 계신가요? 말씀해주시면 도와드리겠습니다!`,
+                    "timeStamp": Date.now(),
+                })
+
+                
+                this.generator = new ConsultingGenerator(this, {
+                    isStream: true,
+                    preferredLanguage: "Korean"
+                });
+
+                this.EventBus.on('messages-updated', () => {
+                    this.chatRenderKey++;
+                });
+
+            } else {
+                await this.init();
+                this.generator = new ChatGenerator(this, {
+                    isStream: true,
+                    preferredLanguage: 'Korean'
+                });
+                if (this.$store.state.messages) {
+                    const messagesString = JSON.stringify(this.$store.state.messages);
+                    this.prompt = `아래 대화 내용에서 프로세스를 유추하여 프로세스 정의를 생성해주세요. 이때 가능한 프로세스를 일반화하여 작성:
+                    ${messagesString}.`;
+                    this.$store.commit('clearMessages');
+                }
+                if (this.$store.state.editMessages) {
+                    const messagesString = JSON.stringify(this.$store.state.editMessages);
+                    this.prompt = `아래 대화 내용을 보고 기존 프로세스에서 수정 가능한 부분을 유추하여 프로세스 정의를 수정해주세요.
+                    ${messagesString}.`;
+                    this.$store.commit('clearMessages');
+                }
+    
+                if (this.fullPath && this.fullPath != '') {
+                    this.chatRoomId = this.fullPath;
+                }
+                this.validate();
             }
-            this.validate();
         });
     },
     watch: {
@@ -219,9 +292,14 @@ export default {
     },
     computed: {
         fullPath() {
-            let path = this.$route.params.pathMatch.join('/');
-            if (path.startsWith('/')) {
-                path = fullPath.substring(1);
+            let path
+            if(this.$route.params.pathMatch){
+                path = this.$route.params.pathMatch.join('/');
+                if (path.startsWith('/')) {
+                    path = fullPath.substring(1);
+                }
+            } else {
+                path = this.$route.params.id
             }
             return path;
         },
@@ -247,6 +325,35 @@ export default {
         }
     },
     methods: {
+        beforeStartGenerate(){
+            let chatMsgs = [];
+            if (this.messages && this.messages.length > 0) {
+                this.messages.forEach((msg) => {
+                    if (msg.content) {
+                        chatMsgs.push({
+                            role: msg.role,
+                            content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
+                        });
+                    }
+                });
+            }
+
+            if(this.generator){
+                this.generator.model = "gpt-4o";
+            }
+            this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs];
+            if(!this.isMentoMode){
+                this.setPrompt('consulting')
+            }
+            this.startGenerate();
+        },
+        async beforeSaveDefinition(info){
+            if(this.mode == 'consulting'){
+                await this.$emit("createdBPMN", this.processDefinition)
+                info.skipSaveProcMap = true
+            } 
+            this.saveDefinition(info);
+        },
         showXmlMode() {
             this.isXmlMode = !this.isXmlMode;
         },
@@ -483,25 +590,80 @@ export default {
         },
 
         beforeSendMessage(newMessage) {
-            if (this.processDefinitionMap) {
-                this.generator.setProcessDefinitionMap(this.processDefinitionMap);
-            }
-            if (this.processDefinition) {
-                this.generator.setProcessDefinition(this.processDefinition);
+            this.waitForCustomer = false
+            if(!this.isConsultingMode){
+                this.generator = new ChatGenerator(this, {
+                    isStream: true,
+                    preferredLanguage: 'Korean'
+                });
+                this.generator.client.genType = 'proc_def'
+                if (this.processDefinitionMap) {
+                    this.generator.setProcessDefinitionMap(this.processDefinitionMap);
+                }
+                if (this.processDefinition) {
+                    this.generator.setProcessDefinition(this.processDefinition);
+                }
             }
             this.sendMessage(newMessage);
         },
         async afterModelCreated(response) {
             let jsonProcess;
             try {
-                jsonProcess = this.extractJSON(response);
+                if (typeof response === 'string' && !this.isMentoMode) {
+                    try {
+                        jsonProcess = JSON.parse(response);
+                    } catch(e){
+                        try {
+                            jsonProcess = partialParse(response);
+                            if(jsonProcess && Object.keys(jsonProcess).length !== 0){
+                                jsonProcess = partialParse(response + '"');
+                            }
+                        } catch(e){
+                            jsonProcess = this.extractJSON(response);
+                            try {
+                                jsonProcess = JSON.parse(jsonProcess);
+                            } catch(e){
+                                jsonProcess = partialParse(jsonProcess)
+                            }
+                        }
+                    }
+                } else {
+                    jsonProcess = response;
+                }
+                // jsonProcess = this.extractJSON(response);
 
                 if (jsonProcess) {
-                    let unknown = partialParse(jsonProcess);
-                    if (unknown.processDefinitionId) {
-                        this.processDefinition = unknown;
-                        this.bpmn = this.createBpmnXml(this.processDefinition);
-                        this.definitionChangeCount++;
+                    // let unknown = partialParse(jsonProcess);
+                    let unknown = jsonProcess;
+                    if(this.isConsultingMode){
+                        if(this.isMentoMode){
+                            this.messages[this.messages.length - 1].disableMsg = true
+                        } else {
+                            if(unknown){
+                                // if(unknown.processDefinitionId){
+                                //     this.waitForCustomer = true
+                                //     this.isConsultingMode = false
+                                //     this.bpmn = this.createBpmnXml(unknown); 
+                                //     this.definitionChangeCount++;
+                                //     this.messages = []
+                                //     this.messages.push({
+                                //         "role": "system",
+                                //         "content": `컨설팅 내용을 기반으로 모델 생성중입니다. 잠시만 기다려주세요!`,
+                                //         "timeStamp": Date.now(),
+                                //     })
+                                //     this.$emit("openProcessPreview")
+                                // } else 
+                                if(unknown.queryFor && unknown.queryFor != 'customer'){
+                                    this.messages[this.messages.length - 1].disableMsg = true
+                                }
+                            }
+                        }
+                    } else {
+                        if (unknown.processDefinitionId) {
+                            this.processDefinition = unknown;
+                            this.bpmn = this.createBpmnXml(this.processDefinition);
+                            this.definitionChangeCount++;
+                        }
                     }
                 }
             } catch (error) {
@@ -512,8 +674,24 @@ export default {
 
         async afterGenerationFinished(response) {
             let jsonProcess = null;
-            if (typeof response === 'string') {
-                jsonProcess = JSON.parse(response);
+            if (typeof response === 'string' && !this.isMentoMode) {
+                try {
+                    jsonProcess = JSON.parse(response);
+                } catch(e){
+                    try {
+                        jsonProcess = partialParse(response);
+                        if(jsonProcess && Object.keys(jsonProcess).length !== 0){
+                            jsonProcess = partialParse(response + '"');
+                        }
+                    } catch(e){
+                        jsonProcess = this.extractJSON(response);
+                        try {
+                            jsonProcess = JSON.parse(jsonProcess);
+                        } catch(e){
+                            jsonProcess = partialParse(jsonProcess)
+                        }
+                    }
+                }
             } else {
                 jsonProcess = response;
             }
@@ -521,44 +699,84 @@ export default {
             if (jsonProcess) {
                 let unknown = jsonProcess;
 
-                if (unknown.megaProcessId && this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
-                    if (!this.processDefinitionMap.mega_proc_list.some((megaProcess) => megaProcess.name == unknown.megaProcessId)) {
-                        this.processDefinitionMap.mega_proc_list.push({
-                            name: unknown.megaProcessId,
-                            id: unknown.megaProcessId,
-                            major_proc_list: [
-                                {
-                                    name: unknown.majorProcessId,
-                                    id: unknown.majorProcessId,
-                                    sub_proc_list: [
-                                        {
-                                            id: unknown.processDefinitionId,
-                                            name: unknown.processDefinitionName
-                                        }
-                                    ]
+                if(this.isConsultingMode){
+                    try {
+                        let content
+                        if(this.isMentoMode){
+                            content = unknown
+                        } else {
+                            if(unknown){
+                                if(unknown.queryFor == 'customer' && unknown.answerType == 'consulting'){
+                                    this.waitForCustomer = true
                                 }
-                            ]
-                        });
-                    }
-                    if (unknown.majorProcessId) {
-                        this.processDefinitionMap.mega_proc_list.forEach((megaProcess) => {
-                            if (megaProcess.name == unknown.megaProcessId) {
-                                if (megaProcess.major_proc_list.some((majorProcess) => majorProcess.name == unknown.majorProcessId)) {
-                                    const idx = megaProcess.major_proc_list.findIndex(
-                                        (majorProcess) => majorProcess.name == unknown.majorProcessId
-                                    );
-                                    if (
-                                        !megaProcess.major_proc_list[idx].sub_proc_list.some(
-                                            (subProcess) => subProcess.id == unknown.processDefinitionId
-                                        )
-                                    ) {
-                                        megaProcess.major_proc_list[idx].sub_proc_list.push({
-                                            id: unknown.processDefinitionId,
-                                            name: unknown.processDefinitionName
-                                        });
-                                    }
+            
+                                // if(unknown.processDefinitionId){
+                                    // this.waitForCustomer = true
+                                    // this.bpmn = this.createBpmnXml(response); 
+                                    // this.definitionChangeCount++;
+                                    // await this.checkedFormData();
+                                    // await this.saveDef(true);
+                                    // this.initConfetti();
+                                    // this.render();
+                                    // this.isConsultingMode = false
+                                // } else {
+                                    content = unknown.content
+                                    this.messages[this.messages.length - 1].content = content
+                                // }
+                            }
+                        }
+        
+        
+                        if(!this.waitForCustomer){
+                            if(unknown.answerType && unknown.answerType == 'generateProcessDef'){
+                                this.generator = new ChatGenerator(this, {
+                                    isStream: true,
+                                    preferredLanguage: 'Korean'
+                                });
+                                this.isMentoMode = false
+                                this.isConsultingMode = false
+                                this.waitForCustomer = true
+                                this.$emit("openProcessPreview")
+                            } else {
+                                if(this.isMentoMode){
+                                    this.generator = new ConsultingGenerator(this, {
+                                        isStream: true,
+                                        preferredLanguage: "Korean"
+                                    });
+                                    this.isMentoMode = false
                                 } else {
-                                    megaProcess.major_proc_list.push({
+                                    this.generator = new ConsultingMentoGenerator(this, {
+                                        isStream: true,
+                                        preferredLanguage: "Korean"
+                                    });
+                                    this.isMentoMode = true
+                                }
+                            }
+                            this.beforeStartGenerate()
+                        }
+                    } catch(e) {
+                        console.log(e)
+                        if(this.messages[this.messages.length - 1].role == 'system'){
+                            this.messages.pop()
+                        }
+                        this.waitForCustomer = false
+                        this.generator = new ConsultingGenerator(this, {
+                            isStream: true,
+                            preferredLanguage: "Korean"
+                        });
+                        this.isMentoMode = false
+                        this.beforeStartGenerate()
+                    }
+                } 
+
+                if(!this.isConsultingMode) {
+                    if (unknown.megaProcessId && this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
+                        if (!this.processDefinitionMap.mega_proc_list.some((megaProcess) => megaProcess.name == unknown.megaProcessId)) {
+                            this.processDefinitionMap.mega_proc_list.push({
+                                name: unknown.megaProcessId,
+                                id: unknown.megaProcessId,
+                                major_proc_list: [
+                                    {
                                         name: unknown.majorProcessId,
                                         id: unknown.majorProcessId,
                                         sub_proc_list: [
@@ -567,42 +785,74 @@ export default {
                                                 name: unknown.processDefinitionName
                                             }
                                         ]
-                                    });
+                                    }
+                                ]
+                            });
+                        }
+                        if (unknown.majorProcessId) {
+                            this.processDefinitionMap.mega_proc_list.forEach((megaProcess) => {
+                                if (megaProcess.name == unknown.megaProcessId) {
+                                    if (megaProcess.major_proc_list.some((majorProcess) => majorProcess.name == unknown.majorProcessId)) {
+                                        const idx = megaProcess.major_proc_list.findIndex(
+                                            (majorProcess) => majorProcess.name == unknown.majorProcessId
+                                        );
+                                        if (
+                                            !megaProcess.major_proc_list[idx].sub_proc_list.some(
+                                                (subProcess) => subProcess.id == unknown.processDefinitionId
+                                            )
+                                        ) {
+                                            megaProcess.major_proc_list[idx].sub_proc_list.push({
+                                                id: unknown.processDefinitionId,
+                                                name: unknown.processDefinitionName
+                                            });
+                                        }
+                                    } else {
+                                        megaProcess.major_proc_list.push({
+                                            name: unknown.majorProcessId,
+                                            id: unknown.majorProcessId,
+                                            sub_proc_list: [
+                                                {
+                                                    id: unknown.processDefinitionId,
+                                                    name: unknown.processDefinitionName
+                                                }
+                                            ]
+                                        });
+                                    }
                                 }
-                            }
-                        });
-                    }
-                }
-                const store = useBpmnStore();
-                const modeler = store.getModeler;
-                if (unknown.modifications) {
-                    // unknown.modifications.forEach(async (modification) => {
-                    for (let modification of unknown.modifications) {
-                        if (modification.action == 'replace') {
-                            this.jsonPathReplace(this.processDefinition, modification.targetJsonPath, modification.value);
-                            console.log(this.processDefinition);
-                            this.bpmn = this.createBpmnXml(this.processDefinition);
-                        } else if (modification.action == 'add') {
-                            this.modificationAdd(modification);
-                            this.modificationElement(modification, modeler);
-                            let xml = await modeler.saveXML({ format: true, preamble: true });
-                            this.bpmn = xml.xml;
-                            console.log('done');
-                        } else if (modification.action == 'delete') {
-                            this.modificationRemove(modification, modeler);
-                            let xml = await modeler.saveXML({ format: true, preamble: true });
-                            this.bpmn = xml.xml;
-                            // this.bpmn = this.createBpmnXml(this.processDefinition);
+                            });
                         }
                     }
-
-                    this.definitionChangeCount++;
+                    const store = useBpmnStore();
+                    const modeler = store.getModeler;
+                    if (unknown.modifications) {
+                        // unknown.modifications.forEach(async (modification) => {
+                        for (let modification of unknown.modifications) {
+                            if (modification.action == 'replace') {
+                                this.jsonPathReplace(this.processDefinition, modification.targetJsonPath, modification.value);
+                                console.log(this.processDefinition);
+                                this.bpmn = this.createBpmnXml(this.processDefinition);
+                            } else if (modification.action == 'add') {
+                                this.modificationAdd(modification);
+                                this.modificationElement(modification, modeler);
+                                let xml = await modeler.saveXML({ format: true, preamble: true });
+                                this.bpmn = xml.xml;
+                                console.log('done');
+                            } else if (modification.action == 'delete') {
+                                this.modificationRemove(modification, modeler);
+                                let xml = await modeler.saveXML({ format: true, preamble: true });
+                                this.bpmn = xml.xml;
+                                // this.bpmn = this.createBpmnXml(this.processDefinition);
+                            }
+                        }
+    
+                        this.definitionChangeCount++;
+                    }
+                    await this.checkedFormData();
+        
+                    this.isChanged = true;
                 }
             }
 
-            await this.checkedFormData();
-
-            this.isChanged = true;
         },
         afterModelStopped(response) {},
         async saveToVectorStore(definition) {

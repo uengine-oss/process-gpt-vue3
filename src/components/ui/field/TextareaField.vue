@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="form-text-area">
         <v-textarea v-model="localModelValue" :disabled="localDisabled" :rows="rows">
             <template v-slot:label>
                 <span style="color:black;">

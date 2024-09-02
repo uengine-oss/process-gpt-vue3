@@ -1,24 +1,40 @@
 <template>
-    <v-card class="h-100" style="width: 100%; height: 100%;  overflow: auto" variant="outlined">
-        <v-card-text v-if="selectedTask">
-            <v-row>
-                <v-col v-for="val,idx in selectedTask" :key="idx" :cols="6">
+    <div class="h-100" style="width: 100%; height: 100%;" variant="outlined">
+        <v-row class="ma-0 pa-0 mt-2"
+            style="position:absolute;
+            top:0px;
+            right:5px;"
+        >
+            <v-spacer></v-spacer>
+            <v-btn @click="workItemDialog = !workItemDialog"
+                color="primary"
+                variant="text"
+                icon
+                density="comfortable"
+            >
+                <Icons :icon="'plus'" />
+            </v-btn>
+        </v-row>
+        <div class="ma-0 pa-0">
+            <v-row v-if="selectedTask" class="ma-0 pa-0">
+                <v-col v-for="val,idx in selectedTask" :key="idx"
+                    class="pa-0 pb-2 pr-2"
+                >
                     <test-variable :idx="idx" :selected-task="val" @execute="e => runExistingTest(e)"></test-variable>
                 </v-col>
             </v-row>
-        </v-card-text>
-        <v-card-text v-else>
-            No Data
-        </v-card-text>
-        <v-card-actions>
-            <v-btn @click="workItemDialog = !workItemDialog">ADD</v-btn>
-        </v-card-actions>
+            <v-card-text v-else
+                class="pa-0"
+            >
+                No Data
+            </v-card-text>
+        </div>
         <!-- <v-card-actions class="justify-center" v-if="tool == 'DefaultWorkItem'">
             <v-btn color="primary" variant="flat" class="cp-process-save" @click="executeProcess">실행</v-btn>
             <v-btn color="error" variant="flat" @click="closeDialog()">닫기</v-btn>
         </v-card-actions> -->
         <v-dialog v-model="workItemDialog" style="width: 30%">
-            <v-card v-if="currentComponent">
+            <v-card v-if="currentComponent" class="work-item-dialog-card">
                 <component 
                     :is="currentComponent" 
                     :definitionId="definitionId"
@@ -34,7 +50,7 @@
                 ></component>
             </v-card>
         </v-dialog>
-    </v-card>
+    </div>
 </template>
 
 <script>
@@ -59,14 +75,14 @@ export default {
     props: {
         definitionId: String,
         task: String,
-        taskId: String  
+        taskId: String,
     },
     data: () => ({
         testList: {},
         selectedTask: null,
-        workItemDialog: false,
         workItem: null,
-        currentComponent: null
+        currentComponent: null,
+        workItemDialog: false
     }),
     async created() {
         await this.init()

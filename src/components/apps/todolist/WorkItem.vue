@@ -273,19 +273,15 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    if(me.isDryRun) {
+                    if (me.isDryRun) {
                         me.bpmn = await backend.getRawDefinition(me.definitionId, { type: 'bpmn' });
                         me.workItem = me.dryRunWorkItem
-                       
-                        me.currentComponent = me.workItem.activity.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.activity.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
-
                         me.currentActivities = [me.workItem.activity.tracingTag];
                     } else {
                         me.workItem = await backend.getWorkItem(me.currentTaskId);
                         me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, { type: 'bpmn', version: me.workItem.worklist.defVerId });
                         if (me.workItem.worklist.execScope) me.workItem.execScope = me.workItem.worklist.execScope;
                         me.workListByInstId = await backend.getWorkListByInstId(me.workItem.worklist.instId);
-                        me.currentComponent = me.workItem.worklist.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
                         if (me.workItem.worklist.currentActivities) {
                             me.currentActivities = me.workItem.worklist.currentActivities;
                         } else {
@@ -296,6 +292,13 @@ export default {
                             });
                         }
                     }
+
+                    if (me.mode == 'ProcessGPT') {
+                        me.currentComponent = 'FormWorkItem';
+                    } else {
+                        me.currentComponent = me.workItem.worklist.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
+                    }
+
                     me.updatedDefKey++;
                 },
                 errorMsg: '워크아이템을 찾을 수 없습니다.'
@@ -333,39 +336,4 @@ export default {
 };
 </script>
 <style>
-.work-itme-current-component .v-checkbox .v-input__details {
-    display: none;
-}
-.work-itme-current-component .v-checkbox {
-    height: 40px;
-}
-.work-itme-current-component .v-checkbox label {
-    opacity: 0.6 !important;
-}
-.work-itme-current-component .form-checkbox-label {
-    font-size: 20px;
-    font-weight: 500;
-}
-.work-itme-current-component .form-radio-box {
-    margin-top: 25px;
-}
-.work-itme-current-component .form-radio-box .v-radio-group {
-    margin-top: 8px;
-}
-.work-itme-current-component .form-radio-box .form-radio-label {
-    font-size: 20px;
-    font-weight: 500;
-}
-
-.work-itme-current-component .form-label {
-    font-size: 20px;
-    font-weight: 500;
-}
-
-.processExecute {
-    position: absolute;
-    right: 80px;
-    top: 20px;
-    z-index: 1;
-}
 </style>

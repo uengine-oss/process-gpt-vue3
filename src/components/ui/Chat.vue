@@ -440,30 +440,34 @@
                 <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                     class="shadow-none message-input-box cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
                     auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
-                    style="font-size:20px !important; height: 77px;" @input="handleTextareaInput">
+                    style="font-size:20px !important; height:77px;" @input="handleTextareaInput"
+                >
                     <template v-slot:prepend-inner>
                         <v-btn @click="recordingModeChange()"
                             density="comfortable"
                             icon
+                            variant="text"
                         >
                             <Icons :icon="'round-headset'"  />
                         </v-btn>
                         <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
                             density="comfortable"
                             icon
+                            variant="text"
                         >
                             <Icons :icon="'sharp-mic'"  />
                         </v-btn>
                         <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
                             density="comfortable"
                             icon
+                            variant="text"
                         >
                             <Icons :icon="'stop'" :size="'20'"  />
                         </v-btn>
                         <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'"  />
                     </template>
                     <template v-slot:append-inner>
-                        <div style="height: -webkit-fill-available; margin-right: 10px; margin-top: 10px;">
+                        <div style="height: -webkit-fill-available; margin:5px 5px 0px 0px;">
                             <v-btn v-if="!isLoading" class="cp-send" icon variant="text" type="submit" @click="beforeSend"
                                 style="width:30px; height:30px;" :disabled="disableBtn">
                                 <icons :icon="'send-outline'" :size="20" />

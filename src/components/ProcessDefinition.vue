@@ -52,10 +52,12 @@
                     <BpmnuEngine
                         v-else
                         ref="bpmnVue"
+                        :key="bpmnKey"
                         :bpmn="bpmn"
                         :options="options"
                         :isViewMode="isViewMode"
                         :currentActivities="currentActivities"
+                        :taskStatus="taskStatus"
                         v-on:error="handleError"
                         v-on:shown="handleShown"
                         v-on:openDefinition="(ele) => openSubProcess(ele)"
@@ -245,6 +247,8 @@ import XmlViewer from 'vue3-xml-viewer'
 import InstanceNamePatternForm from '@/components/designer/InstanceNamePatternForm.vue'
 import BackendFactory from "@/components/api/BackendFactory";
 import TestProcess from "@/components/apps/definition-map/TestProcess.vue"
+
+const backend = BackendFactory.createBackend();
 export default {
     name: 'ProcessDefinition',
     components: {
@@ -302,6 +306,8 @@ export default {
             { title: 'processDefinition.query', key: 'query' },
             { title: 'processDefinition.actions', key: 'actions' }
         ],
+        taskStatus: null,
+        bpmnKey: 0,
         // definitionPath: null
     }),
     computed: {
@@ -435,9 +441,11 @@ export default {
         //     fullPath = fullPath.substring(1);
         // }
         // this.definitionPath = fullPath;
+        
     },
     mounted() {
         // Initial Data
+        var me = this;
         if (this.processDefinition) this.copyProcessDefinition = this.processDefinition;
         else
             this.copyProcessDefinition = {
@@ -462,6 +470,16 @@ export default {
             this.copyProcessDefinition = value;
         });
 
+        
+
+        me.$try({
+            action: async () => {
+                if(me.$route.params && me.$route.params.instId) {
+                    me.taskStatus = await backend.getActivitiesStatus(me.$route.params.instId);
+                    me.bpmnKey++;
+                }
+            }
+        });
         // const def = this.bpmnModeler.getDefinitions();
         // console.log(this.definitions)
         // LLM과 uEngine 각각 처리 필요.
@@ -554,7 +572,6 @@ export default {
             var me = this;
             me.$try({
                 action: async () => {
-                    const backend = BackendFactory.createBackend();
                     const input = {
                         process_instance_id: 'new',
                         process_definition_id: me.processDefinition.processDefinitionId
@@ -565,6 +582,7 @@ export default {
                         me.$router.push(`/instancelist/${route}`);
                     }
                     me.EventBus.emit('instances-updated');
+                    
                 },
                 successMsg: 'Process 실행 완료'
             });

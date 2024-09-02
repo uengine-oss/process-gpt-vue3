@@ -41,6 +41,9 @@ export default {
         },
         selectedExecutionScope: {
             type: Object
+        },
+        taskStatus: {
+            type: Object
         }
     },
     data: function () {
@@ -91,10 +94,27 @@ export default {
 
             if (self.isViewMode) {
                 // add marker to current activity elements
-                if (self.currentActivities && self.currentActivities.length > 0) {
-                    self.currentActivities.forEach((actId) => {
-                        if (actId) canvas.addMarker(actId, 'highlight');
-                    });
+                if (window.$mode == "ProcessGPT") {
+                    if (self.currentActivities && self.currentActivities.length > 0) {
+                        self.currentActivities.forEach((actId) => {
+                            if (actId) canvas.addMarker(actId, 'highlight');
+                        });
+                    }
+                } else {
+                    if(self.taskStatus) {
+                        Object.keys(self.taskStatus).forEach((task) => {
+                            let taskStatus = self.taskStatus[task];
+                            if(taskStatus == 'Completed') {
+                                canvas.addMarker(task, 'completed');
+                            } else if(taskStatus == 'Running') {
+                                canvas.addMarker(task, 'running');
+                            } else if(taskStatus == 'Stopped') {
+                                canvas.addMarker(task, 'stopped');
+                            } else if(taskStatus == 'Cancelled') {
+                                canvas.addMarker(task, 'cancelled');
+                            }
+                        });
+                    }
                 }
             }
 
@@ -279,27 +299,39 @@ export default {
             }
 
             eventBus.on('drag.end', function (e) {
-                self.debounce(() => {
+                self.$nextTick(async () => {
                     self.$emit('change');
-                }, 100)
+                });
             });
 
             eventBus.on('shape.removed', function (e) {
-                self.debounce(() => {
+                self.$nextTick(async () => {
                     self.$emit('change');
-                }, 100)
+                });
             });
 
             eventBus.on('connection.removed', function (e) {
-                self.debounce(() => {
+                self.$nextTick(async () => {
                     self.$emit('change');
-                }, 100)
+                });
             });
 
             eventBus.on('connection.added', function (e) {
-                self.debounce(() => {
+                self.$nextTick(async () => {
                     self.$emit('change');
-                }, 100)
+                });
+            });
+
+            eventBus.on('undo', function (e) {
+                self.$nextTick(async () => {
+                    self.$emit('change');
+                });
+            });
+
+            eventBus.on('redo', function (e) {
+                self.$nextTick(async () => {
+                    self.$emit('change');
+                });
             });
 
             self.debounce(() => {

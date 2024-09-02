@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="form-text-field">
         <v-text-field v-model="localModelValue" :type="localType" :disabled="localDisabled" :id="id">
             <template v-slot:label>
                 <span style="color:black;">

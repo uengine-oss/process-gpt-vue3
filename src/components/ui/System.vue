@@ -7,7 +7,7 @@
                 {{ systemInfo.name }}
             </v-card-title>
             <v-card-text class="pa-0 pl-4">
-                Description: {{ systemInfo.description }}
+                {{ $t('System.description') }}: {{ systemInfo.description }}
                 <br>
                 URL: {{ systemInfo.url }}
             </v-card-text>
@@ -17,7 +17,7 @@
                 style="position: absolute;
                 bottom:10px; right:10px;"
             >
-                Edit
+            {{ $t('System.edit') }}
             </v-btn>
         </v-card>
     </div>

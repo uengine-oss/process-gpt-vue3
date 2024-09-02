@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="form-file-field">
         <v-file-input
             :label="(localAlias && localAlias.length > 0) ? localAlias : localName"
             v-model="selectedFiles"

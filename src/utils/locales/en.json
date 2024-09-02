@@ -145,14 +145,14 @@
         "edit": "Edit",
         "delete": "Delete",
         "zoom": "Canvas Zoom in/Zoom out",
-        "preview": "Process Preview",
         "execution": "Start Process",
         "deleteProcess": "Delete Process",
         "showXML": "Show XML",
         "showModeling": "Show Modeling",
         "deleteProcessMessage": "Are you sure you want to delete this process?",
         "cancel": "Cancel",
-        "simulate": "Simulate"
+        "simulate": "Simulate",
+        "capture": "Download process image"
     },
     "ProcessVariable": {
         "name": "Name",
@@ -407,7 +407,9 @@
         "apiUrl": "API URL",
         "openAPISpec": "Open API Spec",
         "system": "Load from system definition",
-        "systemDefinitionDescriptionTitle": "Load and apply items registered in the system definition from the left-side management button"
+        "systemDefinitionDescriptionTitle": "Load and apply items registered in the system definition from the left-side management button",
+        "apiUrlDescriptionTitle": "Set the method (GET, POST, PUT, PATCH) to be used when sending API requests and the endpoint URL of the server that will process the request.",
+        "apiUrlDescriptionSubTitle1": "1.GET: A request to retrieve data from the server \n2.POST: A request to create and send new data to the server \n3.PUT: A request to update or replace the entire existing data \n4.PATCH: A request to partially modify existing data \n5.API URL: The endpoint address of the server where the request will be sent\n"
     },
     "LanePanel": {
         "selectRoleType": "Select Role Type",
@@ -463,5 +465,16 @@
         "gatewayDescriptionSubTitle2": "Inclusive Gateway: When exiting, it moves to one task that matches the condition applied to the line. When entering, it proceeds to the next task only when all tasks are completed.",
         "gatewayDescriptionSubTitle3": "Event-based gateway: It can only proceed to the next task when a specific event occurs.",
         "gatewayDescriptionSubTitle4": "Complex Gateway (Not Implemented): Users can add arbitrary conditions to select the next task."
+    },
+    "SystemList": {
+        "dialogTitle": "Add System",
+        "name": "Name",
+        "description": "Description",
+        "apiUrl": "API URL",
+        "add": "Add"
+    },
+    "System" : {
+        "description" : "Description",
+        "edit" : "Edit"
     }
 }

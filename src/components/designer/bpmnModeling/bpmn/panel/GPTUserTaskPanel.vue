@@ -66,6 +66,11 @@ export default {
             activeTab: 'setting'
         };
     },
+    computed: {
+        existForm() {
+            return this.processDefinition.data.find(data => data.name === this.formId);
+        }
+    },
     created() {
         this.backend = BackendFactory.createBackend();
         if(this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0) {
@@ -93,19 +98,18 @@ export default {
         async init() {
             var me = this;
             me.formId = me.copyUengineProperties.variableForHtmlFormContext.name;
-            if (me.formId && me.formId != '') {
-                me.tempFormHtml = await me.backend.getRawDefinition(me.formId, { type: 'form' });
-            } else {
-                me.formId = me.processDefinitionId + '_' + me.activity.id + '_form';
-                const options = {
-                    type: 'form',
-                    match: {
-                        proc_def_id: me.processDefinitionId,
-                        activity_id: me.activity.id
-                    }
-                }
-                me.tempFormHtml = await me.backend.getRawDefinition(me.formId, options);
+            if (!me.formId || me.formId == '') {
+                me.formId = me.processDefinition.processDefinitionId + '_' + me.elem.id + '_form';
             }
+            const options = {
+                type: 'form',
+                match: {
+                    proc_def_id: me.processDefinitionId,
+                    activity_id: me.element.id
+                }
+            }
+            me.tempFormHtml = await me.backend.getRawDefinition(me.formId, options);
+            
             me.copyUengineProperties = {
                 _type: 'org.uengine.kernel.FormActivity',
                 role: {
@@ -121,7 +125,7 @@ export default {
         async beforeSave() {
             var me = this;
             if (me.formId == '' || me.formId == null) {
-                me.formId = me.processDefinitionId + '_' + me.element.id + '_form';
+                me.formId = me.processDefinition.processDefinitionId + '_' + me.element.id + '_form';
             }
             me.copyUengineProperties = {
                 _type: 'org.uengine.kernel.FormActivity',
@@ -135,22 +139,24 @@ export default {
             };
             const options = {
                 type: 'form',
-                proc_def_id: me.processDefinitionId,
+                proc_def_id: me.processDefinition.processDefinitionId,
                 activity_id: me.element.id
             }
-            if (me.tempFormHtml != '') {
-                me.$emit('addUengineVariable', {
-                    name: me.formId,
-                    type: 'Form',
-                    defaultValue: me.formId,
-                    description: '',
-                    datasource: {
-                        type: '',
-                        sql: ''
-                    },
-                    table: '',
-                    backend: null
-                });
+            if (me.tempFormHtml && me.tempFormHtml != '') {
+                if (!me.existForm) {
+                    me.$emit('addUengineVariable', {
+                        name: me.formId,
+                        type: 'Form',
+                        defaultValue: me.formId,
+                        description: '',
+                        datasource: {
+                            type: '',
+                            sql: ''
+                        },
+                        table: '',
+                        backend: null
+                    });
+                }
 
                 if (options && options.proc_def_id && options.activity_id) {
                     await me.backend.putRawDefinition(me.tempFormHtml, me.formId, options);
