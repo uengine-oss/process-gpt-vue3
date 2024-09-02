@@ -282,7 +282,7 @@ export default {
                         me.currentActivities = [me.workItem.activity.tracingTag];
                     } else {
                         me.workItem = await backend.getWorkItem(me.currentTaskId);
-                        me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, { type: 'bpmn' });
+                        me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, { type: 'bpmn', version: me.workItem.worklist.defVerId });
                         if (me.workItem.worklist.execScope) me.workItem.execScope = me.workItem.worklist.execScope;
                         me.workListByInstId = await backend.getWorkListByInstId(me.workItem.worklist.instId);
                         me.currentComponent = me.workItem.worklist.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');

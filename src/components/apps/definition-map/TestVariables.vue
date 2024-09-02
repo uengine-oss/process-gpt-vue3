@@ -70,7 +70,7 @@ export default {
     }),
     async created() {
         await this.init()
-        const list = await backend.testList(this.definitionId);
+        const list = await backend.testList(this.workItem.worklist.defId);
         this.testList = list;
         console.log(this.task)
         if (this.testList[this.task]) this.selectedTask = JSON.parse(this.testList[this.task]);

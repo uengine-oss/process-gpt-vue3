@@ -238,7 +238,8 @@ export default {
                 action: async () => {
                     console.log(me.isSimulate);
                     let command = {
-                        processDefinitionId: me.definitionId
+                        processDefinitionId: me.definitionId,
+                        simulation: true
                     };
                     let result = await me.backend.start(command);
                     this.instanceId = result.instanceId;
