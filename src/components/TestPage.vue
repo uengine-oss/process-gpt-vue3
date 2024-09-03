@@ -9,8 +9,6 @@
                 <v-btn @click="deleteDefinition">deleteDefinition</v-btn>
                 <v-btn @click="getDefinitionMap">getDefinitionMap</v-btn>
                 <v-btn @click="putDefinitionMap">putDefinitionMap</v-btn>
-                <process-execute-dialog></process-execute-dialog>
-
             </template>
             <template v-slot:rightpart>
                 <div class="no-scrollbar">

@@ -1800,13 +1800,14 @@ export default {
                 context: me,
                 action: async () => {
                     me.loading = true;
-
+                    await me.setDefinitionInfo(info.name, info.version)
                     const store = useBpmnStore();
                     let modeler = store.getModeler;
                     let xmlObj;
                     let retryCount = 0;
                     const maxRetries = 3;
                     const retryDelay = 1000; // 1초
+                    
 
                     async function saveXML() {
                         try {
@@ -1837,7 +1838,7 @@ export default {
                         }
                     }
 
-                    me.setDefinitionInfo(info.name, info.version)
+                    
                     let newProcessDefinition
 
                     if (xmlObj && xmlObj.xml && window.$mode == 'ProcessGPT') {
@@ -2152,56 +2153,59 @@ export default {
                 throw error;
             }
         },
-        setDefinitionInfo(name, version) {
-            
-            const store = useBpmnStore();
-            let modeler = store.getModeler;
-            const definitions = modeler.getDefinitions();
+        async setDefinitionInfo(name, version) {  
+            return new Promise (function (resolve) {
+                console.log(version)
+                const store = useBpmnStore();
+                let modeler = store.getModeler;
+                const definitions = modeler.getDefinitions();
 
-            let bpmnFactory;
-            try {
-                bpmnFactory = modeler.get('bpmnFactory');
-            } catch (error) {
-                console.warn('bpmnFactory not available:', error);
-                return;
-            }
+                let bpmnFactory;
+                try {
+                    bpmnFactory = modeler.get('bpmnFactory');
+                } catch (error) {
+                    console.warn('bpmnFactory not available:', error);
+                    return;
+                }
 
-            const processElement = definitions.rootElements.find((element) => element.$type === 'bpmn:Process');
-            if (!processElement) {
-                console.error('bpmn:Process element not found');
-                return;
-            }
+                const processElement = definitions.rootElements.find((element) => element.$type === 'bpmn:Process');
+                if (!processElement) {
+                    console.error('bpmn:Process element not found');
+                    return;
+                }
 
-            // bpmn2:process 요소 내의 bpmn2:extensionElements 요소를 찾거나 새로 생성합니다.
-            let extensionElements = processElement.extensionElements;
-            if (!extensionElements) {
-                extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
-                processElement.extensionElements = extensionElements;
-            }
+                // // bpmn2:process 요소 내의 bpmn2:extensionElements 요소를 찾거나 새로 생성합니다.
+                let extensionElements = processElement.extensionElements;
+                if (!extensionElements) {
+                    extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
+                    processElement.extensionElements = extensionElements;
+                }
 
-            // uengine:properties 요소를 찾거나 새로 생성합니다.
-            let uengineProperties;
-            if (extensionElements.values) {
-                uengineProperties = extensionElements.values.find((val) => val.$type === 'uengine:Properties');
-            }
+                // // uengine:properties 요소를 찾거나 새로 생성합니다.
+                let uengineProperties;
+                if (extensionElements.values) {
+                    uengineProperties = extensionElements.values.find((val) => val.$type === 'uengine:Properties');
+                }
 
-            if (!uengineProperties) {
-                uengineProperties = bpmnFactory.create('uengine:Properties');
-                extensionElements.get('values').push(uengineProperties);
-            }
+                if (!uengineProperties) {
+                    uengineProperties = bpmnFactory.create('uengine:Properties');
+                    extensionElements.get('values').push(uengineProperties);
+                }
 
-            let processJson;
-            if (uengineProperties.json) {
-                processJson = JSON.parse(uengineProperties.json);    
-            } else {
-                processJson = {};
-            }
-            processJson.definitionName = name;
-            processJson.version = version
+                let processJson;
+                if (uengineProperties.json) {
+                    processJson = JSON.parse(uengineProperties.json);    
+                } else {
+                    processJson = {};
+                }
+                processJson.definitionName = name;
+                processJson.version = version
 
-            uengineProperties.json = JSON.stringify(processJson)
+                uengineProperties.json = JSON.stringify(processJson)
+                // processJson.instanceNamePattern ? processJson.instanceNamePattern : '';
+                resolve()
 
-            
+            })
         },
         async saveModel(info, xml) {
             var me = this;
