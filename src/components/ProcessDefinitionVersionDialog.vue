@@ -33,13 +33,13 @@
                             hide-details
                         ></v-switch>
                         <v-text-field
-                                v-if="isRelease"
-                                v-model="information.releaseName"
-                                :label="$t('ProcessDefinitionVersionDialog.releaseName')"
-                                :rules="[(v) => !!v || 'Name is required']"
-                                required
-                                class="pb-2"
-                            ></v-text-field>
+                            v-if="isRelease"
+                            v-model="information.releaseName"
+                            :label="$t('ProcessDefinitionVersionDialog.releaseName')"
+                            :rules="[(v) => !!v || 'Name is required']"
+                            required
+                            class="pb-2"
+                        ></v-text-field>
                         <div v-if="isNew">
                             <v-text-field
                                 v-model="information.proc_def_id"
@@ -144,7 +144,7 @@ export default {
             }
         }
     },
-    created() {},
+    async mounted() {},
     methods: {
         load() {
             var me = this;
@@ -187,9 +187,19 @@ export default {
                                     };
                                 }
                             } else {
-                                // Uengine
-                                me.information.proc_def_id = me.$route.params.pathMatch.join('/');
-                                me.information.name = me.$route.params.pathMatch.join('/');
+                                let defId = me.$route.params.pathMatch.join('/');
+                                let versionInfo = await backend.getDefinitionVersions(defId, {
+                                    sort: 'desc',
+                                    type: 'bpmn',
+                                    orderBy: 'timeStamp',
+                                    size: 1
+                                });
+                                console.log(versionInfo);
+                                versionInfo.sort((a, b) => parseFloat(b.version) - parseFloat(a.version));
+                                const highestVersion = versionInfo.length > 0 ? versionInfo[0].version : null;
+                                me.information.version = highestVersion
+                                me.information.proc_def_id = defId
+                                me.information.name = defId
                             }
                         } else {
                             me.isNew = true;

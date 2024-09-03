@@ -85,7 +85,7 @@ export default class AIGenerator {
                     let loop = setInterval(() => {
                         let model = me.createModel(existingResult.substring(0, steps[i++]));
 
-                        if (me.client.onModelCreated) {
+                        if (me.client.onModelCreated && me.client.genType != 'form') {
                             me.client.onModelCreated(model);
                         }
 
@@ -105,7 +105,7 @@ export default class AIGenerator {
 
                         let model = me.createModel(existingResult);
 
-                        if (me.client.onModelCreated) {
+                        if (me.client.onModelCreated && me.client.genType != 'form') {
                             me.client.onModelCreated(model);
                         }
 
@@ -205,7 +205,7 @@ export default class AIGenerator {
                 }
             }
 
-            if (me.client.onModelCreated) {
+            if (me.client.onModelCreated && me.client.genType != 'form') {
                 if (responseCnt > 15) {
                     me.saveCacheSteps(messages, newUpdatesJoined.length);
 
@@ -234,7 +234,7 @@ export default class AIGenerator {
                             me.client.onFormGenerationFinished(model);
                         }
                     } else {
-                        if (me.client.onModelCreated) {
+                        if (me.client.onModelCreated && me.client.genType != 'form') {
                             me.client.onModelCreated(model);
                         }
                         if (me.client.onGenerationFinished) {
