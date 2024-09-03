@@ -376,8 +376,6 @@ export default {
                 chatMsgs.push(chatObj);
                 this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs];
 
-                this.setPrompt(message.callType)
-
                 chatObj = this.createMessageObj(message);
                 if (message.image && message.image != '') {
                     chatObj['image'] = message.image;
@@ -410,20 +408,6 @@ export default {
                 }
                 
                 this.replyUser = null;
-            }
-        },
-        setPrompt(callType){
-            if(callType == 'consulting'){
-                const lastMessage = this.generator.previousMessages[this.generator.previousMessages.length - 1];
-                lastMessage.content = `${lastMessage.content}. 
-                답변을 형식에 어긋난 답변을 해서 오류를 야기하는 상황이 자주 발생하기때문에 항상 답변 형식에 따라 반드시 아래의 JSON 형식으로 답변해야해. 어떠한 경우에도 "queryFor" 를 포함한 JSON 형식으로 답변해야해.
-                {
-                    "content": "답변 내용",
-                    "queryFor": "mento" || "customer", // 무조건 둘 중 하나여야함.
-                }
-                
-                만약 일반 대화형 답변이 아닌 프로세스 정의를 생성하는 경우 처음에 지정해둔 프로세스 정의 답변 형식에 맞게 "megaProcessId": "",... 를 포함한 답변을 해야해.
-                `
             }
         },
         async startGenerate() {
