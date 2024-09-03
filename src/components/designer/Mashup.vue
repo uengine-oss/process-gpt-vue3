@@ -6,7 +6,7 @@
             </span>
         </div>
 
-        <div id="kEditor1" class="mashup-hover" :style="mode === 'ProcessGPT' ? 'margin: 0px;' : ''"></div>
+        <div id="kEditor1" class="mashup-hover"></div>
         
         <v-dialog v-model="isOpenComponentSettingDialog">
             <form-definition-panel

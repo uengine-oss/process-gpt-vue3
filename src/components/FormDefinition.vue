@@ -5,7 +5,8 @@
                 <div v-if="isShowMashup" class="overflow-y-auto">
                     <mashup ref="mashup" v-model="kEditorInput" :key="mashupKey"  
                         @onInitKEditorContent="updateKEditorContentBeforeSave"
-                        @onChangeKEditorContent="changedKEditorContent"/>
+                        @onChangeKEditorContent="changedKEditorContent"
+                        @update:modelValue="(val) => (modelValue = val)" />
                 </div>
                 <div v-else class="align-self-center">
                     <v-progress-circular color="primary" indeterminate></v-progress-circular>
@@ -138,9 +139,17 @@ export default {
             } else {
                 this.applyToPreviewTab();
             }
-        }
+        },
     },
     methods: {
+        getFormHTML() {
+            if (this.$refs.mashup) {
+                const kEditorContent = this.$refs.mashup.getKEditorContentHtml();
+                return this.keditorContentHTMLToDynamicFormHTML(kEditorContent);
+            } else {
+                return this.formHTML;
+            }
+        },
         changedKEditorContent(value) {
             this.formHTML = this.keditorContentHTMLToDynamicFormHTML(value.html);
             this.$emit('update:modelValue', this.formHTML);
