@@ -1,11 +1,11 @@
 <template>
     <div class="w-100 mega-hover">
-        <v-card class="align-center pa-3 mb-3 cp-mega" color="primary" elevation="10" style="border-radius: 10px !important;"
+        <v-card class="align-center pa-3 mb-3 cp-mega" elevation="10" style="border-radius: 10px !important; background-color: rgba(var(--v-theme-primary), 0.2);"
             @click="goProcess(value.name, 'mega')">
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-h6 font-weight-semibold">
                 <v-row class="ma-0 pa-0">
                     <v-col :cols="enableEdit ? '8' : '12'" class="ma-0 pa-0 text-left">
-                        <div style="color:white;">{{ value.name }}</div>
+                        <div>{{ value.name }}</div>
                     </v-col>
                     <v-col :cols="enableEdit ? '4' : ''" class="ma-0 pa-0">
                         <div class="ml-auto add-major-process">
