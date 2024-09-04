@@ -60,60 +60,72 @@ export default {
             // 매치된 결과가 없으면 null 반환
             return null;
         },
-        checkedFormData() {
-            if (this.processDefinition && this.processDefinition.data) {
-                let formList = this.processDefinition.data.filter(data => data.type == 'Form');
-                if (formList && formList.length > 0) {
-                    formList.forEach(async (form) => {
-                        await this.generateForm(form);
-                    });
+        async checkedFormData() {
+            if (this.processDefinition && this.processDefinition.components) {
+                const activities = this.processDefinition.components.filter(component => component.componentType === 'Activity');
+                
+                for (const activity of activities) {
+                    let inputs = '';
+                    if (activity.outputData && activity.outputData.length > 0) {
+                        inputs = activity.outputData ? activity.outputData.join(', ') : '';
+                    }
+                    let outputs = '';
+                    if (activity.inputData && activity.inputData.length > 0) {
+                        outputs = activity.inputData ? activity.inputData.join(', ') : '';
+                    }
+                    let generateMsg = `Please refer to the following and create a form.`;
+                    if (inputs) generateMsg += `Fields to enter: ${inputs}`;
+                    if (outputs) generateMsg += `Fields to read only without input: ${outputs}`;
+                    const formHtml = await this.generateForm(generateMsg, activity.id);
                 }
             }
         },
-        async generateForm(form) {
-            let formHtml = await backend.getRawDefinition(form.name, { type: 'form' }) || null;
-            if (formHtml == null) {
+        async generateForm(generateMsg, activityId) {
+            return new Promise((resolve, reject) => {
+                let formHtml = null;
                 const formGenerator = new FormGenerator(this, {
                     isStream: true,
                     preferredLanguage: 'Korean',
                 });
-                formGenerator.client.genType = 'form'
-                // formGenerator.client.onModelCreated = null;
+                formGenerator.client.genType = 'form';
                 formGenerator.client.onFormGenerationFinished = async (response) => {
-                    let jsonData = this.extractJSON(response);
-                    jsonData = jsonData.match(/\{[\s\S]*\}/)[0]
-                        .replaceAll('\n', '')
-                        .replaceAll('`', `"`);
-                    jsonData = partialParse(jsonData);
-                    if (jsonData.htmlOutput) {
-                        const formData = {
-                            html: jsonData.htmlOutput,
-                            name: form.name,
-                        };
-                        await this.saveFormData(formData);
-                        // await backend.putRawDefinition(jsonData.htmlOutput, form.name, { type: 'form' });
-                        formHtml = jsonData.htmlOutput; // 생성된 HTML을 formHtml에 할당
+                    try {
+                        let jsonData = this.extractJSON(response);
+                        jsonData = jsonData.match(/\{[\s\S]*\}/)[0]
+                            .replaceAll('\n', '')
+                            .replaceAll('`', `"`);
+                        jsonData = partialParse(jsonData);
+                        if (jsonData.htmlOutput) {
+                            const formData = {
+                                html: jsonData.htmlOutput,
+                                name: jsonData.name,
+                            };
+                            formHtml = await this.saveFormData(formData, activityId);
+                            resolve(formHtml);
+                        } else {
+                            resolve(null);
+                        }
+                    } catch (error) {
+                        reject(error);
                     }
-                }
-                let newMessage = `'${form.name}' 폼을 생성해줘. ${form.description}`;
+                };
                 formGenerator.previousMessages = [formGenerator.prevMessageFormat];
                 formGenerator.previousMessages.push({
                     role: 'user',
-                    content: newMessage
+                    content: generateMsg
                 });
-                await formGenerator.generate();
-            }
-            return formHtml; // 생성된 또는 기존의 formHtml 반환
+                formGenerator.generate();
+            });
         },
-        async saveFormData(formData) {
-            const activities = this.processDefinition.components.filter(component => component.componentType === 'Activity');
-            const activity = activities.find(activity => activity.inputData.includes(formData.name));
+        async saveFormData(formData, activityId) {
             const options = {
                 type: 'form',
                 proc_def_id: this.processDefinition.processDefinitionId,
-                activity_id: activity.id
+                activity_id: activityId
             };
-            await backend.putRawDefinition(formData.html, formData.name, options);
+            const formId = formData.name ? formData.name : `${options.proc_def_id}_${options.activity_id}_form`;
+            await backend.putRawDefinition(formData.html, formId, options);
+            return formData.html;
         },
         extractPropertyNameAndIndex(jsonPath) {
             let match;
@@ -1923,6 +1935,10 @@ export default {
                     processDefinitionId = this.$route.params.id;
                 }
 
+                if (processDefinitionId == 'chat') {
+                    processDefinitionId = this.processDefinition.processDefinitionId;
+                }
+
                 function ensureArray(item) {
                     return Array.isArray(item) ? item : item ? [item] : [];
                 }
@@ -1984,13 +2000,13 @@ export default {
                     let dataTmp =
                         process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] && process['bpmn:extensionElements']['uengine:properties']['uengine:variable']
                             ? (Array.isArray(process['bpmn:extensionElements']['uengine:properties']['uengine:variable'])
-                                  ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable']
-                                  : [process['bpmn:extensionElements']['uengine:properties']['uengine:variable']]
-                              ).map((varData) => ({
-                                  name: varData.name,
-                                  description: varData.name + ' description',
-                                  type: varData.type
-                              }))
+                                ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable']
+                                : [process['bpmn:extensionElements']['uengine:properties']['uengine:variable']]
+                            ).map((varData) => ({
+                                name: varData.name,
+                                description: varData.name + ' description',
+                                type: varData.type
+                            }))
                             : [];
                     data = data.concat(dataTmp);
                     instanceNamePattern = process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] && process['bpmn:extensionElements']['uengine:properties']['uengine:json'] ? JSON.parse(process['bpmn:extensionElements']['uengine:properties']['uengine:json']).instanceNamePattern : null;
@@ -2075,7 +2091,11 @@ export default {
                                 if (form && form.variableForHtmlFormContext && form.variableForHtmlFormContext.name) {
                                     task.tool = 'formHandler:' + form.variableForHtmlFormContext.name;
                                 } else {
-                                    task.tool = '';
+                                    if (window.$mode == 'ProcessGPT') {
+                                        task.tool = 'formHandler:' + processDefinitionId + '_' + task.id + '_form';
+                                    } else {
+                                        task.tool = '';
+                                    }
                                 }
                                 return task;
                             } catch (e) {

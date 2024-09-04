@@ -80,9 +80,12 @@ class ProcessGPTBackend implements Backend {
 
                 const instList = await storage.list(defId);
                 if (instList && instList.length > 0) {
-                    instList.forEach(async (item: any) => {
-                        await this.deleteInstance(item.id);
-                    });
+                    await Promise.all([
+                        await storage.delete('todolist', { match: { proc_def_id: defId } }),
+                    ]);
+                    // instList.forEach(async (item: any) => {
+                    //     await this.deleteInstance(item.id);
+                    // });
                 }
                 
                 await storage.delete(`proc_def/${defId}`, { key: 'id' });
@@ -650,15 +653,56 @@ class ProcessGPTBackend implements Backend {
         throw new Error("Method not implemented.");
     }
 
+    extractFields(htmlString: string) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlString, 'text/html');
+        const fields: any[] = [];
+    
+        function extractFieldAttributes(elements: any) {
+            elements.forEach((element: any) => {
+                const alias = element.getAttribute('alias');
+                const vModel = element.getAttribute('v-model');
+                const match = vModel.match(/slotProps\.modelValue\['(.*?)'\]/);
+                const tagName = element.tagName.toLowerCase();
+
+                let field: any = {
+                    text: alias || '',
+                    key: match[1] || '',
+                    type: tagName.replace('-field', '') || ''
+                };
+                fields.push(field);
+            });
+        }
+    
+        const fieldTags = [
+            'text-field', 'select-field', 'checkbox-field', 'radio-field', 
+            'file-field', 'label-field', 'boolean-field', 'textarea-field', 
+            'user-select-field'
+        ];
+    
+        fieldTags.forEach(tag => {
+            const elements = doc.querySelectorAll(tag);
+            extractFieldAttributes(elements);
+        });
+    
+        return fields;
+    }
+
     async getVariableWithTaskId(instId: string, taskId: string, varName: string) {
         try {
+            const html = await storage.getString(`form_def/${varName}`, { key: 'id', column: 'html' });
+            const fields = this.extractFields(html);
             const instance: any = await this.getInstance(instId);
-            const columnName: any = varName.toLowerCase().replace(/ /g, '_');
             let varData: any = {};
-            if (typeof instance[columnName] === 'string') {
-                varData = JSON.parse(instance[columnName]);
-            } else {
-                varData = instance[columnName];
+            if (instance && fields.length > 0) {
+                fields.forEach((field) => {
+                    let fieldName = field.text.toLowerCase().replace(/ /g, '_') || field.text;
+                    let fieldValue = instance[fieldName];
+                    if (field.type === 'boolean') {
+                        fieldValue = fieldValue === 'true' ? true : false;
+                    }
+                    varData[field.key] = fieldValue;
+                });
             }
             const result = {
                 valueMap: varData

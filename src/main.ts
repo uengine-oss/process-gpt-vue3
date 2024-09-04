@@ -201,7 +201,16 @@ async function setupSupabase() {
                     
                     const storage = StorageBaseFactory.getStorage();
 
-                    await axios.post(`/execution/update_db`);
+                    try {
+                        await axios.post(`/execution/update_db`);
+                    } catch (error: any) {
+                        if (error.response && error.response.status === 500) {
+                            console.error('Error updating DB:', error);
+                            alert('DB 연결에 실패하였습니다. 연결된 DB가 정상적으로 동작 중인지 확인 후 다시 시도해주세요.');
+                        } else {
+                            console.error('An unexpected error occurred:', error);
+                        }
+                    }
 
                     const response = await storage.list(`users`);
                     if (response && response.length == 0) {
