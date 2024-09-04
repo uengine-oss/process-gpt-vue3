@@ -56,7 +56,7 @@ class UEngineBackend implements Backend {
     async getDefinitionVersions(defId: string, options: any) {
         if (options.key) {
             if (options.key.includes('version')) {
-                const response = await axiosInstance.get(`/definition/${defId}.${options.type}/versions`, options);
+                const response = await axiosInstance.get(`/versions/${defId}.${options.type}`, options);
                 console.log(response);
                 return response.data?._embedded?.definitions;
             } else if (options.key == 'snapshot') {
@@ -64,7 +64,7 @@ class UEngineBackend implements Backend {
                 return [{ snapshot: response }];
             }
         } else {
-            const response = await axiosInstance.get(`/definition/${defId}.${options.type}/versions`, options);
+            const response = await axiosInstance.get(`/versions/${defId}.${options.type}`, options);
                 console.log(response);
                 return response.data?._embedded?.definitions;
         }
