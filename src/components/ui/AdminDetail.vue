@@ -1,14 +1,13 @@
 <template>
     <div>
         <v-card elevation="10" style="height: calc(84vh); width: calc(154vh)">
-            <v-card-title>Instance - {{ instanceId }} </v-card-title>
-            <v-tabs v-model="tab">
-                <v-tab value="definition">Definition</v-tab>
-                <v-tab value="variables">Variables</v-tab>
-                <v-tab value="roles">Roles</v-tab>
-            </v-tabs>
-            <v-window v-model="tab" style="height: 100%">
-                <v-window-item value="definition" style="height: calc(70vh)">
+            <v-card-title>Instance - {{ instanceId }} 
+                <div v-for="event in eventList">
+                        <v-btn @click="$try({context: this, action: () => fireMessage(event.tracingTag), successMsg: `${event.name} 실행 완료`})"> {{ event.name ? event.name : event.tracingTag }} 보내기 </v-btn>
+                    </div>
+            </v-card-title>
+            <v-row class="flex-nowrap" no-gutters>
+                <v-col class="ma-2 pa-2" cols="6">
                     <BpmnUengine
                         v-if="loaded"
                         ref="bpmnVue"
@@ -17,16 +16,17 @@
                         :isViewMode="true"
                         :adminMode="true"
                         :currentActivities="currentActivities"
+                        :executionScopeActivities="executionScopeActivities"
+                        :selectedExecutionScope="selectedExecutionScope"
+                        v-on:selectedExecutionScope="(scope) => (selectedExecutionScope = scope)"
                         v-on:openDefinition="(ele) => openSubProcess(ele)"
                         v-on:openPanel="(id) => openPanel(id)"
                         v-on:rollback="(id) => rollback(id)"
                         style="height: 100%"
                     ></BpmnUengine>
-                    <div v-else>
-                        No process definition
-                    </div>
-                </v-window-item>
-                <v-window-item value="variables">
+                    <div v-else>No process definition</div>
+                </v-col>
+                <v-col class="ma-2 pa-2" cols="6">
                     <v-data-table
                         :items="processVariables"
                         :headers="[
@@ -39,28 +39,8 @@
                             { key: 'value', align: 'start', title: 'Value' }
                         ]"
                     ></v-data-table>
-                </v-window-item>
-                <v-window-item value="roles">
-                    <v-data-table :items="roles" :headers="[{
-                                align: 'start',
-                                key: 'name',
-                                sortable: false,
-                                title: 'Name'
-                            },
-                            { key: 'endpoint', align: 'start', title: 'Endpoint' },
-                            { key: 'resourceName', align: 'start', title: 'Resource Name' }
-                        ]"></v-data-table>
-                </v-window-item>
-                <!-- <v-window-item value="Notification">
-                            <NotificationTab/>
-                        </v-window-item>
-                        <v-window-item value="Bills">
-                            <BillsTab/>
-                        </v-window-item>
-                        <v-window-item value="Security">
-                            <SecurityTab/>
-                        </v-window-item> -->
-            </v-window>
+                </v-col>
+            </v-row>
         </v-card>
     </div>
 </template>
@@ -83,7 +63,9 @@ export default {
         tab: 'definition',
         processDefinition: null,
         processVariables: [],
+        executionScopeActivities: {},
         loaded: false,
+        eventList: [],
         options: {
             propertiesPanel: {
                 invalidationList: {}
@@ -92,8 +74,8 @@ export default {
         },
         roles: [],
         currentActivities: [],
-        activityVariables: {}
-
+        activityVariables: {},
+        selectedExecutionScope: null
     }),
     async created() {
         await this.init();
@@ -102,30 +84,38 @@ export default {
     computed: {},
     watch: {
         processDefinition() {
-            console.log(this.processDefinition);
         },
         async $route(before, after) {
             await this.init();
+        },
+        selectedExecutionScope(value) {
+            console.log(value);
+            this.init();
         }
     },
     methods: {
-        async init() {
-            this.loaded = false
+        async init() {  
+            let startTime = performance.now();
+            this.loaded = false;
             this.instanceId = this.$route.params.id;
+            this.eventList = await backend.getEventList(this.instanceId);
             await this.getInstanceDetail();
             await this.getProcessDefinition();
             await this.getProcessVariables();
-
+            let endTime = performance.now();
+            console.log(`Result Time :  ${endTime - startTime} ms`);
             // this.getCurrentActivities();
         },
         viewDetail(item) {
             console.log(item);
         },
         async getInstanceDetail() {
+            let startTime = performance.now();
             let me = this;
             await backend.getInstance(this.instanceId).then((response) => {
-                console.log(response);
                 me.instanceDetail = response;
+                let endTime = performance.now();
+                console.log(`getInstanceDetail Result Time :  ${endTime - startTime} ms`);
             });
         },
         openSubProcess(e) {
@@ -135,7 +125,11 @@ export default {
                 params: { id: this.activityVariables[e.id]['instanceIdOfSubProcess'] }
             });
         },
+        fireMessage(event) {
+            backend.fireMessage(this.instanceId, event);
+        },
         async getProcessDefinition() {
+            let startTime = performance.now();
             let me = this;
             let encodedId = this.instanceDetail.defId;
             let decodedId = decodeURIComponent(encodedId);
@@ -144,14 +138,20 @@ export default {
             };
             await backend.getRawDefinition(decodedId, options).then((response) => {
                 me.processDefinition = response;
+                let endTime = performance.now();
+                console.log(`getProcessDefinition Result Time :  ${endTime - startTime} ms`);
             });
         },
         async getProcessVariables() {
+            let startTime = performance.now();
             let me = this;
             await backend.getProcessVariables(this.instanceDetail.instanceId).then((response) => {
                 // me.processVariables = response;
                 me.setVariableList(response);
+                let endTime = performance.now();
+                console.log(`getProcessVariables Result Time :  ${endTime - startTime} ms`);
             });
+            
         },
         // getCurrentActivities() {
         //     let me = this;
@@ -164,8 +164,16 @@ export default {
         //         }
         //     }
         // },
-        async rollback(id) {
+        async rollback(ele) {
             let me = this;
+            console.log(ele);
+            let id = null;
+            if (ele.businessObject.$parent.$type == 'bpmn:SubProcess') {
+                id = ele.id + ':' + this.selectedExecutionScope.executionScope;
+            } else {
+                id = ele.id;
+            }
+            console.log(id);
             await backend
                 .backToHere(this.instanceId, id)
                 .then((response) => {
@@ -177,12 +185,34 @@ export default {
                 });
         },
         setVariableList(variables) {
+            let startTime = performance.now();
             let me = this;
             me.processVariables = [];
             me.roles = [];
             me.activityVariables = {};
-            me.currentActivities = []
-            for(let key of Object.keys(variables)) {
+            me.currentActivities = [];
+            for (let key of Object.keys(variables)) {
+                let count = (key.match(new RegExp(':', 'g')) || []).length;
+                if (key.includes('_executionScopes')) {
+                    const executionScopes = variables[key];
+                    let result = {};
+                    for(let scope of executionScopes) {
+                    // executionScopes.forEach((scope) => {
+                        if (!result[scope.rootActivityTracingTag]) {
+                            result[scope.rootActivityTracingTag] = {};
+                        }
+                        // result[scope.executionScope].push(scope);
+                        let obj = {
+                            parent: scope.parent ? scope.parent.executionScope : null
+                        };
+                        result[scope.rootActivityTracingTag][scope.executionScope] = obj;
+                        // result[scope.rootActivityTracingTag].push(obj);
+                        // console.log(scope);
+                    }
+                    // });
+
+                    me.executionScopeActivities = result;
+                }
                 if (key.includes(':_roleMapping_of_')) {
                     let tmp = {
                         name: key.replace(':_roleMapping_of_', ''),
@@ -191,26 +221,77 @@ export default {
                     };
                     me.roles.push(tmp);
                 } else if (key.startsWith(':')) {
-                    let tmp = { key: key, value: variables[key] };
-                    me.processVariables.push(tmp);
+                    if(key.includes('_executionScopes')) {
+                        continue;
+                    }
+                    let newStr = key.slice(1);
+                    let validateText = newStr.split(':')[0];
+                    if (!isNaN(validateText)) {
+                        // executionScope
+                        if(me.selectedExecutionScope) {
+                            if (validateText != me.selectedExecutionScope.executionScope) {
+                                continue;
+                            }
+                        }
+                        let tmp = { key: key, value: variables[key] };
+                        me.processVariables.push(tmp);
+                    } else {
+                        let tmp = { key: key, value: variables[key] };
+                        me.processVariables.push(tmp);
+                    }
+                    // if(validateText != me.selectedExecutionScope) {
+                    //     continue;
+                    // }
                 } else if (key.includes('_status')) {
                     if (variables[key] == 'Completed' || variables[key] == 'Running') {
-                        me.currentActivities.push(key.split(':')[0]);
+                        if (count == 3) {
+                            let executionScope = key.split(':')[1];
+                            if(me.selectedExecutionScope) { 
+                                if (me.selectedExecutionScope.executionScope == executionScope) {
+                                    me.currentActivities.push(key.split(':')[0]);
+                                }
+                            }
+                        } else if (count == 2) {
+                            me.currentActivities.push(key.split(':')[0]);
+                        }
                     }
                 } else {
                     if (key.includes(':')) {
-                        let activity = key.split(':')[0];
-                        let variableKey = key.split(':')[1];
-                        let value = variables[key];
-                        if(!me.activityVariables[activity]) {
-                            me.activityVariables[activity] = {};
+                        if (key.includes('ExecutionScope')) {
+                            continue;
+                            // let activity = key.split(':')[0];
+                            // let executionScopes = variables[key];
+                            // let tmp = {
+                            //     activity: activity,
+                            //     executionScopes: executionScopes
+                            // };
+                            // me.executionScopeActivities.push(tmp);
                         }
-                        me.activityVariables[activity][variableKey] = value;
+                        if (count == 2) {
+                            let activity = key.split(':')[0];
+                            let variableKey = key.split(':')[1];
+                            let value = variables[key];
+                            if (!me.activityVariables[activity]) {
+                                me.activityVariables[activity] = {};
+                            }
+                            me.activityVariables[activity][variableKey] = value;
+                        } else if (count == 3) {
+                            let activity = key.split(':')[0];
+                            let executionScope = key.split(':')[1];
+                            let variableKey = key.split(':')[2];
+                            let value = variables[key];
+                            if (!me.activityVariables[activity]) {
+                                me.activityVariables[activity] = {};
+                            }
+                            me.activityVariables[activity][variableKey] = value;
+                        }
                     }
                 }
             }
-            
+
             me.loaded = true;
+            let endTime = performance.now();
+            console.log(`setVariableList Result Time :  ${endTime - startTime} ms`);
         }
     }
 };

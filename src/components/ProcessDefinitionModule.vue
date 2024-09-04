@@ -1788,7 +1788,7 @@ export default {
                 context: me,
                 action: async () => {
                     me.loading = true;
-                    await me.setDefinitionInfo(info.name, info.version)
+                    await me.setDefinitionInfo(info)
                     const store = useBpmnStore();
                     let modeler = store.getModeler;
                     let xmlObj;
@@ -2133,9 +2133,8 @@ export default {
                 throw error;
             }
         },
-        async setDefinitionInfo(name, version) {  
+        async setDefinitionInfo(info) {  
             return new Promise (function (resolve) {
-                console.log(version)
                 const store = useBpmnStore();
                 let modeler = store.getModeler;
                 const definitions = modeler.getDefinitions();
@@ -2178,8 +2177,9 @@ export default {
                 } else {
                     processJson = {};
                 }
-                processJson.definitionName = name;
-                processJson.version = version
+                processJson.definitionName = info.name;
+                processJson.version = info.version
+                processJson.shortDescription = {"text": info.message}
 
                 uengineProperties.json = JSON.stringify(processJson)
                 // processJson.instanceNamePattern ? processJson.instanceNamePattern : '';
@@ -2252,3 +2252,4 @@ export default {
     }
 };
 </script>
+'

@@ -54,15 +54,19 @@ class UEngineBackend implements Backend {
     }
 
     async getDefinitionVersions(defId: string, options: any) {
-        if(options.key.includes("version")) {
+        if (options.key) {
+            if (options.key.includes('version')) {
+                const response = await axiosInstance.get(`/definition/${defId}.${options.type}/versions`, options);
+                console.log(response);
+                return response.data?._embedded?.definitions;
+            } else if (options.key == 'snapshot') {
+                const response = await this.getRawDefinition(`archive/${defId}.${options.type}/${options.match.version}`, options);
+                return [{ snapshot: response }];
+            }
+        } else {
             const response = await axiosInstance.get(`/definition/${defId}.${options.type}/versions`, options);
-            console.log(response)
-            return response.data?._embedded?.definitions
-        }
-        else if(options.key == 'snapshot') {
-            const response = await this.getRawDefinition(`archive/${defId}.${options.type}/${options.match.version}` , options)
-            return [{snapshot: response}]
-
+                console.log(response);
+                return response.data?._embedded?.definitions;
         }
     }
     async getVersion(version: string) {
@@ -83,7 +87,7 @@ class UEngineBackend implements Backend {
     }
     async releaseVersion(releaseName: string): Promise<any> {
         const response = await axiosInstance.get(`/definition/release/${releaseName}`, {
-            responseType: "blob",
+            responseType: 'blob'
         });
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');
@@ -94,34 +98,36 @@ class UEngineBackend implements Backend {
         document.body.removeChild(link);
     }
     async putRawDefinition(definition: any, requestPath: string, options: any) {
-        console.log(options)
+        console.log(options);
         var config = {
             headers: {
                 'Content-Type': 'application/json'
-            },
+            }
         };
         let body = {
             definition: definition,
             version: options.releaseName ? options.releaseName : options.version
-        }
+        };
         const response = await axiosInstance.put('/definition/raw/' + requestPath + '.' + options.type, body, config);
         return response.data;
     }
     // @ts-ignore
     async getRawDefinition(defPath: string, options) {
-        const response = await axiosInstance.get(`/definition/raw/${defPath}.${options.type}`);
-        return response.data;
+            const response = await axiosInstance.get(`/definition/raw/${defPath}.${options.type}`, options);
+            return response.data;
+        
     }
 
     // Process Service Impl API
     async start(command: object) {
+        console.log(command)
         const response = await axiosInstance.post('/instance', command);
         return response.data;
     }
 
     async findCurrentWorkItemByInstId(instId: string) {
-        const response = await axiosInstance.get(`/instance/${instId}/running`)
-        return response.data
+        const response = await axiosInstance.get(`/instance/${instId}/running`);
+        return response.data;
     }
 
     async stop(instanceId: string) {
@@ -141,7 +147,7 @@ class UEngineBackend implements Backend {
 
     async getInstance(instanceId: string) {
         const response = await axiosInstance.get(`/instance/${instanceId}`);
-        if(!response) return null;
+        if (!response) return null;
 
         let _links = response.data._links;
         let def_href = _links.definition.href;
@@ -149,7 +155,7 @@ class UEngineBackend implements Backend {
 
         // parse defId
         response.data.defId = def_id;
-        
+
         return response.data;
     }
 
@@ -192,7 +198,11 @@ class UEngineBackend implements Backend {
             responseType: 'text' as const
         };
 
-        const response = await axiosInstance.post(`/instance/${instanceId}/task/${taskId}/variable/${varName}`, JSON.stringify(varValue), config);
+        const response = await axiosInstance.post(
+            `/instance/${instanceId}/task/${taskId}/variable/${varName}`,
+            JSON.stringify(varValue),
+            config
+        );
         return response.data;
     }
 
@@ -226,21 +236,21 @@ class UEngineBackend implements Backend {
     }
 
     async fireMessage(instanceId: string, message: any) {
-        const response = await axiosInstance.post(`/instance/${instanceId}/fire-message`, {event: "event",payload: message});
+        const response = await axiosInstance.post(`/instance/${instanceId}/fire-message`, { event: 'event', payload: message });
         return response.data;
     }
 
     async putWorkItemComplete(taskId: string, workItem: any, isSimulate: string) {
         let config = {
             headers: {
-                'isSimulate': isSimulate ? isSimulate : 'false'
+                isSimulate: isSimulate ? isSimulate : 'false'
             }
         };
         const response = await axiosInstance.post(`/work-item/${taskId}/complete`, workItem, config);
         return response.data;
     }
     // async putWorkItemComplete(taskId: string, workItem: any, isSimulate: boolean) {
-    //     const headers = { 
+    //     const headers = {
     //         'isSimulate': isSimulate ? 'true' : 'false'
     //     };
     //     const response = await axiosInstance.post(`/work-item/${taskId}/complete`, workItem, {headers});
@@ -382,10 +392,10 @@ class UEngineBackend implements Backend {
 
     // get Completed WorkList API
     async getCompletedList(options?: any) {
-        let basePath = '/worklist/search/findCompleted'
-        if(!options) options = {}
-        if(!options.page) options.page = 0
-        if(!options.size) options.size = 20
+        let basePath = '/worklist/search/findCompleted';
+        if (!options) options = {};
+        if (!options.page) options.page = 0;
+        if (!options.size) options.size = 20;
         // if(!options.sort) options.sort = 'startDate,DESC'
 
         const response = await axiosInstance.get(`${basePath}?page=${options.page}&size=${options.size}`);
@@ -511,36 +521,36 @@ class UEngineBackend implements Backend {
 
     async getCompletedTaskId(instId: string) {
         // instance/{instanceId}/completed
-        const response = await axiosInstance.get(`/instance/${instId}/completed`)
+        const response = await axiosInstance.get(`/instance/${instId}/completed`);
 
-        return response.data
+        return response.data;
     }
 
     async getActivitiesStatus(instId: string) {
         // instance/{instanceId}/completed
-        const response = await axiosInstance.get(`/instance/${instId}/status`)
+        const response = await axiosInstance.get(`/instance/${instId}/status`);
 
-        return response.data
+        return response.data;
     }
 
-    async dryRun(defPath: String, isSimulate: string){
+    async dryRun(defPath: String, isSimulate: string) {
         let config = {
-                headers: {
-                    'isSimulate': isSimulate ? isSimulate : 'false'
-                }
-            };
+            headers: {
+                isSimulate: isSimulate ? isSimulate : 'false'
+            }
+        };
         const response = await axiosInstance.get(`/dry-run/${defPath}`, config);
         // const response = await axiosInstance.get(encodeURI(`/dry-run/${defPath}`));
         // const response = await axiosInstance.get(encodeURI(`/dry-run/${encodeURIComponent(defPath.toString())}`));
-        
+
         if (!response.data) return null;
         return response.data;
     }
 
-    async startAndComplete(command: object, isSimulate: string){
+    async startAndComplete(command: object, isSimulate: string) {
         let config = {
             headers: {
-                'isSimulate': isSimulate ? isSimulate : 'false'
+                isSimulate: isSimulate ? isSimulate : 'false'
             }
         };
         const response = await axiosInstance.post(`/start-and-complete`, command, config);
@@ -555,7 +565,7 @@ class UEngineBackend implements Backend {
 
     async getSystemList() {
         const response = await axiosInstance.get(`/definition/system`);
-        if(response.data._embedded.definitions.length > 0) return response.data._embedded.definitions;
+        if (response.data._embedded.definitions.length > 0) return response.data._embedded.definitions;
         return null;
     }
     // async getSystemList() {
@@ -571,8 +581,8 @@ class UEngineBackend implements Backend {
     async getCurrentWorkItemByCorrKey(corrKey: number) {
         const response = await axiosInstance.get(`/work-item?corrKey=${corrKey}`);
     }
-    
-    async validate(xml: string){
+
+    async validate(xml: string) {
         const response = await axiosInstance.post(`/validate`, xml);
         if (!response.data) return {};
         return response.data;
@@ -618,4 +628,3 @@ class UEngineBackend implements Backend {
 }
 
 export default UEngineBackend;
-
