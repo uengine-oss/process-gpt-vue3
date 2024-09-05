@@ -1,11 +1,11 @@
 <template>
     <v-row class="ma-0 pa-0 task-btn" style="right:50px; top:12px;">
         <v-spacer></v-spacer>
-        <div class="from-work-item-pc" v-if="!isCompleted && !isPreviewMode">
+        <div class="from-work-item-pc" v-if="!isCompleted">
             <v-btn v-if="!isDryRun" @click="saveTask" color="primary" class="mr-2" rounded>중간 저장</v-btn>
             <v-btn @click="executeProcess" color="primary" rounded>제출 완료</v-btn>
         </div>
-        <div class="from-work-item-mobile" v-if="!isCompleted && !isPreviewMode">
+        <div class="from-work-item-mobile" v-if="!isCompleted">
             <v-tooltip text="중간 저장">
                 <template v-slot:activator="{ props }">
                     <v-btn @click="saveTask" icon v-bind="props" density="comfortable">
@@ -23,7 +23,7 @@
             </v-tooltip>
         </div>
     </v-row>
-    <div class="pa-4" :style="isPreviewMode ? 'width: 100%; height: 100%;':''">
+    <div class="pa-4">
         <!-- <FormMapper></FormMapper> -->
         <!-- <Instruction :workItem="workItem" /> -->
         <DynamicForm ref="dynamicForm" :formHTML="html" v-model="formData"></DynamicForm>
@@ -75,11 +75,6 @@ export default {
             type: String,
             default: "false"
         },
-        formId: String,
-        isPreviewMode: {
-            type: Boolean,
-            default: false
-        }
     },
     data: () => ({
         html: null,
@@ -117,11 +112,7 @@ export default {
             if(me.isDryRun) {
                 me.formDefId = me.dryRunWorkItem.activity.tool.split(':')[1];
             } else {
-                if(me.isPreviewMode){
-                    me.formDefId = me.formId
-                } else {
-                    me.formDefId = me.workItem.worklist.tool.split(':')[1];
-                }
+                me.formDefId = me.workItem.worklist.tool.split(':')[1];
             }
             if(!me.formDefId) return;
             me.html = await backend.getRawDefinition(me.formDefId, { type: 'form' });

@@ -15,6 +15,7 @@
             </v-window-item>
             <v-window-item v-for="tab in ['edit', 'preview']" :key="tab" :value="tab">
                 <FormDefinition
+                    :key="formRenderKey"
                     :type="tab"
                     :formId="formId"
                     v-model="tempFormHtml"
@@ -46,6 +47,7 @@ export default {
         processDefinition: Object,
         element: Object,
         isViewMode: Boolean,
+        isPreviewMode: Boolean,
         role: String,
         roles: Array,
         variableForHtmlFormContext: Object,
@@ -63,7 +65,8 @@ export default {
             },
             formId: '',
             tempFormHtml: '',
-            activeTab: 'setting'
+            activeTab: 'setting',
+            formRenderKey: 0
         };
     },
     computed: {
@@ -87,6 +90,13 @@ export default {
         await me.init();
     },
     watch: {
+        activeTab: {
+            handler(newVal) {
+                if (newVal == 'preview') {
+                    this.formRenderKey++;
+                }
+            }
+        },
         activity: {
             deep: true,
             handler(newVal, oldVal) {
@@ -97,7 +107,15 @@ export default {
     methods: {
         async init() {
             var me = this;
-            me.formId = me.copyUengineProperties.variableForHtmlFormContext.name;
+            if(me.isPreviewMode){
+                me.activeTab = 'preview'
+            }
+            if (me.copyUengineProperties && me.copyUengineProperties.variableForHtmlFormContext && me.copyUengineProperties.variableForHtmlFormContext.name) {
+                me.formId = me.copyUengineProperties.variableForHtmlFormContext.name;
+            } else {
+                me.formId = '';
+                console.warn('No form ID found in copyUengineProperties');
+            }
             if (!me.formId || me.formId == '') {
                 me.formId = me.processDefinition.processDefinitionId + '_' + me.elem.id + '_form';
             }

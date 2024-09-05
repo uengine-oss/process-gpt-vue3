@@ -152,6 +152,7 @@
         "deleteProcessMessage": "프로세스를 삭제하시겠습니까?",
         "cancel": "취소",
         "simulate": "시뮬레이션",
+        "preview": "미리보기",
         "capture": "프로세스 이미지 다운로드"
     },
     "ProcessVariable": {

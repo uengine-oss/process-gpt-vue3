@@ -29,7 +29,7 @@
                     <v-progress-circular color="primary" indeterminate></v-progress-circular>
                 </div>
             </div>
-            <div v-if="!isMobile" class="ml-auto" style="max-width: 250px;">
+            <div v-if="!isMobile && type != 'preview'" class="ml-auto" style="max-width: 250px;">
                 <Chat :chatInfo="chatInfo" :messages="messages" :userInfo="userInfo" type="form"
                     @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage">
                     <template v-slot:custom-title>
