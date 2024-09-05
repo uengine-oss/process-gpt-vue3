@@ -26,7 +26,7 @@
     <div class="pa-4">
         <!-- <FormMapper></FormMapper> -->
         <!-- <Instruction :workItem="workItem" /> -->
-        <DynamicForm ref="dynamicForm" :formHTML="html" v-model="formData"></DynamicForm>
+        <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData"></DynamicForm>
         <AudioTextarea v-if="!isCompleted" v-model="newMessage" :workItem="workItem" @close="close" />
         <Checkpoints ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
     </div>
@@ -114,7 +114,13 @@ export default {
             } else {
                 me.formDefId = me.workItem.worklist.tool.split(':')[1];
             }
-            if(!me.formDefId) return;
+            if(!me.formDefId) {
+                if ($mode == 'ProcessGPT') {
+                    me.formDefId = `${me.workItem.worklist.defId}_${me.workItem.activity.tracingTag}_form`
+                } else {
+                    return;
+                }
+            }
             me.html = await backend.getRawDefinition(me.formDefId, { type: 'form' });
             if(!me.isDryRun) {
                 me.loadForm()
@@ -133,12 +139,11 @@ export default {
 
             if(!me.workItem || !me.workItem.activity || !me.workItem.activity.variableForHtmlFormContext) return;
 
-            let varName = me.workItem.activity.variableForHtmlFormContext.name;
+            let varName = me.workItem.activity.variableForHtmlFormContext.name || me.formDefId;
             let variable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName);
             if (variable && variable.valueMap) {
                 me.formData = variable.valueMap;
             }
-
             
             if(me.workItem?.parameterValues){
                 const parameterValues = me.workItem.parameterValues[varName];

@@ -6,7 +6,6 @@
     </v-row>
     <div class="pa-4" style="height: 100%">
         <div class="d-flex flex-column overflow-y-auto" style="height: 100%">
-            <Instruction :workItem="workItem" />
             <div v-if="outputItems && outputItems.length > 0">
                 <v-row class="w-100" v-for="item in outputItems" :key="item.name">
                     <v-col cols="5">
