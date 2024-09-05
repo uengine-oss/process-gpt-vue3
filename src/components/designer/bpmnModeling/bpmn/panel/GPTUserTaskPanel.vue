@@ -15,11 +15,8 @@
             </v-window-item>
             <v-window-item v-for="tab in ['edit', 'preview']" :key="tab" :value="tab">
                 <FormDefinition
-<<<<<<< HEAD
                     :key="formRenderKey"
-=======
                     ref="formDefinition"
->>>>>>> e61987bcbf2d1925bd6187f27b231ff5dbb33e8b
                     :type="tab"
                     :formId="formId"
                     v-model="tempFormHtml"
