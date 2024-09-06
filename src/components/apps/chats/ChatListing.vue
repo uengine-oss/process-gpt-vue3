@@ -57,7 +57,20 @@ const getProfile = (email) => {
         return `${basePath}/images/chat-icon.png`;
     } else {
         const user = props.userList.find(user => user.email === email);
-        return user && user.profile ? user.profile : `${basePath}/images/defaultUser.png`;
+        if (user && user.profile) {
+            if(user.profile.includes("defaultUser.png")){
+                return `${basePath}/images/defaultUser.png`;
+            } else {
+                const img = new Image();
+                img.src = user.profile;
+                img.onerror = () => {
+                    return `${basePath}/images/defaultUser.png`;
+                };
+                return user.profile;
+            }
+        } else {
+            return `${basePath}/images/defaultUser.png`;
+        }
     }
 };
 
