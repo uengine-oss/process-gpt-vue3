@@ -96,6 +96,7 @@ export default {
         activity: {
             deep: true,
             handler(newVal, oldVal) {
+                console.log(this.processDefinition)
                 this.EventBus.emit('process-definition-updated', this.processDefinition);
             }
         },
@@ -156,10 +157,12 @@ export default {
                     await me.backend.putRawDefinition(me.tempFormHtml, me.formId, options);
                 }
 
+                const taskFields = me.processDefinition.data.map(data => { 
+                    return {name: data.name, type: data.type}
+                });
                 const fields = me.extractFields(me.tempFormHtml);
                 fields.forEach(field => {
-                    const existVar = me.processDefinition.data.find(data => 
-                        data.name === field.text && data.type === field.type);
+                    const existVar = taskFields.find(data => data.name === field.text && data.type === field.type);
                     if (!existVar) {
                         me.$emit('addUengineVariable', {
                             name: field.text,

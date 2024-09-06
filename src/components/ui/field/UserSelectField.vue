@@ -7,7 +7,8 @@
             item-title="username" 
             :item-value="itemValue" 
             chips closable-chips multiple small-chips
-            variant="outlined"
+            :readonly="localReadonly"
+            :variant="localReadonly ? 'filled' : 'outlined'"
         >
             <template v-slot:chip="{ props, item }">
                 <v-chip v-bind="props" :text="item.raw.username ?? item.raw.email"></v-chip>
@@ -38,6 +39,7 @@ export default {
         name: String,
         alias: String,
         disabled: String,
+        readonly: String,
         itemValue: {
             type: String,
             default: "id"
@@ -51,11 +53,13 @@ export default {
             localName: "",
             localAlias: "",
             localDisabled: false,
+            localReadonly: false,
 
             settingInfos: [
                 commonSettingInfos["localName"],
                 commonSettingInfos["localAlias"],
-                commonSettingInfos["localDisabled"]
+                commonSettingInfos["localDisabled"],
+                commonSettingInfos["localReadonly"]
             ],
 
             usersToSelect: []
@@ -88,7 +92,8 @@ export default {
         this.localName = this.name ?? "name"
         this.localAlias = this.alias ?? ""
         this.localDisabled = this.disabled === "true"
-
+        this.localReadonly = this.readonly === "true"
+        
         this.usersToSelect = (await StorageBaseFactory.getStorage().list(`users`))
     }
 };

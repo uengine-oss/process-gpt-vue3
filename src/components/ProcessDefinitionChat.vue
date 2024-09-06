@@ -369,6 +369,7 @@ export default {
                     me.deleteDialog = false;
                     me.isDeleted = true;
                     me.EventBus.emit('definitions-updated');
+                    me.EventBus.emit('instances-updated');
                 }
             });
         },

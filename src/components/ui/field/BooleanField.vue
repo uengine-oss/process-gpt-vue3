@@ -4,6 +4,7 @@
             :label="(localAlias && localAlias.length > 0) ? localAlias : localName" 
             v-model="localModelValue"
             :disabled="localDisabled"
+            :readonly="localReadonly"
         ></v-checkbox>
     </div>
 </template>
@@ -21,7 +22,8 @@ export default {
 
         name: String,
         alias: String,
-        disabled: String
+        disabled: String,
+        readonly: String
     },
 
     data() {
@@ -31,11 +33,13 @@ export default {
             localName: "",
             localAlias: "",
             localDisabled: false,
+            localReadonly: false,
 
             settingInfos: [
                 commonSettingInfos["localName"],
                 commonSettingInfos["localAlias"],
-                commonSettingInfos["localDisabled"]
+                commonSettingInfos["localDisabled"],
+                commonSettingInfos["localReadonly"]
             ]
         };
     },
@@ -64,6 +68,7 @@ export default {
         this.localName = this.name ?? "name"
         this.localAlias = this.alias ?? ""
         this.localDisabled = this.disabled === "true"
+        this.localReadonly = this.readonly === "true"
     }
 }
 </script>

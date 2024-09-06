@@ -43,11 +43,15 @@ let commonSettingInfos = {
 
     "localDisabled": {
         dataToUse: "localDisabled",
-        htmlAttribute: "disabled",
+        htmlAttribute: "disabled"
+    },
+
+    "localReadonly": {
+        dataToUse: "localReadonly",
+        htmlAttribute: "readonly",
         settingLabel: "FormDefinitionPanel.readOnly",
         settingType: "checkbox"
     },
-
 
     "localItems": {
         dataToUse: "localItems",

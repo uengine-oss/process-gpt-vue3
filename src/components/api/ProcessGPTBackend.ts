@@ -82,10 +82,8 @@ class ProcessGPTBackend implements Backend {
                 if (instList && instList.length > 0) {
                     await Promise.all([
                         await storage.delete('todolist', { match: { proc_def_id: defId } }),
+                        await storage.delete('proc_inst', { match: { proc_def_id: defId } }),
                     ]);
-                    // instList.forEach(async (item: any) => {
-                    //     await this.deleteInstance(item.id);
-                    // });
                 }
                 
                 await storage.delete(`proc_def/${defId}`, { key: 'id' });

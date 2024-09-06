@@ -4,7 +4,7 @@
         <v-radio-group v-model="localModelValue">
             <div v-for="(item, index) in controlItems" :key="index">
                 <div v-for="(value, key) in item" :key="key">
-                    <v-radio :label="value" :value="key" :disabled="localDisabled"></v-radio>
+                    <v-radio :label="value" :value="key" :disabled="localDisabled" :readonly="localReadonly"></v-radio>
                 </div>
             </div>
         </v-radio-group>
@@ -25,6 +25,7 @@ export default {
         name: String,
         alias: String,
         disabled: String,
+        readonly: String,
 
         items: String,
         is_dynamic_load: String,
@@ -41,6 +42,7 @@ export default {
             localAlias: "",
             localItems: [],
             localDisabled: false,
+            localReadonly: false,
 
             localIsDynamicLoad: false,
             localDynamicLoadURL: "",
@@ -119,7 +121,7 @@ export default {
         this.localName = this.name ?? "name"
         this.localAlias = this.alias ?? ""
         this.localDisabled = this.disabled === "true"
-
+        this.localReadonly = this.readonly === "true"
 
         try {
             if(!(this.items) || this.items.length === 0)

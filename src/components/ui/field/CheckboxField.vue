@@ -8,6 +8,7 @@
                     :label="value"
                     :value="key"
                     :disabled="localDisabled"
+                    :readonly="localReadonly"
                 ></v-checkbox>
             </div>
         </div>
@@ -28,6 +29,7 @@ export default {
         name: String,
         alias: String,
         disabled: String,
+        readonly: String,
 
         items: String,
         is_dynamic_load: String,
@@ -44,6 +46,7 @@ export default {
             localAlias: "",
             localItems: [],
             localDisabled: false,
+            localReadonly: false,
 
             localIsDynamicLoad: false,
             localDynamicLoadURL: "",
@@ -56,6 +59,7 @@ export default {
                 commonSettingInfos["localName"],
                 commonSettingInfos["localAlias"],
                 commonSettingInfos["localDisabled"],
+                commonSettingInfos["localReadonly"],
                 ...commonSettingInfos["localItemsWithDynamicList"]
             ]
         };
@@ -121,7 +125,7 @@ export default {
         this.localName = this.name ?? "name"
         this.localAlias = this.alias ?? ""
         this.localDisabled = this.disabled === "true"
-
+        this.localReadonly = this.readonly === "true"
 
         try {
             if(!(this.items) || this.items.length === 0)
