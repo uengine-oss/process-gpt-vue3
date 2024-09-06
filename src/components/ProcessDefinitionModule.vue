@@ -3,13 +3,14 @@ import xml2js from 'xml2js';
 import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
 import FormGenerator from './ai/FormDesignGenerator';
+import FormDefinitionModule from './FormDefinitionModule.vue';
 import partialParse from "partial-json-parser";
 import JSON5 from 'json5';
 
 const backend = BackendFactory.createBackend();
 
 export default {
-    mixins: [],
+    mixins: [FormDefinitionModule],
     data: () => ({
         processDefinition: null,
         bpmn: null,
@@ -20,92 +21,77 @@ export default {
         lock: false,
         loading: false,
         isChanged: false,
+        generateFormTask: null,
     }),
     computed: {},
     mounted() {},
     beforeUnmount() {},
     async created() {},
     methods: {
-        extractJSON(inputString, checkFunction) {
-            try {
-                JSON5.parse(inputString); // if no problem, just return the whole thing
-                return inputString;
-            } catch (e) {}
-
-            if (this.hasUnclosedTripleBackticks(inputString)) {
-                inputString = inputString + '\n```';
-            }
-
-            // 정규 표현식 정의
-            //const regex = /^.*?`{3}(?:json)?\n(.*?)`{3}.*?$/s;
-            let regex = /```(?:json)?\s*([\s\S]*?)\s*```/;
-            
-            // 정규 표현식을 사용하여 입력 문자열에서 JSON 부분 추출
-            let match = inputString.match(regex);
-            // 매치된 결과가 있다면, 첫 번째 캡쳐 그룹(즉, JSON 부분)을 반환
-            if (match) {
-                if (checkFunction)
-                    match.forEach((shouldBeJson) => {
-                        const lastIndex = shouldBeJson.lastIndexOf('}');
-                        const result = shouldBeJson.slice(0, lastIndex + 1);
-                        if (checkFunction(result)) return result;
-                    });
-                else return match[1];
-            } else {
-                regex = /\{[\s\S]*\}/
-                match = inputString.match(regex);
-                return match && match[0] ? match[0] : null;
-            }
-
-            // 매치된 결과가 없으면 null 반환
-            return null;
-        },
         async checkedFormData() {
             if (this.processDefinition && this.processDefinition.components) {
                 const activities = this.processDefinition.components.filter(component => component.componentType === 'Activity');
-                
+                this.generateFormTask = {};
                 for (const activity of activities) {
-                    let inputs = '';
+                    let inputs = null;
                     if (activity.outputData && activity.outputData.length > 0) {
                         inputs = activity.outputData ? activity.outputData.join(', ') : '';
                     }
-                    let outputs = '';
+                    let outputs = null;
                     if (activity.inputData && activity.inputData.length > 0) {
-                        outputs = activity.inputData ? activity.inputData.join(', ') : '';
+                        const uniqueInputs = activity.inputData.filter(item => !activity.outputData.includes(item));
+                        outputs = uniqueInputs.join(', ');
                     }
-                    let generateMsg = `Please refer to the following and create a form.`;
-                    if (inputs) generateMsg += `Fields to enter: ${inputs}`;
-                    if (outputs) generateMsg += `Fields to read only without input: ${outputs}`;
-                    const formHtml = await this.generateForm(generateMsg, activity.id);
+                    if (inputs || outputs) { 
+                        this.generateFormTask[activity.id] = 'generating';
+                        let generateMsg = `Please refer to the following and create a form.`;
+                        if (inputs) generateMsg += `Fields to enter: ${inputs}`;
+                        if (outputs) generateMsg += `Fields to read only without input: ${outputs}`;
+                        const formHtml = await this.generateForm(generateMsg, activity);
+                        // 완료 메세지
+                        let messageWriting = this.messages[this.messages.length - 1];
+                        messageWriting.isLoading = false;
+                        this.messages.push({
+                            "role": "system",
+                            "content": `${activity.name} 활동의 폼이 생성되었습니다.`,
+                            "timeStamp": Date.now(),
+                            "contentType": "html",
+                            "htmlContent": formHtml,
+                            "jsonContent": {}
+                        });
+                    }
                 }
+                this.generateFormTask = {};
             }
         },
-        async generateForm(generateMsg, activityId) {
+        async generateForm(generateMsg, activity) {
+            var me = this;
             return new Promise((resolve, reject) => {
                 let formHtml = null;
-                const formGenerator = new FormGenerator(this, {
+                const formGenerator = new FormGenerator(me, {
                     isStream: true,
                     preferredLanguage: 'Korean',
                 });
                 formGenerator.client.genType = 'form';
+                formGenerator.client.onFormCreated = async (response) => {
+                    let messageWriting = me.messages[me.messages.length - 1];
+                    messageWriting.content = response;
+                }
                 formGenerator.client.onFormGenerationFinished = async (response) => {
                     try {
-                        let jsonData = this.extractJSON(response);
-                        jsonData = jsonData.match(/\{[\s\S]*\}/)[0]
-                            .replaceAll('\n', '')
-                            .replaceAll('`', `"`);
-                        jsonData = partialParse(jsonData);
+                        let jsonData = this.extractLastJSON(response);
                         if (jsonData.htmlOutput) {
-                            const formData = {
-                                html: jsonData.htmlOutput,
-                                name: jsonData.name,
-                            };
-                            formHtml = await this.saveFormData(formData, activityId);
+                            const html = await me.keditorContentHTMLToDynamicFormHTML(jsonData.htmlOutput)
+                            formHtml = await me.saveFormData(html, activity.id);
+                            if (formHtml) {
+                                me.generateFormTask[activity.id] = 'finished';
+                            }
                             resolve(formHtml);
                         } else {
                             resolve(null);
                         }
                     } catch (error) {
+                        console.log(error);
                         reject(error);
                     }
                 };
@@ -115,17 +101,23 @@ export default {
                     content: generateMsg
                 });
                 formGenerator.generate();
+                me.messages.push({
+                    "role": "system",
+                    "content": `${activity.name} 활동의 폼을 생성합니다.`,
+                    "timeStamp": Date.now(),
+                    "isLoading": true
+                })
             });
         },
-        async saveFormData(formData, activityId) {
+        async saveFormData(html, activityId) {
             const options = {
                 type: 'form',
                 proc_def_id: this.processDefinition.processDefinitionId,
                 activity_id: activityId
             };
-            const formId = formData.name ? formData.name : `${options.proc_def_id}_${options.activity_id}_form`;
-            await backend.putRawDefinition(formData.html, formId, options);
-            return formData.html;
+            const formId = `${options.proc_def_id}_${options.activity_id}_form`;
+            await backend.putRawDefinition(html, formId, options);
+            return html;
         },
         extractPropertyNameAndIndex(jsonPath) {
             let match;
