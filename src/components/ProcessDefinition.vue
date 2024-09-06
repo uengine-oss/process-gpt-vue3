@@ -4,6 +4,19 @@
             <v-col class="d-flex ma-0 pa-0" style="height: 100%">
                 <v-card style="border-radius: 0px !important; border: none; height: 100%" flat>
                     <v-row class="ma-0 pa-0 button-container">
+                        <div v-if="isPreviewMode">
+                            <v-btn @click="prevStep" small :disabled="currentStepIndex === 0" style="margin-right: 5px;">이전 단계</v-btn>
+                            <v-btn @click="nextStep" :disabled="currentStepIndex === stepIds.length - 1" small>다음 단계</v-btn>
+                        </div>
+                        <v-tooltip :text="$t('processDefinition.preview')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props" @click="previewProcess" class="btn-execute"
+                                    icon variant="text"
+                                >
+                                    <v-icon>mdi-eye</v-icon>
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
                         <v-tooltip v-if="executable" :text="$t('processDefinition.simulate')">
                             <template v-slot:activator="{ props }">
                                 <v-switch color="primary" v-bind="props" v-model="isSimulate" false-value="false" true-value="true" class="btn-simulate"></v-switch>
@@ -56,6 +69,7 @@
                         :bpmn="bpmn"
                         :options="options"
                         :isViewMode="isViewMode"
+                        :isPreviewMode="isPreviewMode"
                         :currentActivities="currentActivities"
                         :taskStatus="taskStatus"
                         :generateFormTask="generateFormTask"
@@ -94,6 +108,7 @@
                         :processDefinitionId="definitionPath"
                         :processDefinition="processDefinition"
                         :validationList="validationList"
+                        :isPreviewMode="isPreviewMode"
                         v-on:change-sequence="onChangeSequence"
                         v-on:remove-shape="onRemoveShape"
                         v-on:change-shape="onChangeShape"
@@ -270,7 +285,6 @@ export default {
         processDefinition: Object,
         bpmn: String,
         isViewMode: Boolean,
-        currentActivities: Array,
         definitionChat: Object,
         definitionPath: String,
         isXmlMode: Boolean,
@@ -310,6 +324,12 @@ export default {
         ],
         taskStatus: null,
         bpmnKey: 0,
+
+        // preview
+        isPreviewMode: false,
+        currentStepIndex: 0,
+        stepIds: [],
+        currentActivities: [],
         // definitionPath: null
     }),
     computed: {
@@ -489,6 +509,25 @@ export default {
         // this.processVariables = this.copyProcessDefinition.data
     },
     methods: {
+        updateCurrentStep(){
+            this.closePanel();
+            this.isPreviewMode = true
+            this.currentActivities = [this.stepIds[this.currentStepIndex]];
+            this.bpmnKey++;
+            this.openPanel(this.stepIds[this.currentStepIndex]);
+        },
+        prevStep() {
+            if (this.currentStepIndex > 0) {
+                this.currentStepIndex--;
+            }
+            this.updateCurrentStep();
+        },
+        nextStep() {
+            if (this.currentStepIndex < this.stepIds.length - 1) {
+                this.currentStepIndex++;
+            }
+            this.updateCurrentStep();
+        },
         setDefinition() {
             let self = this;
             const def = this.bpmnModeler.getDefinitions();
@@ -567,6 +606,20 @@ export default {
         },
         changeElement() {
             this.$emit('change');
+        },
+        previewProcess() {
+            this.stepId = [];
+            this.currentStepIndex = 0;
+
+            const activityIds = this.processDefinition.sequences
+                .flatMap(seq => [seq.source, seq.target])
+            this.stepIds = [...new Set(activityIds)];
+            if (this.stepIds.length > 0) {
+                this.isPreviewMode = true
+                this.currentActivities = [this.stepIds[this.currentStepIndex]];
+                this.bpmnKey++;
+                this.openPanel(this.stepIds[0]);
+            }
         },
         executeProcess() {
             this.executeDialog = !this.executeDialog;
@@ -840,6 +893,9 @@ export default {
         closePanel() {
             this.element = null;
             this.panel = false;
+            this.isPreviewMode = false;
+            this.currentActivities = [];
+            this.bpmnKey++;
             this.$emit('change');
         },
         handleError() {

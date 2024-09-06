@@ -29,6 +29,9 @@ export default {
         isViewMode: {
             type: Boolean
         },
+        isPreviewMode: {
+            type: Boolean
+        },
         adminMode: {
             type: Boolean,
             default: false
@@ -95,7 +98,7 @@ export default {
             var canvas = self.bpmnViewer.get('canvas');
             canvas.zoom('fit-viewport');
 
-            if (self.isViewMode) {
+            if (self.isViewMode || self.isPreviewMode) {
                 // add marker to current activity elements
                 // if (window.$mode == "ProcessGPT") {
                 //     if (self.currentActivities && self.currentActivities.length > 0) {

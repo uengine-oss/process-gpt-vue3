@@ -274,7 +274,12 @@ export default {
             addSubProcess(majorProc);
         },
         closeConsultingDialog(){
-            const answer = window.confirm('저장하지 않은 정보는 모두 유실됩니다. 컨설팅을 종료하시겠습니까 ?');
+            let answer
+            if(this.ProcessPreviewMode){
+                answer = window.confirm('저장하지 않은 정보는 모두 유실됩니다.\n저장하시려면 우측 자물쇠 버튼을 클릭하여 저장하실 수 있습니다.\n\n컨설팅을 종료하시겠습니까?');
+            } else {
+                answer = window.confirm('저장하지 않은 정보는 모두 유실됩니다. 컨설팅을 종료하시겠습니까?');
+            }
             if (answer) {
                 this.ProcessPreviewMode = false
                 this.openConsultingDialog = false

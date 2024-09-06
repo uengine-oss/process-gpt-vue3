@@ -51,7 +51,7 @@
                                 v-bind="props"
                                 @click="jumpToProcessDefintionChat()"
                             >
-                                <v-icon>mdi-auto-fix</v-icon>
+                                <v-icon>mdi-pencil</v-icon>
                             </v-btn>
                         </template>
                     </v-tooltip>

@@ -15,6 +15,7 @@
             </v-window-item>
             <v-window-item v-for="tab in ['edit', 'preview']" :key="tab" :value="tab">
                 <FormDefinition
+                    :key="formRenderKey"
                     ref="formDefinition"
                     :type="tab"
                     :formId="formId"
@@ -47,6 +48,7 @@ export default {
         processDefinition: Object,
         element: Object,
         isViewMode: Boolean,
+        isPreviewMode: Boolean,
         role: String,
         roles: Array,
         variableForHtmlFormContext: Object,
@@ -64,7 +66,8 @@ export default {
             },
             formId: '',
             tempFormHtml: '',
-            activeTab: 'setting'
+            activeTab: 'setting',
+            formRenderKey: 0
         };
     },
     created() {
@@ -83,6 +86,13 @@ export default {
         await me.init();
     },
     watch: {
+        activeTab: {
+            handler(newVal) {
+                if (newVal == 'preview') {
+                    this.formRenderKey++;
+                }
+            }
+        },
         activity: {
             deep: true,
             handler(newVal, oldVal) {
@@ -100,6 +110,9 @@ export default {
     methods: {
         async init() {
             var me = this;
+            if(me.isPreviewMode){
+                me.activeTab = 'preview'
+            }
             me.formId = me.copyUengineProperties.variableForHtmlFormContext? me.copyUengineProperties.variableForHtmlFormContext.name : '';
             if (!me.formId || me.formId == '') {
                 me.formId = me.processDefinition.processDefinitionId + '_' + me.element.id + '_form';
