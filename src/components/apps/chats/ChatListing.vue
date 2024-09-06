@@ -52,11 +52,12 @@ const filteredChats = computed(() => {
 });
 
 const getProfile = (email) => {
+    let basePath = window.location.port == '' ? window.location.origin:'' 
     if(email == "system@uengine.org"){
-        return '/src/assets/images/chat/chat-icon.png';
+        return `${basePath}/images/chat-icon.png`;
     } else {
         const user = props.userList.find(user => user.email === email);
-        return user && user.profile ? user.profile : '/images/defaultUser.png';
+        return user && user.profile ? user.profile : `${basePath}/images/defaultUser.png`;
     }
 };
 
