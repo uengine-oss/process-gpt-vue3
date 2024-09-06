@@ -4,9 +4,27 @@
             <v-col class="d-flex ma-0 pa-0" style="height: 100%">
                 <v-card style="border-radius: 0px !important; border: none; height: 100%" flat>
                     <v-row class="ma-0 pa-0 button-container">
-                        <div v-if="isPreviewMode">
-                            <v-btn @click="prevStep" small :disabled="currentStepIndex === 0" style="margin-right: 5px;">이전 단계</v-btn>
-                            <v-btn @click="nextStep" :disabled="currentStepIndex === stepIds.length - 1" small>다음 단계</v-btn>
+                        <div v-if="isPreviewMode" style="margin-right: 20px;">
+                            <v-tooltip text="이전 단계">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" @click="prevStep" class="btn-execute"
+                                        icon variant="text"
+                                        :disabled="currentStepIndex === 0"
+                                    >
+                                        <v-icon>mdi-arrow-left</v-icon>
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                            <v-tooltip text="다음 단계">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" @click="nextStep" class="btn-execute"
+                                        icon variant="text"
+                                        :disabled="currentStepIndex === stepIds.length - 1"
+                                    >
+                                        <v-icon>mdi-arrow-right</v-icon>
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
                         </div>
                         <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.preview')">
                             <template v-slot:activator="{ props }">
