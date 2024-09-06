@@ -208,9 +208,11 @@
                                                     </v-row>
                                                 </v-row>
 
-                                                <div class="w-100 pb-5"
-                                                     :style="message.role == 'user' ? 'max-width:70% !important;' : ''"
-                                                >
+                                                <div v-if="message.contentType && message.contentType == 'html'">
+                                                    <DynamicForm ref="dynamicForm" :formHTML="message.htmlContent" v-model="message.jsonContent"></DynamicForm>
+                                                </div>
+
+                                                <div v-else class="w-100 pb-5">
                                                     <v-sheet v-if="message.image" class="mb-1">
                                                         <img :src="message.image" class="rounded-md" alt="pro" width="250" />
                                                     </v-sheet>
@@ -513,13 +515,15 @@ import { HistoryIcon } from 'vue-tabler-icons';
 import Record from './Record.vue';
 // import Record from './Record2.vue';
 import defaultWorkIcon from '@/assets/images/chat/chat-icon.png';
+import DynamicForm from '@/components/designer/DynamicForm.vue';
 
 export default {
     components: {
         Icon,
         RetrievalBox,
         AgentsChat,
-        Record
+        Record,
+        DynamicForm
     },
     mixins: [
         ProgressAnimated,

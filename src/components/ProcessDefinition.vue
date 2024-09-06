@@ -58,6 +58,7 @@
                         :isViewMode="isViewMode"
                         :currentActivities="currentActivities"
                         :taskStatus="taskStatus"
+                        :generateFormTask="generateFormTask"
                         v-on:error="handleError"
                         v-on:shown="handleShown"
                         v-on:openDefinition="(ele) => openSubProcess(ele)"
@@ -274,7 +275,8 @@ export default {
         definitionPath: String,
         isXmlMode: Boolean,
         validationList: Object,
-        isAdmin: Boolean
+        isAdmin: Boolean,
+        generateFormTask: Object,
     },
     data: () => ({
         panel: false,
@@ -475,7 +477,8 @@ export default {
         me.$try({
             action: async () => {
                 if(me.$route.params && me.$route.params.instId) {
-                    me.taskStatus = await backend.getActivitiesStatus(me.$route.params.instId);
+                    const instId =  window.$mode == 'ProcessGPT' ? atob(me.$route.params.instId) : me.$route.params.instId;
+                    me.taskStatus = await backend.getActivitiesStatus(instId);
                     me.bpmnKey++;
                 }
             }
@@ -578,7 +581,7 @@ export default {
                     };
                     const data = await backend.start(input);
                     if (data.instanceId) {
-                        const route = window.$mode == 'ProcessGPT' ? btoa(data.instanceId) : data.instanceId;
+                        const route = window.$mode == 'ProcessGPT' ? atob(data.instanceId) : data.instanceId;
                         me.$router.push(`/instancelist/${route}`);
                     }
                     me.EventBus.emit('instances-updated');

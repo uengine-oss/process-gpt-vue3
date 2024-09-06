@@ -44,6 +44,9 @@ export default {
         },
         taskStatus: {
             type: Object
+        },
+        generateFormTask: {
+            type: Object
         }
     },
     data: function () {
@@ -94,29 +97,29 @@ export default {
 
             if (self.isViewMode) {
                 // add marker to current activity elements
-                if (window.$mode == "ProcessGPT") {
-                    if (self.currentActivities && self.currentActivities.length > 0) {
-                        self.currentActivities.forEach((actId) => {
-                            if (actId) canvas.addMarker(actId, 'highlight');
-                        });
-                    }
-                } else {
-                    if(self.taskStatus) {
-                        Object.keys(self.taskStatus).forEach((task) => {
-                            let taskStatus = self.taskStatus[task];
-                            if(taskStatus == 'Completed') {
-                                canvas.addMarker(task, 'completed');
-                            } else if(taskStatus == 'Running') {
-                                canvas.addMarker(task, 'running');
-                            } else if(taskStatus == 'Stopped') {
-                                canvas.addMarker(task, 'stopped');
-                            } else if(taskStatus == 'Cancelled') {
-                                canvas.addMarker(task, 'cancelled');
-                            }
-                        });
-                    }
+                // if (window.$mode == "ProcessGPT") {
+                //     if (self.currentActivities && self.currentActivities.length > 0) {
+                //         self.currentActivities.forEach((actId) => {
+                //             if (actId) canvas.addMarker(actId, 'highlight');
+                //         });
+                //     }
+                // }
+                if(self.taskStatus) {
+                    Object.keys(self.taskStatus).forEach((task) => {
+                        let taskStatus = self.taskStatus[task];
+                        if(taskStatus == 'Completed') {
+                            canvas.addMarker(task, 'completed');
+                        } else if(taskStatus == 'Running') {
+                            canvas.addMarker(task, 'running');
+                        } else if(taskStatus == 'Stopped') {
+                            canvas.addMarker(task, 'stopped');
+                        } else if(taskStatus == 'Cancelled') {
+                            canvas.addMarker(task, 'cancelled');
+                        }
+                    });
                 }
             }
+
 
             if (self.adminMode) {
                 var overlays = self.bpmnViewer.get('overlays');
@@ -407,6 +410,17 @@ export default {
                 eventBus.fire('config.changed', {
                     config: _options
                 });
+            },
+            deep: true
+        },
+        generateFormTask: {
+            handler(newVal) {
+                if (newVal && newVal.length > 0) {
+                    var canvas = this.bpmnViewer.get('canvas');
+                    newVal.forEach((activityId) => {
+                        canvas.addMarker(activityId, 'running');
+                    });
+                }
             },
             deep: true
         }

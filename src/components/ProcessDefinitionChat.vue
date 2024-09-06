@@ -56,6 +56,7 @@
                     :definitionChat="this"
                     :validationList="validationList"
                     :isAdmin="isAdmin"
+                    :generateFormTask="generateFormTask"
                     @update="updateDefinition"
                     @change="changeElement"
                 ></process-definition>
