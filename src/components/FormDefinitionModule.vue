@@ -5,7 +5,13 @@ export default {
          * 마지막 최종 결과 Html이 표시된 JSON을 추출하기 위해서
          */
          extractLastJSON(inputString) {
-            const textFragments = inputString.split('```');
+            let textFragments = [];
+            if (typeof inputString === 'string' && inputString.includes('```')) {
+                textFragments = inputString.split('```');
+            } else {
+                console.warn('Invalid input string or no code blocks found');
+                return null; // or handle this case as appropriate for your application
+            }
             for (let i = textFragments.length - 1; i >= 0; i--) {
                 const textFragment = textFragments[i];
                 if (!textFragment.includes('{') || !textFragment.includes('}')) continue;

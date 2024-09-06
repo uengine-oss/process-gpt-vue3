@@ -98,15 +98,17 @@ export default {
             var canvas = self.bpmnViewer.get('canvas');
             canvas.zoom('fit-viewport');
 
-            if (self.isViewMode || self.isPreviewMode) {
-                // add marker to current activity elements
-                // if (window.$mode == "ProcessGPT") {
-                //     if (self.currentActivities && self.currentActivities.length > 0) {
-                //         self.currentActivities.forEach((actId) => {
-                //             if (actId) canvas.addMarker(actId, 'highlight');
-                //         });
-                //     }
-                // }
+            if (self.isPreviewMode) {
+                if (window.$mode == "ProcessGPT") {
+                    if (self.currentActivities && self.currentActivities.length > 0) {
+                        self.currentActivities.forEach((actId) => {
+                            if (actId) canvas.addMarker(actId, 'highlight');
+                        });
+                    }
+                } 
+            }
+            
+            if (self.isViewMode) {
                 if(self.taskStatus) {
                     Object.keys(self.taskStatus).forEach((task) => {
                         let taskStatus = self.taskStatus[task];
@@ -122,7 +124,6 @@ export default {
                     });
                 }
             }
-
 
             if (self.adminMode) {
                 var overlays = self.bpmnViewer.get('overlays');
