@@ -8,7 +8,7 @@
                             <v-btn @click="prevStep" small :disabled="currentStepIndex === 0" style="margin-right: 5px;">이전 단계</v-btn>
                             <v-btn @click="nextStep" :disabled="currentStepIndex === stepIds.length - 1" small>다음 단계</v-btn>
                         </div>
-                        <v-tooltip :text="$t('processDefinition.preview')">
+                        <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.preview')">
                             <template v-slot:activator="{ props }">
                                 <v-btn v-bind="props" @click="previewProcess" class="btn-execute"
                                     icon variant="text"

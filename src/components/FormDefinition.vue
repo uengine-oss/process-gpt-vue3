@@ -140,6 +140,12 @@ export default {
                 this.applyToPreviewTab();
             }
         },
+        previewHTML: {
+            handler(newVal) {
+                this.EventBus.emit('updatePreviewHTML', newVal);
+            },  
+            immediate: true
+        },
     },
     methods: {
         getFormHTML() {
@@ -429,10 +435,10 @@ export default {
             this.formHTML = (await this.backend.getRawDefinition(this.formId, { type: 'form' }));
 
             let tempHTML = ''
-            if (this.formHTML) {
-                tempHTML = this.dynamicFormHTMLToKeditorContentHTML(this.formHTML);
-            } else {
+            if (this.modelValue) {
                 tempHTML = this.dynamicFormHTMLToKeditorContentHTML(this.modelValue);
+            } else {
+                tempHTML = this.dynamicFormHTMLToKeditorContentHTML(this.formHTML);
             }
             const kEditorContent = this.loadHTMLToKEditorContent(tempHTML);
             this.applyNewSrcToMashup(kEditorContent);
@@ -486,9 +492,11 @@ export default {
                     if (messageWriting.jsonContent.htmlOutput) {
                         this.$emit('update:modelValue', messageWriting.jsonContent.htmlOutput);
                         this.applyNewSrcToMashup(this.loadHTMLToKEditorContent(messageWriting.jsonContent.htmlOutput));
+                        this.previewHTML = this.keditorContentHTMLToDynamicFormHTML(messageWriting.jsonContent.htmlOutput);
                     } else if (messageWriting.jsonContent.modifications) {
                         const modifiedPrevFormOutput = this.getModifiedPrevFormOutput(messageWriting.jsonContent.modifications);
                         this.applyNewSrcToMashup(this.loadHTMLToKEditorContent(modifiedPrevFormOutput));
+                        this.previewHTML = this.keditorContentHTMLToDynamicFormHTML(modifiedPrevFormOutput);
                     } else console.error('알 수 없는 JSON 결과: ', JSON.stringify(messageWriting.jsonContent));
                     this.isAIUpdated = true;
                 }
@@ -846,10 +854,10 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    if (me.formHTML) {
-                        me.previewHTML = me.keditorContentHTMLToDynamicFormHTML(me.formHTML);
-                    } else {
+                    if (me.modelValue) {
                         me.previewHTML = me.keditorContentHTMLToDynamicFormHTML(me.modelValue);
+                    } else {
+                        me.previewHTML = me.keditorContentHTMLToDynamicFormHTML(me.formHTML);
                     }
                     console.log('### 프리뷰 HTML ###');
                     console.log(me.previewHTML);
@@ -859,9 +867,9 @@ export default {
                 }
             });
             me.previewFormValues = {};
-            me.isShowPreview = true;
-
+            
             me.$nextTick(() => {
+                me.isShowPreview = true;
                 me.dev.previewFormValues = JSON.stringify(me.previewFormValues);
             });
         },
