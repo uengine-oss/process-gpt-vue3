@@ -245,6 +245,13 @@
                                                             <v-row class="pa-0 ma-0">
                                                                 <v-spacer></v-spacer>
                                                                 <div v-if="replyIndex === index" >
+                                                                    <v-btn v-if="message.descriptionList || message.checkList" 
+                                                                        @click="viewWork(index)"
+                                                                        variant="text" size="x-small" icon
+                                                                        style="background-color:white; margin-right:5px;"
+                                                                    >
+                                                                        <Icons :icon="'document'" :size="20" />
+                                                                    </v-btn>
                                                                     <v-btn @click="beforeReply(message)"
                                                                         variant="text" size="x-small" icon
                                                                         style="background-color:white; margin-right:5px;"
@@ -304,6 +311,29 @@
                                                                 class="text-body-1"
                                                                 >{{ message.jsonContent }}
                                                             </pre>
+                                                            <v-card v-if="isViewWork == index">
+                                                                <div v-if="message.descriptionList.length > 0">
+                                                                    <v-card-title>Descriptions</v-card-title>
+                                                                    <v-card-text>
+                                                                        <div v-for="(desc, index) in message.descriptionList" :key="index">
+                                                                            <h3>{{ desc.word }}</h3>
+                                                                            <p>{{ desc.description }}</p>
+                                                                        </div>
+                                                                    </v-card-text>
+                                                                </div>
+                                                                <div v-if="message.checkList.length > 0">
+                                                                    <v-card-title>CheckList</v-card-title>
+                                                                    <v-card-text>
+                                                                        <v-checkbox
+                                                                            v-for="(check, index) in message.checkList"
+                                                                            :key="index"
+                                                                            :label="check"
+                                                                            readonly
+                                                                            v-model="checked"
+                                                                        ></v-checkbox>
+                                                                    </v-card-text>
+                                                                </div>
+                                                            </v-card>
                                                         </v-sheet>
                                                         <v-progress-linear
                                                             v-if="message.role == 'system' && filteredMessages.length - 1 == index && isLoading"
@@ -325,80 +355,97 @@
                     </perfect-scrollbar>
                     <div :style="type == 'consulting' ? 'position:relative; z-index: 9999;':'position:relative;'">
                         <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
-                            <v-tooltip :text="'카메라'">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn icon variant="text" class="text-medium-emphasis" @click="capture" v-bind="props"
-                                        style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
-                                        <Icons :icon="'camera'" :size="20" />
-                                    </v-btn>
-                                </template>
-                            </v-tooltip>
-                            <v-tooltip :text="$t('chat.addImage')">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn icon variant="text" class="text-medium-emphasis" @click="uploadImage" v-bind="props"
-                                        style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
-                                        <Icons :icon="'add-media-image'" :size="20" />
-                                    </v-btn>
-                                </template>
-                            </v-tooltip>
-                            <v-tooltip text="Draft Agent">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn v-if="(type == 'instances' || type == 'chats') && !agentInfo.isRunning"
-                                        :disabled="!(newMessage || agentInfo.draftPrompt)" icon variant="text"
-                                        class="text-medium-emphasis" @click="requestDraftAgent" v-bind="props"
-                                        style="width:30px; height:30px; margin:1px 0px 0px 5px;">
-                                        <Icons :icon="'document-sparkle'" :size="20"  />
-                                    </v-btn>
-                                    <v-btn v-if="(type == 'instances' || type == 'chats') && agentInfo.isRunning" icon variant="text"
-                                        class="text-medium-emphasis" style="width:30px; height:30px;">
-                                        <v-progress-circular :size="20" indeterminate color="primary"></v-progress-circular>
-                                    </v-btn>
-                                </template>
-                            </v-tooltip>
-                            <v-form v-if="(type == 'instances' || type == 'chats' || type == 'consulting') && !agentInfo.isRunning"
-                                ref="uploadForm" @submit.prevent="submitFile"
-                                style="height:30px;"
-                                class="chat-selected-file"
-                            >
-                                <v-row class="ma-0 pa-0"
-                                    :style="file && file.length > 0 ? 'margin:-13px 0px 0px 7px !important;' : ''"
+                            <div v-if="isOpenedChatMenu" class="chat-menu-background">
+                                <v-btn @click="recordingModeChange()"
+                                    density="comfortable"
+                                    icon
+                                    variant="text"
                                 >
-                                <v-tooltip :text="$t('chat.fileUpLoad')">
+                                    <Icons :icon="'round-headset'"  />
+                                </v-btn>
+                                <v-tooltip v-if="type != 'AssistantChats'" text="업무 지시">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn v-if="file && file.length > 0" type="submit" 
-                                            v-bind="props"
-                                            icon variant="text"
-                                            class="text-medium-emphasis"
-                                            style="width:30px;
-                                                height:30px;
-                                                margin:12.5px 0px 0px 0px;"
-                                        >
-                                            <Icons :icon="'upload'" />
+                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="startWorkOrder" v-bind="props"
+                                            style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
+                                            <Icons :icon="'document'" :size="20" />
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
-                                <v-file-input class="chat-file-up-load"
-                                    :class="{'chat-file-up-load-display': file && file.length > 0}"
-                                    :style="file && file.length > 0 ? '' : 'padding:5px 0px 0px 8px !important; width:30px !important; height:30px !important;'"
-                                    v-model="file"
-                                    label="Choose a file"
-                                    prepend-icon="mdi-paperclip"
-                                    outlined
-                                    :disabled="disableChat"
-                                ></v-file-input>
-                                <v-tooltip v-if="type == 'chats'" :text="ProcessGPTActive ? $t('chat.isDisableProcessGPT') : $t('chat.isEnableProcessGPT')">
+                                <v-tooltip :text="'카메라'">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="toggleProcessGPTActive" v-bind="props"
-                                            style="width:30px; height:30px; margin-left:12px;" :disabled="disableChat">
-                                            <img :style="ProcessGPTActive ? 'opacity:1' : 'opacity:0.5'"
-                                                src="@/assets/images/chat/chat-icon.png"
-                                                style="height:24px;"
-                                            />
+                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="capture" v-bind="props"
+                                            style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
+                                            <Icons :icon="'camera'" :size="20" />
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
-                            </v-row>
-                        </v-form>
+                                <v-tooltip :text="$t('chat.addImage')">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="uploadImage" v-bind="props"
+                                            style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
+                                            <Icons :icon="'add-media-image'" :size="20" />
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
+                                <v-tooltip text="Draft Agent">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-if="(type == 'instances' || type == 'chats') && !agentInfo.isRunning"
+                                            :disabled="!(newMessage || agentInfo.draftPrompt)" icon variant="text"
+                                            class="text-medium-emphasis" @click="requestDraftAgent" v-bind="props"
+                                            style="width:30px; height:30px; margin:1px 0px 0px 5px;">
+                                            <Icons :icon="'document-sparkle'" :size="20"  />
+                                        </v-btn>
+                                        <v-btn v-if="(type == 'instances' || type == 'chats') && agentInfo.isRunning" icon variant="text"
+                                            class="text-medium-emphasis" style="width:30px; height:30px;">
+                                            <v-progress-circular :size="20" indeterminate color="primary"></v-progress-circular>
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
+                                <v-form v-if="(type == 'instances' || type == 'chats' || type == 'consulting') && !agentInfo.isRunning"
+                                    ref="uploadForm" @submit.prevent="submitFile"
+                                    style="height:30px;"
+                                    class="chat-selected-file"
+                                >
+                                    <v-row class="ma-0 pa-0"
+                                        :style="file && file.length > 0 ? 'margin:-13px 0px 0px 7px !important;' : ''"
+                                    >
+                                    <v-tooltip :text="$t('chat.fileUpLoad')">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn v-if="file && file.length > 0" type="submit" 
+                                                v-bind="props"
+                                                icon variant="text"
+                                                class="text-medium-emphasis"
+                                                style="width:30px;
+                                                    height:30px;
+                                                    margin:12.5px 0px 0px 0px;"
+                                            >
+                                                <Icons :icon="'upload'" />
+                                            </v-btn>
+                                        </template>
+                                    </v-tooltip>
+                                    <v-file-input class="chat-file-up-load"
+                                        :class="{'chat-file-up-load-display': file && file.length > 0}"
+                                        :style="file && file.length > 0 ? '' : 'padding:5px 0px 0px 8px !important; width:30px !important; height:30px !important;'"
+                                        v-model="file"
+                                        label="Choose a file"
+                                        prepend-icon="mdi-paperclip"
+                                        outlined
+                                        :disabled="disableChat"
+                                    ></v-file-input>
+                                    <v-tooltip v-if="type == 'chats'" :text="ProcessGPTActive ? $t('chat.isDisableProcessGPT') : $t('chat.isEnableProcessGPT')">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn icon variant="text" class="text-medium-emphasis" @click="toggleProcessGPTActive" v-bind="props"
+                                                style="width:30px; height:30px; margin-left:12px;" :disabled="disableChat">
+                                                <img :style="ProcessGPTActive ? 'opacity:1' : 'opacity:0.5'"
+                                                    src="@/assets/images/chat/chat-icon.png"
+                                                    style="height:24px;"
+                                                />
+                                            </v-btn>
+                                        </template>
+                                    </v-tooltip>
+                                </v-row>
+                            </v-form>
+                        </div>
                     </v-row>
                 </div>
                 <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
@@ -445,12 +492,13 @@
                     style="font-size:20px !important; height:77px;" @input="handleTextareaInput"
                 >
                     <template v-slot:prepend-inner>
-                        <v-btn @click="recordingModeChange()"
+                        <v-btn @click="openChatMenu()"
                             density="comfortable"
                             icon
                             variant="text"
                         >
-                            <Icons :icon="'round-headset'"  />
+                            <v-icon v-if="!isOpenedChatMenu">mdi-plus</v-icon>
+                            <v-icon v-else>mdi-close</v-icon>
                         </v-btn>
                         <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
                             density="comfortable"
@@ -587,6 +635,11 @@ export default {
             file: null,
             isRender: false,
             chatHeight: 'height:calc(100vh - 300px)',
+            
+            // assistantChat
+            checked: true,
+            isOpenedChatMenu: false,
+            isViewWork: null,
         };
     },
     mounted() {
@@ -700,6 +753,13 @@ export default {
         }
     },
     methods: {
+        startWorkOrder(){
+            this.$emit('startWorkOrder');
+            this.isOpenedChatMenu = false
+        },
+        openChatMenu(){
+            this.isOpenedChatMenu = !this.isOpenedChatMenu
+        },
         reGenerateAgentAI(){
             this.$emit('reGenerateAgentAI');
         },
@@ -1062,6 +1122,16 @@ export default {
             this.editIndex = index;
             this.editText = this.messages[this.editIndex].content
         },
+        viewWork(idx){
+            if(this.isViewWork){
+                this.isViewWork = null
+            } else {
+                this.isViewWork = idx
+            }
+            this.$nextTick(() => {
+                this.$refs.scrollContainer.update(); 
+            });
+        },
         viewJSON(index) {
             this.isviewJSONStatus = !this.isviewJSONStatus
             if (!this.isViewJSON.includes(index)) {
@@ -1236,5 +1306,15 @@ pre {
     max-height: 300px;
     overflow-y: auto;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.chat-menu-background {
+    background-color: aliceblue;
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    margin-left: 10px;
 }
 </style>

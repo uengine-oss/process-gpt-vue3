@@ -1,6 +1,7 @@
 <script>
 import jp from 'jsonpath';
 
+import partialParse from "partial-json-parser";
 import BackendFactory from '@/components/api/BackendFactory';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { encodingForModel } from "js-tiktoken";
@@ -326,7 +327,9 @@ export default {
                     role: role ? role : 'user',
                     timeStamp: Date.now(),
                     content: role ? (typeof message == 'string' ? message : JSON.stringify(message)) : message.text,
-                    image: typeof message == 'string' ? "" : message.image
+                    image: typeof message == 'string' ? "" : message.image,
+                    descriptionList: message.descriptionList,
+                    checkList: message.checkList
                 };
             }
 
@@ -643,7 +646,11 @@ export default {
                 if (typeof response == 'string' && !this.isMentoMode) {
                     jsonData = this.extractJSON(response);
                     if(jsonData && jsonData.includes('{')){
-                        jsonData = JSON.parse(jsonData);
+                        try {
+                            jsonData = JSON.parse(jsonData);
+                        } catch(e) {
+                            jsonData = partialParse(jsonData)
+                        }
                     } else {
                         jsonData = null
                     }
