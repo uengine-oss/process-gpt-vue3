@@ -152,6 +152,7 @@
         "deleteProcessMessage": "Are you sure you want to delete this process?",
         "cancel": "Cancel",
         "simulate": "Simulate",
+        "preview": "Preview",
         "capture": "Download process image"
     },
     "ProcessVariable": {

@@ -1,6 +1,6 @@
 <template>
     <div class="form-text-area">
-        <v-textarea v-model="localModelValue" :disabled="localDisabled" :rows="rows">
+        <v-textarea v-model="localModelValue" :disabled="localDisabled" :readonly="localReadonly" :rows="rows" :variant="localReadonly ? 'filled' : 'outlined'">
             <template v-slot:label>
                 <span style="color:black;">
                     {{(localAlias && localAlias.length > 0) ? localAlias : localName}}
@@ -24,7 +24,8 @@ export default {
         name: String,
         alias: String,
         rows: String,
-        disabled: String
+        disabled: String,
+        readonly: String
     },
 
     data() {
@@ -35,6 +36,7 @@ export default {
             localAlias: "",
             localRows: "",
             localDisabled: false,
+            localReadonly: false,
 
             settingInfos: [
                 commonSettingInfos["localName"],
@@ -49,7 +51,8 @@ export default {
                         return null
                     }
                 },
-                commonSettingInfos["localDisabled"]
+                commonSettingInfos["localDisabled"],
+                commonSettingInfos["localReadonly"]
             ]
         };
     },
@@ -79,10 +82,13 @@ export default {
         this.localAlias = this.alias ?? ""
         this.localRows = this.rows ?? 5
         this.localDisabled = this.disabled === "true"
+        this.localReadonly = this.readonly === "true"
     }
 }
 </script>
 
 <style lang="scss">
-
+.form-text-area {
+    margin-bottom: 16px;
+}
 </style>

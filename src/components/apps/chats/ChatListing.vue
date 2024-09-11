@@ -1,12 +1,13 @@
 <script setup>
-import { ref, onMounted, computed, onUnmounted } from 'vue';
+import { ref, onMounted, computed, onUnmounted, watch } from 'vue';
 import { formatDistanceToNowStrict, differenceInSeconds } from 'date-fns';
 import { last } from 'lodash';
 
 const props = defineProps({
     chatRoomList: Array,
     userList: Array,
-    userInfo: Object
+    userInfo: Object,
+    chatRoomId: String
 });
 
 const emit = defineEmits(['chat-selected', 'create-chat-room', 'delete-chat-room']);
@@ -39,9 +40,18 @@ onUnmounted(() => {
     clearInterval(intervalId);
 });
 
+const selectedChatId = ref(null);
+
 const selectChatRoom = (chat) => {
+    selectedChatId.value = chat.id;
     emit('chat-selected', chat);
 };
+
+watch(() => props.chatRoomId, (newVal) => {
+    if (newVal) {
+        selectedChatId.value = newVal;
+    }
+}, { immediate: true });
 
 const chatItem = props.chatRoomList;
 const searchValue = ref('');
@@ -52,11 +62,25 @@ const filteredChats = computed(() => {
 });
 
 const getProfile = (email) => {
+    let basePath = window.location.port == '' ? window.location.origin:'' 
     if(email == "system@uengine.org"){
-        return '/src/assets/images/chat/chat-icon.png';
+        return `${basePath}/images/chat-icon.png`;
     } else {
         const user = props.userList.find(user => user.email === email);
-        return user && user.profile ? user.profile : '/images/defaultUser.png';
+        if (user && user.profile) {
+            if(user.profile.includes("defaultUser.png")){
+                return `${basePath}/images/defaultUser.png`;
+            } else {
+                const img = new Image();
+                img.src = user.profile;
+                img.onerror = () => {
+                    return `${basePath}/images/defaultUser.png`;
+                };
+                return user.profile;
+            }
+        } else {
+            return `${basePath}/images/defaultUser.png`;
+        }
     }
 };
 
@@ -194,8 +218,13 @@ const deleteChatRoom = () => {
     <perfect-scrollbar class="lgScroll">
         <v-list>
             <!---Single Item-->
-            <v-list-item :value="chat.id" color="primary" class="text-no-wrap chatItem" v-for="chat in filteredChats"
-                :key="chat.id" lines="two" @click="selectChatRoom(chat)">
+            <v-list-item 
+                :value="chat.id" 
+                color="primary" class="text-no-wrap chatItem" 
+                v-for="chat in filteredChats"
+                :key="chat.id" lines="two" @click="selectChatRoom(chat)"
+                :class="{ 'selected-chat': chat.id === selectedChatId }"
+            >
                 <!---Avatar-->
                 <template v-slot:prepend>
                     <v-avatar color="#f0f5f9" size="large"
@@ -275,5 +304,9 @@ const deleteChatRoom = () => {
 
 .lgScroll {
     height: calc(100vh - 310px);
+}
+
+.selected-chat {
+    background-color: aliceblue;
 }
 </style>

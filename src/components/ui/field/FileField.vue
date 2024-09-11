@@ -4,7 +4,8 @@
             :label="(localAlias && localAlias.length > 0) ? localAlias : localName"
             v-model="selectedFiles"
             :disabled="localDisabled"
-            variant="outlined"
+            :readonly="localReadonly"
+            :variant="localReadonly ? 'filled' : 'outlined'"
         ></v-file-input>
         <div v-if="selectedFiles && selectedFiles.length > 0 && imgBaseUrl && imgBaseUrl.includes('data:image/')">
             <p style="margin-top: -10px; margin-bottom: 10px;">* 해상도가 낮거나 이미지가 너무 작은 경우 GPT 모델이 인식하지 못할 수 있습니다.</p>
@@ -24,7 +25,8 @@ export default {
 
         name: String,
         alias: String,
-        disabled: String
+        disabled: String,
+        readonly: String
     },
 
     data() {
@@ -32,14 +34,15 @@ export default {
             localName: "",
             localAlias: "",
             localDisabled: false,
-            
+            localReadonly: false,
             selectedFiles: null,
             imgBaseUrl: null,
 
             settingInfos: [
                 commonSettingInfos["localName"],
                 commonSettingInfos["localAlias"],
-                commonSettingInfos["localDisabled"]
+                commonSettingInfos["localDisabled"],
+                commonSettingInfos["localReadonly"]
             ]
         };
     },
@@ -64,12 +67,15 @@ export default {
         this.localName = this.name ?? "name"
         this.localAlias = this.alias ?? ""
         this.localDisabled = this.disabled === "true"
-
+        this.localReadonly = this.readonly === "true"
+        
         this.$emit('update:modelValue', "")
     }
 };
 </script>
 
 <style lang="scss">
-
+.form-file-field {
+    margin-bottom: 16px;
+}
 </style>

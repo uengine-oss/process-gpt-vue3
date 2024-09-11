@@ -195,9 +195,14 @@ export default {
                                     size: 1
                                 });
                                 console.log(versionInfo);
-                                versionInfo.sort((a, b) => parseFloat(b.version) - parseFloat(a.version));
-                                const highestVersion = versionInfo.length > 0 ? versionInfo[0].version : null;
-                                me.information.version = highestVersion
+                                if(versionInfo) {
+                                    versionInfo.sort((a, b) => parseFloat(b.version) - parseFloat(a.version));
+                                    const highestVersion = versionInfo.length > 0 ? versionInfo[0].version : null;
+                                    me.information.version = highestVersion
+                                } else {
+                                    me.information.version = "0.0"
+                                }
+                                
                                 me.information.proc_def_id = defId
                                 me.information.name = defId
                             }

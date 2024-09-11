@@ -75,6 +75,7 @@
                                             :options="options"
                                             :isViewMode="true"
                                             :currentActivities="currentActivities"
+                                            :taskStatus="taskStatus"
                                             v-on:error="handleError"
                                             v-on:shown="handleShown"
                                             v-on:openDefinition="(ele) => openSubProcess(ele)"
@@ -190,7 +191,8 @@ export default {
         },
         currentComponent: null,
         currentActivities: [],
-        
+        taskStatus: null,
+
         // status variables
         updatedKey: 0,
         updatedDefKey: 0,
@@ -292,6 +294,7 @@ export default {
                             });
                         }
                     }
+                    me.taskStatus = await backend.getActivitiesStatus(me.workItem.worklist.instId);
 
                     if (me.mode == 'ProcessGPT') {
                         me.currentComponent = 'FormWorkItem';

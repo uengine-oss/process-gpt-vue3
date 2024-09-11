@@ -105,20 +105,19 @@
         </v-dialog>
         <v-dialog v-model="alertDialog" max-width="500" persistent>
             <v-card>
-                <v-card-text class="mt-2">
+                <v-card-text class="mt-2 alert-message">
                     {{ alertMessage }}
                 </v-card-text>
                 <v-card-actions class="justify-center">
-                    <v-btn v-if="alertType =='checkout'" color="primary" class="cp-check-out" variant="flat"
-                        @click="checkOut">확인</v-btn>
-                    <v-btn v-else-if="alertType =='checkin' && userName && userName == editUser " color="primary"
-                        class="cp-check-in" variant="flat" @click="checkIn">확인</v-btn>
-                    <v-btn v-else-if="alertType =='checkin' && userName && userName != editUser " color="primary"
-                        class="cp-check-in" variant="flat" @click="checkOut">체크인</v-btn>
-                    <v-btn v-else-if="alertType =='download'" color="primary" variant="flat" @click="download">다운로드</v-btn>
-                    <v-btn v-if="userName && userName == editUser" color="error" variant="flat"
-                        @click="alertDialog=false">닫기</v-btn>
-                    <v-btn v-else color="error" variant="flat" @click="alertDialog=false">취소</v-btn>
+                    <div v-for="(btn, index) in actionButtons" :key="index">
+                        <v-btn v-if="btn.show" :color="btn.color" :class="btn.class + (index > 0 ? ' ml-2' : '')" 
+                            variant="flat" @click="btn.action">
+                            {{ btn.text }}
+                        </v-btn>
+                    </div>
+                    <v-btn color="error" variant="flat" @click="alertDialog = false" class="ml-2">
+                        {{ (userName && userName === editUser) ? '닫기' : '취소' }}
+                    </v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -172,6 +171,53 @@ export default {
     computed: {
         useLock() {
             return window.$mode == "ProcessGPT"
+        },
+        actionButtons() {
+            return [
+                {
+                    show: this.alertType === 'checkout',
+                    text: '확인',
+                    color: 'primary',
+                    class: 'cp-check-out',
+                    action: this.checkOut   // 잠금 해제
+                },
+                {
+                    show: this.alertType === 'checkin' && this.userName && this.userName === this.editUser,
+                    text: '저장 후 체크인',
+                    color: 'success',
+                    class: 'cp-check-in',
+                    action: () => {
+                        this.checkIn();
+                        this.saveProcess();
+                    }
+                },
+                {
+                    show: this.alertType === 'checkin' && this.userName && this.userName === this.editUser,
+                    text: '취소 후 체크인',
+                    color: 'primary',
+                    class: 'cp-check-in',
+                    action: async () => {
+                        this.checkIn();
+                        await this.getProcessMap();
+                    }
+                },
+                {
+                    show: this.alertType === 'checkin' && this.userName && this.userName !== this.editUser,
+                    text: '체크인',
+                    color: 'primary',
+                    class: 'cp-check-in',
+                    action: async () => {
+                        await this.getProcessMap();
+                        this.checkOut();
+                    }
+                },
+                {
+                    show: this.alertType === 'download',
+                    text: '다운로드',
+                    color: 'primary',
+                    action: this.download
+                }
+            ];
         }
     },
     async created() {
@@ -274,7 +320,12 @@ export default {
             addSubProcess(majorProc);
         },
         closeConsultingDialog(){
-            const answer = window.confirm('저장하지 않은 정보는 모두 유실됩니다. 컨설팅을 종료하시겠습니까 ?');
+            let answer
+            if(this.ProcessPreviewMode){
+                answer = window.confirm('저장하지 않은 정보는 모두 유실됩니다.\n저장하시려면 우측 자물쇠 버튼을 클릭하여 저장하실 수 있습니다.\n\n컨설팅을 종료하시겠습니까?');
+            } else {
+                answer = window.confirm('저장하지 않은 정보는 모두 유실됩니다. 컨설팅을 종료하시겠습니까?');
+            }
             if (answer) {
                 this.ProcessPreviewMode = false
                 this.openConsultingDialog = false
@@ -351,7 +402,7 @@ export default {
         },
         async saveProcess() {
             await backend.putProcessDefinitionMap(this.value);
-            
+            await this.getProcessMap();
             this.closeAlertDialog();
         },
         async checkIn() {
@@ -363,9 +414,6 @@ export default {
             } else {
                 this.lock = false;
                 this.enableEdit = false;
-                if (this.userName == this.editUser) {
-                    await this.saveProcess();
-                }
                 if (this.useLock) {
                     await this.storage.delete('lock/process-map', { key: 'id' });
                 }
@@ -416,10 +464,13 @@ export default {
                                 me.editUser = lockObj.user_id;
                                 if (me.editUser == me.userName) {
                                     me.alertDialog = true;
-                                    me.alertMessage = '수정된 내용을 저장 및 체크인 하시겠습니까?';
+                                    me.alertMessage = '수정된 내용을 저장 혹은 체크인 하시겠습니까? \n' + 
+                                    '(※ 취소 후 체크인을 진행하는 경우 수정된 내용은 저장되지 않습니다.)';
                                 } else {
                                     me.alertDialog = true;
-                                    me.alertMessage = `현재 ${me.editUser} 님께서 수정 중입니다. 체크인 하는 경우 ${me.editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크인 하시겠습니까?`;
+                                    me.alertMessage = `현재 "${me.editUser}" 님께서 수정 중입니다. \n` + 
+                                    `(※ 체크인을 진행하는 경우 "${me.editUser}" 님이 수정한 내용은 손상되어 저장되지 않습니다.) \n` +
+                                    `체크인 하시겠습니까?`;
                                     me.enableEdit = false;
                                 }
                                 me.alertType = 'checkin';
@@ -461,3 +512,9 @@ export default {
     },
 }
 </script>
+
+<style scoped>
+.alert-message {
+    white-space: pre-line;
+}
+</style>

@@ -29,6 +29,9 @@ export default {
         isViewMode: {
             type: Boolean
         },
+        isPreviewMode: {
+            type: Boolean
+        },
         adminMode: {
             type: Boolean,
             default: false
@@ -43,6 +46,9 @@ export default {
             type: Object
         },
         taskStatus: {
+            type: Object
+        },
+        generateFormTask: {
             type: Object
         }
     },
@@ -92,29 +98,30 @@ export default {
             var canvas = self.bpmnViewer.get('canvas');
             canvas.zoom('fit-viewport');
 
-            if (self.isViewMode) {
-                // add marker to current activity elements
+            if (self.isPreviewMode) {
                 if (window.$mode == "ProcessGPT") {
                     if (self.currentActivities && self.currentActivities.length > 0) {
                         self.currentActivities.forEach((actId) => {
                             if (actId) canvas.addMarker(actId, 'highlight');
                         });
                     }
-                } else {
-                    if(self.taskStatus) {
-                        Object.keys(self.taskStatus).forEach((task) => {
-                            let taskStatus = self.taskStatus[task];
-                            if(taskStatus == 'Completed') {
-                                canvas.addMarker(task, 'completed');
-                            } else if(taskStatus == 'Running') {
-                                canvas.addMarker(task, 'running');
-                            } else if(taskStatus == 'Stopped') {
-                                canvas.addMarker(task, 'stopped');
-                            } else if(taskStatus == 'Cancelled') {
-                                canvas.addMarker(task, 'cancelled');
-                            }
-                        });
-                    }
+                } 
+            }
+            
+            if (self.isViewMode) {
+                if(self.taskStatus) {
+                    Object.keys(self.taskStatus).forEach((task) => {
+                        let taskStatus = self.taskStatus[task];
+                        if(taskStatus == 'Completed') {
+                            canvas.addMarker(task, 'completed');
+                        } else if(taskStatus == 'Running') {
+                            canvas.addMarker(task, 'running');
+                        } else if(taskStatus == 'Stopped') {
+                            canvas.addMarker(task, 'stopped');
+                        } else if(taskStatus == 'Cancelled') {
+                            canvas.addMarker(task, 'cancelled');
+                        }
+                    });
                 }
             }
 
@@ -407,6 +414,21 @@ export default {
                 eventBus.fire('config.changed', {
                     config: _options
                 });
+            },
+            deep: true
+        },
+        generateFormTask: {
+            handler(newVal) {
+                if (newVal && Object.keys(newVal).length > 0) {
+                    var canvas = this.bpmnViewer.get('canvas');
+                    Object.keys(newVal).forEach((activityId) => {
+                        if (newVal[activityId] === 'generating') {
+                            canvas.addMarker(activityId, 'running');
+                        } else if (newVal[activityId] === 'finished') {
+                            canvas.addMarker(activityId, 'generated');
+                        }
+                    });
+                }
             },
             deep: true
         }

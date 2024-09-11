@@ -56,6 +56,7 @@
                     :definitionChat="this"
                     :validationList="validationList"
                     :isAdmin="isAdmin"
+                    :generateFormTask="generateFormTask"
                     @update="updateDefinition"
                     @change="changeElement"
                 ></process-definition>
@@ -368,6 +369,7 @@ export default {
                     me.deleteDialog = false;
                     me.isDeleted = true;
                     me.EventBus.emit('definitions-updated');
+                    me.EventBus.emit('instances-updated');
                 }
             });
         },
@@ -451,17 +453,22 @@ export default {
         },
         async changeXML(info) {
             var me = this;
-            if (!info) return;
-            if (!info.id) return;
-            if (info.xml) {
-                me.processDefinition = await me.convertXMLToJSON(info.xml);
+            if(window.$mode == 'ProcessGPT') {
+                if (!info) return;
+                if (!info.id) return;
+                if (info.xml) {
+                    me.processDefinition = await me.convertXMLToJSON(info.xml);
+                }
+                await me.storage.putObject('proc_def', {
+                    id: info.id,
+                    name: info.name,
+                    bpmn: info.xml,
+                    definition: me.processDefinition
+                }); 
+            } else {
+                
             }
-            await me.storage.putObject('proc_def', {
-                id: info.id,
-                name: info.name,
-                bpmn: info.xml,
-                definition: me.processDefinition
-            });
+            
             me.bpmn = info.xml;
             me.definitionChangeCount++;
             me.toggleVerMangerDialog(false);

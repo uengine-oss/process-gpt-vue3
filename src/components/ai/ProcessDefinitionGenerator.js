@@ -8,6 +8,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
         // const processDefinitionMap = JSON.stringify(client.processDefinitionMap);
         // const processDefinition = JSON.stringify(client.processDefinition);
         const externalSystems = JSON.stringify(client.externalSystems);
+        const jsonStructure = this.getJsonStructure();
         this.previousMessages = [{
             role: 'system', 
             content: `
@@ -65,82 +66,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
             roles의 height는 roles가 있는 component에서 roleName과 role의 name이 같은 컴포넌트 기준으로 제일 첫번쨰의 y값에 위로 40, 제일 마지막 y값에 아래로 80추가함
             모든 roles는 겹치지 않으며 서로 붙어있음
             \`\`\`
-
-            {
-              "megaProcessId": "한글로 된 Mega Process 아이디",
-              "majorProcessId": "한글로 된 Major Process 아이디",
-              "processDefinitionName": "프로세스 명",
-              "processDefinitionId": "String-based unique id of the process definition in Snake case English without spaces",
-              "description": "한글로 된 프로세스 설명",
-              "isHorizontal": "true | false", 
-              "data": [{
-                 "name": "한글로 된 프로세스 변수명",
-                 "description": "한글로 된 프로세스 변수 설명",
-                 "type": "Text" | "Number" | "Date" | "Attachment" | "Form"
-              }],
-              "roles": [{
-                 "name": "role name",
-                 "resolutionRule": "how to find the actual user mapping for the role"
-              }],
-              "components" :
-              [{
-                  "componentType" :"Gateway",
-                  "id": "gateway_id",//id는 영어로 써야됨
-                  "name": "gateway name",
-                  "role": "role name", // You must use the name among the created "roles".,
-                  "source": "components id", //반드시 존재해야함
-                  "type": "ExclusiveGateway | ParallelGateway | InclusiveGateway | EventBasedGateway",
-                  "description": "선택적 또는 병렬 프로세스 흐름을 제어하는 게이트웨이 설명"
-                },
-                {
-                  "componentType" :"Activity",
-                  "id": "String-based unique id of the activity not including space",//id는 영어로 써야됨
-                  "name": "activity name",
-                  "type": "UserActivity" | "EMailActivity" | "ScriptActivity",
-                  "source": "components id", 반드시 존재해야함
-                  "description": "description of activity",
-                  "instruction": "instruction to user",
-                  "role": "role name", // You must use the name among the created "roles".
-                  "inputData": ["name of data for input"],
-                  "outputData": ["name of data for output"],
-                  "checkpoints":["checkpoint 1", "checkpoint 2"],
-                  "duration": "5"
-                 },
-                 {
-                  "componentType" :"Event",
-                  "id": "event_id",//id는 영어로 써야됨
-                  "name": "event name",
-                  "role": "role name", // You must use the name among the created "roles".,
-                  "source": "components id", 반드시 존재해야함,
-                  "type": "StartEvent | EndEvent | IntermediateCatchEvent | MessageEvent | TimerEvent | ErrorEvent | ConditionalEvent | SignalEvent | TerminationEvent | LinkEvent | CompensationEvent | MultipleEvent | ParallelEvent | EscalationEvent | CancelEvent",
-                  "description": "프로세스의 시작, 종료 또는 중간 이벤트 설명",
-                  "trigger": "이벤트 트리거 조건 (if applicable)"
-                }
-              ],
-              "sequences": [ 
-                {
-                    "source": "activity id of source activity or gateway id of source gateway", e.g. start_event_id, activity_id, gateway_id ...
-                    "target": "activity id of target activity or gateway id of target gateway", e.g. end, activity_id, gateway_id ...
-                    "condition": 
-                    {
-                      "key": "data의 name",
-                      "condition" : " == | != | > | >= | < | <=",
-                      "value": "비교할 값 (예 또는 아니오일 경우 true | false 로 표시 이때는 반드시 영문 소문자로)"
-                    } 기존 프로세스 정보중 "data" 내에 존재하는 값만을 사용하여 condition 을 생성해야한다. "data" 목록을 보고 condition 생성에 필요한 "data" 의 "name" 만으로 생성해야함." // 기존 프로세스 정보가 존재하는 경우에만 생성해야하며, 생성시 기존 프로세스 정보를 참고하여 컨디션을 생성해야한다.
-                }
-              ],
-              "participants": [
-                {
-                    "name": "participant name",
-                    "type": "Participant" | "ParticipantGroup",
-                    "system": "system name",
-                    "url": "api url",
-                    "spec": ""
-
-                }
-              ]
-            }
-             
+            ${jsonStructure}             
             \`\`\`
 
             - 프로세스 변경: 프로세스 정의의 일 부분이 변경될 때는 다음과 같이 변경된 부분만 리턴해줘:
@@ -226,5 +152,158 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
     setProcessDefinition(processDefinition) {
         this.previousMessages[0].content = this.previousMessages[0].content.replace('{{ 기존 프로세스 정보 }}', JSON.stringify(processDefinition));
     }
+
+    getJsonStructure() {
+      if (window.$mode === 'uEngine') {
+          return `
+          {
+              "megaProcessId": "한글로 된 Mega Process 아이디",
+              "majorProcessId": "한글로 된 Major Process 아이디",
+              "processDefinitionName": "프로세스 명",
+              "processDefinitionId": "String-based unique id of the process definition in Snake case English without spaces",
+              "description": "한글로 된 프로세스 설명",
+              "isHorizontal": "true | false", 
+              "data": [{
+                 "name": "한글로 된 프로세스 변수명",
+                 "description": "한글로 된 프로세스 변수 설명",
+                 "type": "Text" | "Number" | "Date" | "Attachment" | "Form"
+              }],
+              "roles": [{
+                 "name": "role name",
+                 "resolutionRule": "how to find the actual user mapping for the role"
+              }],
+              "components" :
+              [{
+                  "componentType" :"Gateway",
+                  "id": "gateway_id",//id는 영어로 써야됨
+                  "name": "gateway name",
+                  "role": "role name", // You must use the name among the created "roles".,
+                  "source": "components id", //반드시 존재해야함
+                  "type": "ExclusiveGateway | ParallelGateway | InclusiveGateway | EventBasedGateway",
+                  "description": "선택적 또는 병렬 프로세스 흐름을 제어하는 게이트웨이 설명"
+                },
+                {
+                  "componentType" :"Activity",
+                  "id": "String-based unique id of the activity not including space",//id는 영어로 써야됨
+                  "name": "activity name",
+                  "type": "UserActivity" | "EMailActivity" | "ScriptActivity",
+                  "source": "components id", 반드시 존재해야함
+                  "description": "description of activity",
+                  "instruction": "instruction to user",
+                  "role": "role name", // You must use the name among the created "roles".
+                  "inputData": ["name of data for input"],
+                  "outputData": ["name of data for output"],
+                  "checkpoints":["checkpoint 1", "checkpoint 2"],
+                  "duration": "5"
+                 },
+                 {
+                  "componentType" :"Event",
+                  "id": "event_id",//id는 영어로 써야됨
+                  "name": "event name",
+                  "role": "role name", // You must use the name among the created "roles".,
+                  "source": "components id", 반드시 존재해야함,
+                  "type": "StartEvent | EndEvent | IntermediateCatchEvent | MessageEvent | TimerEvent | ErrorEvent | ConditionalEvent | SignalEvent | TerminationEvent | LinkEvent | CompensationEvent | MultipleEvent | ParallelEvent | EscalationEvent | CancelEvent",
+                  "description": "프로세스의 시작, 종료 또는 중간 이벤트 설명",
+                  "trigger": "이벤트 트리거 조건 (if applicable)"
+                }
+              ],
+              "sequences": [ 
+                {
+                    "source": "activity id of source activity or gateway id of source gateway", e.g. start_event_id, activity_id, gateway_id ...
+                    "target": "activity id of target activity or gateway id of target gateway", e.g. end, activity_id, gateway_id ...
+                    "condition": 
+                    {
+                      "key": "data의 name",
+                      "condition" : " == | != | > | >= | < | <=",
+                      "value": "비교할 값 (예 또는 아니오일 경우 true | false 로 표시 이때는 반드시 영문 소문자로)"
+                    } 기존 프로세스 정보중 "data" 내에 존재하는 값만을 사용하여 condition 을 생성해야한다. "data" 목록을 보고 condition 생성에 필요한 "data" 의 "name" 만으로 생성해야함." // 기존 프로세스 정보가 존재하는 경우에만 생성해야하며, 생성시 기존 프로세스 정보를 참고하여 컨디션을 생성해야한다.
+                }
+              ],
+              "participants": [
+                {
+                    "name": "participant name",
+                    "type": "Participant" | "ParticipantGroup",
+                    "system": "system name",
+                    "url": "api url",
+                    "spec": ""
+
+                }
+              ]
+            }
+          `;
+      } else {
+          return `
+          {
+              "megaProcessId": "한글로 된 Mega Process 아이디",
+              "majorProcessId": "한글로 된 Major Process 아이디",
+              "processDefinitionName": "프로세스 명",
+              "processDefinitionId": "String-based unique id of the process definition in Snake case English without spaces",
+              "description": "한글로 된 프로세스 설명",
+              "isHorizontal": "true | false", 
+              "data": [{
+                 "name": "한글로 된 프로세스 변수명",
+                 "description": "한글로 된 프로세스 변수 설명",
+                 "type": "Text" | "Number" | "Date" | "Attachment"
+              }],
+              "roles": [{
+                 "name": "role name",
+                 "resolutionRule": "how to find the actual user mapping for the role"
+              }],
+              "components" :
+              [{
+                  "componentType" :"Gateway",
+                  "id": "gateway_id",//id는 영어로 써야됨
+                  "name": "gateway name",
+                  "role": "role name", // You must use the name among the created "roles".,
+                  "source": "components id", //반드시 존재해야함
+                  "type": "ExclusiveGateway | ParallelGateway | InclusiveGateway | EventBasedGateway",
+                  "description": "선택적 또는 병렬 프로세스 흐름을 제어하는 게이트웨이 설명"
+                },
+                {
+                  "componentType" :"Activity",
+                  "id": "String-based unique id of the activity not including space",//id는 영어로 써야됨
+                  "name": "activity name",
+                  "type": "UserActivity" | "EMailActivity" | "ScriptActivity",
+                  "source": "components id", 반드시 존재해야함
+                  "description": "description of activity",
+                  "instruction": "instruction to user",
+                  "role": "role name", // You must use the name among the created "roles".
+                  "inputData": ["name of data for input"],
+                  "outputData": ["name of data for output"],
+                  "checkpoints":["checkpoint 1", "checkpoint 2"],
+                  "duration": "5"
+                 },
+                 {
+                  "componentType" :"Event",
+                  "id": "event_id",//id는 영어로 써야됨, start event 는 start_event, end event 는 end_event 로 고정
+                  "name": "event name",
+                  "role": "role name", // You must use the name among the created "roles".,
+                  "source": "components id", 반드시 존재해야함,
+                  "type": "StartEvent | EndEvent | IntermediateCatchEvent | MessageEvent | TimerEvent | ErrorEvent | ConditionalEvent | SignalEvent | TerminationEvent | LinkEvent | CompensationEvent | MultipleEvent | ParallelEvent | EscalationEvent | CancelEvent",
+                  "description": "프로세스의 시작, 종료 또는 중간 이벤트 설명",
+                  "trigger": "이벤트 트리거 조건 (if applicable)"
+                }
+              ],
+              "sequences": [ 
+                {
+                    "source": "activity id of source activity or gateway id of source gateway", e.g. start_event_id, activity_id, gateway_id ...
+                    "target": "activity id of target activity or gateway id of target gateway", e.g. end, activity_id, gateway_id ...
+                    "condition": "Text-based condition based on user input" // 게이트웨이와 연결된 경우 최대한 비교 조건을 생성, 없으면 빈 문자열 리턴
+                }
+              ],
+              "participants": [
+                {
+                    "name": "participant name",
+                    "type": "Participant" | "ParticipantGroup",
+                    "system": "system name",
+                    "url": "api url",
+                    "spec": ""
+
+                }
+              ]
+            }
+          `;
+      }
+  }
 
 }

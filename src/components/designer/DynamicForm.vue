@@ -44,9 +44,10 @@ export default {
 
   watch: {
     formHTML: {
-      handler() {
-        this.cachedHFunc = null
-      }
+        handler(newHTML) {
+            this.updateFormHTML(newHTML);
+        },
+        immediate: true
     },
 
     modelValue: {
@@ -76,7 +77,8 @@ export default {
       renderedContent: "",
       formValues: {},
       cachedHFunc: null, // 중복 렌더링을 피하기 위해서
-      codeInfos: {}
+      codeInfos: {},
+      copyFormHTML: ''
     }
   },
 
@@ -100,7 +102,18 @@ export default {
       let error = null
       eval(this.codeInfos[name].code)
       return error
+    },
+
+    updateFormHTML(newHTML) {
+      this.copyFormHTML = newHTML;
+      this.cachedHFunc = null;
     }
+  },
+
+  created() {
+    this.EventBus.on('updatePreviewHTML', (newHTML) => {
+      this.updateFormHTML(newHTML);
+    });
   },
 
   /**
@@ -162,7 +175,7 @@ export default {
         })
       },
       template: `<div id="kEditor1">
-  ${me.formHTML}
+  ${me.copyFormHTML}
 </div>`
     }
 

@@ -4,6 +4,37 @@
             <v-col class="d-flex ma-0 pa-0" style="height: 100%">
                 <v-card style="border-radius: 0px !important; border: none; height: 100%" flat>
                     <v-row class="ma-0 pa-0 button-container">
+                        <div v-if="isPreviewMode" style="margin-right: 20px;">
+                            <v-tooltip text="이전 단계">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" @click="prevStep" class="btn-execute"
+                                        icon variant="text"
+                                        :disabled="currentStepIndex === 0"
+                                    >
+                                        <v-icon>mdi-arrow-left</v-icon>
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                            <v-tooltip text="다음 단계">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" @click="nextStep" class="btn-execute"
+                                        icon variant="text"
+                                        :disabled="currentStepIndex === stepIds.length - 1"
+                                    >
+                                        <v-icon>mdi-arrow-right</v-icon>
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                        </div>
+                        <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.preview')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props" @click="previewProcess" class="btn-execute"
+                                    icon variant="text"
+                                >
+                                    <v-icon>mdi-eye</v-icon>
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
                         <v-tooltip v-if="executable" :text="$t('processDefinition.simulate')">
                             <template v-slot:activator="{ props }">
                                 <v-switch color="primary" v-bind="props" v-model="isSimulate" false-value="false" true-value="true" class="btn-simulate"></v-switch>
@@ -56,8 +87,10 @@
                         :bpmn="bpmn"
                         :options="options"
                         :isViewMode="isViewMode"
+                        :isPreviewMode="isPreviewMode"
                         :currentActivities="currentActivities"
                         :taskStatus="taskStatus"
+                        :generateFormTask="generateFormTask"
                         v-on:error="handleError"
                         v-on:shown="handleShown"
                         v-on:openDefinition="(ele) => openSubProcess(ele)"
@@ -93,6 +126,7 @@
                         :processDefinitionId="definitionPath"
                         :processDefinition="processDefinition"
                         :validationList="validationList"
+                        :isPreviewMode="isPreviewMode"
                         v-on:change-sequence="onChangeSequence"
                         v-on:remove-shape="onRemoveShape"
                         v-on:change-shape="onChangeShape"
@@ -269,12 +303,12 @@ export default {
         processDefinition: Object,
         bpmn: String,
         isViewMode: Boolean,
-        currentActivities: Array,
         definitionChat: Object,
         definitionPath: String,
         isXmlMode: Boolean,
         validationList: Object,
-        isAdmin: Boolean
+        isAdmin: Boolean,
+        generateFormTask: Object,
     },
     data: () => ({
         panel: false,
@@ -308,6 +342,12 @@ export default {
         ],
         taskStatus: null,
         bpmnKey: 0,
+
+        // preview
+        isPreviewMode: false,
+        currentStepIndex: 0,
+        stepIds: [],
+        currentActivities: [],
         // definitionPath: null
     }),
     computed: {
@@ -475,7 +515,8 @@ export default {
         me.$try({
             action: async () => {
                 if(me.$route.params && me.$route.params.instId) {
-                    me.taskStatus = await backend.getActivitiesStatus(me.$route.params.instId);
+                    const instId =  window.$mode == 'ProcessGPT' ? atob(me.$route.params.instId) : me.$route.params.instId;
+                    me.taskStatus = await backend.getActivitiesStatus(instId);
                     me.bpmnKey++;
                 }
             }
@@ -486,6 +527,25 @@ export default {
         // this.processVariables = this.copyProcessDefinition.data
     },
     methods: {
+        updateCurrentStep(){
+            this.closePanel();
+            this.isPreviewMode = true
+            this.currentActivities = [this.stepIds[this.currentStepIndex]];
+            this.bpmnKey++;
+            this.openPanel(this.stepIds[this.currentStepIndex]);
+        },
+        prevStep() {
+            if (this.currentStepIndex > 0) {
+                this.currentStepIndex--;
+            }
+            this.updateCurrentStep();
+        },
+        nextStep() {
+            if (this.currentStepIndex < this.stepIds.length - 1) {
+                this.currentStepIndex++;
+            }
+            this.updateCurrentStep();
+        },
         setDefinition() {
             let self = this;
             const def = this.bpmnModeler.getDefinitions();
@@ -565,6 +625,20 @@ export default {
         changeElement() {
             this.$emit('change');
         },
+        previewProcess() {
+            this.stepId = [];
+            this.currentStepIndex = 0;
+
+            const activityIds = this.processDefinition.sequences
+                .flatMap(seq => [seq.source, seq.target])
+            this.stepIds = [...new Set(activityIds)];
+            if (this.stepIds.length > 0) {
+                this.isPreviewMode = true
+                this.currentActivities = [this.stepIds[this.currentStepIndex]];
+                this.bpmnKey++;
+                this.openPanel(this.stepIds[0]);
+            }
+        },
         executeProcess() {
             this.executeDialog = !this.executeDialog;
         },
@@ -578,7 +652,7 @@ export default {
                     };
                     const data = await backend.start(input);
                     if (data.instanceId) {
-                        const route = window.$mode == 'ProcessGPT' ? btoa(data.instanceId) : data.instanceId;
+                        const route = window.$mode == 'ProcessGPT' ? atob(data.instanceId) : data.instanceId;
                         me.$router.push(`/instancelist/${route}`);
                     }
                     me.EventBus.emit('instances-updated');
@@ -837,6 +911,9 @@ export default {
         closePanel() {
             this.element = null;
             this.panel = false;
+            this.isPreviewMode = false;
+            this.currentActivities = [];
+            this.bpmnKey++;
             this.$emit('change');
         },
         handleError() {

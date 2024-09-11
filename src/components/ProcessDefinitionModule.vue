@@ -3,13 +3,14 @@ import xml2js from 'xml2js';
 import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
 import FormGenerator from './ai/FormDesignGenerator';
+import FormDefinitionModule from './FormDefinitionModule.vue';
 import partialParse from "partial-json-parser";
 import JSON5 from 'json5';
 
 const backend = BackendFactory.createBackend();
 
 export default {
-    mixins: [],
+    mixins: [FormDefinitionModule],
     data: () => ({
         processDefinition: null,
         bpmn: null,
@@ -20,100 +21,103 @@ export default {
         lock: false,
         loading: false,
         isChanged: false,
+        generateFormTask: null,
     }),
     computed: {},
     mounted() {},
     beforeUnmount() {},
     async created() {},
     methods: {
-        extractJSON(inputString, checkFunction) {
-            try {
-                JSON5.parse(inputString); // if no problem, just return the whole thing
-                return inputString;
-            } catch (e) {}
-
-            if (this.hasUnclosedTripleBackticks(inputString)) {
-                inputString = inputString + '\n```';
-            }
-
-            // 정규 표현식 정의
-            //const regex = /^.*?`{3}(?:json)?\n(.*?)`{3}.*?$/s;
-            let regex = /```(?:json)?\s*([\s\S]*?)\s*```/;
-            
-            // 정규 표현식을 사용하여 입력 문자열에서 JSON 부분 추출
-            let match = inputString.match(regex);
-            // 매치된 결과가 있다면, 첫 번째 캡쳐 그룹(즉, JSON 부분)을 반환
-            if (match) {
-                if (checkFunction)
-                    match.forEach((shouldBeJson) => {
-                        const lastIndex = shouldBeJson.lastIndexOf('}');
-                        const result = shouldBeJson.slice(0, lastIndex + 1);
-                        if (checkFunction(result)) return result;
-                    });
-                else return match[1];
-            } else {
-                regex = /\{[\s\S]*\}/
-                match = inputString.match(regex);
-                return match && match[0] ? match[0] : null;
-            }
-
-            // 매치된 결과가 없으면 null 반환
-            return null;
-        },
-        checkedFormData() {
-            if (this.processDefinition && this.processDefinition.data) {
-                let formList = this.processDefinition.data.filter(data => data.type == 'Form');
-                if (formList && formList.length > 0) {
-                    formList.forEach(async (form) => {
-                        await this.generateForm(form);
-                    });
+        async checkedFormData() {
+            if (this.processDefinition && this.processDefinition.components) {
+                const activities = this.processDefinition.components.filter(component => component.componentType === 'Activity');
+                this.generateFormTask = {};
+                for (const activity of activities) {
+                    let inputs = null;
+                    if (activity.outputData && activity.outputData.length > 0) {
+                        inputs = activity.outputData ? activity.outputData.join(', ') : '';
+                    }
+                    let outputs = null;
+                    if (activity.inputData && activity.inputData.length > 0) {
+                        const uniqueInputs = activity.inputData.filter(item => !activity.outputData.includes(item));
+                        outputs = uniqueInputs.join(', ');
+                    }
+                    if (inputs || outputs) { 
+                        this.generateFormTask[activity.id] = 'generating';
+                        let generateMsg = `Please refer to the following and create a form.`;
+                        if (inputs) generateMsg += `Fields to enter: ${inputs}`;
+                        if (outputs) generateMsg += `Fields to read only without input: ${outputs}`;
+                        const formHtml = await this.generateForm(generateMsg, activity);
+                        // 완료 메세지
+                        let messageWriting = this.messages[this.messages.length - 1];
+                        messageWriting.isLoading = false;
+                        this.messages.push({
+                            "role": "system",
+                            "content": `${activity.name} 활동의 폼이 생성되었습니다.`,
+                            "timeStamp": Date.now(),
+                            "contentType": "html",
+                            "htmlContent": formHtml,
+                            "jsonContent": {}
+                        });
+                    }
                 }
+                this.generateFormTask = {};
             }
         },
-        async generateForm(form) {
-            let formHtml = await backend.getRawDefinition(form.name, { type: 'form' }) || null;
-            if (formHtml == null) {
-                const formGenerator = new FormGenerator(this, {
+        async generateForm(generateMsg, activity) {
+            var me = this;
+            return new Promise((resolve, reject) => {
+                let formHtml = null;
+                const formGenerator = new FormGenerator(me, {
                     isStream: true,
                     preferredLanguage: 'Korean',
                 });
-                formGenerator.client.genType = 'form'
-                // formGenerator.client.onModelCreated = null;
-                formGenerator.client.onFormGenerationFinished = async (response) => {
-                    let jsonData = this.extractJSON(response);
-                    jsonData = jsonData.match(/\{[\s\S]*\}/)[0]
-                        .replaceAll('\n', '')
-                        .replaceAll('`', `"`);
-                    jsonData = partialParse(jsonData);
-                    if (jsonData.htmlOutput) {
-                        const formData = {
-                            html: jsonData.htmlOutput,
-                            name: form.name,
-                        };
-                        await this.saveFormData(formData);
-                        // await backend.putRawDefinition(jsonData.htmlOutput, form.name, { type: 'form' });
-                        formHtml = jsonData.htmlOutput; // 생성된 HTML을 formHtml에 할당
-                    }
+                formGenerator.client.genType = 'form';
+                formGenerator.client.onFormCreated = async (response) => {
+                    let messageWriting = me.messages[me.messages.length - 1];
+                    messageWriting.content = response;
                 }
-                let newMessage = `'${form.name}' 폼을 생성해줘. ${form.description}`;
+                formGenerator.client.onFormGenerationFinished = async (response) => {
+                    try {
+                        let jsonData = this.extractLastJSON(response);
+                        if (jsonData.htmlOutput) {
+                            const html = await me.keditorContentHTMLToDynamicFormHTML(jsonData.htmlOutput)
+                            formHtml = await me.saveFormData(html, activity.id);
+                            if (formHtml) {
+                                me.generateFormTask[activity.id] = 'finished';
+                            }
+                            resolve(formHtml);
+                        } else {
+                            resolve(null);
+                        }
+                    } catch (error) {
+                        console.log(error);
+                        reject(error);
+                    }
+                };
                 formGenerator.previousMessages = [formGenerator.prevMessageFormat];
                 formGenerator.previousMessages.push({
                     role: 'user',
-                    content: newMessage
+                    content: generateMsg
                 });
-                await formGenerator.generate();
-            }
-            return formHtml; // 생성된 또는 기존의 formHtml 반환
+                formGenerator.generate();
+                me.messages.push({
+                    "role": "system",
+                    "content": `${activity.name} 활동의 폼을 생성합니다.`,
+                    "timeStamp": Date.now(),
+                    "isLoading": true
+                })
+            });
         },
-        async saveFormData(formData) {
-            const activities = this.processDefinition.components.filter(component => component.componentType === 'Activity');
-            const activity = activities.find(activity => activity.inputData.includes(formData.name));
+        async saveFormData(html, activityId) {
             const options = {
                 type: 'form',
                 proc_def_id: this.processDefinition.processDefinitionId,
-                activity_id: activity.id
+                activity_id: activityId
             };
-            await backend.putRawDefinition(formData.html, formData.name, options);
+            const formId = `${options.proc_def_id}_${options.activity_id}_form`;
+            await backend.putRawDefinition(html, formId, options);
+            return html;
         },
         extractPropertyNameAndIndex(jsonPath) {
             let match;
@@ -506,26 +510,36 @@ export default {
                     let params = xmlDoc.createElementNS('http://uengine', 'uengine:json');
                     params.setAttribute('key', 'condition');
                     if(sequence.condition) {
-                        if(sequence.condition.key && sequence.condition.condition && sequence.condition.value)  {
-                            
-                        const conditionJson = {
-                            condition: {
-                                _type:"org.uengine.kernel.Evaluate",
-                                key: sequence.condition.key,
-                                condition: sequence.condition.condition,
-                                value: sequence.condition.value
+                        if(sequence.condition.key && sequence.condition.condition && sequence.condition.value)  {    
+                            const conditionJson = {
+                                condition: {
+                                    _type:"org.uengine.kernel.Evaluate",
+                                    key: sequence.condition.key,
+                                    condition: sequence.condition.condition,
+                                    value: sequence.condition.value
+                                }
                             }
+                            if(!sequence.name || sequence.name == '') {
+                                let sequenceName = sequence.condition.condition + '' + sequence.condition.value;
+                                sequenceFlow.setAttribute('name', sequenceName);
+                            }
+                            params.textContent = JSON.stringify(conditionJson);
+                            root.appendChild(params);
+                            extensionElements.appendChild(root);
+                            sequenceFlow.appendChild(extensionElements);
+                        } else if (typeof sequence.condition === 'string') {
+                            const conditionJson = {
+                                condition: sequence.condition
+                            }
+                            if(!sequence.name || sequence.name == '') {
+                                let sequenceName = sequence.condition;
+                                sequenceFlow.setAttribute('name', sequenceName);
+                            }
+                            params.textContent = JSON.stringify(conditionJson);
+                            root.appendChild(params);
+                            extensionElements.appendChild(root);
+                            sequenceFlow.appendChild(extensionElements);
                         }
-                        if(!sequence.name || sequence.name == '') {
-                            let sequenceName = sequence.condition.condition + '' + sequence.condition.value;
-                            sequenceFlow.setAttribute('name', sequenceName);
-                        }
-                        params.textContent = JSON.stringify(conditionJson);
-                        root.appendChild(params);
-                        extensionElements.appendChild(root);
-                        sequenceFlow.appendChild(extensionElements);
-                        }
-
                     }
                     process.appendChild(sequenceFlow);
 
@@ -1788,7 +1802,7 @@ export default {
                 context: me,
                 action: async () => {
                     me.loading = true;
-                    await me.setDefinitionInfo(info.name, info.version)
+                    await me.setDefinitionInfo(info)
                     const store = useBpmnStore();
                     let modeler = store.getModeler;
                     let xmlObj;
@@ -1923,6 +1937,10 @@ export default {
                     processDefinitionId = this.$route.params.id;
                 }
 
+                if (processDefinitionId == 'chat') {
+                    processDefinitionId = this.processDefinition.processDefinitionId;
+                }
+
                 function ensureArray(item) {
                     return Array.isArray(item) ? item : item ? [item] : [];
                 }
@@ -1984,13 +2002,13 @@ export default {
                     let dataTmp =
                         process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] && process['bpmn:extensionElements']['uengine:properties']['uengine:variable']
                             ? (Array.isArray(process['bpmn:extensionElements']['uengine:properties']['uengine:variable'])
-                                  ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable']
-                                  : [process['bpmn:extensionElements']['uengine:properties']['uengine:variable']]
-                              ).map((varData) => ({
-                                  name: varData.name,
-                                  description: varData.name + ' description',
-                                  type: varData.type
-                              }))
+                                ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable']
+                                : [process['bpmn:extensionElements']['uengine:properties']['uengine:variable']]
+                            ).map((varData) => ({
+                                name: varData.name,
+                                description: varData.name + ' description',
+                                type: varData.type
+                            }))
                             : [];
                     data = data.concat(dataTmp);
                     instanceNamePattern = process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] && process['bpmn:extensionElements']['uengine:properties']['uengine:json'] ? JSON.parse(process['bpmn:extensionElements']['uengine:properties']['uengine:json']).instanceNamePattern : null;
@@ -2075,7 +2093,11 @@ export default {
                                 if (form && form.variableForHtmlFormContext && form.variableForHtmlFormContext.name) {
                                     task.tool = 'formHandler:' + form.variableForHtmlFormContext.name;
                                 } else {
-                                    task.tool = '';
+                                    if (window.$mode == 'ProcessGPT') {
+                                        task.tool = 'formHandler:' + processDefinitionId + '_' + task.id + '_form';
+                                    } else {
+                                        task.tool = '';
+                                    }
                                 }
                                 return task;
                             } catch (e) {
@@ -2110,19 +2132,26 @@ export default {
                             properties: gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties'] && gateway['bpmn:extensionElements']['uengine:properties']['uengine:json'] ? gateway['bpmn:extensionElements']['uengine:properties']['uengine:json'] : '{}'
                         }))
                     ],
-                    sequences: sequenceFlows.map((flow) => ({
-                        id: flow.id,
-                        source: flow.sourceRef,
-                        target: flow.targetRef,
-                        condition:
-                            flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties']
-                                ? JSON.parse(flow['bpmn:extensionElements']['uengine:properties']['uengine:json']).condition || ''
-                                : '',
-                        properties:
-                            flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties']
-                                ? flow['bpmn:extensionElements']['uengine:properties']['uengine:json'] || '{}'
-                                : '{}'
-                    })),
+                    sequences: sequenceFlows.map((flow) => {
+                        let condition = null;
+                        if (window.$mode == 'ProcessGPT') {
+                            condition = flow.condition || '';
+                        } else {
+                            condition = flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties']
+                                ? JSON.parse(flow['bpmn:extensionElements']['uengine:properties']['uengine:json']).condition || flow.condition
+                                : '';
+                        }
+                        return {
+                            id: flow.id,
+                            source: flow.sourceRef,
+                            target: flow.targetRef,
+                            condition: condition,
+                            properties:
+                                flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties']
+                                    ? flow['bpmn:extensionElements']['uengine:properties']['uengine:json'] || '{}'
+                                    : '{}'
+                        }
+                    }),
                     participants: participants,
                     instanceNamePattern: instanceNamePattern
                 };
@@ -2133,9 +2162,8 @@ export default {
                 throw error;
             }
         },
-        async setDefinitionInfo(name, version) {  
+        async setDefinitionInfo(info) {  
             return new Promise (function (resolve) {
-                console.log(version)
                 const store = useBpmnStore();
                 let modeler = store.getModeler;
                 const definitions = modeler.getDefinitions();
@@ -2178,8 +2206,9 @@ export default {
                 } else {
                     processJson = {};
                 }
-                processJson.definitionName = name;
-                processJson.version = version
+                processJson.definitionName = info.name;
+                processJson.version = info.version
+                processJson.shortDescription = {"text": info.message}
 
                 uengineProperties.json = JSON.stringify(processJson)
                 // processJson.instanceNamePattern ? processJson.instanceNamePattern : '';
@@ -2252,3 +2281,4 @@ export default {
     }
 };
 </script>
+'
