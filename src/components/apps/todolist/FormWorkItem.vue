@@ -5,7 +5,7 @@
             <v-btn v-if="!isDryRun" @click="saveTask" color="primary" class="mr-2" rounded>중간 저장</v-btn>
             <v-btn @click="executeProcess" color="primary" rounded>제출 완료</v-btn>
         </div>
-        <div class="from-work-item-mobile" v-if="!isCompleted">
+        <div class="form-work-item-mobile" v-if="!isCompleted">
             <v-tooltip text="중간 저장">
                 <template v-slot:activator="{ props }">
                     <v-btn @click="saveTask" icon v-bind="props" density="comfortable">
@@ -26,7 +26,7 @@
     <div class="pa-4">
         <!-- <FormMapper></FormMapper> -->
         <!-- <Instruction :workItem="workItem" /> -->
-        <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData"></DynamicForm>
+        <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form"></DynamicForm>
         <AudioTextarea v-if="!isCompleted" v-model="newMessage" :workItem="workItem" @close="close" />
         <Checkpoints ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
     </div>
@@ -307,11 +307,18 @@ export default {
     }
 };
 </script>
+
 <style>
-.from-work-item-mobile {
+.dynamic-form .v-field--disabled {
+    opacity: 1 !important;
+    background-color: #eaeaea !important;
+    pointer-events: none !important;
+}
+
+.form-work-item-mobile {
     display: none;
 }
-.from-work-item-mobile button {
+.form-work-item-mobile button {
     margin-right:10px;
 }
 
@@ -319,7 +326,7 @@ export default {
     .from-work-item-pc {
         display: none;
     }
-    .from-work-item-mobile {
+    .form-work-item-mobile {
         display: block;
     }
 }

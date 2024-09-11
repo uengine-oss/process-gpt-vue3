@@ -150,5 +150,7 @@ export default {
 </script>
 
 <style lang="scss">
-
+.form-radio-field {
+    margin-bottom: 16px;
+}
 </style>

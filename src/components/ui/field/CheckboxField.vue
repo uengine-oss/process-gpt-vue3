@@ -152,5 +152,7 @@ export default {
 </script>
 
 <style lang="scss">
-
+.form-checkbox-field {
+    margin-bottom: 16px;
+}
 </style>

@@ -75,5 +75,7 @@ export default {
 </script>
 
 <style lang="scss">
-
+.form-file-field {
+    margin-bottom: 16px;
+}
 </style>
