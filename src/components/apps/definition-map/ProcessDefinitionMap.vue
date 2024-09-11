@@ -105,7 +105,7 @@
         </v-dialog>
         <v-dialog v-model="alertDialog" max-width="500" persistent>
             <v-card>
-                <v-card-text class="mt-2">
+                <v-card-text class="mt-2 alert-message">
                     {{ alertMessage }}
                 </v-card-text>
                 <v-card-actions class="justify-center">
@@ -183,7 +183,7 @@ export default {
                 },
                 {
                     show: this.alertType === 'checkin' && this.userName && this.userName === this.editUser,
-                    text: '저장',
+                    text: '저장 후 체크인',
                     color: 'success',
                     class: 'cp-check-in',
                     action: () => {
@@ -193,7 +193,7 @@ export default {
                 },
                 {
                     show: this.alertType === 'checkin' && this.userName && this.userName === this.editUser,
-                    text: '체크인',
+                    text: '취소 후 체크인',
                     color: 'primary',
                     class: 'cp-check-in',
                     action: async () => {
@@ -206,7 +206,10 @@ export default {
                     text: '체크인',
                     color: 'primary',
                     class: 'cp-check-in',
-                    action: this.checkOut   // 잠금 해제
+                    action: async () => {
+                        await this.getProcessMap();
+                        this.checkOut();
+                    }
                 },
                 {
                     show: this.alertType === 'download',
@@ -461,11 +464,13 @@ export default {
                                 me.editUser = lockObj.user_id;
                                 if (me.editUser == me.userName) {
                                     me.alertDialog = true;
-                                    me.alertMessage = '수정된 내용을 저장 혹은 체크인 하시겠습니까?' + 
-                                    '(체크인만 하는 경우 수정된 내용은 저장되지 않습니다.)';
+                                    me.alertMessage = '수정된 내용을 저장 혹은 체크인 하시겠습니까? \n' + 
+                                    '(※ 취소 후 체크인을 진행하는 경우 수정된 내용은 저장되지 않습니다.)';
                                 } else {
                                     me.alertDialog = true;
-                                    me.alertMessage = `현재 ${me.editUser} 님께서 수정 중입니다. 체크인 하는 경우 ${me.editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크인 하시겠습니까?`;
+                                    me.alertMessage = `현재 "${me.editUser}" 님께서 수정 중입니다. \n` + 
+                                    `(※ 체크인을 진행하는 경우 "${me.editUser}" 님이 수정한 내용은 손상되어 저장되지 않습니다.) \n` +
+                                    `체크인 하시겠습니까?`;
                                     me.enableEdit = false;
                                 }
                                 me.alertType = 'checkin';
@@ -507,3 +512,9 @@ export default {
     },
 }
 </script>
+
+<style scoped>
+.alert-message {
+    white-space: pre-line;
+}
+</style>
