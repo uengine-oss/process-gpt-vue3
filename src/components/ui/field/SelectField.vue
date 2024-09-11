@@ -174,5 +174,7 @@ export default {
 </script>
 
 <style lang="scss">
-
+.form-select-field {
+    margin-bottom: 16px;
+}
 </style>

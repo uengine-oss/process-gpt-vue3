@@ -419,10 +419,14 @@ export default {
         },
         generateFormTask: {
             handler(newVal) {
-                if (newVal && newVal.length > 0) {
+                if (newVal && Object.keys(newVal).length > 0) {
                     var canvas = this.bpmnViewer.get('canvas');
-                    newVal.forEach((activityId) => {
-                        canvas.addMarker(activityId, 'running');
+                    Object.keys(newVal).forEach((activityId) => {
+                        if (newVal[activityId] === 'generating') {
+                            canvas.addMarker(activityId, 'running');
+                        } else if (newVal[activityId] === 'finished') {
+                            canvas.addMarker(activityId, 'generated');
+                        }
                     });
                 }
             },

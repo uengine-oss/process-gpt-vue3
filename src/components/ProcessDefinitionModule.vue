@@ -510,26 +510,36 @@ export default {
                     let params = xmlDoc.createElementNS('http://uengine', 'uengine:json');
                     params.setAttribute('key', 'condition');
                     if(sequence.condition) {
-                        if(sequence.condition.key && sequence.condition.condition && sequence.condition.value)  {
-                            
-                        const conditionJson = {
-                            condition: {
-                                _type:"org.uengine.kernel.Evaluate",
-                                key: sequence.condition.key,
-                                condition: sequence.condition.condition,
-                                value: sequence.condition.value
+                        if(sequence.condition.key && sequence.condition.condition && sequence.condition.value)  {    
+                            const conditionJson = {
+                                condition: {
+                                    _type:"org.uengine.kernel.Evaluate",
+                                    key: sequence.condition.key,
+                                    condition: sequence.condition.condition,
+                                    value: sequence.condition.value
+                                }
                             }
+                            if(!sequence.name || sequence.name == '') {
+                                let sequenceName = sequence.condition.condition + '' + sequence.condition.value;
+                                sequenceFlow.setAttribute('name', sequenceName);
+                            }
+                            params.textContent = JSON.stringify(conditionJson);
+                            root.appendChild(params);
+                            extensionElements.appendChild(root);
+                            sequenceFlow.appendChild(extensionElements);
+                        } else if (typeof sequence.condition === 'string') {
+                            const conditionJson = {
+                                condition: sequence.condition
+                            }
+                            if(!sequence.name || sequence.name == '') {
+                                let sequenceName = sequence.condition;
+                                sequenceFlow.setAttribute('name', sequenceName);
+                            }
+                            params.textContent = JSON.stringify(conditionJson);
+                            root.appendChild(params);
+                            extensionElements.appendChild(root);
+                            sequenceFlow.appendChild(extensionElements);
                         }
-                        if(!sequence.name || sequence.name == '') {
-                            let sequenceName = sequence.condition.condition + '' + sequence.condition.value;
-                            sequenceFlow.setAttribute('name', sequenceName);
-                        }
-                        params.textContent = JSON.stringify(conditionJson);
-                        root.appendChild(params);
-                        extensionElements.appendChild(root);
-                        sequenceFlow.appendChild(extensionElements);
-                        }
-
                     }
                     process.appendChild(sequenceFlow);
 
@@ -2122,19 +2132,26 @@ export default {
                             properties: gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties'] && gateway['bpmn:extensionElements']['uengine:properties']['uengine:json'] ? gateway['bpmn:extensionElements']['uengine:properties']['uengine:json'] : '{}'
                         }))
                     ],
-                    sequences: sequenceFlows.map((flow) => ({
-                        id: flow.id,
-                        source: flow.sourceRef,
-                        target: flow.targetRef,
-                        condition:
-                            flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties']
-                                ? JSON.parse(flow['bpmn:extensionElements']['uengine:properties']['uengine:json']).condition || ''
-                                : '',
-                        properties:
-                            flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties']
-                                ? flow['bpmn:extensionElements']['uengine:properties']['uengine:json'] || '{}'
-                                : '{}'
-                    })),
+                    sequences: sequenceFlows.map((flow) => {
+                        let condition = null;
+                        if (window.$mode == 'ProcessGPT') {
+                            condition = flow.condition || '';
+                        } else {
+                            condition = flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties']
+                                ? JSON.parse(flow['bpmn:extensionElements']['uengine:properties']['uengine:json']).condition || flow.condition
+                                : '';
+                        }
+                        return {
+                            id: flow.id,
+                            source: flow.sourceRef,
+                            target: flow.targetRef,
+                            condition: condition,
+                            properties:
+                                flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties']
+                                    ? flow['bpmn:extensionElements']['uengine:properties']['uengine:json'] || '{}'
+                                    : '{}'
+                        }
+                    }),
                     participants: participants,
                     instanceNamePattern: instanceNamePattern
                 };

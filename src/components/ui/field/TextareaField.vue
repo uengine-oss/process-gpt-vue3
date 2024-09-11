@@ -88,5 +88,7 @@ export default {
 </script>
 
 <style lang="scss">
-
+.form-text-area {
+    margin-bottom: 16px;
+}
 </style>

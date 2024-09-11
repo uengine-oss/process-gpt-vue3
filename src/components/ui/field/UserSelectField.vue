@@ -100,5 +100,7 @@ export default {
 </script>
 
 <style lang="scss">
-
+.form-user-select-field {
+    margin-bottom: 16px;
+}
 </style>

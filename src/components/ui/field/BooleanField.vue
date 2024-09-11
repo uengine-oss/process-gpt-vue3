@@ -74,5 +74,7 @@ export default {
 </script>
 
 <style lang="scss">
-
+.form-boolean-field {
+    margin-bottom: 16px;
+}
 </style>

@@ -288,7 +288,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                 {
                     "source": "activity id of source activity or gateway id of source gateway", e.g. start_event_id, activity_id, gateway_id ...
                     "target": "activity id of target activity or gateway id of target gateway", e.g. end, activity_id, gateway_id ...
-                    "condition": "Text-based condition based on user input" // 없으면 빈 문자열 리턴
+                    "condition": "Text-based condition based on user input" // 게이트웨이와 연결된 경우 최대한 비교 조건을 생성, 없으면 빈 문자열 리턴
                 }
               ],
               "participants": [
