@@ -92,27 +92,7 @@ const CACHE_EXPIRATION_TIME = 60 * 60 * 1000;
 // 인증 정보 캐싱
 
 async function setupSupabase() {
-    if(window.$mode != "ProcessGPT") return;
     window.$jms = false;
-
-    const cachedAuth = localStorage.getItem('cachedAuth');
-    const cachedTimestamp = localStorage.getItem('cachedAuthTimestamp');
-
-    if (cachedAuth && cachedTimestamp) {
-        const currentTime = new Date().getTime();
-        if (currentTime - parseInt(cachedTimestamp) < CACHE_EXPIRATION_TIME) {
-            // 캐시가 유효한 경우
-            const authData = JSON.parse(cachedAuth);
-            window.$supabase = createClient(authData.url, authData.key, {
-                auth: {
-                    autoRefreshToken: false,
-                    persistSession: false
-                }
-            });
-            console.log('Supabase 클라이언트가 캐시에서 로드되었습니다.');
-            return;
-        }
-    }
 
     if (window.location.host.includes('localhost') || window.location.host.includes('192.168') || window.location.host.includes('127.0.0.1') || 
         window.$mode == 'uEngine') {
@@ -267,14 +247,6 @@ async function setupSupabase() {
                             }
                         }
                     } 
-
-                    // 새로운 인증 정보를 캐시에 저장
-                    const authData = {
-                        url: res.url,
-                        key: res.secret
-                    };
-                    localStorage.setItem('cachedAuth', JSON.stringify(authData));
-                    localStorage.setItem('cachedAuthTimestamp', new Date().getTime().toString());
 
                 } else {
                     alert('해당 주소는 존재하지 않는 주소입니다. 가입 후 이용하세요.');
