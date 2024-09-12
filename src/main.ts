@@ -1,4 +1,3 @@
-
 import '@/scss/style.scss';
 import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor';
 import { fakeBackend } from '@/utils/helpers/fake-backend';
@@ -83,15 +82,9 @@ declare global {
     }
 }
 
-
-window.$mode = 'uEngine';
-// window.$mode = 'ProcessGPT';
-
-
-const CACHE_EXPIRATION_TIME = 60 * 60 * 1000; 
-// 인증 정보 캐싱
-
 async function setupSupabase() {
+    // window.$mode = 'uEngine';
+    window.$mode = 'ProcessGPT';
     window.$jms = false;
 
     if (window.location.host.includes('localhost') || window.location.host.includes('192.168') || window.location.host.includes('127.0.0.1') || 
@@ -257,121 +250,44 @@ async function setupSupabase() {
     }
 }
 
-async function setupKeycloak() {
-    if(window.$mode != "uEngine") return;
-    const cachedKeycloak = localStorage.getItem('cachedKeycloak');
-    const cachedKeycloakTimestamp = localStorage.getItem('cachedKeycloakTimestamp');
-
-    if (cachedKeycloak && cachedKeycloakTimestamp) {
-        const currentTime = new Date().getTime();
-        if (currentTime - parseInt(cachedKeycloakTimestamp) < CACHE_EXPIRATION_TIME) {
-            // 캐시가 유효한 경우
-            const keycloakData = JSON.parse(cachedKeycloak);
-            // 캐시된 Keycloak 정보 사용
-            localStorage.setItem('accessToken', keycloakData.token);
-            localStorage.setItem('author', keycloakData.email);
-            localStorage.setItem('userName', keycloakData.username);
-            localStorage.setItem('email', keycloakData.email);
-            localStorage.setItem('uid', keycloakData.sub);
-            localStorage.setItem('isAdmin', 'true');
-            localStorage.setItem('picture', '');
-            console.log('Keycloak 인증 정보가 캐시에서 로드되었습니다.');
-            return;
-        }
-    }
-
-    // 캐시가 없거나 만료된 경우, 새로운 Keycloak 인증 수행
-    let initOptions = {
-        url: `http://localhost:9090/`,
-        realm: `uengine`,
-        clientId: `uengine`,
-        onLoad: 'login-required' as KeycloakOnLoad
-    };
-
-    let keycloak = new Keycloak(initOptions);
-    try {
-        const authenticated = await keycloak.init({
-            onLoad: initOptions.onLoad
-        });
-        if (authenticated && keycloak.token && keycloak.tokenParsed) {
-            // 새로운 인증 정보를 캐시에 저장
-            const keycloakData = {
-                token: keycloak.token,
-                email: keycloak.tokenParsed.email,
-                username: keycloak.tokenParsed.preferred_username,
-                sub: keycloak.tokenParsed.sub
-            };
-            localStorage.setItem('cachedKeycloak', JSON.stringify(keycloakData));
-            localStorage.setItem('cachedKeycloakTimestamp', new Date().getTime().toString());
-
-            // 로컬 스토리지에 인증 정보 저장
-            localStorage.setItem('accessToken', keycloak.token);
-            localStorage.setItem('author', keycloak.tokenParsed.email);
-            if (keycloak.tokenParsed.preferred_username) {
-                localStorage.setItem('userName', keycloak.tokenParsed.preferred_username);
-            }
-            if (keycloak.tokenParsed.email) {
-                localStorage.setItem('email', keycloak.tokenParsed.email);
-            }
-            if (keycloak.tokenParsed.sub) {
-                localStorage.setItem('uid', keycloak.tokenParsed.sub);
-            }
-            localStorage.setItem('isAdmin', 'true');
-            localStorage.setItem('picture', '');
-        }
-    } catch (error) {
-            console.error('Failed to initialize Keycloak:', error);
-        console.error('Failed to initialize Keycloak:', error);
-    }
-}
 async function initializeApp() {
     await setupSupabase();
-    await setupKeycloak();
-
     const app = createApp(App);
-
-    // Vue Monaco Editor 플러그인 설정
     app.use(VueMonacoEditorPlugin, {
         paths: {
+            // The recommended CDN config
             vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.43.0/min/vs'
         }
     });
-
-    // Vuex 스토어 사용
     app.use(store);
-
-    // 전역 메서드 설정
     // @ts-ignore
     app.config.globalProperties.$try = app._component.methods.try;
     // @ts-ignore
     window.$try = app._component.methods.try;
-
-    // 이벤트 버스 설정
     app.config.globalProperties.EventBus = emitter;
     app.config.globalProperties.OGBus = OpenGraphEmitter;
     app.config.globalProperties.ModelingBus = ModelingEmitter;
-
-    // 전역 상태 관리자 설정
+    // 전역 상태 관리자를 전역 속성으로 추가
     app.config.globalProperties.$globalState = globalState;
 
-    // 컴포넌트 등록
     app.component('modeler-image-generator', ModelerImageGenerator);
-    app.component('EasyDataTable', Vue3EasyDataTable);
-    app.component('Icon', Icon);
-    app.component('Icons', Icons);
-    app.component('DetailComponent', DetailComponent);
+    // modeler-image-generator
+    // Use plugins
 
-    // 플러그인 로드
     loadOpengraphComponents(app);
     loadbpmnComponents(app);
 
-    // 기타 플러그인 및 라이브러리 설정
     fakeBackend();
     app.use(router);
+    app.component('EasyDataTable', Vue3EasyDataTable);
     app.use(PerfectScrollbar);
     app.use(createPinia());
     app.use(VCalendar, {});
     app.use(VueTablerIcons);
+    app.component('Icon', Icon);
+    app.component('Icons', Icons)
+    app.component('DetailComponent', DetailComponent);
+    // app.use(print);
     app.use(VueRecaptcha, {
         siteKey: '6LdzqbcaAAAAALrGEZWQHIHUhzJZc8O-KSTdTTh_',
         alterDomain: false // default: false
@@ -379,19 +295,20 @@ async function initializeApp() {
     app.use(i18n);
     app.use(Maska);
     app.use(VueApexCharts);
-    app.use(vuetify);
+    app.use(vuetify).mount('#app');
     app.use(setLocale);
+    //ScrollTop Use
+    // app.use(VueScrollTo);
     app.use(VueScrollTo, {
         duration: 1000,
         easing: 'ease',
         offset: -50
     });
-
-    // 날짜 라이브러리 설정
+    // vue-ganttastic
     dayjs.locale('ko');
     app.use(ganttastic);
 
-    // 전역 복사 기능 추가
+    // 전역으로 복사 가능하게 추가
     document.addEventListener('keydown', function (event) {
         if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
             let selection = window.getSelection();
@@ -405,20 +322,50 @@ async function initializeApp() {
                     }
                 );
             }
-            event.preventDefault();
+            event.preventDefault(); // 기본 이벤트 방지
         }
     });
 
-    // Vue Diff 플러그인 설정
     app.use(VueDiff, {
         componentName: 'vuediff'
     });
-
-    // 앱 마운트
-    app.mount('#app');
-
-    console.log('Application initialized successfully');
+    let initOptions = {
+        url: `http://localhost:9090/`,
+        realm: `uengine`,
+        clientId: `uengine`,
+        onLoad: 'login-required' as KeycloakOnLoad // Explicitly cast to KeycloakOnLoad
+    };
+    (async () => {
+        let keycloak = new Keycloak(initOptions);
+        try {
+            const authenticated = await keycloak.init({
+                onLoad: initOptions.onLoad
+            });
+            console.log(`User is ${authenticated ? 'authenticated' : 'not authenticated'}`);
+            if (authenticated) {
+                localStorage.setItem('keycloak', `${keycloak.token}`);
+                console.log(keycloak.tokenParsed);
+                if (keycloak.token && keycloak.tokenParsed) {
+                    localStorage.setItem('accessToken', `${keycloak.token}`);
+                    localStorage.setItem('author', `${keycloak.tokenParsed.email}`);
+                    localStorage.setItem('userName', `${keycloak.tokenParsed.preferred_username}`);
+                    localStorage.setItem('email', `${keycloak.tokenParsed.email}`);
+                    localStorage.setItem('uid', `${keycloak.tokenParsed.sub}`);
+                    localStorage.setItem('isAdmin', 'true');
+                    localStorage.setItem('picture', '');
+                }
+            }
+            // const response = await fetch('http://localhost:9090/api/users', {
+            //     headers: {
+            //         accept: 'application/json',
+            //         authorization: `Bearer ${keycloak.token}`
+            //     }
+            // });
+            // console.log(response.json());
+        } catch (error) {
+            console.error('Failed to initialize adapter:', error);
+        }
+    })();
 }
-
 
 initializeApp();
