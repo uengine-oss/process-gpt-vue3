@@ -510,8 +510,8 @@ export default {
             this.copyProcessDefinition = value;
         });
 
-        
 
+        
         me.$try({
             action: async () => {
                 if(me.$route.params && me.$route.params.instId) {
@@ -590,7 +590,13 @@ export default {
                 obj.name= variable.$attrs.name,
                 obj.type= variable.$attrs.type
                 // console.log(obj, variable)
-                self.processVariables.push(obj);
+                if (self.processVariables.findIndex((val) => val.name == obj.name && val.type == obj.type) == -1) {
+                    self.processVariables.push(obj);
+                }
+
+                if (!variable.$parent) {
+                    variable.$parent = uengineProperties;
+                }
             });
         },
 
