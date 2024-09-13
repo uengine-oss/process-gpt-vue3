@@ -4,7 +4,7 @@
         <div>
             <v-row :class="isMobile ? 'ma-0 pa-2 mt-2' : 'ma-0 pa-4 pt-0'">
                 <v-col class="pa-0" :cols="isMobile ? 12 : isSimulate ? 6 : 6">
-                    <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
+                    <v-alert v-if="bpmn || subBpmn" class="pa-0 mt-4" color="#2196F3" variant="outlined">
                         <div
                             class="pa-2"
                             :style="
@@ -26,7 +26,6 @@
                                         style="height: 100%;"
                                     ></BpmnUengine>
                                 </div>
-                                <div v-else class="no-bpmn-found-text">No BPMN found</div>
                                 <div v-if="subBpmn">
                                     <div v-for="(sub, key) in subBpmn"
                                          style="border-bottom: 1px solid #E0E0E0;"
@@ -46,6 +45,11 @@
                             </div>
                         </div>
                     </v-alert>
+                    <v-row v-else class="ma-0 pa-0 test-process-skeleton" style="height: 100%;">
+                        <v-col cols="12" class="pa-4">
+                            <v-skeleton-loader type="card"></v-skeleton-loader>
+                        </v-col>
+                    </v-row>
                 </v-col>
                 <v-col class="pa-4" :cols="6">
                     <v-card-title class="pa-0">Worklist</v-card-title>
@@ -73,7 +77,7 @@
                             <v-card
                                 v-for="task in taskList"
                                 variant="outlined"
-                                class="pa-4 mb-2"
+                                class="pa-4 mb-0"
                                 :key="task.taskId"
                             >
                                 <div>
@@ -94,7 +98,11 @@
                                 ></test-variables>
                             </v-card>
                         </div>
-                        <div v-else>Loading...</div>
+                        <v-row v-else class="ma-0 pa-0 test-process-work-list-skeleton" style="height: 100%;">
+                            <v-col cols="12" class="pa-0">
+                                <v-skeleton-loader type="card"></v-skeleton-loader>
+                            </v-col>
+                        </v-row>
                     </div>
                 </v-col>
             </v-row>
