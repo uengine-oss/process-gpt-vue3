@@ -477,5 +477,35 @@
     "System" : {
         "description" : "Description",
         "edit" : "Edit"
+    },
+    "PaletteProvider" : {
+        "undoCmdZ": "Undo (Cmd + Z)",
+        "undoCtrlZ": "Undo (Ctrl + Z)",
+        "RedoCmdShiftZ": "Redo (Cmd + Shift + Z)",
+        "RedoCtrlY": "Redo (Ctrl + Y)",
+        "handTool": "Activate the hand tool",
+        "lassoTool": "Activate the lasso tool",
+        "spaceTool": "Activate the create/remove space tool",
+        "globalConnectTool": "Activate the global connect tool",
+        "participantCollapsed": "Create Pool/Participant",
+        "participantExpanded": "Create Pool/Participant",
+        "StartEvent": "Create Start Event",
+        "IntermediateThrowEvent": "Create Intermediate Throw Event",
+        "EndEvent": "Create End Event",
+        "ExclusiveGateway": "Create Exclusive Gateway",
+        "Task": "Create Task",
+        "SubProcess": "Create Sub Process",
+        "DataStoreReference": "Create Data Store",
+        "DataObjectReference": "Create Data Object",
+        "Participant": "Create Participant",
+        "expandedSubProcess": "Create expanded SubProcess",
+        "dataStore": "Create Data Store",
+        "dataObject": "Create Data Object"
+    },
+    "chatListing": {
+        "search": "search"
+    },
+    "userListing": {
+        "search": "User search"
     }
 }

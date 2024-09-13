@@ -1,5 +1,5 @@
 import { assign } from 'min-dash';
-
+import { i18n } from '@/main';
 
 export default function PaletteProvider(palette,
    create, 
@@ -64,11 +64,12 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     }
 
     var shortType = type.replace(/^bpmn:/, '');
+    var translatedShortType = i18n.global.t(`PaletteProvider.${shortType}`);
 
     return {
       group: group,
       className: className,
-      title: title || 'Create ' + shortType,
+      title: title || translatedShortType,
       action: {
         dragstart: createListener,
         click: createListener
@@ -89,7 +90,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     'undo': {
       group: 'tools',
       className: 'mdi mdi-undo-variant',
-      title: isMac? 'Undo (Cmd + Z)' :'Undo (Ctrl + Z)',
+      title: isMac ? i18n.global.t('PaletteProvider.undoCmdZ') : i18n.global.t('PaletteProvider.undoCtrlZ'),
       action: {
         click: function(event) {
           commandStack.undo();
@@ -99,7 +100,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     'redo': {
       group: 'tools',
       className: 'mdi mdi-redo-variant',
-      title: isMac? 'Redo (Cmd + Shift + Z)' :'Redo (Ctrl + Y)',
+      title: isMac ? i18n.global.t('PaletteProvider.RedoCmdShiftZ') : i18n.global.t('PaletteProvider.RedoCtrlY'),
       action: {
         click: function(event) {
           commandStack.redo();
@@ -109,7 +110,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     'hand-tool': {
       group: 'tools',
       className: 'bpmn-icon-hand-tool',
-      title: translate('Activate the hand tool'),
+      title: i18n.global.t('PaletteProvider.handTool'),
       action: {
         click: function(event) {
           handTool.activateHand(event);
@@ -123,7 +124,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     'lasso-tool': {
       group: 'tools',
       className: 'bpmn-icon-lasso-tool',
-      title: 'Activate the lasso tool',
+      title: i18n.global.t('PaletteProvider.lassoTool'),
       action: {
         click: function(event) {
           lassoTool.activateSelection(event);
@@ -133,7 +134,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     'space-tool': {
       group: 'tools',
       className: 'bpmn-icon-space-tool',
-      title: 'Activate the create/remove space tool',
+      title: i18n.global.t('PaletteProvider.spaceTool'),
       action: {
         click: function(event) {
           spaceTool.activateSelection(event);
@@ -143,7 +144,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     'global-connect-tool': {
       group: 'tools',
       className: 'bpmn-icon-connection-multi',
-      title: translate('Activate the global connect tool'),
+      title: i18n.global.t('PaletteProvider.globalConnectTool'),
       action: {
         click: function(event) {
           globalConnect.toggle(event);
@@ -170,19 +171,19 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
       'bpmn:Task', 'activity', 'bpmn-icon-task'
     ),
     'create.subprocess-expanded': createAction(
-      'bpmn:SubProcess', 'activity', 'bpmn-icon-subprocess-expanded', 'Create expanded SubProcess',
+      'bpmn:SubProcess', 'activity', 'bpmn-icon-subprocess-expanded', i18n.global.t('PaletteProvider.expandedSubProcess'),
       { isExpanded: true }
     ),
     'create.data-store': createAction(
-      'bpmn:DataStoreReference', 'data-object', 'bpmn-icon-data-store', translate('Create Data Store')
+      'bpmn:DataStoreReference', 'data-object', 'bpmn-icon-data-store', i18n.global.t('PaletteProvider.dataStore')
     ),
     'create.data-object': createAction(
-      'bpmn:DataObjectReference', 'data-object', 'bpmn-icon-data-object', translate('Create Data Object')
+      'bpmn:DataObjectReference', 'data-object', 'bpmn-icon-data-object', i18n.global.t('PaletteProvider.dataObject')
     ),
     'create.participant-expanded': {
       group: 'collaboration',
       className: 'bpmn-icon-participant',
-      title: 'Create Pool/Participant',
+      title: i18n.global.t('PaletteProvider.participantCollapsed'),
       action: {
         dragstart: function(event) {
           createParticipant(event, false, true);
@@ -195,7 +196,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     'create.participant-collapsed': {
       group: 'collaboration',
       className: 'bpmn-icon-participant icon-rotate-90',
-      title: 'Create Vertical Pool/Participant',
+      title: i18n.global.t('PaletteProvider.participantExpanded'),
       action: {
         dragstart: function(event) {
           createParticipant(event, true, false);

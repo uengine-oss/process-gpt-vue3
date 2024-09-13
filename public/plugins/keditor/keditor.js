@@ -471,9 +471,9 @@
             
             var filterHtml = '';
             filterHtml += '<div id="keditor-' + lowerCaseType + '-snippets-filter-wrapper" class="keditor-ui keditor-snippets-filter-wrapper">';
-            filterHtml += '     <input type="text" id="keditor-' + lowerCaseType + '-snippets-search" class="keditor-ui keditor-snippets-search" value="" placeholder="Type to search" />';
+            filterHtml += '     <input type="text" id="keditor-' + lowerCaseType + '-snippets-search" class="keditor-ui keditor-snippets-search" value="" placeholder="타입 검색" />';
             filterHtml += '     <select id="keditor-' + lowerCaseType + '-snippets-filter" class="keditor-ui keditor-snippets-filter" style="font-size: small; height: 40px;">';
-            filterHtml += '         <option value="" selected="selected">All</option>';
+            filterHtml += '         <option value="" selected="selected">모두</option>';
             
             for (var i = 0; i < categories.length; i++) {
                 filterHtml += '     <option value="' + categories[i] + '">' + categories[i] + '</option>';

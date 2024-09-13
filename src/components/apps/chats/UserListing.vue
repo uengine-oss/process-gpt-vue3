@@ -1,10 +1,15 @@
 <template>
     <v-sheet>
         <div class="px-6 pt-3">
-            <div class="d-flex">
-                <v-text-field variant="outlined" v-model="searchValue" append-inner-icon="mdi-magnify"
-                    placeholder="Search User" hide-details density="compact"></v-text-field>
-            </div>
+            <v-row class="align-center flex-fill border border-borderColor header-search rounded-pill px-5 ma-0 pa-0"
+                style="min-width:100%;"
+            >
+                <Icons :icon="'magnifer-linear'" :size="22" />
+                <v-text-field v-model="searchValue" variant="plain" density="compact"
+                    class="position-relative pt-0 ml-3 custom-placeholer-color" :placeholder="$t('userListing.search')"
+                    single-line hide-details
+                ></v-text-field>
+            </v-row>
         </div>
     </v-sheet>
     <perfect-scrollbar class="lgScroll">
