@@ -15,17 +15,24 @@
                 <Icons :icon="'plus'" />
             </v-btn>
         </v-row>
-        <div class="ma-0 pa-0">
-            <v-row v-if="selectedTask" class="ma-0 pa-0">
-                <v-col v-for="val,idx in selectedTask" :key="idx"
-                    class="pa-0 pb-2 pr-2"
-                >
-                    <test-variable :idx="idx" :selected-task="val" @execute="e => runExistingTest(e)"></test-variable>
-                </v-col>
-            </v-row>
-            <v-card-text v-else
-                class="pa-0"
-            >
+        <div
+            style="height: calc(100vh - 380px);
+            color: black;
+            overflow: auto;"
+        >
+            <v-table v-if="selectedTask">
+                <thead>
+                    <tr>
+                        <th class="text-left">키값</th>
+                        <th class="text-left">밸류</th>
+                        <th class="text-left">작업</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <test-variable v-for="(val, idx) in selectedTask" :key="idx" :idx="idx" :selected-task="val" @execute="e => runExistingTest(e)"></test-variable>
+                </tbody>
+            </v-table>
+            <v-card-text v-else class="pa-0">
                 No Data
             </v-card-text>
         </div>

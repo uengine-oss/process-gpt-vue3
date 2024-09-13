@@ -6,7 +6,14 @@
                 <WorkItem :definitionId="definitionId" :is-simulate="isSimulate" :isDryRun="true" :dryRunWorkItem="dryRunWorkItem" @close="closeDialog"></WorkItem>
             </div>
             <div v-else-if="dryRunWorkItem == undefined">
-                Loading...
+                <v-row class="ma-0 pa-0 dry-run-process-skeleton" style="height: 100%;">
+                    <v-col cols="4" class="pa-4">
+                        <v-skeleton-loader type="card"></v-skeleton-loader>
+                    </v-col>
+                    <v-col cols="8" class="pa-4">
+                        <v-skeleton-loader type="card"></v-skeleton-loader>
+                    </v-col>
+                </v-row>
             </div>
             <div v-else>
                 Not Found...

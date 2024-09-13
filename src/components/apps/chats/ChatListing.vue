@@ -1,12 +1,13 @@
 <script setup>
-import { ref, onMounted, computed, onUnmounted } from 'vue';
+import { ref, onMounted, computed, onUnmounted, watch } from 'vue';
 import { formatDistanceToNowStrict, differenceInSeconds } from 'date-fns';
 import { last } from 'lodash';
 
 const props = defineProps({
     chatRoomList: Array,
     userList: Array,
-    userInfo: Object
+    userInfo: Object,
+    chatRoomId: String
 });
 
 const emit = defineEmits(['chat-selected', 'create-chat-room', 'delete-chat-room']);
@@ -39,9 +40,18 @@ onUnmounted(() => {
     clearInterval(intervalId);
 });
 
+const selectedChatId = ref(null);
+
 const selectChatRoom = (chat) => {
+    selectedChatId.value = chat.id;
     emit('chat-selected', chat);
 };
+
+watch(() => props.chatRoomId, (newVal) => {
+    if (newVal) {
+        selectedChatId.value = newVal;
+    }
+}, { immediate: true });
 
 const chatItem = props.chatRoomList;
 const searchValue = ref('');
@@ -134,8 +144,13 @@ const deleteChatRoom = () => {
     <v-sheet>
         <div class="px-6 pt-3">
             <div class="d-flex">
-                <v-text-field variant="outlined" v-model="searchValue" append-inner-icon="mdi-magnify"
-                    placeholder="Search Contact" hide-details density="compact"></v-text-field>
+                <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5 ">
+                    <Icons :icon="'magnifer-linear'" :size="22" />
+                    <v-text-field v-model="searchValue" variant="plain" density="compact"
+                        class="position-relative pt-0 ml-3 custom-placeholer-color" :placeholder="$t('chatListing.search')"
+                        single-line hide-details
+                    ></v-text-field>
+                </div>
                 <v-btn density="comfortable" icon @click="openDialog" style="margin-left: 10px;">
                     <v-icon>mdi-chat-plus</v-icon>
                 </v-btn>
@@ -208,8 +223,13 @@ const deleteChatRoom = () => {
     <perfect-scrollbar class="lgScroll">
         <v-list>
             <!---Single Item-->
-            <v-list-item :value="chat.id" color="primary" class="text-no-wrap chatItem" v-for="chat in filteredChats"
-                :key="chat.id" lines="two" @click="selectChatRoom(chat)">
+            <v-list-item 
+                :value="chat.id" 
+                color="primary" class="text-no-wrap chatItem" 
+                v-for="chat in filteredChats"
+                :key="chat.id" lines="two" @click="selectChatRoom(chat)"
+                :class="{ 'selected-chat': chat.id === selectedChatId }"
+            >
                 <!---Avatar-->
                 <template v-slot:prepend>
                     <v-avatar color="#f0f5f9" size="large"
@@ -289,5 +309,9 @@ const deleteChatRoom = () => {
 
 .lgScroll {
     height: calc(100vh - 310px);
+}
+
+.selected-chat {
+    background-color: aliceblue;
 }
 </style>

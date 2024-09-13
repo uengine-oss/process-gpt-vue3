@@ -25,7 +25,21 @@
                 <v-btn color="pink" variant="text" @click="snackbar = false">x </v-btn>
             </template>
         </v-snackbar>
-        <RouterView></RouterView>
+        <!-- v-if="!loadScreen" -->
+        <div v-if="!loadScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: white;"
+            class="main-page-skeleton"
+        >
+            <v-row class="ma-0 pa-0" style="height: 100%;">
+                <v-col cols="2" class="pa-4">
+                    <v-skeleton-loader type="card"></v-skeleton-loader>
+                </v-col>
+                <v-col cols="10" class="pa-4">
+                    <v-skeleton-loader class="main-page-skeleton-right1" type="card"></v-skeleton-loader>
+                    <v-skeleton-loader class="main-page-skeleton-right2" type="card"></v-skeleton-loader>
+                </v-col>
+            </v-row>
+        </div>
+        <RouterView v-else></RouterView>
     </div>
 </template>
 
@@ -33,6 +47,7 @@
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { createClient } from '@supabase/supabase-js';
 import { RouterView } from 'vue-router';
+
 export default {
     components: {
         RouterView
@@ -45,10 +60,14 @@ export default {
         snackbarMessageDetail: null,
         snackbar: false,
         snackbarColor: null,
-        storage: null
+        storage: null,
+        loadScreen: false,
     }),
     async created() {
         window.$app_ = this;
+        window.addEventListener('load', () => {
+            this.loadScreen = true;
+        });
     },
     methods: {
         async try(options, parameters, options_) {
