@@ -25,6 +25,7 @@ interface SidebarItem {
     to: string;
     disable: boolean;
     isMobile?: boolean;
+    isVisible?: boolean;
 }
 
 const sidebarItems = ref<SidebarItem[]>([
@@ -33,26 +34,30 @@ const sidebarItems = ref<SidebarItem[]>([
         icon: 'write',
         to: '/definition-map',
         disable: false,
-        isMobile: false
+        isMobile: false,
+        isVisible: true
     },
     {
         title: 'chats.title',
         icon: 'chat-round-unread-line-duotone',
         to: '/chats',
-        disable: false
+        disable: false,
+        isVisible: window.$mode === 'ProcessGPT'
     },
     {
         title: 'headerMenu.todoList',
         icon: 'overview',
         to: '/todolist',
-        disable: false
+        disable: false,
+        isVisible: true
     },
     // 240819 캘린더 복구
     {
         title: 'headerMenu.calendar',
         icon: 'calendar-line-duotone',
         to: '/calendar',
-        disable: false
+        disable: false,
+        isVisible: window.$mode === 'ProcessGPT'
     }
 ]);
 
@@ -137,7 +142,7 @@ function navigateTo(item: SidebarItem) {
                         </template>
                     </v-tooltip>
                     <template v-for="item in sidebarItems" :key="item.title">
-                        <v-tooltip v-if="!item.isMobile" :text="$t(item.title)">
+                        <v-tooltip v-if="!item.isMobile && item.isVisible" :text="$t(item.title)">
                             <template v-slot:activator="{ props }">
                                 <v-btn icon v-bind="props" @click="navigateTo(item)">
                                     <Icons :icon="item.icon"/>
