@@ -47,6 +47,7 @@ export default {
         processDefinition: Object,
         element: Object,
         isViewMode: Boolean,
+        isPreviewMode: Boolean,
         role: String,
         roles: Array,
         variableForHtmlFormContext: Object,
@@ -86,6 +87,7 @@ export default {
         activity: {
             deep: true,
             handler(newVal, oldVal) {
+                console.log(this.processDefinition)
                 this.EventBus.emit('process-definition-updated', this.processDefinition);
             }
         },
@@ -100,6 +102,9 @@ export default {
     methods: {
         async init() {
             var me = this;
+            if(me.isPreviewMode){
+                me.activeTab = 'preview'
+            }
             me.formId = me.copyUengineProperties.variableForHtmlFormContext? me.copyUengineProperties.variableForHtmlFormContext.name : '';
             if (!me.formId || me.formId == '') {
                 me.formId = me.processDefinition.processDefinitionId + '_' + me.element.id + '_form';
@@ -143,10 +148,12 @@ export default {
                     await me.backend.putRawDefinition(me.tempFormHtml, me.formId, options);
                 }
 
+                const taskFields = me.processDefinition.data.map(data => { 
+                    return {name: data.name, type: data.type}
+                });
                 const fields = me.extractFields(me.tempFormHtml);
                 fields.forEach(field => {
-                    const existVar = me.processDefinition.data.find(data => 
-                        data.name === field.text && data.type === field.type);
+                    const existVar = taskFields.find(data => data.name === field.text && data.type === field.type);
                     if (!existVar) {
                         me.$emit('addUengineVariable', {
                             name: field.text,

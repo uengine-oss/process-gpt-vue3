@@ -56,6 +56,7 @@
                     :definitionChat="this"
                     :validationList="validationList"
                     :isAdmin="isAdmin"
+                    :generateFormTask="generateFormTask"
                     @update="updateDefinition"
                     @change="changeElement"
                 ></process-definition>
@@ -396,6 +397,7 @@ export default {
                     me.deleteDialog = false;
                     me.isDeleted = true;
                     me.EventBus.emit('definitions-updated');
+                    me.EventBus.emit('instances-updated');
                 }
             });
         },

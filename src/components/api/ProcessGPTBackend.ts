@@ -82,10 +82,8 @@ class ProcessGPTBackend implements Backend {
                 if (instList && instList.length > 0) {
                     await Promise.all([
                         await storage.delete('todolist', { match: { proc_def_id: defId } }),
+                        await storage.delete('proc_inst', { match: { proc_def_id: defId } }),
                     ]);
-                    // instList.forEach(async (item: any) => {
-                    //     await this.deleteInstance(item.id);
-                    // });
                 }
                 
                 await storage.delete(`proc_def/${defId}`, { key: 'id' });
@@ -943,8 +941,25 @@ class ProcessGPTBackend implements Backend {
     async getActivitiesStatus(instId: string) {
         // instance/{instanceId}/completed
         //TODO: 현재 프로세스 진행상태 추가
-
-        return null;
+        try {
+            const list = await storage.list(`worklist`, { match: { 'proc_inst_id': instId } });
+            let result: any = {};
+            list.forEach((item: any) => {
+                if(item.status == 'DONE') {
+                    result[item.activity_id] = 'Completed';
+                } else if(item.status == 'IN_PROGRESS') {
+                    result[item.activity_id] = 'Running';
+                } else if(item.status == 'PENDING') {
+                    result[item.activity_id] = 'Pending';
+                } else if(item.status == 'TODO') {
+                    result[item.activity_id] = 'New';
+                }
+            });
+            return result;
+        } catch (e) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
     }
 
     async getEventList(instanceId: string) {

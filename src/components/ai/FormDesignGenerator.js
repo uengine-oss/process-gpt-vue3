@@ -90,6 +90,8 @@ export default class FormDesignGenerator extends AIGenerator{
           7. items에 들어가는 각각의 키는 고유해야 해. 즉, 중복된 키가 존재하면 안돼.
           8. 모든 컴포넌트는 반드시 'col-sm-{숫자}'로 지정된 div 안에 들어가야 해.
           9. 여기서 제시한 태그의 속성만을 적어야 하고, 반드시 전부 다 적어줘야 해.
+          10. class='row'로 선언된 div 태그를 포함해서 모든 태그의 속성 중 name 은 무조건 고유해야 해. 즉, 중복된 name 이 절대 존재하면 안돼.
+          11. readonly 속성과 disabled 속성은 다른 개념이야. readonly 속성은 필드를 읽기 전용으로 만들어주는 것이고, disabled 속성은 필드를 비활성화 시키는 것이야.
 
           사용해야 하는 컴포넌트는 다음과 같아.
           ${componentInfosPromptStr}

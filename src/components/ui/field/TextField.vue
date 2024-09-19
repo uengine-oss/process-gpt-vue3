@@ -1,6 +1,6 @@
 <template>
     <div class="form-text-field">
-        <v-text-field v-model="localModelValue" :type="localType" :disabled="localDisabled" :id="id">
+        <v-text-field v-model="localModelValue" :type="localType" :disabled="localDisabled" :readonly="localReadonly" :id="id" :variant="localReadonly ? 'filled' : 'outlined'">
             <template v-slot:label>
                 <span style="color:black;">
                     {{(localAlias && localAlias.length > 0) ? localAlias : localName}}
@@ -24,7 +24,8 @@ export default {
         name: String,
         alias: String,
         type: String,
-        disabled: String
+        disabled: String,
+        readonly: String
     },
 
     data() {
@@ -46,7 +47,8 @@ export default {
                     settingType: "select",
                     settingValue: ["text", "number", "email", "url", "date", "datetime-local", "month", "week", "time", "password", "tel", "color"]
                 },
-                commonSettingInfos["localDisabled"]
+                commonSettingInfos["localDisabled"],
+                commonSettingInfos["localReadonly"]
             ],
             id: (Date.now().toString() + Math.random().toString(36).substring(2, 5))
         };
@@ -93,6 +95,7 @@ export default {
         this.localAlias = this.alias ?? ""
         this.localType = this.type ?? "text"
         this.localDisabled = this.disabled === "true"
+        this.localReadonly = this.readonly === "true"
     }
 }
 </script>

@@ -56,8 +56,10 @@
                         :bpmn="bpmn"
                         :options="options"
                         :isViewMode="isViewMode"
+                        :isPreviewMode="isPreviewMode"
                         :currentActivities="currentActivities"
                         :taskStatus="taskStatus"
+                        :generateFormTask="generateFormTask"
                         v-on:error="handleError"
                         v-on:shown="handleShown"
                         v-on:openDefinition="(ele) => openSubProcess(ele)"
@@ -94,6 +96,7 @@
                         :processDefinitionId="definitionPath"
                         :processDefinition="processDefinition"
                         :validationList="validationList"
+                        :isPreviewMode="isPreviewMode"
                         v-on:change-sequence="onChangeSequence"
                         v-on:remove-shape="onRemoveShape"
                         v-on:change-shape="onChangeShape"
@@ -270,12 +273,12 @@ export default {
         processDefinition: Object,
         bpmn: String,
         isViewMode: Boolean,
-        currentActivities: Array,
         definitionChat: Object,
         definitionPath: String,
         isXmlMode: Boolean,
         validationList: Object,
-        isAdmin: Boolean
+        isAdmin: Boolean,
+        generateFormTask: Object,
     },
     data: () => ({
         panel: false,
@@ -310,6 +313,12 @@ export default {
         ],
         taskStatus: null,
         bpmnKey: 0,
+
+        // preview
+        isPreviewMode: false,
+        currentStepIndex: 0,
+        stepIds: [],
+        currentActivities: [],
         // definitionPath: null
     }),
     computed: {
@@ -472,12 +481,13 @@ export default {
             this.copyProcessDefinition = value;
         });
 
-        
 
+        
         me.$try({
             action: async () => {
                 if(me.$route.params && me.$route.params.instId) {
-                    me.taskStatus = await backend.getActivitiesStatus(me.$route.params.instId);
+                    const instId =  window.$mode == 'ProcessGPT' ? atob(me.$route.params.instId) : me.$route.params.instId;
+                    me.taskStatus = await backend.getActivitiesStatus(instId);
                     me.bpmnKey++;
                 }
             }
@@ -488,6 +498,25 @@ export default {
         // this.processVariables = this.copyProcessDefinition.data
     },
     methods: {
+        updateCurrentStep(){
+            this.closePanel();
+            this.isPreviewMode = true
+            this.currentActivities = [this.stepIds[this.currentStepIndex]];
+            this.bpmnKey++;
+            this.openPanel(this.stepIds[this.currentStepIndex]);
+        },
+        prevStep() {
+            if (this.currentStepIndex > 0) {
+                this.currentStepIndex--;
+            }
+            this.updateCurrentStep();
+        },
+        nextStep() {
+            if (this.currentStepIndex < this.stepIds.length - 1) {
+                this.currentStepIndex++;
+            }
+            this.updateCurrentStep();
+        },
         setDefinition() {
             let self = this;
             const def = this.bpmnModeler.getDefinitions();
@@ -533,7 +562,13 @@ export default {
                 obj.name= variable.$attrs.name,
                 obj.type= variable.$attrs.type
                 // console.log(obj, variable)
-                self.processVariables.push(obj);
+                if (self.processVariables.findIndex((val) => val.name == obj.name && val.type == obj.type) == -1) {
+                    self.processVariables.push(obj);
+                }
+
+                if (!variable.$parent) {
+                    variable.$parent = uengineProperties;
+                }
             });
         },
 
@@ -568,6 +603,20 @@ export default {
         changeElement() {
             this.$emit('change');
         },
+        previewProcess() {
+            this.stepId = [];
+            this.currentStepIndex = 0;
+
+            const activityIds = this.processDefinition.sequences
+                .flatMap(seq => [seq.source, seq.target])
+            this.stepIds = [...new Set(activityIds)];
+            if (this.stepIds.length > 0) {
+                this.isPreviewMode = true
+                this.currentActivities = [this.stepIds[this.currentStepIndex]];
+                this.bpmnKey++;
+                this.openPanel(this.stepIds[0]);
+            }
+        },
         executeProcess() {
             this.executeDialog = !this.executeDialog;
         },
@@ -581,7 +630,7 @@ export default {
                     };
                     const data = await backend.start(input);
                     if (data.instanceId) {
-                        const route = window.$mode == 'ProcessGPT' ? btoa(data.instanceId) : data.instanceId;
+                        const route = window.$mode == 'ProcessGPT' ? atob(data.instanceId) : data.instanceId;
                         me.$router.push(`/instancelist/${route}`);
                     }
                     me.EventBus.emit('instances-updated');
@@ -840,6 +889,9 @@ export default {
         closePanel() {
             this.element = null;
             this.panel = false;
+            this.isPreviewMode = false;
+            this.currentActivities = [];
+            this.bpmnKey++;
             this.$emit('change');
         },
         handleError() {

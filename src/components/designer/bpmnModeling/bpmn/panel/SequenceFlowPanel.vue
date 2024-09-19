@@ -1,11 +1,15 @@
 <template>
     <div>
         <div class="mb-1 mt-4">{{ $t('BpmnPropertyPanel.condition') }}</div>
-        <div>
+        <div v-if="mode == 'ProcessGPT'">
+            <TextConditionField :value="copyUengineProperties.condition"
+                @update:value="updateCondition"
+            />
+        </div>
+        <div v-else>
             <ConditionField :value="copyUengineProperties.condition"
                 @update:value="updateCondition"
             />
-            <!-- {{ copyUengineProperties.condition }} -->
         </div>
         <br>
         <div>{{ $t('BpmnPropertyPanel.priority') }}</div>
@@ -26,12 +30,14 @@
 import { useBpmnStore } from '@/stores/bpmn';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import ConditionField from './ConditionField.vue';
+import TextConditionField from './TextConditionField.vue';
 
 const storage = StorageBaseFactory.getStorage()
 export default {
     name: 'sequence-flow-panel',
     components: {
         ConditionField,
+        TextConditionField,
     },
     props: {
         uengineProperties: Object,
@@ -58,18 +64,25 @@ export default {
         this.bpmnModeler = store.getModeler;
         
         if (!this.copyUengineProperties.condition) {
-            this.copyUengineProperties.condition = [{
-                _type: "org.uengine.kernel.Evaluate",
-                conditionsVt: [],
-                expression: {
-                    key: '',
-                    value: '',
-                    comparator: '',
-                },
-            }];
+            if (this.mode == 'ProcessGPT') {
+                this.copyUengineProperties.condition = '';
+            } else {
+                this.copyUengineProperties.condition = [{
+                    _type: "org.uengine.kernel.Evaluate",
+                    conditionsVt: [],
+                    expression: {
+                        key: '',
+                        value: '',
+                        comparator: '',
+                    },
+                }];
+            }
         }
     },
     computed: {
+        mode() {
+            return window.$mode;
+        }
     },
     watch: {
     },
@@ -112,21 +125,24 @@ export default {
         },
         beforeSave() {
             var expression = this.copyUengineProperties.condition;
-            if(expression.key == '' && expression.value == '' && expression.condition == '') {
+            if((this.mode == 'ProcessGPT' && expression == '') || (this.mode != 'ProcessGPT' && expression.key == '' && expression.value == '' && expression.condition == '')) {
                 delete this.copyUengineProperties.condition;
                 this.$emit('update:uengineProperties', this.copyUengineProperties)
                 return;
             }
+            
             if (!this.name || this.name == '') {
-                let name = 'condition'
-                if (this.copyUengineProperties.condition.conditionsVt) {
-                    name = 'multiCondition';
-                } else if (this.copyUengineProperties.condition.condition) {
-                    expression = this.copyUengineProperties.condition;
-                    name = "NOT " + expression.condition.key + " " + expression.condition.condition + " " + expression.condition.value;
-                } else {
-                    expression = this.copyUengineProperties.condition;
-                    name = expression.key + " " + expression.condition + " " + expression.value;
+                if (this.mode !== 'ProcessGPT') {
+                    let name = 'condition'
+                    if (this.copyUengineProperties.condition.conditionsVt) {
+                        name = 'multiCondition';
+                    } else if (this.copyUengineProperties.condition.condition) {
+                        expression = this.copyUengineProperties.condition;
+                        name = "NOT " + expression.condition.key + " " + expression.condition.condition + " " + expression.condition.value;
+                    } else {
+                        expression = this.copyUengineProperties.condition;
+                        name = expression.key + " " + expression.condition + " " + expression.value;
+                    }
                 }
                 
                 this.$emit('update:name', name);

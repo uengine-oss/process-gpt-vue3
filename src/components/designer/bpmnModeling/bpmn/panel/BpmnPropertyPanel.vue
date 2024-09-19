@@ -13,6 +13,7 @@
                 style="height: 100%"
                 :is="panelName"
                 :isViewMode="isViewMode"
+                :isPreviewMode="isPreviewMode"
                 :uengineProperties="uengineProperties"
                 :name="name"
                 :roles="roles"
@@ -41,6 +42,7 @@ export default {
         processDefinition: Object,
         processDefinitionId: String,
         isViewMode: Boolean,
+        isPreviewMode: Boolean,
         definition: Object,
         roles: Array,
         processVariables: Array,

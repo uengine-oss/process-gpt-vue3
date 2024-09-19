@@ -3,13 +3,14 @@ import xml2js from 'xml2js';
 import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
 import FormGenerator from './ai/FormDesignGenerator';
+import FormDefinitionModule from './FormDefinitionModule.vue';
 import partialParse from "partial-json-parser";
 import JSON5 from 'json5';
 
 const backend = BackendFactory.createBackend();
 
 export default {
-    mixins: [],
+    mixins: [FormDefinitionModule],
     data: () => ({
         processDefinition: null,
         bpmn: null,
@@ -20,92 +21,77 @@ export default {
         lock: false,
         loading: false,
         isChanged: false,
+        generateFormTask: null,
     }),
     computed: {},
     mounted() {},
     beforeUnmount() {},
     async created() {},
     methods: {
-        extractJSON(inputString, checkFunction) {
-            try {
-                JSON5.parse(inputString); // if no problem, just return the whole thing
-                return inputString;
-            } catch (e) {}
-
-            if (this.hasUnclosedTripleBackticks(inputString)) {
-                inputString = inputString + '\n```';
-            }
-
-            // 정규 표현식 정의
-            //const regex = /^.*?`{3}(?:json)?\n(.*?)`{3}.*?$/s;
-            let regex = /```(?:json)?\s*([\s\S]*?)\s*```/;
-            
-            // 정규 표현식을 사용하여 입력 문자열에서 JSON 부분 추출
-            let match = inputString.match(regex);
-            // 매치된 결과가 있다면, 첫 번째 캡쳐 그룹(즉, JSON 부분)을 반환
-            if (match) {
-                if (checkFunction)
-                    match.forEach((shouldBeJson) => {
-                        const lastIndex = shouldBeJson.lastIndexOf('}');
-                        const result = shouldBeJson.slice(0, lastIndex + 1);
-                        if (checkFunction(result)) return result;
-                    });
-                else return match[1];
-            } else {
-                regex = /\{[\s\S]*\}/
-                match = inputString.match(regex);
-                return match && match[0] ? match[0] : null;
-            }
-
-            // 매치된 결과가 없으면 null 반환
-            return null;
-        },
         async checkedFormData() {
             if (this.processDefinition && this.processDefinition.components) {
                 const activities = this.processDefinition.components.filter(component => component.componentType === 'Activity');
-                
+                this.generateFormTask = {};
                 for (const activity of activities) {
-                    let inputs = '';
+                    let inputs = null;
                     if (activity.outputData && activity.outputData.length > 0) {
                         inputs = activity.outputData ? activity.outputData.join(', ') : '';
                     }
-                    let outputs = '';
+                    let outputs = null;
                     if (activity.inputData && activity.inputData.length > 0) {
-                        outputs = activity.inputData ? activity.inputData.join(', ') : '';
+                        const uniqueInputs = activity.inputData.filter(item => !activity.outputData.includes(item));
+                        outputs = uniqueInputs.join(', ');
                     }
-                    let generateMsg = `Please refer to the following and create a form.`;
-                    if (inputs) generateMsg += `Fields to enter: ${inputs}`;
-                    if (outputs) generateMsg += `Fields to read only without input: ${outputs}`;
-                    const formHtml = await this.generateForm(generateMsg, activity.id);
+                    if (inputs || outputs) { 
+                        this.generateFormTask[activity.id] = 'generating';
+                        let generateMsg = `Please refer to the following and create a form.`;
+                        if (inputs) generateMsg += `Fields to enter: ${inputs}`;
+                        if (outputs) generateMsg += `Fields to read only without input: ${outputs}`;
+                        const formHtml = await this.generateForm(generateMsg, activity);
+                        // 완료 메세지
+                        let messageWriting = this.messages[this.messages.length - 1];
+                        messageWriting.isLoading = false;
+                        this.messages.push({
+                            "role": "system",
+                            "content": `${activity.name} 활동의 폼이 생성되었습니다.`,
+                            "timeStamp": Date.now(),
+                            "contentType": "html",
+                            "htmlContent": formHtml,
+                            "jsonContent": {}
+                        });
+                    }
                 }
+                this.generateFormTask = {};
             }
         },
-        async generateForm(generateMsg, activityId) {
+        async generateForm(generateMsg, activity) {
+            var me = this;
             return new Promise((resolve, reject) => {
                 let formHtml = null;
-                const formGenerator = new FormGenerator(this, {
+                const formGenerator = new FormGenerator(me, {
                     isStream: true,
                     preferredLanguage: 'Korean',
                 });
                 formGenerator.client.genType = 'form';
+                formGenerator.client.onFormCreated = async (response) => {
+                    let messageWriting = me.messages[me.messages.length - 1];
+                    messageWriting.content = response;
+                }
                 formGenerator.client.onFormGenerationFinished = async (response) => {
                     try {
-                        let jsonData = this.extractJSON(response);
-                        jsonData = jsonData.match(/\{[\s\S]*\}/)[0]
-                            .replaceAll('\n', '')
-                            .replaceAll('`', `"`);
-                        jsonData = partialParse(jsonData);
+                        let jsonData = this.extractLastJSON(response);
                         if (jsonData.htmlOutput) {
-                            const formData = {
-                                html: jsonData.htmlOutput,
-                                name: jsonData.name,
-                            };
-                            formHtml = await this.saveFormData(formData, activityId);
+                            const html = await me.keditorContentHTMLToDynamicFormHTML(jsonData.htmlOutput)
+                            formHtml = await me.saveFormData(html, activity.id);
+                            if (formHtml) {
+                                me.generateFormTask[activity.id] = 'finished';
+                            }
                             resolve(formHtml);
                         } else {
                             resolve(null);
                         }
                     } catch (error) {
+                        console.log(error);
                         reject(error);
                     }
                 };
@@ -115,17 +101,23 @@ export default {
                     content: generateMsg
                 });
                 formGenerator.generate();
+                me.messages.push({
+                    "role": "system",
+                    "content": `${activity.name} 활동의 폼을 생성합니다.`,
+                    "timeStamp": Date.now(),
+                    "isLoading": true
+                })
             });
         },
-        async saveFormData(formData, activityId) {
+        async saveFormData(html, activityId) {
             const options = {
                 type: 'form',
                 proc_def_id: this.processDefinition.processDefinitionId,
                 activity_id: activityId
             };
-            const formId = formData.name ? formData.name : `${options.proc_def_id}_${options.activity_id}_form`;
-            await backend.putRawDefinition(formData.html, formId, options);
-            return formData.html;
+            const formId = `${options.proc_def_id}_${options.activity_id}_form`;
+            await backend.putRawDefinition(html, formId, options);
+            return html;
         },
         extractPropertyNameAndIndex(jsonPath) {
             let match;
@@ -518,26 +510,36 @@ export default {
                     let params = xmlDoc.createElementNS('http://uengine', 'uengine:json');
                     params.setAttribute('key', 'condition');
                     if(sequence.condition) {
-                        if(sequence.condition.key && sequence.condition.condition && sequence.condition.value)  {
-                            
-                        const conditionJson = {
-                            condition: {
-                                _type:"org.uengine.kernel.Evaluate",
-                                key: sequence.condition.key,
-                                condition: sequence.condition.condition,
-                                value: sequence.condition.value
+                        if(sequence.condition.key && sequence.condition.condition && sequence.condition.value)  {    
+                            const conditionJson = {
+                                condition: {
+                                    _type:"org.uengine.kernel.Evaluate",
+                                    key: sequence.condition.key,
+                                    condition: sequence.condition.condition,
+                                    value: sequence.condition.value
+                                }
                             }
+                            if(!sequence.name || sequence.name == '') {
+                                let sequenceName = sequence.condition.condition + '' + sequence.condition.value;
+                                sequenceFlow.setAttribute('name', sequenceName);
+                            }
+                            params.textContent = JSON.stringify(conditionJson);
+                            root.appendChild(params);
+                            extensionElements.appendChild(root);
+                            sequenceFlow.appendChild(extensionElements);
+                        } else if (typeof sequence.condition === 'string') {
+                            const conditionJson = {
+                                condition: sequence.condition
+                            }
+                            if(!sequence.name || sequence.name == '') {
+                                let sequenceName = sequence.condition;
+                                sequenceFlow.setAttribute('name', sequenceName);
+                            }
+                            params.textContent = JSON.stringify(conditionJson);
+                            root.appendChild(params);
+                            extensionElements.appendChild(root);
+                            sequenceFlow.appendChild(extensionElements);
                         }
-                        if(!sequence.name || sequence.name == '') {
-                            let sequenceName = sequence.condition.condition + '' + sequence.condition.value;
-                            sequenceFlow.setAttribute('name', sequenceName);
-                        }
-                        params.textContent = JSON.stringify(conditionJson);
-                        root.appendChild(params);
-                        extensionElements.appendChild(root);
-                        sequenceFlow.appendChild(extensionElements);
-                        }
-
                     }
                     process.appendChild(sequenceFlow);
 
@@ -764,7 +766,19 @@ export default {
                             if(source) {
                                 if (source.role != component.role) {
                                     componentX += isHorizontal ? 0 : 150;
-                                    componentY += isHorizontal ? 100 : 0;
+                                    // componentY += isHorizontal ? 100 : 0;
+                                    const roleInnerElements = jsonModel.components.filter(element => element.role == source.role);
+                                    if (roleInnerElements.length > 0) {
+                                        let maxY = componentY;
+                                        roleInnerElements.forEach(element => {
+                                            if(maxY < activityPos[element.id].y) {
+                                                maxY = activityPos[element.id].y;
+                                            }
+                                        });
+                                        componentY = isHorizontal ? maxY + 100 : 0;
+                                    } else {
+                                        componentY += isHorizontal ? 100 : 0;
+                                    }
                                 } else {
                                 }
                             }
@@ -913,6 +927,8 @@ export default {
             
 
             console.log(roleVector);
+            let laneBounds = this.calculateLaneBounds(roleVector);
+            // console.log(laneBounds);
             let roleWidth = isHorizontal ? (mainWidth - 30) : 0;
             let roleHeight = isHorizontal ? 0 : (mainHeight - 30);
             
@@ -931,10 +947,12 @@ export default {
                             roleX = role[roleKey].x;
                         }
                         if(roleY == 0) {
-                            roleY = role[roleKey].y;
+                            roleY = laneBounds[key].y || 100;
+                            // roleY = role[roleKey].y;
                         }
                         if(roleHeight < role[roleKey].y) {
-                            roleHeight = role[roleKey].y - roleY + 100;
+                            roleHeight = laneBounds[key].height || 100;
+                            // roleHeight = role[roleKey].y - roleY + 100;
                         }
                     } else {
                         if(roleX == 0) {
@@ -1207,6 +1225,38 @@ export default {
             return bpmnXml;
 
         },
+
+        calculateLaneBounds(roleVector) {
+            let lanes = {};
+            const minLaneHeight = 100; // 최소 레인 높이
+
+            Object.keys(roleVector).forEach(lane => {
+                let laneElements = Object.values(roleVector[lane]);
+                
+                if (laneElements.length === 0) {
+                    lanes[lane] = { y: 0, height: minLaneHeight };
+                    return;
+                }
+
+                let laneMinY = Math.min(...laneElements.map(element => element.y));
+                let laneMaxY = Math.max(...laneElements.map(element => element.y));
+                console.log(lane, laneMaxY, laneMinY);
+
+                // 레인의 y 좌표는 소속된 객체의 최소 y 좌표
+                let y = laneMinY;
+                
+                // 레인의 높이 계산
+                let height = (laneMaxY === laneMinY) ? minLaneHeight : minLaneHeight + (laneMaxY - laneMinY);
+
+                lanes[lane] = {
+                    y: y,
+                    height: height
+                };
+            });
+
+            return lanes;
+        },
+
         createBpmnXmlTest(jsonModel) {
             // XML 문서 초기화
             let me = this;
@@ -2130,19 +2180,26 @@ export default {
                             properties: gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties'] && gateway['bpmn:extensionElements']['uengine:properties']['uengine:json'] ? gateway['bpmn:extensionElements']['uengine:properties']['uengine:json'] : '{}'
                         }))
                     ],
-                    sequences: sequenceFlows.map((flow) => ({
-                        id: flow.id,
-                        source: flow.sourceRef,
-                        target: flow.targetRef,
-                        condition:
-                            flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties']
-                                ? JSON.parse(flow['bpmn:extensionElements']['uengine:properties']['uengine:json']).condition || ''
-                                : '',
-                        properties:
-                            flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties']
-                                ? flow['bpmn:extensionElements']['uengine:properties']['uengine:json'] || '{}'
-                                : '{}'
-                    })),
+                    sequences: sequenceFlows.map((flow) => {
+                        let condition = null;
+                        if (window.$mode == 'ProcessGPT') {
+                            condition = flow.condition || '';
+                        } else {
+                            condition = flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties']
+                                ? JSON.parse(flow['bpmn:extensionElements']['uengine:properties']['uengine:json']).condition || flow.condition
+                                : '';
+                        }
+                        return {
+                            id: flow.id,
+                            source: flow.sourceRef,
+                            target: flow.targetRef,
+                            condition: condition,
+                            properties:
+                                flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties']
+                                    ? flow['bpmn:extensionElements']['uengine:properties']['uengine:json'] || '{}'
+                                    : '{}'
+                        }
+                    }),
                     participants: participants,
                     instanceNamePattern: instanceNamePattern
                 };

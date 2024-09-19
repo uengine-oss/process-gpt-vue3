@@ -3,15 +3,36 @@
         <AppBaseCard>
             <template v-slot:leftpart>
                 <div class="no-scrollbar">
-                    <ChatProfile />
-                    <ChatListing 
-                        :chatRoomList="filteredChatRoomList" 
-                        :userList="userList" 
-                        :userInfo="userInfo"
-                        @chat-selected="chatRoomSelected" 
-                        @create-chat-room="createChatRoom"
-                        @delete-chat-room="deleteChatRoom"
-                    />
+                    <v-tabs v-model="activeTab">
+                        <v-tab>
+                            <v-icon>mdi-account</v-icon>
+                        </v-tab>
+                        <v-tab>
+                            <v-icon>mdi-message</v-icon>
+                        </v-tab>
+                    </v-tabs>
+                    <v-tabs-items v-model="activeTab">
+                        <v-tab-item v-if="activeTab == 0">
+                            <ChatProfile style="margin-bottom: -15px;" />
+                            <v-divider class="my-2"></v-divider>
+                            <UserListing 
+                                :userList="userList" 
+                                @selectedUser="selectedUser"
+                                @startChat="startChat"
+                            />
+                        </v-tab-item>
+                        <v-tab-item v-else>
+                            <ChatListing 
+                                :chatRoomList="filteredChatRoomList" 
+                                :userList="userList" 
+                                :userInfo="userInfo"
+                                :chatRoomId="chatRoomId"
+                                @chat-selected="chatRoomSelected" 
+                                @create-chat-room="createChatRoom"
+                                @delete-chat-room="deleteChatRoom"
+                            />
+                        </v-tab-item>
+                    </v-tabs-items>
                 </div>
             </template>
             <template v-slot:rightpart>
@@ -37,6 +58,7 @@
                         @sendEditedMessage="sendEditedMessage"
                         @stopMessage="stopMessage"
                         @toggleProcessGPTActive="toggleProcessGPTActive"
+                        @startWorkOrder="startWorkOrder"
                     ></Chat>
                 </div>
             </template>
@@ -52,13 +74,49 @@
                 />
             </template>
         </AppBaseCard>
+        <v-dialog style="max-width: 1000px;" v-model="openWorkOrderDialog" persistent>
+            <v-card class="description-card">
+                <div v-if="descriptionList.length > 0">
+                    <v-card-title>Descriptions</v-card-title>
+                    <v-card-text>
+                        <div v-for="(desc, index) in descriptionList" :key="index">
+                            <h3>{{ desc.word }}</h3>
+                            <p>{{ desc.description }}</p>
+                        </div>
+                    </v-card-text>
+                </div>
+                <div v-if="checkList.length > 0">
+                    <v-card-title>CheckList</v-card-title>
+                    <v-card-text>
+                        <v-checkbox
+                            v-for="(check, index) in checkList"
+                            :key="index"
+                            :label="check"
+                            readonly
+                            v-model="checked"
+                        ></v-checkbox>
+                    </v-card-text>
+                </div>
+                <v-btn @click="workOrder" color="primary">업무 지시하기</v-btn>
+            </v-card>
+            <v-card :style="descriptionList.length > 0 || checkList.length > 0 ? 'position: absolute; left: 30%; margin-top: -500px;':''">
+                <v-card-title style="height: 55px; background-color: rgb(227, 240, 250); align-content: center;">
+                    <v-icon small style="margin-right: 10px;">mdi-file-document</v-icon>
+                    업무 지시
+                    <v-icon @click="closeWorkOrderDialog()" small style="margin-right: 5px; float: right;">mdi-close</v-icon>
+                </v-card-title>
+                <AssistantChats @genFinished="genFinished" />
+            </v-card>
+        </v-dialog>
     </v-card>
 </template>
 
 <script>
+import AssistantChats from "../chat/AssistantChats.vue";
 import ChatModule from "@/components/ChatModule.vue";
 import ChatGenerator from "@/components/ai/WorkAssistantGenerator.js";
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
+import UserListing from '@/components/apps/chats/UserListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import Chat from "@/components/ui/Chat.vue";
@@ -75,8 +133,10 @@ export default {
         Chat,
         AppBaseCard,
         ChatListing,
+        UserListing,
         ChatProfile,
         VDataTable,
+        AssistantChats
 
     },
     data: () => ({
@@ -96,6 +156,15 @@ export default {
         userList: [],
         chatRenderKey: 0,
         generatedWorkList: [],
+        activeTab: 1,
+        
+        // assistantChat
+        checked: true,
+        openWorkOrderDialog: false,
+        assistantRes: null,
+        checkList: [],
+        descriptionList: [],
+        selectedUserInfo: null,
     }),
     computed: {
         filteredChatRoomList() {
@@ -137,6 +206,65 @@ export default {
         }
     },
     methods: {
+        selectedUser(user){
+            this.selectedUserInfo = user
+        },
+        startChat(type){
+            let chatRoomInfo
+            const selectedUserEmail = this.selectedUserInfo.email;
+            const currentUserEmail = this.userInfo.email;
+
+            const chatRoomExists = this.chatRoomList.some(chatRoom => {
+                if(chatRoom.participants.length == 2){
+                    const participantEmails = chatRoom.participants.map(participant => participant.email);
+                    chatRoomInfo = chatRoom
+                    return participantEmails.includes(currentUserEmail) && participantEmails.includes(selectedUserEmail);
+                } else {
+                    return false
+                }
+            });
+
+            if (chatRoomExists) {
+                this.chatRoomSelected(chatRoomInfo)
+            } else {
+                chatRoomInfo = {}
+                chatRoomInfo.name = this.selectedUserInfo.username
+                chatRoomInfo.participants = []
+                chatRoomInfo.participants.push(this.selectedUserInfo)
+                this.createChatRoom(chatRoomInfo)
+            }
+
+            this.activeTab = 1
+
+            if(type == 'work'){
+                this.startWorkOrder()
+            } 
+        },
+        genFinished(responseObj){
+            this.assistantRes = responseObj
+            this.descriptionList = responseObj.descriptions
+            this.checkList = responseObj.checkPoints
+        },
+        workOrder(){
+            this.ProcessGPTActive = false
+            this.beforeSendMessage({
+                image: null,
+                text: this.assistantRes.content,
+                mentionedUsers: [],
+                descriptionList: this.descriptionList,
+                checkList: this.checkList
+            });
+            this.closeWorkOrderDialog()
+        },
+        startWorkOrder(){
+            this.openWorkOrderDialog = true
+            this.assistantRes = null
+            this.checkList = []
+            this.descriptionList = []
+        },
+        closeWorkOrderDialog(){
+            this.openWorkOrderDialog = false
+        },
         toggleProcessGPTActive() {
             this.ProcessGPTActive = !this.ProcessGPTActive;
         },
@@ -531,3 +659,12 @@ export default {
     }
 }
 </script>
+
+<style scoped>
+.description-card {
+    position: absolute;
+    left: -34%;
+    max-width: 600px;
+    margin-top: -500px;
+}
+</style>

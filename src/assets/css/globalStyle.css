@@ -63,7 +63,7 @@ hr {
     }
 }
 
-.running:not(.djs-connection) .djs-visual > :nth-child(2) {
+.running:not(.djs-connection):not(.generated) .djs-visual > :nth-child(2) {
     stroke-width: 5px !important;
     stroke-dasharray: 20, 20 !important;
     animation: running-animation 1.5s linear infinite;
@@ -82,11 +82,6 @@ hr {
 .cancelled:not(.djs-connection) .djs-visual> :nth-child(1) {
     stroke-width: 5px !important;
     stroke: #e53935 !important;
-}
-
-
-.highlight:not(.djs-connection) .djs-visual> :nth-child(2) {
-    /* fill: #ffffff !important; */
 }
 
 /* 팔레트 커스텀 부분 */
@@ -130,9 +125,10 @@ hr {
     height: 50px;
     left:5px; top:5px;
     border: none;
-    border-radius: 10px;
-    background-color: white;
-    box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.1);
+    background-color: transparent;
+    /* border-radius: 10px; */
+    /* background-color: white; */
+    /* box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.1); */
 }
 
 .vue-bpmn-diagram-container .djs-context-pad .entry {
@@ -381,6 +377,55 @@ hr {
     top:-1px;
 }
 
+
+
+/* skeleton 관련 style */
+
+.main-page-skeleton .v-skeleton-loader__heading,
+.execute-skeleton-top .v-skeleton-loader__heading,
+.execute-skeleton-bottom .v-skeleton-loader__heading,
+.dry-run-process-skeleton .v-skeleton-loader__heading,
+.test-process-skeleton .v-skeleton-loader__heading,
+.test-process-work-list-skeleton .v-skeleton-loader__heading {
+    display: none;
+}
+
+.main-page-skeleton .v-skeleton-loader__image {
+    height:97vh;
+}
+
+.main-page-skeleton .main-page-skeleton-right1 {
+    margin-bottom:28px;
+}
+
+.main-page-skeleton .main-page-skeleton-right1 .v-skeleton-loader__image {
+    height:9vh;
+}
+
+.main-page-skeleton .main-page-skeleton-right2 .v-skeleton-loader__image {
+    height:84vh;
+}
+
+.execute-skeleton-bottom .v-skeleton-loader__image {
+    height:65vh;
+}
+
+.dry-run-process-skeleton .v-skeleton-loader__image {
+    height:70vh;
+}
+
+.test-process-skeleton .v-skeleton-loader__image {
+    height:75vh;
+}
+
+.execute-skeleton-bottom .v-skeleton-loader__image {
+    height:65vh;
+}
+
+
+.test-process-work-list-skeleton .v-skeleton-loader__image {
+    height:70vh;
+}
 @media only screen and (max-width:1450px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 375px !important;

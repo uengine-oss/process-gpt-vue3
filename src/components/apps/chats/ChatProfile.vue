@@ -4,6 +4,24 @@ import { ref } from 'vue';
 const name = localStorage.getItem("userName");
 const email = localStorage.getItem("email");
 const picture = localStorage.getItem("picture");
+
+const getProfile = (profile) => {
+    let basePath = window.location.port == '' ? window.location.origin:'' 
+    if(profile){
+        if(profile.includes("defaultUser.png")){
+            return `${basePath}/images/defaultUser.png`;
+        } else {
+            const img = new Image();
+            img.src = profile;
+            img.onerror = () => {
+                return `${basePath}/images/defaultUser.png`;
+            };
+            return profile;
+        }
+    } else {
+        return `${basePath}/images/defaultUser.png`;
+    }
+}
 </script>
 
 <template>
@@ -12,7 +30,7 @@ const picture = localStorage.getItem("picture");
         <div class="d-flex gap-2 align-center pa-6">
             <!---User Avatar-->
             <v-avatar size="large">
-                <img :src="picture" alt="pro" width="54" />
+                <img :src="getProfile(picture)" alt="pro" width="54" />
             </v-avatar>
 
             <v-badge class="badg-dotDetail" dot color="success"> </v-badge>

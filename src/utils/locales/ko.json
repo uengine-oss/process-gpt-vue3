@@ -152,6 +152,7 @@
         "deleteProcessMessage": "프로세스를 삭제하시겠습니까?",
         "cancel": "취소",
         "simulate": "시뮬레이션",
+        "preview": "미리보기",
         "capture": "프로세스 이미지 다운로드"
     },
     "ProcessVariable": {
@@ -476,5 +477,35 @@
     "System" : {
         "description" : "설명",
         "edit" : "수정"
+    },
+    "PaletteProvider": {
+        "undoCmdZ": "되돌리기 (Cmd + Z)",
+        "undoCtrlZ": "되돌리기 (Ctrl + Z)",
+        "RedoCmdShiftZ": "다시 실행 (Cmd + Shift + Z)",
+        "RedoCtrlY": "다시 실행 (Ctrl + Y)",
+        "handTool": "손(이동) 도구 활성화",
+        "lassoTool": "선택영역 지정 도구 활성화",
+        "spaceTool": "공간 생성/제거 도구 활성화",
+        "globalConnectTool": "연결 도구 활성화",
+        "participantCollapsed": "풀/참가자 생성(가로)",
+        "participantExpanded": "풀/참가자 생성(세로)",
+        "StartEvent": "시작 이벤트 생성",
+        "IntermediateThrowEvent": "중간 이벤트 전송",
+        "EndEvent": "종료 이벤트 생성",
+        "ExclusiveGateway": "독점 게이트웨이 생성",
+        "Task": "작업 생성",
+        "SubProcess": "하위 프로세스 생성",
+        "DataStoreReference": "데이터 저장소 생성",
+        "DataObjectReference": "데이터 객체 생성",
+        "Participant": "참가자 생성",
+        "expandedSubProcess": "확장된 하위 프로세스 생성",
+        "dataStore": "데이터 저장소 생성",
+        "dataObject": "데이터 객체 생성"
+    },
+    "chatListing": {
+        "search": "검색"
+    },
+    "userListing": {
+        "search": "유저 검색"
     }
 }

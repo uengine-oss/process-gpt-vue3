@@ -230,6 +230,9 @@ export default class AIGenerator {
 
                 if (!me.stopSignaled) {
                     if(me.client.genType && me.client.genType == 'form'){
+                        if (me.client.onFormCreated) {
+                            me.client.onFormCreated(model);
+                        }
                         if (me.client.onFormGenerationFinished) {
                             me.client.onFormGenerationFinished(model);
                         }

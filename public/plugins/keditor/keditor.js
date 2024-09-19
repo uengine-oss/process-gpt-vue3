@@ -384,7 +384,13 @@
             var self = this;
             var options = self.options;
             var body = self.body;
-            body.addClass('opened-keditor-sidebar');
+
+            var openFormSidebar = window.localStorage.getItem('openFormSidebar');
+            if (openFormSidebar && openFormSidebar === 'false') {
+                body.removeClass('opened-keditor-sidebar');
+            } else {
+                body.addClass('opened-keditor-sidebar');
+            }
             
             if (options.snippetsListId === KEditor.DEFAULTS.snippetsListId) {
                 flog('Render default KEditor snippet container');
@@ -465,9 +471,9 @@
             
             var filterHtml = '';
             filterHtml += '<div id="keditor-' + lowerCaseType + '-snippets-filter-wrapper" class="keditor-ui keditor-snippets-filter-wrapper">';
-            filterHtml += '     <input type="text" id="keditor-' + lowerCaseType + '-snippets-search" class="keditor-ui keditor-snippets-search" value="" placeholder="Type to search" />';
+            filterHtml += '     <input type="text" id="keditor-' + lowerCaseType + '-snippets-search" class="keditor-ui keditor-snippets-search" value="" placeholder="타입 검색" />';
             filterHtml += '     <select id="keditor-' + lowerCaseType + '-snippets-filter" class="keditor-ui keditor-snippets-filter" style="font-size: small; height: 40px;">';
-            filterHtml += '         <option value="" selected="selected">All</option>';
+            filterHtml += '         <option value="" selected="selected">모두</option>';
             
             for (var i = 0; i < categories.length; i++) {
                 filterHtml += '     <option value="' + categories[i] + '">' + categories[i] + '</option>';
@@ -544,6 +550,7 @@
         },
         
         toggleSidebar: function (showSidebar) {
+            window.localStorage.setItem('openFormSidebar', showSidebar);
             flog('toggleSidebar', showSidebar);
             
             var self = this;

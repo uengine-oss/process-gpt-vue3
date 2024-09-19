@@ -18,19 +18,19 @@ const formDesignGeneratorPromptSnipptsData = {
     // 3. 그냥 속성을 적어주면, 그것이 상수라고 생각하고 그대로 사용함
     componentInfos: [
         {
-            tag: `<text-field name='<이 입력창의 고유한 이름>' alias='<이 입력창의 별명>' type='<text|number|email|url|date|datetime-local|month|week|time|password|tel|color>' disabled='<true|false>'></text-field>`,
+            tag: `<text-field name='<이 입력창의 고유한 이름>' alias='<이 입력창의 별명>' type='<text|number|email|url|date|datetime-local|month|week|time|password|tel|color>' disabled='<true|false>' readonly='<true|false>'></text-field>`,
             purpose: "다양한 유형의 텍스트를 입력받기 위해서",
             limit: "년도와 같이 선택해야 할 항목이 너무 많은 경우에는 text-field를 사용할 것"
         },
 
         {
-            tag: `<textarea-field name='<이 입력창의 고유한 이름>' alias='<이 입력창의 별명>' rows='<입력창의 행 크기>' disabled='<true|false>'></textarea-field>`,
+            tag: `<textarea-field name='<이 입력창의 고유한 이름>' alias='<이 입력창의 별명>' rows='<입력창의 행 크기>' disabled='<true|false>' readonly='<true|false>'></textarea-field>`,
             purpose: "여러 행에 걸쳐서 텍스트를 입력받기 위해서",
             limit: ""
         },
 
         {
-            tag: `<boolean-field name='<이 입력창의 고유한 이름>' alias='<이 입력창의 별명>' disabled='<true|false>'></boolean-field>`,
+            tag: `<boolean-field name='<이 입력창의 고유한 이름>' alias='<이 입력창의 별명>' disabled='<true|false>' readonly='<true|false>'></boolean-field>`,
             purpose: `'true' 또는 'false' 중 하나를 선택하기 위해서`,
             limit: ""
         },
@@ -41,7 +41,7 @@ const formDesignGeneratorPromptSnipptsData = {
                  `dynamic_load_url='<is_dynamic_load가 true시에 JSON 데이터 로드 URL>' ` +
                  `dynamic_load_key_json_path='<is_dynamic_load가 true시에 키 배열을 담을 JSON PATH>' ` + 
                  `dynamic_load_value_json_path='<is_dynamic_load가 true시에 값 배열을 담을 JSON PATH>' ` +
-                 `disabled='<true|false>'></select-field>`,
+                 `disabled='<true|false>' readonly='<true|false>'></select-field>`,
             purpose: "여러개의 옵션 중 하나를 선택하기 위해서",
             limit: `is_dynamic_load가 false인 경우, 선택 항목 리스트를 만들기 위해서 items 필수 작성.` +
                    `items는 '[{"key1": "label1"}, {"key2": "label2"}]'와 같이 작성되어야 함.` +
@@ -54,7 +54,7 @@ const formDesignGeneratorPromptSnipptsData = {
                  `dynamic_load_url='<is_dynamic_load가 true시에 JSON 데이터 로드 URL>' ` +
                  `dynamic_load_key_json_path='<is_dynamic_load가 true시에 키 배열을 담을 JSON PATH>' ` + 
                  `dynamic_load_value_json_path='<is_dynamic_load가 true시에 값 배열을 담을 JSON PATH>' ` +
-                 `disabled='<true|false>'></checkbox-field>`,
+                 `disabled='<true|false>' readonly='<true|false>'></checkbox-field>`,
             purpose: "여러개의 선택 사항들 중, 여러개를 선택하기 위해서",
             limit: `is_dynamic_load가 false인 경우, 선택 항목 리스트를 만들기 위해서 items 필수 작성.` +
                    `items는 '[{"key1": "label1"}, {"key2": "label2"}]'와 같이 작성되어야 함.` +
@@ -67,7 +67,7 @@ const formDesignGeneratorPromptSnipptsData = {
                  `dynamic_load_url='<is_dynamic_load가 true시에 JSON 데이터 로드 URL>' ` +
                  `dynamic_load_key_json_path='<is_dynamic_load가 true시에 키 배열을 담을 JSON PATH>' ` + 
                  `dynamic_load_value_json_path='<is_dynamic_load가 true시에 값 배열을 담을 JSON PATH>' ` +
-                 `disabled='<true|false>'></radio-field>`,
+                 `disabled='<true|false>' readonly='<true|false>'></radio-field>`,
             purpose: "나열된 여러개의 옵션 중 하나를 선택하기 위해서",
             limit: `is_dynamic_load가 false인 경우, 선택 항목 리스트를 만들기 위해서 items 필수 작성.` +
                    `items는 '[{"key1": "label1"}, {"key2": "label2"}]'와 같이 작성되어야 함.` +
@@ -75,13 +75,13 @@ const formDesignGeneratorPromptSnipptsData = {
         },
 
         {
-            tag: `<user-select-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' disabled='<true|false>'></user-select-field>`,
+            tag: `<user-select-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' disabled='<true|false>' readonly='<true|false>'></user-select-field>`,
             purpose: "유저들을 선택하기 위해서",
             limit: ""
         },
 
         {
-            tag: `<file-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' disabled='<true|false>'></file-field>`,
+            tag: `<file-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' disabled='<true|false>' readonly='<true|false>'></file-field>`,
             purpose: `파일을 입력받기 위해서`,
             limit: ""
         },

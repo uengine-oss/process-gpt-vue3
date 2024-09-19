@@ -6,6 +6,8 @@
             :item-value="item => item.key"
             v-model="localModelValue"
             :disabled="localDisabled"
+            :readonly="localReadonly"
+            :variant="localReadonly ? 'filled' : 'outlined'"
         >
         <template v-slot:label>
             <span style="color:black;">
@@ -30,6 +32,7 @@ export default {
         name: String,
         alias: String,
         disabled: String,
+        readonly: String,
 
         items: String,
         is_dynamic_load: String,
@@ -54,6 +57,7 @@ export default {
             localAlias: "",
             localItems: [],
             localDisabled: false,
+            localReadonly: false,
 
             localIsDynamicLoad: false,
             localDynamicLoadURL: "",
@@ -66,6 +70,7 @@ export default {
                 commonSettingInfos["localName"],
                 commonSettingInfos["localAlias"],
                 commonSettingInfos["localDisabled"],
+                commonSettingInfos["localReadonly"],
                 ...commonSettingInfos["localItemsWithDynamicList"]
             ]
         };
@@ -140,7 +145,7 @@ export default {
         this.localName = this.name ?? "name"
         this.localAlias = this.alias ?? ""
         this.localDisabled = this.disabled === "true"
-
+        this.localReadonly = this.readonly === "true"
 
         try {
             if(!(this.items) || this.items.length === 0)
@@ -169,5 +174,7 @@ export default {
 </script>
 
 <style lang="scss">
-
+.form-select-field {
+    margin-bottom: 16px;
+}
 </style>
