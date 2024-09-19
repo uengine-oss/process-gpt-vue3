@@ -367,5 +367,5 @@ async function initializeApp() {
         }
     })();
 }
-
+export { i18n };
 initializeApp();
