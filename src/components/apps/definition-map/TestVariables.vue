@@ -20,7 +20,7 @@
                 <v-col v-for="val,idx in selectedTask" :key="idx"
                     class="pa-0 pb-2 pr-2"
                 >
-                    <test-variable :idx="idx" :selected-task="val" @execute="e => runExistingTest(e)"></test-variable>
+                    <test-variable :idx="idx" :selected-task="val" @execute="e => runExistingTest(e)" @delete="idx => deleteTest(idx)"></test-variable>
                 </v-col>
             </v-row>
             <v-card-text v-else
@@ -86,10 +86,7 @@ export default {
     }),
     async created() {
         await this.init()
-        const list = await backend.testList(this.workItem.worklist.defId);
-        this.testList = list;
-        console.log(this.task)
-        if (this.testList[this.task]) this.selectedTask = JSON.parse(this.testList[this.task]);
+        
     },
     methods: {
         runNewTest(e) {
@@ -101,6 +98,11 @@ export default {
             console.log(this.selectedTask[e])
             delete this.selectedTask[e]["_type"];
             this.$emit('executeTest', this.selectedTask[e])
+        },
+        async deleteTest(idx) {
+            console.log(this.task)
+            await backend.deleteTest(this.definitionId, this.task, idx);
+            this.init();
         },
         async init() {
             let me = this
@@ -115,6 +117,10 @@ export default {
             
             this.$emit('type', me.currentComponent)
             this.$emit('workItem', me.workItem)
+            const list = await backend.testList(this.workItem.worklist.defId);
+            this.testList = list;
+            console.log(this.task)
+            if (this.testList[this.task]) this.selectedTask = JSON.parse(this.testList[this.task]);
         }
     }
 };

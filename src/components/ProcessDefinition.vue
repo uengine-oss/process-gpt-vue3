@@ -4,18 +4,18 @@
             <v-col class="d-flex ma-0 pa-0" style="height: 100%">
                 <v-card style="border-radius: 0px !important; border: none; height: 100%" flat>
                     <v-row class="ma-0 pa-0 button-container">
-                        <v-tooltip v-if="executable" :text="$t('processDefinition.simulate')">
+                        <!-- <v-tooltip :text="description">
+                            <template v-slot:activator="{ props }">
+                                <Icons :icon="'info-line'" v-bind="props" :width="32" :height="32" />
+                            </template>
+                        </v-tooltip> -->
+                        <!-- <v-tooltip v-if="executable" :text="$t('processDefinition.simulate')">
                             <template v-slot:activator="{ props }">
                                 <v-switch color="primary" v-bind="props" v-model="isSimulate" false-value="false" true-value="true" class="btn-simulate"></v-switch>
                             </template>
-                        </v-tooltip>
-                        <!-- <v-tooltip v-if="isSimulate == 'true' || isSimulate == 'record'" :text="'record'">
-                            <template v-slot:activator="{ props }">
-                                <v-checkbox v-model="record" ></v-checkbox>
-                            </template>
                         </v-tooltip> -->
                         <!-- 프로세스 실행 버튼  -->
-                        <v-tooltip v-if="executable" :text="$t('processDefinition.execution')">
+                        <!-- <v-tooltip v-if="executable" :text="$t('processDefinition.execution')">
                             <template v-slot:activator="{ props }">
                                 <v-btn v-bind="props" @click="executeProcess" class="btn-execute"
                                     icon variant="text"
@@ -23,7 +23,7 @@
                                     <Icons :icon="'play'" :width="32" :height="32" />
                                 </v-btn>
                             </template>
-                        </v-tooltip>
+                        </v-tooltip> -->
                         <!-- 프로세스 변수 추가 버튼 -->
                         <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
                             <template v-slot:activator="{ props }">
@@ -70,6 +70,7 @@
                         @change="changeElement"
                         style="height: 100%"
                     ></BpmnuEngine>
+                    
                     <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
                         :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
                         v-on:openDefinition="ele => openSubProcess(ele)" v-on:loading="handleLoading"
@@ -215,14 +216,14 @@
             </v-card>
         </v-dialog>
 
-        <v-dialog v-model="executeDialog" max-width="80%">
+        <!-- <v-dialog v-model="executeDialog" max-width="80%">
             <process-gpt-execute v-if="mode === 'LLM'" :definitionId="definitionPath" 
                 @close="executeDialog = false"></process-gpt-execute>
             <div v-else>
                 <test-process v-if="isSimulate == 'true'" :definitionId="definitionPath" @close="executeDialog = false" />
                 <dry-run-process v-else :is-simulate="isSimulate" :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
             </div>
-        </v-dialog>
+        </v-dialog> -->
 
         <!-- <v-navigation-drawer permanent location="right" :width="400"> {{ panelId }} </v-navigation-drawer> -->
     </div>
@@ -240,12 +241,12 @@ import customPaletteModule from './customPalette';
 import customContextPadModule from './customContextPad';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
-import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
-import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
+// import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
 import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
 import XmlViewer from 'vue3-xml-viewer'
 import InstanceNamePatternForm from '@/components/designer/InstanceNamePatternForm.vue'
 import BackendFactory from "@/components/api/BackendFactory";
+import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
 import TestProcess from "@/components/apps/definition-map/TestProcess.vue"
 
 const backend = BackendFactory.createBackend();
@@ -258,11 +259,11 @@ export default {
         ProcessVariable,
         Icon,
         VDataTable,
-        ProcessExecuteDialog,
-        DryRunProcess,
+        // ProcessExecuteDialog,
+        InstanceNamePatternForm,
         'process-gpt-execute': ProcessGPTExecute,
         XmlViewer,
-        InstanceNamePatternForm,
+        DryRunProcess,
         TestProcess
     },
     props: {
@@ -297,6 +298,7 @@ export default {
         executeDialog: false,
         isSimulate: "false",
         record: false,
+        description: "",
         processVariableHeaders: [
             { title: 'processDefinition.name', key: 'name' },
             { title: 'processDefinition.type', key: 'type' },
@@ -517,6 +519,7 @@ export default {
             if (uengineProperties.json) {
                 let processJson = JSON.parse(uengineProperties.json);
                 self.instanceNamePattern = processJson.instanceNamePattern ? processJson.instanceNamePattern : '';
+                self.description = processJson?.shortDescription?.text;
             }
 
             uengineProperties?.variables?.forEach(function (variable) {

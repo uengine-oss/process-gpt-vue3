@@ -395,6 +395,11 @@
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
+                                <!-- <v-tooltip v-if="executable" :text="$t('processDefinition.simulate')">
+                                    <template v-slot:activator="{ props }">
+                                        <v-switch color="primary" v-bind="props" v-model="isSimulate" false-value="false" true-value="true" class="btn-simulate"></v-switch>
+                                    </template>
+                                </v-tooltip> -->
                             </v-row>
                         </v-form>
                     </v-row>

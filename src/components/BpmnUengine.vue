@@ -94,23 +94,23 @@ export default {
 
             if (self.isViewMode) {
                 // add marker to current activity elements
-                if (window.$mode == "ProcessGPT") {
+                if (window.$mode == 'ProcessGPT') {
                     if (self.currentActivities && self.currentActivities.length > 0) {
                         self.currentActivities.forEach((actId) => {
                             if (actId) canvas.addMarker(actId, 'highlight');
                         });
                     }
                 } else {
-                    if(self.taskStatus) {
+                    if (self.taskStatus) {
                         Object.keys(self.taskStatus).forEach((task) => {
                             let taskStatus = self.taskStatus[task];
-                            if(taskStatus == 'Completed') {
+                            if (taskStatus == 'Completed') {
                                 canvas.addMarker(task, 'completed');
-                            } else if(taskStatus == 'Running') {
+                            } else if (taskStatus == 'Running') {
                                 canvas.addMarker(task, 'running');
-                            } else if(taskStatus == 'Stopped') {
+                            } else if (taskStatus == 'Stopped') {
                                 canvas.addMarker(task, 'stopped');
-                            } else if(taskStatus == 'Cancelled') {
+                            } else if (taskStatus == 'Cancelled') {
                                 canvas.addMarker(task, 'cancelled');
                             }
                         });
@@ -126,22 +126,24 @@ export default {
                     self.currentActivities.forEach((actId) => {
                         const elementRegistry = self.bpmnViewer.get('elementRegistry');
                         const element = elementRegistry.get(actId);
-                        if (element.type != 'bpmn:SubProcess' && element.type != 'bpmn:CallActivity') {
-                            var overlayHtml = $(
-                                `<img src="/assets/images/icon/tdesign-rollback.svg" style="width: 20px; height: 20px;" alt="rollback">`
-                            );
-                            overlayHtml.click(function (e) {
-                                // alert('someone clicked ' + actId);
-                                self.$emit('rollback', element);
-                            });
-                            if (actId)
-                                overlays.add(actId, 'note', {
-                                    position: {
-                                        bottom: 10,
-                                        right: 0
-                                    },
-                                    html: overlayHtml
+                        if (element) {
+                            if (element.type != 'bpmn:SubProcess' && element.type != 'bpmn:CallActivity') {
+                                var overlayHtml = $(
+                                    `<img src="/assets/images/icon/tdesign-rollback.svg" style="width: 20px; height: 20px;" alt="rollback">`
+                                );
+                                overlayHtml.click(function (e) {
+                                    // alert('someone clicked ' + actId);
+                                    self.$emit('rollback', element);
                                 });
+                                if (actId)
+                                    overlays.add(actId, 'note', {
+                                        position: {
+                                            bottom: 10,
+                                            right: 0
+                                        },
+                                        html: overlayHtml
+                                    });
+                            }
                         }
                     });
                 }
@@ -225,6 +227,20 @@ export default {
                         // });
                     });
                 }
+                if (self.taskStatus) {
+                        Object.keys(self.taskStatus).forEach((task) => {
+                            let taskStatus = self.taskStatus[task];
+                            if (taskStatus == 'Completed') {
+                                canvas.addMarker(task, 'completed');
+                            } else if (taskStatus == 'Running') {
+                                canvas.addMarker(task, 'running');
+                            } else if (taskStatus == 'Stopped') {
+                                canvas.addMarker(task, 'stopped');
+                            } else if (taskStatus == 'Cancelled') {
+                                canvas.addMarker(task, 'cancelled');
+                            }
+                        });
+                    }
             }
 
             // console..log(eventBus);
@@ -246,7 +262,7 @@ export default {
                 //         const laneSet = bpmnFactory.create('bpmn:LaneSet');
                 //         laneSet.children = [];
                 //         businessObject.processRef.laneSet = laneSet;
-                //         const lane = modeling.addLane(businessObject, false);  
+                //         const lane = modeling.addLane(businessObject, false);
                 //     }, 0);
                 // }
 
@@ -335,8 +351,8 @@ export default {
             });
 
             self.debounce(() => {
-                    self.$emit('change');
-                }, 100)
+                self.$emit('change');
+            }, 100);
 
             // var events = ['element.hover', 'element.out', 'element.click', 'element.dblclick', 'element.mousedown', 'element.mouseup'];
             // events.forEach(function (event) {

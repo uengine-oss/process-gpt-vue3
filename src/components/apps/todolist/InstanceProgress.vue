@@ -39,7 +39,8 @@ export default {
     created() {
         this.init();
         this.EventBus.on('process-definition-updated', async () => {
-            this.bpmn = await backend.getRawDefinition(this.instance.defId, { type: 'bpmn' });
+            console.log(this.instance)
+            this.bpmn = await backend.getRawDefinition(this.instance.defId, { type: 'bpmn', version: this.instance.defVer });
             this.updatedDefKey++;
         });
     },
@@ -68,7 +69,7 @@ export default {
                 context: me,
                 action: async () => {
                     if (me.instance) {
-                        me.bpmn = await backend.getRawDefinition(me.instance.defId, { type: 'bpmn' });
+                        me.bpmn = await backend.getRawDefinition(me.instance.defId, { type: 'bpmn', version: this.instance.defVer });
                         me.workListByInstId = await backend.getWorkListByInstId(me.instance.instanceId);
                         if (me.mode == 'ProcessGPT') {
                             me.currentActivities = me.instance.current_activity_ids;

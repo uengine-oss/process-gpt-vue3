@@ -17,6 +17,11 @@
                 color="primary"
                 rounded
             >실행</v-btn>
+            <v-btn @click="deleteTest"
+                class="cp-process-save"
+                color="error"
+                rounded
+            >삭제</v-btn>
         </v-row>
     </v-card>
 </template>
@@ -38,6 +43,10 @@ export default {
     methods: {
         executeProcess() {
             this.$emit('execute', this.idx)
+        },
+        deleteTest() {
+            // backend.deleteTest(this.idx);
+            this.$emit('delete', this.idx)
         }
     }
 };
