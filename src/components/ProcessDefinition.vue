@@ -47,7 +47,8 @@
                     </v-row>
 
                     <div v-if="isXmlMode" style="height: calc(100% - 70px); margin-top: 70px; overflow: auto; padding: 10px">
-                        <XmlViewer :xml="bpmn" />
+                        <XmlViewer v-if="isViewMode" :xml="bpmn"/>
+                        <XMLEditor v-else :xml="bpmn" @changeBpmn="changeBpmn"/>
                     </div>
                     <BpmnuEngine
                         v-else
@@ -247,6 +248,8 @@ import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPa
 // import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
 import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
 import XmlViewer from 'vue3-xml-viewer'
+import XMLEditor from './ui/XMLEditor.vue';
+
 import InstanceNamePatternForm from '@/components/designer/InstanceNamePatternForm.vue'
 import BackendFactory from "@/components/api/BackendFactory";
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
@@ -266,6 +269,7 @@ export default {
         InstanceNamePatternForm,
         'process-gpt-execute': ProcessGPTExecute,
         XmlViewer,
+        XMLEditor,
         DryRunProcess,
         TestProcess
     },
@@ -602,6 +606,9 @@ export default {
         },
         changeElement() {
             this.$emit('change');
+        },
+        changeBpmn(newVal) {
+            this.$emit('changeBpmn', newVal);
         },
         previewProcess() {
             this.stepId = [];

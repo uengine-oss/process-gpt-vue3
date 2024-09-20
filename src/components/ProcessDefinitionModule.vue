@@ -92,7 +92,20 @@ export default {
                         }
                     } catch (error) {
                         console.log(error);
-                        reject(error);
+                        const maxRetries = 3;
+                        let retryCount = 0;
+
+                        const retry = async () => {
+                            if (retryCount < maxRetries) {
+                                console.log('retrying generate form');
+                                retryCount++;
+                                formGenerator.generate();
+                            } else {
+                                reject(error);
+                            }
+                        };
+
+                        retry();
                     }
                 };
                 formGenerator.previousMessages = [formGenerator.prevMessageFormat];
