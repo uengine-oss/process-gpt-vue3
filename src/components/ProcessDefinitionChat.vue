@@ -237,7 +237,7 @@ export default {
 
                 this.messages.push({
                     "role": "system",
-                    "content": `${this.userInfo.name}님 안녕하세요! 어떤 업무에 어떤 문제를 겪고 계신가요? 말씀해주시면 도와드리겠습니다!`,
+                    "content": this.$t('ProcessDefinitionChat.greetingMessage', { name: this.userInfo.name }),                    
                     "timeStamp": Date.now(),
                 })
 

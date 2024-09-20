@@ -281,7 +281,7 @@ export default {
                 }
                 const textBox = target.querySelector('.node-content-text-box');
                 if (textBox) {
-                    textBox.style.backgroundColor = `rgba(var(--v-theme-primary), 0.15)`;
+                    textBox.style.backgroundColor = `rgba(var(--v-theme-primary), 0.20)`;
                 }
                 this.previousTarget = target;
             } else {

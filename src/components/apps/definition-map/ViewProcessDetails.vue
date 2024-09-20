@@ -3,8 +3,8 @@
         <!-- Mega Process -->
         <div class="d-flex align-items-center">
             <v-card class="d-flex justify-center align-center pa-3 mb-3 details-title-card"
-                color="primary"
                 elevation="10"
+                style="background-color:rgb(var(--v-theme-primary), 0.2)"
             >
                 <div class="d-flex flex-column justify-content-center align-items-center">
                     <h6 class="text-h6 font-weight-semibold text-center">
@@ -19,8 +19,7 @@
             </div>
             <v-card class="d-flex align-center pa-3 mb-3"
                 elevation="10"
-                style="border-radius: 10px !important;"
-                color="primary"
+                style="background-color:rgb(var(--v-theme-primary), 0.2)"
             >
                 <h6 class="text-h6 font-weight-semibold text-center">{{ filteredProcess.name }}</h6>
                 <!-- <div class="ml-auto">
@@ -38,8 +37,9 @@
         </div>
         <!-- major Process -->
         <div class="d-flex align-items-center" v-if="filteredProcess && filteredProcess.major_proc_list && filteredProcess.major_proc_list.length > 0">
-            <v-card class="d-flex justify-center align-center pa-3 mb-3 details-title-card bg-lightsecondary"
+            <v-card class="d-flex justify-center align-center pa-2 mb-3 details-title-card"
                 elevation="10"
+                style="border-radius: 20px !important; margin-bottom: 5px; border: 5px solid rgba(var(--v-theme-primary), 0.2);"
             >
                 <div class="d-flex flex-column justify-content-center align-items-center">
                     <h6 class="text-h6 font-weight-semibold text-center">
@@ -54,9 +54,9 @@
             </div>
             <template v-for="(majorProc, index) in filteredProcess.major_proc_list" :key="index">
                 <v-card 
-                    class="d-flex align-center pa-3 mb-3 bg-lightsecondary last-no-margin"
+                    class="d-flex align-center pa-2 mb-3 last-no-margin"
                     elevation="10"
-                    style="border-radius: 10px !important;"
+                    style="border-radius: 20px !important; margin-bottom: 5px; border: 5px solid rgba(var(--v-theme-primary), 0.2);"
                 >
                     <div class="d-flex flex-column justify-content-center align-items-center">
                         <h6 class="text-h6 font-weight-semibold text-center">{{ majorProc.name }}</h6>

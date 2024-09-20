@@ -111,7 +111,8 @@
         "addMega": "Mega Process",
         "addMajor": "Major Process",
         "addSub": "Sub Process",
-        "save": "Save"
+        "save": "Save",
+        "consultingAI": "Process Consulting AI"
     },
     "uiDefinition": {
         "title": "Screen Definition",
@@ -177,7 +178,9 @@
         "addImage": "Add Image",
         "fileUpLoad": "File Up Load",
         "isEnableProcessGPT": "Enable Process-GPT",
-        "isDisableProcessGPT": "Disable Process-GPT"
+        "isDisableProcessGPT": "Disable Process-GPT",
+        "userReply": "Reply to {name}",
+        "systemReply": "Reply to the system"
     },
     "accountTab": {
         "accountSetting": "Account Settings",
@@ -507,5 +510,25 @@
     },
     "userListing": {
         "search": "User search"
+    },
+    "ProcessDefinitionChat": {
+        "greetingMessage": "Hello {name}! What tasks and issues are you experiencing? Please let me know and I'll help you!"
+    },
+    "customContextPad": {
+        "endEvent": "Append End Event",
+        "gateway": "Append gateway",
+        "task": "Append task",
+        "intermediateEvent": "Append intermediate/boundary event",
+        "textAnnotation": "Add text annotation",
+        "replace": "Change element",
+        "delete": "Delete",
+        "connect": "Connect to other element",
+        "laneAbove": "Add Lane Above",
+        "laneToTheLeft": "Add Lane to the Left",
+        "laneBelow": "Add Lane Below",
+        "laneToTheRight": "Add Lane to the Right",
+        "laneDivideTwo": "Divide into Two Lanes",
+        "laneDivideThree": "Divide into Three Lanes",
+        "connectionMulti": "Connect using Message Flow"
     }
 }
