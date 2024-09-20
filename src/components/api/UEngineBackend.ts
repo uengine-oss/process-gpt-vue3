@@ -60,7 +60,8 @@ class UEngineBackend implements Backend {
                 console.log(response);
                 return response.data?._embedded?.definitions;
             } else if (options.key == 'snapshot') {
-                const response = await this.getRawDefinition(`archive/${defId}.${options.type}/${options.match.version}`, options);
+                options.version = options?.match?.version;
+                const response = await this.getRawDefinition(`definitions/${defId}`, options);
                 return [{ snapshot: response }];
             }
         } else {
@@ -113,9 +114,13 @@ class UEngineBackend implements Backend {
     }
     // @ts-ignore
     async getRawDefinition(defPath: string, options) {
-            const response = await axiosInstance.get(`/definition/raw/${defPath}.${options.type}`, options);
-            return response.data;
-        
+        let path = `/definition/raw/${defPath}.${options.type}`;
+        if(options.version) {
+            path = path + `/version/${options.version}`
+        }
+        const response = await axiosInstance.get(path, options);
+        return response.data;
+
     }
 
     // Process Service Impl API
@@ -624,6 +629,13 @@ class UEngineBackend implements Backend {
             console.error('파일 다운로드 중 오류 발생:', error);
             throw error;
         }
+    }
+
+    async deleteTest(path: string, tracingTag: string, index: number): Promise<any> {
+        const response = await axiosInstance.delete(`/test/${path}`, {
+            data: { tracingTag: tracingTag, idx: index }
+        });
+        return response.data;
     }
 }
 

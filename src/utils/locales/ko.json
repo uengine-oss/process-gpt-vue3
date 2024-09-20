@@ -111,7 +111,8 @@
         "addMega": "Mega 프로세스",
         "addMajor": "Major 프로세스",
         "addSub": "Sub 프로세스",
-        "save" : "저장"
+        "save" : "저장",
+        "consultingAI": "프로세스 컨설팅 AI"
     },
     "uiDefinition": {
         "title": "화면 정의",
@@ -177,7 +178,9 @@
         "addImage": "이미지 추가",
         "fileUpLoad": "파일 업로드",
         "isEnableProcessGPT": "Process-GPT 활성화",
-        "isDisableProcessGPT": "Process-GPT 비활성화"
+        "isDisableProcessGPT": "Process-GPT 비활성화",
+        "userReply": "{name}님에게 답장",
+        "systemReply": "system에게 답장"
     },
     "accountTab": {
         "accountSetting": "계정 설정",
@@ -507,5 +510,25 @@
     },
     "userListing": {
         "search": "유저 검색"
+    },
+    "ProcessDefinitionChat": {
+        "greetingMessage": "{name}님 안녕하세요! 어떤 업무에 어떤 문제를 겪고 계신가요? 말씀해주시면 도와드리겠습니다!"
+    },
+    "customContextPad": {
+        "endEvent": "종료 이벤트 추가",
+        "gateway": "게이트웨이 추가",
+        "task": "작업 추가",
+        "intermediateEvent": "중간/경계 이벤트 추가",
+        "textAnnotation": "텍스트 주석 추가",
+        "replace": "요소 변경",
+        "delete": "삭제",
+        "connect": "다른 요소에 연결",
+        "laneAbove": "위쪽에 레인 추가",
+        "laneToTheLeft": "왼쪽에 레인 추가",
+        "laneBelow": "아래에 레인 추가",
+        "laneToTheRight": "오른쪽에 레인 추가",
+        "laneDivideTwo": "두 개의 레인으로 나누기",
+        "laneDivideThree": "세 개의 레인으로 나누기",
+        "connectionMulti": "메시지 흐름을 사용하여 연결"
     }
 }

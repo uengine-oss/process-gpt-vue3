@@ -93,10 +93,7 @@ export default {
     }),
     async created() {
         await this.init()
-        const list = await backend.testList(this.workItem.worklist.defId);
-        this.testList = list;
-        console.log(this.task)
-        if (this.testList[this.task]) this.selectedTask = JSON.parse(this.testList[this.task]);
+        
     },
     methods: {
         runNewTest(e) {
@@ -108,6 +105,11 @@ export default {
             console.log(this.selectedTask[e])
             delete this.selectedTask[e]["_type"];
             this.$emit('executeTest', this.selectedTask[e])
+        },
+        async deleteTest(idx) {
+            console.log(this.task)
+            await backend.deleteTest(this.definitionId, this.task, idx);
+            this.init();
         },
         async init() {
             let me = this
@@ -122,6 +124,10 @@ export default {
             
             this.$emit('type', me.currentComponent)
             this.$emit('workItem', me.workItem)
+            const list = await backend.testList(this.workItem.worklist.defId);
+            this.testList = list;
+            console.log(this.task)
+            if (this.testList[this.task]) this.selectedTask = JSON.parse(this.testList[this.task]);
         }
     }
 };

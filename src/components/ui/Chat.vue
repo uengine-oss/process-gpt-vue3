@@ -475,8 +475,11 @@
                 </v-chip>
             </div> -->
             <div class="text-body-1" v-if="isReply" style="margin-left: 10px">
-                {{ replyUser.name }}님에게 답장
-                <v-icon @click="cancelReply()">mdi-close</v-icon>
+                <v-row class="ma-0 pa-0">
+                    <div v-if="replyUser.role == 'system'">{{ $t('chat.systemReply') }}</div>
+                    <div v-else>{{ $t('chat.userReply', { name: replyUser.name }) }}</div>
+                    <v-icon @click="cancelReply()" style="margin-top:3px;">mdi-close</v-icon>
+                </v-row>
                 <p>{{ replyUser.content }}</p>
                 <v-divider />
             </div>
