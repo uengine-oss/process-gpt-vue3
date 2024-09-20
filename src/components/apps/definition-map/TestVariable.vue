@@ -28,7 +28,11 @@ export default {
     async created() {},
     methods: {
         executeProcess() {
-            this.$emit('execute', this.idx);
+            this.$emit('execute', this.idx)
+        },
+        deleteTest() {
+            // backend.deleteTest(this.idx);
+            this.$emit('delete', this.idx)
         }
     }
 };

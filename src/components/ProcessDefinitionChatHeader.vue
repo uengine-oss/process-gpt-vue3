@@ -83,6 +83,23 @@
                                 <span>{{ $t('chat.processDefinitionSave') }}</span>
                             </v-tooltip>
                         </div>
+
+                        <v-tooltip location="bottom" :text="$t('processDefinition.execution')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props" @click="executeProcess" icon variant="text" class="text-medium-emphasis" density="comfortable"
+                                >
+                                    <Icons :icon="'play'" />
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
+                        <v-tooltip location="bottom" :text="$t('processDefinition.simulate')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props" @click="executeSimulate" icon variant="text" class="text-medium-emphasis" density="comfortable"
+                                >
+                                    <Icons :icon="'bug-play'" />
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
                     </div>
                 </div>
             </div>
@@ -129,6 +146,13 @@ export default {
         }
     },
     methods: {
+        executeProcess() {
+            this.$emit("executeProcess");
+        },
+        executeSimulate() {
+            console.log("simulate")
+            this.$emit('executeSimulate');
+        },
         triggerFileInput() {
             this.$refs.fileInput.click();
         },

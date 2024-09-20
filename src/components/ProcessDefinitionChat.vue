@@ -108,6 +108,7 @@
                             <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
                                 :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
                                 @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
+                                @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                                 @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete" />
                         </template>
                     </Chat>
@@ -133,11 +134,20 @@
                         <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
                             :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
                             @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
+                            @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                             @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete" />
                     </template>
                 </Chat>
             </template>
         </AppBaseCard>
+        <v-dialog v-model="executeDialog" max-width="80%">
+            <process-gpt-execute v-if="mode === 'LLM'" :definitionId="fullPath" 
+                @close="executeDialog = false"></process-gpt-execute>
+            <div v-else>
+                <test-process v-if="isSimulate == 'true'" :definitionId="fullPath" @close="executeDialog = false" />
+                <dry-run-process v-else :is-simulate="isSimulate" :definitionId="fullPath" @close="executeDialog = false"></dry-run-process>
+            </div>
+        </v-dialog>
     </v-card>
 </template>
 <script>
@@ -150,6 +160,7 @@ import ProcessDefinitionVersionDialog from '@/components/ProcessDefinitionVersio
 import ProcessDefinitionVersionManager from '@/components/ProcessDefinitionVersionManager.vue';
 import ProcessDefinitionChatHeader from '@/components/ProcessDefinitionChatHeader.vue';
 import ProcessDefinitionConvertModule from '@/components/ProcessDefinitionConvertModule.vue';
+import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
 import ChatDetail from '@/components/apps/chats/ChatDetail.vue';
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
@@ -165,8 +176,11 @@ import ConsultingMentoGenerator from "@/components/ai/ProcessConsultingMentoGene
 import Chat from './ui/Chat.vue';
 
 import FormGenerator from './ai/FormDesignGenerator';
-
 import BackendFactory from '@/components/api/BackendFactory';
+
+import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
+import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
+import TestProcess from "@/components/apps/definition-map/TestProcess.vue"
 const backend = BackendFactory.createBackend();
 
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
@@ -191,7 +205,11 @@ export default {
         ProcessDefinitionVersionManager,
         ProcessDefinitionChatHeader,
         ProcessDefinitionConvertModule,
-        FormGenerator
+        FormGenerator,
+        ProcessExecuteDialog,
+        'process-gpt-execute': ProcessGPTExecute,
+        DryRunProcess,
+        TestProcess
     },
     props: {
         mode: {
@@ -220,7 +238,8 @@ export default {
         isDeleted: false,
         externalSystems: [],
         validationList: {},
-
+        executeDialog: false,
+        isSimulate: 'false',
         waitForCustomer: false,
         isConsultingMode: false,
     }),
@@ -326,6 +345,15 @@ export default {
         }
     },
     methods: {
+        executeProcess() {
+            this.isSimulate = 'false'
+            this.executeDialog = !this.executeDialog;
+        },
+        executeSimulate() {
+            console.log("simulate")
+            this.isSimulate = 'true'
+            this.executeDialog = !this.executeDialog;
+        },
         beforeStartGenerate(){
             let chatMsgs = [];
             if (this.messages && this.messages.length > 0) {
