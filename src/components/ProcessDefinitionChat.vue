@@ -59,6 +59,7 @@
                     :generateFormTask="generateFormTask"
                     @update="updateDefinition"
                     @change="changeElement"
+                    @changeBpmn="changeBpmn"
                 ></process-definition>
                 <process-definition-version-dialog
                     :process="processDefinition"
@@ -515,6 +516,9 @@ export default {
         loadBPMN(bpmn) {
             this.bpmn = bpmn;
             this.definitionChangeCount++;
+        },
+        changeBpmn(newVal) {
+            this.loadBPMN(newVal);
         },
         removePositionKey(obj) {
             // 배열인 경우, 각 요소에 대해 재귀적으로 함수를 호출
