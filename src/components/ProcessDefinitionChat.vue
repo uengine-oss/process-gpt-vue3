@@ -660,16 +660,41 @@ export default {
             }
         },
 
+        parseJsonProcess(response) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const jsonProcess = JSON.parse(response);
+                    resolve(jsonProcess);
+                } catch(error) {
+                    console.log(error);
+                    const maxRetries = 3;
+                    let retryCount = 0;
+
+                    const retry = async () => {
+                        if (retryCount < maxRetries) {
+                            console.log('retrying parse json process');
+                            retryCount++;
+                            resolve(partialParse(response));
+                        } else {
+                            reject(error);
+                        }
+                    };
+
+                    retry();
+                }
+            })
+        },
+
         async afterGenerationFinished(response) {
             let jsonProcess = null;
             if (typeof response === 'string') {
                 try {
-                    jsonProcess = JSON.parse(response);
+                    jsonProcess = await this.parseJsonProcess(response);
                 } catch(e){
                     try {
-                        jsonProcess = partialParse(response);
+                        jsonProcess = await this.parseJsonProcess(response);
                         if(jsonProcess && Object.keys(jsonProcess).length !== 0){
-                            jsonProcess = partialParse(response + '"');
+                            jsonProcess = await this.parseJsonProcess(response + '"');
                         }
                     } catch(e){
                         jsonProcess = this.extractJSON(response);
