@@ -144,8 +144,13 @@ const deleteChatRoom = () => {
     <v-sheet>
         <div class="px-6 pt-3">
             <div class="d-flex">
-                <v-text-field variant="outlined" v-model="searchValue" append-inner-icon="mdi-magnify"
-                    placeholder="Search Contact" hide-details density="compact"></v-text-field>
+                <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5 ">
+                    <Icons :icon="'magnifer-linear'" :size="22" />
+                    <v-text-field v-model="searchValue" variant="plain" density="compact"
+                        class="position-relative pt-0 ml-3 custom-placeholer-color" :placeholder="$t('chatListing.search')"
+                        single-line hide-details
+                    ></v-text-field>
+                </div>
                 <v-btn density="comfortable" icon @click="openDialog" style="margin-left: 10px;">
                     <v-icon>mdi-chat-plus</v-icon>
                 </v-btn>

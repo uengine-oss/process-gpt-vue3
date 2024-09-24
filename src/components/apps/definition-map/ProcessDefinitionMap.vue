@@ -91,11 +91,12 @@
         </v-card>
         <v-dialog :style="ProcessPreviewMode ? '' : 'max-width: 1000px;'" v-model="openConsultingDialog" persistent>
             <v-card>
-                <v-card-title style="height: 55px; background-color: rgb(227, 240, 250); align-content: center;">
+                <v-row class="ma-0 pa-3" style="background-color:rgb(var(--v-theme-primary), 0.2); height:50px;">
                     <v-icon small style="margin-right: 10px;">mdi-auto-fix</v-icon>
-                    Process Consulting AI
+                    <div>{{ $t('processDefinitionMap.consultingAI') }}</div>
+                    <v-spacer></v-spacer>
                     <v-icon @click="closeConsultingDialog()" small style="margin-right: 5px; float: right;">mdi-close</v-icon>
-                </v-card-title>
+                </v-row>
                 <ProcessDefinitionChat 
                     :mode="'consulting'"
                     @createdBPMN="createdBPMN"

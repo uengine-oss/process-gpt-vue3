@@ -57,9 +57,9 @@
             <v-col class="pa-0" :cols="isMobile ? 12 : 8">
                 <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
                     <v-tabs v-model="selectedTab">
-                        <v-tab value="progress">진행 상황</v-tab>
-                        <v-tab v-if="messages && messages.length > 0" value="history">워크 히스토리</v-tab>
-                        <v-tab v-if="messages" value="agent">Agent 초안 생성</v-tab>
+                        <v-tab value="progress">{{ $t('WorkItem.progress') }}</v-tab>
+                        <v-tab v-if="messages && messages.length > 0" value="history">{{ $t('WorkItem.history') }}</v-tab>
+                        <v-tab v-if="messages" value="agent">{{ $t('WorkItem.agent') }}</v-tab>
                     </v-tabs>
                     <v-window v-model="selectedTab">
                         <v-window-item value="progress">
@@ -75,7 +75,7 @@
                                             :options="options"
                                             :isViewMode="true"
                                             :currentActivities="currentActivities"
-                                            :taskStatus="taskStatus"
+                                            :task-status="taskStatus"
                                             v-on:error="handleError"
                                             v-on:shown="handleShown"
                                             v-on:openDefinition="(ele) => openSubProcess(ele)"
@@ -199,7 +199,8 @@ export default {
         selectedTab: 'progress',
         eventList: [],
         html: null,
-        formData: null
+        formData: null,
+        taskStatus: {}
     }),
     created() {
         this.init();
@@ -284,22 +285,30 @@ export default {
                         me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, { type: 'bpmn', version: me.workItem.worklist.defVerId });
                         if (me.workItem.worklist.execScope) me.workItem.execScope = me.workItem.worklist.execScope;
                         me.workListByInstId = await backend.getWorkListByInstId(me.workItem.worklist.instId);
+                        // 현재 실행 중인 Task만 표시
+                        let tmp = {}
+                        tmp[me.workItem?.activity?.tracingTag] = "Running"
+                        me.taskStatus = tmp
+                        
                         if (me.workItem.worklist.currentActivities) {
                             me.currentActivities = me.workItem.worklist.currentActivities;
+                        // me.bpmnKey++;
                         } else {
-                            me.currentActivities = me.workListByInstId.map((item) => {
-                                if(item.status != 'COMPLETED' && item.status != 'DONE') {
-                                    return item.tracingTag;
-                                }
-                            });
+                            me.currentActivities = me.workListByInstId.map((item) => item.tracingTag);
+                            console.log(me.workListByInstId.map((item) => item.tracingTag))
+                            // me.currentActivities = me.workListByInstId.map((item) => {
+                            //     if(item.status != 'COMPLETED' && item.status != 'DONE') {
+                            //         return item.tracingTag;
+                            //     }
+                            // });
                         }
                     }
-                    me.taskStatus = await backend.getActivitiesStatus(me.workItem.worklist.instId);
+                    // me.taskStatus = await backend.getActivitiesStatus(me.workItem.worklist.instId);
 
                     if (me.mode == 'ProcessGPT') {
                         me.currentComponent = 'FormWorkItem';
                     } else {
-                        me.currentComponent = me.workItem.worklist.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.worklist.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
+                        me.currentComponent = me.workItem.activity.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.activity.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
                     }
 
                     me.updatedDefKey++;

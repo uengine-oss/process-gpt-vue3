@@ -277,7 +277,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   "componentType" :"Event",
                   "id": "event_id",//id는 영어로 써야됨, start event 는 start_event, end event 는 end_event 로 고정
                   "name": "event name",
-                  "role": "role name", // You must use the name among the created "roles".,
+                  "role": "role name", // You must use the name among the created "roles". start event 와 end event 는 반드시 연결된 Activity 의 role 로 설정,
                   "source": "components id", 반드시 존재해야함,
                   "type": "StartEvent | EndEvent | IntermediateCatchEvent | MessageEvent | TimerEvent | ErrorEvent | ConditionalEvent | SignalEvent | TerminationEvent | LinkEvent | CompensationEvent | MultipleEvent | ParallelEvent | EscalationEvent | CancelEvent",
                   "description": "프로세스의 시작, 종료 또는 중간 이벤트 설명",

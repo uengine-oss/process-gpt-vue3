@@ -23,8 +23,20 @@
                     ></WorkItem>
                 </div>
                 <div v-else>
-                    Loading...                    
-                </div>
+                    <v-row class="ma-0 pa-0 execute-skeleton-top" style="height: 100%;">
+                        <v-col cols="12" class="pa-4">
+                            <v-skeleton-loader type="card"></v-skeleton-loader>
+                        </v-col>
+                    </v-row>
+                    <v-row class="ma-0 pa-0 execute-skeleton-bottom" style="height: 100%;">
+                        <v-col cols="4" class="pa-4">
+                            <v-skeleton-loader type="card"></v-skeleton-loader>
+                        </v-col>
+                        <v-col cols="8" class="pa-4">
+                            <v-skeleton-loader type="card"></v-skeleton-loader>
+                        </v-col>
+                    </v-row>
+                </div>       
             </div>
         </div>
     </v-card>

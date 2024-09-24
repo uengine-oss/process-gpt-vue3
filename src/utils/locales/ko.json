@@ -111,7 +111,8 @@
         "addMega": "Mega 프로세스",
         "addMajor": "Major 프로세스",
         "addSub": "Sub 프로세스",
-        "save" : "저장"
+        "save" : "저장",
+        "consultingAI": "프로세스 컨설팅 AI"
     },
     "uiDefinition": {
         "title": "화면 정의",
@@ -177,7 +178,12 @@
         "addImage": "이미지 추가",
         "fileUpLoad": "파일 업로드",
         "isEnableProcessGPT": "Process-GPT 활성화",
-        "isDisableProcessGPT": "Process-GPT 비활성화"
+        "isDisableProcessGPT": "Process-GPT 비활성화",
+        "userReply": "{name}님에게 답장",
+        "systemReply": "system에게 답장",
+        "headset": "말하기/듣기",
+        "document": "업무 지시",
+        "camera": "카메라"
     },
     "accountTab": {
         "accountSetting": "계정 설정",
@@ -477,5 +483,69 @@
     "System" : {
         "description" : "설명",
         "edit" : "수정"
+    },
+    "PaletteProvider": {
+        "undoCmdZ": "되돌리기 (Cmd + Z)",
+        "undoCtrlZ": "되돌리기 (Ctrl + Z)",
+        "RedoCmdShiftZ": "다시 실행 (Cmd + Shift + Z)",
+        "RedoCtrlY": "다시 실행 (Ctrl + Y)",
+        "handTool": "손(이동) 도구 활성화",
+        "lassoTool": "선택영역 지정 도구 활성화",
+        "spaceTool": "공간 생성/제거 도구 활성화",
+        "globalConnectTool": "연결 도구 활성화",
+        "participantCollapsed": "풀/참가자 생성(가로)",
+        "participantExpanded": "풀/참가자 생성(세로)",
+        "StartEvent": "시작 이벤트 생성",
+        "IntermediateThrowEvent": "중간 이벤트 전송",
+        "EndEvent": "종료 이벤트 생성",
+        "ExclusiveGateway": "독점 게이트웨이 생성",
+        "Task": "작업 생성",
+        "SubProcess": "하위 프로세스 생성",
+        "DataStoreReference": "데이터 저장소 생성",
+        "DataObjectReference": "데이터 객체 생성",
+        "Participant": "참가자 생성",
+        "expandedSubProcess": "확장된 하위 프로세스 생성",
+        "dataStore": "데이터 저장소 생성",
+        "dataObject": "데이터 객체 생성"
+    },
+    "chatListing": {
+        "search": "검색"
+    },
+    "userListing": {
+        "search": "유저 검색"
+    },
+    "ProcessDefinitionChat": {
+        "greetingMessage": "{name}님 안녕하세요! 어떤 업무에 어떤 문제를 겪고 계신가요? 말씀해주시면 도와드리겠습니다!"
+    },
+    "customContextPad": {
+        "endEvent": "종료 이벤트 추가",
+        "gateway": "게이트웨이 추가",
+        "task": "작업 추가",
+        "intermediateEvent": "중간/경계 이벤트 추가",
+        "textAnnotation": "텍스트 주석 추가",
+        "replace": "요소 변경",
+        "delete": "삭제",
+        "connect": "다른 요소에 연결",
+        "laneAbove": "위쪽에 레인 추가",
+        "laneToTheLeft": "왼쪽에 레인 추가",
+        "laneBelow": "아래에 레인 추가",
+        "laneToTheRight": "오른쪽에 레인 추가",
+        "laneDivideTwo": "두 개의 레인으로 나누기",
+        "laneDivideThree": "세 개의 레인으로 나누기",
+        "connectionMulti": "메시지 연결"
+    },
+    "WorkItem": {
+        "progress": "진행 상황",
+        "history": "워크 히스토리",
+        "agent": "Agent 초안 생성"
+    },
+    "TestProcess": {
+        "title": "테스트 프로세스",
+        "mainInstanceId": "메인 - 인스턴스 ID - ",
+        "subInstanceId": "서브 - 인스턴스 ID - ",
+        "worklist": "작업 목록",
+        "success": "성공",
+        "taskID": "작업 ID: ",
+        "instanceID": "인스턴스 ID: "
     }
 }

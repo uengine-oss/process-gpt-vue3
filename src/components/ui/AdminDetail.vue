@@ -18,6 +18,7 @@
                         :currentActivities="currentActivities"
                         :executionScopeActivities="executionScopeActivities"
                         :selectedExecutionScope="selectedExecutionScope"
+                        :task-status="taskStatus"
                         v-on:selectedExecutionScope="(scope) => (selectedExecutionScope = scope)"
                         v-on:openDefinition="(ele) => openSubProcess(ele)"
                         v-on:openPanel="(id) => openPanel(id)"
@@ -75,7 +76,8 @@ export default {
         roles: [],
         currentActivities: [],
         activityVariables: {},
-        selectedExecutionScope: null
+        selectedExecutionScope: null,
+        taskStatus:{}
     }),
     async created() {
         await this.init();
@@ -95,12 +97,18 @@ export default {
     },
     methods: {
         async init() {  
+            let me = this;
             let startTime = performance.now();
             this.loaded = false;
             this.instanceId = this.$route.params.id;
             this.eventList = await backend.getEventList(this.instanceId);
             await this.getInstanceDetail();
             await this.getProcessDefinition();
+            me.$try({
+                action: async () => {
+                    me.taskStatus = await backend.getActivitiesStatus(this.instanceId);
+                }
+            });
             await this.getProcessVariables();
             let endTime = performance.now();
             console.log(`Result Time :  ${endTime - startTime} ms`);
@@ -134,7 +142,8 @@ export default {
             let encodedId = this.instanceDetail.defId;
             let decodedId = decodeURIComponent(encodedId);
             let options = {
-                type: 'bpmn'
+                type: 'bpmn',
+                version: this.instanceDetail.defVer
             };
             await backend.getRawDefinition(decodedId, options).then((response) => {
                 me.processDefinition = response;

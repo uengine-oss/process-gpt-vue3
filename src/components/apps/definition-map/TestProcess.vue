@@ -1,10 +1,10 @@
 <template>
     <v-card style="width: 100%; height: 100%">
-        <v-card-title class="pb-0"> Testing Process </v-card-title>
+        <v-card-title class="pb-0">{{ $t('TestProcess.title') }}</v-card-title>
         <div>
             <v-row :class="isMobile ? 'ma-0 pa-2 mt-2' : 'ma-0 pa-4 pt-0'">
                 <v-col class="pa-0" :cols="isMobile ? 12 : isSimulate ? 6 : 6">
-                    <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
+                    <v-alert v-if="bpmn || subBpmn" class="pa-0 mt-4" color="#2196F3" variant="outlined">
                         <div
                             class="pa-2"
                             :style="
@@ -15,7 +15,7 @@
                         >
                             <div class="pa-0" style="height: 100%;" :key="updatedDefKey">
                                 <div v-if="bpmn" style="border-bottom: 1px solid #E0E0E0;">
-                                    Main - InstanceId - {{ instanceId }}
+                                    {{ $t('TestProcess.mainInstanceId') }}{{ instanceId }}
                                     <BpmnUengine
                                         ref="bpmnVue"
                                         :bpmn="bpmn"
@@ -26,12 +26,11 @@
                                         style="height: 100%;"
                                     ></BpmnUengine>
                                 </div>
-                                <div v-else class="no-bpmn-found-text">No BPMN found</div>
                                 <div v-if="subBpmn">
                                     <div v-for="(sub, key) in subBpmn"
                                          style="border-bottom: 1px solid #E0E0E0;"
                                     >
-                                        Sub - InstanceId - {{ key }}
+                                        {{ $t('TestProcess.subInstanceId') }}{{ key }}
                                         <BpmnUengine
                                             ref="bpmnVue"
                                             :bpmn="sub"
@@ -46,9 +45,14 @@
                             </div>
                         </div>
                     </v-alert>
+                    <v-row v-else class="ma-0 pa-0 test-process-skeleton" style="height: 100%;">
+                        <v-col cols="12" class="pa-4">
+                            <v-skeleton-loader type="card"></v-skeleton-loader>
+                        </v-col>
+                    </v-row>
                 </v-col>
                 <v-col class="pa-4" :cols="6">
-                    <v-card-title class="pa-0">Worklist</v-card-title>
+                    <v-card-title class="pa-0">{{ $t('TestProcess.worklist') }}</v-card-title>
                     <div
                         style="height: calc(-270px + 100vh);
                         color: black;
@@ -61,7 +65,7 @@
                                         $try({
                                             context: this,
                                             action: () => fireMessage(event.tracingTag),
-                                            successMsg: `${event.name} 실행 완료`
+                                            successMsg: `${event.name} ${this.$t('TestProcess.success')}`
                                         })
                                     "
                                     v-if="event.name"
@@ -73,15 +77,15 @@
                             <v-card
                                 v-for="task in taskList"
                                 variant="outlined"
-                                class="pa-4 mb-2"
+                                class="pa-4 mb-0"
                                 :key="task.taskId"
                             >
                                 <div>
                                     <div class="text-h6 mb-1">
                                         {{ task.title }}
                                     </div>
-                                    <div class="text-caption">Task ID: {{ task.taskId }}</div>
-                                    <div class="text-caption">Instance ID: {{ task.instId }}</div>
+                                    <div class="text-caption">{{ $t('TestProcess.taskID') }}{{ task.taskId }}</div>
+                                    <div class="text-caption">{{ $t('TestProcess.instanceID') }}{{ task.instId }}</div>
                                 </div>
                                 <test-variables
                                     style="height: 100%"
@@ -94,7 +98,11 @@
                                 ></test-variables>
                             </v-card>
                         </div>
-                        <div v-else>Loading...</div>
+                        <v-row v-else class="ma-0 pa-0 test-process-work-list-skeleton" style="height: 100%;">
+                            <v-col cols="12" class="pa-0">
+                                <v-skeleton-loader type="card"></v-skeleton-loader>
+                            </v-col>
+                        </v-row>
                     </div>
                 </v-col>
             </v-row>

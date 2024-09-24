@@ -2,18 +2,36 @@
     <div>
         <div style="position: sticky; top:0px; z-index:1; background-color:white;">
             <div class="align-right gap-3 justify-space-between" 
-                :style="modelValueStyle ? 'padding: 15.5px 16px 0 16px;' : 'padding: 16px;'"
+                :style="modelValueStyle ? 'padding: 12px 16px 2px 16px;' : 'padding: 9px 16px 9px 16px;'"
             >
-                <div v-if="modelValue && modelValue !== ''" class="d-flex gap-2 align-center">
-                    <v-text-field v-if="!lock && editUser != '' && editUser == userInfo.name" v-model="processName"
-                        label="프로세스 정의명" variant="underlined" hide-details class="pa-0 ma-0"></v-text-field>
-                    <h5 v-else class="text-h5 mb-n1">{{ modelValue }}</h5>
-                </div>
-                <h5 v-else class="text-h5 mb-n1">{{ $t('processDefinition.title') }}</h5>
+                <v-row class="ma-0 pa-0">
+                    <div v-if="modelValue && modelValue !== ''" class="d-flex gap-2 align-center">
+                        <v-text-field v-if="!lock && editUser != '' && editUser == userInfo.name" v-model="processName"
+                            label="프로세스 정의명" variant="underlined" hide-details class="pa-0 ma-0"
+                            style="min-width:150px; width:150px;"
+                        ></v-text-field>
+                        <h5 v-else class="text-h5 mb-n1">{{ modelValue }}</h5>
+                    </div>
+                    <h5 v-else class="text-h5 mb-n1">{{ $t('processDefinition.title') }}</h5>
+                    <v-spacer></v-spacer>
+                    <!-- 삭제 아이콘 -->
+                    <v-tooltip location="bottom">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
+                                density="comfortable" @click="beforeDelete"
+                            >
+                                <TrashIcon size="24" style="color:#FB977D"/>
+                            </v-btn>
+                        </template>
+                        <span>{{ $t('processDefinition.deleteProcess') }}</span>
+                    </v-tooltip>
+                </v-row>
                 
                 <div class="custom-tools">
-                    <div class="d-flex" 
-                        :style="modelValueStyle ? 'margin: 5px 0 5.5px 0;' : 'margin-top: 12px;'">
+                    <v-row class="ma-0 pa-0 pt-3"
+                        :style="modelValueStyle ? 'margin: 5px 0 5.5px 0;' : 'margin-top: 12px;'"
+                    >
+                        <!-- 파일업로드 아이콘 -->
                         <v-tooltip location="bottom">
                             <template v-slot:activator="{ props }">
                                 <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
@@ -26,52 +44,50 @@
                         <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn ,.jsonold" style="display: none" />
                 
                         <div v-if="bpmn && fullPath != 'chat'">
-                            <v-tooltip location="bottom">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                        density="comfortable" @click="toggleLock">
-                                        <Icons :icon="lock ? 'lock' : 'unLock'"/>
-                                    </v-btn>
-                                </template>
-                                <span v-if="lock">
-                                    {{ editUser != '' && editUser != userInfo.name
-                                        ? `현재 ${editUser} 님께서 수정 중입니다. 체크아웃 하는 경우 ${editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크아웃 하시겠습니까?`
-                                        : $t('chat.unlock') }}
-                                </span>
-                                <span v-else>{{ $t('chat.lock') }}</span>
-                            </v-tooltip>
+                            <!-- 자물쇠 아이콘 -->
+                             <div class="process-definition-chat-btn-set">
+                                <v-tooltip location="bottom">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
+                                            density="comfortable" @click="toggleLock">
+                                            <Icons :icon="lock ? 'lock' : 'unLock'"/>
+                                        </v-btn>
+                                    </template>
+                                    <span v-if="lock">
+                                        {{ editUser != '' && editUser != userInfo.name
+                                            ? `현재 ${editUser} 님께서 수정 중입니다. 체크아웃 하는 경우 ${editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크아웃 하시겠습니까?`
+                                            : $t('chat.unlock') }}
+                                    </span>
+                                    <span v-else>{{ $t('chat.lock') }}</span>
+                                </v-tooltip>
+                            </div>
                 
-                            <v-tooltip location="bottom">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                        density="comfortable" @click="toggleVerMangerDialog">
-                                        <HistoryIcon size="24" />
-                                    </v-btn>
-                                </template>
-                                <span>{{ $t('chat.history') }}</span>
-                            </v-tooltip>
-                
-                            <v-tooltip location="bottom">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                        density="comfortable" @click="beforeDelete">
-                                        <TrashIcon size="24" />
-                                    </v-btn>
-                                </template>
-                                <span>{{ $t('processDefinition.deleteProcess') }}</span>
-                            </v-tooltip>
-                    
-                            <v-tooltip location="bottom">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                        density="comfortable" @click="showXmlMode">
-                                        <Icons :icon="'code-xml'" :color="isXmlMode ? '#1976D2' : '#666666'"/>
-                                    </v-btn>
-                                </template>
-                                <span>{{ isXmlMode ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>
-                            </v-tooltip>
+                            <div class="process-definition-chat-btn-set">
+                                <!-- 히스토리 아이콘 -->
+                                <v-tooltip location="bottom">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
+                                            density="comfortable" @click="toggleVerMangerDialog">
+                                            <HistoryIcon size="24" />
+                                        </v-btn>
+                                    </template>
+                                    <span>{{ $t('chat.history') }}</span>
+                                </v-tooltip>
+                        
+                                <!-- xml보기 아이콘 -->
+                                <v-tooltip location="bottom">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
+                                            density="comfortable" @click="showXmlMode">
+                                            <Icons :icon="'code-xml'" :color="isXmlMode ? '#1976D2' : '#666666'"/>
+                                        </v-btn>
+                                    </template>
+                                    <span>{{ isXmlMode ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>
+                                </v-tooltip>
+                            </div>
                         </div>
                 
+                        <!-- 저장아이콘 -->
                         <div v-else>
                             <v-tooltip location="bottom">   
                                 <template v-slot:activator="{ props }">
@@ -83,7 +99,27 @@
                                 <span>{{ $t('chat.processDefinitionSave') }}</span>
                             </v-tooltip>
                         </div>
-                    </div>
+
+                        <!-- 시뮬레이션 아이콘 -->
+                        <v-tooltip location="bottom" :text="$t('processDefinition.simulate')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props" @click="executeSimulate" icon variant="text" class="text-medium-emphasis" density="comfortable"
+                                >
+                                    <Icons :icon="'bug-play'" />
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
+
+                        <!-- 실행 아이콘 -->
+                        <v-tooltip location="bottom" :text="$t('processDefinition.execution')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props" @click="executeProcess" icon variant="text" class="text-medium-emphasis" density="comfortable"
+                                >
+                                    <Icons :icon="'play'" />
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
+                    </v-row>
                 </div>
             </div>
 
@@ -129,6 +165,13 @@ export default {
         }
     },
     methods: {
+        executeProcess() {
+            this.$emit("executeProcess");
+        },
+        executeSimulate() {
+            console.log("simulate")
+            this.$emit('executeSimulate');
+        },
         triggerFileInput() {
             this.$refs.fileInput.click();
         },

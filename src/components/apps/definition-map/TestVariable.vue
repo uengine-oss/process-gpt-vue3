@@ -1,24 +1,18 @@
 <template>
-    <v-card style="height: 100%;" variant="outlined" class="pa-4">
-        <!-- <v-card-title>  </v-card-title> -->
-        <v-card-text class="pa-0">
-            <div v-for="val, key in selectedTask" :key="key" >
-                <div v-if="key != '_type'"
-                    style="color:black;"
-                >
-                    {{ key }} : {{ val }}
-                </div>
-            </div>
-        </v-card-text>
-        <v-row class="ma-0 pa-0">
-            <v-spacer></v-spacer>
-            <v-btn @click="executeProcess"
-                class="cp-process-save"
-                color="primary"
-                rounded
-            >실행</v-btn>
-        </v-row>
-    </v-card>
+    <tr  v-for="val, key in selectedTask" :key="key">
+        <template v-if="key != '_type'">
+            <td>{{ key }}</td>
+            <td>{{ val }}</td>
+            <td>
+                <v-btn @click="executeProcess"
+                    class="cp-process-save"
+                    color="primary"
+                    rounded
+                    density="comfortable"
+                >실행</v-btn>
+            </td>
+        </template>
+    </tr>
 </template>
 
 <script>
@@ -30,14 +24,15 @@ export default {
         idx: Number,
         selectedTask: Object
     },
-    data: () => ({
-        
-    }),
-    async created() {
-    },
+    data: () => ({}),
+    async created() {},
     methods: {
         executeProcess() {
             this.$emit('execute', this.idx)
+        },
+        deleteTest() {
+            // backend.deleteTest(this.idx);
+            this.$emit('delete', this.idx)
         }
     }
 };

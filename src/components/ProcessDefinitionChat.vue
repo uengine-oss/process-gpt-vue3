@@ -59,6 +59,7 @@
                     :generateFormTask="generateFormTask"
                     @update="updateDefinition"
                     @change="changeElement"
+                    @changeBpmn="changeBpmn"
                 ></process-definition>
                 <process-definition-version-dialog
                     :process="processDefinition"
@@ -78,14 +79,22 @@
                     @changeXML="changeXML"
                 ></ProcessDefinitionVersionManager>
                 <v-dialog v-model="deleteDialog" max-width="500">
-                    <v-card>
-                        <v-card-text>
-                            {{ $t('processDefinition.deleteProcessMessage') }}
-                        </v-card-text>
-                        <v-card-actions class="justify-center pt-0">
-                            <v-btn color="primary" variant="flat" @click="deleteProcess">{{ $t('processDefinition.delete') }}</v-btn>
-                            <v-btn color="error" variant="flat" @click="deleteDialog = false">{{ $t('processDefinition.cancel') }}</v-btn>
-                        </v-card-actions>
+                    <v-card class="pa-4">
+                        <v-row class="ma-0 pa-0 mb-8">
+                            <v-card-text class="ma-0 pa-0" style="font-size:24px;">
+                                {{ $t('processDefinition.deleteProcessMessage') }}
+                            </v-card-text>
+                            <v-spacer></v-spacer>
+                            <v-btn @click="deleteDialog = false" icon variant="text" density="comfortable"
+                                style="margin-top:-8px;"
+                            >
+                                <Icons :icon="'close'" :size="16" />
+                            </v-btn>
+                        </v-row>
+                        <v-row class="ma-0 pa-0">
+                            <v-spacer></v-spacer>
+                            <v-btn color="error" rounded variant="flat" @click="deleteProcess">{{ $t('processDefinition.delete') }}</v-btn>
+                        </v-row>
                     </v-card>
                 </v-dialog>
             </template>
@@ -108,6 +117,7 @@
                             <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
                                 :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
                                 @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
+                                @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                                 @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete" />
                         </template>
                     </Chat>
@@ -133,11 +143,20 @@
                         <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
                             :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
                             @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
+                            @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                             @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete" />
                     </template>
                 </Chat>
             </template>
         </AppBaseCard>
+        <v-dialog v-model="executeDialog" max-width="80%">
+            <process-gpt-execute v-if="mode === 'LLM'" :definitionId="fullPath" 
+                @close="executeDialog = false"></process-gpt-execute>
+            <div v-else>
+                <test-process v-if="isSimulate == 'true'" :definitionId="fullPath" @close="executeDialog = false" />
+                <dry-run-process v-else :is-simulate="isSimulate" :definitionId="fullPath" @close="executeDialog = false"></dry-run-process>
+            </div>
+        </v-dialog>
     </v-card>
 </template>
 <script>
@@ -150,6 +169,7 @@ import ProcessDefinitionVersionDialog from '@/components/ProcessDefinitionVersio
 import ProcessDefinitionVersionManager from '@/components/ProcessDefinitionVersionManager.vue';
 import ProcessDefinitionChatHeader from '@/components/ProcessDefinitionChatHeader.vue';
 import ProcessDefinitionConvertModule from '@/components/ProcessDefinitionConvertModule.vue';
+import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
 import ChatDetail from '@/components/apps/chats/ChatDetail.vue';
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
@@ -165,8 +185,11 @@ import ConsultingMentoGenerator from "@/components/ai/ProcessConsultingMentoGene
 import Chat from './ui/Chat.vue';
 
 import FormGenerator from './ai/FormDesignGenerator';
-
 import BackendFactory from '@/components/api/BackendFactory';
+
+import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
+import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
+import TestProcess from "@/components/apps/definition-map/TestProcess.vue"
 const backend = BackendFactory.createBackend();
 
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
@@ -191,7 +214,11 @@ export default {
         ProcessDefinitionVersionManager,
         ProcessDefinitionChatHeader,
         ProcessDefinitionConvertModule,
-        FormGenerator
+        FormGenerator,
+        ProcessExecuteDialog,
+        'process-gpt-execute': ProcessGPTExecute,
+        DryRunProcess,
+        TestProcess
     },
     props: {
         mode: {
@@ -220,7 +247,8 @@ export default {
         isDeleted: false,
         externalSystems: [],
         validationList: {},
-
+        executeDialog: false,
+        isSimulate: 'false',
         waitForCustomer: false,
         isConsultingMode: false,
     }),
@@ -237,7 +265,7 @@ export default {
 
                 this.messages.push({
                     "role": "system",
-                    "content": `${this.userInfo.name}님 안녕하세요! 어떤 업무에 어떤 문제를 겪고 계신가요? 말씀해주시면 도와드리겠습니다!`,
+                    "content": this.$t('ProcessDefinitionChat.greetingMessage', { name: this.userInfo.name }),                    
                     "timeStamp": Date.now(),
                 })
 
@@ -326,6 +354,15 @@ export default {
         }
     },
     methods: {
+        executeProcess() {
+            this.isSimulate = 'false'
+            this.executeDialog = !this.executeDialog;
+        },
+        executeSimulate() {
+            console.log("simulate")
+            this.isSimulate = 'true'
+            this.executeDialog = !this.executeDialog;
+        },
         beforeStartGenerate(){
             let chatMsgs = [];
             if (this.messages && this.messages.length > 0) {
@@ -487,6 +524,9 @@ export default {
         loadBPMN(bpmn) {
             this.bpmn = bpmn;
             this.definitionChangeCount++;
+        },
+        changeBpmn(newVal) {
+            this.loadBPMN(newVal);
         },
         removePositionKey(obj) {
             // 배열인 경우, 각 요소에 대해 재귀적으로 함수를 호출
@@ -660,16 +700,41 @@ export default {
             }
         },
 
+        parseJsonProcess(response) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const jsonProcess = JSON.parse(response);
+                    resolve(jsonProcess);
+                } catch(error) {
+                    console.log(error);
+                    const maxRetries = 3;
+                    let retryCount = 0;
+
+                    const retry = async () => {
+                        if (retryCount < maxRetries) {
+                            console.log('retrying parse json process');
+                            retryCount++;
+                            resolve(partialParse(response));
+                        } else {
+                            reject(error);
+                        }
+                    };
+
+                    retry();
+                }
+            })
+        },
+
         async afterGenerationFinished(response) {
             let jsonProcess = null;
             if (typeof response === 'string') {
                 try {
-                    jsonProcess = JSON.parse(response);
+                    jsonProcess = await this.parseJsonProcess(response);
                 } catch(e){
                     try {
-                        jsonProcess = partialParse(response);
+                        jsonProcess = await this.parseJsonProcess(response);
                         if(jsonProcess && Object.keys(jsonProcess).length !== 0){
-                            jsonProcess = partialParse(response + '"');
+                            jsonProcess = await this.parseJsonProcess(response + '"');
                         }
                     } catch(e){
                         jsonProcess = this.extractJSON(response);

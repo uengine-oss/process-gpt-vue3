@@ -405,14 +405,21 @@
                     <div :style="type == 'consulting' ? 'position:relative; z-index: 9999;':'position:relative;'">
                         <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
                             <div v-if="isOpenedChatMenu" class="chat-menu-background">
-                                <v-btn @click="recordingModeChange()"
-                                    density="comfortable"
-                                    icon
-                                    variant="text"
-                                >
-                                    <Icons :icon="'round-headset'"  />
-                                </v-btn>
-                                <v-tooltip v-if="type != 'AssistantChats'" text="업무 지시">
+                                
+                                <v-tooltip :text="$t('chat.headset')">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn @click="recordingModeChange()"
+                                            class="text-medium-emphasis"
+                                            icon
+                                            variant="text"
+                                            v-bind="props"
+                                            style="width:30px; height:30px;"
+                                        >
+                                            <Icons :icon="'round-headset'" :size="20"  />
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
+                                <v-tooltip v-if="type != 'AssistantChats'" :text="$t('chat.document')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="startWorkOrder" v-bind="props"
                                             style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
@@ -420,7 +427,7 @@
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
-                                <v-tooltip :text="'카메라'">
+                                <v-tooltip :text="$t('chat.camera')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="capture" v-bind="props"
                                             style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
@@ -524,8 +531,11 @@
                 </v-chip>
             </div> -->
             <div class="text-body-1" v-if="isReply" style="margin-left: 10px">
-                {{ replyUser.name }}님에게 답장
-                <v-icon @click="cancelReply()">mdi-close</v-icon>
+                <v-row class="ma-0 pa-0">
+                    <div v-if="replyUser.role == 'system'">{{ $t('chat.systemReply') }}</div>
+                    <div v-else>{{ $t('chat.userReply', { name: replyUser.name }) }}</div>
+                    <v-icon @click="cancelReply()" style="margin-top:3px;">mdi-close</v-icon>
+                </v-row>
                 <p>{{ replyUser.content }}</p>
                 <v-divider />
             </div>
@@ -1362,7 +1372,7 @@ pre {
 }
 
 .chat-menu-background {
-    background-color: aliceblue;
+    background-color: rgb(var(--v-theme-primary), 0.15) !important;
     border-radius: 10px;
     padding: 10px;
     display: flex;

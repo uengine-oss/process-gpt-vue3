@@ -92,7 +92,20 @@ export default {
                         }
                     } catch (error) {
                         console.log(error);
-                        reject(error);
+                        const maxRetries = 3;
+                        let retryCount = 0;
+
+                        const retry = async () => {
+                            if (retryCount < maxRetries) {
+                                console.log('retrying generate form');
+                                retryCount++;
+                                formGenerator.generate();
+                            } else {
+                                reject(error);
+                            }
+                        };
+
+                        retry();
                     }
                 };
                 formGenerator.previousMessages = [formGenerator.prevMessageFormat];
@@ -766,7 +779,19 @@ export default {
                             if(source) {
                                 if (source.role != component.role) {
                                     componentX += isHorizontal ? 0 : 150;
-                                    componentY += isHorizontal ? 100 : 0;
+                                    // componentY += isHorizontal ? 100 : 0;
+                                    const roleInnerElements = jsonModel.components.filter(element => element.role == source.role);
+                                    if (roleInnerElements.length > 0) {
+                                        let maxY = componentY;
+                                        roleInnerElements.forEach(element => {
+                                            if(maxY < activityPos[element.id].y) {
+                                                maxY = activityPos[element.id].y;
+                                            }
+                                        });
+                                        componentY = isHorizontal ? maxY + 100 : 0;
+                                    } else {
+                                        componentY += isHorizontal ? 100 : 0;
+                                    }
                                 } else {
                                 }
                             }
@@ -915,6 +940,8 @@ export default {
             
 
             console.log(roleVector);
+            let laneBounds = this.calculateLaneBounds(roleVector);
+            // console.log(laneBounds);
             let roleWidth = isHorizontal ? (mainWidth - 30) : 0;
             let roleHeight = isHorizontal ? 0 : (mainHeight - 30);
             
@@ -933,10 +960,12 @@ export default {
                             roleX = role[roleKey].x;
                         }
                         if(roleY == 0) {
-                            roleY = role[roleKey].y;
+                            roleY = laneBounds[key].y || 100;
+                            // roleY = role[roleKey].y;
                         }
                         if(roleHeight < role[roleKey].y) {
-                            roleHeight = role[roleKey].y - roleY + 100;
+                            roleHeight = laneBounds[key].height || 100;
+                            // roleHeight = role[roleKey].y - roleY + 100;
                         }
                     } else {
                         if(roleX == 0) {
@@ -1209,6 +1238,38 @@ export default {
             return bpmnXml;
 
         },
+
+        calculateLaneBounds(roleVector) {
+            let lanes = {};
+            const minLaneHeight = 100; // 최소 레인 높이
+
+            Object.keys(roleVector).forEach(lane => {
+                let laneElements = Object.values(roleVector[lane]);
+                
+                if (laneElements.length === 0) {
+                    lanes[lane] = { y: 0, height: minLaneHeight };
+                    return;
+                }
+
+                let laneMinY = Math.min(...laneElements.map(element => element.y));
+                let laneMaxY = Math.max(...laneElements.map(element => element.y));
+                console.log(lane, laneMaxY, laneMinY);
+
+                // 레인의 y 좌표는 소속된 객체의 최소 y 좌표
+                let y = laneMinY;
+                
+                // 레인의 높이 계산
+                let height = (laneMaxY === laneMinY) ? minLaneHeight : minLaneHeight + (laneMaxY - laneMinY);
+
+                lanes[lane] = {
+                    y: y,
+                    height: height
+                };
+            });
+
+            return lanes;
+        },
+
         createBpmnXmlTest(jsonModel) {
             // XML 문서 초기화
             let me = this;
