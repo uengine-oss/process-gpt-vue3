@@ -244,8 +244,8 @@
                                                             </p> -->
                                                             <v-row class="pa-0 ma-0">
                                                                 <v-spacer></v-spacer>
-                                                                <div v-if="replyIndex === index" >
-                                                                    <v-btn v-if="message.descriptionList || message.checkList" 
+                                                                <div v-if="isMobile || replyIndex === index" >
+                                                                    <v-btn v-if="type != 'AssistantChats' && message.specific" 
                                                                         @click="viewWork(index)"
                                                                         variant="text" size="x-small" icon
                                                                         style="background-color:white; margin-right:5px;"
@@ -311,27 +311,76 @@
                                                                 class="text-body-1"
                                                                 >{{ message.jsonContent }}
                                                             </pre>
-                                                            <v-card v-if="isViewWork == index">
-                                                                <div v-if="message.descriptionList.length > 0">
+                                                            <v-card v-if="(type == 'AssistantChats' && isMobile && index === filteredMessages.length - 1) || isViewWork == index">
+                                                                <div v-if="message.specific">
+                                                                    <v-card-title style="margin-bottom: -10px;"><h3>Title:</h3></v-card-title>
+                                                                    <v-card-text>
+                                                                        <v-textarea readonly rows="1" v-model="message.title" auto-grow></v-textarea>
+                                                                    </v-card-text>
+                                                                    <v-card-title style="margin-bottom: -10px;"><h3>Specific:</h3></v-card-title>
+                                                                    <v-card-text>
+                                                                        <v-textarea readonly rows="1" v-model="message.specific" auto-grow></v-textarea>
+                                                                    </v-card-text>
+                                                                    <v-card-title style="margin-bottom: -10px;"><h3>Measurable:</h3></v-card-title>
+                                                                    <v-card-text>
+                                                                        <v-textarea readonly rows="1" v-model="message.measurable" auto-grow></v-textarea>
+                                                                    </v-card-text>
+                                                                    <v-card-title style="margin-bottom: -10px;"><h3>Attainable:</h3></v-card-title>
+                                                                    <v-card-text>
+                                                                        <v-textarea readonly rows="1" v-model="message.attainable" auto-grow></v-textarea>
+                                                                    </v-card-text>
+                                                                    <v-card-title style="margin-bottom: -10px;"><h3>Relevant:</h3></v-card-title>
+                                                                    <v-card-text>
+                                                                        <v-textarea readonly rows="1" v-model="message.relevant" auto-grow></v-textarea>
+                                                                    </v-card-text>
+                                                                    <v-card-title style="margin-bottom: -10px;"><h3>Time-bound:</h3></v-card-title>
+                                                                    <v-card-text>
+                                                                        <v-col style="max-width: 100%;" cols="12" sm="6" md="4">
+                                                                            <v-menu
+                                                                                v-model="timeBoundMenu"
+                                                                                :close-on-content-click="false"
+                                                                                :nudge-right="40"
+                                                                                transition="scale-transition"
+                                                                                offset-y
+                                                                                min-width="auto"
+                                                                            >
+                                                                                <template v-slot:activator="{ on, attrs }">
+                                                                                    <v-text-field
+                                                                                        v-model="message.time_bound"
+                                                                                        prepend-icon="mdi-calendar"
+                                                                                        readonly
+                                                                                        v-bind="attrs"
+                                                                                        v-on="on"
+                                                                                    ></v-text-field>
+                                                                                </template>
+                                                                                <v-date-picker
+                                                                                    v-model="message.time_bound"
+                                                                                    @input="timeBoundMenu = false"
+                                                                                ></v-date-picker>
+                                                                            </v-menu>
+                                                                        </v-col>
+                                                                    </v-card-text>
                                                                     <v-card-title>Descriptions</v-card-title>
                                                                     <v-card-text>
-                                                                        <div v-for="(desc, index) in message.descriptionList" :key="index">
+                                                                        <div v-for="(desc, index) in message.descriptions" :key="index">
                                                                             <h3>{{ desc.word }}</h3>
                                                                             <p>{{ desc.description }}</p>
                                                                         </div>
                                                                     </v-card-text>
-                                                                </div>
-                                                                <div v-if="message.checkList.length > 0">
                                                                     <v-card-title>CheckList</v-card-title>
                                                                     <v-card-text>
                                                                         <v-checkbox
-                                                                            v-for="(check, index) in message.checkList"
+                                                                            v-for="(check, index) in message.checkPoints"
                                                                             :key="index"
                                                                             :label="check"
                                                                             readonly
                                                                             v-model="checked"
                                                                         ></v-checkbox>
                                                                     </v-card-text>
+                                                                    <div v-if="type == 'AssistantChats' && isMobile" class="d-flex justify-center" style="margin-bottom: 10px;">
+                                                                        <v-btn
+                                                                            @click="clickedWorkOrder" color="primary">업무 지시하기</v-btn>
+                                                                    </div>
                                                                 </div>
                                                             </v-card>
                                                         </v-sheet>
@@ -594,7 +643,8 @@ export default {
         generatedWorkList: Array,
         ProcessGPTActive: Boolean,
         isAgentMode: Boolean,
-        chatRoomId: String
+        chatRoomId: String,
+        isMobile: Boolean
     },
     data() {
         return {
@@ -753,6 +803,9 @@ export default {
         }
     },
     methods: {
+        clickedWorkOrder(){
+            this.$emit('clickedWorkOrder');
+        },
         startWorkOrder(){
             this.$emit('startWorkOrder');
             this.isOpenedChatMenu = false
