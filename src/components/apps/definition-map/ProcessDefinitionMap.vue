@@ -12,7 +12,7 @@
                 
                 <!-- buttons -->
                 <div class="ml-auto d-flex">
-                    <v-tooltip location="bottom" v-if="useLock && !lock && isAdmin" >
+                    <v-tooltip location="bottom" v-if="useLock && !lock && isAdmin && !isViewMode" >
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" icon variant="text" size="24" class="ml-3 cp-unlock" @click="openAlertDialog">
                                 <LockIcon width="24" height="24" />
@@ -78,7 +78,7 @@
                     <SubProcessDetail :value="value" @capture="capturePng" :enableEdit="enableEdit" />
                 </div>
                 <div v-else>
-                    <DefinitionMapList :value="value" :enableEdit="enableEdit" />
+                    <DefinitionMapList :value="value" :enableEdit="enableEdit" @clickProcess="clickProcess" />
                 </div>
             </div>
 
@@ -150,6 +150,10 @@ export default {
             type: String,
             required: true
         },
+        isViewMode: {
+            type: Boolean,
+            default: false
+        }
     },
     data: () => ({
         storage: null,
@@ -171,7 +175,11 @@ export default {
     }),
     computed: {
         useLock() {
-            return window.$mode == "ProcessGPT"
+            if(window.$mode == "ProcessGPT"){
+                return true;
+            } else {
+                return this.isViewMode;
+            }
         },
         actionButtons() {
             return [
@@ -510,6 +518,9 @@ export default {
             this.alertType = '';
             this.alertMessage = '';
         },
+        clickProcess(id) {
+            this.$emit('clickProcess', id);
+        }
     },
 }
 </script>

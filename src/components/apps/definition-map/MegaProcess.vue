@@ -42,13 +42,13 @@
         >
             <transition-group>
                 <div v-for="item in value.major_proc_list" :key="item.id" class="cursor-pointer">
-                    <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" />
+                    <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" />
                 </div>
             </transition-group>
         </draggable>
         <div v-else>
             <div v-for="item in value.major_proc_list" :key="item.id">
-                <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" />
+                <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" />
             </div>
         </div>
         <v-card v-if="!processDialogStatus && enableEdit" 
@@ -115,6 +115,9 @@ export default {
         },
         deleteProcess() {
             this.parent.mega_proc_list = this.parent.mega_proc_list.filter(item => item.id != this.value.id);
+        },
+        clickProcess(id) {
+            this.$emit('clickProcess', id);
         },
     },
 }

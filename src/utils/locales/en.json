@@ -30,7 +30,10 @@
         "category": "Category"
     },
     "dashboard": {
-        "title": "Dashboard"
+        "title": "Dashboard",
+        "startProcess": "Start Process",
+        "startProcessDescription": "Click the Start Process button to start the process.",
+        "welcome": "Welcome"
     },
     "todoList": {
         "title": "ToDoList",

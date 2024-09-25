@@ -30,7 +30,10 @@
         "category": "구분"
     },
     "dashboard": {
-        "title": "대시보드"
+        "title": "대시보드",
+        "startProcess": "프로세스 시작",
+        "startProcessDescription": "프로세스 시작을 눌러 프로세스를 시작 할 수 있습니다.",
+        "welcome": "환영합니다."
     },
     "todoList": {
         "title": "할 일 목록",

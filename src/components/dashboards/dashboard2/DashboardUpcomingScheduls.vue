@@ -44,6 +44,9 @@
 </template>
 <script>
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
+  
 
 export default {
     data() {
@@ -52,32 +55,31 @@ export default {
         }
     },
     async created() {
-        const storage = await StorageBaseFactory.getStorage();
-        let userId = localStorage.getItem('uid');
-        let option = {
-            key: "uid"
+        if(window.$mode === 'processGPT') {
+            this.initProcessGPTMode();
+        }else {
+            this.initUengineMode();
         }
+    },
+    methods: {
+        // goToCalendar() {
+        //     this.$router.push('/calendar');
+        // },
+        async initUengineMode() {
+            const me = this;
+            const workList = await backend.getWorkListAll();
+            const calendars = workList.map(item => {
+                return {
+                    title: item.title,
+                    start: item.dueDate,
+                    color: item.color || '#000000' // 기본 색상 설정
+                };
+            });
 
-        const calendarsData = await storage.getObject(`db://calendar/${userId}`, option);
-
-        let calendars = [];
-        
-        if (calendarsData) {
             const today = new Date();
             today.setHours(0, 0, 0, 0); // 시간 정보 초기화
 
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const currentYearAndMonth = `${year}_${month}`;
-
-            Object.keys(calendarsData.data).forEach(key => {
-                if (key >= currentYearAndMonth && calendars.length < 8) {
-                    calendars = [...calendars, ...Object.values(calendarsData.data[key])];
-                }
-            });
-
-            // 이후 필터링, 정렬, 슬라이싱 로직은 유지
-            calendars = calendars
+            me.calendars = calendars
                 .filter(calendar => {
                     const calendarDate = new Date(calendar.start);
                     return calendarDate >= today; // 오늘 날짜 이후인 일정만 필터링
@@ -88,14 +90,47 @@ export default {
                 })
                 .slice(0, 7); // 결과 배열에서 처음 7개의 요소만 가져옵니다.
 
-            this.calendars = calendars;
-        }
+        },
+        async initProcessGPTMode() {
+            const storage = await StorageBaseFactory.getStorage();
+            let userId = localStorage.getItem('uid');
+            let option = {
+                key: "uid"
+            }
 
-    },
-    methods: {
-        // goToCalendar() {
-        //     this.$router.push('/calendar');
-        // },
+            const calendarsData = await storage.getObject(`db://calendar/${userId}`, option);
+
+            let calendars = [];
+            
+            if (calendarsData) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // 시간 정보 초기화
+
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const currentYearAndMonth = `${year}_${month}`;
+
+                Object.keys(calendarsData.data).forEach(key => {
+                    if (key >= currentYearAndMonth && calendars.length < 8) {
+                        calendars = [...calendars, ...Object.values(calendarsData.data[key])];
+                    }
+                });
+
+                // 이후 필터링, 정렬, 슬라이싱 로직은 유지
+                calendars = calendars
+                    .filter(calendar => {
+                        const calendarDate = new Date(calendar.start);
+                        return calendarDate >= today; // 오늘 날짜 이후인 일정만 필터링
+                    })
+                    .sort((a, b) => {
+                        const dateA = new Date(a.start), dateB = new Date(b.start);
+                        return dateA - dateB; // 날짜 순으로 정렬
+                    })
+                    .slice(0, 7); // 결과 배열에서 처음 7개의 요소만 가져옵니다.
+
+                this.calendars = calendars;
+            }
+        },
         formatDateTime(datetime) {
             if (!datetime) return '';
             const [datePart, timePart] = datetime.split('T');

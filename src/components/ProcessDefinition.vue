@@ -898,7 +898,6 @@ export default {
             this.panel = false;
             this.isPreviewMode = false;
             this.currentActivities = [];
-            this.bpmnKey++;
             this.$emit('change');
         },
         handleError() {

@@ -1,10 +1,9 @@
 <template>
     <div class="align-center pa-2 cursor-pointer sub-process-hover sub-process-style pr-3 pl-3"
-        @click="goProcess(value.id, 'sub')"
     >
         <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-2 font-weight-semibold">
             <v-row class="ma-0 pa-0">
-                <v-col :cols="enableEdit ? '6' : '12'" class="ma-0 pa-0 text-left align-center">
+                <v-col :cols="enableEdit ? '6' : '12'" class="ma-0 pa-0 text-left align-center" @click="handleClick">
                     <div>
                         {{ value.name }}
                         <v-chip v-if="value.new" style="margin-left: 5px; margin-top: -4px; background-color: red; color: white;" size="x-small">New</v-chip>
@@ -61,13 +60,20 @@ export default {
     async created() {
     },
     methods: {
+        handleClick() {
+            this.$emit('clickProcess', this.value.path);
+        },
         deleteProcess() {
             this.parent.sub_proc_list = this.parent.sub_proc_list.filter(item => item.id != this.value.id);
         },
         async editProcessModel() {
             const backend = BackendFactory.createBackend();
             const id = this.value.id.replace(/ /g, '_')
-            this.definition = await backend.getRawDefinition(id);
+            const defId = id.substr(0, id.indexOf('.'));
+            const options = {
+                type: id.substr(id.indexOf('.') + 1)
+            }
+            this.definition = await backend.getRawDefinition(defId, options);
             let url;
             if (this.definition && this.definition.id) {
                 url = `/definitions/${this.definition.id}?modeling=true`;
