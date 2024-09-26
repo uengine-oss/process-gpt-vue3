@@ -58,7 +58,6 @@ import ProfileCards from "@/components/dashboards/dashboard2/ProfileCards.vue";
 import FigmaCard from "@/components/dashboards/dashboard2/FigmaCard.vue";
 import UpcommingSchedule from "@/components/dashboards/dashboard2/UpcommingSchedule.vue";
 import DashboardUpcomingScheduls from '@/components/dashboards/dashboard2/DashboardUpcomingScheduls.vue'
-import ProcessList from '@/components/dashboards/dashboard2/ProcessList.vue'
 import BackendFactory from '@/components/api/BackendFactory';
 import ProcessDefinitionMap from '@/components/apps/definition-map/ProcessDefinitionMap.vue';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
@@ -85,7 +84,6 @@ export default {
     FigmaCard,
     UpcommingSchedule,
     DashboardUpcomingScheduls,
-    ProcessList,
     ProcessDefinitionMap,
     DryRunProcess,
   },
