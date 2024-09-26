@@ -83,8 +83,8 @@ declare global {
 }
 
 async function setupSupabase() {
-    window.$mode = 'uEngine';
-    // window.$mode = 'ProcessGPT';
+    // window.$mode = 'uEngine';
+    window.$mode = 'ProcessGPT';
     window.$jms = false;
 
     if (window.location.host.includes('localhost') || window.location.host.includes('192.168') || window.location.host.includes('127.0.0.1') || 
