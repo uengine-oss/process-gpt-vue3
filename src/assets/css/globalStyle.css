@@ -330,6 +330,10 @@ hr {
     display: inline-block;
 }
 
+.test-variables-table-box tr {
+    border: solid 2px black !important;
+}
+
 #apexTreeWrapper {
     height: 100% !important;
 }

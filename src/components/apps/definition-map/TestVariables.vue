@@ -16,7 +16,7 @@
             </v-btn>
         </v-row>
         <div
-            style="height: calc(100vh - 380px);
+            style="max-height: calc(100vh - 380px);
             color: black;
             overflow: auto;"
         >

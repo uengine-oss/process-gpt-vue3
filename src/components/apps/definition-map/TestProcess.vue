@@ -54,7 +54,7 @@
                 <v-col class="pa-4" :cols="6">
                     <v-card-title class="pa-0">{{ $t('TestProcess.worklist') }}</v-card-title>
                     <div
-                        style="height: calc(-270px + 100vh);
+                        style="max-height: calc(-270px + 100vh);
                         color: black;
                         overflow: auto;"
                     >

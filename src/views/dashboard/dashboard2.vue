@@ -88,31 +88,8 @@ export default {
     DryRunProcess,
   },
   async created() {
-    if(window.$mode === 'processGPT') {
-      this.initProcessGPTMode();
-    }else {
-      this.initUengineMode();
-    }
   },
   methods: {
-    async initProcessGPTMode() {
-    },  
-    async initUengineMode(path = '') {
-      const processList = await backend.listDefinition(path);
-      for (const item of processList) {
-        if (item.name.indexOf('.bpmn') !== -1) {
-          this.processList.push({
-            title: item.name.replace('.bpmn', ''),
-            directory: false,
-            BgColor: 'primary',
-            path: item.path
-          });
-        }
-        if (item.directory) {
-          await this.initUengineMode(item.path);
-        }
-      }
-    },
     clickStartProcess() {
       this.selectProcessDialog = true;
     },

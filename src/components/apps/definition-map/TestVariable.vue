@@ -1,8 +1,35 @@
 <template>
-    <tr  v-for="val, key in selectedTask" :key="key">
-        <template v-if="key != '_type'">
+    <template v-if="Object.values(selectedTask).some(val => Array.isArray(val))">
+        <tr v-for="(val, key, index) in selectedTask" :key="key">
             <td>{{ key }}</td>
             <td>{{ val }}</td>
+            <template v-if="index === Object.keys(selectedTask).length - 1">
+                <td>
+                    <v-btn @click="executeProcess"
+                        class="cp-process-save"
+                        color="primary"
+                        rounded
+                        density="comfortable"
+                    >실행</v-btn>
+                </td>
+            </template>
+        </tr>
+    </template>
+    <template v-else>
+        <tr>
+            <!-- key를 세로로 배치 -->
+            <td>
+                <div v-for="(val, key) in selectedTask" :key="key">
+                    {{ key }}
+                </div>
+            </td>
+            <!-- value를 세로로 배치 -->
+            <td>
+                <div v-for="(val, key) in selectedTask" :key="key">
+                    {{ val }}
+                </div>
+            </td>
+            <!-- 실행 버튼을 마지막에 추가 -->
             <td>
                 <v-btn @click="executeProcess"
                     class="cp-process-save"
@@ -11,8 +38,8 @@
                     density="comfortable"
                 >실행</v-btn>
             </td>
-        </template>
-    </tr>
+        </tr>
+    </template>
 </template>
 
 <script>
