@@ -637,6 +637,10 @@ class UEngineBackend implements Backend {
         });
         return response.data;
     }
+
+    async checkDBConnection() {
+        return true;
+    }
 }
 
 export default UEngineBackend;

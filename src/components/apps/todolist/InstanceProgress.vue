@@ -39,7 +39,6 @@ export default {
     created() {
         this.init();
         this.EventBus.on('process-definition-updated', async () => {
-            console.log(this.instance)
             this.bpmn = await backend.getRawDefinition(this.instance.defId, { type: 'bpmn', version: this.instance.defVer });
             this.updatedDefKey++;
         });
