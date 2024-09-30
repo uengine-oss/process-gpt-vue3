@@ -63,6 +63,17 @@ hr {
     }
 }
 
+.completed.djs-connection .djs-visual > path {
+    stroke: #68369a !important;
+}
+
+.completed.djs-connection .djs-visual > defs > marker > path {
+    stroke: #68369a !important;
+    fill: #68369a !important;
+}
+
+
+
 .running:not(.djs-connection):not(.generated) .djs-visual > :nth-child(2) {
     stroke-width: 5px !important;
     stroke-dasharray: 20, 20 !important;
