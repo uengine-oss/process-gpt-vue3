@@ -30,7 +30,10 @@
         "category": "Category"
     },
     "dashboard": {
-        "title": "Dashboard"
+        "title": "Dashboard",
+        "startProcess": "Start Process",
+        "startProcessDescription": "Click the Start Process button to start the process.",
+        "welcome": "Welcome"
     },
     "todoList": {
         "title": "ToDoList",
@@ -180,7 +183,10 @@
         "isEnableProcessGPT": "Enable Process-GPT",
         "isDisableProcessGPT": "Disable Process-GPT",
         "userReply": "Reply to {name}",
-        "systemReply": "Reply to the system"
+        "systemReply": "Reply to the system",
+        "headset": "Speaking/Listening",
+        "document": "Work Instruction",
+        "camera": "Camera"
     },
     "accountTab": {
         "accountSetting": "Account Settings",
@@ -530,5 +536,19 @@
         "laneDivideTwo": "Divide into Two Lanes",
         "laneDivideThree": "Divide into Three Lanes",
         "connectionMulti": "Connect using Message Flow"
+    },
+    "WorkItem": {
+        "progress": "Progress",
+        "history": "Work History",
+        "agent": "Create Agent Draft"
+    },
+    "TestProcess": {
+        "title": "Testing Process",
+        "mainInstanceId": "Main - InstanceId - ",
+        "subInstanceId": "Sub - InstanceId - ",
+        "worklist": "Worklist",
+        "success": "Success",
+        "taskID": "Task ID: ",
+        "instanceID": "Instance ID: "
     }
 }

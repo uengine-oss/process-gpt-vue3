@@ -255,7 +255,7 @@ async function setupSupabase() {
     //                     res = data;
     //                 }
     //             }
-    //             if(res.url && res.secret){
+    //             if(res && res.url && res.secret){
     //                 window.$supabase = createClient(res.url, res.secret, {
     //                     auth: {
     //                         autoRefreshToken: false,

@@ -79,14 +79,22 @@
                     @changeXML="changeXML"
                 ></ProcessDefinitionVersionManager>
                 <v-dialog v-model="deleteDialog" max-width="500">
-                    <v-card>
-                        <v-card-text>
-                            {{ $t('processDefinition.deleteProcessMessage') }}
-                        </v-card-text>
-                        <v-card-actions class="justify-center pt-0">
-                            <v-btn color="primary" variant="flat" @click="deleteProcess">{{ $t('processDefinition.delete') }}</v-btn>
-                            <v-btn color="error" variant="flat" @click="deleteDialog = false">{{ $t('processDefinition.cancel') }}</v-btn>
-                        </v-card-actions>
+                    <v-card class="pa-4">
+                        <v-row class="ma-0 pa-0 mb-8">
+                            <v-card-text class="ma-0 pa-0" style="font-size:24px;">
+                                {{ $t('processDefinition.deleteProcessMessage') }}
+                            </v-card-text>
+                            <v-spacer></v-spacer>
+                            <v-btn @click="deleteDialog = false" icon variant="text" density="comfortable"
+                                style="margin-top:-8px;"
+                            >
+                                <Icons :icon="'close'" :size="16" />
+                            </v-btn>
+                        </v-row>
+                        <v-row class="ma-0 pa-0">
+                            <v-spacer></v-spacer>
+                            <v-btn color="error" rounded variant="flat" @click="deleteProcess">{{ $t('processDefinition.delete') }}</v-btn>
+                        </v-row>
                     </v-card>
                 </v-dialog>
             </template>

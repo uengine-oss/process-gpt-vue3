@@ -30,7 +30,10 @@
         "category": "구분"
     },
     "dashboard": {
-        "title": "대시보드"
+        "title": "대시보드",
+        "startProcess": "프로세스 시작",
+        "startProcessDescription": "프로세스 시작을 눌러 프로세스를 시작 할 수 있습니다.",
+        "welcome": "환영합니다."
     },
     "todoList": {
         "title": "할 일 목록",
@@ -180,7 +183,10 @@
         "isEnableProcessGPT": "Process-GPT 활성화",
         "isDisableProcessGPT": "Process-GPT 비활성화",
         "userReply": "{name}님에게 답장",
-        "systemReply": "system에게 답장"
+        "systemReply": "system에게 답장",
+        "headset": "말하기/듣기",
+        "document": "업무 지시",
+        "camera": "카메라"
     },
     "accountTab": {
         "accountSetting": "계정 설정",
@@ -529,6 +535,20 @@
         "laneToTheRight": "오른쪽에 레인 추가",
         "laneDivideTwo": "두 개의 레인으로 나누기",
         "laneDivideThree": "세 개의 레인으로 나누기",
-        "connectionMulti": "메시지 흐름을 사용하여 연결"
+        "connectionMulti": "메시지 연결"
+    },
+    "WorkItem": {
+        "progress": "진행 상황",
+        "history": "워크 히스토리",
+        "agent": "Agent 초안 생성"
+    },
+    "TestProcess": {
+        "title": "테스트 프로세스",
+        "mainInstanceId": "메인 - 인스턴스 ID - ",
+        "subInstanceId": "서브 - 인스턴스 ID - ",
+        "worklist": "작업 목록",
+        "success": "성공",
+        "taskID": "작업 ID: ",
+        "instanceID": "인스턴스 ID: "
     }
 }
