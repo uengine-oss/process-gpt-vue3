@@ -1,5 +1,6 @@
 {
     "message": "ko",
+    "changePath": "저장되지 않은 변경사항이 있습니다. 이동하시겠습니까?",
     "mainPage": {
         "login": "로그인",
         "logout": "로그아웃",
@@ -12,7 +13,7 @@
         "subTitle": "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
     },
     "headerMenu" : {
-        "sidebar" : "사이드바",
+        "sidebar" : "메뉴 접기 펼치기",
         "dashboard" : "대시보드",
         "todoList" : "할 일",
         "calendar" : "달력",
@@ -115,6 +116,7 @@
         "addMajor": "Major 프로세스",
         "addSub": "Sub 프로세스",
         "save" : "저장",
+        "downloadImage": "정의 체계도를 이미지로 다운로드",
         "consultingAI": "프로세스 컨설팅 AI"
     },
     "uiDefinition": {
@@ -186,7 +188,9 @@
         "systemReply": "system에게 답장",
         "headset": "말하기/듣기",
         "document": "업무 지시",
-        "camera": "카메라"
+        "camera": "카메라",
+        "user": "유저",
+        "chatRoom": "대화방"
     },
     "accountTab": {
         "accountSetting": "계정 설정",
@@ -515,7 +519,8 @@
         "search": "검색"
     },
     "userListing": {
-        "search": "유저 검색"
+        "search": "유저 검색",
+        "chat": "채팅"
     },
     "ProcessDefinitionChat": {
         "greetingMessage": "{name}님 안녕하세요! 어떤 업무에 어떤 문제를 겪고 계신가요? 말씀해주시면 도와드리겠습니다!"

@@ -27,11 +27,10 @@ export default {
 
 <style scoped>
 .xml-editor {
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: calc(100vh - 235px);
     font-family: monospace;
     font-size: 14px;
-    padding: 10px;
     box-sizing: border-box;
 }
 </style>

@@ -361,7 +361,7 @@ hr {
 #apexTreeWrapper #toolbar #zoom-out:hover,
 #apexTreeWrapper #toolbar #fit-screen:hover,
 #apexTreeWrapper #toolbar #export:hover {
-    background: rgb(var(--v-theme-primary), 0.15) !important;
+    background-color: #E0E0E0 !important;
 }
 
 .apextree-node > div {

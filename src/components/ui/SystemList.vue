@@ -11,7 +11,7 @@
             <v-col cols="12" sm="6" md="4" lg="3">
                 <v-card elevation="10" 
                     @click="openDialog = !openDialog"
-                    style="height:300px;
+                    style="height:200px;
                     display: flex; justify-content: center; align-items: center;"
                 >
                     <Icons :icon="'plus'"/>

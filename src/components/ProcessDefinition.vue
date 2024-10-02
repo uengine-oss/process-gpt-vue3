@@ -46,7 +46,7 @@
                         </v-tooltip>
                     </v-row>
 
-                    <div v-if="isXmlMode" style="height: calc(100% - 70px); margin-top: 70px; overflow: auto; padding: 10px">
+                    <div v-if="isXmlMode" style="height: calc(100% - 50px); margin-top: 50px; overflow: auto; padding: 10px">
                         <XmlViewer v-if="isViewMode" :xml="bpmn"/>
                         <XMLEditor v-else :xml="bpmn" @changeBpmn="changeBpmn"/>
                     </div>

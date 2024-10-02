@@ -51,10 +51,13 @@
                     <span v-if="useLock && lock && userName && userName != editUser" class="ml-1">
                         {{ editUser }} 님이 수정 중 입니다.
                     </span>
-
-                    <v-btn icon variant="text" :size="24" class="ml-3" @click="capturePng">
-                        <Icons :icon="'image-download'" />
-                    </v-btn>
+                    <v-tooltip :text="$t('processDefinitionMap.downloadImage')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" icon variant="text" :size="24" class="ml-3" @click="capturePng">
+                                <Icons :icon="'image-download'" />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
 
                     <!-- 프로세스 정의 체계도 캔버스 확대 축소 버튼 및 아이콘 -->
                     <v-tooltip v-if="componentName != 'SubProcessDetail'" :text="$t('processDefinition.zoom')">
