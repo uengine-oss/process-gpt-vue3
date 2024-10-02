@@ -11,9 +11,12 @@ enum ErrorCode {
 }
 
 class ProcessGPTBackend implements Backend {
-    
+
+    async deleteTest(testId: string): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+
     async releaseVersion(releaseName: string): Promise<any> {
-        
     }
     
     testList(path: string): Promise<any> {
@@ -24,7 +27,8 @@ class ProcessGPTBackend implements Backend {
     }
 
     async checkDBConnection() {
-        return await storage.isConnection();
+        if (await storage.isConnection()) return true;
+        return false;
     }
 
     async listDefinition(path: string) {
@@ -37,7 +41,7 @@ class ProcessGPTBackend implements Backend {
             });
             return procDefs
         } catch (e) {
-            // this.checkDBConnection();
+            
             //@ts-ignore
             throw new Error(e.message);
         }
@@ -78,28 +82,32 @@ class ProcessGPTBackend implements Backend {
                     await storage.delete(`lock/${defId}`, { key: 'id' });
                 }
 
-                const instList = await storage.list(defId);
-                if (instList && instList.length > 0) {
-                    await Promise.all([
-                        await storage.delete('todolist', { match: { proc_def_id: defId } }),
-                        await storage.delete('proc_inst', { match: { proc_def_id: defId } }),
-                    ]);
-                }
+                // const instList = await storage.list(defId);
+                // if (instList && instList.length > 0) {
+                //     await Promise.all([
+                //         await storage.delete('todolist', { match: { proc_def_id: defId } }),
+                //         await storage.delete('proc_inst', { match: { proc_def_id: defId } }),
+                //     ]);
+                // }
+                await Promise.all([
+                    await storage.delete('todolist', { match: { proc_def_id: defId } }),
+                    await storage.delete('bpm_proc_inst', { match: { proc_def_id: defId } }),
+                ]);
                 
                 await storage.delete(`proc_def/${defId}`, { key: 'id' });
 
-                if (!window.$jms) {
-                    await axios.post(`/execution/drop-process-table/invoke`, {
-                        "input": {
-                            "process_definition_id": defId
-                        }
-                    }).catch(error => {
-                        throw new Error(error && error.detail ? error.detail : error);
-                    });
-                }
+                // if (!window.$jms) {
+                //     await axios.post(`/execution/drop-process-table/invoke`, {
+                //         "input": {
+                //             "process_definition_id": defId
+                //         }
+                //     }).catch(error => {
+                //         throw new Error(error && error.detail ? error.detail : error);
+                //     });
+                // }
             }
         } catch (e) {
-            // this.checkDBConnection();
+            
             //@ts-ignore
             throw new Error(e.message);
         }
@@ -112,22 +120,44 @@ class ProcessGPTBackend implements Backend {
 
             // 폼 정보를 저장하기 위해서
             if(options && options.type === "form") {
-                await storage.putObject('form_def', {
-                    id: defId.replace(/\//g, "#"),
-                    html: xml,
-                    proc_def_id: options.proc_def_id,
-                    activity_id: options.activity_id
+                var formDef: any = await storage.getObject('form_def', {
+                    match: {
+                        proc_def_id: options.proc_def_id,
+                        activity_id: options.activity_id,
+                    }
                 });
+                if(formDef) {
+                    formDef.html = xml;
+                    await storage.putObject('form_def', formDef);
+                } else {
+                    await storage.putObject('form_def', {
+                        id: defId.replace(/\//g, "#"),
+                    html: xml,
+                        proc_def_id: options.proc_def_id,
+                        activity_id: options.activity_id,
+                    });
+                }
                 return
             }
 
-            const procDef: any = {
-                id: defId,
-                name: options.name,
-                bpmn: xml,
-                definition: options.definition,
+            var procDef: any = await storage.getObject('proc_def', {
+                match: {
+                    id: defId,
+                }
+            });
+            if (procDef) {
+                procDef.bpmn = xml;
+                procDef.name = options.name;
+                procDef.definition = options.definition;
+                await storage.putObject('proc_def', procDef);
+            } else {
+                await storage.putObject('proc_def', {
+                    id: defId,
+                    name: options.name,
+                    bpmn: xml,
+                    definition: options.definition,
+                });
             }
-            await storage.putObject('proc_def', procDef);
 
             if (options.version) {
                 const procDefArcv: any = {
@@ -136,7 +166,7 @@ class ProcessGPTBackend implements Backend {
                     version: options.version,
                     snapshot: xml,
                     diff: options.diff,
-                    message: options.message
+                    message: options.message,
                 }
                 await storage.putObject('proc_def_arcv', procDefArcv);
             }
@@ -151,21 +181,21 @@ class ProcessGPTBackend implements Backend {
                 throw new Error("Error when to unlock: " + (error && error.detail ? error.detail : error));
             }
 
-            if (!window.$jms) {
-                try {
-                    await axios.post(`/execution/process-db-schema/invoke`, {
-                        "input": {
-                            "process_definition_id": defId
-                        }
-                    })
-                } catch(error) {
-                    //@ts-ignore
-                    throw new Error("Error when to creating database for the definition: " + (error && error.detail ? error.detail : error));
-                }
-            }
+            // if (!window.$jms) {
+            //     try {
+            //         await axios.post(`/execution/process-db-schema/invoke`, {
+            //             "input": {
+            //                 "process_definition_id": defId
+            //             }
+            //         })
+            //     } catch(error) {
+            //         //@ts-ignore
+            //         throw new Error("Error when to creating database for the definition: " + (error && error.detail ? error.detail : error));
+            //     }
+            // }
 
         } catch (e) {
-            // this.checkDBConnection();
+            
             throw new Error('error when to save definition: ' + (e instanceof Error ? e.message : ''));
         }
     }
@@ -203,7 +233,7 @@ class ProcessGPTBackend implements Backend {
             }
 
         } catch (error) {
-            // this.checkDBConnection();
+            
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -225,16 +255,16 @@ class ProcessGPTBackend implements Backend {
 
             let defId = input.process_definition_id || input.processDefinitionId;
             if (defId && defId != '') {
-                const list = await storage.list(defId);
-                if (list.code == ErrorCode.TableNotFound) {
-                    await axios.post(`/execution/process-db-schema/invoke`, {
-                        "input": {
-                            "process_definition_id": defId
-                        }
-                    }).catch(error => {
-                        throw new Error(error && error.detail ? error.detail : error);
-                    });
-                }
+                // const list = await storage.list(defId);
+                // if (list.code == ErrorCode.TableNotFound) {
+                //     await axios.post(`/execution/process-db-schema/invoke`, {
+                //         "input": {
+                //             "process_definition_id": defId
+                //         }
+                //     }).catch(error => {
+                //         throw new Error(error && error.detail ? error.detail : error);
+                //     });
+                // }
             } else {
                 if (input.process_instance_id && input.process_instance_id != '') {
                     defId = input.process_instance_id.split('.')[0];
@@ -292,7 +322,7 @@ class ProcessGPTBackend implements Backend {
 
             return result;
         } catch (error) {
-            // this.checkDBConnection();
+            
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -300,26 +330,26 @@ class ProcessGPTBackend implements Backend {
 
     async getInstance(instanceId: string) {
         try {
-            const defId = instanceId.split('.')[0];
             const options = {
                 match: {
                     proc_inst_id: instanceId
                 }
             };
-            const data = await storage.getObject(defId, options);
-            if (data) {
-                data.defId = defId;
-                data.instanceId = instanceId;
-                data.name = data.proc_inst_name;
-                if (data.current_activity_ids && data.current_activity_ids.length > 0) {
-                    data.status = 'RUNNING'
+            const instance = await storage.getObject('bpm_proc_inst', options);
+            if (instance) {
+                instance.defId = instance.proc_def_id;
+                instance.instanceId = instanceId;
+                instance.name = instance.proc_inst_name;
+                if (instance.current_activity_ids && instance.current_activity_ids.length > 0) {
+                    instance.status = 'RUNNING'
                 } else {
-                    data.status = 'COMPLETED'
+                    instance.status = 'COMPLETED'
                 }
             }
-            return data;
+            console.log(instance);
+            return instance;
         } catch (e) {
-            // this.checkDBConnection();
+            
             //@ts-ignore
             throw new Error(e.message);
         }
@@ -327,7 +357,7 @@ class ProcessGPTBackend implements Backend {
 
     async getAllInstanceList() {
         try {
-            const list = await storage.list('proc_inst');
+            const list = await storage.list('bpm_proc_inst');
             return list;
         } catch (e) {
             //@ts-ignore
@@ -436,7 +466,7 @@ class ProcessGPTBackend implements Backend {
             }
             return worklist;
         } catch (error) {
-            // this.checkDBConnection();
+            
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -494,7 +524,7 @@ class ProcessGPTBackend implements Backend {
             }
             return result;
         } catch (error) {
-            // this.checkDBConnection();
+            
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -504,7 +534,7 @@ class ProcessGPTBackend implements Backend {
         try {
             await storage.delete(`todolist/${taskId}`, { key: 'id' });
         } catch (error) {
-            // this.checkDBConnection();
+            
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -518,7 +548,7 @@ class ProcessGPTBackend implements Backend {
             }
             return null;
         } catch (error) {
-            // this.checkDBConnection();
+            
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -529,7 +559,7 @@ class ProcessGPTBackend implements Backend {
         try {
             const options = {
                 match: {
-                    key: 'proc_map'
+                    key: 'proc_map',
                 }
             };
             const procMap = await storage.getObject('configuration', options);
@@ -550,7 +580,7 @@ class ProcessGPTBackend implements Backend {
             }
             return {};
         } catch (error) {
-            // this.checkDBConnection();
+            
             //@ts-ignore
             throw new Error(error.message);
         } 
@@ -558,13 +588,21 @@ class ProcessGPTBackend implements Backend {
 
     async putProcessDefinitionMap(definitionMap: any) {
         try {
+            const options = {
+                match: {
+                    key: 'proc_map',
+                },
+                column: 'uuid'
+            };
+            const procMapId = await storage.getString('configuration', options);
             const putObj = {
+                uuid: procMapId || this.uuid(),
                 key: 'proc_map',
-                value: definitionMap
+                value: definitionMap,
             }
             await storage.putObject('configuration', putObj);
         } catch (error) {
-            // this.checkDBConnection();
+            
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -593,7 +631,7 @@ class ProcessGPTBackend implements Backend {
             }
             return list;
         } catch (error) {
-            // this.checkDBConnection();
+            
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -695,7 +733,7 @@ class ProcessGPTBackend implements Backend {
             if (instance && fields.length > 0) {
                 fields.forEach((field) => {
                     let fieldName = field.text.toLowerCase().replace(/ /g, '_') || field.text;
-                    let fieldValue = instance[fieldName];
+                    let fieldValue = instance.variables_data[fieldName];
                     if (field.type === 'boolean') {
                         fieldValue = fieldValue === 'true' ? true : false;
                     }
@@ -705,6 +743,7 @@ class ProcessGPTBackend implements Backend {
             const result = {
                 valueMap: varData
             }
+            console.log(result);
             return result;
         } catch (error) {
             //@ts-ignore
@@ -718,7 +757,9 @@ class ProcessGPTBackend implements Backend {
             const defId: any = instanceId.split('.')[0];
             const putObj: any = {
                 proc_inst_id: instanceId,
-                [columnName]: varValue
+                variables_data: {
+                    [columnName]: varValue
+                }
             }
 
             await storage.putObject(defId, putObj);
@@ -738,7 +779,7 @@ class ProcessGPTBackend implements Backend {
             }
             await storage.putObject(defId, putObj);
         } catch (error) {
-            // this.checkDBConnection();
+            
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -830,7 +871,7 @@ class ProcessGPTBackend implements Backend {
             return result;
 
         } catch (e) {
-            // this.checkDBConnection();
+            
             //@ts-ignore
             throw new Error(e.message);
         }
@@ -838,40 +879,31 @@ class ProcessGPTBackend implements Backend {
 
     async updateInstanceChat(instanceId: string, newMessage: any) {
         try {
-            function uuid() {
-                function s4() {
-                    return Math.floor((1 + Math.random()) * 0x10000)
-                        .toString(16)
-                        .substring(1);
-                }
-    
-                return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
-            }
             const putObj = {
                 id: instanceId,
-                uuid: uuid(),
-                messages: newMessage
+                uuid: this.uuid(),
+                messages: newMessage,
             }
             await storage.putObject('chats', putObj);
         } catch (e) {
-            // this.checkDBConnection();
+            
             //@ts-ignore
             throw new Error(e.message);
         }
     }
 
     async fetchInstanceListByStatus(status: string): Promise<any[]> {
-        const list = await storage.list('proc_inst', { match: { status: status } });
+        const list = await storage.list('bpm_proc_inst', { match: { status: status } });
         const email = window.localStorage.getItem("email");
-        const filteredData = list.filter((item: any) => item.user_ids.includes(email));
+        const filteredData = list.filter((item: any) => item.current_user_ids.includes(email));
 
         if (filteredData && filteredData.length > 0) {
             const result = filteredData.map((item: any) => {
                 return {
-                    instId: item.id,
-                    instName: item.name,
+                    instId: item.proc_inst_id,
+                    instName: item.proc_inst_name,
                     status: item.status,
-                    defId: item.id.split(".")[0]
+                    defId: item.proc_def_id
                 }
             });
             return result;
@@ -884,7 +916,7 @@ class ProcessGPTBackend implements Backend {
             let instList: any[] = await this.fetchInstanceListByStatus("RUNNING");
             return instList;
         } catch (error) {
-            // this.checkDBConnection();
+            
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -895,7 +927,7 @@ class ProcessGPTBackend implements Backend {
             let instList: any[] = await this.fetchInstanceListByStatus("COMPLETED");
             return instList;
         } catch (error) {
-            // this.checkDBConnection();
+            
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -924,7 +956,7 @@ class ProcessGPTBackend implements Backend {
             })
             return worklist;
         } catch (e) {
-            // this.checkDBConnection();
+            
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -1036,10 +1068,10 @@ class ProcessGPTBackend implements Backend {
 
     async deleteInstance(instId: string) {
         try {
-            const defId = instId.split('.')[0];
+            // const defId = instId.split('.')[0];
             await Promise.all([
-                await storage.delete(defId, { match: { proc_inst_id: instId } }),
-                await storage.delete('proc_inst', { match: { id: instId } }),
+                // await storage.delete(defId, { match: { proc_inst_id: instId } }),
+                await storage.delete('bpm_proc_inst', { match: { proc_inst_id: instId } }),
                 await storage.delete('todolist', { match: { proc_inst_id: instId } }),
                 await storage.delete('chats', { match: { id: instId } })
             ]);
@@ -1173,6 +1205,16 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getUserInfo() {
+        try {
+            const user = await storage.getUserInfo();
+            return user;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async updateUserInfo(value: any) {
         try {
             if (value.type === 'update') {
@@ -1189,6 +1231,108 @@ class ProcessGPTBackend implements Backend {
     async uploadDefinition(file: File, path: string) {
     }
 
+    async getLock(id: string) {
+        try {
+            const options = {
+                match: {
+                    id: id,
+                }
+            }
+            const lock = await storage.getObject('lock', options);
+            return lock;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async setLock(lockObj: any) {
+        try {
+            const lock = await this.getLock(lockObj.id);
+            var putObj: any = { 
+                id: lockObj.id, 
+                user_id: lockObj.user_id 
+            };
+            if(lock) {
+                putObj.uuid = lock.uuid;
+                await storage.putObject('lock', putObj);
+            } else {
+                await storage.putObject('lock', putObj);
+            }
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteLock(id: string) {
+        try {
+            const options = {
+                match: {
+                    id: id,
+                }
+            }
+            await storage.delete('lock', options);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getTenants() {
+        try {
+            const tenants = await storage.list('tenants');
+            return tenants;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getTenant(tenantId: string) {
+        try {
+            const tenant = await storage.getString('tenants', { 
+                match: { 
+                    id: tenantId 
+                },
+                column: 'id'
+            });
+            return tenant;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async setTenant(tenantId: string) {
+        try {
+            await storage.setCurrentTenant(tenantId);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async putTenant(tenantId: string) {
+        try {
+            if (!tenantId) {
+                throw new Error("Tenant ID cannot be null or empty");
+            }
+            await storage.putObject('tenants', { id: tenantId });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteTenant(tenantId: string) {
+        try {
+            await storage.delete('tenants', { match: { id: tenantId } });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
 }
 
 export default ProcessGPTBackend;

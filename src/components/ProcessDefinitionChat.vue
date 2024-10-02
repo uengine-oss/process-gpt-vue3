@@ -150,7 +150,7 @@
             </template>
         </AppBaseCard>
         <v-dialog v-model="executeDialog" max-width="80%">
-            <process-gpt-execute v-if="mode === 'LLM'" :definitionId="fullPath" 
+            <process-gpt-execute v-if="mode === 'ProcessGPT'" :definitionId="fullPath" 
                 @close="executeDialog = false"></process-gpt-execute>
             <div v-else>
                 <test-process v-if="isSimulate == 'true'" :definitionId="fullPath" @close="executeDialog = false" />
@@ -221,7 +221,7 @@ export default {
         TestProcess
     },
     props: {
-        mode: {
+        chatMode: {
             type: String,
             default: ""
         },
@@ -255,7 +255,7 @@ export default {
     async created() {
         $try(async () => {
             // Issue: init Methods가 종료되기전에, ChatGenerator를 생성하면서 this로 넘겨주는 Client 정보가 누락되는 현상 발생.
-            if(this.mode == 'consulting'){
+            if(this.chatMode == 'consulting'){
                 this.isConsultingMode = true
             } 
             if(this.isConsultingMode){
@@ -335,6 +335,9 @@ export default {
         isAdmin() {
             const isAdmin = localStorage.getItem('isAdmin') === 'true';
             return isAdmin;
+        },
+        mode(){
+            return window.$mode;
         }
     },
     async beforeRouteLeave(to, from, next) {
@@ -383,7 +386,7 @@ export default {
             this.startGenerate();
         },
         async beforeSaveDefinition(info){
-            if(this.mode == 'consulting'){
+            if(this.chatMode == 'consulting'){
                 await this.$emit("createdBPMN", this.processDefinition)
                 info.skipSaveProcMap = true
             } 
@@ -490,7 +493,7 @@ export default {
         },
         async changeXML(info) {
             var me = this;
-            if(window.$mode == 'ProcessGPT') {
+            if(me.mode == 'ProcessGPT') {
                 if (!info) return;
                 if (!info.id) return;
                 if (info.xml) {

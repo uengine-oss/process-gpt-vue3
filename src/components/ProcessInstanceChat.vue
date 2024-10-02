@@ -399,32 +399,6 @@ export default {
             }
         },
 
-        async sendNotification(data) {
-            const options = {
-                match: {
-                    id: this.userInfo.uid,
-                    email: this.userInfo.email,
-                }
-            };
-            const result = await this.getData('users', options);
-            let notifications = result.notifications;
-            if (!notifications) {
-                notifications = [];
-            }
-            const noti = {
-                id: data.instanceId,
-                type: 'instance',
-                isChecked: false,
-            };
-            notifications.push(noti);
-
-            const obj = {
-                id: this.userInfo.uid,
-                notifications: notifications,
-            };
-            this.putObject('users', obj);
-        },
-
         async saveDefinitionToVectorDB() {
             const list = await this.storage.list("proc_def");
             if (list && list.length > 0) {

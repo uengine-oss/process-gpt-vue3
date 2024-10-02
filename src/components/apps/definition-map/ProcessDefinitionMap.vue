@@ -101,7 +101,7 @@
                     <v-icon @click="closeConsultingDialog()" small style="margin-right: 5px; float: right;">mdi-close</v-icon>
                 </v-row>
                 <ProcessDefinitionChat 
-                    :mode="'consulting'"
+                    :chatMode="'consulting'"
                     @createdBPMN="createdBPMN"
                     @openProcessPreview="openProcessPreview" 
                 />
@@ -129,7 +129,6 @@
 </template>
 
 <script>
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import domtoimage from 'dom-to-image';
 import DefinitionMapList from './DefinitionMapList.vue';
 import ProcessMenu from './ProcessMenu.vue';
@@ -159,7 +158,6 @@ export default {
         }
     },
     data: () => ({
-        storage: null,
         value: {
             mega_proc_list: []
         },
@@ -346,8 +344,7 @@ export default {
         async checkedLock() {
             if (this.isAdmin) {
                 this.enableEdit = false;
-                this.storage = StorageBaseFactory.getStorage();
-                const lockObj = await this.storage.getObject('lock', { match: { id: 'process-map' } });
+                const lockObj = await backend.getLock('process-map');
                 if (lockObj && lockObj.id && lockObj.user_id) {
                     this.lock = true;
                     this.editUser = lockObj.user_id;
@@ -427,7 +424,7 @@ export default {
                 this.lock = false;
                 this.enableEdit = false;
                 if (this.useLock) {
-                    await this.storage.delete('lock/process-map', { key: 'id' });
+                    await backend.deleteLock('process-map');
                 }
                 this.closeAlertDialog();
             }
@@ -445,7 +442,7 @@ export default {
                         id: 'process-map',
                         user_id: this.editUser,
                     }
-                    await this.storage.putObject('lock', lockObj);
+                    await backend.setLock(lockObj);
                 }
             }
             this.closeAlertDialog();
@@ -469,8 +466,7 @@ export default {
 
                         if(me.useLock){
                             // GPT 모드인 경우
-                            me.storage = StorageBaseFactory.getStorage();
-                            const lockObj = await me.storage.getObject('lock/process-map', { key: 'id' });
+                            const lockObj = await backend.getLock('process-map');
                             if (lockObj && lockObj.id && lockObj.user_id) {
                                 me.lock = true;
                                 me.editUser = lockObj.user_id;

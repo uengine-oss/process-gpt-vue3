@@ -260,7 +260,7 @@
         "step3-2-text": "1. You can check the “Secret Key” by clicking the “Reveal” button from the “Project API Keys” section.<br>(*Copy the “Secret Key” and paste it into the box below.”",
         "step3-3": "STEP 3. DataBase Connection",
         "step3-3-text": "1. Select “Database” from the menu list of “Settings”.<br>2. Copy “Host”, “Database name”, “Port”, “User” from the “Connection parameters” section and paste it into the each box below.",
-        "step4": "STEP 4. Enter the Company Name to Use",
+        "step4": "STEP 1. Enter the Company Name to Use",
         "step4-text": "1. Enter the name of the company in the box below and click “Create” button to create a company.<br>The name of the company will be used as a sub-domain.<br>e.g. {Company Name}.process-gpt.io",
         "step5": "STEP 5. Setting up Supabase Site URL",
         "step5-text": "1. Select lock icon(Authentication) from the left menu.<br>2. Click “URL Configuration”.<br>3. Click copy button to copy the “Site URL” including the company name you entered from Step4 and paste it into the “Site URL” box.<br>4. Click “Save” button."

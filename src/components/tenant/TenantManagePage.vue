@@ -56,7 +56,7 @@
                                 <v-sheet style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
                                     <v-tooltip text="수정">
                                         <template v-slot:activator="{ props }">
-                                            <v-btn @click="(e) => {e.stopPropagation(); toEditTenantPage(tenantInfo.id)}" icon v-bind="props" style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
+                                            <v-btn @click.stop="toEditTenantPage(tenantInfo.id)" icon v-bind="props" style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
                                                 <v-icon size="24">mdi-pencil</v-icon>
                                             </v-btn>
                                         </template>
@@ -67,7 +67,7 @@
                                 <v-sheet style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
                                     <v-tooltip text="삭제">
                                         <template v-slot:activator="{ props }">
-                                            <v-btn @click="(e) => {e.stopPropagation(); tenantIdToDelete = tenantInfo.id; deleteDialog = true}" icon v-bind="props" style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
+                                            <v-btn @click.stop="deleteDialog = true" icon v-bind="props" style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
                                                 <Icons :icon="'trash'" />
                                             </v-btn>
                                         </template>
@@ -87,7 +87,7 @@
                 회사를 삭제하시겠습니까?
             </v-card-text>
             <v-card-actions class="justify-center pt-0">
-                <v-btn color="primary" variant="flat" @click="deleteTenant(tenantIdToDelete); deleteDialog = false">삭제</v-btn>
+                <v-btn color="primary" variant="flat" @click="deleteTenant(); deleteDialog = false">삭제</v-btn>
                 <v-btn color="error" variant="flat" @click="deleteDialog = false">취소</v-btn>
             </v-card-actions>
         </v-card>
@@ -96,23 +96,56 @@
 
 <script>
 import Logo from '@/layouts/full/logo/Logo.vue';
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
+
+import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
 
 export default {
     name: 'TenantManagePage',
     components: {
         Logo
     },
-
     data: () => ({
         tenantInfos: [],
         deleteDialog: false,
         tenantIdToDelete: null,
-
-        storage: null,
-        userInfo: null
     }),
+    async created() {
+        const isLogin = await backend.checkDBConnection();
+        if(!isLogin) {
+            alert("로그인이 필요합니다.")
+            this.$router.push('/auth/login')
+        }
+        const tenants = await backend.getTenants();
+        this.tenantInfos = tenants;
+        // let me = this
+        // const checkIsLogin = async () => {
+        //     const isLogin = localStorage.getItem("accessToken") ? true : false
+        //     if(!isLogin) {
+        //         alert("로그인이 필요합니다.")
+        //         await me.$router.push('/auth/login')
+        //         return false
+        //     }
+        //     return true
+        // }
 
+        // if(!(await checkIsLogin())) return
+        // me.$try({
+        //     context: me,
+        //     action: async () => {
+        //         me.storage = StorageBaseFactory.getStorage()
+        //         me.userInfo = await me.storage.getUserInfo();
+
+        //         const tenants = (await me.storage.getObject(`users/${me.userInfo.uid}`, {key: 'id'})).tenants
+        //         if(tenants) {
+        //             for (const tenant of tenants) {
+        //                 const tenantInfo = await me.storage.getObject(`tenant_def/${tenant}`, {key: 'id'})
+        //                 if(tenantInfo) me.tenantInfos.push(tenantInfo)
+        //             }
+        //         }
+        //     }
+        // });
+    },
     methods: {
         toAddTenentPage() {
             this.$router.push('/tenant/create')
@@ -123,59 +156,18 @@ export default {
         },
 
         async deleteTenant(tenantId) {
-            let me = this
-            me.$try({
-                context: me,
-                action: async () => {
-                    await me.storage.delete(`tenant_def/${tenantId}`, { key: 'id' });
-                    const dbUserInfo = await me.storage.getObject(`users/${me.userInfo.uid}`, {key: 'id'})
-                    await me.storage.putObject(`users/${me.userInfo.uid}`, {
-                        ...dbUserInfo,
-                        tenants: dbUserInfo.tenants.filter(tenant => tenant !== tenantId)
-                    });
-
-                    me.tenantInfos = me.tenantInfos.filter(tenantInfo => tenantInfo.id !== tenantId)
-                },
-                successMsg: '회사가 정상적으로 삭제되었습니다.'
-            });
+            await backend.deleteTenant(tenantId)
+            this.tenantInfos = this.tenantInfos.filter(tenant => tenant.id !== tenantId)
         },
         
-        toSelectedTenantPage(tenantId) {
-            if(!location.port || location.port == '')
+        async toSelectedTenantPage(tenantId) {
+            await backend.setTenant(tenantId);
+            if(!location.port || location.port == '') {
                 location.href = `https://${tenantId}.process-gpt.io`
-            else
+            } else {
                 location.href = `http://${tenantId}.process-gpt.io:${location.port}`
-        }
-    },
-
-    async created() {
-        let me = this
-        const checkIsLogin = async () => {
-            const isLogin = localStorage.getItem("accessToken") ? true : false
-            if(!isLogin) {
-                alert("로그인이 필요합니다.")
-                await me.$router.push('/auth/login')
-                return false
             }
-            return true
         }
-
-        if(!(await checkIsLogin())) return
-        me.$try({
-            context: me,
-            action: async () => {
-                me.storage = StorageBaseFactory.getStorage()
-                me.userInfo = await me.storage.getUserInfo();
-
-                const tenants = (await me.storage.getObject(`users/${me.userInfo.uid}`, {key: 'id'})).tenants
-                if(tenants) {
-                    for (const tenant of tenants) {
-                        const tenantInfo = await me.storage.getObject(`tenant_def/${tenant}`, {key: 'id'})
-                        if(tenantInfo) me.tenantInfos.push(tenantInfo)
-                    }
-                }
-            }
-        });
     },
 };
 </script>
