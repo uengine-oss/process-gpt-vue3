@@ -60,6 +60,7 @@ export interface Backend {
     getActivitiesStatus(instId: string): Promise<any>;
     deleteTest(path: string, tracingTag: string, index: number): Promise<any>;
     checkDBConnection(): Promise<any>;
+    getWorkListAll(): Promise<any>;
 }
 
 // export type { Backend }
