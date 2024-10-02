@@ -3,13 +3,21 @@
         <AppBaseCard>
             <template v-slot:leftpart>
                 <div class="no-scrollbar">
-                    <v-tabs v-model="activeTab">
-                        <v-tab>
-                            <v-icon>mdi-account</v-icon>
-                        </v-tab>
-                        <v-tab>
-                            <v-icon>mdi-message</v-icon>
-                        </v-tab>
+                    <v-tabs v-model="activeTab" grow color="primary">
+                        <v-tooltip location="top" :text="$t('chat.user')">
+                            <template v-slot:activator="{ props }">
+                                <v-tab v-bind="props">
+                                    <v-icon>mdi-account</v-icon>
+                                </v-tab>
+                            </template>
+                        </v-tooltip>
+                        <v-tooltip location="top" :text="$t('chat.chatRoom')">
+                            <template v-slot:activator="{ props }">
+                                <v-tab v-bind="props">
+                                    <v-icon>mdi-message</v-icon>
+                                </v-tab>
+                            </template>
+                        </v-tooltip>
                     </v-tabs>
                     <v-tabs-items v-model="activeTab">
                         <v-tab-item v-if="activeTab == 0">

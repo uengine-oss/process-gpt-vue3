@@ -272,7 +272,7 @@ export default {
                 if (newVal.path !== oldVal.path) {
                     if(this.$refs.mashup) {
                         if(this.isAIUpdated || (this.$refs.mashup.getKEditorContentHtml() != this.kEditorContentBeforeSave)) {
-                            const answer = window.confirm('You have unsaved changes. Are you sure you want to leave?');
+                            const answer = window.confirm(this.$t('changePath'));
                             if (answer)
                                 this.loadData();
                             else {
@@ -1105,7 +1105,7 @@ export default {
         if(!(this.$refs.mashup)) return next();
 
         if(this.isAIUpdated || (this.$refs.mashup.getKEditorContentHtml() != this.kEditorContentBeforeSave)) {
-            const answer = window.confirm('You have unsaved changes. Are you sure you want to leave?');
+            const answer = window.confirm(this.$t('changePath'));
             if (answer) {
                 next();
             } else {

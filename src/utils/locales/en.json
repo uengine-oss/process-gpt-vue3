@@ -1,5 +1,6 @@
 {
     "message": "en",
+    "changePath": "You have unsaved changes. Are you sure you want to leave?",
     "mainPage": {
         "login": "login",
         "logout": "logout",
@@ -115,6 +116,7 @@
         "addMajor": "Major Process",
         "addSub": "Sub Process",
         "save": "Save",
+        "downloadImage": "Download definition diagram as an image",
         "consultingAI": "Process Consulting AI"
     },
     "uiDefinition": {
@@ -186,7 +188,9 @@
         "systemReply": "Reply to the system",
         "headset": "Speaking/Listening",
         "document": "Work Instruction",
-        "camera": "Camera"
+        "camera": "Camera",
+        "user": "User",
+        "chatRoom": "Chat Room"
     },
     "accountTab": {
         "accountSetting": "Account Settings",
@@ -515,7 +519,8 @@
         "search": "search"
     },
     "userListing": {
-        "search": "User search"
+        "search": "User search",
+        "chat": "Chat"
     },
     "ProcessDefinitionChat": {
         "greetingMessage": "Hello {name}! What tasks and issues are you experiencing? Please let me know and I'll help you!"

@@ -346,7 +346,7 @@ export default {
         const xmlObj = await modeler.saveXML({ format: true, preamble: true });
 
         if (from.path === '/definitions/chat' && xmlObj && xmlObj.xml && !this.isViewMode) {
-            const answer = window.confirm('You have unsaved changes. Are you sure you want to leave?');
+        const answer = window.confirm(this.$t('changePath'));
             if (answer) {
                 next();
             } else {

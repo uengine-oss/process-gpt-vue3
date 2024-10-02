@@ -204,7 +204,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     if (is(element, 'bpmn:SequenceFlow')) {
       var strokColor = this.getValidateColor(this.validate(element.id));
       if (strokColor == null) {
-        strokColor = '#68369a';
+        strokColor = 'black';
       }
       const customMarkerUrl = createCustomMarker(parentNode, strokColor); // 화살표 색상 설정
       const options = {
