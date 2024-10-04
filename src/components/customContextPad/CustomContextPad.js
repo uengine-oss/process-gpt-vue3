@@ -4,6 +4,7 @@ import { i18n } from '@/main';
 export default function ContextPadProvider(config, injector, eventBus, contextPad,
   modeling, elementFactory, connect, create, popupMenu, canvas, rules, translate) {
 
+  const originalContextPadProvider = injector.get('contextPadProvider');
   this._config = config;
   this._injector = injector;
   this._eventBus = eventBus;
@@ -18,6 +19,8 @@ export default function ContextPadProvider(config, injector, eventBus, contextPa
   this._translate = translate;
 
   contextPad.registerProvider(this);
+
+  this._originalGetContextPadEntries = originalContextPadProvider.getContextPadEntries.bind(originalContextPadProvider);
 }
 
 ContextPadProvider.$inject = [
@@ -151,7 +154,7 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
     });
   }
 
-  const actions = {};
+  const actions =  this._originalGetContextPadEntries(element);
 
   if (element.type === 'bpmn:Participant' || element.type === 'bpmn:Lane') {
     const isHorizontal = element.di.isHorizontal;
@@ -194,14 +197,6 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
           click: divideIntoThreeLanes
         }
       },
-      'delete': {
-        group: 'edit',
-        className: 'bpmn-icon-trash',
-        title: i18n.global.t('customContextPad.delete'),
-        action: {
-          click: removeElement
-        }
-      },
       'connect': {
         group: 'connect',
         className: 'bpmn-icon-connection-multi',
@@ -227,114 +222,31 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
     //   });
     // }
   }
-  else {
-    assign(actions, {
-      'append.end-event': {
-        group: 'model',
-        className: 'bpmn-icon-end-event-none',
-        title: i18n.global.t('customContextPad.endEvent'),
-        action: {
-          click: appendAction(
-            'bpmn:EndEvent',
-            'bpmn-icon-end-event-none',
-            translate('Append end event')
-          )
-        }
-      },
-      'append.gateway': {
-        group: 'model',
-        className: 'bpmn-icon-gateway-none',
-        title: i18n.global.t('customContextPad.gateway'),
-        action: {
-          click: appendAction(
-            'bpmn:ExclusiveGateway',
-            'bpmn-icon-gateway-none',
-            translate('Append gateway')
-          )
-        }
-      },
-      'append.append-task': {
-        group: 'model',
-        className: 'bpmn-icon-task',
-        title: i18n.global.t('customContextPad.task'),
-        action: {
-          click: appendAction(
-            'bpmn:Task',
-            'bpmn-icon-task',
-            translate('Append task')
-          )
-        }
-      },
-      'append.intermediate-event': {
-        group: 'model',
-        className: 'bpmn-icon-intermediate-event-none',
-        title: i18n.global.t('customContextPad.intermediateEvent'),
-        action: {
-          click: appendAction(
-            'bpmn:IntermediateThrowEvent',
-            'bpmn-icon-intermediate-event-none',
-            translate('Append intermediate/boundary event')
-          )
-        }
-      },
-      'append.text-annotation': {
-        group: 'model',
-        className: 'bpmn-icon-text-annotation',
-        title: i18n.global.t('customContextPad.textAnnotation'),
-        action: {
-          click: appendAction(
-            'bpmn:TextAnnotation',
-            'bpmn-icon-text-annotation',
-            translate('Append text annotation')
-          )
-        }
-      },
-      'replace': {
-        group: 'edit',
-        className: 'bpmn-icon-screw-wrench',
-        title: i18n.global.t('customContextPad.replace'),
-        action: {
-          click: function(event, element) {
-            var position = assign({
-              x: event.x,
-              y: event.y
-            }, 
-            {
-              cursor: { x: event.x, y: event.y }
-            });
-  
-            popupMenu.open(element, 'bpmn-replace', position, {
-              title: i18n.global.t('customContextPad.replace'),
-              width: 300,
-              search: true
-            });
-          }
-        }
-      },
-      'delete': {
-        group: 'edit',
-        className: 'bpmn-icon-trash',
-        title: i18n.global.t('customContextPad.delete'),
-        action: {
-          click: function(event, element) {
-            modeling.removeElements([element]);
-          }
-        }
-      },
-      'connect': {
-        group: 'connect',
-        className: 'bpmn-icon-connection-multi',
-        title: i18n.global.t('customContextPad.connect'),
-        action: {
-          click: function(event, element) {
-            connect.start(event, element);
-          },
-          dragstart: function(event, element) {
-            connect.start(event, element);
-          }
-        }
-      }
-    });
+    
+  if(actions['append.end-event']) {
+    actions['append.end-event'].title = i18n.global.t('customContextPad.endEvent');
   }
+  if(actions['append.gateway']) {
+    actions['append.gateway'].title = i18n.global.t('customContextPad.gateway');
+  }
+  if(actions['append.append-task']) {
+    actions['append.append-task'].title = i18n.global.t('customContextPad.task');
+  }
+  if(actions['append.intermediate-event']) {
+    actions['append.intermediate-event'].title = i18n.global.t('customContextPad.intermediateEvent');
+  }
+  if(actions['append.text-annotation']) {
+    actions['append.text-annotation'].title = i18n.global.t('customContextPad.textAnnotation');
+  }
+  if(actions['replace']) {
+    actions['replace'].title = i18n.global.t('customContextPad.replace');
+  }
+  if(actions['connect']) {
+    actions['connect'].title = i18n.global.t('customContextPad.connect');
+  }
+  if(actions['delete']) {
+    actions['delete'].title = i18n.global.t('customContextPad.delete');
+  }
+  
   return actions;
 };
