@@ -1333,6 +1333,16 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
+    async getWorkListAll() {
+        try {
+            const list = await this.getWorkList();
+            return list;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
 }
 
 export default ProcessGPTBackend;

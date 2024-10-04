@@ -55,7 +55,7 @@ export default {
         }
     },
     async created() {
-        if(window.$mode === 'processGPT') {
+        if(window.$mode === 'ProcessGPT') {
             this.initProcessGPTMode();
         }else {
             this.initUengineMode();

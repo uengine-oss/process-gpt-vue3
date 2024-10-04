@@ -57,18 +57,18 @@ export default class StorageBaseSupabase {
                 if (result.error && result.error != null) {
                     console.error('Error updating app metadata:', result.error);
                 } else {
-                    await this.writeUserData(data);
+                    await this.writeUserData(result.data);
                     const isOwner = await this.checkTenantOwner(tenantId);
                     if (isOwner) {
-                        this.putObject('users', {
-                            id: data.user.id,
+                        await this.putObject('users', {
+                            id: result.data.user.id,
                             is_admin: true,
                             role: 'superAdmin',
                             current_tenant: tenantId
                         });
                     } else {
-                        this.putObject('users', {
-                            id: data.user.id,
+                        await this.putObject('users', {
+                            id: result.data.user.id,
                             is_admin: false,
                             role: 'user',
                             current_tenant: tenantId
@@ -91,7 +91,7 @@ export default class StorageBaseSupabase {
     async checkTenantOwner(tenantId) {
         try {
             const data = await this.getObject(`tenants/${tenantId}`, { key: 'id' });
-            if (data.owner) {
+            if (data && data.owner) {
                 const user = await this.getUserInfo();
                 if (data.owner == user.uid) {
                     return true;
@@ -168,11 +168,15 @@ export default class StorageBaseSupabase {
             });
     
             if (!result.error) {
-                this.putObject('users', {
+                await this.putObject('users', {
                     id: result.data.user.id,
                     username: result.data.user.user_metadata.name,
                     role: 'user',
                 });
+
+                if (!window.$isTenantServer && window.$tenantName) {
+                    await this.setCurrentTenant(window.$tenantName);
+                }
                 
                 const { access_token, refresh_token } = result.data.session;
                 document.cookie = `access_token=${access_token}; domain=.process-gpt.io; path=/`;
