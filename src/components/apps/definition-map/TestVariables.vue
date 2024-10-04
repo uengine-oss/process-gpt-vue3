@@ -29,7 +29,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <test-variable v-for="(val, idx) in selectedTask" :key="idx" :idx="idx" :selected-task="val" @execute="e => runExistingTest(e)"></test-variable>
+                    <test-variable v-for="(val, idx) in selectedTask" :key="idx" :idx="idx" :selected-task="val" @execute="e => runExistingTest(e)" @delete="idx => deleteTest(idx)"></test-variable>
                 </tbody>
             </v-table>
             <v-card-text v-else class="pa-0">
