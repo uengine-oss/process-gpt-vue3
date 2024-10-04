@@ -80,6 +80,14 @@
     "admin": {
         "title": "Administrator Menu"
     },
+    "adminDetail": {
+        "processVariables": "Process Variables",
+        "properties": "Properties",
+        "noProcessDefinition": "No Process Definition",
+        "key": "Key",
+        "value": "Value",
+        "save": "Save"
+    },
     "completeInstance": {
         "title": "Complete Instance"
     },
