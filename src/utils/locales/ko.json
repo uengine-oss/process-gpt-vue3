@@ -1,5 +1,6 @@
 {
     "message": "ko",
+    "changePath": "저장되지 않은 변경사항이 있습니다. 이동하시겠습니까?",
     "mainPage": {
         "login": "로그인",
         "logout": "로그아웃",
@@ -12,7 +13,7 @@
         "subTitle": "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
     },
     "headerMenu" : {
-        "sidebar" : "사이드바",
+        "sidebar" : "메뉴 접기 펼치기",
         "dashboard" : "대시보드",
         "todoList" : "할 일",
         "calendar" : "달력",
@@ -30,7 +31,10 @@
         "category": "구분"
     },
     "dashboard": {
-        "title": "대시보드"
+        "title": "대시보드",
+        "startProcess": "프로세스 시작",
+        "startProcessDescription": "프로세스 시작을 눌러 프로세스를 시작 할 수 있습니다.",
+        "welcome": "환영합니다."
     },
     "todoList": {
         "title": "할 일 목록",
@@ -76,6 +80,14 @@
     "admin": {
       "title": "관리자 메뉴"   
     },
+    "adminDetail": {
+        "processVariables": "프로세스 변수",
+        "properties": "속성",
+        "noProcessDefinition": "프로세스 정의가 없습니다.",
+        "key": "키",
+        "value": "값",
+        "save": "저장"
+    },
     "completeInstance": {
         "title": "종료된 인스턴스"
     },
@@ -112,6 +124,7 @@
         "addMajor": "Major 프로세스",
         "addSub": "Sub 프로세스",
         "save" : "저장",
+        "downloadImage": "정의 체계도를 이미지로 다운로드",
         "consultingAI": "프로세스 컨설팅 AI"
     },
     "uiDefinition": {
@@ -180,7 +193,12 @@
         "isEnableProcessGPT": "Process-GPT 활성화",
         "isDisableProcessGPT": "Process-GPT 비활성화",
         "userReply": "{name}님에게 답장",
-        "systemReply": "system에게 답장"
+        "systemReply": "system에게 답장",
+        "headset": "말하기/듣기",
+        "document": "업무 지시",
+        "camera": "카메라",
+        "user": "유저",
+        "chatRoom": "대화방"
     },
     "accountTab": {
         "accountSetting": "계정 설정",
@@ -250,7 +268,7 @@
         "step3-2-text": "1. Project API keys 섹션의 Reveal 버튼을 클릭하여 Secret 키 값을 확인할 수 있습니다.<br>(*Secret 키를 복사하여 아래의 Secret 입력창에 붙혀넣습니다.)",
         "step3-3": "STEP 3. DataBase 연결",
         "step3-3-text": "1. Settings 메뉴리스트중 Database 메뉴를 선택합니다.<br>2. Connection parameters 섹션에서 Host, Database name, Port, User 값을 복사하여 아래의 각 입력창에 붙혀넣습니다.",
-        "step4": "STEP 4. 사용할 회사명 입력하기",
+        "step4": "STEP 1. 사용할 회사명 입력하기",
         "step4-text": "1. 사용할 회사명을 아래의 ID 입력창에 입력하고 생성하기 버튼을 클릭해서 회사를 생성합니다.<br>입력한 회사명은 서브도메인으로 사용됩니다.<br>e.g. { 입력한 회사명 }.process-gpt.io",
         "step5": "STEP 5. Supabase Site URL 설정하기",
         "step5-text": "1. 왼쪽 메뉴 중 자물쇠 아이콘(Authentication) 메뉴를 선택합니다.<br>2. URL Configuration을 클릭합니다.<br>3. 아래 보이는 STEP 4에서 입력한 회사명이 포함된 Site URL을 복사 버튼을 눌러 복사 후 복사하여 Site URL 입력란에 입력합니다.<br>4. save 버튼을 눌러 저장합니다."
@@ -509,7 +527,8 @@
         "search": "검색"
     },
     "userListing": {
-        "search": "유저 검색"
+        "search": "유저 검색",
+        "chat": "채팅"
     },
     "ProcessDefinitionChat": {
         "greetingMessage": "{name}님 안녕하세요! 어떤 업무에 어떤 문제를 겪고 계신가요? 말씀해주시면 도와드리겠습니다!"
@@ -529,6 +548,20 @@
         "laneToTheRight": "오른쪽에 레인 추가",
         "laneDivideTwo": "두 개의 레인으로 나누기",
         "laneDivideThree": "세 개의 레인으로 나누기",
-        "connectionMulti": "메시지 흐름을 사용하여 연결"
+        "connectionMulti": "메시지 연결"
+    },
+    "WorkItem": {
+        "progress": "진행 상황",
+        "history": "워크 히스토리",
+        "agent": "Agent 초안 생성"
+    },
+    "TestProcess": {
+        "title": "테스트 프로세스",
+        "mainInstanceId": "메인 - 인스턴스 ID - ",
+        "subInstanceId": "서브 - 인스턴스 ID - ",
+        "worklist": "작업 목록",
+        "success": "성공",
+        "taskID": "작업 ID: ",
+        "instanceID": "인스턴스 ID: "
     }
 }

@@ -412,9 +412,10 @@ export default {
                 }
 
                 roles.forEach((role) => {
+                    const roleName = 'roles.' + role;
                     if (nodes['roles']) {
-                        nodes['roles'].children.push(role);
-                        nodes[role] = {
+                        nodes['roles'].children.push(roleName);
+                        nodes[roleName] = {
                             text: role,
                             children: []
                         };
@@ -455,8 +456,9 @@ export default {
             if (nodes['instance']) {
                 nodes['instance'].children = [];
                 instanceNodes.forEach((node) => {
-                    nodes['instance'].children.push(node);
-                    nodes[node] = {
+                    const instanceName = 'instance.' + node;
+                    nodes['instance'].children.push(instanceName);
+                    nodes[instanceName] = {
                         text: node,
                         children: []
                     };
@@ -483,21 +485,22 @@ export default {
                 if (nodes['activities']) {
                     nodes['activities'].children = [];
                     activities.forEach((activity) => {
-                        nodes['activities'].children.push(activity.name);
-                        nodes[activity.name] = {
+                        const activityName = 'activities.' + activity.name;
+                        nodes['activities'].children.push(activityName);
+                        nodes[activityName] = {
                             text: activity.name,
                             children: []
                         };
                         activityNodes.forEach((node) => {
-                            if (!nodes[activity.name]) {
-                                nodes[activity.name] = {
+                            if (!nodes[activityName]) {
+                                nodes[activityName] = {
                                     text: activity.name,
                                     children: []
                                 };
                             }
-
-                            nodes[activity.name].children.push(node);
-                            nodes[node] = {
+                            const activityNodeName = activityName + '.' + node;
+                            nodes[activityName].children.push(activityNodeName);
+                            nodes[activityNodeName] = {
                                 text: node,
                                 children: []
                             };
@@ -579,9 +582,9 @@ export default {
                 const obj = {};
                 if (node.children && node.children.length > 0) {
                     const childrenArray = node.children.map((childId) => processNode(childId)).filter((n) => n !== null);
-                    obj[node.text] = childrenArray.length > 0 ? childrenArray : [];
+                    obj[nodeId] = childrenArray.length > 0 ? childrenArray : [];
                 } else {
-                    obj[node.text] = [];
+                    obj[nodeId] = [];
                 }
 
                 return obj;

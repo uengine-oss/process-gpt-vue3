@@ -44,6 +44,9 @@ export default {
             } else {
                 return false;
             }
+        },
+        isMobile() {
+            return window.innerWidth <= 1080;
         }
     },
     mounted() {
@@ -320,6 +323,23 @@ export default {
                     replyContent: this.replyUser.content,
                     replyUserEmail: this.replyUser.email,
                 };
+            } else if(message.specific){
+                obj = {
+                    name: role ? role : this.userInfo.name,
+                    email: role ? role + '@uengine.org' : this.userInfo.email,
+                    role: role ? role : 'user',
+                    timeStamp: Date.now(),
+                    content: role ? (typeof message == 'string' ? message : JSON.stringify(message)) : message.text,
+                    image: typeof message == 'string' ? "" : message.image,
+                    descriptions: message.descriptions,
+                    checkPoints: message.checkPoints,
+                    attainable: message.attainable,
+                    measurable: message.measurable,
+                    relevant: message.relevant,
+                    specific: message.specific,
+                    time_bound: message.time_bound,
+                    title: message.title,
+                };
             } else {
                 obj = {
                     name: role ? role : this.userInfo.name,
@@ -328,9 +348,8 @@ export default {
                     timeStamp: Date.now(),
                     content: role ? (typeof message == 'string' ? message : JSON.stringify(message)) : message.text,
                     image: typeof message == 'string' ? "" : message.image,
-                    descriptionList: message.descriptionList,
-                    checkList: message.checkList
                 };
+
             }
 
             return obj;

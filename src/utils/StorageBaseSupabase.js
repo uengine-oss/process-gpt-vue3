@@ -1,5 +1,6 @@
 import axios from 'axios';
 // import StorageBase from "./StorageBase";
+
 class StorageBaseError extends Error {
     constructor(message, cause, args) {
         super(message, { cause: cause });
@@ -13,18 +14,93 @@ export default class StorageBaseSupabase {
 
     async isConnection() {
         try {
-            const { data, error } = await window.$supabase.from('users').select().limit(1);
+            const accessToken = document.cookie.split('; ').find(row => row.startsWith('access_token')).split('=')[1];
+            const refreshToken = document.cookie.split('; ').find(row => row.startsWith('refresh_token')).split('=')[1];
+
+            if (accessToken && refreshToken) {
+                window.localStorage.setItem('accessToken', accessToken);
+                await window.$supabase.auth.setSession({
+                    access_token: accessToken,
+                    refresh_token: refreshToken
+                });
+            }
+
+            const { data, error } = await window.$supabase.auth.getUser();
             if (error) {
-                console.error('Supabase connection error:', error);
                 return false;
             }
             if (data) {
                 console.log('Supabase is connected.');
+                this.writeUserData(data);
                 return true;
             }
         } catch (error) {
             console.error('Error checking Supabase connection:', error);
             return false;
+        }
+    }
+
+    async setCurrentTenant(tenantId) {
+        try {
+            const { data, error } = await window.$supabase.auth.getUser();
+            if (error) {
+                console.error('Error fetching current user:', error.message);
+                throw new StorageBaseError('Error fetching current user', error, arguments);
+            } else if (error == null && data.user) {
+                const result = await window.$supabase.auth.admin.updateUserById(data.user.id,
+                    {
+                        app_metadata: {
+                            tenant_id: tenantId
+                        }
+                    }
+                )
+                if (result.error && result.error != null) {
+                    console.error('Error updating app metadata:', result.error);
+                } else {
+                    await this.writeUserData(result.data);
+                    const isOwner = await this.checkTenantOwner(tenantId);
+                    if (isOwner) {
+                        await this.putObject('users', {
+                            id: result.data.user.id,
+                            is_admin: true,
+                            role: 'superAdmin',
+                            current_tenant: tenantId
+                        });
+                    } else {
+                        await this.putObject('users', {
+                            id: result.data.user.id,
+                            is_admin: false,
+                            role: 'user',
+                            current_tenant: tenantId
+                        });
+                    }
+                }
+            }
+            
+            if (!data) {
+                console.log('No user is currently logged in');
+                return null;
+            }
+            
+            // return user;
+        } catch (error) {
+            console.error('Unexpected error in setTenants:', error);
+        }
+    }
+
+    async checkTenantOwner(tenantId) {
+        try {
+            const data = await this.getObject(`tenants/${tenantId}`, { key: 'id' });
+            if (data && data.owner) {
+                const user = await this.getUserInfo();
+                if (data.owner == user.uid) {
+                    return true;
+                }
+            } else {
+                return false;
+            }
+        } catch(e) {
+            throw new StorageBaseError('error in checkTenantOwner', e, arguments);
         }
     }
 
@@ -35,6 +111,15 @@ export default class StorageBaseSupabase {
                 password: userInfo.password
             });
             if (!result.error) {
+                await axios.post(`/execution/signin`, {
+                    email: userInfo.email,
+                    password: userInfo.password
+                });
+
+                const { access_token, refresh_token } = result.data.session;
+                document.cookie = `access_token=${access_token}; domain=.process-gpt.io; path=/`;
+                document.cookie = `refresh_token=${refresh_token}; domain=.process-gpt.io; path=/`;
+
                 return result.data;
             } else if(result.error && result.error.message.includes("Email not confirmed")){
                 result.errorMsg = "계정 인증이 완료되지 않았습니다. 이메일 확인 후 다시 로그인하세요."
@@ -83,6 +168,20 @@ export default class StorageBaseSupabase {
             });
     
             if (!result.error) {
+                await this.putObject('users', {
+                    id: result.data.user.id,
+                    username: result.data.user.user_metadata.name,
+                    role: 'user',
+                });
+
+                if (!window.$isTenantServer && window.$tenantName) {
+                    await this.setCurrentTenant(window.$tenantName);
+                }
+                
+                const { access_token, refresh_token } = result.data.session;
+                document.cookie = `access_token=${access_token}; domain=.process-gpt.io; path=/`;
+                document.cookie = `refresh_token=${refresh_token}; domain=.process-gpt.io; path=/`;
+
                 return result.data;
             } else {
                 result.errorMsg = result.error.message;
@@ -104,7 +203,11 @@ export default class StorageBaseSupabase {
             window.localStorage.removeItem('uid');
             window.localStorage.removeItem('isAdmin');
             window.localStorage.removeItem('execution');
-            return await window.$supabase.auth.signOut();            
+            
+            document.cookie = 'access_token=; domain=.process-gpt.io; path=/';
+            document.cookie = 'refresh_token=; domain=.process-gpt.io; path=/';
+
+            return await window.$supabase.auth.signOut();
         } catch(e) {
             throw new StorageBaseError('error in signOut', e, arguments);
         }
@@ -112,12 +215,20 @@ export default class StorageBaseSupabase {
 
     async createUser(userInfo) {
         try {
+            const { data, error } = await window.$supabase.auth.getUser();
+            if (error) {
+                throw new StorageBaseError('error in createUser', error, arguments);
+            }
+            const tenantId = data.user.app_metadata.tenant_id;
             const result = await window.$supabase.auth.admin.createUser({
                 email: userInfo.email, 
                 password: userInfo.password,
                 options: {
                     data: {
                         name: userInfo.username,
+                    },
+                    app_metadata: {
+                        tenant_id: tenantId
                     }
                 }
             });
@@ -134,24 +245,32 @@ export default class StorageBaseSupabase {
 
     async getUserInfo() {
         try {
-            const uid = window.localStorage.getItem("uid");
-            var { data, error } = await window.$supabase.from('users').select().eq('id', uid).maybeSingle();
-
-            if (!error && data) {
-                return {
-                    email: data.email,
-                    name: data.username,
-                    profile: data.profile,
-                    uid: data.id,
-                    role: data.role
+            const userData = await window.$supabase.auth.getUser();
+            if (userData.error) {
+                throw new StorageBaseError('error in getUserInfo', userData.error, arguments);
+            } else if (userData.data.user) {
+                const uid = userData.data.user.id;
+                var { data, error } = await window.$supabase.from('users').select().eq('id', uid).maybeSingle();
+                if (!error && data) {
+                    return {
+                        email: data.email,
+                        name: data.username,
+                        profile: data.profile,
+                        uid: data.id,
+                        role: data.role
+                    }
+                } else if (error) {
+                    // const isConnected = this.isConnection();
+                    // if (isConnected) {  // DB 연결된 경우
+                    //     alert('로그인이 필요합니다');
+                    //     // window.location.href = '/auth/login';
+                    // }
+                    throw new StorageBaseError('error in getUserInfo', error, arguments);
                 }
-            } else if (error) {
-                // const isConnected = this.isConnection();
-                // if (isConnected) {  // DB 연결된 경우
-                //     alert('로그인이 필요합니다');
-                //     // window.location.href = '/auth/login';
-                // }
-                throw new StorageBaseError('error in getUserInfo', error, arguments);
+            } else {
+                alert('로그인이 필요합니다');
+                window.location.href = '/auth/login';
+                throw new StorageBaseError('error in getUserInfo', userData.error, arguments);
             }
         } catch(e) {
             throw new StorageBaseError('error in getUserInfo', e, arguments);
@@ -597,31 +716,6 @@ export default class StorageBaseSupabase {
                 window.localStorage.setItem('author', value.user.email);
                 window.localStorage.setItem('uid', value.user.id);
                 
-                if(window.$isTenantServer && userInfo && userInfo.password){
-                    await this.putObject('users', {
-                        id: value.user.id,
-                        username: value.user.user_metadata.name,
-                        role: 'superAdmin',
-                        is_admin: true,
-                        pw: userInfo.password
-                    });
-                } else {
-                    const count = await this.getCount('users');
-                    if (count && count === 1) {
-                        await this.putObject('users', {
-                            id: value.user.id,
-                            username: value.user.user_metadata.name,
-                            role: 'superAdmin',
-                            is_admin: true
-                        });
-                    } else {
-                        await this.putObject('users', {
-                            id: value.user.id,
-                            username: value.user.user_metadata.name
-                        });
-                    }
-                }
-
                 const { data, error } = await window.$supabase
                     .from('users')
                     .select('*')

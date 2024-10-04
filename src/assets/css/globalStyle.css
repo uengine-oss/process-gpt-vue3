@@ -63,6 +63,17 @@ hr {
     }
 }
 
+.completed.djs-connection .djs-visual > path {
+    stroke: #68369a !important;
+}
+
+.completed.djs-connection .djs-visual > defs > marker > path {
+    stroke: #68369a !important;
+    fill: #68369a !important;
+}
+
+
+
 .running:not(.djs-connection):not(.generated) .djs-visual > :nth-child(2) {
     stroke-width: 5px !important;
     stroke-dasharray: 20, 20 !important;
@@ -143,7 +154,7 @@ hr {
 }
 
 .vue-bpmn-diagram-container .djs-context-pad .group > div:hover {
-    background-color: rgba(var(--v-theme-primary), 0.20) !important;
+    background-color: #E0E0E0 !important;
 }
 
 .chat-display-none {
@@ -325,6 +336,15 @@ hr {
     z-index: 1;
 }
 
+.process-definition-chat-btn-set {
+    margin-right:20px;
+    display: inline-block;
+}
+
+.test-variables-table-box tr {
+    border: solid 2px black !important;
+}
+
 #apexTreeWrapper {
     height: 100% !important;
 }
@@ -352,7 +372,7 @@ hr {
 #apexTreeWrapper #toolbar #zoom-out:hover,
 #apexTreeWrapper #toolbar #fit-screen:hover,
 #apexTreeWrapper #toolbar #export:hover {
-    background: rgb(var(--v-theme-primary), 0.15) !important;
+    background-color: #E0E0E0 !important;
 }
 
 .apextree-node > div {

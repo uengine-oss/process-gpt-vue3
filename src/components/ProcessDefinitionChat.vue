@@ -79,14 +79,22 @@
                     @changeXML="changeXML"
                 ></ProcessDefinitionVersionManager>
                 <v-dialog v-model="deleteDialog" max-width="500">
-                    <v-card>
-                        <v-card-text>
-                            {{ $t('processDefinition.deleteProcessMessage') }}
-                        </v-card-text>
-                        <v-card-actions class="justify-center pt-0">
-                            <v-btn color="primary" variant="flat" @click="deleteProcess">{{ $t('processDefinition.delete') }}</v-btn>
-                            <v-btn color="error" variant="flat" @click="deleteDialog = false">{{ $t('processDefinition.cancel') }}</v-btn>
-                        </v-card-actions>
+                    <v-card class="pa-4">
+                        <v-row class="ma-0 pa-0 mb-8">
+                            <v-card-text class="ma-0 pa-0" style="font-size:24px;">
+                                {{ $t('processDefinition.deleteProcessMessage') }}
+                            </v-card-text>
+                            <v-spacer></v-spacer>
+                            <v-btn @click="deleteDialog = false" icon variant="text" density="comfortable"
+                                style="margin-top:-8px;"
+                            >
+                                <Icons :icon="'close'" :size="16" />
+                            </v-btn>
+                        </v-row>
+                        <v-row class="ma-0 pa-0">
+                            <v-spacer></v-spacer>
+                            <v-btn color="error" rounded variant="flat" @click="deleteProcess">{{ $t('processDefinition.delete') }}</v-btn>
+                        </v-row>
                     </v-card>
                 </v-dialog>
             </template>
@@ -142,7 +150,7 @@
             </template>
         </AppBaseCard>
         <v-dialog v-model="executeDialog" max-width="80%">
-            <process-gpt-execute v-if="mode === 'LLM'" :definitionId="fullPath" 
+            <process-gpt-execute v-if="mode === 'ProcessGPT'" :definitionId="fullPath" 
                 @close="executeDialog = false"></process-gpt-execute>
             <div v-else>
                 <test-process v-if="isSimulate == 'true'" :definitionId="fullPath" @close="executeDialog = false" />
@@ -213,7 +221,7 @@ export default {
         TestProcess
     },
     props: {
-        mode: {
+        chatMode: {
             type: String,
             default: ""
         },
@@ -247,7 +255,7 @@ export default {
     async created() {
         $try(async () => {
             // Issue: init Methods가 종료되기전에, ChatGenerator를 생성하면서 this로 넘겨주는 Client 정보가 누락되는 현상 발생.
-            if(this.mode == 'consulting'){
+            if(this.chatMode == 'consulting'){
                 this.isConsultingMode = true
             } 
             if(this.isConsultingMode){
@@ -327,6 +335,9 @@ export default {
         isAdmin() {
             const isAdmin = localStorage.getItem('isAdmin') === 'true';
             return isAdmin;
+        },
+        mode(){
+            return window.$mode;
         }
     },
     async beforeRouteLeave(to, from, next) {
@@ -335,7 +346,7 @@ export default {
         const xmlObj = await modeler.saveXML({ format: true, preamble: true });
 
         if (from.path === '/definitions/chat' && xmlObj && xmlObj.xml && !this.isViewMode) {
-            const answer = window.confirm('You have unsaved changes. Are you sure you want to leave?');
+        const answer = window.confirm(this.$t('changePath'));
             if (answer) {
                 next();
             } else {
@@ -375,7 +386,7 @@ export default {
             this.startGenerate();
         },
         async beforeSaveDefinition(info){
-            if(this.mode == 'consulting'){
+            if(this.chatMode == 'consulting'){
                 await this.$emit("createdBPMN", this.processDefinition)
                 info.skipSaveProcMap = true
             } 
@@ -482,7 +493,7 @@ export default {
         },
         async changeXML(info) {
             var me = this;
-            if(window.$mode == 'ProcessGPT') {
+            if(me.mode == 'ProcessGPT') {
                 if (!info) return;
                 if (!info.id) return;
                 if (info.xml) {
@@ -692,16 +703,41 @@ export default {
             }
         },
 
+        parseJsonProcess(response) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const jsonProcess = JSON.parse(response);
+                    resolve(jsonProcess);
+                } catch(error) {
+                    console.log(error);
+                    const maxRetries = 3;
+                    let retryCount = 0;
+
+                    const retry = async () => {
+                        if (retryCount < maxRetries) {
+                            console.log('retrying parse json process');
+                            retryCount++;
+                            resolve(partialParse(response));
+                        } else {
+                            reject(error);
+                        }
+                    };
+
+                    retry();
+                }
+            })
+        },
+
         async afterGenerationFinished(response) {
             let jsonProcess = null;
             if (typeof response === 'string') {
                 try {
-                    jsonProcess = JSON.parse(response);
+                    jsonProcess = await this.parseJsonProcess(response);
                 } catch(e){
                     try {
-                        jsonProcess = partialParse(response);
+                        jsonProcess = await this.parseJsonProcess(response);
                         if(jsonProcess && Object.keys(jsonProcess).length !== 0){
-                            jsonProcess = partialParse(response + '"');
+                            jsonProcess = await this.parseJsonProcess(response + '"');
                         }
                     } catch(e){
                         jsonProcess = this.extractJSON(response);

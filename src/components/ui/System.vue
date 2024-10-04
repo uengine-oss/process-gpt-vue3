@@ -1,7 +1,7 @@
 <template>
     <div v-if="systemInfo">
         <v-card elevation="10"
-            style="height:300px;"
+            style="height:200px;"
         >
             <v-card-title>
                 {{ systemInfo.name }}

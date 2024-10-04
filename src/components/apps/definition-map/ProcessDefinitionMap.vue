@@ -12,7 +12,7 @@
                 
                 <!-- buttons -->
                 <div class="ml-auto d-flex">
-                    <v-tooltip location="bottom" v-if="useLock && !lock && isAdmin" >
+                    <v-tooltip location="bottom" v-if="useLock && !lock && isAdmin && !isViewMode" >
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" icon variant="text" size="24" class="ml-3 cp-unlock" @click="openAlertDialog">
                                 <LockIcon width="24" height="24" />
@@ -51,10 +51,13 @@
                     <span v-if="useLock && lock && userName && userName != editUser" class="ml-1">
                         {{ editUser }} 님이 수정 중 입니다.
                     </span>
-
-                    <v-btn icon variant="text" :size="24" class="ml-3" @click="capturePng">
-                        <Icons :icon="'image-download'" />
-                    </v-btn>
+                    <v-tooltip :text="$t('processDefinitionMap.downloadImage')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" icon variant="text" :size="24" class="ml-3" @click="capturePng">
+                                <Icons :icon="'image-download'" />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
 
                     <!-- 프로세스 정의 체계도 캔버스 확대 축소 버튼 및 아이콘 -->
                     <v-tooltip v-if="componentName != 'SubProcessDetail'" :text="$t('processDefinition.zoom')">
@@ -78,7 +81,7 @@
                     <SubProcessDetail :value="value" @capture="capturePng" :enableEdit="enableEdit" />
                 </div>
                 <div v-else>
-                    <DefinitionMapList :value="value" :enableEdit="enableEdit" />
+                    <DefinitionMapList :value="value" :enableEdit="enableEdit" @clickProcess="clickProcess" />
                 </div>
             </div>
 
@@ -98,7 +101,7 @@
                     <v-icon @click="closeConsultingDialog()" small style="margin-right: 5px; float: right;">mdi-close</v-icon>
                 </v-row>
                 <ProcessDefinitionChat 
-                    :mode="'consulting'"
+                    :chatMode="'consulting'"
                     @createdBPMN="createdBPMN"
                     @openProcessPreview="openProcessPreview" 
                 />
@@ -126,7 +129,6 @@
 </template>
 
 <script>
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import domtoimage from 'dom-to-image';
 import DefinitionMapList from './DefinitionMapList.vue';
 import ProcessMenu from './ProcessMenu.vue';
@@ -150,9 +152,12 @@ export default {
             type: String,
             required: true
         },
+        isViewMode: {
+            type: Boolean,
+            default: false
+        }
     },
     data: () => ({
-        storage: null,
         value: {
             mega_proc_list: []
         },
@@ -171,7 +176,11 @@ export default {
     }),
     computed: {
         useLock() {
-            return window.$mode == "ProcessGPT"
+            if(window.$mode == "ProcessGPT"){
+                return true;
+            } else {
+                return this.isViewMode;
+            }
         },
         actionButtons() {
             return [
@@ -335,8 +344,7 @@ export default {
         async checkedLock() {
             if (this.isAdmin) {
                 this.enableEdit = false;
-                this.storage = StorageBaseFactory.getStorage();
-                const lockObj = await this.storage.getObject('lock', { match: { id: 'process-map' } });
+                const lockObj = await backend.getLock('process-map');
                 if (lockObj && lockObj.id && lockObj.user_id) {
                     this.lock = true;
                     this.editUser = lockObj.user_id;
@@ -416,7 +424,7 @@ export default {
                 this.lock = false;
                 this.enableEdit = false;
                 if (this.useLock) {
-                    await this.storage.delete('lock/process-map', { key: 'id' });
+                    await backend.deleteLock('process-map');
                 }
                 this.closeAlertDialog();
             }
@@ -434,7 +442,7 @@ export default {
                         id: 'process-map',
                         user_id: this.editUser,
                     }
-                    await this.storage.putObject('lock', lockObj);
+                    await backend.setLock(lockObj);
                 }
             }
             this.closeAlertDialog();
@@ -458,8 +466,7 @@ export default {
 
                         if(me.useLock){
                             // GPT 모드인 경우
-                            me.storage = StorageBaseFactory.getStorage();
-                            const lockObj = await me.storage.getObject('lock/process-map', { key: 'id' });
+                            const lockObj = await backend.getLock('process-map');
                             if (lockObj && lockObj.id && lockObj.user_id) {
                                 me.lock = true;
                                 me.editUser = lockObj.user_id;
@@ -510,6 +517,9 @@ export default {
             this.alertType = '';
             this.alertMessage = '';
         },
+        clickProcess(id) {
+            this.$emit('clickProcess', id);
+        }
     },
 }
 </script>

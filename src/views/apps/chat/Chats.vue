@@ -3,13 +3,21 @@
         <AppBaseCard>
             <template v-slot:leftpart>
                 <div class="no-scrollbar">
-                    <v-tabs v-model="activeTab">
-                        <v-tab>
-                            <v-icon>mdi-account</v-icon>
-                        </v-tab>
-                        <v-tab>
-                            <v-icon>mdi-message</v-icon>
-                        </v-tab>
+                    <v-tabs v-model="activeTab" grow color="primary">
+                        <v-tooltip location="top" :text="$t('chat.user')">
+                            <template v-slot:activator="{ props }">
+                                <v-tab v-bind="props">
+                                    <v-icon>mdi-account</v-icon>
+                                </v-tab>
+                            </template>
+                        </v-tooltip>
+                        <v-tooltip location="top" :text="$t('chat.chatRoom')">
+                            <template v-slot:activator="{ props }">
+                                <v-tab v-bind="props">
+                                    <v-icon>mdi-message</v-icon>
+                                </v-tab>
+                            </template>
+                        </v-tooltip>
                     </v-tabs>
                     <v-tabs-items v-model="activeTab">
                         <v-tab-item v-if="activeTab == 0">
@@ -64,48 +72,114 @@
             </template>
 
             <template v-slot:mobileLeftContent>
-                <ChatProfile />
-                <ChatListing 
-                    :chatRoomList="filteredChatRoomList" 
-                    :userList="userList" 
-                    :userInfo="userInfo"
-                    @chat-selected="chatRoomSelected" 
-                    @create-chat-room="createChatRoom"
-                />
+                <div class="no-scrollbar">
+                    <v-tabs v-model="activeTab">
+                        <v-tab>
+                            <v-icon>mdi-account</v-icon>
+                        </v-tab>
+                        <v-tab>
+                            <v-icon>mdi-message</v-icon>
+                        </v-tab>
+                    </v-tabs>
+                    <v-tabs-items v-model="activeTab">
+                        <v-tab-item v-if="activeTab == 0">
+                            <ChatProfile style="margin-bottom: -15px;" />
+                            <v-divider class="my-2"></v-divider>
+                            <UserListing 
+                                :userList="userList" 
+                                @selectedUser="selectedUser"
+                                @startChat="startChat"
+                            />
+                        </v-tab-item>
+                        <v-tab-item v-else>
+                            <ChatListing 
+                                :chatRoomList="filteredChatRoomList" 
+                                :userList="userList" 
+                                :userInfo="userInfo"
+                                :chatRoomId="chatRoomId"
+                                @chat-selected="chatRoomSelected" 
+                                @create-chat-room="createChatRoom"
+                                @delete-chat-room="deleteChatRoom"
+                            />
+                        </v-tab-item>
+                    </v-tabs-items>
+                </div>
             </template>
         </AppBaseCard>
         <v-dialog style="max-width: 1000px;" v-model="openWorkOrderDialog" persistent>
-            <v-card class="description-card">
-                <div v-if="descriptionList.length > 0">
-                    <v-card-title>Descriptions</v-card-title>
-                    <v-card-text>
-                        <div v-for="(desc, index) in descriptionList" :key="index">
-                            <h3>{{ desc.word }}</h3>
-                            <p>{{ desc.description }}</p>
-                        </div>
-                    </v-card-text>
-                </div>
-                <div v-if="checkList.length > 0">
-                    <v-card-title>CheckList</v-card-title>
-                    <v-card-text>
-                        <v-checkbox
-                            v-for="(check, index) in checkList"
-                            :key="index"
-                            :label="check"
-                            readonly
-                            v-model="checked"
-                        ></v-checkbox>
-                    </v-card-text>
-                </div>
+            <v-card style="height: 800px;" v-if="!isMobile && assistantRes" class="description-card">
+                <v-card-title style="margin-bottom: -20px;"><h3>Title:</h3></v-card-title>
+                <v-card-text>
+                    <v-textarea rows="1" v-model="assistantRes.title" auto-grow></v-textarea>
+                </v-card-text>
+                <v-card-title style="margin-bottom: -20px;"><h3>Specific:</h3></v-card-title>
+                <v-card-text>
+                    <v-textarea rows="1" v-model="assistantRes.specific" auto-grow></v-textarea>
+                </v-card-text>
+                <v-card-title style="margin-bottom: -20px;"><h3>Measurable:</h3></v-card-title>
+                <v-card-text>
+                    <v-textarea rows="1" v-model="assistantRes.measurable" auto-grow></v-textarea>
+                </v-card-text>
+                <v-card-title style="margin-bottom: -20px;"><h3>Attainable:</h3></v-card-title>
+                <v-card-text>
+                    <v-textarea rows="1" v-model="assistantRes.attainable" auto-grow></v-textarea>
+                </v-card-text>
+                <v-card-title style="margin-bottom: -20px;"><h3>Relevant:</h3></v-card-title>
+                <v-card-text>
+                    <v-textarea rows="1" v-model="assistantRes.relevant" auto-grow></v-textarea>
+                </v-card-text>
+                <v-card-title style="margin-bottom: -20px;"><h3>Time-bound:</h3></v-card-title>
+                <v-card-text>
+                    <v-col style="max-width: 100%;" cols="12" sm="6" md="4">
+                        <v-menu
+                            v-model="timeBoundMenu"
+                            :close-on-content-click="false"
+                            :nudge-right="40"
+                            transition="scale-transition"
+                            offset-y
+                            min-width="auto"
+                        >
+                            <template v-slot:activator="{ on, attrs }">
+                                <v-text-field
+                                    v-model="assistantRes.time_bound"
+                                    prepend-icon="mdi-calendar"
+                                    v-bind="attrs"
+                                    v-on="on"
+                                ></v-text-field>
+                            </template>
+                            <v-date-picker
+                                v-model="assistantRes.time_bound"
+                                @input="timeBoundMenu = false"
+                            ></v-date-picker>
+                        </v-menu>
+                    </v-col>
+                </v-card-text>
+                <v-card-title style="margin-bottom: -20px;"><h3>Descriptions:</h3></v-card-title>
+                <v-card-text>
+                    <div v-for="(desc, index) in assistantRes.descriptions" :key="index">
+                        <h4>{{ desc.word }}:</h4>{{ desc.description }}
+                    </div>
+                </v-card-text>
+                <v-card-title style="margin-bottom: -20px;"><h3>CheckList:</h3></v-card-title>
+                <v-card-text>
+                    <v-checkbox
+                        v-for="(check, index) in assistantRes.checkPoints"
+                        :key="index"
+                        :label="check"
+                        readonly
+                        v-model="checked"
+                        class="mb-2"
+                    ></v-checkbox>
+                </v-card-text>
                 <v-btn @click="workOrder" color="primary">업무 지시하기</v-btn>
             </v-card>
-            <v-card :style="descriptionList.length > 0 || checkList.length > 0 ? 'position: absolute; left: 30%; margin-top: -500px;':''">
+            <v-card :style="!isMobile && assistantRes ? 'position: absolute; left: 30%; margin-top: -500px;':''">
                 <v-card-title style="height: 55px; background-color: rgb(227, 240, 250); align-content: center;">
                     <v-icon small style="margin-right: 10px;">mdi-file-document</v-icon>
                     업무 지시
                     <v-icon @click="closeWorkOrderDialog()" small style="margin-right: 5px; float: right;">mdi-close</v-icon>
                 </v-card-title>
-                <AssistantChats @genFinished="genFinished" />
+                <AssistantChats @genFinished="genFinished" @clickedWorkOrder="workOrder"/>
             </v-card>
         </v-dialog>
     </v-card>
@@ -162,9 +236,8 @@ export default {
         checked: true,
         openWorkOrderDialog: false,
         assistantRes: null,
-        checkList: [],
-        descriptionList: [],
         selectedUserInfo: null,
+        timeBoundMenu: false,
     }),
     computed: {
         filteredChatRoomList() {
@@ -214,24 +287,32 @@ export default {
             const selectedUserEmail = this.selectedUserInfo.email;
             const currentUserEmail = this.userInfo.email;
 
-            const chatRoomExists = this.chatRoomList.some(chatRoom => {
-                if(chatRoom.participants.length == 2){
-                    const participantEmails = chatRoom.participants.map(participant => participant.email);
-                    chatRoomInfo = chatRoom
-                    return participantEmails.includes(currentUserEmail) && participantEmails.includes(selectedUserEmail);
-                } else {
-                    return false
-                }
-            });
-
-            if (chatRoomExists) {
-                this.chatRoomSelected(chatRoomInfo)
-            } else {
+            if(type == 'work'){
                 chatRoomInfo = {}
                 chatRoomInfo.name = this.selectedUserInfo.username
                 chatRoomInfo.participants = []
                 chatRoomInfo.participants.push(this.selectedUserInfo)
                 this.createChatRoom(chatRoomInfo)
+            } else {
+                const chatRoomExists = this.chatRoomList.some(chatRoom => {
+                    if(chatRoom.participants.length == 2){
+                        const participantEmails = chatRoom.participants.map(participant => participant.email);
+                        chatRoomInfo = chatRoom
+                        return participantEmails.includes(currentUserEmail) && participantEmails.includes(selectedUserEmail);
+                    } else {
+                        return false
+                    }
+                });
+    
+                if (chatRoomExists) {
+                    this.chatRoomSelected(chatRoomInfo)
+                } else {
+                    chatRoomInfo = {}
+                    chatRoomInfo.name = this.selectedUserInfo.username
+                    chatRoomInfo.participants = []
+                    chatRoomInfo.participants.push(this.selectedUserInfo)
+                    this.createChatRoom(chatRoomInfo)
+                }
             }
 
             this.activeTab = 1
@@ -241,26 +322,30 @@ export default {
             } 
         },
         genFinished(responseObj){
+            console.log(responseObj)
             this.assistantRes = responseObj
-            this.descriptionList = responseObj.descriptions
-            this.checkList = responseObj.checkPoints
         },
         workOrder(){
             this.ProcessGPTActive = false
             this.beforeSendMessage({
                 image: null,
-                text: this.assistantRes.content,
+                // text: this.assistantRes.content,
+                text: this.assistantRes.title,
                 mentionedUsers: [],
-                descriptionList: this.descriptionList,
-                checkList: this.checkList
+                attainable: this.assistantRes.attainable,
+                measurable: this.assistantRes.measurable,
+                relevant: this.assistantRes.relevant,
+                specific: this.assistantRes.specific,
+                time_bound: this.assistantRes.time_bound,
+                title: this.assistantRes.title,
+                descriptions: this.assistantRes.descriptions,
+                checkPoints: this.assistantRes.checkPoints
             });
             this.closeWorkOrderDialog()
         },
         startWorkOrder(){
             this.openWorkOrderDialog = true
             this.assistantRes = null
-            this.checkList = []
-            this.descriptionList = []
         },
         closeWorkOrderDialog(){
             this.openWorkOrderDialog = false

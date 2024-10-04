@@ -23,7 +23,8 @@
 import shape2 from '@/assets/images/svgs/danger-shap.svg';
 import shape3 from '@/assets/images/svgs/info-shap.svg';
 import shape1 from '@/assets/images/svgs/warning-shap.svg';
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
   
 
 export default {
@@ -55,37 +56,24 @@ export default {
     }
   },
   async created() {
-    const storage = StorageBaseFactory.getStorage();
-    let userId = localStorage.getItem('email');
-    if (!userId) {
-      const loginUserInfo = await storage?.getUserInfo();
-      userId = loginUserInfo.email;
-    }
-    for (let item of this.todoList) {
-      const options = {
-        match: {
-          status: item.status,
-          user_id: userId
-        }
-      };
-      // getCount 함수를 호출하여 개수를 조회
-      const todoCount = await storage.getCount("todolist", options);
-
-      // 조회 결과에서 에러가 없다면, 해당 개수를 item.count에 할당
-      if (todoCount !== null && todoCount !== undefined && typeof todoCount === 'number') { // 에러가 없고, 숫자형 데이터인 경우
-        item.count = todoCount;
-      } else if (todoCount && todoCount.error) { // 에러 객체가 존재하는 경우
-        console.error(`Error fetching count for ${item.status}`, todoCount.error);
-        item.count = 0; // 에러가 발생한 경우, count를 0으로 설정
-      } else { // 그 외의 경우 (예상치 못한 응답 형태)
-        console.error(`Unexpected response format for ${item.status}`, todoCount);
-        item.count = 0;
-      }
-    }
-    // 데이터 업데이트 후 Vue 인스턴스의 상태를 갱신하기 위해 반응형 데이터를 업데이트
-    this.todoList = [...this.todoList];
+    await this.init();
   },
   methods: {
+    async init() {
+      const me = this;
+      const workList = await backend.getWorkListAll();
+      workList.forEach(item => {
+          if (item.status === 'NEW' || me.todoList[0].status == item.status) {
+            me.todoList[0].count += 1;
+          } else if (item.status === 'RUNNING' || me.todoList[1].status == item.status) {
+            me.todoList[1].count += 1;
+          } else if (item.status === 'COMPLETED' || me.todoList[2].status == item.status) {
+            me.todoList[2].count += 1;
+          }
+        });
+
+        me.todoList = [...me.todoList];
+    },
     goToTodoList() {
       this.$router.push('/todolist');
     }

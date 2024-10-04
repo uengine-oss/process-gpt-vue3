@@ -1,21 +1,8 @@
-<script setup lang="ts">
-import { ref } from "vue";
-import WelcomeCard from "@/components/dashboards/dashboard2/WelcomeCard.vue";
-import TextCards from "@/components/dashboards/dashboard2/DashboardTodoCards.vue";
-import ProfitExpanse from "@/components/dashboards/dashboard2/ProfitExpanse.vue";
-import ProductSales from "@/components/dashboards/dashboard2/ProductSales.vue";
-import TraficDistribution from "@/components/dashboards/dashboard2/TrafficDistribution.vue";
-import ProfileCards from "@/components/dashboards/dashboard2/ProfileCards.vue";
-import FigmaCard from "@/components/dashboards/dashboard2/FigmaCard.vue";
-import UpcommingSchedule from "@/components/dashboards/dashboard2/UpcommingSchedule.vue";
-import DashboardUpcomingScheduls from '@/components/dashboards/dashboard2/DashboardUpcomingScheduls.vue'
-</script>
-
 <template>
   <v-row>
     <!---Welcome cards-->
     <v-col cols="12" sm="12" lg="6">
-      <WelcomeCard />
+      <WelcomeCard @clickStartProcess="clickStartProcess"/>
     </v-col>
     <!---Text cards-->
     <v-col cols="12" sm="12" lg="6" class="d-flex">
@@ -52,4 +39,65 @@ import DashboardUpcomingScheduls from '@/components/dashboards/dashboard2/Dashbo
     <v-col cols="12" sm="12" lg="8" >
     </v-col>
   </v-row>
+  <v-dialog v-model="selectProcessDialog" max-width="80%">
+    <ProcessDefinitionMap @clickProcess="clickProcess" :isViewMode="true"/>
+    <!-- <ProcessList :processList="processList" @selectProcess="selectProcess"/> -->
+  </v-dialog>
+  <v-dialog v-model="startProcessDialog" max-width="80%">
+    <dry-run-process :is-simulate="isSimulate" :definitionId="selectedProcess"></dry-run-process>
+  </v-dialog>
 </template>
+
+<script>
+import WelcomeCard from "@/components/dashboards/dashboard2/WelcomeCard.vue";
+import TextCards from "@/components/dashboards/dashboard2/DashboardTodoCards.vue";
+import ProfitExpanse from "@/components/dashboards/dashboard2/ProfitExpanse.vue";
+import ProductSales from "@/components/dashboards/dashboard2/ProductSales.vue";
+import TraficDistribution from "@/components/dashboards/dashboard2/TrafficDistribution.vue";
+import ProfileCards from "@/components/dashboards/dashboard2/ProfileCards.vue";
+import FigmaCard from "@/components/dashboards/dashboard2/FigmaCard.vue";
+import UpcommingSchedule from "@/components/dashboards/dashboard2/UpcommingSchedule.vue";
+import DashboardUpcomingScheduls from '@/components/dashboards/dashboard2/DashboardUpcomingScheduls.vue'
+import BackendFactory from '@/components/api/BackendFactory';
+import ProcessDefinitionMap from '@/components/apps/definition-map/ProcessDefinitionMap.vue';
+import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
+const backend = BackendFactory.createBackend();
+
+
+export default {
+  data() {
+    return {
+      selectProcessDialog: false,
+      selectedProcess: null,
+      startProcessDialog: false,
+      isSimulate: "false",
+      processList: [],
+    };
+  },
+  components: {
+    WelcomeCard,
+    TextCards,
+    ProfitExpanse,
+    ProductSales,
+    TraficDistribution,
+    ProfileCards,
+    FigmaCard,
+    UpcommingSchedule,
+    DashboardUpcomingScheduls,
+    ProcessDefinitionMap,
+    DryRunProcess,
+  },
+  async created() {
+  },
+  methods: {
+    clickStartProcess() {
+      this.selectProcessDialog = true;
+    },
+    clickProcess(id) {
+      this.selectedProcess = id.replace('.bpmn', '');
+      this.selectProcessDialog = false;
+      this.startProcessDialog = true;
+    }
+  }
+};
+</script>

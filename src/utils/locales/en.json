@@ -1,5 +1,6 @@
 {
     "message": "en",
+    "changePath": "You have unsaved changes. Are you sure you want to leave?",
     "mainPage": {
         "login": "login",
         "logout": "logout",
@@ -30,7 +31,10 @@
         "category": "Category"
     },
     "dashboard": {
-        "title": "Dashboard"
+        "title": "Dashboard",
+        "startProcess": "Start Process",
+        "startProcessDescription": "Click the Start Process button to start the process.",
+        "welcome": "Welcome"
     },
     "todoList": {
         "title": "ToDoList",
@@ -76,6 +80,14 @@
     "admin": {
         "title": "Administrator Menu"
     },
+    "adminDetail": {
+        "processVariables": "Process Variables",
+        "properties": "Properties",
+        "noProcessDefinition": "No Process Definition",
+        "key": "Key",
+        "value": "Value",
+        "save": "Save"
+    },
     "completeInstance": {
         "title": "Complete Instance"
     },
@@ -112,6 +124,7 @@
         "addMajor": "Major Process",
         "addSub": "Sub Process",
         "save": "Save",
+        "downloadImage": "Download definition diagram as an image",
         "consultingAI": "Process Consulting AI"
     },
     "uiDefinition": {
@@ -180,7 +193,12 @@
         "isEnableProcessGPT": "Enable Process-GPT",
         "isDisableProcessGPT": "Disable Process-GPT",
         "userReply": "Reply to {name}",
-        "systemReply": "Reply to the system"
+        "systemReply": "Reply to the system",
+        "headset": "Speaking/Listening",
+        "document": "Work Instruction",
+        "camera": "Camera",
+        "user": "User",
+        "chatRoom": "Chat Room"
     },
     "accountTab": {
         "accountSetting": "Account Settings",
@@ -250,7 +268,7 @@
         "step3-2-text": "1. You can check the “Secret Key” by clicking the “Reveal” button from the “Project API Keys” section.<br>(*Copy the “Secret Key” and paste it into the box below.”",
         "step3-3": "STEP 3. DataBase Connection",
         "step3-3-text": "1. Select “Database” from the menu list of “Settings”.<br>2. Copy “Host”, “Database name”, “Port”, “User” from the “Connection parameters” section and paste it into the each box below.",
-        "step4": "STEP 4. Enter the Company Name to Use",
+        "step4": "STEP 1. Enter the Company Name to Use",
         "step4-text": "1. Enter the name of the company in the box below and click “Create” button to create a company.<br>The name of the company will be used as a sub-domain.<br>e.g. {Company Name}.process-gpt.io",
         "step5": "STEP 5. Setting up Supabase Site URL",
         "step5-text": "1. Select lock icon(Authentication) from the left menu.<br>2. Click “URL Configuration”.<br>3. Click copy button to copy the “Site URL” including the company name you entered from Step4 and paste it into the “Site URL” box.<br>4. Click “Save” button."
@@ -509,7 +527,8 @@
         "search": "search"
     },
     "userListing": {
-        "search": "User search"
+        "search": "User search",
+        "chat": "Chat"
     },
     "ProcessDefinitionChat": {
         "greetingMessage": "Hello {name}! What tasks and issues are you experiencing? Please let me know and I'll help you!"
@@ -530,5 +549,19 @@
         "laneDivideTwo": "Divide into Two Lanes",
         "laneDivideThree": "Divide into Three Lanes",
         "connectionMulti": "Connect using Message Flow"
+    },
+    "WorkItem": {
+        "progress": "Progress",
+        "history": "Work History",
+        "agent": "Create Agent Draft"
+    },
+    "TestProcess": {
+        "title": "Testing Process",
+        "mainInstanceId": "Main - InstanceId - ",
+        "subInstanceId": "Sub - InstanceId - ",
+        "worklist": "Worklist",
+        "success": "Success",
+        "taskID": "Task ID: ",
+        "instanceID": "Instance ID: "
     }
 }

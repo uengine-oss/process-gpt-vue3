@@ -5,7 +5,7 @@
             <transition-group>
                 <v-col v-for="item in value.mega_proc_list" :key="item.id" class="cursor-pointer draggable-item"
                     cols="12" md="2" sm="6">
-                    <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit" />
+                    <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit"  @clickProcess="clickProcess"/>
                 </v-col>
                 <!-- 실제 카드가 들어가야 할 위치 -->
                 <v-col class="cursor-pointer" cols="12" md="2" sm="3">
@@ -38,7 +38,7 @@
         </draggable>
         <v-row v-else>
             <v-col v-for="item in value.mega_proc_list" :key="item.id" class="cursor-pointer" cols="12" md="2" sm="6">
-                <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit"/>
+                <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess"/>
             </v-col>
         </v-row>
     </div>
@@ -100,10 +100,30 @@ export default {
             if (subProcList.length > 0) {
                 subProcList = subProcList.map(sub => sub.id);
                 const backend = BackendFactory.createBackend();
-                let definitions = await backend.listDefinition();
-                definitions = definitions.filter(definition => !subProcList.includes(definition.id) && !definition.path.includes('.form'));
+                const listDefinition = await backend.listDefinition();
+                let definitions = [];
+                
+                const addChildDefinitions = async (parentDefinition) => {
+                    parentDefinition.id = parentDefinition.path;
+                    definitions.push(parentDefinition);
+
+                    if(parentDefinition.directory){
+                        const childDefinitions = await backend.listDefinition(parentDefinition.path);
+                        for (const child of childDefinitions) {
+                            await addChildDefinitions(child);
+                        }
+                    }
+
+                };
+
+                for(const definition of listDefinition){
+                    await addChildDefinitions(definition);
+                }
+
+                definitions = definitions.filter(definition => !subProcList.includes(definition.id) && definition.path.includes('.bpmn'));
+                
                 if (definitions.length > 0) {
-                    definitions = definitions.map(definition => { return { id: definition.id, name: definition.name } });
+                    definitions = definitions.map(definition => { return { id: definition.id, name: definition.name, path: definition.path } });
                     if (unclassifiedIdx == -1) {
                         this.value.mega_proc_list.push({
                             id: "unclassified",
@@ -124,6 +144,9 @@ export default {
                 }
             }
         },
+        clickProcess(id) {
+            this.$emit('clickProcess', id);
+        }
     },
 }
 </script>

@@ -57,9 +57,9 @@
             <v-col class="pa-0" :cols="isMobile ? 12 : 8">
                 <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
                     <v-tabs v-model="selectedTab">
-                        <v-tab value="progress">진행 상황</v-tab>
-                        <v-tab v-if="messages && messages.length > 0" value="history">워크 히스토리</v-tab>
-                        <v-tab v-if="messages" value="agent">Agent 초안 생성</v-tab>
+                        <v-tab value="progress">{{ $t('WorkItem.progress') }}</v-tab>
+                        <v-tab v-if="messages && messages.length > 0" value="history">{{ $t('WorkItem.history') }}</v-tab>
+                        <v-tab v-if="messages" value="agent">{{ $t('WorkItem.agent') }}</v-tab>
                     </v-tabs>
                     <v-window v-model="selectedTab">
                         <v-window-item value="progress">

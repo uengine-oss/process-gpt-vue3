@@ -1,14 +1,16 @@
-<script setup lang="ts">
-const name = localStorage.getItem("userName")
-</script>
+
 <template>
   <v-card elevation="10" class="overflow-visible">
     <v-card-text class="position-relative pb-5">
-      <h5 class="text-h5 mb-1 font-weight-semibold">
-        Welcome {{ name }}
+      <h5 class="text-h5 mb-1 font-weight-semibold"> 
+        {{ $t('dashboard.welcome') }} {{ name }}
       </h5>
-      <div class="text-subtitle-1 text-grey100 pb-1">Check all the statistics</div>
-      <v-btn color="primary" class="mt-4 mb-2 px-7" rounded="pill" size="large"> visit now </v-btn>
+      <div class="text-subtitle-1 text-grey100 pb-1">
+        {{ $t('dashboard.startProcessDescription') }}
+      </div>
+      <v-btn color="primary" class="mt-4 mb-2 px-7" rounded="pill" size="large" @click="clickStartProcess"> 
+        {{ $t('dashboard.startProcess') }} 
+      </v-btn>
     </v-card-text>
     <img
       src="@/assets/images/backgrounds/school.png"
@@ -16,6 +18,21 @@ const name = localStorage.getItem("userName")
     />
   </v-card>
 </template>
+
+<script>
+export default {
+  data() {
+    return {
+      name: localStorage.getItem("userName")
+    };
+  },
+  methods: {
+    clickStartProcess() {
+      this.$emit('clickStartProcess');
+    }
+  }
+}
+</script>
 
 <style scoped>
 .overlay-title {

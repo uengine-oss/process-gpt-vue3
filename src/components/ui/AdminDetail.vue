@@ -25,21 +25,76 @@
                         v-on:rollback="(id) => rollback(id)"
                         style="height: 100%"
                     ></BpmnUengine>
-                    <div v-else>No process definition</div>
+                    <div v-else>{{ $t('adminDetail.noProcessDefinition') }}</div>
                 </v-col>
                 <v-col class="ma-2 pa-2" cols="6">
-                    <v-data-table
-                        :items="processVariables"
-                        :headers="[
-                            {
-                                align: 'start',
-                                key: 'key',
-                                sortable: false,
-                                title: 'Key'
-                            },
-                            { key: 'value', align: 'start', title: 'Value' }
-                        ]"
-                    ></v-data-table>
+                    <v-tabs v-model="tab">
+                        <v-tab>{{ $t('adminDetail.processVariables') }}</v-tab>
+                        <v-tab>{{ $t('adminDetail.properties') }}</v-tab>
+                    </v-tabs>
+                    <v-window v-model="tab">
+                    <v-window-item>
+                        <v-data-table
+                            :items="processVariables"
+                            :headers="headers"
+                            item-value="key"
+                            class="elevation-1"
+                        >
+                            <template v-slot:[`item.key`]="{ item }">
+                                <span>{{ item.key }}</span>
+                            </template>
+                            <template  v-slot:[`item.value`]="{ item }">
+                                <v-text-field
+                                    v-if="item.editMode"
+                                    v-model="item.value"
+                                    outlined
+                                    dense
+                                    hide-details="true"
+                                ></v-text-field>
+                                <span v-else style="white-space: pre-wrap;">{{ item.value }}</span>
+                            </template>
+                            <template v-slot:[`item.save`]="{ item }">
+                                <v-btn v-if="item.editMode" @click="updateItem(item)">
+                                    <Icons :icon="'save'" />
+                                </v-btn>
+                                <v-btn v-else @click="item.editMode = true">
+                                    <Icons :icon="'pencil'" />
+                                </v-btn>
+                            </template>
+                        </v-data-table>
+                    </v-window-item>
+                    <v-window-item>
+                        <v-data-table
+                            :items="properties"
+                            :headers="headers"
+                            item-value="key"
+                            class="elevation-1"
+                            :items-per-page="5"
+                        >
+                            <template v-slot:[`item.key`]="{ item }">
+                                <span>{{ item.key }}</span>
+                            </template>
+                            <template  v-slot:[`item.value`]="{ item }">
+                                <v-text-field
+                                    v-if="item.editMode"
+                                    v-model="item.value"
+                                    outlined
+                                    dense
+                                    hide-details="true"
+                                ></v-text-field>
+                                <span v-else style="white-space: pre-wrap;">{{ item.value }}</span>
+                            </template>
+                            <template v-slot:[`item.save`]="{ item }">
+                                <v-btn v-if="item.editMode" @click="updateItem(item)">
+                                    <Icons :icon="'save'" />
+                                </v-btn>
+                                <v-btn v-else @click="item.editMode = true">
+                                    <Icons :icon="'pencil'" />
+                                </v-btn>
+                            </template>
+                        </v-data-table>
+                    </v-window-item>
+                    </v-window>
                 </v-col>
             </v-row>
         </v-card>
@@ -61,9 +116,10 @@ export default {
     data: () => ({
         instanceId: null,
         instanceDetail: null,
-        tab: 'definition',
+        tab: null,
         processDefinition: null,
         processVariables: [],
+        properties: [],
         executionScopeActivities: {},
         loaded: false,
         eventList: [],
@@ -82,7 +138,29 @@ export default {
     async created() {
         await this.init();
     },
-    mounted() {},
+    mounted() {
+        this.headers = [
+            {
+            title: this.$t('adminDetail.key'),
+            align: 'start',
+            key: 'key',
+            sortable: false,
+            width: '50%', // Key 필드의 너비를 50%로 지정
+            },
+            {
+            title: this.$t('adminDetail.value'),
+            align: 'start',
+            key: 'value',
+            width: '40%', // Value 필드의 너비를 50%로 지정
+            },
+            {
+            title: this.$t('adminDetail.save'),
+            align: 'start',
+            key: 'save',
+            width: '10%', // Value 필드의 너비를 50%로 지정
+            },
+        ];
+    },
     computed: {},
     watch: {
         processDefinition() {
@@ -242,11 +320,19 @@ export default {
                                 continue;
                             }
                         }
-                        let tmp = { key: key, value: variables[key] };
-                        me.processVariables.push(tmp);
+                        let tmp = { key: key.split(':').slice(1).join(':'), value: JSON.stringify(variables[key]) }; 
+                        if(key.includes(':prop')) {
+                            me.properties.push(tmp);
+                        } else {
+                            me.processVariables.push(tmp);
+                        }
                     } else {
-                        let tmp = { key: key, value: variables[key] };
-                        me.processVariables.push(tmp);
+                        let tmp = { key: key.split(':').slice(1).join(':'), value: JSON.stringify(variables[key]) };
+                        if(key.includes(':prop')) {
+                            me.properties.push(tmp);
+                        } else {
+                            me.processVariables.push(tmp);
+                        }
                     }
                     // if(validateText != me.selectedExecutionScope) {
                     //     continue;
@@ -301,6 +387,13 @@ export default {
             me.loaded = true;
             let endTime = performance.now();
             console.log(`setVariableList Result Time :  ${endTime - startTime} ms`);
+        },
+        async updateItem(item) {
+            let me = this;
+            let key = item.key;
+            let value = JSON.parse(item.value);
+            item.editMode = false;
+            await backend.setVariable(me.instanceId, key, value);
         }
     }
 };
