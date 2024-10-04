@@ -2,7 +2,7 @@
     <div>
         <v-dialog v-model="isOpen" max-width="400" @click:outside="close()">
             <v-card>
-                <v-row class="ma-0 pa-2">
+                <v-row class="ma-0 pa-2 pt-0 pb-0">
                     <v-card-title>{{
                         isNew ? $t('ProcessDefinitionVersionDialog.title') : $t('ProcessDefinitionVersionDialog.title2')
                     }}</v-card-title>
@@ -11,10 +11,13 @@
                         <Icons :icon="'close'" :size="16" />
                     </v-btn>
                 </v-row>
-                <v-card-text>
-                    <v-switch v-model="isVersion" color="primary" :label="`${$t('ProcessDefinitionVersionDialog.update')}`"></v-switch>
+                <v-card-text class="delete-input-details pt-0">
+                    <v-switch v-model="isVersion" color="primary" :label="`${$t('ProcessDefinitionVersionDialog.minorUpdate')}: ${newVersion}`"></v-switch>
+                    <DetailComponent
+                        :title="$t('ProcessDefinitionVersionDialog.versionDescriptionTitle')"
+                    />
                     <div v-if="isVersion">
-                        <v-switch
+                        <!-- <v-switch
                             v-model="isMajor"
                             :label="
                                 this.isMajor
@@ -24,22 +27,7 @@
                             color="primary"
                             :disabled="isNew"
                             hide-details
-                        ></v-switch>
-                        <v-switch
-                            v-model="isRelease"
-                            :label="`${$t('ProcessDefinitionVersionDialog.release')}`"
-                            color="primary"
-                            :disabled="isNew"
-                            hide-details
-                        ></v-switch>
-                        <v-text-field
-                            v-if="isRelease"
-                            v-model="information.releaseName"
-                            :label="$t('ProcessDefinitionVersionDialog.releaseName')"
-                            :rules="[(v) => !!v || 'Name is required']"
-                            required
-                            class="pb-2"
-                        ></v-text-field>
+                        ></v-switch> -->
                         <div v-if="isNew">
                             <v-text-field
                                 v-model="information.proc_def_id"
@@ -62,6 +50,21 @@
                             hide-details
                             rows="3"
                         ></v-textarea>
+                        <!-- <v-switch
+                            v-model="isRelease"
+                            :label="`${$t('ProcessDefinitionVersionDialog.release')}`"
+                            color="primary"
+                            :disabled="isNew"
+                            hide-details
+                        ></v-switch>
+                        <v-text-field
+                            v-if="isRelease"
+                            v-model="information.releaseName"
+                            :label="$t('ProcessDefinitionVersionDialog.releaseName')"
+                            :rules="[(v) => !!v || 'Name is required']"
+                            required
+                            class="pb-2"
+                        ></v-text-field> -->
                     </div>
                 </v-card-text>
                 <v-row class="ma-0 pa-4 pt-0 pr-5">
