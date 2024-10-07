@@ -37,6 +37,12 @@
                     rounded
                     density="comfortable"
                 >실행</v-btn>
+                <v-btn @click="deleteTest"
+                    class="cp-process-save"
+                    color="error"
+                    rounded
+                    density="comfortable"
+                >삭제</v-btn>
             </td>
         </tr>
     </template>

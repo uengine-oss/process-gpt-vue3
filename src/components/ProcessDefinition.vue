@@ -898,6 +898,8 @@ export default {
             this.panel = false;
             this.isPreviewMode = false;
             this.currentActivities = [];
+            // Todo: 재형씨 확인
+            // this.bpmnKey++;
             this.$emit('change');
         },
         handleError() {
