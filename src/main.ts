@@ -82,7 +82,8 @@ declare global {
 }
 
 Object.defineProperty(window, '$mode', {
-    value: 'ProcessGPT',
+    value: 'uEngine',
+    // value: 'ProcessGPT',
     writable: false,
     configurable: false
 });
@@ -95,9 +96,9 @@ Object.defineProperty(window, '$jms', {
 
 
 async function setupSupabase() {
-    window.$mode = 'uEngine';
+    // window.$mode = 'uEngine';
     // window.$mode = 'ProcessGPT';
-    window.$jms = false;
+    // window.$jms = false;
 
     if (window.location.host.includes('localhost') || window.location.host.includes('192.168') || window.location.host.includes('127.0.0.1') || 
         window.$mode == 'uEngine') {
@@ -319,8 +320,7 @@ async function initializeApp() {
     const app = createApp(App);
     app.use(VueMonacoEditorPlugin, {
         paths: {
-            // The recommended CDN config
-            vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.43.0/min/vs'
+            vs: '/node_modules/monaco-editor/min/vs'
         }
     });
     app.use(store);
