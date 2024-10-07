@@ -17,7 +17,8 @@
         "dashboard": "Dashboard",
         "todoList": "Todo List",
         "calendar": "Calendar",
-        "layoutSetting": "Layout Setting"
+        "layoutSetting": "Layout Setting",
+        "admin" : "Admin Page"
     },
     "DashboardTodoList": {
         "todo": "Todo",
@@ -78,7 +79,17 @@
         "title": "Running Instance"
     },
     "admin": {
-        "title": "Administrator Menu"
+        "title": "Administrator Menu",
+        "viewDetails": "View Details",
+        "instanceList": "Instance List",
+        "instanceId": "Instance ID",
+        "name": "Name",
+        "status": "Status",
+        "startedDate": "Started Date",
+        "finishedDate": "Finished Date",
+        "initiator": "Initiator",
+        "subProcess": "SubProcess",
+        "actions": "Actions"
     },
     "adminDetail": {
         "processVariables": "Process Variables",
@@ -86,6 +97,8 @@
         "noProcessDefinition": "No Process Definition",
         "key": "Key",
         "value": "Value",
+        "tools": "Tools",
+        "edit": "Edit",
         "save": "Save"
     },
     "completeInstance": {

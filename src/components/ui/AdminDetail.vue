@@ -1,13 +1,21 @@
 <template>
     <div>
-        <v-card elevation="10" style="height: calc(84vh); width: calc(154vh)">
+        <v-card elevation="10">
             <v-card-title>Instance - {{ instanceId }} 
-                <div v-for="event in eventList">
-                        <v-btn @click="$try({context: this, action: () => fireMessage(event.tracingTag), successMsg: `${event.name} 실행 완료`})"> {{ event.name ? event.name : event.tracingTag }} 보내기 </v-btn>
-                    </div>
+                <div v-for="event in eventList" :key="event">
+                    <v-btn @click="$try({context: this, action: () => fireMessage(event.tracingTag), successMsg: `${event.name} 실행 완료`})"> {{ event.name ? event.name : event.tracingTag }} 보내기 </v-btn>
+                </div>
             </v-card-title>
-            <v-row class="flex-nowrap" no-gutters>
-                <v-col class="ma-2 pa-2" cols="6">
+            <v-row class="ma-0 pa-0 pb-2">
+                <v-col class="ma-0 pa-0" 
+                    cols="12"
+                    lg="6"
+                    md="12"
+                    sm="12"
+                    style="height:69vh;
+                    overflow: auto;
+                    border-right:solid 1px #ADADAD"
+                >
                     <BpmnUengine
                         v-if="loaded"
                         ref="bpmnVue"
@@ -27,73 +35,110 @@
                     ></BpmnUengine>
                     <div v-else>{{ $t('adminDetail.noProcessDefinition') }}</div>
                 </v-col>
-                <v-col class="ma-2 pa-2" cols="6">
-                    <v-tabs v-model="tab">
+                <v-col class="ma-0 pa-4 pt-0" 
+                    cols="12"
+                    lg="6"
+                    md="12"
+                    sm="12"
+                    style="height:69vh;
+                    overflow: auto;"
+                >
+                    <v-tabs v-model="tab" color="primary">
                         <v-tab>{{ $t('adminDetail.processVariables') }}</v-tab>
                         <v-tab>{{ $t('adminDetail.properties') }}</v-tab>
                     </v-tabs>
                     <v-window v-model="tab">
-                    <v-window-item>
-                        <v-data-table
-                            :items="processVariables"
-                            :headers="headers"
-                            item-value="key"
-                            class="elevation-1"
-                        >
-                            <template v-slot:[`item.key`]="{ item }">
-                                <span>{{ item.key }}</span>
-                            </template>
-                            <template  v-slot:[`item.value`]="{ item }">
-                                <v-text-field
-                                    v-if="item.editMode"
-                                    v-model="item.value"
-                                    outlined
-                                    dense
-                                    hide-details="true"
-                                ></v-text-field>
-                                <span v-else style="white-space: pre-wrap;">{{ item.value }}</span>
-                            </template>
-                            <template v-slot:[`item.save`]="{ item }">
-                                <v-btn v-if="item.editMode" @click="updateItem(item)">
-                                    <Icons :icon="'save'" />
-                                </v-btn>
-                                <v-btn v-else @click="item.editMode = true">
-                                    <Icons :icon="'pencil'" />
-                                </v-btn>
-                            </template>
-                        </v-data-table>
-                    </v-window-item>
-                    <v-window-item>
-                        <v-data-table
-                            :items="properties"
-                            :headers="headers"
-                            item-value="key"
-                            class="elevation-1"
-                            :items-per-page="5"
-                        >
-                            <template v-slot:[`item.key`]="{ item }">
-                                <span>{{ item.key }}</span>
-                            </template>
-                            <template  v-slot:[`item.value`]="{ item }">
-                                <v-text-field
-                                    v-if="item.editMode"
-                                    v-model="item.value"
-                                    outlined
-                                    dense
-                                    hide-details="true"
-                                ></v-text-field>
-                                <span v-else style="white-space: pre-wrap;">{{ item.value }}</span>
-                            </template>
-                            <template v-slot:[`item.save`]="{ item }">
-                                <v-btn v-if="item.editMode" @click="updateItem(item)">
-                                    <Icons :icon="'save'" />
-                                </v-btn>
-                                <v-btn v-else @click="item.editMode = true">
-                                    <Icons :icon="'pencil'" />
-                                </v-btn>
-                            </template>
-                        </v-data-table>
-                    </v-window-item>
+                        <v-window-item>
+                            <v-data-table
+                                :items="processVariables"
+                                :headers="headers"
+                                item-value="key"
+                                class="elevation-1 custom-table"
+                            >
+                                <template v-slot:[`item.key`]="{ item }">
+                                    <span>{{ item.key }}</span>
+                                </template>
+                                <template  v-slot:[`item.value`]="{ item }">
+                                    <v-text-field
+                                        v-if="item.editMode"
+                                        v-model="item.value"
+                                        outlined
+                                        dense
+                                        hide-details="true"
+                                    ></v-text-field>
+                                    <span v-else style="white-space: pre-wrap;">{{ item.value }}</span>
+                                </template>
+                                <template v-slot:[`item.save`]="{ item }">
+                                    <v-tooltip v-if="item.editMode" :text="$t('adminDetail.save')">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn
+                                                @click="updateItem(item)"
+                                                v-bind="props"
+                                                icon variant="text"
+                                                density="comfortable"
+                                            >
+                                                <Icons :icon="'save'" :size="18" class="text-primary"/>
+                                            </v-btn>
+                                        </template>
+                                    </v-tooltip>
+                                    <v-tooltip v-else :text="$t('adminDetail.edit')">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn @click="item.editMode = true"
+                                                v-bind="props" density="comfortable" icon flat 
+                                            >
+                                                <PencilIcon stroke-width="1.5" size="18" class="text-primary" />
+                                            </v-btn>
+                                        </template>
+                                    </v-tooltip>
+                                </template>
+                            </v-data-table>
+                        </v-window-item>
+                        <v-window-item>
+                            <v-data-table
+                                :items="properties"
+                                :headers="headers"
+                                item-value="key"
+                                :items-per-page="10"
+                                class="elevation-1 custom-table"
+                            >
+                                <template v-slot:[`item.key`]="{ item }">
+                                    <span>{{ item.key }}</span>
+                                </template>
+                                <template  v-slot:[`item.value`]="{ item }">
+                                    <v-text-field
+                                        v-if="item.editMode"
+                                        v-model="item.value"
+                                        outlined
+                                        dense
+                                        hide-details="true"
+                                    ></v-text-field>
+                                    <span v-else style="white-space: pre-wrap;">{{ item.value }}</span>
+                                </template>
+                                <template v-slot:[`item.save`]="{ item }">
+                                    <v-tooltip v-if="item.editMode" :text="$t('adminDetail.save')">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn
+                                                @click="updateItem(item)"
+                                                v-bind="props"
+                                                icon variant="text"
+                                                density="comfortable"
+                                            >
+                                                <Icons :icon="'save'" :size="18" class="text-primary"/>
+                                            </v-btn>
+                                        </template>
+                                    </v-tooltip>
+                                    <v-tooltip v-else :text="$t('adminDetail.edit')">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn @click="item.editMode = true"
+                                                v-bind="props" density="comfortable" icon flat 
+                                            >
+                                                <PencilIcon stroke-width="1.5" size="18" class="text-primary" />
+                                            </v-btn>
+                                        </template>
+                                    </v-tooltip>
+                                </template>
+                            </v-data-table>
+                        </v-window-item>
                     </v-window>
                 </v-col>
             </v-row>
@@ -141,23 +186,20 @@ export default {
     mounted() {
         this.headers = [
             {
-            title: this.$t('adminDetail.key'),
-            align: 'start',
-            key: 'key',
-            sortable: false,
-            width: '50%', // Key 필드의 너비를 50%로 지정
+                title: this.$t('adminDetail.key'),
+                align: 'start',
+                key: 'key',
+                sortable: false,
             },
             {
-            title: this.$t('adminDetail.value'),
-            align: 'start',
-            key: 'value',
-            width: '40%', // Value 필드의 너비를 50%로 지정
+                title: this.$t('adminDetail.value'),
+                align: 'start',
+                key: 'value',
             },
             {
-            title: this.$t('adminDetail.save'),
-            align: 'start',
-            key: 'save',
-            width: '10%', // Value 필드의 너비를 50%로 지정
+                title: this.$t('adminDetail.tools'),
+                align: 'start',
+                key: 'save',
             },
         ];
     },
@@ -398,3 +440,11 @@ export default {
     }
 };
 </script>
+
+<style>
+.custom-table th {
+    white-space: nowrap !important; /* 텍스트를 한 줄로 표시 */
+    text-align: center !important; /* 텍스트 가운데 정렬 */
+    writing-mode: horizontal-tb !important; /* 텍스트 방향을 가로로 설정 */
+}
+</style>

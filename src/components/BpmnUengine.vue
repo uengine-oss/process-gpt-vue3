@@ -114,8 +114,8 @@ export default {
                 canvas.viewbox({
                     x: viewbox.x - 50, // 여백을 위해 약간의 오프셋을 추가
                     y: viewbox.y - 50,
-                    width: viewbox.width,
-                    height: viewbox.height
+                    width: viewbox.width + 100,
+                    height: viewbox.height + 100
                 });
             }
 

@@ -164,7 +164,7 @@ export default {
             const totalCount = definitionCount + instanceCount;
 
             if (totalCount >= 12 && definitionCount >= 6 && instanceCount >= 6) {
-                return 'max-height: 47%; overflow: auto;';
+                return 'max-height: 45%; overflow: auto;';
             } else if (totalCount > 12) {
                 const remainingCount = 12 - instanceCount;
                 return `max-height: ${51 * Math.min(instanceCount, remainingCount)}px; overflow: auto;`;
@@ -178,7 +178,7 @@ export default {
             const totalCount = definitionCount + instanceCount;
 
             if (totalCount >= 12 && definitionCount >= 6 && instanceCount >= 6) {
-                return 'max-height: 47%; overflow: auto;';
+                return 'max-height: 45%; overflow: auto;';
             } else if (totalCount > 12) {
                 const remainingCount = 12 - instanceCount;
                 return `max-height: ${51 * Math.min(definitionCount, remainingCount)}px; overflow: auto;`;

@@ -1,12 +1,16 @@
 <template>
     <div>
-        <v-card elevation="10" style="height: calc(84vh); width: calc(154vh)">
-            <v-card-title>InstanceList</v-card-title>
-            <v-data-table v-model:search="search" :items="instanceList" :headers="headers">
+        <v-card elevation="10" style="height:83vh">
+            <v-card-title>{{ $t('admin.instanceList') }}</v-card-title>
+            <v-data-table
+                v-model:search="search"
+                :items="sortedInstanceList"
+                :headers="headers"
+                :items-per-page="15"
+                style="height:calc(100% - 42px); overflow: auto;"
+            >
                 <template v-slot:item.name="{ item }">
-                    <div @click="viewDetail(item)">
-                        {{ item.name }}
-                    </div>
+                    <div>{{ item.name }}</div>
                 </template>
                 <template v-slot:item.status="{ item }">
                     <div>
@@ -25,14 +29,23 @@
                     </div>
                 </template>
                 <template v-slot:item.actions="{ item }">
-                    <div>
-                        <v-btn flat @click="viewDetail(item)">view</v-btn>
-                    </div>
+                    <v-tooltip :text="$t('admin.viewDetails')">
+                        <template v-slot:activator="{ props }">
+                        <v-btn @click="viewDetail(item)"
+                            v-bind="props"
+                            icon variant="text"
+                            density="comfortable"
+                        >
+                            <Icons :icon="'preview'" :size="18" class="text-primary"/>
+                        </v-btn>
+                    </template>
+                </v-tooltip>
                 </template>
                 <template v-slot:item.subProcess="{ item }">
                     <v-icon v-if="item.subProcess" color="success">mdi-checkbox-marked-circle</v-icon>
-                    <!-- <v-chip x color="success" prepend-icon="mdi-checkbox-marked-circle">
-                    </v-chip> -->
+                </template>
+                <template v-slot:item.startedDate="{ item }">
+                    <div>{{ formatDate(item.startedDate) }}</div>
                 </template>
             </v-data-table>
         </v-card>
@@ -53,29 +66,41 @@ export default {
     data: () => ({
         instanceList: [],
         search: '',
-        headers: [
-            {
-                align: 'start',
-                key: 'instId',
-                sortable: false,
-                title: 'Instance ID'
-            },
-            { key: 'name', align: 'start', title: 'Name' },
-            { key: 'status', align: 'start', title: 'Status' },
-            { key: 'startedDate', align: 'start', title: 'Started Date' },
-            { key: 'finishedDate', align: 'start', title: 'Finished Date' },
-            { key: 'initEp', align: 'start', title: 'Initiator' },
-            { key: 'subProcess', align: 'center', title: 'SubProcess' },
-            { key: 'actions', align: 'start', title: 'Actions' }
-        ]
+        headers: [],
     }),
     async created() {
         this.getInstanceList();
     },
-    mounted() {},
-    computed: {},
+    mounted() {
+        this.headers = [
+            {
+                align: 'start',
+                key: 'instId',
+                sortable: false,
+                title: this.$t('admin.instanceId')
+            },
+            { key: 'name', align: 'start', title: this.$t('admin.name') },
+            { key: 'status', align: 'start', title: this.$t('admin.status') },
+            { key: 'startedDate', align: 'start', title: this.$t('admin.startedDate') },
+            { key: 'finishedDate', align: 'start', title: this.$t('admin.finishedDate') },
+            { key: 'initEp', align: 'start', title: this.$t('admin.initiator') },
+            { key: 'subProcess', align: 'center', title: this.$t('admin.subProcess') },
+            { key: 'actions', align: 'start', title: this.$t('admin.actions') }
+        ]
+    },
+    computed: {
+        sortedInstanceList() {
+            return this.instanceList.slice().sort((a, b) => {
+                return new Date(b.startedDate) - new Date(a.startedDate);
+            });
+        }
+    },
     watch: {},
     methods: {
+        formatDate(date) {
+            const options = { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric' };
+            return new Date(date).toLocaleString('ko-KR', options);
+        },
         viewDetail(item) {
             this.$router.push({ name: 'Admin Detail', params: { id: item.instId } });
         },
