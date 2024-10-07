@@ -106,7 +106,7 @@ export default {
         },
         async getInstanceList() {
             let me = this;
-            await backend.getAllInstanceList().then((response) => {
+            await backend.getAllInstanceList(0).then((response) => {
                 console.log(response);
                 let result = [];
                 response.forEach((item) => {
