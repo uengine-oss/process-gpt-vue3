@@ -355,7 +355,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getAllInstanceList() {
+    async getAllInstanceList(page: any) {
         try {
             const list = await storage.list('bpm_proc_inst');
             return list;
