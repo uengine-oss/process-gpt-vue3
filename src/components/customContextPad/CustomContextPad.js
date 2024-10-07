@@ -237,7 +237,28 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
     actions['append.text-annotation'].title = i18n.global.t('customContextPad.textAnnotation');
   }
   if(actions['replace']) {
-    actions['replace'].title = i18n.global.t('customContextPad.replace');
+    actions['replace'] = {
+      group: 'edit',
+      className: 'bpmn-icon-screw-wrench',
+      title: i18n.global.t('customContextPad.replace'),
+      action: {
+        click: function(event, element) {
+          var position = assign({
+            x: event.x,
+            y: event.y
+          }, 
+          {
+            cursor: { x: event.x, y: event.y }
+          });
+
+          popupMenu.open(element, 'bpmn-replace', position, {
+            title: i18n.global.t('customContextPad.replace'),
+            width: 300,
+            search: true
+          });
+        }
+      }
+    }
   }
   if(actions['connect']) {
     actions['connect'].title = i18n.global.t('customContextPad.connect');
