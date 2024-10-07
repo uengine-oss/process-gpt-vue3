@@ -17,7 +17,8 @@
         "dashboard": "Dashboard",
         "todoList": "Todo List",
         "calendar": "Calendar",
-        "layoutSetting": "Layout Setting"
+        "layoutSetting": "Layout Setting",
+        "admin" : "Admin Page"
     },
     "DashboardTodoList": {
         "todo": "Todo",
@@ -78,7 +79,17 @@
         "title": "Running Instance"
     },
     "admin": {
-        "title": "Administrator Menu"
+        "title": "Administrator Menu",
+        "viewDetails": "View Details",
+        "instanceList": "Instance List",
+        "instanceId": "Instance ID",
+        "name": "Name",
+        "status": "Status",
+        "startedDate": "Started Date",
+        "finishedDate": "Finished Date",
+        "initiator": "Initiator",
+        "subProcess": "SubProcess",
+        "actions": "Actions"
     },
     "adminDetail": {
         "processVariables": "Process Variables",
@@ -86,6 +97,8 @@
         "noProcessDefinition": "No Process Definition",
         "key": "Key",
         "value": "Value",
+        "tools": "Tools",
+        "edit": "Edit",
         "save": "Save"
     },
     "completeInstance": {
@@ -93,7 +106,8 @@
     },
     "definitionManagement": {
         "title": "Definition Management",
-        "upload": "Definition Upload"
+        "upload": "Upload definition list",
+        "release": "Download definition list"
     },
     "systemDefinition": {
         "title": "System Definition"
@@ -331,7 +345,8 @@
         "id": "ID",
         "name": "Name",
         "message": "Description",
-        "save": "Save"
+        "save": "Save",
+        "versionDescriptionTitle": "If checked, it will save by incrementing the version by one step, otherwise it will save in the current version."
     },
     "FormDefinitionPanel": {
         "editForm": "Edit Form Attribute",
@@ -563,5 +578,10 @@
         "success": "Success",
         "taskID": "Task ID: ",
         "instanceID": "Instance ID: "
+    },
+    "VerticalSidebar": {
+        "saveFileName": "File name to be saved",
+        "downloadDefinitionList": "Download definition list",
+        "save": "Save"
     }
 }

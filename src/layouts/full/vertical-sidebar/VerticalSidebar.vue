@@ -110,6 +110,27 @@ const customizer = useCustomizerStore();
             <ExtraBox />
         </div>
     </v-navigation-drawer>
+    <v-dialog v-model="isOpen" max-width="400" class="delete-input-details">
+        <v-card class="pa-4 pt-2">
+            <v-row class="ma-0 pa-0 pb-2" align="center">
+                <v-card-title class="pa-0">{{ $t('VerticalSidebar.downloadDefinitionList') }}</v-card-title>
+                <v-spacer></v-spacer>
+                <v-btn @click="closeDownloadDefinitionList()" icon variant="text" density="comfortable">
+                    <Icons :icon="'close'" :size="16" />
+                </v-btn>
+            </v-row>
+            <v-text-field
+                v-model="release"
+                :label="$t('VerticalSidebar.saveFileName')"
+                required
+                class="pb-2"
+            ></v-text-field>
+            <v-row class="pa-0 pa-4">
+                <v-spacer></v-spacer>
+                <v-btn @click="downloadDefinitionList(release)" color="primary" rounded>{{ $t('VerticalSidebar.save') }}</v-btn>
+            </v-row>
+        </v-card>
+    </v-dialog>
 </template>
 
 <script>
@@ -127,7 +148,8 @@ export default {
         definitionItem: [],
         definitionList: null,
         logoPadding: '',
-        instanceList: []
+        instanceList: [],
+        isOpen: false
     }),
     computed: {
         JMS() {
@@ -142,7 +164,7 @@ export default {
             const totalCount = definitionCount + instanceCount;
 
             if (totalCount >= 12 && definitionCount >= 6 && instanceCount >= 6) {
-                return 'max-height: 47%; overflow: auto;';
+                return 'max-height: 45%; overflow: auto;';
             } else if (totalCount > 12) {
                 const remainingCount = 12 - instanceCount;
                 return `max-height: ${51 * Math.min(instanceCount, remainingCount)}px; overflow: auto;`;
@@ -156,7 +178,7 @@ export default {
             const totalCount = definitionCount + instanceCount;
 
             if (totalCount >= 12 && definitionCount >= 6 && instanceCount >= 6) {
-                return 'max-height: 47%; overflow: auto;';
+                return 'max-height: 45%; overflow: auto;';
             } else if (totalCount > 12) {
                 const remainingCount = 12 - instanceCount;
                 return `max-height: ${51 * Math.min(definitionCount, remainingCount)}px; overflow: auto;`;
@@ -219,6 +241,13 @@ export default {
                     },
                     disable: true
                 },
+                {
+                    title: 'definitionManagement.release',
+                    icon: 'download',
+                    BgColor: 'primary',
+                    disable: true,
+                    to: this.openDialog
+                },
             ]
             if (this.mode === 'ProcessGPT') {
                 this.definitionItem = this.definitionItem.filter((item) => 
@@ -247,6 +276,16 @@ export default {
         // });
     },
     methods: {
+        openDialog() {
+            this.isOpen = true;
+        },
+        closeDownloadDefinitionList() {
+            this.isOpen = false;
+        },
+        async downloadDefinitionList(releaseName) {
+            await backend.releaseVersion(releaseName);
+            this.closeDownloadDefinitionList()
+        },
         async getChild(subitem) {
             let res = await backend.listDefinition(subitem.path);
             let menu = [];

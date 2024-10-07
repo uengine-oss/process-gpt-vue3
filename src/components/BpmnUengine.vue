@@ -96,7 +96,28 @@ export default {
             // console..log(def);
             // self.bpmnViewer.get('canvas').zoom('fit-viewport');
             var canvas = self.bpmnViewer.get('canvas');
-            canvas.zoom('fit-viewport');
+            var elementRegistry = self.bpmnViewer.get('elementRegistry');
+            var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+
+            if (allPools.length > 1) {
+                var firstPool = allPools[0];
+                var bbox = canvas.getAbsoluteBBox(firstPool);
+                canvas.viewbox({
+                    x: bbox.x - 50, // 여백을 위해 약간의 오프셋을 추가
+                    y: bbox.y - 50,
+                    width: bbox.width + 100,
+                    height: bbox.height + 100
+                });
+            } else {
+                canvas.zoom('fit-viewport');
+                var viewbox = canvas.viewbox();
+                canvas.viewbox({
+                    x: viewbox.x - 50, // 여백을 위해 약간의 오프셋을 추가
+                    y: viewbox.y - 50,
+                    width: viewbox.width + 100,
+                    height: viewbox.height + 100
+                });
+            }
 
             if (self.isPreviewMode) {
                 if (window.$mode == "ProcessGPT") {

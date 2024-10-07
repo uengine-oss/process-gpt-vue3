@@ -157,9 +157,7 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
   const actions =  this._originalGetContextPadEntries(element);
 
   if (element.type === 'bpmn:Participant' || element.type === 'bpmn:Lane') {
-    const isHorizontal = element.di.isHorizontal;
-    
-
+    const isHorizontal = element.di.isHorizontal
     assign(actions, {
       'lane-insert-above': {
         group: 'lane',

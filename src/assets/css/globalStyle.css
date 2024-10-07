@@ -446,6 +446,13 @@ hr {
 .test-process-work-list-skeleton .v-skeleton-loader__image {
     height:70vh;
 }
+
+.process-title-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 @media only screen and (max-width:1450px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 375px !important;

@@ -28,6 +28,8 @@ interface SidebarItem {
     isVisible?: boolean;
 }
 
+const isAdmin = localStorage.getItem('isAdmin') === 'true';
+
 const sidebarItems = ref<SidebarItem[]>([
     {
         title: 'processDefinitionMap.title',
@@ -51,7 +53,13 @@ const sidebarItems = ref<SidebarItem[]>([
         disable: false,
         isVisible: true
     },
-    // 240819 캘린더 복구
+    {
+        title: 'headerMenu.admin',
+        icon: 'user-admin',
+        to: '/admin',
+        disable: false,
+        isVisible: isAdmin // Only visible if isAdmin is true
+    },
     {
         title: 'headerMenu.calendar',
         icon: 'calendar-line-duotone',
@@ -63,7 +71,6 @@ const sidebarItems = ref<SidebarItem[]>([
 
 // 생명주기 훅 사용
 onBeforeMount(() => {
-    // window.mode 값에 따라 sidebarItems 수정
     if (window.$mode === 'ProcessGPT') {
         // sidebarItems.value = sidebarItems.value.filter(item => item.to !== '/calendar');
     }

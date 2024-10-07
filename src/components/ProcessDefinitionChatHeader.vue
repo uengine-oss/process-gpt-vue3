@@ -5,12 +5,19 @@
                 :style="modelValueStyle ? 'padding: 12px 16px 2px 16px;' : 'padding: 9px 16px 9px 16px;'"
             >
                 <v-row class="ma-0 pa-0">
-                    <div v-if="modelValue && modelValue !== ''" class="d-flex gap-2 align-center">
+                    <div v-if="modelValue && modelValue !== ''" class="d-flex gap-2 align-center"
+                        style="max-width:80%;"
+                    >
                         <v-text-field v-if="!lock && editUser != '' && editUser == userInfo.name" v-model="processName"
                             label="프로세스 정의명" variant="underlined" hide-details class="pa-0 ma-0"
                             style="min-width:150px; width:150px;"
                         ></v-text-field>
-                        <h5 v-else class="text-h5 mb-n1">{{ modelValue }}</h5>
+                        <v-tooltip v-else  location="bottom">
+                            <template v-slot:activator="{ props }">
+                                <h5 v-bind="props" class="text-h5 mb-n1 process-title-truncate">{{ modelValue }}</h5>
+                            </template>
+                            <span>{{ modelValue }}</span>
+                        </v-tooltip>
                     </div>
                     <h5 v-else class="text-h5 mb-n1">{{ $t('processDefinition.title') }}</h5>
                     <v-spacer></v-spacer>
