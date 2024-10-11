@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import MainRoutes from './MainRoutes';
 import AuthRoutes from './AuthRoutes';
+import TenantRoutes from './TenantRoutes';
 
 export const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -10,7 +11,8 @@ export const router = createRouter({
             component: () => import('@/views/authentication/Error.vue')
         },
         MainRoutes,
-        AuthRoutes
+        AuthRoutes,
+        TenantRoutes
     ]
 });
 
@@ -28,12 +30,28 @@ router.beforeEach(async (to, from, next) => {
                 alert("로그인이 필요합니다.")
             }
             return next('/auth/login');
-        } else {
-            next();
         }
-    } else {
-        next();
     }
+
+    if (to.fullPath.includes('/auth')) {
+        next();
+    } else {
+        if (window.$isTenantServer) {
+            if (!to.fullPath.includes('/tenant') && to.fullPath !== '/') {
+                alert("잘못된 경로입니다.");
+                return next('/tenant/manage');
+            } else if (to.fullPath === '/' || 
+                to.matched.some((record) => TenantRoutes.children.includes(record as any))) {
+                next();
+            }
+        } else {
+            if (to.fullPath.includes('/tenant')) {
+                alert("잘못된 경로입니다.");
+                return next('/');
+            }
+        }
+    }
+    next();
 });
 
 export default router;

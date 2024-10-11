@@ -27,12 +27,12 @@ const AuthRoutes = {
             props: { isTenantRegister: false },
             component: () => import('@/views/authentication/SideRegister.vue')
         },
-        {
-            name: 'Side Register For Tenant',
-            path: '/tenant/register',
-            props: { isTenantRegister: true },
-            component: () => import('@/views/authentication/SideRegister.vue')
-        },
+        // {
+        //     name: 'Side Register For Tenant',
+        //     path: '/tenant/register',
+        //     props: { isTenantRegister: true },
+        //     component: () => import('@/views/authentication/SideRegister.vue')
+        // },
         // {
         //     name: 'Boxed Register',
         //     path: '/auth/register2',
@@ -73,21 +73,21 @@ const AuthRoutes = {
         //     path: '/auth/maintenance',
         //     component: () => import('@/views/authentication/Maintenance.vue')
         // },
-        {
-            name: 'Tenant Manage',
-            path: '/tenant/manage',
-            component: () => import('@/components/tenant/TenantManagePage.vue')
-        },
-        {
-            name: 'Tenant Create',
-            path: '/tenant/create',
-            component: () => import('@/components/tenant/TenantCreatePage.vue')
-        },
-        {
-            name: 'Tenant Edit',
-            path: '/tenant/edit/:tenantId',
-            component: () => import('@/components/tenant/TenantEditPage.vue')
-        },
+        // {
+        //     name: 'Tenant Manage',
+        //     path: '/tenant/manage',
+        //     component: () => import('@/components/tenant/TenantManagePage.vue')
+        // },
+        // {
+        //     name: 'Tenant Create',
+        //     path: '/tenant/create',
+        //     component: () => import('@/components/tenant/TenantCreatePage.vue')
+        // },
+        // {
+        //     name: 'Tenant Edit',
+        //     path: '/tenant/edit/:tenantId',
+        //     component: () => import('@/components/tenant/TenantEditPage.vue')
+        // },
     ]
 };
 
