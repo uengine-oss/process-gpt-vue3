@@ -43,13 +43,6 @@ export default {
     data: () => ({
         tenantInfo: {
             id: '',
-        //     url: '',
-        //     secret: '',
-        //     host: '',
-        //     databaseName: '',
-        //     port: '',
-        //     user: '',
-        //     password: '',
         },
         tenantId: '',
     }),
@@ -61,39 +54,6 @@ export default {
         }
         this.tenantInfo.id = this.$route.params.tenantId;
         this.tenantId = this.tenantInfo.id;
-        // let me = this
-        // const checkIsLogin = async () => {
-        //     const isLogin = localStorage.getItem("accessToken") ? true : false
-        //     if(!isLogin) {
-        //         alert("로그인이 필요합니다.")
-        //         await me.$router.push('/auth/login')
-        //         return false
-        //     }
-        //     return true
-        // }
-
-        // if(!(await checkIsLogin())) return
-        // me.$try({
-        //     context: me,
-        //     action: async () => {
-        //         me.storage = StorageBaseFactory.getStorage()
-
-        //         // #region 편집할 테넌트 정보 가져오기
-        //         const tenantId = me.$route.params.tenantId
-        //         const dbTenantInfo = await me.storage.getObject(`tenant_def/${tenantId}`, {key: 'id'})
-        //         me.tenantInfo = {
-        //             id: dbTenantInfo.id,
-        //             url: dbTenantInfo.url,
-        //             secret: dbTenantInfo.secret,
-        //             host: dbTenantInfo.host,
-        //             databaseName: dbTenantInfo.dbname,
-        //             port: dbTenantInfo.port,
-        //             user: dbTenantInfo.user,
-        //             password: dbTenantInfo.pw,
-        //         }
-        //         // #endregion
-        //     }
-        // });
     },
     methods: {
         async editTenant() {
@@ -101,27 +61,6 @@ export default {
             await backend.deleteTenant(this.tenantId); // 기존 테넌트 삭제
             await backend.putTenant(this.tenantInfo.id); // 변경된 테넌트 저장
             await this.$router.push('/tenant/manage');
-        //     let me = this
-        //     me.$try({
-        //         context: me,
-        //         action: async () => {
-        //             await me.$refs.tenantInfoField.validCheck()
-
-        //             await me.storage.putObject('tenant_def', {
-        //                 id: me.tenantInfo.id,
-        //                 url: me.tenantInfo.url,
-        //                 secret: me.tenantInfo.secret,
-        //                 host: me.tenantInfo.host,
-        //                 dbname: me.tenantInfo.databaseName,
-        //                 port: me.tenantInfo.port,
-        //                 user: me.tenantInfo.user,
-        //                 pw: me.tenantInfo.password
-        //             });
-
-        //             await me.$router.push('/tenant/manage');
-        //         },
-        //         successMsg: '회사가 정상적으로 수정되었습니다.'
-        //     });
         }
     }
 };

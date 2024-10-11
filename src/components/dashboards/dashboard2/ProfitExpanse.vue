@@ -73,9 +73,8 @@
 </template>
 
 <script>
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import BackendFactory from '@/components/api/BackendFactory';
-const backend = BackendFactory.createBackend();
+
 export default {
     components: {
     },
@@ -185,50 +184,50 @@ export default {
         }
     },
     methods: {
-        init() {
+        async init() {
             var me = this;
-            backend.getWorkListAll().then(workList => {
-                const userStatusMap = {};
-                workList.forEach(item => {
-                    const itemEndDate = new Date(item.dueDate);
-                    const start = new Date(me.startDate);
-                    const end = new Date(me.endDate);
-                    if (itemEndDate >= start && itemEndDate <= end) {
-                        if (!userStatusMap[item.endpoint]) {
-                            userStatusMap[item.endpoint] = {
-                                name: item.endpoint,
-                                end_dates: {
-                                    TODO: null,
-                                    IN_PROGRESS: null,
-                                    DONE: null
-                                },
-                                TODO: 0,
-                                IN_PROCESS: 0,
-                                DONE: 0,
-                            };
-                        }
-                        if (item.status === 'NEW' || item.status == 'TODO') {
-                            userStatusMap[item.endpoint].TODO += 1;
-                            userStatusMap[item.endpoint].end_dates.TODO = item.dueDate;
-                        } else if (item.status === 'RUNNING' || item.status == 'IN_PROGRESS') {
-                            userStatusMap[item.endpoint].IN_PROCESS += 1;
-                            userStatusMap[item.endpoint].end_dates.IN_PROGRESS = item.dueDate;
-                        } else if (item.status === 'COMPLETED' || item.status == 'DONE') {
-                            userStatusMap[item.endpoint].DONE += 1;
-                            userStatusMap[item.endpoint].end_dates.DONE = item.dueDate;
-                        }
+            const backend = BackendFactory.createBackend();
+            const workList = await backend.getWorkListAll();
+            const userStatusMap = {};
+            workList.forEach(item => {
+                const itemEndDate = new Date(item.dueDate);
+                const start = new Date(me.startDate);
+                const end = new Date(me.endDate);
+                if (itemEndDate >= start && itemEndDate <= end) {
+                    if (!userStatusMap[item.endpoint]) {
+                        userStatusMap[item.endpoint] = {
+                            name: item.endpoint,
+                            end_dates: {
+                                TODO: null,
+                                IN_PROGRESS: null,
+                                DONE: null
+                            },
+                            TODO: 0,
+                            IN_PROCESS: 0,
+                            DONE: 0,
+                        };
                     }
-                });
-
-                let topUsersInfo = Object.values(userStatusMap);
-                // DONE 상태의 end_date를 기준으로 내림차순 정렬
-                topUsersInfo.sort((a, b) => new Date(b.end_dates.DONE) - new Date(a.end_dates.DONE));
-                me.topUsers = topUsersInfo.slice(0, 7);
-                me.summary.total = me.topUsers.reduce((acc, user) => acc + user.TODO + user.IN_PROCESS + user.DONE, 0);
-                me.summary.todo = me.topUsers.reduce((acc, user) => acc + user.TODO, 0);
-                me.summary.inProcess = me.topUsers.reduce((acc, user) => acc + user.IN_PROCESS, 0);
-                me.summary.done = me.topUsers.reduce((acc, user) => acc + user.DONE, 0);
+                    if (item.status === 'NEW' || item.status == 'TODO') {
+                        userStatusMap[item.endpoint].TODO += 1;
+                        userStatusMap[item.endpoint].end_dates.TODO = item.dueDate;
+                    } else if (item.status === 'RUNNING' || item.status == 'IN_PROGRESS') {
+                        userStatusMap[item.endpoint].IN_PROCESS += 1;
+                        userStatusMap[item.endpoint].end_dates.IN_PROGRESS = item.dueDate;
+                    } else if (item.status === 'COMPLETED' || item.status == 'DONE') {
+                        userStatusMap[item.endpoint].DONE += 1;
+                        userStatusMap[item.endpoint].end_dates.DONE = item.dueDate;
+                    }
+                }
             });
+
+            let topUsersInfo = Object.values(userStatusMap);
+            // DONE 상태의 end_date를 기준으로 내림차순 정렬
+            topUsersInfo.sort((a, b) => new Date(b.end_dates.DONE) - new Date(a.end_dates.DONE));
+            me.topUsers = topUsersInfo.slice(0, 7);
+            me.summary.total = me.topUsers.reduce((acc, user) => acc + user.TODO + user.IN_PROCESS + user.DONE, 0);
+            me.summary.todo = me.topUsers.reduce((acc, user) => acc + user.TODO, 0);
+            me.summary.inProcess = me.topUsers.reduce((acc, user) => acc + user.IN_PROCESS, 0);
+            me.summary.done = me.topUsers.reduce((acc, user) => acc + user.DONE, 0);
         },
     },
 

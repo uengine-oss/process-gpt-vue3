@@ -1341,6 +1341,21 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
+    async getOpenAIToken() {
+        try {
+            let option = {
+                match: {
+                    key: 'openai_key'
+                }
+            };
+            const res = await storage.getObject('configuration', option);
+            return res?.value?.key || window.localStorage.getItem('openAIToken') || null;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
 }
 
 export default ProcessGPTBackend;

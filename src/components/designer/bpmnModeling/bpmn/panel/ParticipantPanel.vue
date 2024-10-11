@@ -34,9 +34,8 @@
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
-const storage = StorageBaseFactory.getStorage();
 import BackendFactory from '@/components/api/BackendFactory';
+
 export default {
     name: 'participant-panel',
     props: {
@@ -116,12 +115,12 @@ export default {
                 });
             });
         });
+        this.backend = BackendFactory.createBackend();
         // // bpmn2:process 요소 내의 bpmn2:extensionElements 요소를 찾거나 새로 생성합니다.
-        const value = await storage.list('proc_def');
+        const value = await this.backend.listDefinition();
         if (value) {
             this.definitions = value;
         }
-        this.backend = BackendFactory.createBackend();
         const systemList = await this.backend.getSystemList();
         systemList.forEach(system => {
             this.systemList.push(system.name.replace(".json",""));
@@ -188,15 +187,7 @@ export default {
 
             return obj;
         },
-        async getData(path, options) {
-            // let value;
-            // if (path) {
-            //     value = await this.storage.getObject(`db://${path}`, options);
-            // } else {
-            //     value = await this.storage.getObject(`db://${this.path}`, options);
-            // }
-            // return value;
-        },
+        
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
             this.$emit('update:uEngineProperties', this.copyUengineProperties);

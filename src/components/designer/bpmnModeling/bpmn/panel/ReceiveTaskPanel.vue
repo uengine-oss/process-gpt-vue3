@@ -132,11 +132,10 @@
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { Icon } from '@iconify/vue';
 import Mapper from '@/components/designer/mapper/Mapper.vue';
-const storage = StorageBaseFactory.getStorage();
 import yaml from 'yamljs';
+
 export default {
     name: 'receive-task-panel',
     props: {
@@ -363,15 +362,7 @@ export default {
             // this.paramKey = ""
             // this.paramValue = ""
         },
-        async getData(path, options) {
-            // let value;
-            // if (path) {
-            //     value = await this.storage.getObject(`db://${path}`, options);
-            // } else {
-            //     value = await this.storage.getObject(`db://${this.path}`, options);
-            // }
-            // return value;
-        },
+        
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
             this.$emit('update:uEngineProperties', this.copyUengineProperties);

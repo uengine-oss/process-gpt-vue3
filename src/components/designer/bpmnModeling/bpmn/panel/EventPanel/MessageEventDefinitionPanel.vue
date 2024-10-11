@@ -82,9 +82,8 @@
 <script>
 import partialParse from 'partial-json-parser';
 import { useBpmnStore } from '@/stores/bpmn';
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { Icon } from '@iconify/vue';
-const storage = StorageBaseFactory.getStorage();
+import BackendFactory from '@/components/api/BackendFactory';
 // import { setPropeties } from '@/components/designer/bpmnModelingf/bpmn/panel/CommonPanel.ts';
 
 export default {
@@ -98,7 +97,6 @@ export default {
     },
     async created() {
         this.copyUengineProperties = this.uengineProperties;
-        this.storage = StorageBaseFactory.getStorage();
         this.openaiToken = await this.getToken();
         Object.keys(this.requiredKeyLists).forEach((key) => {
             this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
@@ -179,11 +177,8 @@ export default {
     watch: {},
     methods: {
         async getToken() {
-            let option = {
-                key: 'key'
-            };
-            const res = await this.storage.getObject('db://configuration/openai_key', option);
-            return res?.value?.key || window.localStorage.getItem('openAIToken') || null;
+            const backend = BackendFactory.createBackend();
+            return await backend.getOpenAIToken();
         },
         ensureKeyExists(obj, key, defaultValue) {
             if (!obj.hasOwnProperty(key)) {

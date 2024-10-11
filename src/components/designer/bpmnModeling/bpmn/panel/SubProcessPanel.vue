@@ -93,10 +93,10 @@
         </div> -->
     </div>
 </template>
+
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
-const storage = StorageBaseFactory.getStorage();
+import BackendFactory from '@/components/api/BackendFactory';
 
 export default {
     name: 'sub-process-panel',
@@ -190,12 +190,6 @@ export default {
         if (this.copyUengineProperties.forEachRole) {
             this.selectedRole = this.copyUengineProperties.forEachRole.name;
         }
-        // // // bpmn2:process 요소 내의 bpmn2:extensionElements 요소를 찾거나 새로 생성합니다.
-        // const value = await storage.list('proc_def');
-        // if (value) {
-        //     this.definitions = value;
-        // }
-        // if (this.copyUengineProperties.definitionId) this.setDefinitionInfo(this.copyUengineProperties.definitionId);
     },
     computed: {
         // inputData() {
@@ -259,7 +253,8 @@ export default {
         },
         async setDefinitionInfo(definitionId) {
             // definition 정보 호출
-            const def = await storage.getObject(`proc_def/${definitionId}`, { key: 'id' });
+            const backend = BackendFactory.createBackend();
+            const def = await backend.getRawDefinition(definitionId);
             // XML에서 role 정보 추출
             this.definitionRoles = this.extractLanesFromBpmnXml(def.bpmn);
             this.definitionVariables = this.extractVariablesFromBpmnXml(def.bpmn);
@@ -322,15 +317,7 @@ export default {
             this.copyUengineProperties.variableBindings.push({ key: this.paramKey, value: this.paramValue });
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
         },
-        async getData(path, options) {
-            // let value;
-            // if (path) {
-            //     value = await this.storage.getObject(`db://${path}`, options);
-            // } else {
-            //     value = await this.storage.getObject(`db://${this.path}`, options);
-            // }
-            // return value;
-        },
+        
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
             this.$emit('update:uEngineProperties', this.copyUengineProperties);

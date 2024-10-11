@@ -431,15 +431,7 @@ export default {
             // this.paramKey = ""
             // this.paramValue = ""
         },
-        async getData(path, options) {
-            // let value;
-            // if (path) {
-            //     value = await this.storage.getObject(`db://${path}`, options);
-            // } else {
-            //     value = await this.storage.getObject(`db://${this.path}`, options);
-            // }
-            // return value;
-        },
+        
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
             // this.$emit('update:uEngineProperties', this.copyUengineProperties);

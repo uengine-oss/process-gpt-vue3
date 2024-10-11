@@ -61,6 +61,7 @@ export interface Backend {
     deleteTest(path: string, tracingTag: string, index: number): Promise<any>;
     checkDBConnection(): Promise<any>;
     getWorkListAll(): Promise<any>;
+    getOpenAIToken(): Promise<any>;
 }
 
 // export type { Backend }
