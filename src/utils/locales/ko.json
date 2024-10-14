@@ -635,5 +635,16 @@
         "saveFileName": "저장될 파일명",
         "downloadDefinitionList": "정의 목록 다운로드",
         "save": "저장"
+    },
+    "ProfitExpanse": {
+        "processExecutionPerformance": "프로세스 실행실적",
+        "startDate": "시작일",
+        "endDate": "종료일",
+        "toDo": "할 일",
+        "inProcess": "진행 중",
+        "done": "완료 됨",
+        "all": "전체",
+        "typeSelection": "유형 선택",
+        "taskId": "작업 ID"
     }
 }

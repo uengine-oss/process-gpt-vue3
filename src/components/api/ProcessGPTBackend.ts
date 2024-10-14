@@ -505,7 +505,7 @@ class ProcessGPTBackend implements Backend {
                         proc_inst_id: workItem.instId,
                         current_activity_ids: [workItem.tracingTag || workItem.title]
                     }
-                    await storage.putObject(workItem.defId, putInst);
+                    await storage.putObject('bpm_proc_inst', putInst);
                 }
             } else { // instance workItem
                 const answer = {
@@ -754,7 +754,6 @@ class ProcessGPTBackend implements Backend {
     async setVariable(instanceId: string, varName: string, varValue: any) {
         try {
             const columnName: any = varName.toLowerCase().replace(/ /g, '_');
-            const defId: any = instanceId.split('.')[0];
             const putObj: any = {
                 proc_inst_id: instanceId,
                 variables_data: {
@@ -762,7 +761,7 @@ class ProcessGPTBackend implements Backend {
                 }
             }
 
-            await storage.putObject(defId, putObj);
+            await storage.putObject('bpm_proc_inst', putObj);
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -772,12 +771,13 @@ class ProcessGPTBackend implements Backend {
     async setVariableWithTaskId(instId: string, taskId: string, varName: string, varValue: any) {
         try {
             const columnName: any = varName.toLowerCase().replace(/ /g, '_');
-            const defId: any = instId.split('.')[0];
             const putObj: any = {
                 proc_inst_id: instId,
-                [columnName]: varValue.valueMap ? varValue.valueMap : varValue
+                variables_data: {
+                    [columnName]: varValue.valueMap ? varValue.valueMap : varValue
+                }
             }
-            await storage.putObject(defId, putObj);
+            await storage.putObject('bpm_proc_inst', putObj);
         } catch (error) {
             
             //@ts-ignore
@@ -1073,9 +1073,7 @@ class ProcessGPTBackend implements Backend {
 
     async deleteInstance(instId: string) {
         try {
-            // const defId = instId.split('.')[0];
             await Promise.all([
-                // await storage.delete(defId, { match: { proc_inst_id: instId } }),
                 await storage.delete('bpm_proc_inst', { match: { proc_inst_id: instId } }),
                 await storage.delete('todolist', { match: { proc_inst_id: instId } }),
                 await storage.delete('chats', { match: { id: instId } })
@@ -1343,6 +1341,21 @@ class ProcessGPTBackend implements Backend {
         try {
             const list = await this.getWorkList();
             return list;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getOpenAIToken() {
+        try {
+            let option = {
+                match: {
+                    key: 'openai_key'
+                }
+            };
+            const res = await storage.getObject('configuration', option);
+            return res?.value?.key || window.localStorage.getItem('openAIToken') || null;
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);

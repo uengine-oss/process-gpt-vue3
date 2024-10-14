@@ -68,7 +68,6 @@
 </template>
 
 <script>
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
 // import createAccount from '@/assets/images/tenant/help/1.png';
 // import selectNewProject from '@/assets/images/tenant/help/2.png';
 // import createOrganization from '@/assets/images/tenant/help/3.png';
@@ -109,7 +108,6 @@ export default {
     },
 
     data: () => ({
-        // storage: null,
         activeIndex: 0,
         guideSlides: [
             // { 
@@ -284,7 +282,6 @@ export default {
     }),
 
     async created() {
-        this.storage = StorageBaseFactory.getStorage()
     },
 
     methods: {

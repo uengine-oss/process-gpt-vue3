@@ -44,7 +44,6 @@
 </template>
 
 <script>
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { createClient } from '@supabase/supabase-js';
 import { RouterView } from 'vue-router';
 

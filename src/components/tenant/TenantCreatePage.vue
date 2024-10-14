@@ -37,31 +37,10 @@ export default {
     data: () => ({
         tenantInfo: {
             id: '',
-        //     url: '',
-        //     secret: '',
-        //     host: 'aws-0-ap-northeast-2.pooler.supabase.com',
-        //     databaseName: 'postgres',
-        //     port: '6543',
-        //     user: '',
-        //     password: '',
         },
         isLoading: false,
-        // storage: null
     }),
     async created() {
-        // let me = this
-        // const checkIsLogin = async () => {
-        //     const isLogin = localStorage.getItem("accessToken") ? true : false
-        //     if(!isLogin) {
-        //         alert("로그인이 필요합니다.")
-        //         await me.$router.push('/auth/login')
-        //         return false
-        //     }
-        //     return true
-        // }
-
-        // if(!(await checkIsLogin())) return
-        // this.storage = StorageBaseFactory.getStorage()
         const isLogin = await backend.checkDBConnection();
         if(!isLogin) {
             alert("로그인이 필요합니다.")
@@ -79,40 +58,8 @@ export default {
         async createTenant() {
             await this.$refs.tenantInfoField.validCheck();
             this.tenantId = this.tenantInfo.id;
-            console.log(this.tenantId);
             await backend.putTenant(this.tenantId);
             await this.$router.push('/tenant/manage');
-            // let me = this
-            // me.$try({
-            //     context: me,
-            //     action: async () => {
-            //         await me.$refs.tenantInfoField.validCheck();
-
-            //         const userInfo = await me.storage.getUserInfo();
-
-            //         await me.storage.putObject('tenant_def', {
-            //             id: me.tenantInfo.id,
-            //             url: me.tenantInfo.url,
-            //             secret: me.tenantInfo.secret,
-            //             host: me.tenantInfo.host,
-            //             dbname: me.tenantInfo.databaseName,
-            //             port: me.tenantInfo.port,
-            //             user: me.tenantInfo.user,
-            //             pw: me.tenantInfo.password,
-            //             owner: userInfo.email
-            //         });
-
-            //         // #region 사용자 정보에 추가한 테넌트 ID 업데이트
-            //         const dbUserInfo = await me.storage.getObject(`users/${userInfo.uid}`, { key: 'id' });
-            //         await me.storage.putObject(`users/${userInfo.uid}`, {
-            //             ...dbUserInfo,
-            //             tenants: (dbUserInfo.tenants) ? [...dbUserInfo.tenants, me.tenantInfo.id] : [me.tenantInfo.id]
-            //         });
-            //         // #endregion
-            //         await me.$router.push('/tenant/manage');
-            //     },
-            //     successMsg: '회사가 정상적으로 생성되었습니다. 생성된 회사가 관리하는 페이지에 접속 시 현재 로그인된 계정을 이메일 인증 이후 사용하실 수 있습니다.'
-            // });
         }
     },
 };

@@ -3,10 +3,9 @@
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { Icon } from '@iconify/vue';
 import yaml from 'yamljs';
-const storage = StorageBaseFactory.getStorage();
+
 export default {
     name: 'collaboration-api-panel',
     props: {
@@ -129,15 +128,7 @@ export default {
         // addParameter() {
         //     this.uengineProperties.parameters.push({ key: this.paramKey, value: this.paramValue });
         // },
-        async getData(path, options) {
-            // let value;
-            // if (path) {
-            //     value = await this.storage.getObject(`db://${path}`, options);
-            // } else {
-            //     value = await this.storage.getObject(`db://${this.path}`, options);
-            // }
-            // return value;
-        },
+        
         addCheckpoint() {
             this.uengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
         },

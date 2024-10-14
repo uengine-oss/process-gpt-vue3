@@ -118,33 +118,6 @@ export default {
         }
         const tenants = await backend.getTenants();
         this.tenantInfos = tenants;
-        // let me = this
-        // const checkIsLogin = async () => {
-        //     const isLogin = localStorage.getItem("accessToken") ? true : false
-        //     if(!isLogin) {
-        //         alert("로그인이 필요합니다.")
-        //         await me.$router.push('/auth/login')
-        //         return false
-        //     }
-        //     return true
-        // }
-
-        // if(!(await checkIsLogin())) return
-        // me.$try({
-        //     context: me,
-        //     action: async () => {
-        //         me.storage = StorageBaseFactory.getStorage()
-        //         me.userInfo = await me.storage.getUserInfo();
-
-        //         const tenants = (await me.storage.getObject(`users/${me.userInfo.uid}`, {key: 'id'})).tenants
-        //         if(tenants) {
-        //             for (const tenant of tenants) {
-        //                 const tenantInfo = await me.storage.getObject(`tenant_def/${tenant}`, {key: 'id'})
-        //                 if(tenantInfo) me.tenantInfos.push(tenantInfo)
-        //             }
-        //         }
-        //     }
-        // });
     },
     methods: {
         toAddTenentPage() {

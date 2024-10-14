@@ -26,7 +26,8 @@
 
 <script>
 import { commonSettingInfos } from "./CommonSettingInfos.vue"
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
 
 export default {
     name: "UserSelectField",
@@ -94,7 +95,7 @@ export default {
         this.localDisabled = this.disabled === "true"
         this.localReadonly = this.readonly === "true"
         
-        this.usersToSelect = (await StorageBaseFactory.getStorage().list(`users`))
+        this.usersToSelect = await backend.getUserList();
     }
 };
 </script>

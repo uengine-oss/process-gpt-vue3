@@ -113,18 +113,6 @@ export default {
                 condition: ''
             };
         }
-
-        // const storage = StorageBaseFactory.getStorage();
-        // const options = {
-        //     match: {
-        //         id: this.$route.params.id
-        //     }
-        // }
-
-        // const process = await storage.getObject('proc_def', options);
-        // if (process && process.definition && process.definition.data) {
-        //     this.varItems = process.definition.data.map(item => item.name);
-        // }
     },
     mounted() {
         const bpmnStore = useBpmnStore();

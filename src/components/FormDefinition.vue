@@ -105,18 +105,18 @@ export default {
         isRoutedWithUnsaved: false,
     }),
     async created() {
-        const reloadOnConnectionFailure = async () => {
-            if (!(await this.storage.isConnection())) {
-                const reloadOnConnectionSuccess = async () => {
-                    if(await this.storage.isConnection())
-                        this.$router.go(0);
-                    else
-                        setTimeout(reloadOnConnectionSuccess, 500);
-                }
-                setTimeout(reloadOnConnectionSuccess, 500);
-            }
-        }
-        reloadOnConnectionFailure()
+        // const reloadOnConnectionFailure = async () => {
+        //     if (!(await this.storage.isConnection())) {
+        //         const reloadOnConnectionSuccess = async () => {
+        //             if(await this.storage.isConnection())
+        //                 this.$router.go(0);
+        //             else
+        //                 setTimeout(reloadOnConnectionSuccess, 500);
+        //         }
+        //         setTimeout(reloadOnConnectionSuccess, 500);
+        //     }
+        // }
+        // reloadOnConnectionFailure()
 
         if (this.modelValue != '') {
             this.kEditorInput = this.dynamicFormHTMLToKeditorContentHTML(this.modelValue);

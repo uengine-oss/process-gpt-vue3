@@ -19,10 +19,24 @@ export default class StorageBaseSupabase {
 
             if (accessToken && refreshToken) {
                 window.localStorage.setItem('accessToken', accessToken);
-                await window.$supabase.auth.setSession({
+                const { error: sessionError } = await window.$supabase.auth.setSession({
                     access_token: accessToken,
                     refresh_token: refreshToken
                 });
+
+                if (sessionError) {
+                    console.error('Error setting session:', sessionError);
+                    // Attempt to refresh the session
+                    const { data: refreshData, error: refreshError } = await window.$supabase.auth.refreshSession();
+                    if (refreshError) {
+                        console.error('Error refreshing session:', refreshError);
+                        return false;
+                    }
+                    // Update cookies and local storage with new tokens
+                    document.cookie = `access_token=${refreshData.session.access_token}; domain=.process-gpt.io; path=/`;
+                    document.cookie = `refresh_token=${refreshData.session.refresh_token}; domain=.process-gpt.io; path=/`;
+                    window.localStorage.setItem('accessToken', refreshData.session.access_token);
+                }
             }
 
             const { data, error } = await window.$supabase.auth.getUser();
@@ -245,6 +259,7 @@ export default class StorageBaseSupabase {
 
     async getUserInfo() {
         try {
+            await this.isConnection();
             const userData = await window.$supabase.auth.getUser();
             if (userData.error) {
                 throw new StorageBaseError('error in getUserInfo', userData.error, arguments);
@@ -260,11 +275,6 @@ export default class StorageBaseSupabase {
                         role: data.role
                     }
                 } else if (error) {
-                    // const isConnected = this.isConnection();
-                    // if (isConnected) {  // DB 연결된 경우
-                    //     alert('로그인이 필요합니다');
-                    //     // window.location.href = '/auth/login';
-                    // }
                     throw new StorageBaseError('error in getUserInfo', error, arguments);
                 }
             } else {

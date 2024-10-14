@@ -72,7 +72,7 @@ const sidebarItems = ref<SidebarItem[]>([
 // 생명주기 훅 사용
 onBeforeMount(() => {
     if (window.$mode === 'ProcessGPT') {
-        // sidebarItems.value = sidebarItems.value.filter(item => item.to !== '/calendar');
+        sidebarItems.value = sidebarItems.value.filter(item => item.to !== '/admin');
     }
     window.addEventListener('scroll', handleScroll);
 });
