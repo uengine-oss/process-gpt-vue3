@@ -497,8 +497,8 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
-    async getAllInstanceList(page: any) {
-        const response = await axiosInstance.get(`/instances/search/findAll?page=${page}&size=10`);
+    async getAllInstanceList(page: any, size: any) {
+        const response = await axiosInstance.get(`/instances/search/findAll?page=${page}&size=${size}`);
         return response.data._embedded.instances;
     }
 
@@ -514,6 +514,33 @@ class UEngineBackend implements Backend {
             status: inst.status,
             startedDate: inst.startedDate,
             defId: inst.defId
+        }));
+    }
+    
+    // Running Instance API
+    async getFilteredInstanceList(filters: object, page: number) {
+        const queryParams = new URLSearchParams();
+        queryParams.append('page', page.toString());
+    
+        Object.entries(filters).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                queryParams.append(key, value as string);
+            }
+        });
+    
+        const request = `/instances/search/findFilterICanSee?${queryParams.toString()}`
+        const response = await axiosInstance.get(request);
+        if (!response.data) return null;
+        if (!response.data._embedded) return null;
+        return response.data._embedded.instances.map((inst: any) => ({
+            instId: inst.rootInstId,
+            instName: inst.name,
+            status: inst.status,
+            startedDate: inst.startedDate,
+            finishedDate: inst.finishedDate,
+            defId: inst.defId,
+            initEp: inst.initEp,
+            subProcess: inst.subProcess
         }));
     }
 

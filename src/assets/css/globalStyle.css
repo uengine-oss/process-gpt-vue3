@@ -453,6 +453,10 @@ hr {
     text-overflow: ellipsis;
 }
 
+.no-border .v-field__outline {
+    display: none;
+}
+
 @media only screen and (max-width:1450px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 375px !important;

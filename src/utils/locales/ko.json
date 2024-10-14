@@ -85,8 +85,8 @@
         "instanceId": "인스턴스 ID",
         "name": "이름",
         "status": "상태",
-        "startedDate": "시작 날짜",
-        "finishedDate": "종료 날짜",
+        "startedDate": "시작일",
+        "finishedDate": "종료일",
         "initiator": "요청자",
         "subProcess": "서브 프로세스",
         "actions": "작업"
