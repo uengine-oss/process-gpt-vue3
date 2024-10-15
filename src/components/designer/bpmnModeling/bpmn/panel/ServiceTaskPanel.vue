@@ -1,7 +1,33 @@
 <template>
     <div>
         <div class="mb-2 mt-4">
-            
+
+            <v-col class="pa-0 pr-2" style="margin-bottom: 10px">
+                <div>Headers</div>
+                <v-row v-for="(header, idx) in copyUengineProperties.headers" :key="idx" style="margin-left: 13px; margin-top: 10px;">
+                    <v-row style="align-self: center;">
+                        <div style="font-size: 15px; width: 50%;"> {{ header.name }}</div>
+                        <div style="font-size: 15px; width: 40%;"> {{ header.value }}</div>
+                    </v-row>
+                    <v-btn variant="text" density="comfortable" size="x-small" icon="mdi-delete" @click="removeHeader(header)" style="margin-right: 7px;"></v-btn>
+                </v-row>
+                <v-row style="margin-left: 0px; margin-top: 20px; margin-bottom: 20px;">
+                    <v-text-field class="delete-input-details"
+                        v-model="newHeader.name"
+                        label="Key"
+                        required
+                        hide-details
+                    ></v-text-field>
+                    <v-text-field class="delete-input-details"
+                        v-model="newHeader.value"
+                        label="value"
+                        required
+                        hide-details
+                    ></v-text-field>
+                    <v-btn variant="text" density="comfortable" icon="mdi-plus" @click="addHeader()"></v-btn>
+                </v-row>
+            </v-col>   
+
             <v-row class="ma-0 pa-0">
                 <v-col cols="3" class="pa-0 pr-2">
                     <v-autocomplete
@@ -22,7 +48,7 @@
                 :details="methodTypeDescription"
             />
         </div>
-        <div style="height: 40%" v-if="copyUengineProperties.httpMethods != 'GET'">
+        <div style="height: 40%" v-if="copyUengineProperties.method != 'GET'">
             <v-row class="ma-0 pa-0" style="height: 100%">
                 <vue-monaco-editor
                     v-model:value="copyUengineProperties.inputPayloadTemplate"
@@ -41,12 +67,13 @@
                 {{ $t('ServiceTaskPanel.generation') }}
             </v-btn>
         </div>
-        <v-btn block text rounded color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ServiceTaskPanel.dataMapping') }}</v-btn>
-        <DetailComponent
-            :title="$t('BpmnPropertyPanel.mapperDescriptionTitle')"
-            :details="mapperDescription"
-            :detailUrl="'https://www.youtube.com/watch?v=1tCKnzck2-c'"
-        />
+        <!-- <v-btn block text rounded color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ServiceTaskPanel.dataMapping') }}</v-btn> -->
+        <div v-if="!isLoading">
+            <EventSynchronizationForm
+                v-model="tempOutputMapping"
+                :definition="copyDefinition"
+            />
+        </div>
         <div>
             <!-- <div>Return 값을 저장 할 변수</div> -->
             <!-- <v-row class="ma-0 pa-0">
@@ -89,12 +116,14 @@ import BPMNAPIGenerator from '@/components/ai/BPMNAPIGenerator.js';
 import Mapper from '@/components/designer/mapper/Mapper.vue';
 import yaml from 'yamljs';
 import BackendFactory from '@/components/api/BackendFactory';
+import EventSynchronizationForm from '@/components/designer/EventSynchronizationForm.vue';
 // import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
 
 export default {
     name: 'service-task-panel',
     components: {
-        Mapper
+        Mapper,
+        EventSynchronizationForm
     },
     props: {
         uengineProperties: Object,
@@ -104,17 +133,30 @@ export default {
         definition: Object
     },
     async created() {
+        this.isLoading = true;
         this.copyUengineProperties = this.uengineProperties;
-        if(!typeof this.copyUengineProperties.inputPayloadTemplate != 'string') {
+
+        if(!this.copyUengineProperties) this.copyUengineProperties = {}
+        if(!this.copyUengineProperties.headers) this.copyUengineProperties.headers = [{"name": "Content-Type", "value":"application/json"}]
+        if(!this.copyUengineProperties.method) this.copyUengineProperties.method = 'GET'
+        if(!this.copyUengineProperties.outputMapping) this.copyUengineProperties.outputMapping = {} 
+        if(!this.copyUengineProperties.outputMapping.attributes) this.copyUengineProperties.outputMapping.attributes = []
+        if(!this.copyUengineProperties.outputMapping.mappingContext) this.copyUengineProperties.outputMapping.mappingContext = { mappingElements: [] }        
+        if(!this.tempOutputMapping) this.tempOutputMapping = {}
+        this.tempOutputMapping.eventSynchronization = JSON.parse(JSON.stringify(this.copyUengineProperties.outputMapping)) 
+
+       if(typeof this.copyUengineProperties.inputPayloadTemplate != 'string') {
             this.copyUengineProperties.inputPayloadTemplate = JSON.stringify(this.copyUengineProperties.inputPayloadTemplate)
         }
         this.openaiToken = await this.getToken();
         Object.keys(this.requiredKeyLists).forEach((key) => {
             this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
         });
+        this.isLoading = false;
     },
     data() {
         return {
+            isLoading: false,
             MONACO_EDITOR_OPTIONS: {
                 automaticLayout: true,
                 formatOnType: true,
@@ -123,6 +165,11 @@ export default {
             requiredKeyLists: { payload: '' },
             methodList: ['GET', 'POST', 'PUT', 'PATCH'],
             copyUengineProperties: null,
+            tempOutputMapping: {},
+            newHeader:{
+                name: '',
+                value: ''
+            },
             name: '',
             checkpoints: [],
             editCheckpoint: false,
@@ -235,11 +282,28 @@ export default {
     computed: {},
     watch: {},
     methods: {
+        addHeader(){
+            this.copyUengineProperties.headers.push(this.newHeader);
+            this.newHeader = {
+                name: '',
+                value: ''
+            };
+        },
+        removeHeader(header){
+            if(!header) return;
+            this.copyUengineProperties.headers.splice(this.copyUengineProperties.headers.indexOf(header), 1);
+        },
         saveMapperJson(jsonString) {
             this.formMapperJson = jsonString;
             // this.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
             this.copyUengineProperties.mapperIn = JSON.parse(jsonString);
             // this.$emit('update:uEngineProperties', this.copyUengineProperties);
+        },
+        beforeSave() {
+            this.copyUengineProperties.outputMapping = this.tempOutputMapping.eventSynchronization
+            const { method, uriTemplate, headers, inputPayloadTemplate, outputMapping } = this.copyUengineProperties;
+            this.copyUengineProperties = { method, uriTemplate, headers, inputPayloadTemplate, outputMapping };
+            this.$emit('update:uEngineProperties', this.copyUengineProperties);
         },
         async getToken() {
             const backend = BackendFactory.createBackend();
