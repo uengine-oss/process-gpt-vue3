@@ -2,7 +2,7 @@
     <v-card elevation="10"
         :style="$globalState.state.isZoomed ? 'height: 100vh' : 'height:calc(100vh - 155px);'"
     >
-        <div class="pa-2 d-flex align-center">
+        <div class="pa-4 d-flex align-center">
             <div v-if="selectedProc.mega" class="d-flex align-center cursor-pointer"
                 @click="goProcess()">
                 <h6 class="text-h6 font-weight-semibold">{{ selectedProc.mega.name }}</h6>

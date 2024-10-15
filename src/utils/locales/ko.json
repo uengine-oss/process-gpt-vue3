@@ -89,7 +89,10 @@
         "finishedDate": "종료일",
         "initiator": "요청자",
         "subProcess": "서브 프로세스",
-        "actions": "작업"
+        "actions": "작업",
+        "search": "검색",
+        "itemsPerPageText": "페이지 수",
+        "noSearch": "검색 결과가 없습니다."
     },
     "adminDetail": {
         "processVariables": "프로세스 변수",
@@ -646,5 +649,11 @@
         "all": "전체",
         "typeSelection": "유형 선택",
         "taskId": "작업 ID"
+    },
+    "InstanceCard": {
+        "progress": "진행 상황",
+        "workItem": "워크 아이템",
+        "workHistory": "워크 히스토리",
+        "ganttChart": "칸트 차트"
     }
 }

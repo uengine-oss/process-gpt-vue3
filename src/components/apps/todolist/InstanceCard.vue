@@ -1,7 +1,7 @@
 <template>
     <v-card elevation="10" v-if="instance" style="height: calc(100vh - 155px); ">
         <div class="d-flex">
-            <div class="px-3 py-3 pb-2 align-center">
+            <div class="px-3 py-3 pb-2 pl-4 align-center">
                 <div class="d-flex">
                     <h5 class="text-h5 font-weight-semibold">
                         {{ instance.name }}
@@ -27,7 +27,7 @@
         <div style="height: 100%;">
             <v-tabs v-model="tab" bg-color="transparent" height="40" color="primary">
                 <v-tab v-for="tabItem in tabItems" :key="tabItem.value" :value="tabItem.value">
-                    {{ tabItem.label }}
+                    {{ $t(tabItem.label) }}
                 </v-tab>
             </v-tabs>
             <v-divider></v-divider>
@@ -67,10 +67,10 @@ export default {
         // tab
         tab: "progress",
         tabItems: [
-            { value: 'progress', label: '진행 상황', component: 'InstanceProgress' },
-            { value: 'todo', label: '워크 아이템', component: 'InstanceTodo' },
-            { value: 'workhistory', label: '워크 히스토리', component: 'InstanceWorkHistory' },
-            { value: 'gantt', label: '간트 차트', component: 'InstanceGantt' }
+            { value: 'progress', label: 'InstanceCard.progress', component: 'InstanceProgress' },
+            { value: 'todo', label: 'InstanceCard.workItem', component: 'InstanceTodo' },
+            { value: 'workhistory', label: 'InstanceCard.workHistory', component: 'InstanceWorkHistory' },
+            { value: 'gantt', label: 'InstanceCard.ganttChart', component: 'InstanceGantt' }
         ]
     }),
     watch: {
