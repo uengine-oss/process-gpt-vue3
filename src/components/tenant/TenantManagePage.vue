@@ -67,7 +67,7 @@
                                 <v-sheet style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
                                     <v-tooltip text="삭제">
                                         <template v-slot:activator="{ props }">
-                                            <v-btn @click.stop="deleteDialog = true" icon v-bind="props" style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
+                                            <v-btn @click.stop="deleteDialog = true; tenantIdToDelete = tenantInfo.id" icon v-bind="props" style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
                                                 <Icons :icon="'trash'" />
                                             </v-btn>
                                         </template>
@@ -128,9 +128,9 @@ export default {
             this.$router.push(`/tenant/edit/${tenantId}`)
         },
 
-        async deleteTenant(tenantId) {
-            await backend.deleteTenant(tenantId)
-            this.tenantInfos = this.tenantInfos.filter(tenant => tenant.id !== tenantId)
+        async deleteTenant() {
+            await backend.deleteTenant(this.tenantIdToDelete)
+            this.tenantInfos = this.tenantInfos.filter(tenant => tenant.id !== this.tenantIdToDelete)
         },
         
         async toSelectedTenantPage(tenantId) {

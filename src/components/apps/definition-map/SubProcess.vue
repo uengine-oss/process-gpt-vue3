@@ -61,7 +61,11 @@ export default {
     },
     methods: {
         handleClick() {
-            this.$emit('clickProcess', this.value.path);
+            if (window.$mode == 'ProcessGPT') {
+                this.goProcess(this.value.id, 'sub');
+            } else {
+                this.$emit('clickProcess', this.value.path);
+            }
         },
         deleteProcess() {
             this.parent.sub_proc_list = this.parent.sub_proc_list.filter(item => item.id != this.value.id);

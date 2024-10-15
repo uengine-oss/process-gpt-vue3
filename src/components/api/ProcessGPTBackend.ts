@@ -36,7 +36,7 @@ class ProcessGPTBackend implements Backend {
             // 프로세스 정보, 폼 정보를 각각 불러와서 파일명을 포함해서 가공하기 위해서
             let procDefs = await storage.list('proc_def', (path ? { like: `${path}%` } : undefined));
             procDefs.map((item: any) => {
-                item.path = `${item.id}.bpmn`
+                item.path = `${item.id}`
                 item.name = item.name || item.path 
             });
             return procDefs
@@ -1221,7 +1221,9 @@ class ProcessGPTBackend implements Backend {
     async updateUserInfo(value: any) {
         try {
             if (value.type === 'update') {
+                value.user.current_tenant = window.$tenantName;
                 await storage.putObject('users', value.user);
+                await storage.writeUserData(value);
             } else if (value.type === 'delete') {
                 await storage.delete('users', { match: { id: value.user.id } });
             }
@@ -1322,6 +1324,16 @@ class ProcessGPTBackend implements Backend {
                 throw new Error("Tenant ID cannot be null or empty");
             }
             await storage.putObject('tenants', { id: tenantId });
+            const user: any = await this.getUserInfo();
+            const tenantList = user?.tenants || [];
+            if (!tenantList.includes(tenantId)) {
+                tenantList.push(tenantId);
+            }
+            await storage.putObject('users', {
+                id: user.uid,
+                tenants: tenantList,
+                current_tenant: tenantId
+            });
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
