@@ -76,6 +76,7 @@ export default class StorageBaseSupabase {
                     if (isOwner) {
                         await this.putObject('users', {
                             id: result.data.user.id,
+                            username: result.data.user.user_metadata.name,
                             is_admin: true,
                             role: 'superAdmin',
                             current_tenant: tenantId
@@ -83,7 +84,7 @@ export default class StorageBaseSupabase {
                     } else {
                         await this.putObject('users', {
                             id: result.data.user.id,
-                            is_admin: false,
+                            username: result.data.user.user_metadata.name,
                             role: 'user',
                             current_tenant: tenantId
                         });
@@ -120,39 +121,50 @@ export default class StorageBaseSupabase {
 
     async signIn(userInfo) {
         try {
-            const result = await window.$supabase.auth.signInWithPassword({
-                email: userInfo.email,
-                password: userInfo.password
-            });
-            if (!result.error) {
-                await axios.post(`/execution/signin`, {
+            const existUser = await this.getObject('users', { match: { email: userInfo.email } });
+            if ((window.$isTenantServer && !window.$tenantName) || 
+                (existUser && existUser.tenants && existUser.tenants.includes(window.$tenantName))
+            ) {
+                const result = await window.$supabase.auth.signInWithPassword({
                     email: userInfo.email,
                     password: userInfo.password
                 });
-
-                const { access_token, refresh_token } = result.data.session;
-                document.cookie = `access_token=${access_token}; domain=.process-gpt.io; path=/`;
-                document.cookie = `refresh_token=${refresh_token}; domain=.process-gpt.io; path=/`;
-
-                return result.data;
-            } else if(result.error && result.error.message.includes("Email not confirmed")){
-                result.errorMsg = "계정 인증이 완료되지 않았습니다. 이메일 확인 후 다시 로그인하세요."
-                return result;
-            } else {
-                const users = await this.list('users');
-                if (users && users.length > 0) {
-                    const checkedId = users.some((user) => user.email == userInfo.email);
-                    if (checkedId) {
-                        result.errorMsg = '비밀번호가 틀렸습니다.';
-                    } else {
-                        result.errorMsg = '아이디가 틀렸습니다.';
+                if (!result.error) {
+                    await axios.post(`/execution/signin`, {
+                        email: userInfo.email,
+                        password: userInfo.password
+                    });
+    
+                    const { access_token, refresh_token } = result.data.session;
+                    document.cookie = `access_token=${access_token}; domain=.process-gpt.io; path=/`;
+                    document.cookie = `refresh_token=${refresh_token}; domain=.process-gpt.io; path=/`;
+    
+                    if (!window.$isTenantServer && window.$tenantName) {
+                        await this.setCurrentTenant(window.$tenantName);
                     }
+    
+                    return result.data;
+                } else if (result.error && result.error.message.includes("Email not confirmed")){
+                    result.errorMsg = "계정 인증이 완료되지 않았습니다. 이메일 확인 후 다시 로그인하세요."
                     return result;
                 } else {
-                    throw new StorageBaseError(result.error);
+                    const users = await this.list('users');
+                    if (users && users.length > 0) {
+                        const checkedId = users.some((user) => user.email == userInfo.email);
+                        if (checkedId) {
+                            result.errorMsg = '비밀번호가 틀렸습니다.';
+                        } else {
+                            result.errorMsg = '아이디가 틀렸습니다.';
+                        }
+                        return result;
+                    } else {
+                        throw new StorageBaseError(result.error);
+                    }
                 }
+            } else {
+                alert('존재하지 않는 계정입니다.');
+                // throw new StorageBaseError('error in signIn', e, arguments);
             }
-    
         } catch(e) {
             throw new StorageBaseError('error in signIn', e, arguments);
         }
@@ -171,37 +183,50 @@ export default class StorageBaseSupabase {
     }
     async signUp(userInfo) {
         try {
-            const result = await window.$supabase.auth.signUp({
-                email: userInfo.email,
-                password: userInfo.password,
-                options: {
-                    data: {
-                        name: userInfo.username
-                    }
+            const existUser = await this.getObject('users', { match: { email: userInfo.email } });
+            if (existUser) {
+                var tenants = existUser.tenants;
+                if (!tenants.includes(window.$tenantName)) {
+                    tenants.push(window.$tenantName);
                 }
-            });
-    
-            if (!result.error) {
+                existUser.tenants = tenants;
                 await this.putObject('users', {
-                    id: result.data.user.id,
-                    username: result.data.user.user_metadata.name,
-                    role: 'user',
+                    id: existUser.id,
+                    tenants: tenants,
+                    current_tenant: window.$tenantName
                 });
-
-                if (!window.$isTenantServer && window.$tenantName) {
-                    await this.setCurrentTenant(window.$tenantName);
-                }
-                
-                const { access_token, refresh_token } = result.data.session;
-                document.cookie = `access_token=${access_token}; domain=.process-gpt.io; path=/`;
-                document.cookie = `refresh_token=${refresh_token}; domain=.process-gpt.io; path=/`;
-
-                return result.data;
+                return await this.signIn(userInfo);
             } else {
-                result.errorMsg = result.error.message;
-                return result;
+                const result = await window.$supabase.auth.signUp({
+                    email: userInfo.email,
+                    password: userInfo.password,
+                    options: {
+                        data: {
+                            name: userInfo.username
+                        }
+                    }
+                });
+        
+                if (!result.error) {
+                    if (!window.$isTenantServer && window.$tenantName) {
+                        await this.putObject('users', {
+                            id: result.data.user.id,
+                            username: result.data.user.user_metadata.name,
+                            tenants: [window.$tenantName],
+                            current_tenant: window.$tenantName
+                        });
+                    }
+                    
+                    const { access_token, refresh_token } = result.data.session;
+                    document.cookie = `access_token=${access_token}; domain=.process-gpt.io; path=/`;
+                    document.cookie = `refresh_token=${refresh_token}; domain=.process-gpt.io; path=/`;
+    
+                    return result.data;
+                } else {
+                    result.errorMsg = result.error.message;
+                    return result;
+                }
             }
-
         } catch (e) {
             throw new StorageBaseError('error in signUp', e, arguments);
         }
@@ -272,7 +297,9 @@ export default class StorageBaseSupabase {
                         name: data.username,
                         profile: data.profile,
                         uid: data.id,
-                        role: data.role
+                        role: data.role,
+                        tenants: data.tenants,
+                        current_tenant: data.current_tenant
                     }
                 } else if (error) {
                     throw new StorageBaseError('error in getUserInfo', error, arguments);
