@@ -19,7 +19,7 @@ export interface Backend {
     resume(instanceId: string): Promise<any>;
     getInstance(instanceId: string): Promise<any>;
     getAllInstanceList(page: any, size: any): Promise<any>;
-    getFilteredInstanceList(filters: object, page: number): Promise<any>;
+    getFilteredInstanceList(filters: object, page: number, size: number): Promise<any>;
     backToHere(instanceId: string, tracingTag: string): Promise<any>;
     getProcessVariables(instanceId: string): Promise<any>;
     getVariable(instId: string, varName: string): Promise<any>;

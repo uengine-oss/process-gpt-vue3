@@ -125,13 +125,18 @@
                 >검색</v-btn>
             </v-row>
             
-            <v-data-table
+            <v-data-table-server
                 v-model:search="search"
                 :items="instanceList"
                 :headers="headers"
-                :items-per-page="10"
+                :items-per-page="itemsPerPage"
+                :items-per-page-options="[10, 20, 30, 40, 50, -1]"
+                itemsPerPageText="페이지 수"
+                :items-length="totalElements"
                 style="height:calc(100% - 100px); overflow: auto;"
                 no-data-text="검색 결과가 없습니다."
+                @update:page="handlePageUpdate"
+                @update:items-per-page="updateItemsPerPage"
             >
                 <template v-slot:item.name="{ item }">
                     <div>{{ item.instName }}</div>
@@ -177,7 +182,7 @@
                 <template v-slot:item.finishedDate="{ item }">
                     <div>{{ formatDate(item.finishedDate) }}</div>
                 </template>
-            </v-data-table>
+            </v-data-table-server>
         </v-card>
     </div>
 </template>
@@ -197,6 +202,9 @@ export default {
         instanceList: [],
         search: '',
         headers: [],
+        itemsPerPage: 10,
+        currentPage: 0,
+        totalElements: 0,  // totalElements 초기값 설정
         filters: {
             instName: null,
             status: null,
@@ -276,6 +284,15 @@ export default {
         viewDetail(item) {
             this.$router.push({ name: 'Admin Detail', params: { id: item.instId } });
         },
+        handlePageUpdate(page) {
+            this.currentPage = page - 1; // 페이지 번호를 0부터 시작하도록 조정
+            this.getFilteredInstanceList(this.currentPage);
+        },
+        updateItemsPerPage(size) {
+            this.itemsPerPage = size === -1 ? this.totalElements : size;
+            this.currentPage = 0;
+            this.getFilteredInstanceList(this.currentPage);
+        },
         async getFilteredInstanceList(page) {
             let me = this;
             const filters = {
@@ -283,16 +300,14 @@ export default {
                 startedDate: me.formattedStartDate,
                 finishedDate: me.formattedFinishedDate
             };
-            console.log('Filters:', filters);  // 콘솔 로그 추가
-            await backend.getFilteredInstanceList(filters, page).then((response) => {
-                console.log(response);
-                let result = [];
-                response.forEach((item) => {
-                    result.push(item);
-                });
-                me.instanceList = result;
+            await backend.getFilteredInstanceList(filters, page, me.itemsPerPage).then((response) => {
+                if (response) {
+                    me.instanceList = response.instances;
+                    me.totalElements = response.totalElements;
+                    me.currentPage = response.currentPage; // 현재 페이지 설정
+                }
             });
-        }
+        },
     }
 };
 </script>
