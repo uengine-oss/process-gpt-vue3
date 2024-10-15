@@ -30,7 +30,7 @@
                         v-on:selectedExecutionScope="(scope) => (selectedExecutionScope = scope)"
                         v-on:openDefinition="(ele) => openSubProcess(ele)"
                         v-on:openPanel="(id) => openPanel(id)"
-                        v-on:rollback="(id) => rollback(id)"
+                        v-on:rollback="(id) => showRollbackDialog(true, id)"
                         style="height: 100%"
                     ></BpmnUengine>
                     <div v-else>{{ $t('adminDetail.noProcessDefinition') }}</div>
@@ -140,6 +140,20 @@
                             </v-data-table>
                         </v-window-item>
                     </v-window>
+
+                    <v-dialog v-model="rollbackDialog" width="500" style="z-index: 9999;" :key="rollbackElement">
+                        <v-card class="pa-4">
+                            <v-card-title>되돌리기</v-card-title>
+                            <v-card-text>
+                                <div>"{{ rollbackElementName }}"으로 되돌리시겠습니까?</div>
+                            </v-card-text>
+                            <v-card-actions>
+                                <v-spacer></v-spacer>
+                                <v-btn color="primary" @click="rollback(rollbackElement)">실행</v-btn>
+                                <v-btn color="error" @click="showRollbackDialog(false, null)">닫기</v-btn>
+                            </v-card-actions>
+                        </v-card>
+                    </v-dialog>
                 </v-col>
             </v-row>
         </v-card>
@@ -178,7 +192,9 @@ export default {
         currentActivities: [],
         activityVariables: {},
         selectedExecutionScope: null,
-        taskStatus:{}
+        taskStatus:{},
+        rollbackDialog: false,
+        rollbackElement: null
     }),
     async created() {
         await this.init();
@@ -203,7 +219,14 @@ export default {
             },
         ];
     },
-    computed: {},
+    computed: {
+        rollbackElementName(){
+            if(this.rollbackElement){
+                return this.rollbackElement.businessObject ? this.rollbackElement.businessObject.name : '';
+            }
+            return null;
+        }
+    },
     watch: {
         processDefinition() {
         },
@@ -293,6 +316,10 @@ export default {
         //         }
         //     }
         // },
+        showRollbackDialog(isOpen, ele){
+            this.rollbackDialog = isOpen
+            this.rollbackElement = ele;
+        },
         async rollback(ele) {
             let me = this;
             console.log(ele);
