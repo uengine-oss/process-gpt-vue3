@@ -355,7 +355,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getAllInstanceList(page: any) {
+    async getAllInstanceList(page: any, size: any) {
         try {
             const list = await storage.list('bpm_proc_inst');
             return list;
@@ -960,6 +960,11 @@ class ProcessGPTBackend implements Backend {
             //@ts-ignore
             throw new Error(error.message);
         }
+    }
+
+    async getFilteredInstanceList(filters: object, page: number) {
+        //TODO: 인스턴스 목록 관리자 페이지 필터 결과
+        return null
     }
 
     
