@@ -517,10 +517,11 @@ class UEngineBackend implements Backend {
         }));
     }
     
-    // Running Instance API
-    async getFilteredInstanceList(filters: object, page: number) {
+    // 관리자 페이지 필터링 관련  API
+    async getFilteredInstanceList(filters: object, page: number, size: number) {
         const queryParams = new URLSearchParams();
         queryParams.append('page', page.toString());
+        queryParams.append('size', size.toString()); // size 추가
     
         Object.entries(filters).forEach(([key, value]) => {
             if (value !== undefined && value !== null && value !== '') {
@@ -532,16 +533,21 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.get(request);
         if (!response.data) return null;
         if (!response.data._embedded) return null;
-        return response.data._embedded.instances.map((inst: any) => ({
-            instId: inst.rootInstId,
-            instName: inst.name,
-            status: inst.status,
-            startedDate: inst.startedDate,
-            finishedDate: inst.finishedDate,
-            defId: inst.defId,
-            initEp: inst.initEp,
-            subProcess: inst.subProcess
-        }));
+        return {
+            instances: response.data._embedded.instances.map((inst: any) => ({
+                instId: inst.rootInstId,
+                instName: inst.name,
+                status: inst.status,
+                startedDate: inst.startedDate,
+                finishedDate: inst.finishedDate,
+                defId: inst.defId,
+                initEp: inst.initEp,
+                subProcess: inst.subProcess
+            })),
+            totalElements: response.data.page.totalElements, // totalElements 반환
+            totalPages: response.data.page.totalPages,  // totalPages 반환
+            currentPage: response.data.page.number      // currentPage 반환
+        };
     }
 
     // Complate Instance API
