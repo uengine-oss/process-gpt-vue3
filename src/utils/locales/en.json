@@ -89,7 +89,10 @@
         "finishedDate": "Finished Date",
         "initiator": "Initiator",
         "subProcess": "SubProcess",
-        "actions": "Actions"
+        "actions": "Actions",
+        "search": "Search",
+        "itemsPerPageText": "Items per page",
+        "noSearch": "No search results found."
     },
     "adminDetail": {
         "processVariables": "Process Variables",
@@ -635,5 +638,22 @@
         "saveFileName": "File name to be saved",
         "downloadDefinitionList": "Download definition list",
         "save": "Save"
+    },
+    "ProfitExpanse": {
+        "processExecutionPerformance": "Process Execution Performance",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "toDo": "To Do",
+        "inProcess": "In Progress",
+        "done": "Completed",
+        "all": "All",
+        "typeSelection": "Type Selection",
+        "taskId": "Task ID"
+    },
+    "InstanceCard": {
+        "progress": "Progress",
+        "workItem": "Work Item",
+        "workHistory": "Work History",
+        "ganttChart": "Gantt Chart"
     }
 }

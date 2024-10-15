@@ -1,17 +1,17 @@
 <template>
     <div>
-        <v-card elevation="10" style="height:83vh" class="pa-4">
+        <v-card elevation="10" style="height:83vh;" class="pa-2">
             <v-row class="ma-0 pa-0 pt-2 pt-b2 delete-input-details">
                 <v-card-title>{{ $t('admin.instanceList') }}</v-card-title>
                 <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5 ">
                     <Icons :icon="'magnifer-linear'" :size="22" />
                     <v-text-field
                         v-model="filters.name"
-                        label="이름"
+                        :label="$t('admin.name')"
                         variant="plain"
                         density="compact"
                         class="position-relative pt-0 ml-3 custom-placeholer-color admin-filter-font-size"
-                        placeholder="이름"
+                        :placeholder="$t('admin.name')"
                         single-line
                         hide-details
                         style="max-width: 100px;"
@@ -21,11 +21,11 @@
                     <Icons :icon="'magnifer-linear'" :size="22" />
                     <v-text-field
                         v-model="filters.initEp"
-                        label="요청자"
+                        :label="$t('admin.initiator')"
                         variant="plain"
                         density="compact"
                         class="position-relative pt-0 ml-3 custom-placeholer-color admin-filter-font-size"
-                        placeholder="요청자"
+                        :placeholder="$t('admin.initiator')"
                         single-line
                         hide-details
                     ></v-text-field>
@@ -35,7 +35,7 @@
                 <v-select
                     v-model="filters.subProcess"
                     :items="subProcessOptions"
-                    label="서브 프로세스"
+                    :label="$t('admin.subProcess')"
                     variant="underlined"
                     class="ml-3"
                     style="max-width: 160px;"
@@ -47,7 +47,7 @@
                 <v-select
                     v-model="filters.status"
                     :items="statusOptions"
-                    label="상태"
+                    :label="$t('admin.status')"
                     variant="underlined"
                     class="ml-3"
                     style="max-width: 160px;"
@@ -59,7 +59,7 @@
                 <v-text-field
                     @click="toggleStartDateMenu"
                     v-model="formattedStartDate"
-                    label="시작일"
+                    :label="$t('admin.startedDate')"
                     readonly
                     class="ml-3 no-border admin-calendar-label"
                     prepend-inner-icon="mdi-calendar"
@@ -90,7 +90,7 @@
                 <v-text-field
                     @click="toggleFinishedDateMenu"
                     v-model="formattedFinishedDate"
-                    label="종료일"
+                    :label="$t('admin.finishedDate')"
                     readonly
                     class="ml-3 no-border admin-calendar-label"
                     prepend-inner-icon="mdi-calendar"
@@ -122,7 +122,7 @@
                     class="ml-4 mt-2"
                     rounded
                     color="primary"
-                >검색</v-btn>
+                >{{ $t('admin.search') }}</v-btn>
             </v-row>
             
             <v-data-table-server
@@ -131,10 +131,10 @@
                 :headers="headers"
                 :items-per-page="itemsPerPage"
                 :items-per-page-options="[10, 20, 30, 40, 50, -1]"
-                itemsPerPageText="페이지 수"
+                :itemsPerPageText="$t('admin.itemsPerPageText')"
                 :items-length="totalElements"
                 style="height:calc(100% - 100px); overflow: auto;"
-                no-data-text="검색 결과가 없습니다."
+                :no-data-text="$t('admin.noSearch')"
                 @update:page="handlePageUpdate"
                 @update:items-per-page="updateItemsPerPage"
             >

@@ -1,6 +1,6 @@
 <template>
     <v-card elevation="10" v-if="currentComponent" :key="updatedKey">
-        <div class="px-3 py-3 pb-2 align-center">
+        <div class="px-3 py-3 pb-4 align-center">
             <div class="d-flex">
                 <h5 class="text-h5 font-weight-semibold">
                     {{ activityName }}
