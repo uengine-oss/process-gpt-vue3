@@ -1991,7 +1991,11 @@ export default {
 
                 const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
                 const result = await parser.parseStringPromise(xmlString);
-                var processDefinitionId = 'Unknown';
+                let processDefinitionId = 'Unknown';
+                let definitionName = null;
+                let version = null;
+                let shortDescription = null;
+
                 if(this.fullPath) {
                     processDefinitionId = this.fullPath;
                 } else {
@@ -2072,12 +2076,20 @@ export default {
                             }))
                             : [];
                     data = data.concat(dataTmp);
-                    instanceNamePattern = process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] && process['bpmn:extensionElements']['uengine:properties']['uengine:json'] ? JSON.parse(process['bpmn:extensionElements']['uengine:properties']['uengine:json']).instanceNamePattern : null;
+                    let processJson = process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] && process['bpmn:extensionElements']['uengine:properties']['uengine:json'] ? JSON.parse(process['bpmn:extensionElements']['uengine:properties']['uengine:json']) : null;
+                    if(processJson){
+                        instanceNamePattern = processJson.instanceNamePattern ? processJson.instanceNamePattern : null;
+                        definitionName = processJson.definitionName ? processJson.definitionName : null;
+                        version = processJson.version ? processJson.version : null;
+                        shortDescription = processJson.shortDescription ? processJson.shortDescription : null;         
+                    }
                 }
 
                 const jsonData = {
-                    processDefinitionName: processDefinitionId,
+                    processDefinitionName: definitionName,
                     processDefinitionId: processDefinitionId,
+                    version: version,
+                    shortDescription: shortDescription,
                     description: 'process.description',
                     data: data,
                     roles: lanes.map((lane) => ({
