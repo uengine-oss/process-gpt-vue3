@@ -283,7 +283,7 @@
         "step3-3": "STEP 3. DataBase 연결",
         "step3-3-text": "1. Settings 메뉴리스트중 Database 메뉴를 선택합니다.<br>2. Connection parameters 섹션에서 Host, Database name, Port, User 값을 복사하여 아래의 각 입력창에 붙혀넣습니다.",
         "step4": "STEP 1. 사용할 회사명 입력하기",
-        "step4-text": "1. 사용할 회사명을 아래의 ID 입력창에 입력하고 생성하기 버튼을 클릭해서 회사를 생성합니다.<br>입력한 회사명은 서브도메인으로 사용됩니다.<br>e.g. { 입력한 회사명 }.process-gpt.io",
+        "step4-text": "1. 사용할 회사명을 아래의 ID 입력창에 입력하고 생성하기 버튼을 클릭해서 회사를 생성합니다.<br>입력한 회사명은 서브도메인으로 사용됩니다.<br>e.g. 입력한 회사명.process-gpt.io",
         "step5": "STEP 5. Supabase Site URL 설정하기",
         "step5-text": "1. 왼쪽 메뉴 중 자물쇠 아이콘(Authentication) 메뉴를 선택합니다.<br>2. URL Configuration을 클릭합니다.<br>3. 아래 보이는 STEP 4에서 입력한 회사명이 포함된 Site URL을 복사 버튼을 눌러 복사 후 복사하여 Site URL 입력란에 입력합니다.<br>4. save 버튼을 눌러 저장합니다."
     },
