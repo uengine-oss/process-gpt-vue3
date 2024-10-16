@@ -80,17 +80,6 @@
                                     </template>
                                     <span>{{ $t('chat.history') }}</span>
                                 </v-tooltip>
-                        
-                                <!-- xml보기 아이콘 -->
-                                <v-tooltip location="bottom">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                            density="comfortable" @click="showXmlMode">
-                                            <Icons :icon="'code-xml'" :color="isXmlMode ? '#1976D2' : '#666666'"/>
-                                        </v-btn>
-                                    </template>
-                                    <span>{{ isXmlMode ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>
-                                </v-tooltip>
                             </div>
                         </div>
                 
@@ -107,6 +96,17 @@
                             </v-tooltip>
                         </div>
 
+                         <!-- xml보기 아이콘 -->
+                         <v-tooltip location="bottom">
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
+                                    density="comfortable" @click="showXmlMode">
+                                    <Icons :icon="'code-xml'" :color="isXmlMode ? '#1976D2' : '#666666'"/>
+                                </v-btn>
+                            </template>
+                            <span>{{ isXmlMode ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>
+                        </v-tooltip>
+                        
                         <!-- 시뮬레이션 아이콘 -->
                         <v-tooltip location="bottom" :text="$t('processDefinition.simulate')">
                             <template v-slot:activator="{ props }">

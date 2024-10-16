@@ -7,7 +7,7 @@
                     <v-progress-circular v-if="loading" color="primary" :size="25" indeterminate
                         style="margin-left: 5px;"></v-progress-circular>
                     <div v-if="currentVersionMessage" class="text-body-1 mt-1">
-                        {{ currentVersionMessage }}
+                        설명: {{ currentVersionMessage }}
                     </div>
                 </div>
                 <v-btn icon class="ml-auto" variant="text" @click="close" density="compact">
@@ -70,10 +70,12 @@ import { Icon } from '@iconify/vue';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
+import ProcessDefinitionModule from '@/components/ProcessDefinitionModule.vue';
 
 // import 'vue-diff/dist/index.css';
 export default {
     name: 'ProcessDefinitionVersionManager',
+    mixins: [ProcessDefinitionModule],
     components: {
         Icon,
         ProcessDefinition,
@@ -94,6 +96,7 @@ export default {
         currentIndex: 0,
         lists: [],
         loading: false,
+        currentInfo: null,
     }),
     computed: {
         beforeXML() {
@@ -109,20 +112,20 @@ export default {
             return null;
         },
         currentVersionName() {
-            if (this.lists.length > 0 && this.lists[this.currentIndex]) {
-                return this.lists[this.currentIndex].name
+            if (this.currentInfo) {
+                return this.currentInfo.processDefinitionName
             }
             return null;
         },
         currentVersion() {
-            if (this.lists.length > 0 && this.lists[this.currentIndex]) {
-                return this.lists[this.currentIndex].version
+            if (this.currentInfo) {
+                return this.currentInfo.version
             }
             return null;
         },
         currentVersionMessage() {
-            if (this.lists.length > 0 && this.lists[this.currentIndex]) {
-                return this.lists[this.currentIndex].message
+            if (this.currentInfo && this.currentInfo.shortDescription) {
+                return this.currentInfo.shortDescription.text
             }
             return null;
         },
@@ -188,10 +191,12 @@ export default {
                 type: me.type,
                 match: { 'version': version }
             });
-            if (result[0]) {
-                return result[0].snapshot
+            let xml = null;
+            if(result){
+                xml = result[0].snapshot
+                me.currentInfo = await me.convertXMLToJSON(xml);
             }
-            return null
+            return xml;
         },
         copyToClipboard(text) {
             if (navigator.clipboard) { // 최신 브라우저 API 지원 여부 확인

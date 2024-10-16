@@ -334,7 +334,7 @@ export default {
                 .backToHere(this.instanceId, id)
                 .then((response) => {
                     me.init();
-                    alert('rollback success');
+                    me.showRollbackDialog(false, null);
                 })
                 .catch((error) => {
                     alert(error);
