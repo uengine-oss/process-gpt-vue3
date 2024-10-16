@@ -98,6 +98,7 @@ export default {
         },
         userDialog: false,
         newUserList: [],
+        organizationChartId: null,
     }),
     async created() {
         await this.init();
@@ -131,8 +132,9 @@ export default {
             return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
         },
         async loadData(path) {
-            const data = await this.getData(`configuration/organization`, {key: 'key'});
+            const data = await this.getData(`configuration`, { match: { key: 'organization' } });
             if (data && data.value) {
+                this.organizationChartId = data.uuid;
                 if (data.value.chart) {
                     this.organizationChart = data.value.chart;
                     if (!this.organizationChart) {
@@ -212,19 +214,22 @@ export default {
                 } else if (unknown && unknown.deleteUsers) {
                     this.deleteUser(unknown.deleteUsers);
                 } else {
-                    const putObj =  {
+                    var putObj =  {
                         key: 'organization',
                         value: {
                             chart: this.organizationChart,
-                        }
+                        },
                     };
                     this.drawChart(this.organizationChart);
-                    this.putObject("configuration", putObj);
+                    if (this.organizationChartId) {
+                        putObj.uuid = this.organizationChartId;
+                    }
+                    await this.putObject("configuration", putObj);
                 }
             }
 
             const newMessage = this.messages[this.messages.length - 1];
-            const putObj =  {
+            var putObj =  {
                 id: 'organization_chart_chat',
                 uuid: this.uuid(),
                 messages: newMessage,
@@ -278,12 +283,15 @@ export default {
             }
         },
         async updateNode() {
-            const putObj =  {
+            var putObj =  {
                 key: 'organization',
                 value: {
                     chart: this.organizationChart,
                 }
             };
+            if (this.organizationChartId) {
+                putObj.uuid = this.organizationChartId;
+            }
             await this.putObject("configuration", putObj);
         },
     }
