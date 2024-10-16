@@ -66,12 +66,15 @@ const customizer = useCustomizerStore();
                 
 
                 <!-- definition menu item -->
-                <template v-for="item in definitionItem" :key="item.title">
+                <template v-for="(item, index) in definitionItem" :key="item.title">
                     <!-- Item Sub Header -->
+                    <div v-if="item.header && index === 0"
+                        style="font-size:14px;"
+                        class="text-medium-emphasis cp-menu mt-3 ml-2"
+                    >{{ $t(item.header) }}</div>
                     <v-row v-if="item.header && !item.disable"
-                        class="pa-0 pl-2 ma-0" 
+                        class="pa-0 ma-0" 
                     >
-                        <NavGroup :item="item" :key="item.title" />
                         <template v-for="subItem in definitionItem" :key="subItem.title">
                             <v-tooltip v-if="subItem.title" location="bottom" :text="$t(subItem.title)">
                                 <template v-slot:activator="{ props }">

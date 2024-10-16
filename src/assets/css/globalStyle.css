@@ -336,11 +336,6 @@ hr {
     z-index: 1;
 }
 
-.process-definition-chat-btn-set {
-    margin-right:20px;
-    display: inline-block;
-}
-
 .test-variables-table-box tr {
     border: solid 2px black !important;
 }

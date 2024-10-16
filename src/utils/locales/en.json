@@ -110,7 +110,7 @@
     "definitionManagement": {
         "title": "Definition Management",
         "upload": "Upload definition list",
-        "release": "Download definition list"
+        "release": "Definition Export"
     },
     "systemDefinition": {
         "title": "System Definition"
@@ -636,7 +636,7 @@
     },
     "VerticalSidebar": {
         "saveFileName": "File name to be saved",
-        "downloadDefinitionList": "Download definition list",
+        "downloadDefinitionList": "Definition Export",
         "save": "Save"
     },
     "ProfitExpanse": {

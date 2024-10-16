@@ -110,7 +110,7 @@
     "definitionManagement": {
         "title": "정의 관리",
         "upload": "정의 목록 업로드",
-        "release": "정의 목록 다운로드"
+        "release": "정의 내보내기"
     },
     "systemDefinition": {
         "title": "시스템 정의"
@@ -636,7 +636,7 @@
     },
     "VerticalSidebar": {
         "saveFileName": "저장될 파일명",
-        "downloadDefinitionList": "정의 목록 다운로드",
+        "downloadDefinitionList": "정의 내보내기",
         "save": "저장"
     },
     "ProfitExpanse": {
