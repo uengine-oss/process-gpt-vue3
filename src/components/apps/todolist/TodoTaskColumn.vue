@@ -102,7 +102,7 @@ export default {
                 onFail: (e) => {
                     me.$emit('updateStatus', task.taskId, me.originColumnId);
                 },
-                successMsg: task.status == 'DONE' ? '해당 업무 완료' : null
+                successMsg: task.status == 'DONE' ? this.$t('successMsg.workCompleted') : null
             });
         },
         closeDialog(isUpdated) {

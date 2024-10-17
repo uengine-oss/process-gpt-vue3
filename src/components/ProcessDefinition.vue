@@ -644,7 +644,7 @@ export default {
                     me.EventBus.emit('instances-updated');
                     
                 },
-                successMsg: 'Process 실행 완료'
+                successMsg: this.$t('successMsg.processExecutionCompleted')
             });
         },
         addUengineVariable(val) {

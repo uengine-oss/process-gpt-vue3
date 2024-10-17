@@ -1,6 +1,6 @@
 <template>
     <v-card style="width: 100%; height: 100%">
-        <v-card-title> Process 실행 </v-card-title>
+        <v-card-title> {{ $t('successMsg.runningTheProcess') }} </v-card-title>
 
         <v-card-text>
             <!-- Role Mapping Context -->
@@ -96,7 +96,7 @@ export default {
                     await me.uengine.start(command);
                     me.closeDialog();
                 },
-                successMsg: 'Process 실행 완료'
+                successMsg: this.$t('successMsg.processExecutionCompleted')
             });
         },
         uuid() {

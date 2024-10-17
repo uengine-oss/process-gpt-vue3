@@ -1,6 +1,19 @@
 {
     "message": "en",
     "changePath": "You have unsaved changes. Are you sure you want to leave?",
+    "successMsg": {
+        "runningTheProcess": "Running the process",
+        "processExecutionCompleted": "Process execution completed",
+        "workCompleted": "Completion of work",
+        "save": "Saved successfully.",
+        "intermediate": "Intermediate save completed",
+        "delete": "Deleted successfully.",
+        "instanceDelete": "The instance has been deleted.",
+        "completed": "Completed"
+    },
+    "App": {
+        "view": "Read more"
+    },
     "mainPage": {
         "login": "login",
         "logout": "logout",
@@ -111,7 +124,7 @@
     "definitionManagement": {
         "title": "Definition Management",
         "upload": "Upload definition list",
-        "release": "Download definition list"
+        "release": "Definition Export"
     },
     "systemDefinition": {
         "title": "System Definition"
@@ -409,6 +422,8 @@
         "methodTypeDescriptionSubTitle1": "1. GET: A request to retrieve data from the server \n2. POST: A request to create and send new data to the server \n3. PUT: A request to update or replace existing data entirely \n4. PATCH: A request to partially modify existing data \n5. API URL: The endpoint URL of the server where the request will be sent\n"
     },
     "EventSynchronizationForm": {
+        "edit": "Edit",
+        "delete": "Delete",
         "dataMapping": "Data Mapping",
         "eventAttributes": "Event Attributes",
         "primaryKey": "Primary Key",
@@ -635,9 +650,19 @@
         "taskID": "Task ID: ",
         "instanceID": "Instance ID: "
     },
+    "TestVariables": {
+        "key": "Key",
+        "value": "Value",
+        "action": "Action",
+        "noData": "No Data"
+    },
+    "TestVariable": {
+        "start": "Start",
+        "delete": "Delete"
+    },
     "VerticalSidebar": {
         "saveFileName": "File name to be saved",
-        "downloadDefinitionList": "Download definition list",
+        "downloadDefinitionList": "Definition Export",
         "save": "Save"
     },
     "ProfitExpanse": {
@@ -656,5 +681,8 @@
         "workItem": "Work Item",
         "workHistory": "Work History",
         "ganttChart": "Gantt Chart"
+    },
+    "DryRunProcess": {
+        
     }
 }

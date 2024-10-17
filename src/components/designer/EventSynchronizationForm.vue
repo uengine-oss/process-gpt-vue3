@@ -78,8 +78,20 @@
                             <div style="display: flex; align-items: center; width: 20%;">
                                 <div style="width: 30px; height: 30px; place-content: center; text-align: center;"><v-icon v-if="attribute.isKey" disabled large style="color: #0085db;">mdi-key</v-icon></div>
                                 <div style="width: 30px; height: 30px; place-content: center; text-align: center;"><v-icon v-if="attribute.isCorrKey" disabled large style="color: #0085db;">mdi-link-variant</v-icon></div>
-                                <v-btn variant="text" density="comfortable" size="small" icon="mdi-lead-pencil" @click="editAttribute(attribute)"></v-btn>
-                                <v-btn variant="text" density="comfortable" size="small" icon="mdi-delete" @click="deleteAttribute(attribute)"></v-btn>
+                                <v-tooltip :text="$t('EventSynchronizationForm.edit')">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn density="compact" icon flat @click="editAttribute(attribute)" v-bind="props" style="margin-right:5px;">
+                                            <PencilIcon stroke-width="1.5" size="20" class="text-primary" />
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
+                                <v-tooltip :text="$t('EventSynchronizationForm.delete')">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn density="compact" icon flat @click="deleteAttribute(attribute)" v-bind="props">
+                                            <TrashIcon stroke-width="1.5" size="20" class="text-error" />
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
                             </div>
                         </v-row>
                     </div>

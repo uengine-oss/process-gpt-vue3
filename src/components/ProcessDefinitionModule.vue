@@ -1981,7 +1981,7 @@ export default {
                     me.loading = false;
                     me.isChanged = true;
                 },
-                successMsg: '저장되었습니다.'
+                successMsg: this.$t('successMsg.save')
             });
         },
         async convertXMLToJSON(xmlString) {

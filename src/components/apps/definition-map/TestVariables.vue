@@ -23,9 +23,9 @@
             <v-table v-if="selectedTask">
                 <thead>
                     <tr>
-                        <th class="text-left">키값</th>
-                        <th class="text-left">밸류</th>
-                        <th class="text-left">작업</th>
+                        <th class="text-left">{{ $t('TestVariables.key') }}</th>
+                        <th class="text-left">{{ $t('TestVariables.value') }}</th>
+                        <th class="text-left">{{ $t('TestVariables.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -33,7 +33,7 @@
                 </tbody>
             </v-table>
             <v-card-text v-else class="pa-0">
-                No Data
+                {{ $t('TestVariables.noData') }}
             </v-card-text>
         </div>
         <!-- <v-card-actions class="justify-center" v-if="tool == 'DefaultWorkItem'">
