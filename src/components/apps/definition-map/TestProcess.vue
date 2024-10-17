@@ -199,7 +199,7 @@ export default {
                     me.taskList = taskInfo;
                     me.setTaskInfo();
                 },
-                successMsg: '해당 업무 완료'
+                successMsg: this.$t('successMsg.workCompleted')
             });
         },
         async saveForm(testData, task) {

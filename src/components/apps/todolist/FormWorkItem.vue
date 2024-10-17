@@ -177,7 +177,7 @@ export default {
                     ///////////////////////////////////
                     await backend.putWorkItem(me.$route.params.taskId, { parameterValues: {} }, me.isSimulate);
                 },
-                successMsg: '중간 저장 완료'
+                successMsg: this.$t('successMsg.intermediate')
             });
         },
         async saveForm(variables){

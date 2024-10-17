@@ -1,6 +1,19 @@
 {
     "message": "ko",
     "changePath": "저장되지 않은 변경사항이 있습니다. 이동하시겠습니까?",
+    "successMsg": {
+        "runningTheProcess": "Process 실행",
+        "processExecutionCompleted": "프로세스 실행 완료",
+        "workCompleted": "해당 업무 완료",
+        "save": "저장되었습니다.",
+        "intermediate": "중간 저장 완료",
+        "delete": "삭제되었습니다.",
+        "instanceDelete": "인스턴스가 삭제되었습니다.",
+        "completed": "실행 완료"
+    },
+    "App": {
+        "view": "자세히 보기"
+    },
     "mainPage": {
         "login": "로그인",
         "logout": "로그아웃",
@@ -408,6 +421,8 @@
         "methodTypeDescriptionSubTitle1": "1.GET : 서버로부터 데이터를 조회하는 요청 \n2.POST : 서버에 새 데이터를 생성하여 전송하는 요청 \n3.PUT : 기존 데이터를 업데이트하거나 전체를 대체하는 요청 \n4.PATCH : 기존 데이터의 일부를 수정하는 요청 \n5.API URL : 요청이 전송될 서버의 엔드포인트 주소\n"
     },
     "EventSynchronizationForm": {
+        "edit": "수정",
+        "delete": "삭제",
         "dataMapping": "데이터 매핑",
         "eventAttributes": "속성",
         "primaryKey": "고유 키",
@@ -634,6 +649,16 @@
         "taskID": "작업 ID: ",
         "instanceID": "인스턴스 ID: "
     },
+    "TestVariables": {
+        "key": "키값",
+        "value": "밸류",
+        "action": "작업",
+        "noData": "데이터가 없습니다."
+    },
+    "TestVariable": {
+        "start": "실행",
+        "delete": "삭제"
+    },
     "VerticalSidebar": {
         "saveFileName": "저장될 파일명",
         "downloadDefinitionList": "정의 내보내기",
@@ -655,5 +680,8 @@
         "workItem": "워크 아이템",
         "workHistory": "워크 히스토리",
         "ganttChart": "칸트 차트"
+    },
+    "DryRunProcess": {
+        
     }
 }

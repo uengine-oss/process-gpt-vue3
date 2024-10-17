@@ -165,7 +165,7 @@ export default {
                         me.$router.push(`/instancelist/${route}`);
                     }
                 },
-                successMsg: '해당 업무 완료'
+                successMsg: this.$t('successMsg.workCompleted')
             });
         },
         executeProcess() {
@@ -199,7 +199,7 @@ export default {
                         });
                     }
                 },
-                successMsg: '중간 저장 완료'
+                successMsg: this.$t('successMsg.intermediate')
             });
         }
     }

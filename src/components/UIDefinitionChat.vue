@@ -330,7 +330,7 @@ export default {
                         html: DynamicFormHTML
                     });
                 },
-                successMsg: '저장되었습니다.'
+                successMsg: this.$t('successMsg.save')
             });
         },
 
@@ -1091,7 +1091,7 @@ export default {
                     await this.$router.push('/ui-definitions/chat');
                     window.location.reload();
                 },
-                successMsg: '삭제되었습니다.'
+                successMsg: this.$t('successMsg.delete')
             });
         }
     },

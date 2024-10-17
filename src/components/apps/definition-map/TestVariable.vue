@@ -10,7 +10,7 @@
                         color="primary"
                         rounded
                         density="comfortable"
-                    >실행</v-btn>
+                    >{{ $t('TestVariable.start') }}</v-btn>
                 </td>
             </template>
         </tr>
@@ -31,18 +31,20 @@
             </td>
             <!-- 실행 버튼을 마지막에 추가 -->
             <td>
-                <v-btn @click="executeProcess"
-                    class="cp-process-save"
-                    color="primary"
-                    rounded
-                    density="comfortable"
-                >실행</v-btn>
-                <v-btn @click="deleteTest"
-                    class="cp-process-save"
-                    color="error"
-                    rounded
-                    density="comfortable"
-                >삭제</v-btn>
+                <v-tooltip :text="$t('TestVariable.start')">
+                    <template v-slot:activator="{ props }">
+                        <v-btn density="compact" icon flat @click="executeProcess" v-bind="props" style="margin-right:5px;">
+                            <Icons :icon="'play-outline'" :size="17" stroke-width="1.5" :color="'rgb(var(--v-theme-primary))'" />
+                        </v-btn>
+                    </template>
+                </v-tooltip>
+                <v-tooltip :text="$t('TestVariable.delete')">
+                    <template v-slot:activator="{ props }">
+                        <v-btn density="compact" icon flat @click="deleteTest" v-bind="props">
+                            <TrashIcon stroke-width="1.5" size="20" class="text-error" />
+                        </v-btn>
+                    </template>
+                </v-tooltip>
             </td>
         </tr>
     </template>

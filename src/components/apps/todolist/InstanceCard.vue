@@ -146,7 +146,7 @@ export default {
                     me.EventBus.emit('instances-updated');
                     me.$router.push("/todolist");
                 },
-                successMsg: '인스턴스가 삭제되었습니다.',
+                successMsg: this.$t('successMsg.instanceDelete')
             });
         }
     }
