@@ -25,14 +25,11 @@ export default class StorageBaseSupabase {
                 });
 
                 if (sessionError) {
-                    console.error('Error setting session:', sessionError);
-                    // Attempt to refresh the session
                     const { data: refreshData, error: refreshError } = await window.$supabase.auth.refreshSession();
                     if (refreshError) {
                         console.error('Error refreshing session:', refreshError);
                         return false;
                     }
-                    // Update cookies and local storage with new tokens
                     if (window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1')) {
                         document.cookie = `access_token=${refreshData.session.access_token}; path=/; SameSite=Lax`;
                         document.cookie = `refresh_token=${refreshData.session.refresh_token}; path=/; SameSite=Lax`;
@@ -299,32 +296,37 @@ export default class StorageBaseSupabase {
 
     async getUserInfo() {
         try {
-            await this.isConnection();
-            const userData = await window.$supabase.auth.getUser();
-            if (userData.error) {
-                throw new StorageBaseError('error in getUserInfo', userData.error, arguments);
-            } else if (userData.data.user) {
-                const uid = userData.data.user.id;
-                var { data, error } = await window.$supabase.from('users').select().eq('id', uid).maybeSingle();
-                if (!error && data) {
-                    return {
-                        email: data.email,
-                        name: data.username,
-                        profile: data.profile,
-                        uid: data.id,
-                        role: data.role,
-                        tenants: data.tenants,
-                        current_tenant: data.current_tenant
+            if (await this.isConnection()) {
+                const userData = await window.$supabase.auth.getUser();
+                if (userData.error) {
+                    throw new StorageBaseError('error in getUserInfo', userData.error, arguments);
+                } else if (userData.data.user) {
+                    const uid = userData.data.user.id;
+                    var { data, error } = await window.$supabase.from('users').select().eq('id', uid).maybeSingle();
+                    if (!error && data) {
+                        return {
+                            email: data.email,
+                            name: data.username,
+                            profile: data.profile,
+                            uid: data.id,
+                            role: data.role,
+                            tenants: data.tenants,
+                            current_tenant: data.current_tenant
+                        }
+                    } else if (error) {
+                        throw new StorageBaseError('error in getUserInfo', error, arguments);
                     }
-                } else if (error) {
-                    throw new StorageBaseError('error in getUserInfo', error, arguments);
                 }
             } else {
                 alert('로그인이 필요합니다');
                 window.location.href = '/auth/login';
-                throw new StorageBaseError('error in getUserInfo', userData.error, arguments);
             }
         } catch(e) {
+            if (e instanceof StorageBaseError && e.cause) {
+                console.error('Error in getUserInfo:', e.cause);
+            } else {
+                console.error('Unexpected error in getUserInfo:', e);
+            }
             throw new StorageBaseError('error in getUserInfo', e, arguments);
         }
     }
@@ -346,12 +348,15 @@ export default class StorageBaseSupabase {
         }
     }
 
-    async updateUser(new_password) {
+    async updateUser(value) {
         try {
-            const result = await window.$supabase.auth.updateUser({
-                password: new_password
-            });
-            return result;
+            const user = await this.getUserInfo();
+            if (user) {
+                const result = await window.$supabase.auth.admin.updateUserById(user.uid, value);
+                return result;    
+            } else {
+                throw new StorageBaseError('error in updateUser', 'user not found', arguments);
+            }
         } catch (e) {
             throw new StorageBaseError('error in updateUser', e, arguments);
         } 

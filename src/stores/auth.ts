@@ -89,9 +89,9 @@ export const useAuthStore = defineStore({
                 console.log(e);
             }
         },
-        async updatePassword(email: string, password: string) {
+        async updatePassword(password: string) {
             try {
-                var result: any = await storage?.updateUser(password);
+                var result: any = await storage?.updateUser({ password: password });
                 if (!result.error) {
                     alert('비밀번호가 변경되었습니다.');
                     router.push('/auth/login');

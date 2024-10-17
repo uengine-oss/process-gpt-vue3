@@ -1223,7 +1223,17 @@ class ProcessGPTBackend implements Backend {
             if (value.type === 'update') {
                 value.user.current_tenant = window.$tenantName;
                 await storage.putObject('users', value.user);
-                await storage.writeUserData(value);
+                const user: any = await this.getUserInfo();
+                if (user && value.user.id === user.uid) {
+                    const userInfo = {
+                        email: value.user.email,
+                        user_metadata: {
+                            name: value.user.username
+                        }
+                    }
+                    await storage.updateUser(userInfo);
+                    await storage.writeUserData(value);
+                }
             } else if (value.type === 'delete') {
                 await storage.delete('users', { match: { id: value.user.id } });
             }

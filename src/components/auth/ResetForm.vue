@@ -22,7 +22,7 @@ function resetPassword() {
 }
 
 function updatePassword() {
-    authStore.updatePassword(email.value, password.value);
+    authStore.updatePassword(password.value);
 }
 </script>
 
