@@ -53,7 +53,8 @@
         "description": "Description",
         "color": "Color",
         "save": "Save",
-        "delete": "Delete"
+        "delete": "Delete",
+        "newEventTitle": "Please enter a new title for your event"
     },
     "chats": {
         "title": "Chats"
