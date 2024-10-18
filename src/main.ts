@@ -115,16 +115,6 @@ async function setupSupabase() {
             writable: false,
             configurable: false
         });
-        Object.defineProperty(window, '$isTenantServer', {
-            value: false,
-            writable: false,
-            configurable: true
-        });
-        Object.defineProperty(window, '$tenantName', {
-            value: 'localhost',
-            writable: false,
-            configurable: false
-        });
     } else {
         Object.defineProperty(window, '$supabase', {
             value: createClient(
@@ -140,25 +130,6 @@ async function setupSupabase() {
             writable: false,
             configurable: false
         });
-        const subdomain = window.location.host.split('.')[0];
-        if(subdomain == 'www' || subdomain == 'process-gpt'){
-            Object.defineProperty(window, '$isTenantServer', {
-                value: true,
-                writable: false,
-                configurable: true
-            });
-        } else {
-            Object.defineProperty(window, '$isTenantServer', {
-                value: false,
-                writable: false,
-                configurable: true
-            });
-            Object.defineProperty(window, '$tenantName', {
-                value: subdomain,
-                writable: false,
-                configurable: false
-            });
-        }
     }
 }
 
