@@ -11,13 +11,14 @@
                 </div> -->
 
                 <v-card-title class="pa-0">{{ $t('EventSynchronizationForm.eventAttributes') }}</v-card-title>
-                <draggable v-model="attributes" :options="dragOptions" class="mb-6" style="max-height:200px; overflow:auto;">
+                <draggable v-model="attributes" :options="dragOptions" class="mb-6 pt-2" style="max-height:200px; overflow:auto;">
                     <div v-for="(attribute, idx) in attributes" :key="idx">
                         <div v-if="attribute.isEdit" style="display: flex; align-items: center; height: 10%;">
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props"
-                                        icon variant="text" 
+                                        icon variant="text"
+                                        density="comfortable"
                                         type="file"
                                         class="text-medium-emphasis"
                                         @click="setPrimaryKey(attribute)"
@@ -30,7 +31,8 @@
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props"
-                                        icon variant="text" 
+                                        icon variant="text"
+                                        density="comfortable"
                                         type="file"
                                         class="text-medium-emphasis"
                                         @click="setCorrKey(attribute)"
@@ -40,7 +42,7 @@
                                 </template>
                                 <span>{{ $t('EventSynchronizationForm.correlationKey') }}</span>
                             </v-tooltip>
-                            <v-select class="delete-input-details"
+                            <v-select class="delete-input-details pr-4"
                                     style="width: 30px" 
                                     v-model="attribute.className" 
                                     :items="entityTypeList"
@@ -57,7 +59,7 @@
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props"
                                         icon variant="text" 
-                                        size="small"
+                                        class="text-medium-emphasis"
                                         @click="saveAttribute(attribute)"
                                     >
                                         <v-icon>mdi-content-save</v-icon>
@@ -127,7 +129,7 @@
                             </template>
                             <span>{{$t('EventSynchronizationForm.correlationKey')}}</span>
                         </v-tooltip>
-                        <v-select class="delete-input-details" 
+                        <v-select class="delete-input-details pr-4" 
                                 style="width: 30px" 
                                 v-model="newAttribute.className" 
                                 :items="entityTypeList"

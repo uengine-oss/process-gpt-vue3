@@ -115,7 +115,9 @@
         "value": "값",
         "tools": "작업",
         "edit": "수정",
-        "save": "저장"
+        "save": "저장",
+        "rollback": "되돌리기",
+        "rollbackMessage": "으로 되돌리시겠습니까?"
     },
     "completeInstance": {
         "title": "종료된 인스턴스"
@@ -682,6 +684,6 @@
         "ganttChart": "칸트 차트"
     },
     "DryRunProcess": {
-        
+        "notFound": "워크아이템을 찾을 수 없습니다."
     }
 }

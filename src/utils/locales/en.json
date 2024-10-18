@@ -115,7 +115,9 @@
         "value": "Value",
         "tools": "Tools",
         "edit": "Edit",
-        "save": "Save"
+        "save": "Save",
+        "rollback": "Rollback",
+        "rollbackMessage": "Do you want to roll back to this point?"
     },
     "completeInstance": {
         "title": "Complete Instance"
@@ -682,6 +684,6 @@
         "ganttChart": "Gantt Chart"
     },
     "DryRunProcess": {
-        
+        "notFound": "Work item not found."
     }
 }

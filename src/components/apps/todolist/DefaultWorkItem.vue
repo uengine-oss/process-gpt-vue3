@@ -1,5 +1,5 @@
 <template>
-    <v-row v-if="!isCompleted" class="ma-0 pa-0 task-btn" style="right: 50px">
+    <v-row v-if="!isCompleted" class="ma-0 pa-0 task-btn" style="right: 10px">
         <v-spacer></v-spacer>
         <v-btn v-if="!isDryRun" @click="intermediateSave" color="primary" rounded class="mr-1">중간 저장</v-btn>
         <v-btn @click="executeProcess" color="primary" rounded>완료</v-btn>

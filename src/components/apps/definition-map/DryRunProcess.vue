@@ -16,7 +16,7 @@
                 </v-row>
             </div>
             <div v-else>
-                Not Found...
+                {{ $t('DryRunProcess.notFound') }}
             </div>
         </v-card-text>
 

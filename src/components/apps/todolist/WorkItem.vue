@@ -33,7 +33,8 @@
                         @executeProcess="executeProcess"
                         :is-simulate="isSimulate"
                     ></component>
-                    <v-tooltip :text="$t('processDefinition.zoom')">
+                    <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
+                    <!-- <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
                             <v-btn
                                 @click="$globalState.methods.toggleZoom()"
@@ -42,7 +43,6 @@
                                 v-bind="props"
                                 class="processVariables-zoom task-btn"
                             >
-                                <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
                                 <Icons
                                     :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
                                     :width="32"
@@ -50,7 +50,7 @@
                                 />
                             </v-btn>
                         </template>
-                    </v-tooltip>
+                    </v-tooltip> -->
                 </div>
             </v-col>
             <!-- Right -->
