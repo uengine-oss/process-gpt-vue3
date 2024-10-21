@@ -36,7 +36,7 @@
                                 <LockIcon width="24" height="24" />
                             </v-btn>
                         </template>
-                        <span>{{ $t('processDefinitionMap.lock') }}</span>
+                        <span>{{ $t('processDefinitionMap.unlock') }}</span>
                     </v-tooltip>
 
                     <v-tooltip location="bottom" v-if="!useLock">
@@ -49,7 +49,7 @@
                     </v-tooltip>
 
                     <span v-if="useLock && lock && userName && userName != editUser" class="ml-1">
-                        {{ editUser }} 님이 수정 중 입니다.
+                        {{ $t('processDefinitionMap.editingUser', {name: editUser}) }}
                     </span>
                     <v-tooltip :text="$t('processDefinitionMap.downloadImage')">
                         <template v-slot:activator="{ props }">
@@ -89,7 +89,8 @@
                 @click="openConsultingDialog = true, ProcessPreviewMode = false"
                 style="margin-left: 20px;" color="primary" rounded
             >
-                <Icons :icon="'magic'" :size="18"  style="margin-right: 10px;" />프로세스 컨설팅 시작하기
+                <Icons :icon="'magic'" :size="18"  style="margin-right: 10px;" />
+                {{ $t('processDefinitionMap.consultingButton') }}
             </v-btn>
         </v-card>
         <v-dialog :style="ProcessPreviewMode ? '' : 'max-width: 1000px;'" v-model="openConsultingDialog" persistent>
@@ -112,15 +113,18 @@
                 <v-card-text class="mt-2 alert-message">
                     {{ alertMessage }}
                 </v-card-text>
-                <v-card-actions class="justify-center">
+                <v-card-actions>
+                    <v-spacer></v-spacer>
                     <div v-for="(btn, index) in actionButtons" :key="index">
-                        <v-btn v-if="btn.show" :color="btn.color" :class="btn.class + (index > 0 ? ' ml-2' : '')" 
-                            variant="flat" @click="btn.action">
+                        <v-btn v-if="btn.show" 
+                            :color="btn.color" 
+                            :class="btn.class + (index > 0 ? ' ml-2' : '')" 
+                            variant="flat" @click="btn.action" rounded>
                             {{ btn.text }}
                         </v-btn>
                     </div>
-                    <v-btn color="error" variant="flat" @click="alertDialog = false" class="ml-2">
-                        {{ (userName && userName === editUser) ? '닫기' : '취소' }}
+                    <v-btn color="error" rounded variant="flat" @click="alertDialog = false" class="ml-2">
+                        {{ (userName && userName === editUser) ? $t('processDefinitionMap.close') : $t('processDefinitionMap.cancel') }}
                     </v-btn>
                 </v-card-actions>
             </v-card>
@@ -186,14 +190,14 @@ export default {
             return [
                 {
                     show: this.alertType === 'checkout',
-                    text: '확인',
+                    text: this.$t('processDefinitionMap.confirm'),
                     color: 'primary',
                     class: 'cp-check-out',
                     action: this.checkOut   // 잠금 해제
                 },
                 {
                     show: this.alertType === 'checkin' && this.userName && this.userName === this.editUser,
-                    text: '저장 후 체크인',
+                    text: this.$t('processDefinitionMap.saveCheckIn'),
                     color: 'success',
                     class: 'cp-check-in',
                     action: () => {
@@ -203,7 +207,7 @@ export default {
                 },
                 {
                     show: this.alertType === 'checkin' && this.userName && this.userName === this.editUser,
-                    text: '취소 후 체크인',
+                    text: this.$t('processDefinitionMap.cancelCheckIn'),
                     color: 'primary',
                     class: 'cp-check-in',
                     action: async () => {
@@ -213,7 +217,7 @@ export default {
                 },
                 {
                     show: this.alertType === 'checkin' && this.userName && this.userName !== this.editUser,
-                    text: '체크인',
+                    text: this.$t('processDefinitionMap.confirm'),
                     color: 'primary',
                     class: 'cp-check-in',
                     action: async () => {
@@ -223,7 +227,7 @@ export default {
                 },
                 {
                     show: this.alertType === 'download',
-                    text: '다운로드',
+                    text: this.$t('processDefinitionMap.download'),
                     color: 'primary',
                     action: this.download
                 }
@@ -289,14 +293,14 @@ export default {
             };
 
             if (res.megaProcessId === "") {
-                let uncategorizedMegaProc = this.value.mega_proc_list.find(megaProc => megaProc.name === '미분류');
+                let uncategorizedMegaProc = this.value.mega_proc_list.find(megaProc => megaProc.name === this.$t('processDefinitionMap.uncategorized'));
                 if (!uncategorizedMegaProc) {
                     uncategorizedMegaProc = {
                         id: generateUniqueMegaProcessId(),
-                        name: '미분류',
+                        name: this.$t('processDefinitionMap.uncategorized'),
                         major_proc_list: [{
                             id: "0",
-                            name: "미분류",
+                            name: this.$t('processDefinitionMap.uncategorized'),
                             sub_proc_list: []
                         }]
                     };
@@ -311,7 +315,7 @@ export default {
             if (!megaProc) {
                 megaProc = {
                     id: res.megaProcessId,
-                    name: '미분류',
+                    name: this.$t('processDefinitionMap.uncategorized'),
                     major_proc_list: []
                 };
                 this.value.mega_proc_list.push(megaProc);
@@ -321,7 +325,7 @@ export default {
             if (!majorProc) {
                 majorProc = {
                     id: res.majorProcessId,
-                    name: '미분류',
+                    name: this.$t('processDefinitionMap.uncategorized'),
                     sub_proc_list: []
                 };
                 megaProc.major_proc_list.push(majorProc);
@@ -332,9 +336,9 @@ export default {
         closeConsultingDialog(){
             let answer
             if(this.ProcessPreviewMode){
-                answer = window.confirm('저장하지 않은 정보는 모두 유실됩니다.\n저장하시려면 우측 자물쇠 버튼을 클릭하여 저장하실 수 있습니다.\n\n컨설팅을 종료하시겠습니까?');
+                answer = window.confirm(this.$t('processDefinitionMap.closeConsultingInPreview'));
             } else {
-                answer = window.confirm('저장하지 않은 정보는 모두 유실됩니다. 컨설팅을 종료하시겠습니까?');
+                answer = window.confirm(this.$t('processDefinitionMap.closeConsulting'));
             }
             if (answer) {
                 this.ProcessPreviewMode = false
@@ -364,7 +368,7 @@ export default {
                     // Set the link's href to the data URL of the PNG image
                     link.href = dataUrl;
                     // Configure the download attribute of the link
-                    link.download = 'processMap.png';
+                    link.download = 'process_definition_map.png';
                     // Append the link to the body
                     document.body.appendChild(link);
                     // Trigger the download by simulating a click on the link
@@ -418,7 +422,7 @@ export default {
             const isConnected = await backend.checkDBConnection();
             if (!isConnected) {
                 this.alertDialog = true;
-                this.alertMessage = "현재 DB 연결이 끊어졌습니다. 수정된 데이터를 다운로드하여 저장하고 관리자에게 문의주세요.";
+                this.alertMessage = this.$t('processDefinitionMap.checkInDBError');
                 this.alertType = 'download';
             } else {
                 this.lock = false;
@@ -432,7 +436,7 @@ export default {
         async checkOut() {
             const isConnected = await backend.checkDBConnection();
             if (!isConnected) {
-                alert('DB 연결이 끊어졌습니다. 관리자에게 문의해주세요.');
+                alert(this.$t('processDefinitionMap.checkOutDBError'));
             } else {
                 this.lock = true;
                 this.enableEdit = true;
@@ -472,13 +476,10 @@ export default {
                                 me.editUser = lockObj.user_id;
                                 if (me.editUser == me.userName) {
                                     me.alertDialog = true;
-                                    me.alertMessage = '수정된 내용을 저장 혹은 체크인 하시겠습니까? \n' + 
-                                    '(※ 취소 후 체크인을 진행하는 경우 수정된 내용은 저장되지 않습니다.)';
+                                    me.alertMessage = this.$t('processDefinitionMap.checkInMessage');
                                 } else {
                                     me.alertDialog = true;
-                                    me.alertMessage = `현재 "${me.editUser}" 님께서 수정 중입니다. \n` + 
-                                    `(※ 체크인을 진행하는 경우 "${me.editUser}" 님이 수정한 내용은 손상되어 저장되지 않습니다.) \n` +
-                                    `체크인 하시겠습니까?`;
+                                    me.alertMessage = this.$t('processDefinitionMap.forcedCheckOutMessage', {name: me.editUser});
                                     me.enableEdit = false;
                                 }
                                 me.alertType = 'checkin';
@@ -494,7 +495,7 @@ export default {
                                 me.lock = false;
                                 me.enableEdit = false;
                                 me.alertDialog = true;
-                                me.alertMessage = `프로세스 정의 체계도를 수정하시겠습니까?`;
+                                me.alertMessage = this.$t('processDefinitionMap.checkOutMessage');
                                 me.alertType = 'checkout';
                                 // 사용자의 응답을 기다림
                                 me.$nextTick(() => {

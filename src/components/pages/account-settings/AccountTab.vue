@@ -53,7 +53,7 @@
                                 <v-col cols="12" md="6">
                                     <v-label class="mb-2 font-weight-medium">{{ $t('accountTab.email') }}</v-label>
                                     <v-text-field color="primary" variant="outlined" type="email" v-model="userInfo.email"
-                                        hide-details></v-text-field>
+                                        hide-details readonly></v-text-field>
                                 </v-col>
                                 <!-- <v-col cols="12" md="6">
                                     <v-label class="mb-2 font-weight-medium">{{ $t('accountTab.phone') }}</v-label>

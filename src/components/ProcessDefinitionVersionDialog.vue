@@ -193,6 +193,9 @@ export default {
                         }
                     } else {
                         let defId = me.$route.params.pathMatch.join('/');
+                        if(me.process && me.process.processDefinitionId) {
+                            defId = me.process.processDefinitionId;
+                        }
                         let versionInfo = await backend.getDefinitionVersions(defId, {
                             sort: 'desc',
                             type: 'bpmn',
