@@ -1035,6 +1035,15 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async deleteSystem(system: any) {
+        try {
+            return null;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async getSystemList() {
         try {
             return [];

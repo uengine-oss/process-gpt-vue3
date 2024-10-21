@@ -46,6 +46,7 @@ export interface Backend {
     startAndComplete(command: object, isSimulate: string) : Promise<any>;
     getSystemList(): Promise<any>;
     putSystem(system: any): Promise<any>;
+    deleteSystem(system: any): Promise<any>;
     getSystem(systemId: String): Promise<any>;
     getCurrentWorkItemByCorrKey(corrKey: number): Promise<any>;
     deleteInstance(instanceId: string): Promise<any>;
