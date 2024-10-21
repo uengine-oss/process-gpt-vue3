@@ -194,7 +194,11 @@ export default {
             const json = JSON.stringify(this.uengineProperties);
             
             const elementCopyDeep = _.cloneDeep(this.elementCopy);
-            modeling.updateProperties(task, { name: name });
+            if(task) {
+                modeling.updateProperties(task, { name: name });
+            } else {
+                this.$emit('close');
+            }
             if (task.type == 'bpmn:TextAnnotation') {
                 // TextAnnotation Size 깨지는 현상 해결
                 const originTaskWidth = task.width? JSON.parse(JSON.stringify(task.width)) : null;

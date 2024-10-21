@@ -52,7 +52,7 @@
                             </v-tooltip>
                             <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn ,.jsonold" style="display: none" />
                     
-                            <div v-if="bpmn && fullPath != 'chat'">
+                            <div v-if="bpmn || fullPath != 'chat'">
                                 <!-- 자물쇠 아이콘 -->
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">

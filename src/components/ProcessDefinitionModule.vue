@@ -2337,7 +2337,7 @@ export default {
                     if (me.$route.query && me.$route.query.modeling) {
                         let bpmn;
                         if (me.$route.query.id) {
-                            bpmn = await backend.getRawDefinition(me.$route.query.id, { type: 'bpmn' });
+                            bpmn = await backend.getRawDefinition(me.$route.query.id.replace('.bpmn', ''), { type: 'bpmn' });
                         } else {
                             bpmn = await backend.getRawDefinition(info.proc_def_id, { type: 'bpmn' });
                         }

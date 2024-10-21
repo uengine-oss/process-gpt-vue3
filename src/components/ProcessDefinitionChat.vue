@@ -611,11 +611,17 @@ export default {
 
                     if (me.$route.query && me.$route.query.id) {
                         me.processDefinition = {
-                            processDefinitionId: me.$route.query.id
+                            processDefinitionId: me.$route.query.id.replace('.bpmn', '')
                         };
                         if (me.$route.query.name) {
-                            me.projectName = me.$route.query.name;
+                            me.projectName = me.$route.query.name.replace('.bpmn', '');
                             me.processDefinition.processDefinitionName = me.projectName;
+                        }
+                        if(window.$mode == 'uEngine')  {
+                            let bpmnQuery = await backend.getRawDefinition(me.processDefinition.processDefinitionId , { type: 'bpmn' });
+                            if(bpmnQuery) {
+                                me.bpmn = bpmnQuery;
+                            }
                         }
                     }
 
