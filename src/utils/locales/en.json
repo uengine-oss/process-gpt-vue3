@@ -118,7 +118,10 @@
         "edit": "Edit",
         "save": "Save",
         "rollback": "Rollback",
-        "rollbackMessage": "Do you want to roll back to this point?"
+        "rollbackMessage": "Do you want to roll back to this point?",
+        "start": "Start",
+        "success": "Execution completed",
+        "send": "Send"
     },
     "completeInstance": {
         "title": "Complete Instance"
@@ -533,7 +536,10 @@
     },
     "System" : {
         "description" : "Description",
-        "edit" : "Edit"
+        "edit" : "Edit",
+        "delete": "Delete",
+        "confirmDeleteTitle" : "Delete System Definition",
+        "confirmDeleteText" : "Are you sure you want to delete?"
     },
     "PaletteProvider" : {
         "undoCmdZ": "Undo (Cmd + Z)",
@@ -682,7 +688,8 @@
         "progress": "Progress",
         "workItem": "Work Item",
         "workHistory": "Work History",
-        "ganttChart": "Gantt Chart"
+        "ganttChart": "Gantt Chart",
+        "sendEvent": "Send {event}"
     },
     "DryRunProcess": {
         "notFound": "Work item not found."
