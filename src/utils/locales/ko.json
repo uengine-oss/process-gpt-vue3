@@ -70,7 +70,9 @@
         "newEventTitle": "새 일정의 제목을 입력하세요."
     },
     "chats": {
-        "title": "채팅"
+        "title": "채팅",
+        "document": "업무 지시",
+        "assignTask": "업무 지시하기"
     },
     "proposals": {
         "title": "제안서"
@@ -121,7 +123,8 @@
         "rollbackMessage": "으로 되돌리시겠습니까?",
         "start": "실행",
         "success": "실행 완료",
-        "send": "보내기"
+        "send": "보내기",
+        "goBack": "뒤로가기"
     },
     "completeInstance": {
         "title": "종료된 인스턴스"
@@ -586,7 +589,19 @@
         "dataObject": "데이터 객체 생성"
     },
     "chatListing": {
-        "search": "검색"
+        "title": "채팅방 설정",
+        "search": "검색",
+        "chatRoomName": "채팅방 이름",
+        "selectParticipants": "참여자 선택",
+        "save": "저장",
+        "delete": "삭제",
+        "create": "생성",
+        "cancel": "취소",
+        "setting": "설정",
+        "deleteChatRoom": "채팅방 삭제",
+        "confirmDeleteChatRoom": "채팅방을 삭제하시겠습니까?",
+        "enterChatRoomName": "채팅방 이름을 입력해주세요.",
+        "selectAtLeastOneParticipant": "참여자를 하나 이상 선택해주세요."
     },
     "userListing": {
         "search": "유저 검색",

@@ -12,7 +12,14 @@
                         {{ instance.status }}
                     </v-chip>
                     <div v-for="event in eventList">
-                        <v-btn @click="fireMessage(event)"> {{ event }} 보내기 </v-btn>
+                        <v-btn @click="fireMessage(event)"
+                            color="primary"
+                            rounded
+                            style="font-size:12px;"
+                            density="comfortable"
+                            class="ml-3"
+                        > {{ $t('InstanceCard.sendEvent', {event: event}) }}
+                        </v-btn>
                     </div>
                 </div>
                 <div v-if="instance.instanceId" class="font-weight-medium" style="color:gray; font-size:14px;">

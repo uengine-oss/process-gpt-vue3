@@ -1,8 +1,8 @@
 <template>
     <div>
-        <v-card elevation="10" style="height:83vh;" class="pa-2">
-            <v-row class="ma-0 pa-0 pt-2 pt-b2 delete-input-details">
-                <v-card-title>{{ $t('admin.instanceList') }}</v-card-title>
+        <v-card elevation="10" style="height:83vh;" class="pa-4">
+            <v-row class="ma-0 pa-0 delete-input-details">
+                <v-card-title class="pl-3">{{ $t('admin.instanceList') }}</v-card-title>
                 <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5 ">
                     <Icons :icon="'magnifer-linear'" :size="22" />
                     <v-text-field

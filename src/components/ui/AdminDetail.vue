@@ -1,11 +1,39 @@
 <template>
     <div>
         <v-card elevation="10">
-            <v-card-title>Instance - {{ instanceId }} 
+            <v-row class="ma-0 pa-4">
+                <v-tooltip location="bottom">
+                    <template v-slot:activator="{ props }">
+                        <v-btn v-bind="props"
+                            @click="$router.push('/admin')"
+                            icon variant="text"
+                            type="file"
+                            class="text-medium-emphasis mr-3" 
+                            density="comfortable" 
+                            size="28"
+                        >
+                            <v-icon left>mdi-arrow-left</v-icon>
+                        </v-btn>
+                    </template>
+                    <span>{{ $t('adminDetail.goBack') }}</span>
+                </v-tooltip>
+                <v-card-title class="ma-0 pa-0">Instance - {{ instanceId }}</v-card-title>
                 <div v-for="event in eventList" :key="event">
-                    <v-btn @click="$try({context: this, action: () => fireMessage(event.tracingTag), successMsg: `${event.name} 실행 완료`})"> {{ event.name ? event.name : event.tracingTag }} 보내기 </v-btn>
+                    <v-btn 
+                        @click="$try({
+                            context: this, 
+                            action: () => fireMessage(event.tracingTag), 
+                            successMsg: `${event.name} ${this.$t('adminDetail.success')}`
+                        })"
+                        color="primary"
+                        rounded
+                        style="font-size:12px;"
+                        density="comfortable"
+                        class="ml-3"
+                    > {{ event.name ? event.name : event.tracingTag }} {{ $t('adminDetail.send') }} 
+                    </v-btn>
                 </div>
-            </v-card-title>
+            </v-row>
             <v-row class="ma-0 pa-0 pb-2">
                 <v-col class="ma-0 pa-0" 
                     cols="12"
@@ -33,7 +61,7 @@
                         v-on:rollback="(id) => showRollbackDialog(true, id)"
                         style="height: 100%"
                     ></BpmnUengine>
-                    <div v-else>{{ $t('adminDetail.noProcessDefinition') }}</div>
+                    <div v-else class="pa-6">{{ $t('adminDetail.noProcessDefinition') }}</div>
                 </v-col>
                 <v-col class="ma-0 pa-4 pt-0" 
                     cols="12"
@@ -66,7 +94,7 @@
                                         dense
                                         hide-details="true"
                                     ></v-text-field>
-                                    <span v-else style="white-space: pre-wrap;">{{ item.value }}</span>
+                                    <span v-else style="white-space: pre-wrap;">{{ formatJsonValue(item.value) }}</span>
                                 </template>
                                 <template v-slot:[`item.save`]="{ item }">
                                     <v-tooltip v-if="item.editMode" :text="$t('adminDetail.save')">
@@ -141,17 +169,28 @@
                         </v-window-item>
                     </v-window>
 
-                    <v-dialog v-model="rollbackDialog" width="500" style="z-index: 9999;" :key="rollbackElement">
+                    <v-dialog v-model="rollbackDialog"
+                        width="500"
+                        style="z-index: 9999;"
+                        :key="rollbackElement"
+                    >
                         <v-card class="pa-4">
-                            <v-card-title>되돌리기</v-card-title>
-                            <v-card-text>
-                                <div>"{{ rollbackElementName }}"으로 되돌리시겠습니까?</div>
-                            </v-card-text>
-                            <v-card-actions>
+                            <v-row class="ma-0 pa-0">
+                                <v-card-title class="ma-0 pa-0">{{ $t('adminDetail.rollback') }}</v-card-title>
                                 <v-spacer></v-spacer>
-                                <v-btn color="primary" @click="rollback(rollbackElement)">실행</v-btn>
-                                <v-btn color="error" @click="showRollbackDialog(false, null)">닫기</v-btn>
-                            </v-card-actions>
+                                <v-btn @click="showRollbackDialog(false, null)" icon variant="text" density="comfortable"
+                                    style="margin-top:-8px;"
+                                >
+                                    <Icons :icon="'close'" :size="16" />
+                                </v-btn>
+                            </v-row>
+                            <v-card-text class="pa-0 pt-4 pb-4">
+                                <div>"{{ rollbackElementName }}"{{ $t('adminDetail.rollbackMessage') }}</div>
+                            </v-card-text>
+                            <v-row class="pa-0 ma-0">
+                                <v-spacer></v-spacer>
+                                <v-btn color="primary" rounded @click="rollback(rollbackElement)">{{ $t('adminDetail.start') }}</v-btn>
+                            </v-row>
                         </v-card>
                     </v-dialog>
                 </v-col>
@@ -239,6 +278,15 @@ export default {
         }
     },
     methods: {
+        formatJsonValue(value) {
+            try {
+                const parsed = JSON.parse(value);
+                return JSON.stringify(parsed, null, 4); // 들여쓰기 4칸으로 포맷
+            } catch (e) {
+                alert('AdminDetail formatJsonValue methods error' + e.message);
+                return value; // JSON 파싱 실패 시 원래 값 반환
+            }
+        },
         async init() {  
             let me = this;
             let startTime = performance.now();
