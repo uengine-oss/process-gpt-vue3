@@ -99,6 +99,10 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
   }
 
 
+  function insertLanes(num) {
+    modeling.splitLane(element, num);
+  }
+
   function divideIntoTwoLanes(event) {
     modeling.splitLane(element, 2);
   }
@@ -193,6 +197,17 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
         title: i18n.global.t('customContextPad.laneDivideThree'),
         action: {
           click: divideIntoThreeLanes
+        }
+      },
+      'lane-insert-single': {
+        group: 'lane',
+        className: isHorizontal ? 'bpmn-icon-participant' : 'bpmn-icon-participant icon-rotate-90',
+        title: isHorizontal ? i18n.global.t('customContextPad.lane') : i18n.global.t('customContextPad.laneToTheLeft'),
+        action: {
+          click: function(event, element) {
+            const laneCount = element.children.filter(child => child.type === 'bpmn:Lane').length;
+            insertLanes(1);
+          }
         }
       },
       'connect': {

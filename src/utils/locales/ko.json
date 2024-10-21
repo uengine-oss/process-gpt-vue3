@@ -596,6 +596,7 @@
         "replace": "요소 변경",
         "delete": "삭제",
         "connect": "다른 요소에 연결",
+        "lane": "레인 추가",
         "laneAbove": "위쪽에 레인 추가",
         "laneToTheLeft": "왼쪽에 레인 추가",
         "laneBelow": "아래에 레인 추가",

@@ -596,6 +596,7 @@
         "replace": "Change element",
         "delete": "Delete",
         "connect": "Connect to other element",
+        "lane": "Add Lane",
         "laneAbove": "Add Lane Above",
         "laneToTheLeft": "Add Lane to the Left",
         "laneBelow": "Add Lane Below",
