@@ -46,6 +46,7 @@
                     {{ projectName }}
                 </h5>
                 <process-definition
+                    ref="process-definition"
                     class="process-definition-resize"
                     :bpmn="bpmn"
                     :processDefinition="processDefinition"
@@ -317,6 +318,27 @@ export default {
                     }
                 }
             }
+        },
+        executeDialog: {
+            handler(newVal) {
+                if (newVal === false) {
+                    this.closeModelingDialog();
+                }
+            }
+        },
+        versionDialog: {
+            handler(newVal) {
+                if (newVal === false) {
+                    this.closeModelingDialog();
+                }
+            }
+        },
+        verMangerDialog: {
+            handler(newVal) {
+                if (newVal === false) {
+                    this.closeModelingDialog();
+                }
+            }
         }
     },
     computed: {
@@ -365,6 +387,13 @@ export default {
             console.log("simulate")
             this.isSimulate = 'true'
             this.executeDialog = !this.executeDialog;
+        },
+        closeModelingDialog() {
+            console.log('closeModelingDialog')
+            const processDefinition = this.$refs['process-definition'];
+            if (processDefinition) {
+                processDefinition.closeModelingDialog();
+            }
         },
         beforeStartGenerate(){
             let chatMsgs = [];

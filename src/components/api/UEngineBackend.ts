@@ -608,6 +608,16 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
+    async deleteSystem(system: any) {
+        try {
+            const response = await axiosInstance.delete(`/definition/system/${system.name}`);
+            return response.data;
+        } catch (error) {
+            alert(`시스템 삭제 중 오류 발생: ${error}`);
+            throw error;
+        }
+    }
+
     async getSystemList() {
         const response = await axiosInstance.get(`/definition/system`);
         if (response.data._embedded.definitions.length > 0) return response.data._embedded.definitions;

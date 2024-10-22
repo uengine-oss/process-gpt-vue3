@@ -5,12 +5,16 @@
                 cols="12" sm="6" md="4" lg="3"
             >
                 <template v-if="systemList">
-                    <System :system="system.name" v-on:edit-system="$evt => editSystem($evt)" />
+                    <System 
+                        :system="system.name" 
+                        v-on:edit-system="$evt => editSystem($evt)" 
+                        @systemDeleted="loadSystems"
+                    />
                 </template>
             </v-col>
             <v-col cols="12" sm="6" md="4" lg="3">
                 <v-card elevation="10" 
-                    @click="openDialog = !openDialog"
+                    @click="openAddDialog"
                     style="height:200px;
                     display: flex; justify-content: center; align-items: center;"
                 >
@@ -19,8 +23,8 @@
             </v-col>
         </v-row>
         <v-dialog v-model="openDialog" width="auto">
-            <v-card style="width: 70vh; height: 80vh">
-                <v-card-title>{{ $t('SystemList.dialogTitle') }}</v-card-title>
+            <v-card style="width: 70vh;">
+                <v-card-title>{{ dialogTitle }}</v-card-title>
                 <v-card-item>
                     <v-text-field v-model="addSystem.name" style="margin-top: 10px" :label="$t('SystemList.name')" />
                     <v-text-field v-model="addSystem.description" :label="$t('SystemList.description')" />
@@ -34,12 +38,12 @@
                         :options="MONACO_EDITOR_OPTIONS"
                     />
                 </v-card-item>
-                <v-row class="ma-0 pa-0 pt-2 pr-5">
+                <v-row class="ma-0 pa-0 pt-4 pb-4 pr-5">
                     <v-spacer></v-spacer>
                     <v-btn @click="putSystem"
                         color="primary"
                         rounded
-                    > {{ $t('SystemList.add') }} </v-btn>
+                    > {{ dialogBtnText }} </v-btn>
                 </v-row>
             </v-card>
         </v-dialog>
@@ -63,6 +67,8 @@ export default {
             formatOnType: true,
             formatOnPaste: true
         },
+        dialogTitle: '',
+        dialogBtnText: '',
         addSystem: {},
         openDialog: false,
         systemList: null
@@ -96,6 +102,14 @@ export default {
         },
         editSystem(system) {
             this.addSystem = JSON.parse(JSON.stringify(system));
+            this.dialogTitle = this.$t('SystemList.editDialogTitle')
+            this.dialogBtnText = this.$t('SystemList.edit')
+            this.openDialog = true;
+        },
+        openAddDialog() {
+            this.addSystem = {};
+            this.dialogTitle = this.$t('SystemList.addDialogTitle')
+            this.dialogBtnText = this.$t('SystemList.add')
             this.openDialog = true;
         }
     }

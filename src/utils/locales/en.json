@@ -70,7 +70,9 @@
         "newEventTitle": "Please enter a new title for your event"
     },
     "chats": {
-        "title": "Chats"
+        "title": "Chats",
+        "document": "Work Instruction",
+        "assignTask": "Assign Task"
     },
     "proposals": {
         "title": "Proposal"
@@ -118,7 +120,11 @@
         "edit": "Edit",
         "save": "Save",
         "rollback": "Rollback",
-        "rollbackMessage": "Do you want to roll back to this point?"
+        "rollbackMessage": "Do you want to roll back to this point?",
+        "start": "Start",
+        "success": "Execution completed",
+        "send": "Send",
+        "goBack": "Go back"
     },
     "completeInstance": {
         "title": "Complete Instance"
@@ -542,16 +548,21 @@
         "gatewayDescriptionSubTitle3": "Event-based gateway: It can only proceed to the next task when a specific event occurs.",
         "gatewayDescriptionSubTitle4": "Complex Gateway (Not Implemented): Users can add arbitrary conditions to select the next task."
     },
-    "SystemList": {
-        "dialogTitle": "Add System",
-        "name": "Name",
-        "description": "Description",
-        "apiUrl": "API URL",
-        "add": "Add"
+    "SystemList" : {
+        "addDialogTitle" : "Add System",
+        "editDialogTitle": "Edit System",
+        "name" : "Name",
+        "description" : "Description",
+        "apiUrl" : "API URL",
+        "add" : "Add",
+        "edit" : "Edit"
     },
     "System" : {
         "description" : "Description",
-        "edit" : "Edit"
+        "edit" : "Edit",
+        "delete": "Delete",
+        "confirmDeleteTitle" : "Delete System Definition",
+        "confirmDeleteText" : "Are you sure you want to delete?"
     },
     "PaletteProvider" : {
         "undoCmdZ": "Undo (Cmd + Z)",
@@ -578,7 +589,19 @@
         "dataObject": "Create Data Object"
     },
     "chatListing": {
-        "search": "search"
+        "title": "Chat Room Settings",
+        "search": "Search",
+        "chatRoomName": "Chat Room Name",
+        "selectParticipants": "Select Participants",
+        "save": "Save",
+        "delete": "Delete",
+        "create": "Create",
+        "cancel": "Cancel",
+        "setting": "Setting",
+        "deleteChatRoom": "Delete Chat Room",
+        "confirmDeleteChatRoom": "Are you sure you want to delete this chat room?",
+        "enterChatRoomName": "Please enter a chat room name.",
+        "selectAtLeastOneParticipant": "Please select at least one participant."
     },
     "userListing": {
         "search": "User search",
@@ -701,7 +724,8 @@
         "progress": "Progress",
         "workItem": "Work Item",
         "workHistory": "Work History",
-        "ganttChart": "Gantt Chart"
+        "ganttChart": "Gantt Chart",
+        "sendEvent": "Send {event}"
     },
     "DryRunProcess": {
         "notFound": "Work item not found."

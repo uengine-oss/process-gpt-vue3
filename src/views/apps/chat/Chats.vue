@@ -171,12 +171,12 @@
                         class="mb-2"
                     ></v-checkbox>
                 </v-card-text>
-                <v-btn @click="workOrder" color="primary">업무 지시하기</v-btn>
+                <v-btn @click="workOrder" color="primary">{{ $t('chats.assignTask') }}123</v-btn>
             </v-card>
             <v-card :style="!isMobile && assistantRes ? 'position: absolute; left: 30%; margin-top: -500px;':''">
                 <v-card-title style="height: 55px; background-color: rgb(227, 240, 250); align-content: center;">
                     <v-icon small style="margin-right: 10px;">mdi-file-document</v-icon>
-                    업무 지시
+                    {{ $t('chats.document') }}
                     <v-icon @click="closeWorkOrderDialog()" small style="margin-right: 5px; float: right;">mdi-close</v-icon>
                 </v-card-title>
                 <AssistantChats @genFinished="genFinished" @clickedWorkOrder="workOrder"/>
