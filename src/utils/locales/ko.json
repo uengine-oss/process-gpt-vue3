@@ -72,7 +72,17 @@
     "chats": {
         "title": "채팅",
         "document": "업무 지시",
-        "assignTask": "업무 지시하기"
+        "assignTask": "업무 지시하기",
+        "requestCancelled": "{name}님의 요청이 취소되었습니다.",
+        "startProcess": "{title}프로세스를 시작하겠습니다.",
+        "todoAdded": "{activityId} 할 일이 추가되었습니다.",
+        "scheduleAdded": "{title} 일정이 추가되었습니다.",
+        "processDefinitionCreated": "프로세스 정의가 생성되었습니다.",
+        "processDefinitionModificationStarted": "프로세스 정의 수정이 시작되었습니다.",
+        "userRequestedAction": "{name}님이 요청하신 {action}"
+    },
+    "AssistantChats": {
+        "document": "지시할 업무 내용을 입력하세요. 업무에 관한 정보를 주시면 업무를 받는 사람이 확인할 업무 미리보기가 좌측에 표시됩니다. 미리보기를 확인하고 부족한 부분을 개선합니다. 개선이 완료되었다면 '업무 지시하기'로 업무를 지시합니다."
     },
     "proposals": {
         "title": "제안서"
@@ -255,7 +265,9 @@
         "document": "업무 지시",
         "camera": "카메라",
         "user": "유저",
-        "chatRoom": "대화방"
+        "chatRoom": "대화방",
+        "viewDetails": "상세보기",
+        "executeProcess": "프로세스 실행"
     },
     "accountTab": {
         "accountSetting": "계정 설정",

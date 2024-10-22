@@ -61,7 +61,7 @@ export default {
         this.messages = [];
         this.messages.push({
             role: 'system',
-            content: "지시할 업무 내용을 입력하세요. 업무에 관한 정보를 주시면 업무를 받는 사람이 확인할 업무 미리보기가 좌측에 표시됩니다. 미리보기를 확인하고 부족한 부분을 개선합니다. 개선이 완료되었다면 '업무 지시하기'로 업무를 지시합니다."
+            content: this.$t('chats.document')
         })
         this.generator = new ChatGenerator(this, {
             isStream: true,

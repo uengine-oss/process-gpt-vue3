@@ -71,8 +71,18 @@
     },
     "chats": {
         "title": "Chats",
-        "document": "Work Instruction",
-        "assignTask": "Assign Task"
+        "document": "Work Instructions",
+        "assignTask": "Assign Task",
+        "requestCancelled": "{name}'s request has been cancelled.",
+        "startProcess": "Starting the {title} process.",
+        "todoAdded": "Todo {activityId} has been added.",
+        "scheduleAdded": "Schedule {title} has been added.",
+        "processDefinitionCreated": "Process definition has been created.",
+        "processDefinitionModificationStarted": "Process definition modification has started.",
+        "userRequestedAction": "{name} requested {action}"
+    },
+    "AssistantChats": {
+        "document": "Enter the task details you want to assign. When you provide information about the task, a preview of the task that the recipient will see is displayed on the left. Review the preview and improve any lacking areas. Once the improvements are complete, use 'Assign Task' to give the task."
     },
     "proposals": {
         "title": "Proposal"
@@ -255,7 +265,9 @@
         "document": "Work Instruction",
         "camera": "Camera",
         "user": "User",
-        "chatRoom": "Chat Room"
+        "chatRoom": "Chat Room",
+        "viewDetails": "View Details",
+        "executeProcess": "Execute Process"
     },
     "accountTab": {
         "accountSetting": "Account Settings",

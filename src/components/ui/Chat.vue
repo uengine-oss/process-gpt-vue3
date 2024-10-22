@@ -155,18 +155,28 @@
                                                                             </template>
                                                                             <div style="margin-left:5px; margin-top:0px;">{{ work.messageForUser }}</div>
                                                                             <div>
-                                                                                <v-btn @click="work.expanded = !work.expanded"
-                                                                                    class="ml-2"
-                                                                                    size="small" icon density="comfortable"
-                                                                                >
-                                                                                    <icons :icon="work.expanded ? 'arrow-up-2' : 'arrow-down-2'" />
-                                                                                </v-btn>
-                                                                                <v-btn  @click="startProcess(work, index)"
-                                                                                    class="ml-2"
-                                                                                    size="small" icon density="comfortable"
-                                                                                >
-                                                                                    <Icons :icon="'play'" />
-                                                                                </v-btn>
+                                                                                <v-tooltip v-if="!isViewMode" :text="$t('chat.viewDetails')">
+                                                                                    <template v-slot:activator="{ props }">
+                                                                                        <v-btn v-bind="props"
+                                                                                            @click="work.expanded = !work.expanded"
+                                                                                            class="ml-2"
+                                                                                            size="small" icon variant="text" density="comfortable"
+                                                                                        >
+                                                                                        <icons :icon="work.expanded ? 'arrow-up-2' : 'arrow-down-2'" />
+                                                                                        </v-btn>
+                                                                                    </template>
+                                                                                </v-tooltip>
+                                                                                <v-tooltip v-if="!isViewMode" :text="$t('chat.executeProcess')">
+                                                                                    <template v-slot:activator="{ props }">
+                                                                                        <v-btn v-bind="props"
+                                                                                            @click="startProcess(work, index)"
+                                                                                            class="ml-2"
+                                                                                            size="small" icon variant="text" density="comfortable"
+                                                                                        >
+                                                                                            <Icons :icon="'play'" :color="'rgb(var(--v-theme-primary))'"/>
+                                                                                        </v-btn>
+                                                                                    </template>
+                                                                                </v-tooltip>
                                                                             </div>
                                                                         </v-row>
                                                                         <v-expand-transition>
