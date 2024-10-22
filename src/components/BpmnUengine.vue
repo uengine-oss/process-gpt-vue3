@@ -471,6 +471,9 @@ export default {
         }
     },
     methods: {
+        closeModelingDialog() {//모델링을 여는 다이얼로그가 닫혔을 때 기존 bpmn정보가 날아가기 때문에 사용
+            this.bpmnStore.setModeler(this.bpmnViewer);
+        },
         debounce(func, timeout) {
             let timer;
             return (...args) => {
