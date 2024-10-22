@@ -721,9 +721,17 @@ export default {
             }
         });
         if (window.location.pathname && window.location.pathname.includes('/definitions/')) {
-            this.chatHeight = 'height:calc(100vh - 337px)'
+            if (!this.isMobile) {
+                this.chatHeight = 'height:calc(100vh - 337px)'
+            } else {
+                this.chatHeight = 'height:calc(100vh - 450px)'
+            }
         } else if (window.location.pathname && window.location.pathname.includes('/instancelist')) {
-            this.chatHeight = 'height:calc(100vh - 350px)' // 원하는 height 값으로 변경
+            if (!this.isMobile) {
+                this.chatHeight = 'height:calc(100vh - 350px)'
+            } else {
+                this.chatHeight = 'height:calc(100vh - 450px)'
+            }
         }
 
         this.EventBus.on('scroll_update', () => {
@@ -929,8 +937,8 @@ export default {
             if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
                 this.mediaRecorder.stop();
                 this.mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
-                this.uploadAudio(audioBlob);
+                    const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
+                    this.uploadAudio(audioBlob);
                 };
             }
         },
@@ -955,8 +963,8 @@ export default {
             if (this.micRecorder && this.micRecorder.state === 'recording') {
                 this.micRecorder.stop();
                 this.micRecorder.onstop = async () => {
-                const audioBlob = new Blob(this.micAudioChunks, { type: 'audio/wav' });
-                await this.uploadAudio(audioBlob);
+                    const audioBlob = new Blob(this.micAudioChunks, { type: 'audio/wav' });
+                    await this.uploadAudio(audioBlob);
                 };
             }
         },

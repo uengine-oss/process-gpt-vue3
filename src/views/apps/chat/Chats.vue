@@ -241,7 +241,6 @@ export default {
         path: "chats",
         organizationChart: [],
         calendarData: null,
-        currentChatRoom: null,
         userList: [],
         chatRenderKey: 0,
         generatedWorkList: [],

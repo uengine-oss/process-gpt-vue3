@@ -33,7 +33,7 @@ export default {
         processInstanceId: null,
         chatRoomId: '',
         isVisionMode: false,
-
+        currentChatRoom: null,
         // consulting
         isMentoMode: false,
     }),
@@ -177,7 +177,12 @@ export default {
                             me.messages.splice(messageIndex, 1);
                         }
                     } else {
-                        if(data.new.messages.email != me.userInfo.email){
+                        if (!me.currentChatRoom && me.chatRoomId) {
+                            me.currentChatRoom = {
+                                id: me.chatRoomId
+                            }
+                        }
+                        if (data.new.messages.email != me.userInfo.email) {
                             if(data.new.id == me.currentChatRoom.id){
                                 if ((me.messages && me.messages.length > 0) 
                                 && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
@@ -203,17 +208,6 @@ export default {
                                     
                                 }
                             }
-                        } else {
-                            // if(data.eventType == "INSERT" && data.new.id == me.currentChatRoom.id) {
-                            //     let lastMessage = me.messages[me.messages.length - 1]
-                            //     if(!(lastMessage.content == data.new.messages.content &&
-                            //         lastMessage.role == data.new.messages.role &&
-                            //         lastMessage.name == data.new.messages.name &&
-                            //         lastMessage.email == data.new.messages.email)
-                            //     ) {
-                            //         me.messages.push(data.new.messages)
-                            //     }
-                            // }
                         }
                     }
                 }

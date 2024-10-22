@@ -503,6 +503,12 @@ export default {
         // this.processVariables = this.copyProcessDefinition.data
     },
     methods: {
+        closeModelingDialog() {//모델링을 여는 다이얼로그가 닫혔을 때 기존 bpmn정보가 날아가기 때문에 사용
+            const bpmnUEngine = this.$refs['bpmnVue'];
+            if (bpmnUEngine) {
+                bpmnUEngine.closeModelingDialog();
+            }
+        },
         updateCurrentStep(){
             this.closePanel();
             this.isPreviewMode = true

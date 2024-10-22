@@ -736,7 +736,7 @@
         "progress": "진행 상황",
         "workItem": "워크 아이템",
         "workHistory": "워크 히스토리",
-        "ganttChart": "칸트 차트",
+        "ganttChart": "간트 차트",
         "sendEvent": "{event} 보내기"
     },
     "DryRunProcess": {

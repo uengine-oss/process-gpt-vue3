@@ -99,8 +99,11 @@ async function setupSupabase() {
     // window.$mode = 'ProcessGPT';
     // window.$jms = false;
 
-    if (window.location.host.includes('localhost') || window.location.host.includes('192.168') || window.location.host.includes('127.0.0.1') || 
-        window.$mode == 'uEngine') {
+    if (window.location.host.includes('localhost') || 
+        window.location.host.includes('192.168') || 
+        window.location.host.includes('127.0.0.1') || 
+        window.$mode == 'uEngine'
+    ) {
         Object.defineProperty(window, '$supabase', {
             value: createClient(
                 'http://127.0.0.1:54321',

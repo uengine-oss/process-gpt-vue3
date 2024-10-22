@@ -322,7 +322,6 @@ class ProcessGPTBackend implements Backend {
 
             return result;
         } catch (error) {
-            
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -346,7 +345,6 @@ class ProcessGPTBackend implements Backend {
                     instance.status = 'COMPLETED'
                 }
             }
-            console.log(instance);
             return instance;
         } catch (e) {
             
