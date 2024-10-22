@@ -5,8 +5,7 @@
             :disableChat="disableChat" :type="'instances'" :name="chatName" :chatRoomId="chatRoomId"
             @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
             @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
-            @reGenerateAgentAI="reGenerateAgentAI"
-            >
+            @reGenerateAgentAI="reGenerateAgentAI">
             <template v-slot:custom-title>
                 <div></div>
             </template>
@@ -60,15 +59,6 @@ export default {
             }
             return '';
         },
-        chatRoomId () {
-            let result = '';
-            if (this.processInstance && this.processInstance.proc_inst_id) {
-                result = this.processInstance.proc_inst_id;
-            } else if (this.$route.params.instId) {
-                result = atob(this.$route.params.instId);
-            }
-            return result;
-        }
     },
     async created() {
         await this.init();
@@ -294,6 +284,7 @@ export default {
             const me = this;
             me.processInstance = null;
             me.bpmn = null;
+            
             let id;
             if (me.$route.params.taskId) {
                 const taskId = me.$route.params.taskId;
@@ -303,7 +294,9 @@ export default {
                 }
             } else if (me.$route.params.instId) {
                 id = atob(me.$route.params.instId);
+                this.chatRoomId = id;
             }
+
             if (id) {
                 const value = await backend.getInstance(id);
                 if (value) {
@@ -338,9 +331,9 @@ export default {
             if (newMessage && newMessage.text != '') {
                 if (this.chatRoomId) {
                     this.putMessage(this.createMessageObj(newMessage));
-                    this.generator.beforeGenerate(newMessage, false);
+                    await this.generator.beforeGenerate(newMessage, false);
                 } else {
-                    this.generator.beforeGenerate(newMessage, true);
+                    await this.generator.beforeGenerate(newMessage, true);
                 }
                 this.sendMessage(newMessage);
             }

@@ -47,17 +47,30 @@ export default {
     },
     methods: {
         setupAudioStream() {
+            // this.audio = this.$refs.audioPlay;
+            // this.audio.autoplay = true;
+            // this.mediaSource = new MediaSource();
+            // this.audio.src = URL.createObjectURL(this.mediaSource);
+            
+            // this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            // this.analyser = this.audioContext.createAnalyser();
+            // this.analyser.fftSize = 256;
+            // this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+
+            // const audioElement = this.$refs.audioPlay;
+            // const source = this.audioContext.createMediaElementSource(audioElement);
+            // source.connect(this.analyser);
+            // this.analyser.connect(this.audioContext.destination);
             this.audio = this.$refs.audioPlay;
             this.audio.autoplay = true;
-            this.mediaSource = new MediaSource();
-            this.audio.src = URL.createObjectURL(this.mediaSource);
-            
-            
+
+            // AudioContext 생성
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
             this.analyser = this.audioContext.createAnalyser();
             this.analyser.fftSize = 256;
             this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
 
+            // 오디오 요소로부터 MediaStreamAudioSourceNode 생성
             const audioElement = this.$refs.audioPlay;
             const source = this.audioContext.createMediaElementSource(audioElement);
             source.connect(this.analyser);
@@ -86,12 +99,60 @@ export default {
         },
         async playResponseData(response) {
             var me = this;
-            me.abortController = new AbortController(); // 새로운 AbortController 생성
-            const signal = me.abortController.signal; // signal 추출
+            // me.abortController = new AbortController(); // 새로운 AbortController 생성
+            // const signal = me.abortController.signal; // signal 추출
 
-            if(me.sourceBuffer == null) {
-                me.sourceBuffer = me.mediaSource.addSourceBuffer('audio/mpeg');
-            }
+            // if(me.sourceBuffer == null) {
+            //     me.sourceBuffer = me.mediaSource.addSourceBuffer('audio/mpeg');
+            // }
+            // var input = {
+            //     query: response,
+            //     chat_room_id: me.chatRoomId
+            // }
+            // const token = localStorage.getItem('accessToken');
+            // fetch(`/execution/audio-stream`, {
+            //     method: 'POST',
+            //     headers: {
+            //         'Content-Type': 'text/plain',
+            //         'Authorization': `Bearer ${token}`
+            //     },
+            //     body: JSON.stringify(input),    //'{"query": "'+ response +'"}',
+            //     signal: signal // fetch 요청에 signal 추가
+            // }).then(response => {
+            //     const reader = response.body.getReader();
+            //     const push = () => {
+            //         reader.read().then(({ done, value }) => {
+            //             if (done) {
+            //                 me.mediaSource.endOfStream();
+            //                 me.audio.onended = () => {
+            //                     me.$emit('audio:stop');
+            //                 };
+            //                 return;
+            //             }
+            //             if (!me.sourceBuffer.updating) {
+            //                 me.sourceBuffer.appendBuffer(value);
+            //                 me.audio.play();
+            //                 me.$emit('update:isLoading', false);
+            //                 me.$emit('audio:start');
+            //                 me.updateAudioBars();
+            //             }
+            //             me.sourceBuffer.addEventListener('updateend', push, { once: true });
+            //         }).catch(error => {
+            //             console.error('Error fetching audio stream', error);
+            //             me.$emit('update:isLoading', false);
+            //         });
+            //     };
+            //     push();
+            // }).catch(error => {
+            //     if (error.name === 'AbortError') {
+            //         console.log('Fetch aborted');
+            //     } else {
+            //         console.error('Fetch error:', error);
+            //     }
+            // });
+            me.abortController = new AbortController();
+            const signal = me.abortController.signal;
+
             var input = {
                 query: response,
                 chat_room_id: me.chatRoomId
@@ -103,27 +164,31 @@ export default {
                     'Content-Type': 'text/plain',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(input),    //'{"query": "'+ response +'"}',
-                signal: signal // fetch 요청에 signal 추가
+                body: JSON.stringify(input),
+                signal: signal
             }).then(response => {
                 const reader = response.body.getReader();
                 const push = () => {
                     reader.read().then(({ done, value }) => {
                         if (done) {
-                            me.mediaSource.endOfStream();
                             me.audio.onended = () => {
                                 me.$emit('audio:stop');
                             };
                             return;
                         }
-                        if (!me.sourceBuffer.updating) {
-                            me.sourceBuffer.appendBuffer(value);
-                            me.audio.play();
-                            me.$emit('update:isLoading', false);
-                            me.$emit('audio:start');
-                            me.updateAudioBars();
-                        }
-                        me.sourceBuffer.addEventListener('updateend', push, { once: true });
+                        // AudioContext로 오디오 데이터 처리
+                        const audioBuffer = me.audioContext.decodeAudioData(value.buffer, (buffer) => {
+                            const source = me.audioContext.createBufferSource();
+                            source.buffer = buffer;
+                            source.connect(me.audioContext.destination);
+                            source.start();
+                        });
+
+                        me.$emit('update:isLoading', false);
+                        me.$emit('audio:start');
+                        me.updateAudioBars();
+
+                        push();
                     }).catch(error => {
                         console.error('Error fetching audio stream', error);
                         me.$emit('update:isLoading', false);

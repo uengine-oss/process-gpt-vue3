@@ -1,6 +1,3 @@
-import axios from 'axios';
-// import StorageBase from "./StorageBase";
-
 class StorageBaseError extends Error {
     constructor(message, cause, args) {
         super(message, { cause: cause });
@@ -30,7 +27,10 @@ export default class StorageBaseSupabase {
                         console.error('Error refreshing session:', refreshError);
                         return false;
                     }
-                    if (window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1')) {
+                    if (window.location.host.includes('localhost') || 
+                        window.location.host.includes('127.0.0.1') ||
+                        window.location.host.includes('192.168')
+                    ) {
                         document.cookie = `access_token=${refreshData.session.access_token}; path=/; SameSite=Lax`;
                         document.cookie = `refresh_token=${refreshData.session.refresh_token}; path=/; SameSite=Lax`;
                     } else {
@@ -131,14 +131,13 @@ export default class StorageBaseSupabase {
                     email: userInfo.email,
                     password: userInfo.password
                 });
-                if (!result.error) {
-                    await axios.post(`/execution/signin`, {
-                        email: userInfo.email,
-                        password: userInfo.password
-                    });
-    
+
+                if (!result.error) {    
                     const { access_token, refresh_token } = result.data.session;
-                    if (window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1')) {
+                    if (window.location.host.includes('localhost') || 
+                        window.location.host.includes('127.0.0.1') ||
+                        window.location.host.includes('192.168')
+                    ) {
                         document.cookie = `access_token=${access_token}; path=/; SameSite=Lax`;
                         document.cookie = `refresh_token=${refresh_token}; path=/; SameSite=Lax`;
                     } else {
@@ -149,7 +148,7 @@ export default class StorageBaseSupabase {
                     if (!window.$isTenantServer && window.$tenantName) {
                         await this.setCurrentTenant(window.$tenantName);
                     }
-    
+                    
                     return result.data;
                 } else if (result.error && result.error.message.includes("Email not confirmed")){
                     result.errorMsg = "계정 인증이 완료되지 않았습니다. 이메일 확인 후 다시 로그인하세요."
@@ -169,8 +168,7 @@ export default class StorageBaseSupabase {
                     }
                 }
             } else {
-                alert('존재하지 않는 계정입니다.');
-                // throw new StorageBaseError('error in signIn', e, arguments);
+                throw new StorageBaseError('error in signIn', e, arguments);
             }
         } catch(e) {
             throw new StorageBaseError('error in signIn', e, arguments);
@@ -183,7 +181,7 @@ export default class StorageBaseSupabase {
                 options: {
                     scopes: 'openid'
                 }
-            });                
+            });
         } catch(e) {
             throw new StorageBaseError('error in signInWithKeycloak', e, arguments);
         }
@@ -225,7 +223,10 @@ export default class StorageBaseSupabase {
                     }
                     
                     const { access_token, refresh_token } = result.data.session;
-                    if (window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1')) {
+                    if (window.location.host.includes('localhost') || 
+                        window.location.host.includes('127.0.0.1') ||
+                        window.location.host.includes('192.168')
+                    ) {
                         document.cookie = `access_token=${access_token}; path=/; SameSite=Lax`;
                         document.cookie = `refresh_token=${refresh_token}; path=/; SameSite=Lax`;
                     } else {
@@ -334,7 +335,10 @@ export default class StorageBaseSupabase {
     async resetPassword(email) {
         try {
             let url;
-            if (window.location.host.includes('localhost')) {
+            if (window.location.host.includes('localhost') || 
+                window.location.host.includes('127.0.0.1') ||
+                window.location.host.includes('192.168')
+            ) {
                 url = window.location.host + '/auth/reset-password';
             } else {
                 url = '/auth/reset-password';
@@ -892,28 +896,27 @@ export default class StorageBaseSupabase {
     async searchProcInst(keyword) {
         try {
             const email = window.localStorage.getItem('email');
-            const { data, error } = await window.$supabase.from('proc_inst')
-                .select()
-                .or(`id.ilike.%${keyword}%,name.ilike.%${keyword}%,variables_data.ilike.%${keyword}%`)
-                .contains('user_ids', [email]);
-            
+            const { data, error } = await window.$supabase.rpc('search_bpm_proc_inst', {
+                keyword,
+                user_email: email
+            });
             if (error) throw new StorageBaseError('error in searchProcInst', error, arguments);
 
             if (data && data.length > 0) {
                 const list = data.map((item) => {
                     const matchingColumns = [];
-                    if (item.id && item.id.toLowerCase().includes(keyword.toLowerCase())) {
-                        matchingColumns.push(item.id);
+                    if (item.proc_inst_id && item.proc_inst_id.toLowerCase().includes(keyword.toLowerCase())) {
+                        matchingColumns.push(item.proc_inst_id);
                     }
-                    if (item.name && item.name.toLowerCase().includes(keyword.toLowerCase())) {
-                        matchingColumns.push(item.name);
+                    if (item.proc_inst_name && item.proc_inst_name.toLowerCase().includes(keyword.toLowerCase())) {
+                        matchingColumns.push(item.proc_inst_name);
                     }
-                    if (item.variables_data && item.variables_data.toLowerCase().includes(keyword.toLowerCase())) {
-                        matchingColumns.push(item.variables_data);
+                    if (item.variables_data && JSON.stringify(item.variables_data).toLowerCase().includes(keyword.toLowerCase())) {
+                        matchingColumns.push(JSON.stringify(item.variables_data));
                     }
                     return {
-                        title: item.name,
-                        href: `/instancelist/${btoa(item.id)}`,
+                        title: item.proc_inst_name,
+                        href: `/instancelist/${btoa(item.proc_inst_id)}`,
                         matches: matchingColumns
                     };
                 });

@@ -84,10 +84,9 @@ export default {
         },
         async tab(newVal, oldVal) {
             if (newVal !== oldVal) {
-                await this.$nextTick();
-                const activeComponent = this.$refs[newVal];
-                if (activeComponent && typeof activeComponent.init === 'function') {
-                    await activeComponent.init();
+                const activeComponents = this.$refs[newVal];
+                if (activeComponents && activeComponents.length > 0 && activeComponents[0].init) {
+                    await activeComponents[0].init();
                 }
             }
         }
