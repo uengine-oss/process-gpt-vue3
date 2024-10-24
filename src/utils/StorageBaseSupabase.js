@@ -168,7 +168,11 @@ export default class StorageBaseSupabase {
                     }
                 }
             } else {
-                throw new StorageBaseError('error in signIn', e, arguments);
+                return {
+                    error: true,
+                    errorMsg: '회원가입이 필요합니다.'
+                }
+                // throw new StorageBaseError('error in signIn', e, arguments);
             }
         } catch(e) {
             throw new StorageBaseError('error in signIn', e, arguments);
