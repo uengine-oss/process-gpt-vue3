@@ -16,13 +16,13 @@ export default {
     data() {
         return {
             audio: null,
-            mediaSource: null,
             sourceBuffer: null,
-            mediaStream: null, // MediaStream을 추적하기 위한 변수 추가
             abortController: null, // AbortController 인스턴스 추가
             audioContext: null,
             analyser: null,
             dataArray: null,
+            audioQueue: [], // 오디오 버퍼를 저장할 큐
+            isPlaying: false, // 현재 오디오가 재생 중인지 여부
         }
     },
     mounted() {
@@ -56,16 +56,12 @@ export default {
             this.analyser.fftSize = 256;
             this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
 
-            // 오디오 요소로부터 MediaStreamAudioSourceNode 생성
             const audioElement = this.$refs.audioPlay;
             const source = this.audioContext.createMediaElementSource(audioElement);
             source.connect(this.analyser);
             this.analyser.connect(this.audioContext.destination);
 
             this.updateAudioBars();
-        },
-        onSourceOpen() {
-            this.sourceBuffer = this.mediaSource.addSourceBuffer('audio/mpeg');
         },
         stopStream() {
             if (this.abortController) {
@@ -78,9 +74,8 @@ export default {
             if (this.sourceBuffer && this.sourceBuffer.updating) {
                 this.sourceBuffer.abort();
             }
-            if (this.mediaSource && this.mediaSource.readyState === 'open') {
-                this.mediaSource.endOfStream();
-            }
+            this.audioQueue = []; // Clear the audio queue
+            this.isPlaying = false; // Reset the playing state
             this.$emit('audio:stop');
         },
         async playResponseData(response) {
@@ -106,17 +101,12 @@ export default {
                 const push = () => {
                     reader.read().then(async ({ done, value }) => {
                         if (done) {
-                            me.audio.onended = () => {
-                                me.$emit('audio:stop');
-                            };
                             return;
                         }
                         try {
                             const audioBuffer = await me.audioContext.decodeAudioData(value.buffer);
-                            const source = me.audioContext.createBufferSource();
-                            source.buffer = audioBuffer;
-                            source.connect(me.audioContext.destination);
-                            source.start();
+                            me.audioQueue.push(audioBuffer); // 큐에 오디오 버퍼 추가
+                            me.playNextInQueue(); // 큐에서 다음 오디오 재생 시도
                         } catch (error) {
                             console.error('Error decoding audio data', error);
                         }
@@ -140,9 +130,34 @@ export default {
                 }
             });
         },
+        playNextInQueue() {
+            if (this.isPlaying || this.audioQueue.length === 0) {
+                return;
+            }
+
+            const audioBuffer = this.audioQueue.shift(); // 큐에서 다음 오디오 버퍼 꺼내기
+            const source = this.audioContext.createBufferSource();
+            source.buffer = audioBuffer;
+
+            // 소스를 분석기 노드에 연결한 후, 오디오 컨텍스트의 목적지에 연결
+            source.connect(this.analyser);
+            this.analyser.connect(this.audioContext.destination);
+
+            source.onended = () => {
+                this.isPlaying = false;
+                this.playNextInQueue(); // 현재 오디오가 끝나면 다음 오디오 재생
+            };
+
+            source.start();
+            this.isPlaying = true;
+        },
         updateAudioBars() {
             if (this.analyser) {
+                if (this.audioContext.state === 'suspended') {
+                    this.audioContext.resume();
+                }
                 this.analyser.getByteFrequencyData(this.dataArray);
+                console.log('dataArray', Array.from(this.dataArray))
                 this.$emit('update:audioBars', Array.from(this.dataArray));
                 requestAnimationFrame(this.updateAudioBars);
             }

@@ -95,16 +95,6 @@ class ProcessGPTBackend implements Backend {
                 ]);
                 
                 await storage.delete(`proc_def/${defId}`, { key: 'id' });
-
-                // if (!window.$jms) {
-                //     await axios.post(`/execution/drop-process-table/invoke`, {
-                //         "input": {
-                //             "process_definition_id": defId
-                //         }
-                //     }).catch(error => {
-                //         throw new Error(error && error.detail ? error.detail : error);
-                //     });
-                // }
             }
         } catch (e) {
             
@@ -181,19 +171,6 @@ class ProcessGPTBackend implements Backend {
                 throw new Error("Error when to unlock: " + (error && error.detail ? error.detail : error));
             }
 
-            // if (!window.$jms) {
-            //     try {
-            //         await axios.post(`/execution/process-db-schema/invoke`, {
-            //             "input": {
-            //                 "process_definition_id": defId
-            //             }
-            //         })
-            //     } catch(error) {
-            //         //@ts-ignore
-            //         throw new Error("Error when to creating database for the definition: " + (error && error.detail ? error.detail : error));
-            //     }
-            // }
-
         } catch (e) {
             
             throw new Error('error when to save definition: ' + (e instanceof Error ? e.message : ''));
@@ -254,21 +231,8 @@ class ProcessGPTBackend implements Backend {
             if (window.$jms) return;
 
             let defId = input.process_definition_id || input.processDefinitionId;
-            if (defId && defId != '') {
-                // const list = await storage.list(defId);
-                // if (list.code == ErrorCode.TableNotFound) {
-                //     await axios.post(`/execution/process-db-schema/invoke`, {
-                //         "input": {
-                //             "process_definition_id": defId
-                //         }
-                //     }).catch(error => {
-                //         throw new Error(error && error.detail ? error.detail : error);
-                //     });
-                // }
-            } else {
-                if (input.process_instance_id && input.process_instance_id != '') {
-                    defId = input.process_instance_id.split('.')[0];
-                }
+            if (!defId && input.process_instance_id && input.process_instance_id != '') {
+                defId = input.process_instance_id.split('.')[0];
             }
 
             if (!input.answer) {
