@@ -18,7 +18,9 @@
                                     {{ $t('TestProcess.mainInstanceId') }}{{ instanceId }}
                                     <BpmnUengine
                                         ref="bpmnVue"
+                                        :key="bpmnKey"
                                         :bpmn="bpmn"
+                                        :taskStatus="taskStatus"
                                         :options="options"
                                         :isViewMode="true"
                                         :currentActivities="currentActivities"
@@ -33,9 +35,11 @@
                                         {{ $t('TestProcess.subInstanceId') }}{{ key }}
                                         <BpmnUengine
                                             ref="bpmnVue"
+                                            :key= "subBpmnKey"
                                             :bpmn="sub"
                                             :options="options"
                                             :isViewMode="true"
+                                            :taskStatus="subTaskStatus[key]"
                                             :currentActivities="subCurrentActivities[key]"
                                             v-on:openDefinition="(ele) => openSubProcess(ele)"
                                             style="height: 100%"
@@ -145,7 +149,11 @@ export default {
         instanceId: null,
         tool: null,
         subBpmn: null,
-        subCurrentActivities: null
+        subBpmnKey: 0,
+        subTaskStatus : {},
+        subCurrentActivities: null,
+        taskStatus: null,
+        bpmnKey: 0
     }),
     created() {
         let me = this;
@@ -176,7 +184,10 @@ export default {
 
                 if (me.subBpmn == null) me.subBpmn = {};
                 me.subBpmn[item.worklist.instId] = await me.backend.getRawDefinition(item.worklist.defId, { type: 'bpmn' });
+                await me.setStatus();
                 me.updatedDefKey++;
+
+                
                 // me.subCurrentActivities ?  : me.subCurrentActivities
             }
         },
@@ -198,9 +209,13 @@ export default {
                     let taskInfo = await me.backend.findCurrentWorkItemByInstId(me.instanceId);
                     me.taskList = taskInfo;
                     me.setTaskInfo();
+                    
+                    await me.setStatus();
+                    
                 },
                 successMsg: this.$t('successMsg.workCompleted')
             });
+            
         },
         async saveForm(testData, task) {
             let me = this;
@@ -232,6 +247,17 @@ export default {
             const keyToDelete = 'specificKey'; // Replace 'specificKey' with the actual key you want to delete
             if (me.workItem.hasOwnProperty(task.taskId)) {
                 delete me.workItem[task.taskId];
+            }
+        },
+        setStatus() {
+            let me = this;
+            if(me.subBpmn) {
+                Object.keys(me.subBpmn).forEach(async function (instId) {
+                    me.subTaskStatus[instId] = await me.backend.getActivitiesStatus(instId);
+                    me.bpmnKey++;
+                    me.subBpmnKey++;
+                    me.updatedDefKey++;
+                });
             }
         },
         startProcess() {
@@ -279,6 +305,9 @@ export default {
             // me.currentActivities = [];
             // me.workItem = await me.backend.getWorkItem(me.taskId);
 
+            const instId =  window.$mode == 'ProcessGPT' ? atob(me.instanceId) : me.instanceId;
+            me.taskStatus = tasks;
+            me.bpmnKey++;
             me.updatedDefKey++;
         },
         async fireMessage(event) {
