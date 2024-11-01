@@ -127,33 +127,33 @@ export default class StorageBaseSupabase {
             if ((window.$isTenantServer && !window.$tenantName) || 
                 (existUser && existUser.tenants && existUser.tenants.includes(window.$tenantName))
             ) {
-                const result = await window.$supabase.auth.signInWithPassword({
-                    email: userInfo.email,
-                    password: userInfo.password
-                });
+            const result = await window.$supabase.auth.signInWithPassword({
+                email: userInfo.email,
+                password: userInfo.password
+            });
 
-                if (!result.error) {    
-                    const { access_token, refresh_token } = result.data.session;
-                    if (window.location.host.includes('localhost') || 
-                        window.location.host.includes('127.0.0.1') ||
-                        window.location.host.includes('192.168')
-                    ) {
-                        document.cookie = `access_token=${access_token}; path=/; SameSite=Lax`;
-                        document.cookie = `refresh_token=${refresh_token}; path=/; SameSite=Lax`;
-                    } else {
-                        document.cookie = `access_token=${access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                        document.cookie = `refresh_token=${refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                    }
-    
+            if (!result.error) {
+                const { access_token, refresh_token } = result.data.session;
+                if (window.location.host.includes('localhost') || 
+                    window.location.host.includes('127.0.0.1') ||
+                    window.location.host.includes('192.168')
+                ) {
+                    document.cookie = `access_token=${access_token}; path=/; SameSite=Lax`;
+                    document.cookie = `refresh_token=${refresh_token}; path=/; SameSite=Lax`;
+                } else {
+                    document.cookie = `access_token=${access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                    document.cookie = `refresh_token=${refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                }
+                
                     if (!window.$isTenantServer && window.$tenantName) {
                         await this.setCurrentTenant(window.$tenantName);
                     }
-                    
+
                     return result.data;
-                } else if (result.error && result.error.message.includes("Email not confirmed")){
-                    result.errorMsg = "계정 인증이 완료되지 않았습니다. 이메일 확인 후 다시 로그인하세요."
-                    return result;
-                } else {
+            } else if (result.error && result.error.message.includes("Email not confirmed")){
+                result.errorMsg = "계정 인증이 완료되지 않았습니다. 이메일 확인 후 다시 로그인하세요."
+                return result;
+            } else {
                     const users = await this.list('users');
                     if (users && users.length > 0) {
                         const checkedId = users.some((user) => user.email == userInfo.email);
@@ -162,7 +162,7 @@ export default class StorageBaseSupabase {
                         } else {
                             result.errorMsg = '아이디가 틀렸습니다.';
                         }
-                        return result;
+                return result;
                     } else {
                         throw new StorageBaseError(result.error);
                     }
@@ -206,37 +206,37 @@ export default class StorageBaseSupabase {
                 });
                 return await this.signIn(userInfo);
             } else {
-                const result = await window.$supabase.auth.signUp({
-                    email: userInfo.email,
-                    password: userInfo.password,
-                    options: {
-                        data: {
-                            name: userInfo.username
-                        }
+            const result = await window.$supabase.auth.signUp({
+                email: userInfo.email,
+                password: userInfo.password,
+                options: {
+                    data: {
+                        name: userInfo.username
                     }
-                });
-        
+                }
+            });
+
                 if (!result.error) {
-                    if (!window.$isTenantServer && window.$tenantName) {
-                        await this.putObject('users', {
-                            id: result.data.user.id,
-                            username: result.data.user.user_metadata.name,
-                            tenants: [window.$tenantName],
-                            current_tenant: window.$tenantName
-                        });
-                    }
+                if (!window.$isTenantServer && window.$tenantName) {
+                    await this.putObject('users', {
+                        id: result.data.user.id,
+                        username: result.data.user.user_metadata.name,
+                        tenants: [window.$tenantName],
+                        current_tenant: window.$tenantName
+                    });
+                }
                     
-                    const { access_token, refresh_token } = result.data.session;
-                    if (window.location.host.includes('localhost') || 
-                        window.location.host.includes('127.0.0.1') ||
-                        window.location.host.includes('192.168')
-                    ) {
-                        document.cookie = `access_token=${access_token}; path=/; SameSite=Lax`;
-                        document.cookie = `refresh_token=${refresh_token}; path=/; SameSite=Lax`;
-                    } else {
-                        document.cookie = `access_token=${access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                        document.cookie = `refresh_token=${refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                    }
+                const { access_token, refresh_token } = result.data.session;
+                if (window.location.host.includes('localhost') || 
+                    window.location.host.includes('127.0.0.1') ||
+                    window.location.host.includes('192.168')
+                ) {
+                    document.cookie = `access_token=${access_token}; path=/; SameSite=Lax`;
+                    document.cookie = `refresh_token=${refresh_token}; path=/; SameSite=Lax`;
+                } else {
+                    document.cookie = `access_token=${access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                    document.cookie = `refresh_token=${refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                }
     
                     return result.data;
                 } else {
@@ -900,11 +900,10 @@ export default class StorageBaseSupabase {
     async searchProcInst(keyword) {
         try {
             const email = window.localStorage.getItem('email');
-            const { data, error } = await window.$supabase.rpc('search_bpm_proc_inst', {
+            const data = await this.callProcedure('search_bpm_proc_inst', {
                 keyword,
                 user_email: email
             });
-            if (error) throw new StorageBaseError('error in searchProcInst', error, arguments);
 
             if (data && data.length > 0) {
                 const list = data.map((item) => {
@@ -1047,11 +1046,7 @@ export default class StorageBaseSupabase {
 
     async searchChat(keyword) {
         try {
-            const { data, error } = await window.$supabase.from('chat_room_chats')
-                .select()
-                .or(`messages->>content.ilike.%${keyword}%,messages->>name.ilike.%${keyword}%,messages->>email.ilike.%${keyword}%`);
-            
-            if (error) throw new StorageBaseError('error in searchChat', error, arguments);
+            const data = await this.callProcedure('search_chat_room_chats', { keyword: keyword });
             
             if (data && data.length > 0) {
                 let list = data.map((item) => {

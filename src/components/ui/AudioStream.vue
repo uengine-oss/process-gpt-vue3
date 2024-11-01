@@ -157,7 +157,6 @@ export default {
                     this.audioContext.resume();
                 }
                 this.analyser.getByteFrequencyData(this.dataArray);
-                console.log('dataArray', Array.from(this.dataArray))
                 this.$emit('update:audioBars', Array.from(this.dataArray));
                 requestAnimationFrame(this.updateAudioBars);
             }

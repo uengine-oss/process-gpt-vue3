@@ -403,7 +403,7 @@ class ProcessGPTBackend implements Backend {
                 const email = localStorage.getItem("email");
                 filter.match.user_id = email;
             }
-            const list = await storage.list('worklist', filter);
+            const list = await storage.list('todolist', filter);
             const worklist: any[] = [];
             if (list && list.length > 0) {
                 for (const item of list) {
@@ -705,7 +705,6 @@ class ProcessGPTBackend implements Backend {
             const result = {
                 valueMap: varData
             }
-            console.log(result);
             return result;
         } catch (error) {
             //@ts-ignore
@@ -897,7 +896,7 @@ class ProcessGPTBackend implements Backend {
 
     async getWorkListByInstId(instId: number) {
         try {
-            const list = await storage.list(`todolist`, { match: { 'proc_inst_id': instId } });
+            const list = await storage.list('todolist', { match: { 'proc_inst_id': instId } });
             const worklist: any[] = list.map((item: any) => {
                 return {
                     defId: item.proc_def_id,
@@ -941,7 +940,7 @@ class ProcessGPTBackend implements Backend {
         // instance/{instanceId}/completed
         //TODO: 현재 프로세스 진행상태 추가
         try {
-            const list = await storage.list(`worklist`, { match: { 'proc_inst_id': instId } });
+            const list = await storage.list('todolist', { match: { 'proc_inst_id': instId } });
             let result: any = {};
             list.forEach((item: any) => {
                 if(item.status == 'DONE') {
