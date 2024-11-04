@@ -1,74 +1,76 @@
 <template>
-    <AppBaseCard>
-        <template v-slot:leftpart>
-            <Chat :name="$t(chatInfo.title)"
-                :messages="messages"
-                :chatInfo="chatInfo"
-                :userInfo="userInfo" 
-                :disableChat="disableChat"
-                @sendMessage="beforeSendMessage"
-                @sendEditedMessage="sendEditedMessage"
-                @stopMessage="stopMessage"
-            ></Chat>
+    <v-card elevation="10">
+        <AppBaseCard>
+            <template v-slot:leftpart>
+                <Chat :name="$t(chatInfo.title)"
+                    :messages="messages"
+                    :chatInfo="chatInfo"
+                    :userInfo="userInfo" 
+                    :disableChat="disableChat"
+                    @sendMessage="beforeSendMessage"
+                    @sendEditedMessage="sendEditedMessage"
+                    @stopMessage="stopMessage"
+                ></Chat>
 
-            <v-dialog v-model="userDialog" max-width="500">
-                <v-card>
-                    <v-card-title>신규 입사자 가입</v-card-title>
-                    <v-card-text class="overflow-y-auto">
-                        <div v-for="(user, index) in newUserList" :key="index" class="py-2">
-                            <v-text-field v-model="user.name" label="이름"></v-text-field>
-                            <v-text-field v-model="user.email" label="이메일"></v-text-field>
-                            <v-divider></v-divider>
-                        </div>
-                    </v-card-text>
-                    <v-card-actions>
-                        <v-spacer></v-spacer>
-                        <v-btn color="primary" @click="createNewUser(newUserList)">가입</v-btn>
-                        <v-btn color="error" @click="userDialog = false">닫기</v-btn>
-                    </v-card-actions>
-                </v-card>
-            </v-dialog>
-        </template>
+                <v-dialog v-model="userDialog" max-width="500">
+                    <v-card>
+                        <v-card-title>신규 입사자 가입</v-card-title>
+                        <v-card-text class="overflow-y-auto">
+                            <div v-for="(user, index) in newUserList" :key="index" class="py-2">
+                                <v-text-field v-model="user.name" label="이름"></v-text-field>
+                                <v-text-field v-model="user.email" label="이메일"></v-text-field>
+                                <v-divider></v-divider>
+                            </div>
+                        </v-card-text>
+                        <v-card-actions>
+                            <v-spacer></v-spacer>
+                            <v-btn color="primary" @click="createNewUser(newUserList)">가입</v-btn>
+                            <v-btn color="error" @click="userDialog = false">닫기</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
+            </template>
 
-        <template v-slot:rightpart>
-            <OrganizationChart
-                    :node="organizationChart"
-                    :key="organizationChart.id"
-                    :userList="userList"
-                    @updateNode="updateNode"
-            ></OrganizationChart>
-        </template>
+            <template v-slot:rightpart>
+                <OrganizationChart
+                        :node="organizationChart"
+                        :key="organizationChart.id"
+                        :userList="userList"
+                        @updateNode="updateNode"
+                ></OrganizationChart>
+            </template>
 
-        <template v-slot:mobileLeftContent>
-            <Chat :name="$t(chatInfo.title)"
-                :messages="messages"
-                :chatInfo="chatInfo"
-                :userInfo="userInfo" 
-                :disableChat="disableChat"
-                @sendMessage="beforeSendMessage"
-                @sendEditedMessage="sendEditedMessage"
-                @stopMessage="stopMessage"
-            ></Chat>
+            <template v-slot:mobileLeftContent>
+                <Chat :name="$t(chatInfo.title)"
+                    :messages="messages"
+                    :chatInfo="chatInfo"
+                    :userInfo="userInfo" 
+                    :disableChat="disableChat"
+                    @sendMessage="beforeSendMessage"
+                    @sendEditedMessage="sendEditedMessage"
+                    @stopMessage="stopMessage"
+                ></Chat>
 
-            <v-dialog v-model="userDialog" max-width="500">
-                <v-card>
-                    <v-card-title>신규 입사자 가입</v-card-title>
-                    <v-card-text>
-                        <div v-for="(user, index) in newUserList" :key="index" class="py-2">
-                            <v-text-field v-model="user.name" label="이름"></v-text-field>
-                            <v-text-field v-model="user.email" label="이메일"></v-text-field>
-                            <v-divider></v-divider>
-                        </div>
-                    </v-card-text>
-                    <v-card-actions>
-                        <v-spacer></v-spacer>
-                        <v-btn color="primary" @click="createNewUser(newUserList)">가입</v-btn>
-                        <v-btn color="error" @click="userDialog = false">닫기</v-btn>
-                    </v-card-actions>
-                </v-card>
-            </v-dialog>
-        </template>
-    </AppBaseCard>
+                <v-dialog v-model="userDialog" max-width="500">
+                    <v-card>
+                        <v-card-title>신규 입사자 가입</v-card-title>
+                        <v-card-text>
+                            <div v-for="(user, index) in newUserList" :key="index" class="py-2">
+                                <v-text-field v-model="user.name" label="이름"></v-text-field>
+                                <v-text-field v-model="user.email" label="이메일"></v-text-field>
+                                <v-divider></v-divider>
+                            </div>
+                        </v-card-text>
+                        <v-card-actions>
+                            <v-spacer></v-spacer>
+                            <v-btn color="primary" @click="createNewUser(newUserList)">가입</v-btn>
+                            <v-btn color="error" @click="userDialog = false">닫기</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
+            </template>
+        </AppBaseCard>
+    </v-card>
 </template>
 
 <script>

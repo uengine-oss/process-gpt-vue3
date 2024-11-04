@@ -45,7 +45,7 @@ const MainRoutes = {
         {
             name: 'organization',
             path: '/organization',
-            component: () => import('@/views/apps/organization/Organization.vue')
+            component: () => import('@/components/OrganizationChartChat.vue')
         },
         {
             name: 'definitions',
