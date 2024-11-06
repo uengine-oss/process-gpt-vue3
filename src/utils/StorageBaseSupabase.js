@@ -206,38 +206,48 @@ export default class StorageBaseSupabase {
                 });
                 return await this.signIn(userInfo);
             } else {
-            const result = await window.$supabase.auth.signUp({
-                email: userInfo.email,
-                password: userInfo.password,
-                options: {
-                    data: {
-                        name: userInfo.username
+                const result = await window.$supabase.auth.signUp({
+                    email: userInfo.email,
+                    password: userInfo.password,
+                    options: {
+                        data: {
+                            name: userInfo.username
+                        }
                     }
-                }
-            });
+                });
 
                 if (!result.error) {
-                if (!window.$isTenantServer && window.$tenantName) {
-                    await this.putObject('users', {
-                        id: result.data.user.id,
-                        username: result.data.user.user_metadata.name,
-                        tenants: [window.$tenantName],
-                        current_tenant: window.$tenantName
-                    });
-                }
-                    
-                const { access_token, refresh_token } = result.data.session;
-                if (window.location.host.includes('localhost') || 
-                    window.location.host.includes('127.0.0.1') ||
-                    window.location.host.includes('192.168')
-                ) {
-                    document.cookie = `access_token=${access_token}; path=/; SameSite=Lax`;
-                    document.cookie = `refresh_token=${refresh_token}; path=/; SameSite=Lax`;
-                } else {
-                    document.cookie = `access_token=${access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                    document.cookie = `refresh_token=${refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                }
-    
+                    if (!window.$isTenantServer && window.$tenantName) {
+                        const existTenant = await this.getObject('tenants', { match: { id: window.$tenantName } });
+                        if (!existTenant) {
+                            await this.putObject('tenants', {
+                                id: window.$tenantName,
+                                owner: result.data.user.id
+                            });
+                        }
+
+                        await this.putObject('users', {
+                            id: result.data.user.id,
+                            username: result.data.user.user_metadata.name,
+                            tenants: [window.$tenantName],
+                            current_tenant: window.$tenantName
+                        });
+                    }
+                        
+                    const { access_token, refresh_token } = result.data.session;
+                    if (window.location.host.includes('localhost') || 
+                        window.location.host.includes('127.0.0.1') ||
+                        window.location.host.includes('192.168')
+                    ) {
+                        document.cookie = `access_token=${access_token}; path=/; SameSite=Lax`;
+                        document.cookie = `refresh_token=${refresh_token}; path=/; SameSite=Lax`;
+                    } else {
+                        document.cookie = `access_token=${access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                        document.cookie = `refresh_token=${refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                    }
+
+                    await this.setCurrentTenant(window.$tenantName);
+
                     return result.data;
                 } else {
                     result.errorMsg = result.error.message;
