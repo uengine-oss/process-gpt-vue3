@@ -5,6 +5,7 @@
 ### with Docker Compose
 start docker compose
 ```
+cd docker-compose
 docker-compose up -d
 ```
 stop docker compose

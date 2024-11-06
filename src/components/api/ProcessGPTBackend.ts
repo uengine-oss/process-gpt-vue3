@@ -1075,7 +1075,9 @@ class ProcessGPTBackend implements Backend {
                 }
             })
             .catch(error => {
-                throw new Error(error && error.detail ? error.detail : error);
+                console.log(error);
+                return null;
+                // throw new Error(error && error.detail ? error.detail : error);
             });
             return result;
         } catch (error) {

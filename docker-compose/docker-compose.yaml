@@ -2,18 +2,24 @@ version: '3.8'
 
 services:
   frontend:
-    image: gcr.io/process-gpt-419207/process-gpt:v2.6.1
+    image: gcr.io/process-gpt-419207/process-gpt:v2.6.2
     ports:
       - "8080:8080"
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
 
   execution:
-    image: gcr.io/process-gpt-419207/process-gpt-execution:v0.3.2
+    image: gcr.io/process-gpt-419207/process-gpt-execution:v0.3.3
     ports:
       - "8000:8000"
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SUPABASE_URL_PROD: ${SUPABASE_URL}
+      SUPABASE_KEY_PROD: ${SERVICE_ROLE_KEY}
+      SUPABASE_SECRET_KEY_PROD: ${JWT_SECRET}
+      SUPABASE_URL_DEV: ${SUPABASE_URL}
+      SUPABASE_KEY_DEV: ${SERVICE_ROLE_KEY}
+      SUPABASE_SECRET_KEY_DEV: ${JWT_SECRET}
 
   autonomous:
     image: gcr.io/process-gpt-419207/process-gpt-autonomous:v0.1.4
@@ -57,9 +63,9 @@ services:
       timeout: 5s
       interval: 5s
       retries: 3
-    depends_on:
-      analytics:
-        condition: service_healthy
+    # depends_on:
+    #   analytics:
+    #     condition: service_healthy
     ports:
       - "${STUDIO_PORT}:3000"
     environment:
@@ -92,10 +98,10 @@ services:
     entrypoint: bash -c 'eval "echo \"$$(cat ~/temp.yml)\"" > ~/kong.yml && /docker-entrypoint.sh kong docker-start'
     ports:
       - ${KONG_HTTP_PORT}:8000/tcp
-      - ${KONG_HTTPS_PORT}:8443/tcp
-    depends_on:
-      analytics:
-        condition: service_healthy
+      # - ${KONG_HTTPS_PORT}:8443/tcp
+    # depends_on:
+    #   analytics:
+    #     condition: service_healthy
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
@@ -115,12 +121,12 @@ services:
   auth:
     container_name: supabase-auth
     image: supabase/gotrue:v2.158.1
-    depends_on:
-      db:
-        # Disable this if you are using an external Postgres database
-        condition: service_healthy
-      analytics:
-        condition: service_healthy
+    # depends_on:
+    #   db:
+    #     # Disable this if you are using an external Postgres database
+    #     condition: service_healthy
+    #   analytics:
+    #     condition: service_healthy
     healthcheck:
       test:
         [
@@ -131,9 +137,9 @@ services:
           "--spider",
           "http://localhost:9999/health"
         ]
-      timeout: 5s
+      timeout: 25s
       interval: 5s
-      retries: 3
+      retries: 5
     restart: unless-stopped
     environment:
       GOTRUE_API_HOST: 0.0.0.0
@@ -198,12 +204,12 @@ services:
   rest:
     container_name: supabase-rest
     image: postgrest/postgrest:v12.2.0
-    depends_on:
-      db:
-        # Disable this if you are using an external Postgres database
-        condition: service_healthy
-      analytics:
-        condition: service_healthy
+    # depends_on:
+    #   db:
+    #     # Disable this if you are using an external Postgres database
+    #     condition: service_healthy
+    #   analytics:
+    #     condition: service_healthy
     restart: unless-stopped
     environment:
       PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
@@ -219,12 +225,12 @@ services:
     # This container name looks inconsistent but is correct because realtime constructs tenant id by parsing the subdomain
     container_name: realtime-dev.supabase-realtime
     image: supabase/realtime:v2.30.34
-    depends_on:
-      db:
-        # Disable this if you are using an external Postgres database
-        condition: service_healthy
-      analytics:
-        condition: service_healthy
+    # depends_on:
+    #   db:
+    #     # Disable this if you are using an external Postgres database
+    #     condition: service_healthy
+    #   analytics:
+    #     condition: service_healthy
     healthcheck:
       test:
         [
@@ -263,14 +269,14 @@ services:
   storage:
     container_name: supabase-storage
     image: supabase/storage-api:v1.11.13
-    depends_on:
-      db:
-        # Disable this if you are using an external Postgres database
-        condition: service_healthy
-      rest:
-        condition: service_started
-      imgproxy:
-        condition: service_started
+    # depends_on:
+    #   db:
+    #     # Disable this if you are using an external Postgres database
+    #     condition: service_healthy
+    #   rest:
+    #     condition: service_started
+    #   imgproxy:
+    #     condition: service_started
     healthcheck:
       test:
         [
@@ -322,12 +328,12 @@ services:
   meta:
     container_name: supabase-meta
     image: supabase/postgres-meta:v0.84.2
-    depends_on:
-      db:
-        # Disable this if you are using an external Postgres database
-        condition: service_healthy
-      analytics:
-        condition: service_healthy
+    # depends_on:
+    #   db:
+    #     # Disable this if you are using an external Postgres database
+    #     condition: service_healthy
+    #   analytics:
+    #     condition: service_healthy
     restart: unless-stopped
     environment:
       PG_META_PORT: 8080
@@ -341,9 +347,9 @@ services:
     container_name: supabase-edge-functions
     image: supabase/edge-runtime:v1.59.0
     restart: unless-stopped
-    depends_on:
-      analytics:
-        condition: service_healthy
+    # depends_on:
+    #   analytics:
+    #     condition: service_healthy
     environment:
       JWT_SECRET: ${JWT_SECRET}
       SUPABASE_URL: http://kong:8000
@@ -368,10 +374,10 @@ services:
       interval: 5s
       retries: 10
     restart: unless-stopped
-    depends_on:
-      db:
-        # Disable this if you are using an external Postgres database
-        condition: service_healthy
+    # depends_on:
+    #   db:
+    #     # Disable this if you are using an external Postgres database
+    #     condition: service_healthy
     # Uncomment to use Big Query backend for analytics
     # volumes:
     #   - type: bind
@@ -410,6 +416,9 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    # depends_on:
+    #   vector:
+    #     condition: service_healthy
     command:
       - postgres
       - -c
@@ -445,6 +454,8 @@ services:
       - ./volumes/db/pooler.sql:/docker-entrypoint-initdb.d/migrations/99-pooler.sql:Z
       # Use named volume to persist pgsodium decryption key between restarts
       - db-config:/etc/postgresql-custom
+      - ./volumes/db/table.sql:/docker-entrypoint-initdb.d/table.sql
+
 
 volumes:
   db-config:
