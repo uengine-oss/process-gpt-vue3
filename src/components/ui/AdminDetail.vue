@@ -54,7 +54,7 @@
                         :currentActivities="currentActivities"
                         :executionScopeActivities="executionScopeActivities"
                         :selectedExecutionScope="selectedExecutionScope"
-                        :task-status="taskStatus"
+                        :taskStatus="taskStatus"
                         v-on:selectedExecutionScope="(scope) => (selectedExecutionScope = scope)"
                         v-on:openDefinition="(ele) => openSubProcess(ele)"
                         v-on:openPanel="(id) => openPanel(id)"
@@ -202,7 +202,7 @@
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
-import BpmnUengine from '@/components/BpmnUengine.vue';
+import BpmnUengine from '@/components/BpmnUengineViewer.vue';
 import customBpmnModule from '@/components/customBpmn';
 import { VDataTable } from 'vuetify/components/VDataTable';
 export default {
@@ -222,9 +222,6 @@ export default {
         loaded: false,
         eventList: [],
         options: {
-            propertiesPanel: {
-                invalidationList: {}
-            },
             additionalModules: [customBpmnModule]
         },
         roles: [],

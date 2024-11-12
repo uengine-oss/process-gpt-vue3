@@ -75,7 +75,7 @@
                                             :options="options"
                                             :isViewMode="true"
                                             :currentActivities="currentActivities"
-                                            :task-status="taskStatus"
+                                            :taskStatus="taskStatus"
                                             v-on:error="handleError"
                                             v-on:shown="handleShown"
                                             v-on:openDefinition="(ele) => openSubProcess(ele)"
@@ -145,7 +145,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import DefaultWorkItem from './DefaultWorkItem.vue';
 import FormWorkItem from './FormWorkItem.vue'; // FormWorkItem 컴포넌트 임포트
 import URLWorkItem from './URLWorkItem.vue';
-import BpmnUengine from '@/components/BpmnUengine.vue';
+import BpmnUengine from '@/components/BpmnUengineViewer.vue';
 
 import WorkItemChat from '@/components/ui/WorkItemChat.vue';
 import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
@@ -200,7 +200,6 @@ export default {
         eventList: [],
         html: null,
         formData: null,
-        taskStatus: {}
     }),
     created() {
         this.init();
@@ -303,7 +302,9 @@ export default {
                             // });
                         }
                     }
-                    // me.taskStatus = await backend.getActivitiesStatus(me.workItem.worklist.instId);
+                    if(me.workItem.worklist) {//dry-run에서는 실제 실행상태가 아니라 안나옴
+                        me.taskStatus = await backend.getActivitiesStatus(me.workItem.worklist.instId);
+                    }
 
                     if (me.mode == 'ProcessGPT') {
                         me.currentComponent = 'FormWorkItem';

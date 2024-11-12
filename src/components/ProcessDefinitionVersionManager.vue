@@ -50,9 +50,15 @@
                         <pre><code class="xml">{{ currentXML }}</code></pre>
                     </div>
                 </div>
-                <div v-else style="height: 100%;">
-                    <process-definition class="process-definition-resize" :bpmn="currentXML" :isViewMode="true"
-                        :key="key"></process-definition>
+                <div v-else style="height: 100%; border-bottom: 1px solid #E0E0E0;">
+                    <BpmnUengine
+                        ref="bpmnVue"
+                        :key="key"
+                        :bpmn="currentXML"
+                        :options="options"
+                        :isViewMode="false"
+                        style="height: 100%;"
+                    ></BpmnUengine>
                 </div>
             </v-card-text>
             <v-card-actions>
@@ -67,8 +73,9 @@
 <script>
 import { Icon } from '@iconify/vue';
 
-import ProcessDefinition from '@/components/ProcessDefinition.vue';
+import BpmnUengine from '@/components/BpmnUengineViewer.vue';
 import BackendFactory from '@/components/api/BackendFactory';
+import customBpmnModule from '@/components/customBpmn';
 const backend = BackendFactory.createBackend();
 import ProcessDefinitionModule from '@/components/ProcessDefinitionModule.vue';
 
@@ -78,7 +85,7 @@ export default {
     mixins: [ProcessDefinitionModule],
     components: {
         Icon,
-        ProcessDefinition,
+        BpmnUengine,
     },
     props: {
         open: Boolean,
@@ -97,6 +104,9 @@ export default {
         lists: [],
         loading: false,
         currentInfo: null,
+        options: {
+            additionalModules: [customBpmnModule]
+        },
     }),
     computed: {
         beforeXML() {

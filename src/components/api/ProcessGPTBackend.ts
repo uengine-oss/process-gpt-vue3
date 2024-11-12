@@ -936,7 +936,7 @@ class ProcessGPTBackend implements Backend {
         return null;
     }
     
-    async getActivitiesStatus(instId: string) {
+    async getActivitiesStatus(instId: string, executionScope: String = "0") {
         // instance/{instanceId}/completed
         //TODO: 현재 프로세스 진행상태 추가
         try {

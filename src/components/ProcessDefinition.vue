@@ -59,7 +59,6 @@
                         :isViewMode="isViewMode"
                         :isPreviewMode="isPreviewMode"
                         :currentActivities="currentActivities"
-                        :taskStatus="taskStatus"
                         :generateFormTask="generateFormTask"
                         v-on:error="handleError"
                         v-on:shown="handleShown"
@@ -281,7 +280,6 @@ export default {
         definitionChat: Object,
         definitionPath: String,
         isXmlMode: Boolean,
-        validationList: Object,
         isAdmin: Boolean,
         generateFormTask: Object,
     },
@@ -324,6 +322,7 @@ export default {
         currentStepIndex: 0,
         stepIds: [],
         currentActivities: [],
+        validationList: {},
         // definitionPath: null
     }),
     computed: {
@@ -404,15 +403,12 @@ export default {
                 this.$emit('valueToStr', str);
             }
         },
-        validationList: {
-            handler(newVal) {
-                this.options.propertiesPanel.invalidationList = newVal;
-            }
-        },
         panel: {
             handler() {
                 let me = this;
                 me.roles = [];
+                const store = useBpmnStore();
+                this.bpmnModeler = store.getModeler;
 
                 let def = this.bpmnModeler.getDefinitions();
                 const processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
@@ -503,11 +499,14 @@ export default {
         // this.processVariables = this.copyProcessDefinition.data
     },
     methods: {
-        closeModelingDialog() {//모델링을 여는 다이얼로그가 닫혔을 때 기존 bpmn정보가 날아가기 때문에 사용
-            const bpmnUEngine = this.$refs['bpmnVue'];
-            if (bpmnUEngine) {
-                bpmnUEngine.closeModelingDialog();
-            }
+        async validate() {
+            let me = this;
+            me.$nextTick(async () => {
+                const store = useBpmnStore();
+                const modeler = store.getModeler;
+                const xmlObj = await modeler._moddle.toXML(modeler._definitions, { format: true, preamble: true });
+                me.validationList = await backend.validate(xmlObj.xml);
+            });
         },
         updateCurrentStep(){
             this.closePanel();
@@ -581,6 +580,7 @@ export default {
                     variable.$parent = uengineProperties;
                 }
             });
+            this.$emit('onLoaded');
         },
 
         updateInstanceNamePattern(val) {

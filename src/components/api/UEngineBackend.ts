@@ -571,9 +571,8 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
-    async getActivitiesStatus(instId: string) {
-        // instance/{instanceId}/completed
-        const response = await axiosInstance.get(`/instance/${instId}/status`);
+    async getActivitiesStatus(instId: string, executionScope: String = "0") {
+        const response = await axiosInstance.get(`/instance/${instId}/status/${executionScope}`);
 
         return response.data;
     }

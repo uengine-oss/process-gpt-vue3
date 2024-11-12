@@ -10,8 +10,8 @@
                     <process-definition
                         class="process-definition-resize"
                         :bpmn="bpmn"
-                        :key="definitionChangeCount"
                         :isViewMode="true"
+                        :key="definitionChangeCount"
                         :isXmlMode="isXmlMode"
                         :definitionPath="fullPath"
                         :definitionChat="this"
@@ -46,7 +46,6 @@
                     {{ projectName }}
                 </h5>
                 <process-definition
-                    ref="process-definition"
                     class="process-definition-resize"
                     :bpmn="bpmn"
                     :processDefinition="processDefinition"
@@ -55,12 +54,12 @@
                     :isXmlMode="isXmlMode"
                     :definitionPath="fullPath"
                     :definitionChat="this"
-                    :validationList="validationList"
                     :isAdmin="isAdmin"
                     :generateFormTask="generateFormTask"
                     @update="updateDefinition"
                     @change="changeElement"
                     @changeBpmn="changeBpmn"
+                    @onLoaded="onLoadBpmn()"
                 ></process-definition>
                 <process-definition-version-dialog
                     :process="processDefinition"
@@ -247,7 +246,6 @@ export default {
         deleteDialog: false,
         isDeleted: false,
         externalSystems: [],
-        validationList: {},
         executeDialog: false,
         isSimulate: 'false',
         waitForCustomer: false,
@@ -302,7 +300,6 @@ export default {
                 if (this.fullPath && this.fullPath != '') {
                     this.chatRoomId = this.fullPath;
                 }
-                this.validate();
             }
         });
     },
@@ -316,27 +313,6 @@ export default {
                     if (newVal.params.pathMatch) {
                         this.init();
                     }
-                }
-            }
-        },
-        executeDialog: {
-            handler(newVal) {
-                if (newVal === false) {
-                    this.closeModelingDialog();
-                }
-            }
-        },
-        versionDialog: {
-            handler(newVal) {
-                if (newVal === false) {
-                    this.closeModelingDialog();
-                }
-            }
-        },
-        verMangerDialog: {
-            handler(newVal) {
-                if (newVal === false) {
-                    this.closeModelingDialog();
                 }
             }
         }
@@ -387,13 +363,6 @@ export default {
             console.log("simulate")
             this.isSimulate = 'true'
             this.executeDialog = !this.executeDialog;
-        },
-        closeModelingDialog() {
-            console.log('closeModelingDialog')
-            const processDefinition = this.$refs['process-definition'];
-            if (processDefinition) {
-                processDefinition.closeModelingDialog();
-            }
         },
         beforeStartGenerate(){
             let chatMsgs = [];
@@ -542,17 +511,6 @@ export default {
             me.definitionChangeCount++;
             me.toggleVerMangerDialog(false);
         },
-        async changeElement() {
-            await this.validate();
-        },
-        async validate() {
-            this.$nextTick(async () => {
-                const store = useBpmnStore();
-                const modeler = store.getModeler;
-                const xmlObj = await modeler.saveXML({ format: true, preamble: true });
-                this.validationList = await backend.validate(xmlObj.xml);
-            });
-        },
         loadBPMN(bpmn) {
             this.bpmn = bpmn;
             this.definitionChangeCount++;
@@ -609,29 +567,9 @@ export default {
                 let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
                 if (fullPath && lastPath != 'chat') {
                     let bpmn = await backend.getRawDefinition(fullPath, { type: 'bpmn' });
-                    const store = useBpmnStore();
-                    let modeler = store.getModeler;
-                    let definitions;
-                    if (bpmn) {
-                        me.bpmn = bpmn;            
-                        definitions = modeler.getDefinitions();   
-                        me.definitionChangeCount++;
-                    }
-                    if (me.useLock) {
-                        const value = await backend.getRawDefinition(fullPath);
-                        if (value) {
-                            me.processDefinition = value.definition;
-                            me.processDefinition.processDefinitionId = value.id;
-                            me.processDefinition.processDefinitionName = value.name;
-                            me.projectName = value.name ? value.name : me.processDefinition.processDefinitionName;
-                        }
-                        me.checkedLock(lastPath);
-                    } else {
-                        me.processDefinition = await me.convertXMLToJSON(me.bpmn);
-                        me.processDefinition.processDefinitionId = fullPath;
-                        me.processDefinition.processDefinitionName = fullPath;
-                        me.projectName = definitions.name ? definitions.name : me.processDefinition.processDefinitionName;
-                    }
+                    me.bpmn = bpmn;             
+                    me.definitionChangeCount++;
+
                 } else if (lastPath == 'chat') {
                     // me.processDefinition = null;
                     me.projectName = null;
@@ -670,7 +608,34 @@ export default {
                 alert(e);
             }
         },
-
+        async onLoadBpmn() {
+            const store = useBpmnStore();
+            let modeler = store.getModeler;
+            let me = this;
+            let definitions;
+            let fullPath = me.$route.params.pathMatch.join('/');
+            if (fullPath.startsWith('/')) {
+                fullPath = fullPath.substring(1);
+            }
+            definitions = modeler.getDefinitions();  
+            if(definitions) {
+                if (me.useLock) {
+                const value = await backend.getRawDefinition(fullPath);
+                if (value) {
+                    me.processDefinition = value.definition;
+                    me.processDefinition.processDefinitionId = value.id;
+                    me.processDefinition.processDefinitionName = value.name;
+                    me.projectName = value.name ? value.name : me.processDefinition.processDefinitionName;
+                }
+                me.checkedLock(lastPath);
+                } else {
+                    me.processDefinition = await me.convertXMLToJSON(me.bpmn);
+                    me.processDefinition.processDefinitionId = fullPath;
+                    me.processDefinition.processDefinitionName = fullPath;
+                    me.projectName = definitions.name ? definitions.name : me.processDefinition.processDefinitionName;
+                }
+            }
+        },
         beforeSendMessage(newMessage) {
             this.waitForCustomer = false
             if(!this.isConsultingMode){

@@ -25,7 +25,7 @@
                                         :isViewMode="true"
                                         :currentActivities="currentActivities"
                                         v-on:openDefinition="(ele) => openSubProcess(ele)"
-                                        style="height: 100%;"
+                                        style="height: 45vh;"
                                     ></BpmnUengine>
                                 </div>
                                 <div v-if="subBpmn">
@@ -42,7 +42,7 @@
                                             :taskStatus="subTaskStatus[key]"
                                             :currentActivities="subCurrentActivities[key]"
                                             v-on:openDefinition="(ele) => openSubProcess(ele)"
-                                            style="height: 100%"
+                                            style="height: 45vh"
                                         ></BpmnUengine>
                                     </div>
                                 </div>
@@ -123,7 +123,7 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import TestVariables from '@/components/apps/definition-map/TestVariables.vue';
 import customBpmnModule from '@/components/customBpmn';
-import BpmnUengine from '@/components/BpmnUengine.vue';
+import BpmnUengine from '@/components/BpmnUengineViewer.vue';
 export default {
     components: { TestVariables, BpmnUengine },
     props: {
@@ -138,7 +138,6 @@ export default {
         bpmn: null,
         updatedDefKey: 0,
         options: {
-            propertiesPanel: {},
             additionalModules: [customBpmnModule]
         },
         eventList: [],
@@ -305,7 +304,6 @@ export default {
             // me.currentActivities = [];
             // me.workItem = await me.backend.getWorkItem(me.taskId);
 
-            const instId =  window.$mode == 'ProcessGPT' ? atob(me.instanceId) : me.instanceId;
             me.taskStatus = tasks;
             me.bpmnKey++;
             me.updatedDefKey++;
