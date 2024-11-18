@@ -881,6 +881,7 @@ export default {
             }
         },
         closePanel() {
+            let me = this;
             this.element = null;
             this.panel = false;
             this.isPreviewMode = false;
