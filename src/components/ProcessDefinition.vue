@@ -53,7 +53,6 @@
                     <BpmnuEngine
                         v-else
                         ref="bpmnVue"
-                        :key="bpmnKey"
                         :bpmn="bpmn"
                         :options="options"
                         :isViewMode="isViewMode"
@@ -69,7 +68,7 @@
                         v-on:definition="(def) => (definitions = def)"
                         v-on:add-shape="onAddShape"
                         v-on:done="setDefinition"
-                        @change="changeElement"
+                        @changeElement="changeElement"
                         style="height: 100%"
                     ></BpmnuEngine>
                     
@@ -315,7 +314,6 @@ export default {
             { title: 'processDefinition.actions', key: 'actions' }
         ],
         taskStatus: null,
-        bpmnKey: 0,
 
         // preview
         isPreviewMode: false,
@@ -356,9 +354,6 @@ export default {
         },
         options() {
             let result = {
-                propertiesPanel: {
-                    invalidationList: this.validationList
-                },
                 additionalModules: this.isViewMode ? [customBpmnModule] : [customBpmnModule, customPaletteModule, customContextPadModule, customReplaceElement]
             };
             return result;
@@ -482,37 +477,16 @@ export default {
             this.copyProcessDefinition = value;
         });
 
-
-        
-        me.$try({
-            action: async () => {
-                if(me.$route.params && me.$route.params.instId) {
-                    const instId =  window.$mode == 'ProcessGPT' ? atob(me.$route.params.instId) : me.$route.params.instId;
-                    me.taskStatus = await backend.getActivitiesStatus(instId);
-                    me.bpmnKey++;
-                }
-            }
-        });
         // const def = this.bpmnModeler.getDefinitions();
         // console.log(this.definitions)
         // LLM과 uEngine 각각 처리 필요.
         // this.processVariables = this.copyProcessDefinition.data
     },
     methods: {
-        async validate() {
-            let me = this;
-            me.$nextTick(async () => {
-                const store = useBpmnStore();
-                const modeler = store.getModeler;
-                const xmlObj = await modeler._moddle.toXML(modeler._definitions, { format: true, preamble: true });
-                me.validationList = await backend.validate(xmlObj.xml);
-            });
-        },
         updateCurrentStep(){
             this.closePanel();
             this.isPreviewMode = true
             this.currentActivities = [this.stepIds[this.currentStepIndex]];
-            this.bpmnKey++;
             this.openPanel(this.stepIds[this.currentStepIndex]);
         },
         prevStep() {
@@ -611,8 +585,15 @@ export default {
             processJson.instanceNamePattern = val;
             uengineProperties.json = JSON.stringify(processJson);
         },
-        changeElement() {
-            this.$emit('change');
+        async changeElement() {
+            let me = this;
+            me.$nextTick(async () => {
+                const store = useBpmnStore();
+                let modeler = store.getModeler;
+                let xmlObj = await modeler.saveXML({ format: true, preamble: true });
+                me.validationList = await backend.validate(xmlObj.xml);
+                this.$emit('changeElement', xmlObj.xml);
+            });
         },
         changeBpmn(newVal) {
             this.$emit('changeBpmn', newVal);
@@ -627,7 +608,6 @@ export default {
             if (this.stepIds.length > 0) {
                 this.isPreviewMode = true
                 this.currentActivities = [this.stepIds[this.currentStepIndex]];
-                this.bpmnKey++;
                 this.openPanel(this.stepIds[0]);
             }
         },
@@ -905,9 +885,13 @@ export default {
             this.panel = false;
             this.isPreviewMode = false;
             this.currentActivities = [];
-            // Todo: 재형씨 확인
-            // this.bpmnKey++;
-            this.$emit('change');
+            me.$nextTick(async () => {
+                const store = useBpmnStore();
+                let modeler = store.getModeler;
+                let xmlObj = await modeler.saveXML({ format: true, preamble: true });
+                me.validationList = await backend.validate(xmlObj.xml);
+                this.$emit('changeElement', xmlObj.xml);
+            });
         },
         handleError() {
             console.error('failed to show diagram', err);

@@ -57,8 +57,8 @@
                     :isAdmin="isAdmin"
                     :generateFormTask="generateFormTask"
                     @update="updateDefinition"
-                    @change="changeElement"
                     @changeBpmn="changeBpmn"
+                    @changeElement="changeElement"
                     @onLoaded="onLoadBpmn()"
                 ></process-definition>
                 <process-definition-version-dialog
@@ -518,6 +518,9 @@ export default {
         changeBpmn(newVal) {
             this.loadBPMN(newVal);
         },
+        changeElement(newVal) {
+            this.bpmn = newVal;
+        },
         removePositionKey(obj) {
             // 배열인 경우, 각 요소에 대해 재귀적으로 함수를 호출
             if (Array.isArray(obj)) {
@@ -584,12 +587,6 @@ export default {
                             me.projectName = me.$route.query.name.replace('.bpmn', '');
                             me.processDefinition.processDefinitionName = me.projectName;
                         }
-                        if(window.$mode == 'uEngine')  {
-                            let bpmnQuery = await backend.getRawDefinition(me.processDefinition.processDefinitionId , { type: 'bpmn' });
-                            if(bpmnQuery) {
-                                me.bpmn = bpmnQuery;
-                            }
-                        }
                     }
 
                     me.lock = false;
@@ -613,10 +610,17 @@ export default {
             let modeler = store.getModeler;
             let me = this;
             let definitions;
+            let xmlObj = await modeler.saveXML({ format: true, preamble: true });
+            me.bpmn = xmlObj.xml;
             let fullPath = me.$route.params.pathMatch.join('/');
             if (fullPath.startsWith('/')) {
                 fullPath = fullPath.substring(1);
             }
+            let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
+            if(fullPath || lastPath == 'chat') return;
+
+            
+
             definitions = modeler.getDefinitions();  
             if(definitions) {
                 if (me.useLock) {

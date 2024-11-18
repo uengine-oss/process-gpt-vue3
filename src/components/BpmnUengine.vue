@@ -57,14 +57,13 @@ export default {
             openPanel: false,
             moddle: null,
             bpmnStore: null,
-            bpmnViewer: null,
-            bpmnQueue: [] // BPMN 변경을 위한 큐 추가
+            bpmnViewer: null
         };
     },
     computed: {
         async getXML() {
-            let xml = await this.bpmnViewer.saveXML({ format: true, preamble: true });
-            return xml;
+            let xmlObj = await this.bpmnViewer.saveXML({ format: true, preamble: true });
+            return xmlObj.xml;
         }
     },
     mounted() {
@@ -72,10 +71,10 @@ export default {
         this.setDiagramEvent();
         if (this.bpmn) {
             this.diagramXML = this.bpmn;
-            this.bpmnViewer.importXML(this.diagramXML);
+        } else {
+            this.diagramXML = '<?xml version="1.0" encoding="UTF-8"?> <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_0bfky9r" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0"> <bpmn:process id="Process_1oscmbn" isExecutable="false"> <bpmn:extensionElements> <uengine:properties> </uengine:properties> </bpmn:extensionElements> </bpmn:process> <bpmndi:BPMNDiagram id="BPMNDiagram_1"> <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1oscmbn" /> </bpmndi:BPMNDiagram> </bpmn:definitions>';
         }
-        
-        console.error("mounted")
+        this.bpmnViewer.importXML(this.diagramXML);
     },
     watch: {
         isViewMode(val) {
@@ -154,7 +153,7 @@ export default {
                     }
                 });
             }
-            self.$emit('change');
+            self.$emit('changeElement');
         },
         setDiagramEvent() {
             var self = this;
@@ -167,6 +166,14 @@ export default {
             eventBus.on('import.done', async function (evt) {
                 console.log('import.done');
                 self.$emit('done');
+                
+                if(self.bpmn) {
+                    self.$nextTick(async () => {
+                        const { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
+                        self.bpmnXML = xml;
+                        self.validate();
+                    });
+                }
             });
             eventBus.on('import.render.complete', async function (event) {
                 let startTime = performance.now();
@@ -263,12 +270,6 @@ export default {
                 // events.forEach(function (event) {
 
                 // });
-                
-                if(self.bpmn) {
-                    const { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
-                    self.bpmnXML = xml;
-                    self.validate();
-                }
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
             });

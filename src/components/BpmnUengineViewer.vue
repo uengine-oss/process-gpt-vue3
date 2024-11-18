@@ -49,7 +49,7 @@ export default {
     computed: {
         async getXML() {
             let xml = await this.bpmnViewer.saveXML({ format: true, preamble: true });
-            return xml;
+            return xml.xml;
         }
     },
     mounted() {

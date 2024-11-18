@@ -92,13 +92,6 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     return shape;
   }
 
-
-  drawCustomLane(parentNode, shape, element) {
-    svgAttr(shape, {
-      color: 'red'
-    });
-  }
-
   // 스윔레인 배경 색상 및 선 색상 bpmn:Lane, (stroke : 선 색상, fill: 배경 색상)
   drawCustomLane(parentNode, shape, element) {
     svgAttr(shape, {

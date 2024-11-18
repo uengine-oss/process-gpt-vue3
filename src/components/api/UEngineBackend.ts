@@ -637,11 +637,16 @@ class UEngineBackend implements Backend {
     }
 
     async validate(xml: string) {
-        const response = await axiosInstance.post(`/validate`, xml);
-        if (!response.data) return {};
-        return response.data;
+        try {
+            const response = await axiosInstance.post(`/validate`, xml);
+            if (!response.data) return {};
+            return response.data;
+        } catch (error) {
+            // console.error('유효성 검사 중 오류 발생:', error);
+            throw error;
+        }
     }
-
+    
     async uploadDefinition(file: File, path: string) {
         const formData = new FormData();
         formData.append('file', file);
