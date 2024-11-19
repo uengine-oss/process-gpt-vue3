@@ -617,7 +617,7 @@ export default {
                 fullPath = fullPath.substring(1);
             }
             let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
-            if(fullPath || lastPath == 'chat') return;
+            if(fullPath == 'chat' && lastPath == 'chat') return;
 
             
 
