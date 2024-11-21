@@ -549,6 +549,9 @@
     },
     "TimerEventDefinitionPanel" : {
         "cron": "시간 입력(Cron)",
+        "date": "날짜 선택",
+        "time": "시간 선택",
+        "frequency": "빈도 선택",
         "cronDescriptionTitle": "Cron 표현식을 사용하여 Timer Intermediate Catch Event가 트리거될 시간을 정밀하게 설정할 수 있습니다.",
         "cronDescriptionSubTitle": "형식: Cron 표현식은 다섯 개의 필드로 구성되며, 각 필드는 분, 시간, 일, 월, 요일을 나타냅니다. \n예시: \n0 0 * * * : 매일 자정 (00:00)에 이벤트가 트리거됩니다. \n15 10 * * * : 매일 10:15 AM에 이벤트가 트리거됩니다. \n0 9 1 * * : 매월 1일 9:00 AM에 이벤트가 트리거됩니다. \n0 0 * * 1 : 매주 월요일 자정 (00:00)에 이벤트가 트리거됩니다. \n*/10 * * * * : 매 10분마다 이벤트가 트리거됩니다."
     },
@@ -690,7 +693,19 @@
         "toggle-is-collection": "컬렉션 여부 전환",
         "toggle-adhoc": "애드혹 전환",
         "replace-with-collapsed-pool": "접힌 풀로 변경",
-        "toggle-participant-multiplicity": "참가자 다중성 전환"
+        "toggle-participant-multiplicity": "참가자 다중성 전환",
+        "replace-with-compensation-boundary": "보상 경계 이벤트로 변경",
+        "replace-with-conditional-boundary": "조건부 경계 이벤트로 변경",
+        "replace-with-error-boundary": "오류 경계 이벤트로 변경",
+        "replace-with-escalation-boundary": "에스컬레이션 경계 이벤트로 변경",
+        "replace-with-message-boundary": "메시지 경계 이벤트로 변경",
+        "replace-with-non-interrupting-conditional-boundary": "조건부 경계 이벤트 (비중단)로 변경",
+        "replace-with-non-interrupting-escalation-boundary": "에스컬레이션 경계 이벤트 (비중단)로 변경",
+        "replace-with-non-interrupting-message-boundary": "메시지 경계 이벤트 (비중단)로 변경",
+        "replace-with-non-interrupting-signal-boundary": "신호 경계 이벤트 (비중단)로 변경",
+        "replace-with-non-interrupting-timer-boundary": "타이머 경계 이벤트 (비중단)로 변경",
+        "replace-with-signal-boundary": "신호 경계 이벤트로 변경",
+        "replace-with-timer-boundary": "타이머 경계 이벤트로 변경"
     },
     "WorkItem": {
         "progress": "진행 상황",

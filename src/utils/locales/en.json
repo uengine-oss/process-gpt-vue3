@@ -690,7 +690,19 @@
         "toggle-is-collection": "Toggle Is Collection",
         "toggle-adhoc": "Toggle Adhoc",
         "replace-with-collapsed-pool": "Replace With Collapsed Pool",
-        "toggle-participant-multiplicity": "Toggle participant multiplicity"
+        "toggle-participant-multiplicity": "Toggle participant multiplicity",
+        "replace-with-compensation-boundary": "Replace with compensation boundary event",
+        "replace-with-conditional-boundary": "Replace with conditional boundary event",
+        "replace-with-error-boundary": "Replace with error boundary event",
+        "replace-with-escalation-boundary": "Replace with escalation boundary event",
+        "replace-with-message-boundary": "Replace with message boundary event",
+        "replace-with-non-interrupting-conditional-boundary": "Replace with non-interrupting conditional boundary event",
+        "replace-with-non-interrupting-escalation-boundary": "Replace with non-interrupting escalation boundary event",
+        "replace-with-non-interrupting-message-boundary": "Replace with non-interrupting message boundary event",
+        "replace-with-non-interrupting-signal-boundary": "Replace with non-interrupting signal boundary event",
+        "replace-with-non-interrupting-timer-boundary": "Replace with non-interrupting timer boundary event",
+        "replace-with-signal-boundary": "Replace with signal boundary event",
+        "replace-with-timer-boundary": "Replace with timer boundary event"
     },
     "WorkItem": {
         "progress": "Progress",
