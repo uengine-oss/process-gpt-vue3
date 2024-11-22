@@ -7,6 +7,14 @@ class UEngineBackend implements Backend {
     //     super();
     // }
 
+    async uploadImage(fileName: string, image: File) {
+        return null;
+    }
+
+    async getImageUrl(fileName: string) {
+        return null;
+    }
+
     async getUserList() {
         return [];
     }

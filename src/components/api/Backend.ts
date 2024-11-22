@@ -64,6 +64,8 @@ export interface Backend {
     checkDBConnection(): Promise<any>;
     getWorkListAll(): Promise<any>;
     getOpenAIToken(): Promise<any>;
+    uploadImage(fileName: string, image: File): Promise<any>;
+    getImageUrl(fileName: string): Promise<any>;
 }
 
 // export type { Backend }

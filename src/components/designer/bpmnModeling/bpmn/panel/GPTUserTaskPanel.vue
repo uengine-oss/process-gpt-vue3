@@ -116,7 +116,12 @@ export default {
                     activity_id: me.element.id
                 }
             }
-            me.tempFormHtml = await me.backend.getRawDefinition(me.formId, options);
+            const lastPath = me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1];
+            if (lastPath == 'chat') {
+                me.tempFormHtml = localStorage.getItem(me.formId);
+            } else {
+                me.tempFormHtml = await me.backend.getRawDefinition(me.formId, options);
+            }
             
             me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
             me.copyUengineProperties.role = {'name': me.role || ''};
@@ -145,7 +150,12 @@ export default {
 
             if (me.tempFormHtml && me.tempFormHtml != '') {
                 if (options && options.proc_def_id && options.activity_id) {
-                    await me.backend.putRawDefinition(me.tempFormHtml, me.formId, options);
+                    const lastPath = me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1];
+                    if (lastPath == 'chat') {
+                        localStorage.setItem(me.formId, me.tempFormHtml);
+                    } else {
+                        await me.backend.putRawDefinition(me.tempFormHtml, me.formId, options);
+                    }
                 }
 
                 const taskFields = me.processDefinition.data.map(data => { 

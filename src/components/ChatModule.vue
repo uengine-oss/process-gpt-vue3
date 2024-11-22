@@ -370,6 +370,7 @@ export default {
                     this.generator.model = "gpt-4o";
                 }
                 if (message.image && message.image != '') {
+                    console.log(message.image);
                     chatObj.content = [
                         {
                             "type": "text",

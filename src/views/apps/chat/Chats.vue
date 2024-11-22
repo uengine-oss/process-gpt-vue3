@@ -539,28 +539,38 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    var url = '/process-search/invoke'
+                    var url = '/process-search'
                     var req = {
                         input: {
                             answer: newMessage.text || '',
                             image: newMessage.image || ''
                         }
                     }
-                    let response = await axios.post(url, req);
-                    const output = JSON.parse(response.data.output)
-                    if (output && output.processDefinitionList) {
-                        const processDefinition = output.processDefinitionList.pop();
-                        me.executeProcess(processDefinition.id);
-                    }
+                    const token = localStorage.getItem('accessToken');
+                    await axios.post(url, req, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    }).then(async res => {
+                        console.log(res)
+                        if (res.data && res.data.output) { 
+                            const output = JSON.parse(res.data.output)
+                            if (output && output.processDefinitionList) {
+                                const processDefinition = output.processDefinitionList.pop();
+                                await me.executeProcess(processDefinition.id);
+                            }
+                        }
+                    })
                 }
             })
         },
-        async executeProcess(processDefinitionId) {
+        async executeProcess(input) {
             var me = this;
             me.$try({
                 context: me,
                 action: async () => {
-                    await me.backend.start({processDefinitionId: processDefinitionId});
+                    await me.backend.start(input);
                     me.EventBus.emit('instances-updated');
                 }
             })
@@ -598,8 +608,15 @@ export default {
                         const userMsgs = this.messages.filter(msg => msg.role === 'user');
                         this.lastSendMessage = userMsgs[userMsgs.length - 1];
                     }
-                    systemMsg = this.$t('chats.startProcess', { title: responseObj.title })
-                    this.beforeExecuteProcess({ text: responseObj.title, image: this.lastSendMessage.image });
+                    systemMsg = this.$t('chats.startProcess', { title: responseObj.title });
+                    const input = {
+                        process_definition_id: responseObj.process_definition_id,
+                        answer: {
+                            text: responseObj.prompt,
+                            image: this.lastSendMessage.image
+                        }
+                    };
+                    await this.executeProcess(input);
 
                 } else if(responseObj.work == 'TodoListRegistration'){
                     systemMsg = this.$t('chats.todoAdded', { activityId: responseObj.activity_id })

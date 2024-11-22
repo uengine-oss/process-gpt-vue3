@@ -573,6 +573,17 @@ export default {
                     me.bpmn = bpmn;             
                     me.definitionChangeCount++;
 
+                    if (me.useLock) {
+                        const value = await backend.getRawDefinition(fullPath);
+                        if (value) {
+                            me.processDefinition = value.definition;
+                            me.processDefinition.processDefinitionId = value.id;
+                            me.processDefinition.processDefinitionName = value.name;
+                            me.projectName = value.name ? value.name : me.processDefinition.processDefinitionName;
+                        }
+                        me.checkedLock(lastPath);
+                    }
+
                 } else if (lastPath == 'chat') {
                     // me.processDefinition = null;
                     me.projectName = null;
@@ -618,21 +629,9 @@ export default {
             }
             let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
             if(fullPath == 'chat' && lastPath == 'chat') return;
-
-            
-
             definitions = modeler.getDefinitions();  
             if(definitions) {
-                if (me.useLock) {
-                const value = await backend.getRawDefinition(fullPath);
-                if (value) {
-                    me.processDefinition = value.definition;
-                    me.processDefinition.processDefinitionId = value.id;
-                    me.processDefinition.processDefinitionName = value.name;
-                    me.projectName = value.name ? value.name : me.processDefinition.processDefinitionName;
-                }
-                me.checkedLock(lastPath);
-                } else {
+                if (!me.useLock) {
                     me.processDefinition = await me.convertXMLToJSON(me.bpmn);
                     me.processDefinition.processDefinitionId = fullPath;
                     me.processDefinition.processDefinitionName = fullPath;

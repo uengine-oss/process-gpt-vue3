@@ -634,6 +634,9 @@ import Record from './Record.vue';
 import defaultWorkIcon from '@/assets/images/chat/chat-icon.png';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 
+import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
+
 export default {
     components: {
         Icon,
@@ -1229,34 +1232,44 @@ export default {
             this.attachedImg = null;
             this.$refs.uploader.click();
         },
-        changeImage(e) {
+        async changeImage(e) {
             const me = this;
             const imageFile = e.target.files[0];
-            const reader = new FileReader();
-
-            reader.onload = (event) => {
-                const imgElement = document.createElement("img");
-                imgElement.src = event.target.result;
-                imgElement.onload = () => {
-                    const canvas = document.createElement("canvas");
-                    const max_width = 200; // 최대 너비 설정
-                    const scaleSize = max_width / imgElement.width;
-                    canvas.width = max_width;
-                    canvas.height = imgElement.height * scaleSize;
-
-                    const ctx = canvas.getContext("2d");
-                    ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
-                    const srcEncoded = ctx.canvas.toDataURL(imgElement, "image/jpeg", 0.2);
-
-                    // 이미지 미리보기에 추가
-                    var html = `<img src=${srcEncoded} width='100%' />`;
+            
+            if (window.location.hostname !== 'localhost') {
+                const fileName = `uploads/${Date.now()}_${imageFile.name}`;
+                const data = await backend.uploadImage(fileName, imageFile);
+                if (data && data.path) {
+                    const imageUrl = await backend.getImageUrl(data.path);
+                    var html = `<img src=${imageUrl} width='100%' />`;
                     $('#imagePreview').append(html);
-                    me.attachedImg = srcEncoded;
-                };
-            };
+                    me.attachedImg = imageUrl;
+                }
+            } else {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const imgElement = document.createElement("img");
+                    imgElement.src = event.target.result;
+                    imgElement.onload = () => {
+                        const canvas = document.createElement("canvas");
+                        const max_width = 200; // 최대 너비 설정
+                        const scaleSize = max_width / imgElement.width;
+                        canvas.width = max_width;
+                        canvas.height = imgElement.height * scaleSize;
 
-            if (imageFile) {
-                reader.readAsDataURL(imageFile);
+                        const ctx = canvas.getContext("2d");
+                        ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+                        const srcEncoded = ctx.canvas.toDataURL(imgElement, "image/jpeg", 0.2);
+
+                        // 이미지 미리보기에 추가
+                        var html = `<img src=${srcEncoded} width='100%' />`;
+                        $('#imagePreview').append(html);
+                        me.attachedImg = srcEncoded;
+                    };
+                };
+                if (imageFile) {
+                    reader.readAsDataURL(imageFile);
+                }
             }
         },
         capture() {

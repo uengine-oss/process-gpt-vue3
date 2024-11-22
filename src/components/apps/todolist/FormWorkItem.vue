@@ -151,6 +151,7 @@ export default {
                     me.formData = parameterValues.valueMap;
                 }
             }
+            console.log(me.formData)
         },
         async saveTask() {
             var me = this;

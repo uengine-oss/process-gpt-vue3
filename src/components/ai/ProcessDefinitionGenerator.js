@@ -18,6 +18,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
 
             - 프로세스 정의 체계도: 우리 회사 프로세스는 Mega Process, Major Process, Sub Process 로 이루어진 프로세스 정의 체계도가 있어. 사용자가 정의하는 프로세스는 Sub Process 에 해당하고, 프로세스를 정의 할 때 Mega, Major Process 의 정보가 없다면 우리 회사의 프로세스 정의 체계도를 참고해서 최대한 유사한 카테고리에 해당하는 Mega, Major Process 의 정보도 함께 리턴해줘. 만약 유사한 Mega, Major Process 가 없다면 새로운 Mega, Major Process 를 리턴할 수 있도록 해.
 
+            만약 이미지를 입력 받았다면 받은 이미지를 분석해서 분석한 내용을 바탕으로 프로세스 정의를 생성해줘.
+
             프로세스 정의 체계도:
             {{ 프로세스 정의 체계도 정보 }}
             

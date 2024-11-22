@@ -554,7 +554,9 @@ export default {
                     variable.$parent = uengineProperties;
                 }
             });
-            this.$emit('onLoaded');
+            if (this.mode == 'uEngine') {
+                this.$emit('onLoaded');
+            }
         },
 
         updateInstanceNamePattern(val) {

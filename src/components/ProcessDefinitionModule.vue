@@ -129,7 +129,12 @@ export default {
                 activity_id: activityId
             };
             const formId = `${options.proc_def_id}_${options.activity_id}_form`;
-            await backend.putRawDefinition(html, formId, options);
+            const lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
+            if (lastPath == 'chat') {
+                localStorage.setItem(formId, html);
+            } else {
+                await backend.putRawDefinition(html, formId, options);
+            }
             return html;
         },
         extractPropertyNameAndIndex(jsonPath) {
@@ -784,8 +789,10 @@ export default {
                                     if (roleInnerElements.length > 0) {
                                         let maxY = componentY;
                                         roleInnerElements.forEach(element => {
-                                            if(maxY < activityPos[element.id].y) {
-                                                maxY = activityPos[element.id].y;
+                                            if(activityPos[element.id]) {
+                                                if(maxY < activityPos[element.id].y) {
+                                                    maxY = activityPos[element.id].y;
+                                                }
                                             }
                                         });
                                         componentY = isHorizontal ? maxY + 100 : 0;
@@ -866,7 +873,6 @@ export default {
                         eventLabel.appendChild(dcBoundsLabel);
                         componentShape.appendChild(eventLabel);
                     }
-
                     bpmnPlane.appendChild(componentShape);
 
                     activityPos[component.id] = {
@@ -2306,6 +2312,29 @@ export default {
                         if (!me.processDefinition) me.processDefinition = {};
                         if (!me.processDefinition.processDefinitionId) me.processDefinition.processDefinitionId = null;
                         if (!me.processDefinition.processDefinitionName) me.processDefinition.processDefinitionName = null;
+
+                        const lastPath = me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1];
+                        if (lastPath == 'chat') {
+                            if (me.processDefinition.activities && me.processDefinition.activities.length > 0) {
+                                me.processDefinition.activities.forEach(async (activity) => {
+                                    if (activity.tool && activity.tool.includes('formHandler:')) {
+                                        const formId = activity.tool.split(':')[1];
+                                        if (formId) {
+                                            const formHtml = localStorage.getItem(formId);
+                                            if (formHtml) {
+                                                const options = {
+                                                    type: 'form',
+                                                    proc_def_id: me.processDefinition.processDefinitionId,
+                                                    activity_id: activity.id
+                                                }
+                                                await backend.putRawDefinition(formHtml, formId, options);
+                                            }
+                                            localStorage.removeItem(formId);
+                                        }
+                                    }
+                                });
+                            }
+                        }
 
                         me.processDefinition.processDefinitionId = info.proc_def_id
                             ? info.proc_def_id

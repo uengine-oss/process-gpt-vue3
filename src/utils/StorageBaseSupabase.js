@@ -1087,5 +1087,37 @@ export default class StorageBaseSupabase {
         }
     }
 
-    
+    async uploadImage(fileName, image) {
+        try {
+            const { data, error } = await window.$supabase.storage
+                .from('chat-images')
+                .upload(fileName, image);
+            
+            if (error) {
+                return error;
+            }
+
+            return data;
+
+        } catch (error) {
+            throw new StorageBaseError('error in uploadImage', error, arguments);
+        }
+    }
+
+    async getImageUrl(path) {
+        try {
+            const { data, error } = await window.$supabase.storage
+                .from('chat-images')
+                .getPublicUrl(path);
+            
+            if (error) {
+                return error;
+            }
+            
+            return data.publicUrl;
+
+        } catch (error) {
+            throw new StorageBaseError('error in getImageUrl', error, arguments);
+        }
+    }
 }
