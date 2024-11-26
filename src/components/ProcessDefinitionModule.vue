@@ -2313,15 +2313,24 @@ export default {
                         if (!me.processDefinition.processDefinitionId) me.processDefinition.processDefinitionId = null;
                         if (!me.processDefinition.processDefinitionName) me.processDefinition.processDefinitionName = null;
 
+                        // 최초 저장 시 폼 정보 저장
                         const lastPath = me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1];
                         if (lastPath == 'chat') {
                             if (me.processDefinition.activities && me.processDefinition.activities.length > 0) {
+                                me.processDefinition.data = [];
                                 me.processDefinition.activities.forEach(async (activity) => {
                                     if (activity.tool && activity.tool.includes('formHandler:')) {
                                         const formId = activity.tool.split(':')[1];
                                         if (formId) {
                                             const formHtml = localStorage.getItem(formId);
                                             if (formHtml) {
+                                                let fieldData = me.extractFields(formHtml);
+                                                fieldData = fieldData.map((field) => ({
+                                                    name: field.key,
+                                                    description: field.text,
+                                                    type: field.type
+                                                }));
+                                                me.processDefinition.data = me.processDefinition.data.concat(fieldData);
                                                 const options = {
                                                     type: 'form',
                                                     proc_def_id: me.processDefinition.processDefinitionId,

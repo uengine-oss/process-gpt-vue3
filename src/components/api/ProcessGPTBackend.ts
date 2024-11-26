@@ -110,6 +110,7 @@ class ProcessGPTBackend implements Backend {
 
             // 폼 정보를 저장하기 위해서
             if(options && options.type === "form") {
+                const fieldsJson = this.extractFields(xml);
                 var formDef: any = await storage.getObject('form_def', {
                     match: {
                         proc_def_id: options.proc_def_id,
@@ -118,13 +119,17 @@ class ProcessGPTBackend implements Backend {
                 });
                 if(formDef) {
                     formDef.html = xml;
+                    if (fieldsJson) {
+                        formDef.fields_json = fieldsJson;
+                    }
                     await storage.putObject('form_def', formDef);
                 } else {
                     await storage.putObject('form_def', {
                         id: defId.replace(/\//g, "#"),
-                    html: xml,
+                        html: xml,
                         proc_def_id: options.proc_def_id,
                         activity_id: options.activity_id,
+                        fields_json: fieldsJson
                     });
                 }
                 return
@@ -192,7 +197,6 @@ class ProcessGPTBackend implements Backend {
                     const data = await storage.getString(`form_def/${defId}`, { key: 'id', column: 'html' });
                     if(!data) {
                         return null;
-                        // throw new Error('no such form definition');
                     }
                     return data;
                 } else if(options.type === "bpmn") {
@@ -253,7 +257,7 @@ class ProcessGPTBackend implements Backend {
 
             var result: any = null;
             var url = `/execution/complete`;
-            if (input.image != null) {
+            if (input.answer && input.answer.image != null) {
                 url = `/execution/vision-complete`;
             }
             var req = {
@@ -272,10 +276,10 @@ class ProcessGPTBackend implements Backend {
                         result = data;
                         if (result.cannotProceedErrors && result.cannotProceedErrors.length > 0) {
                             result.errors = result.cannotProceedErrors;
-                            const dataNotExist = result.cannotProceedErrors.find((item: any) => item.type === 'DATA_FIELD_NOT_EXIST');
-                            if (!dataNotExist) {
-                                throw new Error(result.cannotProceedErrors.map((item: any) => item.reason).join('\n'));
-                            }
+                            // const dataNotExist = result.cannotProceedErrors.find((item: any) => item.type === 'DATA_FIELD_NOT_EXIST');
+                            // if (!dataNotExist) {
+                            //     throw new Error(result.cannotProceedErrors.map((item: any) => item.reason).join('\n'));
+                            // }
                         }
                     }
                 }
@@ -287,7 +291,7 @@ class ProcessGPTBackend implements Backend {
             return result;
         } catch (error) {
             //@ts-ignore
-            throw new Error(error.message);
+            return error;
         }
     }
 
@@ -651,9 +655,9 @@ class ProcessGPTBackend implements Backend {
         throw new Error("Method not implemented.");
     }
 
-    extractFields(htmlString: string) {
+    extractFields(html: string) {
         const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlString, 'text/html');
+        const doc = parser.parseFromString(html, 'text/html');
         const fields: any[] = [];
     
         function extractFieldAttributes(elements: any) {
@@ -662,11 +666,15 @@ class ProcessGPTBackend implements Backend {
                 const vModel = element.getAttribute('v-model');
                 const match = vModel.match(/slotProps\.modelValue\['(.*?)'\]/);
                 const tagName = element.tagName.toLowerCase();
+                const disabled = element.getAttribute('disabled');
+                const readonly = element.getAttribute('readonly');
 
                 let field: any = {
                     text: alias || '',
                     key: match[1] || '',
-                    type: tagName.replace('-field', '') || ''
+                    type: tagName.replace('-field', '') || '',
+                    disabled: disabled ? disabled : false,
+                    readonly: readonly ? readonly : false
                 };
                 fields.push(field);
             });
@@ -688,14 +696,23 @@ class ProcessGPTBackend implements Backend {
 
     async getVariableWithTaskId(instId: string, taskId: string, varName: string) {
         try {
-            const html = await storage.getString(`form_def/${varName}`, { key: 'id', column: 'html' });
-            const fields = this.extractFields(html);
+            var fields: any = [];
+            const formObject: any = await storage.getObject(`form_def/${varName}`, { key: 'id' });
+            if (formObject) {
+                fields = formObject.fields_json;
+            } else {
+                const html = await storage.getString(`form_def/${varName}`, { key: 'id', column: 'html' });
+                fields = this.extractFields(html);
+            }
             const instance: any = await this.getInstance(instId);
             let varData: any = {};
             if (instance && fields.length > 0) {
-                fields.forEach((field) => {
+                fields.forEach((field: any) => {
                     let fieldName = field.text.toLowerCase().replace(/ /g, '_') || field.text;
                     let fieldValue = instance.variables_data[fieldName];
+                    if (!fieldValue) {
+                        fieldValue = instance.variables_data[field.key];
+                    }
                     if (field.type === 'boolean') {
                         fieldValue = fieldValue === 'true' ? true : false;
                     }
@@ -801,7 +818,7 @@ class ProcessGPTBackend implements Backend {
             }
 
             const input = {
-                answer: JSON.stringify(inputData),
+                answer: inputData,
                 process_instance_id: workItem.proc_inst_id,
                 process_definition_id: workItem.proc_def_id,
                 activity_id: workItem.activity_id,
@@ -812,6 +829,9 @@ class ProcessGPTBackend implements Backend {
             };
             const token = localStorage.getItem('accessToken');
             let url = `/execution/complete`;
+            if (input.answer && input.answer.image != null) {
+                url = `/execution/vision-complete`;
+            }
             await axios.post(url, req, {
                 headers: {
                     'Content-Type': 'application/json',

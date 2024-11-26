@@ -418,7 +418,7 @@
                                 
                                 <v-tooltip :text="$t('chat.headset')">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn @click="recordingModeChange()"
+                                        <v-btn @click="openChatMenu(); recordingModeChange()"
                                             class="text-medium-emphasis"
                                             icon
                                             variant="text"
@@ -431,7 +431,7 @@
                                 </v-tooltip>
                                 <v-tooltip v-if="type != 'AssistantChats'" :text="$t('chat.document')">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="startWorkOrder" v-bind="props"
+                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); startWorkOrder()" v-bind="props"
                                             style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
                                             <Icons :icon="'document'" :size="20" />
                                         </v-btn>
@@ -439,7 +439,7 @@
                                 </v-tooltip>
                                 <v-tooltip :text="$t('chat.camera')">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="capture" v-bind="props"
+                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); capture()" v-bind="props"
                                             style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
                                             <Icons :icon="'camera'" :size="20" />
                                         </v-btn>
@@ -447,7 +447,7 @@
                                 </v-tooltip>
                                 <v-tooltip :text="$t('chat.addImage')">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="uploadImage" v-bind="props"
+                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); uploadImage()" v-bind="props"
                                             style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
                                             <Icons :icon="'add-media-image'" :size="20" />
                                         </v-btn>
@@ -457,7 +457,7 @@
                                     <template v-slot:activator="{ props }">
                                         <v-btn v-if="(type == 'instances' || type == 'chats') && !agentInfo.isRunning"
                                             :disabled="!(newMessage || agentInfo.draftPrompt)" icon variant="text"
-                                            class="text-medium-emphasis" @click="requestDraftAgent" v-bind="props"
+                                            class="text-medium-emphasis" @click="openChatMenu(); requestDraftAgent()" v-bind="props"
                                             style="width:30px; height:30px; margin:1px 0px 0px 5px;">
                                             <Icons :icon="'document-sparkle'" :size="20"  />
                                         </v-btn>
@@ -468,7 +468,7 @@
                                     </template>
                                 </v-tooltip>
                                 <v-form v-if="(type == 'instances' || type == 'chats' || type == 'consulting') && !agentInfo.isRunning"
-                                    ref="uploadForm" @submit.prevent="submitFile"
+                                    ref="uploadForm" @submit.prevent="openChatMenu(); submitFile()"
                                     style="height:30px;"
                                     class="chat-selected-file"
                                 >
@@ -500,7 +500,7 @@
                                     ></v-file-input>
                                     <v-tooltip v-if="type == 'chats'" :text="ProcessGPTActive ? $t('chat.isDisableProcessGPT') : $t('chat.isEnableProcessGPT')">
                                         <template v-slot:activator="{ props }">
-                                            <v-btn icon variant="text" class="text-medium-emphasis" @click="toggleProcessGPTActive" v-bind="props"
+                                            <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); toggleProcessGPTActive()" v-bind="props"
                                                 style="width:30px; height:30px; margin-left:12px;" :disabled="disableChat">
                                                 <img :style="ProcessGPTActive ? 'opacity:1' : 'opacity:0.5'"
                                                     src="@/assets/images/chat/chat-icon.png"
@@ -517,6 +517,11 @@
                 <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
                     <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
                 </div> -->
+                <!-- image preview -->
+                <div style="position: absolute; bottom: 20%; z-index: 9999;" class="d-flex">
+                    <div id="imagePreview"></div>
+                    <v-btn v-if="delImgBtn" @click="deleteImage()" density="compact" icon="mdi-close" variant="text" class="ml-1"></v-btn>
+                </div>
             </div>
             <v-divider />
 
@@ -553,7 +558,6 @@
             <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
             <!-- image upload -->
             <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
-            <div id="imagePreview" style="max-width: 200px;"></div>
             <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex align-center pa-0">
                 <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                     class="shadow-none message-input-box cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
@@ -574,16 +578,16 @@
                             icon
                             variant="text"
                         >
-                            <Icons :icon="'sharp-mic'"  />
+                            <Icons :icon="'sharp-mic'" />
                         </v-btn>
                         <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
                             density="comfortable"
                             icon
                             variant="text"
                         >
-                            <Icons :icon="'stop'" :size="'20'"  />
+                            <Icons :icon="'stop'" :size="'20'" />
                         </v-btn>
-                        <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'"  />
+                        <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
                     </template>
                     <template v-slot:append-inner>
                         <div style="height: -webkit-fill-available; margin:5px 5px 0px 0px;">
@@ -699,6 +703,7 @@ export default {
             isViewJSON: [],
             isviewJSONStatus: false,
             attachedImg: null,
+            delImgBtn: false,
             showNewMessageNoti: false,
             lastMessage: { name: '', content: '' },
             showNewMessageNotiTimer: null,
@@ -1186,6 +1191,7 @@ export default {
             this.attachedImg = null;
             var imagePreview = document.querySelector("#imagePreview");
             imagePreview.innerHTML = '';
+            this.delImgBtn = false;
             this.isAtBottom = true
             setTimeout(() => {
                 this.newMessage = "";
@@ -1265,6 +1271,7 @@ export default {
                         var html = `<img src=${srcEncoded} width='100%' />`;
                         $('#imagePreview').append(html);
                         me.attachedImg = srcEncoded;
+                        me.delImgBtn = true;
                     };
                 };
                 if (imageFile) {
@@ -1277,6 +1284,12 @@ export default {
             this.attachedImg = null;
             this.$refs.captureImg.click();
         },
+        deleteImage() {
+            this.delImgBtn = false;
+            this.attachedImg = null;
+            var imagePreview = document.querySelector("#imagePreview");
+            imagePreview.innerHTML = '';
+        }
     }
 };
 </script>

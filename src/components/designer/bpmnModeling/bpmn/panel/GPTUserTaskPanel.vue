@@ -65,7 +65,8 @@ export default {
             },
             formId: '',
             tempFormHtml: '',
-            activeTab: 'setting'
+            activeTab: 'setting',
+            fieldsJson: []
         };
     },
     created() {
@@ -157,68 +158,9 @@ export default {
                         await me.backend.putRawDefinition(me.tempFormHtml, me.formId, options);
                     }
                 }
-
-                const taskFields = me.processDefinition.data.map(data => { 
-                    return {name: data.name, type: data.type}
-                });
-                const fields = me.extractFields(me.tempFormHtml);
-                fields.forEach(field => {
-                    const existVar = taskFields.find(data => data.name === field.text && data.type === field.type);
-                    if (!existVar) {
-                        me.$emit('addUengineVariable', {
-                            name: field.text,
-                            type: field.type,
-                            defaultValue: '',
-                            description: '',
-                            datasource: {
-                                type: '',
-                                sql: ''
-                            },
-                            table: '',
-                            backend: null
-                        });
-                    }
-                });
             }
             
             me.$emit('update:uengineProperties', me.copyUengineProperties);
-        },
-        extractFields(htmlString) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(htmlString, 'text/html');
-            const fields = [];
-
-            function extractFieldAttributes(elements) {
-                elements.forEach((element) => {
-                    const alias = element.getAttribute('alias');
-                    const key = element.getAttribute('name') || '';
-                    if (alias) {
-                        let type = "Text";
-                        const tagName = element.tagName.toLowerCase();
-                        if (tagName === 'text-field' && element.getAttribute('type') === 'number') {
-                            type = "Number";
-                        } else if (tagName === 'text-field' && element.getAttribute('type') === 'date') {
-                            type = "Date";
-                        } else if (tagName === 'file-field') {
-                            type = "Attachment";
-                        }
-                        fields.push({ text: alias, key: key, type: type });
-                    }
-                });
-            }
-
-            const fieldTags = [
-                'text-field', 'select-field', 'checkbox-field', 'radio-field', 
-                'file-field', 'label-field', 'boolean-field', 'textarea-field', 
-                'user-select-field'
-            ];
-
-            fieldTags.forEach(tag => {
-                const elements = doc.querySelectorAll(tag);
-                extractFieldAttributes(elements);
-            });
-
-            return fields;
         },
     }
 };
