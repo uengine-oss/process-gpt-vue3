@@ -54,6 +54,7 @@ export interface Backend {
     setNotifications(value: any): Promise<any>;
     search(keyword: string): Promise<any>;
     testList(path: string): Promise<any>;
+    testRecordList(path: string): Promise<any>;
     findCurrentWorkItemByInstId(instId: string): Promise<any>;
     getUserList(): Promise<any>;
     releaseVersion(releaseName: string) : Promise<any>;
@@ -61,6 +62,7 @@ export interface Backend {
     getCompletedTaskId(instId: string): Promise<any>;
     getActivitiesStatus(instId: string, executionScope: String): Promise<any>;
     deleteTest(path: string, tracingTag: string, index: number): Promise<any>;
+    deleteRecordTest(path: string, index: number): Promise<any>;
     checkDBConnection(): Promise<any>;
     getWorkListAll(): Promise<any>;
     getOpenAIToken(): Promise<any>;

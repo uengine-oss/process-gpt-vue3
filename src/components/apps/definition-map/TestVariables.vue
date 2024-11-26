@@ -1,4 +1,4 @@
-<template>
+<template>    
     <div class="h-100" style="width: 100%; height: 100%;" variant="outlined">
         <v-row class="ma-0 pa-0 mt-2"
             style="position:absolute;
@@ -20,16 +20,15 @@
             color: black;
             overflow: auto;"
         >
-            <v-table v-if="selectedTask">
+            <v-table v-if="headers">
                 <thead>
                     <tr>
-                        <th class="text-left">{{ $t('TestVariables.key') }}</th>
-                        <th class="text-left">{{ $t('TestVariables.value') }}</th>
-                        <th class="text-left">{{ $t('TestVariables.action') }}</th>
+                        <th v-for="header in headers" :key="header" class="text-left">{{ header }}</th>
+                        <th class="text-right">{{ $t('TestVariables.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <test-variable v-for="(val, idx) in selectedTask" :key="idx" :idx="idx" :selected-task="val" @execute="e => runExistingTest(e)" @delete="idx => deleteTest(idx)"></test-variable>
+                    <test-variable v-for="(val, idx) in selectedTask" :key="idx" :idx="idx" :selected-task="val" :headers="headers" @execute="e => runExistingTest(e)" @delete="idx => deleteTest(idx)"></test-variable>
                 </tbody>
             </v-table>
             <v-card-text v-else class="pa-0">
@@ -89,7 +88,9 @@ export default {
         selectedTask: null,
         workItem: null,
         currentComponent: null,
-        workItemDialog: false
+        workItemDialog: false,
+        headers: [],
+        values: [],
     }),
     async created() {
         await this.init()
@@ -128,7 +129,25 @@ export default {
             this.testList = list;
             console.log(this.task)
             if (this.testList[this.task]) this.selectedTask = JSON.parse(this.testList[this.task]);
-        }
+            this.extractHeadersAndValues();
+        },
+        extractHeadersAndValues() {
+            this.headers = [];
+            this.values = [];
+
+            if (this.selectedTask) {
+                this.selectedTask.forEach(taskVariable => {
+                    if(taskVariable && Object.keys(taskVariable).length > 0) {
+                        Object.keys(taskVariable).forEach(key => {
+                            if (!this.headers.includes(key)) {
+                                this.headers.push(key);
+                            }
+                            this.values.push(taskVariable[key]);
+                        });
+                    }
+                });
+            }
+        },
     }
 };
 </script>

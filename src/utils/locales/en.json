@@ -716,7 +716,13 @@
         "worklist": "Worklist",
         "success": "Success",
         "taskID": "Task ID: ",
-        "instanceID": "Instance ID: "
+        "instanceID": "Instance ID: ",
+        "processRecord": "Process Execution Record",
+        "startRecording": "Start Recording Process Execution",
+        "stopRecording": "Stop Recording Process Execution",
+        "recordingSave": "Save Process Execution Recording",
+        "confirm": "Confirm",
+        "name": "Title"
     },
     "TestVariables": {
         "key": "Key",

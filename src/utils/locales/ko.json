@@ -719,7 +719,13 @@
         "worklist": "작업 목록",
         "success": "성공",
         "taskID": "작업 ID: ",
-        "instanceID": "인스턴스 ID: "
+        "instanceID": "인스턴스 ID: ",
+        "processRecord": "프로세스 실행 기록",
+        "startRecording": "프로세스 실행 기록 시작",
+        "stopRecording": "프로세스 실행 기록 중지",
+        "recordingSave": "프로세스 실행 기록 저장",
+        "confirm": "확인",
+        "name": "제목"
     },
     "TestVariables": {
         "key": "키값",
