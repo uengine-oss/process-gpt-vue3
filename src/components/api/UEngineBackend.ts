@@ -275,6 +275,12 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
+    async testRecordList(path: string) {
+        const response = await axiosInstance.get(`/test/${path}/record`);
+        return response.data;
+    }
+
+
     async getEventList(instanceId: string) {
         const response = await axiosInstance.get(`/instance/${instanceId}/eventList`);
         return response.data;
@@ -696,6 +702,13 @@ class UEngineBackend implements Backend {
     async deleteTest(path: string, tracingTag: string, index: number): Promise<any> {
         const response = await axiosInstance.delete(`/test/${path}`, {
             data: { tracingTag: tracingTag, idx: index }
+        });
+        return response.data;
+    }
+
+    async deleteRecordTest(path: string, index: number): Promise<any> {
+        const response = await axiosInstance.delete(`/test/${path}/record`, {
+            data: { idx: index }
         });
         return response.data;
     }

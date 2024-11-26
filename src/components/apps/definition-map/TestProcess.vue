@@ -56,7 +56,17 @@
                     </v-row>
                 </v-col>
                 <v-col class="pa-4" :cols="6">
-                    <v-card-title class="pa-0">{{ $t('TestProcess.worklist') }}</v-card-title>
+                    <v-row class="pa-0 mb-0">
+                        <v-card-title >{{ $t('TestProcess.worklist') }}</v-card-title>
+                        <!-- <v-tooltip :text="isRecording ? $t('TestProcess.stopRecording') : $t('TestProcess.startRecording')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn @click="isRecording = !isRecording" class="ml-auto" v-bind="props">
+                                    <v-icon>{{ isRecording ? 'mdi-video-off' : 'mdi-video' }}</v-icon>
+                                </v-btn>
+                            </template>
+                        </v-tooltip> -->
+                        <!-- 프로세스 기록버튼 -->
+                    </v-row>
                     <div
                         style="max-height: calc(-270px + 100vh);
                         color: black;
@@ -101,6 +111,38 @@
                                     @work-item="(e) => addWorkItem(e, task.taskId)"
                                 ></test-variables>
                             </v-card>
+                            
+                            <v-card-title class="mt-4" >{{ $t('TestProcess.processRecord') }}</v-card-title>
+                            <v-card class="pa-4" variant="outlined">
+                                <v-table>
+                                    <tbody>
+                                        <tr v-for="key in Object.keys(recordedProcess)" :key="key">
+                                            <td class="pa-0" style="width: calc(100% - 65px); ">
+                                                <div style="display: flex; overflow-x: auto; white-space: nowrap; flex-direction: row; flex-wrap: wrap;">
+                                                    <test-record-card class="mr-2" :testRecord="item" :isLast="(index === JSON.parse(recordedProcess[key]).length - 1)" v-for="(item, index) in JSON.parse(recordedProcess[key])" :key="item"/>
+                                                </div>
+                                                <v-divider class="pb-2"/>
+                                            </td>
+                                            <td class="align-right" style="width: 65px; padding: 0px; text-align: right;">
+                                                <v-tooltip :text="$t('TestVariable.start')">
+                                                    <template v-slot:activator="{ props }">
+                                                        <v-btn density="compact" icon flat @click="executeRecordProcess(recordedProcess[key])" v-bind="props" style="margin-right:5px;">
+                                                            <Icons :icon="'play-outline'" :size="17" stroke-width="1.5" :color="'rgb(var(--v-theme-primary))'" />
+                                                        </v-btn>
+                                                    </template>
+                                                </v-tooltip>
+                                                <v-tooltip :text="$t('TestVariable.delete')">
+                                                    <template v-slot:activator="{ props }">
+                                                        <v-btn density="compact" icon flat @click="deleteRecordProcess(key)" v-bind="props">
+                                                            <TrashIcon stroke-width="1.5" size="20" class="text-error" />
+                                                        </v-btn>
+                                                    </template>
+                                                </v-tooltip>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </v-table>
+                            </v-card>
                         </div>
                         <v-row v-else class="ma-0 pa-0 test-process-work-list-skeleton" style="height: 100%;">
                             <v-col cols="12" class="pa-0">
@@ -117,15 +159,39 @@
             <v-btn color="error" variant="flat" @click="closeDialog()">닫기</v-btn>
         </v-card-actions> -->
     </v-card>
+
+    <v-dialog v-model="recodingDialog" max-width="400px">
+        <v-card>
+            <v-card-title>
+                <span class="headline">{{ $t('TestProcess.recordingSave') }}</span>
+            </v-card-title>
+            <v-card-text>
+                    <v-row>
+                        <v-col cols="12">
+                            <v-text-field
+                                v-model="title"
+                                :label="$t('TestProcess.name')"
+                                required
+                            ></v-text-field>
+                        </v-col>
+                    </v-row>
+            </v-card-text>
+            <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn color="primary" @click="saveRecording">{{ $t('TestProcess.confirm') }}</v-btn>
+            </v-card-actions>
+        </v-card>
+    </v-dialog>
 </template>
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import TestVariables from '@/components/apps/definition-map/TestVariables.vue';
+import TestRecordCard from '@/components/apps/definition-map/TestRecordCard.vue';
 import customBpmnModule from '@/components/customBpmn';
 import BpmnUengine from '@/components/BpmnUengineViewer.vue';
 export default {
-    components: { TestVariables, BpmnUengine },
+    components: { TestVariables, BpmnUengine, TestRecordCard },
     props: {
         definitionId: String // proceeName (proceeName.bpmn)
     },
@@ -152,12 +218,20 @@ export default {
         subTaskStatus : {},
         subCurrentActivities: null,
         taskStatus: null,
-        bpmnKey: 0
+        bpmnKey: 0,
+        recordedProcess: [],
+        isRecording: false,
+        recodingDialog: false,
+        confirmRecording: false,
+        recordedProcessQueue: []
     }),
     created() {
         let me = this;
         me.backend = BackendFactory.createBackend();
         me.startProcess();
+    },
+    mounted() {
+        this.getRecordList();
     },
     watch: {
         // taskId: {
@@ -165,8 +239,24 @@ export default {
         //         this.setTaskInfo();
         //     }
         // }
+        isRecording(newVal) {
+            if(!newVal) {
+                this.recodingDialog = true;
+            } else {
+                this.confirmRecording = false;
+            }
+        },
+        recodingDialog(newVal) {
+            if(!newVal && !this.confirmRecording) {
+                this.isRecording = true;
+            }
+        }
     },
     methods: {
+        async getRecordList() {
+            const recordList = await this.backend.testRecordList(this.definitionId);
+            this.recordedProcess = recordList;
+        },
         async addWorkItem(item, taskId) {
             let me = this;
             this.workItem[taskId] = item;
@@ -206,6 +296,14 @@ export default {
                     if (task?.execScope) value.execScope = task.execScope;
                     let result = await me.backend.putWorkItemComplete(task.taskId, value, me.isSimulate);
                     let taskInfo = await me.backend.findCurrentWorkItemByInstId(me.instanceId);
+                    // if (!me.recordedProcess) {
+                    //     me.recordedProcess = [];
+                    // }
+                    // me.recordedProcess.push({
+                    //     trcTag: task.trcTag,
+                    //     workItem: value
+                    // });
+                    
                     me.taskList = taskInfo;
                     me.setTaskInfo();
                     
@@ -215,6 +313,32 @@ export default {
                 successMsg: this.$t('successMsg.workCompleted')
             });
             
+        },
+        async executeRecordProcess(process) {
+            let me = this;
+            let recordProcess = JSON.parse(process);
+            console.log(recordProcess);
+            for (const item of recordProcess) {
+                let taskId;
+                let taskInfo = await me.backend.findCurrentWorkItemByInstId(me.instanceId);
+                me.taskList = taskInfo;
+                for (let task of me.taskList) {
+                    if (task.trcTag === item.tracingTag) {
+                        taskId = task.taskId;
+                        break;
+                    }
+                }
+                if(taskId) {
+                    await me.backend.putWorkItemComplete(taskId, item.workItem, me.isSimulate);
+                }
+            }
+
+            this.setTaskInfo();
+            await me.setStatus();
+        },
+        async deleteRecordProcess(key) {
+            await this.backend.deleteRecordTest(this.definitionId, key);
+            await this.getRecordList();
         },
         async saveForm(testData, task) {
             let me = this;
@@ -247,6 +371,14 @@ export default {
             if (me.workItem.hasOwnProperty(task.taskId)) {
                 delete me.workItem[task.taskId];
             }
+        },
+        saveRecording() {
+            this.confirmRecording = true;
+            this.recodingDialog = false;
+
+
+            
+            this.recordedProcess = [];//제일 마지막에 있어야 함
         },
         setStatus() {
             let me = this;

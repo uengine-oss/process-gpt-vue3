@@ -16,12 +16,21 @@ class ProcessGPTBackend implements Backend {
         throw new Error("Method not implemented.");
     }
 
+    async deleteRecordTest(path: string, index: number): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+
     async releaseVersion(releaseName: string): Promise<any> {
     }
     
     testList(path: string): Promise<any> {
         throw new Error('Method not implemented.');
     }
+
+    testRecordList(path: string): Promise<any> {
+        throw new Error('Method not implemented.');
+    }
+
     findCurrentWorkItemByInstId(instId: string): Promise<any> {
         throw new Error('Method not implemented.');
     }
