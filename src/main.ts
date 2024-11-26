@@ -21,8 +21,8 @@ import './_mockApis';
 // print
 // import print from 'vue3-print-nb';
 // Table
-import Vue3EasyDataTable from 'vue3-easy-data-table';
-import 'vue3-easy-data-table/dist/style.css';
+// import Vue3EasyDataTable from 'vue3-easy-data-table';
+// import 'vue3-easy-data-table/dist/style.css';
 //i18
 import messages from '@/utils/locales/messages';
 import { createI18n } from 'vue-i18n';
@@ -164,7 +164,7 @@ async function initializeApp() {
 
     fakeBackend();
     app.use(router);
-    app.component('EasyDataTable', Vue3EasyDataTable);
+    // app.component('EasyDataTable', Vue3EasyDataTable);
     app.use(PerfectScrollbar);
     app.use(createPinia());
     app.use(VCalendar, {});

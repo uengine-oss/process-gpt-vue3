@@ -2,14 +2,14 @@ version: '3.8'
 
 services:
   frontend:
-    image: gcr.io/process-gpt-419207/process-gpt:v2.6.2
+    image: gcr.io/process-gpt-419207/process-gpt:v2.6.3
     ports:
       - "8080:8080"
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
 
   execution:
-    image: gcr.io/process-gpt-419207/process-gpt-execution:v0.3.3
+    image: gcr.io/process-gpt-419207/process-gpt-execution:v0.3.4
     ports:
       - "8000:8000"
     environment:
