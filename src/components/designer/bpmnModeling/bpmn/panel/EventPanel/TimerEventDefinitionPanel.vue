@@ -116,7 +116,7 @@ export default {
     },
     mounted() {
         if(!this.copyUengineProperties.expression) {
-            this.copyUengineProperties.expression = "* * * * * *" + " *";
+            this.copyUengineProperties.expression = "* * * * * *";
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
         } else {
             this.expression = this.copyUengineProperties.expression.slice(0, -2);
@@ -126,7 +126,7 @@ export default {
     },
     watch: {
         expression(newVal) {
-            this.copyUengineProperties.expression = newVal + " *";
+            this.copyUengineProperties.expression = newVal;
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
         }
     },

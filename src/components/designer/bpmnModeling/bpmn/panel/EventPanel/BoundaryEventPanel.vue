@@ -1,12 +1,12 @@
 <template>
     <div>
-        <v-col>
+        <!-- <v-col>
             <v-row v-for="roleMapping in roleMappings">
                 <v-text-field label="Role Name" v-model="roleMapping.roleName"></v-text-field>
                 <v-text-field label="Role Endpoint" v-model="roleMapping.roleEndpoint"></v-text-field>
                 <v-text-field label="Resource Names" v-model="roleMapping.resourceNames"></v-text-field>
             </v-row>
-        </v-col>
+        </v-col> -->
         <component
             v-if="eventType"
             :is="panelName"
