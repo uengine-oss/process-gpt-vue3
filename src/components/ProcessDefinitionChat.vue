@@ -153,7 +153,7 @@
             <process-gpt-execute v-if="mode === 'ProcessGPT'" :definitionId="fullPath" 
                 @close="executeDialog = false"></process-gpt-execute>
             <div v-else>
-                <test-process v-if="isSimulate == 'true'" :definitionId="fullPath" @close="executeDialog = false" />
+                <test-process v-if="isSimulate == 'true'" :executeDialog="executeDialog" :definitionId="fullPath" @close="executeDialog = false" />
                 <dry-run-process v-else :is-simulate="isSimulate" :definitionId="fullPath" @close="executeDialog = false"></dry-run-process>
             </div>
         </v-dialog>

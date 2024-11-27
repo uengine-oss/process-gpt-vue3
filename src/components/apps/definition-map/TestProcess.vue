@@ -192,7 +192,8 @@ import BpmnUengine from '@/components/BpmnUengineViewer.vue';
 export default {
     components: { TestVariables, BpmnUengine, TestRecordCard },
     props: {
-        definitionId: String // proceeName (proceeName.bpmn)
+        definitionId: String, // proceeName (proceeName.bpmn)
+        executeDialog: Boolean
     },
     data: () => ({
         backend: null,
@@ -223,7 +224,8 @@ export default {
         confirmRecording: false,
         recordedProcessQueue: [],
         recodingDialog: false,
-        testRecord: null
+        testRecord: null,
+        intervalId: null
     }),
     created() {
         let me = this;
@@ -232,12 +234,16 @@ export default {
     },
     mounted() {
         this.getRecordList();
-
-        setInterval(() => {
+        this.intervalId = setInterval(() => {
             this.refreshProcess();
         }, 10000);
     },
     watch: {
+        executeDialog(newVal) {
+            if(!newVal) {
+                clearInterval(this.intervalId);
+            }
+        }
     },
     methods: {
         async refreshProcess() {
