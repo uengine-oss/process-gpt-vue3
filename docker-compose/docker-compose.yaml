@@ -7,6 +7,8 @@ services:
       - "8080:8080"
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SERVICE_ROLE_KEY}
 
   execution:
     image: gcr.io/process-gpt-419207/process-gpt-execution:v0.3.4

@@ -261,6 +261,7 @@ export default {
                         let path = ''
                         if ($mode == 'ProcessGPT') {
                             path = btoa(me.workItem.worklist.instId)
+                            me.EventBus.emit('instances-updated');
                         } else {
                             path = me.workItem.worklist.instId
                         }
