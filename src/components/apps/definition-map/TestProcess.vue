@@ -66,6 +66,9 @@
                             </template>
                         </v-tooltip> -->
                         <!-- 프로세스 기록버튼 -->
+                        <v-btn icon @click="refreshProcess" class="ml-auto">
+                            <v-icon>mdi-refresh</v-icon>
+                        </v-btn>
                     </v-row>
                     <div
                         style="max-height: calc(-270px + 100vh);
@@ -119,7 +122,7 @@
                                         <tr v-for="key in Object.keys(recordedProcess)" :key="key">
                                             <td class="pa-0" style="width: calc(100% - 65px); ">
                                                 <div style="display: flex; overflow-x: auto; white-space: nowrap; flex-direction: row; flex-wrap: wrap;">
-                                                    <test-record-card class="mr-2" :testRecord="item" :isLast="(index === JSON.parse(recordedProcess[key]).length - 1)" v-for="(item, index) in JSON.parse(recordedProcess[key])" :key="item"/>
+                                                    <test-record-card class="mr-2" :testRecord="item" :isLast="(index === JSON.parse(recordedProcess[key]).length - 1)" v-for="(item, index) in JSON.parse(recordedProcess[key])" :key="item" @card-click="handleCardClick" />
                                                 </div>
                                                 <v-divider class="pb-2"/>
                                             </td>
@@ -154,34 +157,30 @@
             </v-row>
         </div>
 
+        <v-dialog v-model="recodingDialog" max-width="600px">
+            <v-card>
+                <v-card-title class="pb-0">{{ testRecord.name }}</v-card-title>
+                <v-card-text class="pt-0 pl-4 pr-4">
+                    <v-form ref="form">
+                        <v-simple-table>
+                            <tbody>
+                                <tr v-for="(value, key) in testRecord.workItem" :key="key" style="font-size: 12px;">
+                                    <td><strong>{{ key }}</strong></td>
+                                    <td>&nbsp;</td>
+                                    <td>{{ value }}</td>
+                                </tr>
+                            </tbody>
+                        </v-simple-table>
+                    </v-form>
+                </v-card-text>
+            </v-card>
+        </v-dialog>
+
         <!-- <v-card-actions class="justify-center" v-if="tool == 'DefaultWorkItem'">
             <v-btn color="primary" variant="flat" class="cp-process-save" @click="executeProcess">실행</v-btn>
             <v-btn color="error" variant="flat" @click="closeDialog()">닫기</v-btn>
         </v-card-actions> -->
     </v-card>
-
-    <v-dialog v-model="recodingDialog" max-width="400px">
-        <v-card>
-            <v-card-title>
-                <span class="headline">{{ $t('TestProcess.recordingSave') }}</span>
-            </v-card-title>
-            <v-card-text>
-                    <v-row>
-                        <v-col cols="12">
-                            <v-text-field
-                                v-model="title"
-                                :label="$t('TestProcess.name')"
-                                required
-                            ></v-text-field>
-                        </v-col>
-                    </v-row>
-            </v-card-text>
-            <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn color="primary" @click="saveRecording">{{ $t('TestProcess.confirm') }}</v-btn>
-            </v-card-actions>
-        </v-card>
-    </v-dialog>
 </template>
 
 <script>
@@ -221,9 +220,10 @@ export default {
         bpmnKey: 0,
         recordedProcess: [],
         isRecording: false,
-        recodingDialog: false,
         confirmRecording: false,
-        recordedProcessQueue: []
+        recordedProcessQueue: [],
+        recodingDialog: false,
+        testRecord: null
     }),
     created() {
         let me = this;
@@ -232,27 +232,21 @@ export default {
     },
     mounted() {
         this.getRecordList();
+
+        setInterval(() => {
+            this.refreshProcess();
+        }, 10000);
     },
     watch: {
-        // taskId: {
-        //     handler() {
-        //         this.setTaskInfo();
-        //     }
-        // }
-        isRecording(newVal) {
-            if(!newVal) {
-                this.recodingDialog = true;
-            } else {
-                this.confirmRecording = false;
-            }
-        },
-        recodingDialog(newVal) {
-            if(!newVal && !this.confirmRecording) {
-                this.isRecording = true;
-            }
-        }
     },
     methods: {
+        async refreshProcess() {
+            let me = this;
+            me.setTaskInfo();
+            let taskInfo = await me.backend.findCurrentWorkItemByInstId(me.instanceId);
+            me.taskList = taskInfo;
+            await me.setStatus();
+        },
         async getRecordList() {
             const recordList = await this.backend.testRecordList(this.definitionId);
             this.recordedProcess = recordList;
@@ -328,8 +322,29 @@ export default {
                         break;
                     }
                 }
+
+                let value;
+                if (this.tool == 'FormWorkItem') {
+                    me.saveForm(item.workItem, task);
+                }
+                if (item.workItem.parameterValues) value = item.workItem;
+                else value = { parameterValues: item.workItem };
+
                 if(taskId) {
-                    await me.backend.putWorkItemComplete(taskId, item.workItem, me.isSimulate);
+                    await me.backend.putWorkItemComplete(taskId, value, me.isSimulate);
+                } else {
+                    while (!taskId) {
+                        await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
+                        taskInfo = await me.backend.findCurrentWorkItemByInstId(me.instanceId);
+                        me.taskList = taskInfo;
+                        for (let task of me.taskList) {
+                            if (task.trcTag === item.tracingTag) {
+                                taskId = task.taskId;
+                                break;
+                            }
+                        }
+                    }
+                    await me.backend.putWorkItemComplete(taskId, value, me.isSimulate);
                 }
             }
 
@@ -371,14 +386,6 @@ export default {
             if (me.workItem.hasOwnProperty(task.taskId)) {
                 delete me.workItem[task.taskId];
             }
-        },
-        saveRecording() {
-            this.confirmRecording = true;
-            this.recodingDialog = false;
-
-
-            
-            this.recordedProcess = [];//제일 마지막에 있어야 함
         },
         setStatus() {
             let me = this;
@@ -446,6 +453,11 @@ export default {
             let taskInfo = await me.backend.findCurrentWorkItemByInstId(me.instanceId);
             me.taskList = taskInfo;
             me.setTaskInfo();
+        },
+        handleCardClick(testRecord) {
+            console.log('Card clicked:', testRecord);
+            this.recodingDialog = true;
+            this.testRecord = testRecord;
         }
     }
 };
