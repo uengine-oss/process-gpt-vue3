@@ -5,12 +5,13 @@ import vuetify from 'vite-plugin-vuetify';
 import dotenv from 'dotenv'
 import path from 'path';
 dotenv.config()
+const env = loadEnv('development', process.cwd(), '')
 
 // https://vitejs.dev/config/
 export default defineConfig({
     define: {
-        VITE_DB_URL: `"${process.env.VITE_DB_URL}"`, // wrapping in "" since it's a string
-        VITE_DB_PW: `"${process.env.VITE_DB_PW}"`
+        SUPABASE_URL: `"${env.SUPABASE_URL}"`,
+        SUPABASE_KEY: `"${env.SUPABASE_KEY}"`
     },
     plugins: [
         vue(),

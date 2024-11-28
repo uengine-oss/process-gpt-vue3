@@ -98,38 +98,23 @@ async function setupSupabase() {
     // window.$mode = 'uEngine';
     // window.$mode = 'ProcessGPT';
     // window.$jms = false;
+    const supabaseUrl = SUPABASE_URL;
+    const supabaseKey = SUPABASE_KEY;
 
-    if (typeof process !== 'undefined' && process && process.env && process.env.SUPABASE_URL) {
-        Object.defineProperty(window, '$supabase', {
-            value: createClient(
-                process.env.SUPABASE_URL,
-                process.env.SUPABASE_KEY || '',
-                {
-                    auth: {
-                        autoRefreshToken: true,
-                        persistSession: true
-                    }
+    Object.defineProperty(window, '$supabase', {
+        value: createClient(
+            supabaseUrl,
+            supabaseKey,
+            {
+                auth: {
+                    autoRefreshToken: true,
+                    persistSession: true
                 }
-            ),
-            writable: false,
-            configurable: false
-        });
-    } else {
-        Object.defineProperty(window, '$supabase', {
-            value: createClient(
-                'http://127.0.0.1:54321',
-                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
-                {
-                    auth: {
-                        autoRefreshToken: true,
-                        persistSession: true
-                    }
-                }
-            ),
-            writable: false,
-            configurable: false
-        });
-    }
+            }
+        ),
+        writable: false,
+        configurable: false
+    });
 }
 
 async function initializeApp() {
