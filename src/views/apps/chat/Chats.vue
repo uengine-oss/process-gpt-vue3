@@ -533,49 +533,22 @@ export default {
                 this.sendMessage(newMessage);
             }
         },
-
-        async beforeExecuteProcess(newMessage) {
-            var me = this;
-            me.$try({
-                context: me,
-                action: async () => {
-                    var url = '/process-search'
-                    var req = {
-                        input: {
-                            answer: newMessage.text || '',
-                            image: newMessage.image || ''
-                        }
-                    }
-                    const token = localStorage.getItem('accessToken');
-                    await axios.post(url, req, {
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        }
-                    }).then(async res => {
-                        console.log(res)
-                        if (res.data && res.data.output) { 
-                            const output = JSON.parse(res.data.output)
-                            if (output && output.processDefinitionList) {
-                                const processDefinition = output.processDefinitionList.pop();
-                                await me.executeProcess(processDefinition.id);
-                            }
-                        }
-                    })
-                }
-            })
-        },
         async executeProcess(input) {
             var me = this;
             me.$try({
                 context: me,
                 action: async () => {
-                    await me.backend.start(input);
-                    me.EventBus.emit('instances-updated');
+                    const response = await me.backend.start(input);
+                    console.log(response);
+                    if (response) {
+                        me.EventBus.emit('instances-updated');
+                    } else {
+                        const systemMsg = this.$t('chats.processExecutionFailed', { title: input.process_name });
+                        me.putMessage(me.createMessageObj(systemMsg, 'system'));
+                    }
                 }
             })
         },
-
         afterModelCreated(response) {
         },
         deleteSystemMessage(response){
@@ -610,6 +583,7 @@ export default {
                     }
                     systemMsg = this.$t('chats.startProcess', { title: responseObj.title });
                     const input = {
+                        process_name: responseObj.title,
                         process_definition_id: responseObj.process_definition_id,
                         answer: {
                             text: responseObj.prompt,

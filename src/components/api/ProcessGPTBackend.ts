@@ -294,7 +294,7 @@ class ProcessGPTBackend implements Backend {
                 }
             })
             .catch(error => {
-                throw new Error(error && error.detail ? error.detail : error);
+                return error;
             });
 
             return result;
@@ -860,10 +860,8 @@ class ProcessGPTBackend implements Backend {
     
             return result;
 
-        } catch (e) {
-            
-            //@ts-ignore
-            throw new Error(e.message);
+        } catch (error) {
+            return error;
         }
     }
 
