@@ -568,10 +568,11 @@ export default {
       } else if (text.indexOf("instance.") != -1) {
         reuslt = text.replace("instance.", "[instance].");
       } else if (text.indexOf("activities.") != -1) {
-        reuslt = text.replace("activities.", "[activities].");
         this.activities.forEach(activity => {
+          reuslt = text.replace("activities.activities." + activity.name, "");
           reuslt = reuslt.replace(activity.name, activity.id);
         });
+        reuslt = reuslt.replace("activities.", "[activities].");
       } else {
         reuslt = text.replace(rootNodeName + ".", "");
       }
