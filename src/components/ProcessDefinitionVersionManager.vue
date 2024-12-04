@@ -107,6 +107,9 @@ export default {
         options: {
             additionalModules: [customBpmnModule]
         },
+        currentVersionName: null,
+        currentVersion: null,
+        currentVersionMessage: null,
     }),
     computed: {
         beforeXML() {
@@ -118,24 +121,6 @@ export default {
         currentXML() {
             if (this.lists.length > 0 && this.lists[this.currentIndex]) {
                 return this.lists[this.currentIndex].xml
-            }
-            return null;
-        },
-        currentVersionName() {
-            if (this.currentInfo) {
-                return this.currentInfo.processDefinitionName
-            }
-            return null;
-        },
-        currentVersion() {
-            if (this.currentInfo) {
-                return this.currentInfo.version
-            }
-            return null;
-        },
-        currentVersionMessage() {
-            if (this.currentInfo && this.currentInfo.shortDescription) {
-                return this.currentInfo.shortDescription.text
             }
             return null;
         },
@@ -163,15 +148,18 @@ export default {
                 type: me.type
             });
             me.lists = result.map(item => ({ ...item, xml: null }));
-            me.lists[0].xml = await me.loadXMLOfVer(me.lists[0].version)
-            me.isOpen = true
-            me.loading = false
+            me.currentIndex = me.lists.length - 1;
+            me.lists[me.currentIndex].xml = await me.loadXMLOfVer(me.lists[me.currentIndex].version);
+            await me.setCurrentInfo(me.lists[me.currentIndex].xml);
+            me.isOpen = true;
+            me.loading = false;
         },
         async handleBeforeChange(index) {
             var me = this
             me.loading = true
             if (!me.lists[index]) return;
             if (!me.lists[index].xml) me.lists[index].xml = await me.loadXMLOfVer(me.lists[index].version)
+            await me.setCurrentInfo(me.lists[index].xml);
             me.loading = false
             me.key++
         },
@@ -191,6 +179,13 @@ export default {
             } else {
                 alert('선택된 버전의 XML 데이터가 없습니다.');
             }
+        },
+        async setCurrentInfo(xml) {
+            let me = this;
+            const currentInfo = await me.convertXMLToJSON(xml);
+            me.currentVersionName = currentInfo.processDefinitionName;
+            me.currentVersion = currentInfo.version;
+            me.currentVersionMessage = currentInfo.shortDescription.text;
         },
         async loadXMLOfVer(version) {
             var me = this

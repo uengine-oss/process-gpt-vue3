@@ -1,14 +1,23 @@
 <template>
     <!-- <div> -->
-    <div ref="container" class="vue-bpmn-diagram-container"></div>
+    <div style="height: 100%; position: relative;" ref="container" class="vue-bpmn-diagram-container">
+        <div style="position: absolute; top: 20px; right: 20px; pointer-events: auto; z-index: 10;">
+            <div class="pa-1" style="display: flex; flex-direction: column; align-items: center; border: gray 1px solid; background-color: white;">
+                <v-icon class="mb-1" @click="resetZoom" style="color: #444; cursor: pointer;">mdi-crosshairs-gps</v-icon>
+                <v-icon class="mb-1" @click="zoomIn" style="color: #444; cursor: pointer;">mdi-plus</v-icon>
+                <v-icon @click="zoomOut" style="color: #444; cursor: pointer;">mdi-minus</v-icon>
+            </div>
+        </div>
+    </div>
     <!-- </div> -->
 </template>
 
 <script>
 import 'bpmn-js/dist/assets/diagram-js.css';
 import BpmnViewer from 'bpmn-js/lib/Viewer';
-import ZoomScroll from 'diagram-js/lib/navigation/zoomscroll';
+import ZoomScroll from './customZoomScroll';
 import MoveCanvas from 'diagram-js/lib/navigation/movecanvas';
+
 
 export default {
     name: 'bpmn-uengine',
@@ -62,26 +71,8 @@ export default {
             var canvas = self.bpmnViewer.get('canvas');
             var elementRegistry = self.bpmnViewer.get('elementRegistry');
             var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
-
-            if (allPools.length > 1) {
-                var firstPool = allPools[0];
-                var bbox = canvas.getAbsoluteBBox(firstPool);
-                canvas.viewbox({
-                    x: bbox.x - 50, // 여백을 위해 약간의 오프셋을 추가
-                    y: bbox.y - 50,
-                    width: bbox.width + 100,
-                    height: bbox.height + 100
-                });
-            } else {
-                canvas.zoom('fit-viewport');
-                var viewbox = canvas.viewbox();
-                canvas.viewbox({
-                    x: viewbox.x - 50, // 여백을 위해 약간의 오프셋을 추가
-                    y: viewbox.y - 50,
-                    width: viewbox.width + 100,
-                    height: viewbox.height + 100
-                });
-            }
+            
+            self.resetZoom();
 
             if (window.$mode == "ProcessGPT") {
                 if (self.currentActivities && self.currentActivities.length > 0) {
@@ -90,15 +81,14 @@ export default {
                     });
                 }
             } 
-            
+
+            var overlays = self.bpmnViewer.get('overlays');
 
             if (self.adminMode) {
-                var overlays = self.bpmnViewer.get('overlays');
                 // add marker to current activity elements
 
                 if (self.currentActivities && self.currentActivities.length > 0) {
                     self.currentActivities.forEach((actId) => {
-                        const elementRegistry = self.bpmnViewer.get('elementRegistry');
                         const element = elementRegistry.get(actId);
                         if (element) {
                             if (element.type != 'bpmn:SubProcess' && element.type != 'bpmn:CallActivity') {
@@ -242,6 +232,59 @@ export default {
         }
     },
     methods: {
+        resetZoom() {
+            var self = this;
+            var canvas = self.bpmnViewer.get('canvas');
+            var elementRegistry = self.bpmnViewer.get('elementRegistry');
+            var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+            const zoomScroll = self.bpmnViewer.get('zoomScroll');
+            zoomScroll.reset();
+
+            canvas._eventBus.on('zoom', function(event) {
+                let zoomLevel = event.scale;
+
+                // 줌 범위를 0.2 ~ 2로 제한
+                if (zoomLevel < 0.2) {
+                    zoomLevel = 0.2;
+                } else if (zoomLevel > 2) {
+                    zoomLevel = 2;
+                }
+
+                // 줌 레벨을 제한된 값으로 설정
+                canvas.zoom(zoomLevel, {
+                    x: canvas._cachedViewbox.inner.width / 2,
+                    y: canvas._cachedViewbox.inner.height / 2
+                });
+            });
+
+            if (allPools.length > 1) {
+                var firstPool = allPools[0];
+                var bbox = canvas.getAbsoluteBBox(firstPool);
+                canvas.viewbox({
+                    x: bbox.x - 50, // 여백을 위해 약간의 오프셋을 추가
+                    y: bbox.y - 50,
+                    width: bbox.width + 100,
+                    height: bbox.height + 100
+                });
+            } else {
+                var viewbox = canvas.viewbox();
+                canvas.viewbox({
+                    x: viewbox.x - 50, // 여백을 위해 약간의 오프셋을 추가
+                    y: viewbox.y - 50,
+                    width: viewbox.width + 100,
+                    height: viewbox.height + 100
+                });
+            }
+
+        },
+        zoomIn() {
+            const zoomScroll = this.bpmnViewer.get('zoomScroll');
+            zoomScroll.stepZoom(1);
+        },
+        zoomOut() {
+            const zoomScroll = this.bpmnViewer.get('zoomScroll');
+            zoomScroll.stepZoom(-1);
+        },
         initializeViewer() {
             var container = this.$refs.container;
             var self = this;
