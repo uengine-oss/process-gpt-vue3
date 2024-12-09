@@ -59,7 +59,7 @@ const customizer = useCustomizerStore();
                     <NavItem v-else-if="!item.disable" class="leftPadding" :item="item" />
                     <!---End Single Item-->
                 </template>
-                <v-col class="pa-0" style="flex: 1 1 auto; overflow: auto;">
+                <v-col class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto;">
                     <ProcessInstanceList
                         @update:instanceList="handleInstanceListUpdate" 
                     />
@@ -95,7 +95,7 @@ const customizer = useCustomizerStore();
                         <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
                     </template>
                 </v-col>
-                <v-col class="pa-0" style="flex: 1 1 auto; overflow: auto;">
+                <v-col class="pa-0" style="flex: 1 1 50%; overflow: auto;">
                     <template v-if="definitionList">
                         <!-- 정의 목록 리스트 -->
                         <NavCollapse v-for="(definition, i) in definitionList.children" :key="i"
