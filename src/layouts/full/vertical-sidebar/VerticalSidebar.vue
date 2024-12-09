@@ -47,69 +47,68 @@ const customizer = useCustomizerStore();
         <!---Navigation -->
         <!-- ---------------------------------------------- -->
         <div class="scrollnavbar bg-containerBg overflow-y-hidden">
-            <v-list class="py-4 px-4 bg-containerBg pt-0 pb-0"
-                style="display: flex; flex-direction: column; height: 100%;"
-            >
-                <!---Menu Loop -->
-                <template v-for="item in sidebarItem" :key="item.title">
-                    <!---Item Sub Header -->
-                    <NavGroup v-if="item.header && !item.disable" :item="item" :key="item.title" />
-                    <!---If Has Child -->
-                    <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
-                    <!---Single Item-->
-                    <NavItem v-else-if="!item.disable" class="leftPadding" :item="item" />
-                    <!---End Single Item-->
-                </template>
-                <v-col class="pa-0" style="flex: 1; overflow: auto;">
-                    <ProcessInstanceList
-                        @update:instanceList="handleInstanceListUpdate" 
-                    />
-                </v-col>
-                <v-col class="pa-0" style="flex-grow: 0 !important;">
-                    <!-- definition menu item -->
-                    <template v-for="(item, index) in definitionItem" :key="item.title">
-                        <!-- Item Sub Header -->
-                        <div v-if="item.header && index === 0"
-                            style="font-size:14px;"
-                            class="text-medium-emphasis cp-menu mt-3 ml-2"
-                        >{{ $t(item.header) }}</div>
-                        <v-row v-if="item.header && !item.disable"
-                            class="pa-0 ma-0" 
-                        >
-                            <template v-for="subItem in definitionItem" :key="subItem.title">
-                                <v-tooltip v-if="subItem.title" location="bottom" :text="$t(subItem.title)">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn
-                                            v-if="!subItem.header && !subItem.disable"
-                                            @click="navigateTo(subItem.to)"
-                                            v-bind="props"
-                                            icon variant="text" 
-                                            class="text-medium-emphasis cp-menu"
-                                            density="comfortable"
-                                        >
-                                            <Icons :icon="subItem.icon" :size="20" />    
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip>
+    <v-list class="py-4 px-4 bg-containerBg pt-0 pb-0"
+            style="display: flex; flex-direction: column; height: 100%;">
+        <!---Menu Loop -->
+        <template v-for="item in sidebarItem" :key="item.title">
+            <!---Item Sub Header -->
+            <NavGroup v-if="item.header && !item.disable" :item="item" :key="item.title" />
+            <!---If Has Child -->
+            <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
+            <!---Single Item-->
+            <NavItem v-else-if="!item.disable" class="leftPadding" :item="item" />
+            <!---End Single Item-->
+        </template>
+        <v-col class="pa-0" style="flex: 1 1 auto; overflow: auto;">
+            <ProcessInstanceList
+                @update:instanceList="handleInstanceListUpdate" 
+            />
+        </v-col>
+        <v-col class="pa-0" style="flex: 0 0 auto;">
+            <!-- definition menu item -->
+            <template v-for="(item, index) in definitionItem" :key="item.title">
+                <!-- Item Sub Header -->
+                <div v-if="item.header && index === 0"
+                    style="font-size:14px;"
+                    class="text-medium-emphasis cp-menu mt-3 ml-2"
+                >{{ $t(item.header) }}</div>
+                <v-row v-if="item.header && !item.disable"
+                    class="pa-0 ma-0" 
+                >
+                    <template v-for="subItem in definitionItem" :key="subItem.title">
+                        <v-tooltip v-if="subItem.title" location="bottom" :text="$t(subItem.title)">
+                            <template v-slot:activator="{ props }">
+                                <v-btn
+                                    v-if="!subItem.header && !subItem.disable"
+                                    @click="navigateTo(subItem.to)"
+                                    v-bind="props"
+                                    icon variant="text" 
+                                    class="text-medium-emphasis cp-menu"
+                                    density="comfortable"
+                                >
+                                    <Icons :icon="subItem.icon" :size="20" />    
+                                </v-btn>
                             </template>
-                        </v-row>
-                        <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
+                        </v-tooltip>
                     </template>
-                </v-col>
-                <v-col class="pa-0" style="flex: 1; overflow: auto;">
-                    <template v-if="definitionList">
-                        <!-- 정의 목록 리스트 -->
-                        <NavCollapse v-for="(definition, i) in definitionList.children" :key="i"
-                            :item="definition" 
-                            class="leftPadding"
-                            @update:item="(def) => (definitionList[i] = def)" 
-                            :level="0" 
-                            :type="'definition-list'" 
-                        />
-                    </template>
-                </v-col>
-            </v-list>
-        </div>
+                </v-row>
+                <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
+            </template>
+        </v-col>
+        <v-col class="pa-0" style="flex: 1 1 auto; overflow: auto;">
+            <template v-if="definitionList">
+                <!-- 정의 목록 리스트 -->
+                <NavCollapse v-for="(definition, i) in definitionList.children" :key="i"
+                    :item="definition" 
+                    class="leftPadding"
+                    @update:item="(def) => (definitionList[i] = def)" 
+                    :level="0" 
+                    :type="'definition-list'" 
+                />
+            </template>
+        </v-col>
+    </v-list>
+</div>
 
         <div class="pa-4 px-4 bg-containerBg">
             <ExtraBox />
