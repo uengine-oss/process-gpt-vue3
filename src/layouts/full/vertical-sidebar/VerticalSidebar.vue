@@ -59,7 +59,7 @@ const customizer = useCustomizerStore();
                     <NavItem v-else-if="!item.disable" class="leftPadding" :item="item" />
                     <!---End Single Item-->
                 </template>
-                <v-col class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto;">
+                <v-col v-if="instanceList" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto;">
                     <ProcessInstanceList
                         @update:instanceList="handleInstanceListUpdate" 
                     />
