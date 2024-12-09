@@ -48,7 +48,8 @@ const customizer = useCustomizerStore();
         <!-- ---------------------------------------------- -->
         <div class="scrollnavbar bg-containerBg overflow-y-hidden">
             <v-list class="py-4 px-4 bg-containerBg pt-0 pb-0"
-                    style="display: flex; flex-direction: column; height: 100%;">
+                style="display: flex; flex-direction: column; height: 100%;"
+            >
                 <!---Menu Loop -->
                 <template v-for="item in sidebarItem" :key="item.title">
                     <!---Item Sub Header -->
@@ -59,7 +60,7 @@ const customizer = useCustomizerStore();
                     <NavItem v-else-if="!item.disable" class="leftPadding" :item="item" />
                     <!---End Single Item-->
                 </template>
-                <v-col v-if="instanceList" class="pa-0" style="flex: 1 1 auto; max-height: 50%; min-height:88px; overflow: auto;">
+                <v-col v-if="instanceList" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto;">
                     <ProcessInstanceList
                         @update:instanceList="handleInstanceListUpdate" 
                     />
@@ -95,7 +96,7 @@ const customizer = useCustomizerStore();
                         <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
                     </template>
                 </v-col>
-                <v-col class="pa-0" style="flex: 1 1 auto; overflow: auto;">
+                <v-col class="pa-0" style="flex: 1 1 50%; overflow: auto;">
                     <template v-if="definitionList">
                         <!-- 정의 목록 리스트 -->
                         <NavCollapse v-for="(definition, i) in definitionList.children" :key="i"
