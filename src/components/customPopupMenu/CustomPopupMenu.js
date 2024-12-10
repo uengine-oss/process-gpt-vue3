@@ -1,14 +1,24 @@
-import { assign } from 'min-dash';
 import PopupMenu from 'diagram-js/lib/features/popup-menu/PopupMenu';
-import { i18n } from '@/main';
+import {
+  forEach,
+  isFunction,
+  omit,
+} from 'min-dash';
 
-export default function CustomPopupMenu(
-  config, eventBus, canvas) {
-    this.config = config;
-    this.eventBus = eventBus;
-    this.canvas = canvas;
+export default class CustomPopupMenu extends PopupMenu {
+  constructor(
+    config, eventBus, canvas
+  ) {
+    super(config, eventBus, canvas);
 
   }
+  _getEntries(target) {
+    const entries = PopupMenu.prototype._getEntries.call(this, target); 
+    return null;
+  }
+
+}
+
 
 
 CustomPopupMenu.$inject = [
@@ -18,9 +28,40 @@ CustomPopupMenu.$inject = [
 ];
 
 
-CustomPopupMenu.prototype = Object.create(PopupMenu.prototype);
+PopupMenu.prototype._getEntries = function(target, providers) {
+  var entries = {};
+  var removedEntries = ['replace-with-conditional-intermediate-catch'];
 
-CustomPopupMenu.prototype._getEntries = function(target) {
-  const entries = PopupMenu.prototype._getEntries.call(this, target); 
+  providers.forEach(provider => {
+    if (!provider.getPopupMenuEntries) {
+      forEach(provider.getEntries(target), function(entry) {
+        var id = entry.id;
+
+        if (!id) {
+          throw new Error('entry ID is missing');
+        }
+
+        entries[id] = omit(entry, [ 'id' ]);
+      });
+
+      return;
+    }
+
+    
+    var entriesOrUpdater = provider.getPopupMenuEntries(target);
+
+    if (isFunction(entriesOrUpdater)) {
+      entries = entriesOrUpdater(entries);
+    } else {
+      forEach(entriesOrUpdater, function(entry, id) {
+        entries[id] = entry;
+      });
+    }
+  });
+
+  removedEntries.forEach(id => {
+    delete entries[id];
+  });
+
   return entries;
 };
