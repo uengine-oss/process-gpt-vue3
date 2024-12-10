@@ -32,10 +32,11 @@ export default function MoveCanvas(eventBus, canvas, elementRegistry) {
     this.elementRegistry = elementRegistry;
     elementReg = elementRegistry;
     this.canvasSize = (({ height, width, x, y }) => ({ height, width, x, y }))(canvas.viewbox());
+    this.scaleOffset = 1;
     this.scale = 1;
-    this.movedDistance = {x:-100, y:0};
+    canvas.movedDistance = {x:-100, y:0};
     this.resetMovedDistance = function(){
-      this.movedDistance = {x:-100, y:0};
+      canvas.movedDistance = {x:-100, y:0};
     }
     var context;
 
@@ -69,7 +70,7 @@ export default function MoveCanvas(eventBus, canvas, elementRegistry) {
         var lastPosition = context.last || context.start;
     
         delta = deltaPos(position, lastPosition);
-        me.scale = me.canvas.viewbox().scale;
+        me.scale = me.canvas.viewbox().scale / me.scaleOffset;
     
         // 스케일 조정된 경계를 계산
         var scaledWidth = me.canvasSize.width * me.scale;
@@ -86,19 +87,19 @@ export default function MoveCanvas(eventBus, canvas, elementRegistry) {
         // 경계를 초과하게 될 경우 이동하지 않게 변경
         var adjustedDeltaX = delta.x;
         var adjustedDeltaY = delta.y;
-        var scaledMovedDistanceX = me.movedDistance.x * me.scale;
-        var scaledMovedDistanceY = me.movedDistance.y * me.scale;
+        var scaledMovedDistanceX = canvas.movedDistance.x * me.scale;
+        var scaledMovedDistanceY = canvas.movedDistance.y * me.scale;
     
-        if(scaledLeft > canvasLeft + scaledMovedDistanceX + delta.x){
+        if(delta.x < 0 && scaledLeft > canvasLeft + scaledMovedDistanceX + delta.x){
             adjustedDeltaX = 0;
         }
-        if(scaledRight < canvasRight + scaledMovedDistanceX + delta.x){
+        if(delta.x > 0 && scaledRight < canvasRight + scaledMovedDistanceX + delta.x){
             adjustedDeltaX = 0;
         }
-        if(scaledTop > canvasTop + scaledMovedDistanceY + delta.y){
+        if(delta.y < 0 && scaledTop > canvasTop + scaledMovedDistanceY + delta.y){
             adjustedDeltaY = 0;
         }
-        if(scaledBottom < canvasBottom + scaledMovedDistanceY + delta.y){
+        if(delta.y > 0 && scaledBottom < canvasBottom + scaledMovedDistanceY + delta.y){
             adjustedDeltaY = 0;
         }
 
@@ -112,8 +113,8 @@ export default function MoveCanvas(eventBus, canvas, elementRegistry) {
           });
         }
     
-        me.movedDistance.x += (adjustedDeltaX / me.scale);
-        me.movedDistance.y += (adjustedDeltaY / me.scale);
+        canvas.movedDistance.x += (adjustedDeltaX / me.scale);
+        canvas.movedDistance.y += (adjustedDeltaY / me.scale);
 
         // 마지막 위치를 업데이트
         context.last = {

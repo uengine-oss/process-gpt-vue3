@@ -305,6 +305,7 @@ export default {
                 x: x,
                 y: y
             }
+            moveCanvas.scaleOffset = canvas.viewbox().scale;
             moveCanvas.resetMovedDistance();
 
             zoomScroll.canvasSize = {
@@ -313,6 +314,7 @@ export default {
                 x: x,
                 y: y
             }
+            zoomScroll.scaleOffset = canvas.viewbox().scale;
             zoomScroll.resetMovedDistance();
         },
         zoomIn() {
