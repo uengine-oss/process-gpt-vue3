@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   frontend:
-    image: gcr.io/process-gpt-419207/process-gpt:v2.6.3
+    image: ghcr.io/uengine-oss/process-gpt:v2.6.3
     ports:
       - "8080:8080"
     environment:
@@ -11,7 +11,7 @@ services:
       SUPABASE_KEY: ${SERVICE_ROLE_KEY}
     
   execution:
-    image: gcr.io/process-gpt-419207/process-gpt-execution:v0.3.4
+    image: ghcr.io/uengine-oss/process-gpt-execution:v0.3.4
     ports:
       - "8000:8000"
     environment:
@@ -24,14 +24,14 @@ services:
       SUPABASE_SECRET_KEY_DEV: ${JWT_SECRET}
 
   autonomous:
-    image: gcr.io/process-gpt-419207/process-gpt-autonomous:v0.1.4
+    image: ghcr.io/uengine-oss/process-gpt-autonomous:v0.1.4
     ports:
       - "6789:6789"
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
 
   memento:
-    image: gcr.io/process-gpt-419207/process-gpt-memento:v0.0.5
+    image: ghcr.io/uengine-oss/process-gpt-memento:v0.0.5
     ports:
       - "8005:8005"
     environment:
@@ -198,10 +198,6 @@ services:
       # GOTRUE_HOOK_SEND_EMAIL_ENABLED: "false"
       # GOTRUE_HOOK_SEND_EMAIL_URI: "http://host.docker.internal:54321/functions/v1/email_sender"
       # GOTRUE_HOOK_SEND_EMAIL_SECRETS: "v1,whsec_VGhpcyBpcyBhbiBleGFtcGxlIG9mIGEgc2hvcnRlciBCYXNlNjQgc3RyaW5n"
-
-
-
-
 
   rest:
     container_name: supabase-rest
