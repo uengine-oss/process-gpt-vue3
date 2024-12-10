@@ -147,10 +147,12 @@ export default {
                 orderBy: 'timeStamp',
                 type: me.type
             });
-            me.lists = result.map(item => ({ ...item, xml: null }));
-            me.currentIndex = me.lists.length - 1;
-            me.lists[me.currentIndex].xml = await me.loadXMLOfVer(me.lists[me.currentIndex].version);
-            await me.setCurrentInfo(me.lists[me.currentIndex].xml);
+            if(result){
+                me.lists = result.map(item => ({ ...item, xml: null }));
+                me.currentIndex = me.lists.length - 1;
+                me.lists[me.currentIndex].xml = await me.loadXMLOfVer(me.lists[me.currentIndex].version);
+                await me.setCurrentInfo(me.lists[me.currentIndex].xml);
+            }
             me.isOpen = true;
             me.loading = false;
         },
