@@ -16,7 +16,8 @@
 import 'bpmn-js/dist/assets/diagram-js.css';
 import BpmnViewer from 'bpmn-js/lib/Viewer';
 import ZoomScroll from './customZoomScroll';
-import MoveCanvas from 'diagram-js/lib/navigation/movecanvas';
+import MoveCanvas from './customMoveCanvas';
+// import MoveCanvas from 'diagram-js/lib/navigation/movecanvas';
 
 
 export default {
@@ -238,7 +239,9 @@ export default {
             var elementRegistry = self.bpmnViewer.get('elementRegistry');
             var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
             const zoomScroll = self.bpmnViewer.get('zoomScroll');
+            const moveCanvas = self.bpmnViewer.get('MoveCanvas');
             zoomScroll.reset();
+
 
             canvas._eventBus.on('zoom', function(event) {
                 let zoomLevel = event.scale;
@@ -257,25 +260,60 @@ export default {
                 });
             });
 
+            var x = 0;
+            var y = 0;
+            var width = 0;
+            var height = 0;
+                
             if (allPools.length > 1) {
                 var firstPool = allPools[0];
-                var bbox = canvas.getAbsoluteBBox(firstPool);
-                canvas.viewbox({
-                    x: bbox.x - 50, // 여백을 위해 약간의 오프셋을 추가
-                    y: bbox.y - 50,
-                    width: bbox.width + 100,
-                    height: bbox.height + 100
-                });
-            } else {
+                var lastPool = allPools[allPools.length - 1];
+                var firstBbox = canvas.getAbsoluteBBox(firstPool);
+                var lastBbox = canvas.getAbsoluteBBox(lastPool);
+                x = firstBbox.x;
+                y = firstBbox.y;
+                width = lastBbox.x + lastBbox.width + 100;
+                height = lastBbox.y + lastBbox.height + 100;
+            } 
+            // else if(allPools.length == 1){
+            //     var firstPool = allPools[0];
+            //     var firstBbox = canvas.getAbsoluteBBox(firstPool);
+            //     x = firstBbox.x - 50;
+            //     y = firstBbox.y - 50;
+            //     width = firstBbox.x + firstBbox.width + 100;
+            //     height = firstBbox.y + firstBbox.height + 100;
+            // }
+             else {
                 var viewbox = canvas.viewbox();
-                canvas.viewbox({
-                    x: viewbox.x - 50, // 여백을 위해 약간의 오프셋을 추가
-                    y: viewbox.y - 50,
-                    width: viewbox.width + 100,
-                    height: viewbox.height + 100
-                });
+                x = viewbox.x - 50;
+                y = viewbox.y - 50;
+                width = viewbox.x + viewbox.width + 100;
+                height = viewbox.y + viewbox.height + 100;
             }
 
+            canvas.viewbox({
+                x: x,
+                y: y,
+                width: width,
+                height: height
+            });
+
+            
+            moveCanvas.canvasSize = {
+                height: height,
+                width: width,
+                x: x,
+                y: y
+            }
+            moveCanvas.resetMovedDistance();
+
+            zoomScroll.canvasSize = {
+                height: height,
+                width: width,
+                x: x,
+                y: y
+            }
+            zoomScroll.resetMovedDistance();
         },
         zoomIn() {
             const zoomScroll = this.bpmnViewer.get('zoomScroll');

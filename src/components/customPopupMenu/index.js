@@ -1,5 +1,5 @@
 import CustomPopupMenu from './CustomPopupMenu';
 export default {
-  __init__: [ 'CustomPopupMenu'],
-  CustomPopupMenu: [ 'type', CustomPopupMenu ]
+  __init__: [ 'PopupMenu'],
+  PopupMenu: [ 'type', CustomPopupMenu ]
 };
