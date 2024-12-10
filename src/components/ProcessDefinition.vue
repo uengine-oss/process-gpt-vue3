@@ -242,6 +242,7 @@ import customBpmnModule from './customBpmn';
 import customPaletteModule from './customPalette';
 import customContextPadModule from './customContextPad';
 import customReplaceElement from './customReplaceElement';
+import customPopupMenu from './customPopupMenu';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 // import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
@@ -354,7 +355,7 @@ export default {
         },
         options() {
             let result = {
-                additionalModules: this.isViewMode ? [customBpmnModule] : [customBpmnModule, customPaletteModule, customContextPadModule, customReplaceElement]
+                additionalModules: this.isViewMode ? [customBpmnModule] : [customBpmnModule, customPaletteModule, customContextPadModule, customReplaceElement, customPopupMenu]
             };
             return result;
         }

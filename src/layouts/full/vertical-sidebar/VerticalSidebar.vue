@@ -46,9 +46,9 @@ const customizer = useCustomizerStore();
         <!-- ---------------------------------------------- -->
         <!---Navigation -->
         <!-- ---------------------------------------------- -->
-        <perfect-scrollbar class="scrollnavbar bg-containerBg overflow-y-hidden">
-            <v-list class="py-4 px-4 bg-containerBg"
-                style="height: 100%;"
+        <div class="scrollnavbar bg-containerBg overflow-y-hidden">
+            <v-list class="py-4 px-4 bg-containerBg pt-0 pb-0"
+                style="display: flex; flex-direction: column; height: 100%;"
             >
                 <!---Menu Loop -->
                 <template v-for="item in sidebarItem" :key="item.title">
@@ -60,41 +60,43 @@ const customizer = useCustomizerStore();
                     <NavItem v-else-if="!item.disable" class="leftPadding" :item="item" />
                     <!---End Single Item-->
                 </template>
-                <ProcessInstanceList :style="processInstanceListStyle" 
-                    @update:instanceList="handleInstanceListUpdate" 
-                />
-                
-
-                <!-- definition menu item -->
-                <template v-for="(item, index) in definitionItem" :key="item.title">
-                    <!-- Item Sub Header -->
-                    <div v-if="item.header && index === 0"
-                        style="font-size:14px;"
-                        class="text-medium-emphasis cp-menu mt-3 ml-2"
-                    >{{ $t(item.header) }}</div>
-                    <v-row v-if="item.header && !item.disable"
-                        class="pa-0 ma-0" 
-                    >
-                        <template v-for="subItem in definitionItem" :key="subItem.title">
-                            <v-tooltip v-if="subItem.title" location="bottom" :text="$t(subItem.title)">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn
-                                        v-if="!subItem.header && !subItem.disable"
-                                        @click="navigateTo(subItem.to)"
-                                        v-bind="props"
-                                        icon variant="text" 
-                                        class="text-medium-emphasis cp-menu"
-                                        density="comfortable"
-                                    >
-                                        <Icons :icon="subItem.icon" :size="20" />    
-                                    </v-btn>
-                                </template>
-                            </v-tooltip>
-                        </template>
-                    </v-row>
-                    <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
-                </template>
-                <div :style="definitionListStyle">
+                <v-col v-if="instanceList" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto;">
+                    <ProcessInstanceList
+                        @update:instanceList="handleInstanceListUpdate" 
+                    />
+                </v-col>
+                <v-col class="pa-0" style="flex: 0 0 auto;">
+                    <!-- definition menu item -->
+                    <template v-for="(item, index) in definitionItem" :key="item.title">
+                        <!-- Item Sub Header -->
+                        <div v-if="item.header && index === 0"
+                            style="font-size:14px;"
+                            class="text-medium-emphasis cp-menu mt-3 ml-2"
+                        >{{ $t(item.header) }}</div>
+                        <v-row v-if="item.header && !item.disable"
+                            class="pa-0 ma-0" 
+                        >
+                            <template v-for="subItem in definitionItem" :key="subItem.title">
+                                <v-tooltip v-if="subItem.title" location="bottom" :text="$t(subItem.title)">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn
+                                            v-if="!subItem.header && !subItem.disable"
+                                            @click="navigateTo(subItem.to)"
+                                            v-bind="props"
+                                            icon variant="text" 
+                                            class="text-medium-emphasis cp-menu"
+                                            density="comfortable"
+                                        >
+                                            <Icons :icon="subItem.icon" :size="20" />    
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
+                            </template>
+                        </v-row>
+                        <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
+                    </template>
+                </v-col>
+                <v-col class="pa-0" style="flex: 1 1 50%; overflow: auto;">
                     <template v-if="definitionList">
                         <!-- 정의 목록 리스트 -->
                         <NavCollapse v-for="(definition, i) in definitionList.children" :key="i"
@@ -105,9 +107,9 @@ const customizer = useCustomizerStore();
                             :type="'definition-list'" 
                         />
                     </template>
-                </div>
+                </v-col>
             </v-list>
-        </perfect-scrollbar>
+        </div>
 
         <div class="pa-4 px-4 bg-containerBg">
             <ExtraBox />
@@ -161,34 +163,6 @@ export default {
         mode() {
             return window.$mode;
         },
-        processInstanceListStyle() {
-            const definitionCount = this.definitionList ? Object.keys(this.definitionList.children).length : 0;
-            const instanceCount = this.instanceList.length;
-            const totalCount = definitionCount + instanceCount;
-
-            if (totalCount >= 12 && definitionCount >= 6 && instanceCount >= 6) {
-                return 'max-height: 45%; overflow: auto;';
-            } else if (totalCount > 12) {
-                const remainingCount = 12 - instanceCount;
-                return `max-height: ${51 * Math.min(instanceCount, remainingCount)}px; overflow: auto;`;
-            } else {
-                return `max-height: ${51 * instanceCount}px; overflow: auto;`;
-            }
-        },
-        definitionListStyle() {
-            const definitionCount = this.definitionList ? Object.keys(this.definitionList.children).length : 0;
-            const instanceCount = this.instanceList.length;
-            const totalCount = definitionCount + instanceCount;
-
-            if (totalCount >= 12 && definitionCount >= 6 && instanceCount >= 6) {
-                return 'max-height: 45%; overflow: auto;';
-            } else if (totalCount > 12) {
-                const remainingCount = 12 - instanceCount;
-                return `max-height: ${51 * Math.min(definitionCount, remainingCount)}px; overflow: auto;`;
-            } else {
-                return `max-height: ${51 * definitionCount}px; overflow: auto;`;
-            }
-        }   
     },
     async created() {
         const isAdmin = localStorage.getItem('isAdmin');

@@ -673,7 +673,7 @@
         "replace-with-timer-start": "타이머 시작 이벤트로 변경",
         "replace-with-compensation-intermediate-throw": "보상 중간 던지기로 변경",
         "replace-with-conditional-intermediate-catch": "조건부 중간 잡기로 변경",
-        "replace-with-escalation-intermediate-throw": "승급 중간 던지기로 변경",
+        "replace-with-escalation-intermediate-throw": "에스컬레이션 중간 던지기로 변경",
         "replace-with-link-intermediate-catch": "링크 중간 잡기로 변경",
         "replace-with-link-intermediate-throw": "링크 중간 던지기로 변경",
         "replace-with-message-intermediate-catch": "메시지 중간 잡기로 변경",

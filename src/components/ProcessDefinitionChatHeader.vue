@@ -8,7 +8,7 @@
                     <div v-if="modelValue && modelValue !== ''" class="d-flex gap-2 align-center"
                         style="max-width:80%;"
                     >
-                        <v-text-field v-if="!lock && editUser != '' && editUser == userInfo.name" v-model="processName"
+                        <v-text-field v-if="isEditableTitle" v-model="processName"
                             label="프로세스 정의명" variant="underlined" hide-details class="pa-0 ma-0"
                             style="min-width:150px; width:150px;"
                         ></v-text-field>
@@ -172,6 +172,10 @@ export default {
             } else {
                 return false
             }
+        },
+        isEditableTitle() {
+            const checkGPT =  window.$mode === 'ProcessGPT' ? ( this.editUser != '' && this.editUser == this.userInfo.name) : true;
+            return !this.lock && checkGPT;
         }
     },
     methods: {

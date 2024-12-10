@@ -254,7 +254,7 @@ export default {
                             ? `${me.process.processDefinitionId}_${me.newVersion}`
                             : `${me.information.proc_def_id}_${me.newVersion}`,
                         version: this.isVersion ? me.newVersion : null,
-                        name: me.information.name,
+                        name: (me.processName && me.processName.length > 0) ? me.processName : me.information.name,
                         proc_def_id: me.information.proc_def_id,
                         prevSnapshot: me.information.snapshot,
                         prevDiff: me.information.diff,

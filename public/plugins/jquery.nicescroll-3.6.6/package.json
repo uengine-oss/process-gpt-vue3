@@ -60,11 +60,13 @@
   },
   "devDependencies": {},
   "npmName": "nicescroll",
-  "npmFileMap": [{
-    "basePath": "/dist/",
-    "files": [
-      "*.js",
-      "zoomico.png"
-    ]
-  }]
+  "npmFileMap": [
+    {
+      "basePath": "/dist/",
+      "files": [
+        "*.js",
+        "zoomico.png"
+      ]
+    }
+  ]
 }
