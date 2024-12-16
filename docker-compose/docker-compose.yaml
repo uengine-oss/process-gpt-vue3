@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   frontend:
-    image: ghcr.io/uengine-oss/process-gpt:v2.6.3
+    image: ghcr.io/uengine-oss/process-gpt:v2.6.5
     ports:
       - "8080:8080"
     environment:
@@ -11,17 +11,14 @@ services:
       SUPABASE_KEY: ${SERVICE_ROLE_KEY}
     
   execution:
-    image: ghcr.io/uengine-oss/process-gpt-execution:v0.3.4
+    image: ghcr.io/uengine-oss/process-gpt-execution:v0.3.5
     ports:
       - "8000:8000"
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      SUPABASE_URL_PROD: ${SUPABASE_URL}
-      SUPABASE_KEY_PROD: ${SERVICE_ROLE_KEY}
-      SUPABASE_SECRET_KEY_PROD: ${JWT_SECRET}
-      SUPABASE_URL_DEV: ${SUPABASE_URL}
-      SUPABASE_KEY_DEV: ${SERVICE_ROLE_KEY}
-      SUPABASE_SECRET_KEY_DEV: ${JWT_SECRET}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SERVICE_ROLE_KEY}
+      SUPABASE_SECRET_KEY: ${JWT_SECRET}
 
   autonomous:
     image: ghcr.io/uengine-oss/process-gpt-autonomous:v0.1.4
