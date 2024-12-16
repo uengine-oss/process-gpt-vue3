@@ -27,9 +27,10 @@ export default function CustomZoomScroll(config, eventBus, canvas) {
   this._customZoomRange = { min: 0.2, max: 2 };
   this.canvasSize = (({ height, width, x, y }) => ({ height, width, x, y }))(canvas.viewbox());
   this.scale = 1;
-  this.movedDistance = {x:-100, y:0};
+  this.scaleOffset = 1;
+  canvas.movedDistance = {x:-100, y:0};
   this.resetMovedDistance = function(){
-    this.movedDistance = {x:-100, y:0};
+    canvas.movedDistance = {x:-100, y:0};
   }
 
 }
@@ -135,8 +136,8 @@ CustomZoomScroll.prototype._handleWheel = function handleWheel(event) {
       };
     }
 
-    
-    me.scale = me.canvas.viewbox().scale;
+
+    me.scale = me.canvas.viewbox().scale / me.scaleOffset;
     
     // 스케일 조정된 경계를 계산
     var scaledWidth = me.canvasSize.width * me.scale;
@@ -153,19 +154,19 @@ CustomZoomScroll.prototype._handleWheel = function handleWheel(event) {
     // 경계를 초과하게 될 경우 이동하지 않게 변경
     var adjustedDeltaX = delta.dx;
     var adjustedDeltaY = delta.dy;
-    var scaledMovedDistanceX = me.movedDistance.x * me.scale;
-    var scaledMovedDistanceY = me.movedDistance.y * me.scale;
+    var scaledMovedDistanceX = me.canvas.movedDistance.x * me.scale;
+    var scaledMovedDistanceY = me.canvas.movedDistance.y * me.scale;
 
-    if(scaledLeft > canvasLeft + scaledMovedDistanceX + delta.dx){
+    if(delta.dx < 0 && scaledLeft > canvasLeft + scaledMovedDistanceX + delta.dx){
         adjustedDeltaX = 0;
     }
-    if(scaledRight < canvasRight + scaledMovedDistanceX + delta.dx){
+    if(delta.dx > 0 && scaledRight < canvasRight + scaledMovedDistanceX + delta.dx){
         adjustedDeltaX = 0;
     }
-    if(scaledTop > canvasTop + scaledMovedDistanceY + delta.dy){
+    if(delta.dy < 0 && scaledTop > canvasTop + scaledMovedDistanceY + delta.dy){
         adjustedDeltaY = 0;
     }
-    if(scaledBottom < canvasBottom + scaledMovedDistanceY + delta.dy){
+    if(delta.dy > 0 && scaledBottom < canvasBottom + scaledMovedDistanceY + delta.dy){
         adjustedDeltaY = 0;
     }
 
@@ -176,8 +177,8 @@ CustomZoomScroll.prototype._handleWheel = function handleWheel(event) {
       });
     }
 
-    me.movedDistance.x += (adjustedDeltaX / me.scale);
-    me.movedDistance.y += (adjustedDeltaY / me.scale);
+    me.canvas.movedDistance.x += (adjustedDeltaX / me.scale);
+    me.canvas.movedDistance.y += (adjustedDeltaY / me.scale);
 
   }
 };
