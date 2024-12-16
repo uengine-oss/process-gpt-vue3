@@ -289,15 +289,13 @@ export default {
             let startTime = performance.now();
             this.loaded = false;
             this.instanceId = this.$route.params.id;
-            this.eventList = await backend.getEventList(this.instanceId);
-            await this.getInstanceDetail();
-            await this.getProcessDefinition();
-            me.$try({
-                action: async () => {
-                    me.taskStatus = await backend.getActivitiesStatus(this.instanceId);
-                }
-            });
-            await this.getProcessVariables();
+            if(this.instanceId) {
+                this.eventList = await backend.getEventList(this.instanceId);
+                me.taskStatus = await backend.getActivitiesStatus(this.instanceId);
+                await this.getInstanceDetail();
+                await this.getProcessDefinition();
+                await this.getProcessVariables();
+            }
             let endTime = performance.now();
             console.log(`Result Time :  ${endTime - startTime} ms`);
             // this.getCurrentActivities();
@@ -451,8 +449,8 @@ export default {
                     // if(validateText != me.selectedExecutionScope) {
                     //     continue;
                     // }
-                } else if (key.includes('_status')) {
-                    if (variables[key] == 'Completed' || variables[key] == 'Running') {
+                } else if (key.includes('_status') && !key.includes('Flow')) {
+                    if (variables[key] == 'Completed') {
                         if (count == 3) {
                             let executionScope = key.split(':')[1];
                             if(me.selectedExecutionScope) { 
