@@ -450,7 +450,7 @@ export default {
                     //     continue;
                     // }
                 } else if (key.includes('_status') && !key.includes('Flow')) {
-                    if (variables[key] == 'Completed') {
+                    if (variables[key] != 'Running' && variables[key] != 'Cancelled') {
                         if (count == 3) {
                             let executionScope = key.split(':')[1];
                             if(me.selectedExecutionScope) { 
