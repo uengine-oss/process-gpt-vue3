@@ -2,10 +2,11 @@ version: '3.8'
 
 services:
   frontend:
-    image: ghcr.io/uengine-oss/process-gpt:v2.6.5
+    image: ghcr.io/uengine-oss/process-gpt:v2.6.6
     ports:
       - "8080:8080"
     environment:
+      MODE: docker
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       SUPABASE_URL: ${API_EXTERNAL_URL}
       SUPABASE_KEY: ${SERVICE_ROLE_KEY}
