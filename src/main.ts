@@ -98,8 +98,8 @@ async function setupSupabase() {
     // window.$mode = 'uEngine';
     // window.$mode = 'ProcessGPT';
     // window.$jms = false;
-    const supabaseUrl = SUPABASE_URL;
-    const supabaseKey = SUPABASE_KEY;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
 
     Object.defineProperty(window, '$supabase', {
         value: createClient(

@@ -10,8 +10,8 @@ const env = loadEnv('development', process.cwd(), '')
 // https://vitejs.dev/config/
 export default defineConfig({
     define: {
-        SUPABASE_URL: `"${env.API_EXTERNAL_URL}"`,
-        SUPABASE_KEY: `"${env.SERVICE_ROLE_KEY}"`
+        // SUPABASE_URL: `"${env.API_EXTERNAL_URL}"`,
+        // SUPABASE_KEY: `"${env.SERVICE_ROLE_KEY}"`
     },
     plugins: [
         vue(),
