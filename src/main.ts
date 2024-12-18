@@ -77,6 +77,7 @@ declare global {
         $jms: any;
         $isTenantServer: boolean;
         $tenantName: string;
+        _env_: any;
     }
 }
 
@@ -98,8 +99,8 @@ async function setupSupabase() {
     // window.$mode = 'uEngine';
     // window.$mode = 'ProcessGPT';
     // window.$jms = false;
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
+    const supabaseUrl = window._env_?.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = window._env_?.VITE_SUPABASE_KEY || import.meta.env.VITE_SUPABASE_KEY;
 
     Object.defineProperty(window, '$supabase', {
         value: createClient(
