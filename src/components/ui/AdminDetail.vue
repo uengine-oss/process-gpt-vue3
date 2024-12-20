@@ -449,7 +449,7 @@ export default {
                     // if(validateText != me.selectedExecutionScope) {
                     //     continue;
                     // }
-                } else if (key.includes('_status') && !key.includes('Flow')) {
+                } else if (key.includes('_status') && !key.includes('Flow_')) {
                     if (variables[key] != 'Running' && variables[key] != 'Cancelled' && variables[key] != 'Ready') {
                         if (count == 3) {
                             let executionScope = key.split(':')[1];
