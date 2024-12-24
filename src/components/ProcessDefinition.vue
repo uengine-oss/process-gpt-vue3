@@ -832,9 +832,10 @@ export default {
             if (val.type == 'Form') {
                 let defaultValue = {
                     _type: 'org.uengine.contexts.HtmlFormContext',
-                    formDefId: val.defaultValue.id,
-                    filePath: val.defaultValue.path
+                    formDefId: val.defaultValue.id ? val.defaultValue.id : `${val.defaultValue}`,
+                    filePath: val.defaultValue.path ? val.defaultValue.path : `${val.defaultValue}.form`
                 };
+                
                 val.defaultValue = defaultValue;
             }
 
