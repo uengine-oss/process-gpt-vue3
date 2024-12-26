@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   frontend:
-    image: ghcr.io/uengine-oss/process-gpt:v2.6.6
+    image: ghcr.io/uengine-oss/process-gpt:v2.6.7
     ports:
       - "8080:8080"
     # build:
