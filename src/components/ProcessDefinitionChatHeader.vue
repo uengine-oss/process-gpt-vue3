@@ -5,7 +5,7 @@
                 :style="modelValueStyle ? 'padding: 12px 16px 2px 16px;' : 'padding: 9px 16px 9px 16px;'"
             >
                 <v-row class="ma-0 pa-0">
-                    <div v-if="modelValue && modelValue !== ''" class="d-flex gap-2 align-center"
+                    <div v-if="fullPath != 'chat'" class="d-flex gap-2 align-center"
                         style="max-width:80%;"
                     >
                         <v-text-field v-if="isEditableTitle" v-model="processName"
