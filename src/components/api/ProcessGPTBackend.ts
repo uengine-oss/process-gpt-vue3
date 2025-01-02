@@ -910,6 +910,14 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getInstanceListByRole(roles: string) {
+        return this.getInstanceList();
+    }
+    
+    async getInstanceListByGroup(group: string) {
+        return null;
+    }
+
     async getCompleteInstanceList() {
         try {
             let instList: any[] = await this.fetchInstanceListByStatus("COMPLETED");
@@ -994,6 +1002,10 @@ class ProcessGPTBackend implements Backend {
             //@ts-ignore
             throw new Error(error.message);
         }
+    }
+
+    async fireMessage(instanceId: string, event: any) {
+        throw new Error("Method not implemented.");
     }
 
     async dryRun(defPath: string) {

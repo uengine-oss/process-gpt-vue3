@@ -286,6 +286,13 @@ export default {
                 me.value.eventSynchronization.attributes = newVal.map(({ isEdit, ...rest }) => rest);
             },
             deep: true
+        },
+        "modelValue": {
+            handler: function(newVal, oldVal) {
+                var me = this
+                me.init();
+            },
+            deep: true
         }
     },
     methods:{

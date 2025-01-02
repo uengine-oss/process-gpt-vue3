@@ -745,6 +745,8 @@
         "delete": "삭제"
     },
     "VerticalSidebar": {
+        "instanceList": "인스턴스 목록",
+        "instanceMyGroup": "내 그룹 인스턴스",
         "saveFileName": "저장될 파일명",
         "downloadDefinitionList": "정의 내보내기",
         "save": "저장"
@@ -765,7 +767,7 @@
         "workItem": "워크 아이템",
         "workHistory": "워크 히스토리",
         "ganttChart": "간트 차트",
-        "sendEvent": "{event} 보내기"
+        "sendEvent": "{event} 이벤트 보내기"
     },
     "DryRunProcess": {
         "notFound": "워크아이템을 찾을 수 없습니다."

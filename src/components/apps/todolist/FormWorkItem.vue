@@ -243,7 +243,8 @@ export default {
 
                     if(me.isDryRun){
                         let processExecutionCommand = {
-                            processDefinitionId: me.definitionId
+                            processDefinitionId: me.definitionId,
+                            groups: window.localStorage.getItem('groups')
                         }
                                 
                         await backend.startAndComplete({

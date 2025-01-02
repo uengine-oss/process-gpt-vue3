@@ -19,6 +19,7 @@ export interface Backend {
     resume(instanceId: string): Promise<any>;
     getInstance(instanceId: string): Promise<any>;
     getAllInstanceList(page: any, size: any): Promise<any>;
+    getInstanceListByGroup(group: string): Promise<any>;
     getFilteredInstanceList(filters: object, page: number, size: number): Promise<any>;
     backToHere(instanceId: string, tracingTag: string): Promise<any>;
     getProcessVariables(instanceId: string): Promise<any>;
@@ -34,6 +35,7 @@ export interface Backend {
     putWorkItem(taskId: string, workItem: any): Promise<any>;
     putWorkItemComplete(taskId: string, workItem: any, isSimulate: string): Promise<any>;
     postMessage(instanceId: string, message: any): Promise<any>;
+    fireMessage(instanceId: string, event: any): Promise<any>;
     getWorkList(options?: any): Promise<any>;
     getProcessDefinitionMap(): Promise<any>;
     putProcessDefinitionMap(definitionMap: any): Promise<any>;

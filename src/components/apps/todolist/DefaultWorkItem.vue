@@ -147,7 +147,8 @@ export default {
                         if (workItem.execScope) value.execScope = workItem.execScope;
 
                         let processExecutionCommand = {
-                            processDefinitionId: me.definitionId
+                            processDefinitionId: me.definitionId,
+                            groups: window.localStorage.getItem('groups')
                         };
 
                         await backend.startAndComplete(

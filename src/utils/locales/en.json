@@ -742,6 +742,8 @@
         "delete": "Delete"
     },
     "VerticalSidebar": {
+        "instanceList": "Instance List",
+        "instanceMyGroup": "My Group Instance",
         "saveFileName": "File name to be saved",
         "downloadDefinitionList": "Definition Export",
         "save": "Save"
@@ -762,7 +764,7 @@
         "workItem": "Work Item",
         "workHistory": "Work History",
         "ganttChart": "Gantt Chart",
-        "sendEvent": "Send {event}"
+        "sendEvent": "Send {event} event"
     },
     "DryRunProcess": {
         "notFound": "Work item not found."

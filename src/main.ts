@@ -218,6 +218,8 @@ async function initializeApp() {
                     localStorage.setItem('userName', `${keycloak.tokenParsed.preferred_username}`);
                     localStorage.setItem('email', `${keycloak.tokenParsed.email}`);
                     localStorage.setItem('uid', `${keycloak.tokenParsed.sub}`);
+                    localStorage.setItem('groups', `${keycloak.tokenParsed.groups}`);
+                    localStorage.setItem('roles', `${keycloak.tokenParsed.realm_access?.roles}`);
                     localStorage.setItem('isAdmin', 'true');
                     localStorage.setItem('picture', '');
                 }

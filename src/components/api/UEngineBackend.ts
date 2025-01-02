@@ -523,13 +523,62 @@ class UEngineBackend implements Backend {
         if (!response.data) return null;
         if (!response.data._embedded) return null;
         return response.data._embedded.instances.map((inst: any) => ({
-            instId: inst.rootInstId,
+            instId: inst._links.self.href.split('/').pop(),
             instName: inst.name,
             status: inst.status,
             startedDate: inst.startedDate,
             defId: inst.defId
         }));
     }
+
+    async getInstanceListByRole(roles: string) {
+        if(!roles) {
+            return this.getInstanceList();
+        }
+        
+        let pattern = roles
+        .split(',')
+        .map(item => {
+            const trimmedItem = item.trim();
+            return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
+        })
+        .join('|');
+    
+
+        const response = await axiosInstance.get(`/instances/search/findFilterICanSee?status=Running&rolePattern=${encodeURIComponent(pattern)}`);
+        if (!response.data) return null;
+        if (!response.data._embedded) return null;
+        return response.data._embedded.instances.map((inst: any) => ({
+            instId: inst._links.self.href.split('/').pop(),
+            instName: inst.name,
+            status: inst.status,
+            startedDate: inst.startedDate,
+            defId: inst.defId
+        }));
+    }
+
+    async getInstanceListByGroup(groups: string) {
+        let pattern = groups
+        .split(',')
+        .map(item => {
+            const trimmedItem = item.trim();
+            return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
+        })
+        .join('|');
+    
+        const response = await axiosInstance.get(
+            `/instances/search/findAllByGroupsRegex?status=Running&pattern=${encodeURIComponent(pattern)}`
+        );
+    
+        return response.data._embedded.instances.map((inst: any) => ({
+            instId: inst._links.self.href.split('/').pop(),
+            instName: inst.name,
+            status: inst.status,
+            startedDate: inst.startedDate,
+            defId: inst.defId
+        }));
+    }
+    
     
     // 관리자 페이지 필터링 관련  API
     async getFilteredInstanceList(filters: object, page: number, size: number) {
