@@ -2,17 +2,9 @@ version: '3.8'
 
 services:
   frontend:
-    image: ghcr.io/uengine-oss/process-gpt:v2.6.7
+    image: ghcr.io/uengine-oss/process-gpt:v2.6.8
     ports:
       - "8080:8080"
-    # build:
-    #   context: ..
-    #   dockerfile: Dockerfile
-    #   args:
-    #     - VITE_SUPABASE_URL=${API_EXTERNAL_URL}
-    #     - VITE_SUPABASE_KEY=${SERVICE_ROLE_KEY}
-    # volumes:
-    #   - ./.env:/opt/www/.env
     environment:
       - VITE_SUPABASE_URL=${API_EXTERNAL_URL}
       - VITE_SUPABASE_KEY=${SERVICE_ROLE_KEY}

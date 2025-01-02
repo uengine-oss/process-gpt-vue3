@@ -90,14 +90,9 @@ export default {
         this.releaseAgent()
     },
     async created() {
-        var me = this;
+        // var me = this;
         this.storage = StorageBaseFactory.getStorage();
-        // this.openaiToken = await this.getToken();
-        // this.openaiToken = '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';
-        this.openaiToken = 'sk-ix_CSlDvj6CR1W0fxMKJGslwKN-aia1_ipQwekrlwvT3BlbkFJ9vMHp0Kv7oLwJPPAtOTVBAKat4fX4nCA7tSPuohiwA';
-        
-        
-        
+        this.openaiToken = await this.getToken();
         this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
     },
     methods: {
@@ -149,12 +144,17 @@ export default {
                 }
             })
         },
-        async getToken(){
-            let option = {
-                key: "key"
+        async getToken() {
+            if (window.$mode == 'ProcessGPT') {
+                let option = {
+                    key: "key"
+                }
+                const res = await this.storage.getObject('configuration/openai_key', option);
+                return res?.value?.key || window.localStorage.getItem('openAIToken') || null;
+            } else {
+                const token = window.localStorage.getItem('openAIToken');
+                return token || '';
             }
-            const res = await this.storage.getObject('db://configuration/openai_key', option);
-            return res?.value?.key || window.localStorage.getItem('openAIToken') || null;
         },
         async init() {
             this.disableChat = false;
@@ -703,15 +703,18 @@ export default {
                     window.open('https://platform.openai.com/settings/profile?tab=api-keys', '_blank');
                 } 
                 var apiKey = prompt('openAI API Key 를 입력하세요.\n\ngpt-4o 모델을 사용가능한 API key를 입력해야합니다.');
-                if(apiKey != ''){
-                    let token = {
-                        "key": 'openai_key',
-                        "value": {
-                            "key": apiKey
-                        }
-                    }
-                    this.putObject('configuration', token);
+                if(apiKey != '') {
                     this.openaiToken = apiKey;
+                    window.localStorage.setItem('openAIToken', apiKey);
+                    if(window.$mode == 'ProcessGPT') {
+                        let token = {
+                            "key": 'openai_key',
+                            "value": {
+                                "key": apiKey
+                            }
+                        }
+                        this.putObject('configuration', token);
+                    }
                     this.startGenerate();
                 }
             } else {
