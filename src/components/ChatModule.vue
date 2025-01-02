@@ -93,7 +93,9 @@ export default {
         var me = this;
         this.storage = StorageBaseFactory.getStorage();
         // this.openaiToken = await this.getToken();
-        this.openaiToken = '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';
+        // this.openaiToken = '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';
+        this.openaiToken = 'sk-ix_CSlDvj6CR1W0fxMKJGslwKN-aia1_ipQwekrlwvT3BlbkFJ9vMHp0Kv7oLwJPPAtOTVBAKat4fX4nCA7tSPuohiwA';
+        
         
         
         this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
