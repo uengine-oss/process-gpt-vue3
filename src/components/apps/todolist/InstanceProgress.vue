@@ -55,8 +55,7 @@ export default {
         me.$try({
             action: async () => {
                 if(me.$route.params && me.$route.params.instId) {
-                    const instId =  window.$mode == 'ProcessGPT' ? atob(me.$route.params.instId) : me.$route.params.instId;
-                    me.taskStatus = await backend.getActivitiesStatus(instId);
+                    await me.initStatus();
                 }
             }
         });
@@ -98,6 +97,11 @@ export default {
                 }
             });
         },
+        async initStatus() {
+            var me = this;
+            me.taskStatus = await backend.getActivitiesStatus(me.instance.instanceId);
+            me.updatedDefKey++;
+        }
     }
 };
 </script>

@@ -11,14 +11,14 @@
                         style="margin: 2px 0px 0px 5px !important; display: flex; align-items: center">
                         {{ instance.status }}
                     </v-chip>
-                    <div v-for="event in eventList">
+                    <div v-for="event in eventList" :key="event.tracingTag">
                         <v-btn @click="fireMessage(event)"
                             color="primary"
                             rounded
                             style="font-size:12px;"
                             density="comfortable"
                             class="ml-3"
-                        > {{ $t('InstanceCard.sendEvent', {event: event}) }}
+                        > {{  $t('InstanceCard.sendEvent', {event: event.name ? event.name : event.type}) }}
                         </v-btn>
                     </div>
                 </div>
@@ -139,8 +139,13 @@ export default {
         delay(time) {
             return new Promise((resolve) => setTimeout(resolve, time));
         },
-        fireMessage(event) {
-            backend.fireMessage(this.instance.instanceId, event);
+        async fireMessage(event) {
+            await backend.fireMessage(this.instance.instanceId, event);
+            this.init();
+            const progressComponent = this.$refs.progress[0];
+            if (progressComponent) {
+                progressComponent.initStatus();
+            }
         },
         deleteInstance() {
             var me = this;
