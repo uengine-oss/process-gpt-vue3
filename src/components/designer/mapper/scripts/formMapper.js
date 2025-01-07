@@ -564,7 +564,7 @@ export default {
       const rootNodeName = "Variables";
       var reuslt = text;
       if (text.indexOf("roles.") != -1) {
-        reuslt = text.replace("roles.", "[roles].");
+        reuslt = text.replace("roles.roles.", "[roles].");
       } else if (text.indexOf("instance.") != -1) {
         reuslt = text.replace("instance.", "[instance].");
       } else if (text.indexOf("activities.") != -1) {
@@ -588,7 +588,7 @@ export default {
       const rootNodeName = "Variables";
       var reuslt = text;
       if (text.indexOf("[roles].") != -1) {
-        reuslt = text.replace("[roles].", "roles.");
+        reuslt = text.replace("[roles].", "roles.roles.");
       } else if (text.indexOf("[instance].") != -1) {
         reuslt = text.replace("[instance].", "instance.");
       } else if (text.indexOf("[activities].") != -1) {
