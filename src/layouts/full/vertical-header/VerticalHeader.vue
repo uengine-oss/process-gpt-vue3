@@ -44,14 +44,14 @@ const sidebarItems = ref<SidebarItem[]>([
         icon: 'chat-round-unread-line-duotone',
         to: '/chats',
         disable: false,
-        isVisible: window.$mode === 'ProcessGPT'
+        isVisible: window.$mode === 'ProcessGPT' && !window.$pal
     },
     {
         title: 'headerMenu.todoList',
         icon: 'overview',
         to: '/todolist',
         disable: false,
-        isVisible: true
+        isVisible: !window.$pal
     },
     {
         title: 'headerMenu.admin',
@@ -65,7 +65,7 @@ const sidebarItems = ref<SidebarItem[]>([
         icon: 'calendar-line-duotone',
         to: '/calendar',
         disable: false,
-        isVisible: window.$mode === 'ProcessGPT'
+        isVisible: window.$mode === 'ProcessGPT' && !window.$pal
     }
 ]);
 

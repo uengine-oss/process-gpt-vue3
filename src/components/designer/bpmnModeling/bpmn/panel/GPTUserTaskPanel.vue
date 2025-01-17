@@ -1,4 +1,5 @@
 <template>
+    
     <div class="gpt-user-task-panel">
         <v-tabs v-model="activeTab" class="ma-3">
             <v-tab value="setting">설정</v-tab>
@@ -12,6 +13,13 @@
                 <v-text-field v-model="activity.duration" label="소요시간" suffix="일" type="number" class="mb-4"></v-text-field>
                 <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
                 <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4"></Checkpoints>
+                <v-file-input
+                    v-if="isPal"
+                    v-model="activity.attachments"
+                    label="첨부파일"
+                    multiple
+                    class="mb-4"
+                ></v-file-input>
             </v-window-item>
             <v-window-item v-for="tab in ['edit', 'preview']" :key="tab" :value="tab">
                 <FormDefinition
@@ -20,6 +28,7 @@
                     :formId="formId"
                     v-model="tempFormHtml"
                 />
+                
             </v-window-item>
         </v-window>
     </div>
@@ -83,6 +92,11 @@ export default {
     async mounted() {
         let me = this;
         await me.init();
+    },
+    computed: {
+        isPal() {
+            return window.$pal;
+        }
     },
     watch: {
         activity: {

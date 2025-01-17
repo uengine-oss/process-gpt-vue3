@@ -23,10 +23,10 @@ const customizer = useCustomizerStore();
         expand-on-hover
         width="275"
     >
-        <v-row class="pa-5 pl-4 ma-0 is-sidebar-pc">
+        <v-row class="pa-5 pl-4 ma-0 is-sidebar-pc" >
             <Logo :style="logoPadding"/>
             <v-spacer></v-spacer>
-            <v-tooltip :text="$t('processDefinitionMap.title')"
+            <v-tooltip v-if="!pal" :text="$t('processDefinitionMap.title')"
                 location="bottom"
             >
                 <template v-slot:activator="{ props }">
@@ -41,7 +41,7 @@ const customizer = useCustomizerStore();
             </v-tooltip>
         </v-row>
         <div class="pa-5 pl-4 is-sidebar-mobile">
-            <Logo />
+            <Logo /> 
         </div>
         <!-- ---------------------------------------------- -->
         <!---Navigation -->
@@ -60,12 +60,20 @@ const customizer = useCustomizerStore();
                     <NavItem v-else-if="!item.disable" class="leftPadding" :item="item" />
                     <!---End Single Item-->
                 </template>
-                
+                <v-btn variant="text"
+                    class="text-medium-emphasis"
+                    :to="'/definition-map'"
+                    v-if="pal"
+                >
+                    <Icons :icon="'write'" />
+                    <span>{{ $t('processDefinitionMap.title') }}</span>
+                </v-btn>
                 <div
-                            style="font-size:14px;"
+                    v-if="!pal"
+                    style="font-size:14px;"
                     class="text-medium-emphasis cp-menu mt-3 ml-2"
                 >{{ $t('VerticalSidebar.instanceList') }}</div>
-                <v-col v-if="instanceList" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto;">
+                <v-col v-if="instanceList && !pal" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto;">
                     <ProcessInstanceList
                         @update:instanceList="handleInstanceListUpdate" 
                     />
@@ -168,6 +176,9 @@ export default {
         mode() {
             return window.$mode;
         },
+        pal() {
+            return window.$pal;
+        }
     },
     async created() {
         const isAdmin = localStorage.getItem('isAdmin');

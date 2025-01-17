@@ -73,6 +73,7 @@ const ModelingEmitter = mitt();
 declare global {
     interface Window {
         $mode: any; 
+        $pal: any;
         $supabase: any;
         $jms: any;
         $isTenantServer: boolean;
@@ -80,6 +81,13 @@ declare global {
         _env_: any;
     }
 }
+
+Object.defineProperty(window, '$pal', {
+    value: false,
+    writable: false,
+    configurable: false
+});
+
 
 Object.defineProperty(window, '$mode', {
     // value: 'uEngine',
