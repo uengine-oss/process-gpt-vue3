@@ -385,7 +385,7 @@ export default {
                         }
                     ];
 
-                    this.generator.model = "gpt-4-vision-preview";
+                    this.generator.model = "gpt-4o-mini";
 
                 } else {
                     chatObj.content= message.text;
