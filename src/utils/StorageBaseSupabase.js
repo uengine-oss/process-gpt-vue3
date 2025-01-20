@@ -878,7 +878,7 @@ export default class StorageBaseSupabase {
 
     async search(keyword) {
         let results = [];
-        if (window.$jms) {
+        if (window.$jms || window.$pal) {
             results = await Promise.all([
                 this.searchProcDef(keyword)
             ]);
@@ -886,7 +886,6 @@ export default class StorageBaseSupabase {
             results = await Promise.all([
                 this.searchProcInst(keyword),
                 this.searchProcDef(keyword),
-                this.searchFormDef(keyword),
                 this.searchChatRoom(keyword),
                 this.searchChat(keyword)
             ]);
@@ -1077,9 +1076,7 @@ export default class StorageBaseSupabase {
 
     async uploadImage(fileName, image) {
         try {
-            const { data, error } = await window.$supabase.storage
-                .from('chat-images')
-                .upload(fileName, image);
+            const { data, error } = await window.$supabase.storage.from('chat-images').upload(fileName, image);
             
             if (error) {
                 return error;
@@ -1094,9 +1091,7 @@ export default class StorageBaseSupabase {
 
     async getImageUrl(path) {
         try {
-            const { data, error } = await window.$supabase.storage
-                .from('chat-images')
-                .getPublicUrl(path);
+            const { data, error } = await window.$supabase.storage.from('chat-images').getPublicUrl(path);
             
             if (error) {
                 return error;
@@ -1106,6 +1101,34 @@ export default class StorageBaseSupabase {
 
         } catch (error) {
             throw new StorageBaseError('error in getImageUrl', error, arguments);
+        }
+    }
+
+    async uploadFile(fileName, file) {
+        try {
+            const { data, error } = await window.$supabase.storage.from('files').upload(fileName, file);
+
+            if (error) {
+                return error;
+            }
+
+            return data;
+        } catch (error) {
+            throw new StorageBaseError('error in uploadFile', error, arguments);
+        }
+    }
+
+    async getFileUrl(path) {
+        try {
+            const { data, error } = await window.$supabase.storage.from('files').getPublicUrl(path);
+
+            if (error) {
+                return error;
+            }
+
+            return data.publicUrl;
+        } catch (error) {
+            throw new StorageBaseError('error in getFileUrl', error, arguments);
         }
     }
 }

@@ -1367,3 +1367,12 @@ FOR EACH ROW
 EXECUTE PROCEDURE public.update_tenant_id_for_first_tenant();
 
 
+
+CREATE POLICY "Allow authenticated users to upload"
+ON storage.objects
+FOR INSERT
+WITH CHECK (
+  auth.role() = 'authenticated'
+);
+
+

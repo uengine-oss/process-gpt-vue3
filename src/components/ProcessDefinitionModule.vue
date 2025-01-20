@@ -1952,6 +1952,8 @@ export default {
                                     if (oldActivity) {
                                         activity.instruction = oldActivity.instruction;
                                         activity.checkpoints = oldActivity.checkpoints;
+                                        activity.duration = oldActivity.duration;
+                                        activity.attachments = oldActivity.attachments;
                                     }
                                     return activity;
                                 });

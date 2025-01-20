@@ -15,6 +15,14 @@ class UEngineBackend implements Backend {
         return null;
     }
 
+    async uploadFile(fileName: string, file: File) {
+        return null;
+    }
+
+    async getFileUrl(path: string) {
+        return null;
+    }
+
     async getUserList() {
         return [];
     }

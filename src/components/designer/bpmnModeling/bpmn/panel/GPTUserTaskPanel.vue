@@ -13,13 +13,23 @@
                 <v-text-field v-model="activity.duration" label="소요시간" suffix="일" type="number" class="mb-4"></v-text-field>
                 <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
                 <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4"></Checkpoints>
-                <v-file-input
-                    v-if="isPal"
-                    v-model="activity.attachments"
-                    label="첨부파일"
-                    multiple
-                    class="mb-4"
-                ></v-file-input>
+                <div v-if="isPal">
+                    <v-file-input
+                        label="첨부파일"
+                        multiple
+                        class="mb-4"
+                        @update:modelValue="onFileChange"
+                    ></v-file-input>
+                    <div v-if="activity.attachments && activity.attachments.length > 0">
+                        <div v-for="(attachment, index) in activity.attachments" :key="index">
+                            <div class="d-flex align-center cursor-pointer">
+                                <v-icon @click="openFile(attachment)">mdi-file-document-outline</v-icon>
+                                <div class="ml-2 mr-auto" @click="openFile(attachment)">{{ attachment.replace('uploads/', '') }}</div>
+                                <v-icon v-if="!isViewMode" @click="activity.attachments = activity.attachments.filter(a => a !== attachment)">mdi-delete-outline</v-icon>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </v-window-item>
             <v-window-item v-for="tab in ['edit', 'preview']" :key="tab" :value="tab">
                 <FormDefinition
@@ -69,6 +79,8 @@ export default {
             copyDefinition: null,
             backend: null,
             activity: {
+                duration: 5,
+                attachments: [],
                 instruction: '',
                 checkpoints: ['']
             },
@@ -176,6 +188,26 @@ export default {
             
             me.$emit('update:uengineProperties', me.copyUengineProperties);
         },
+        onFileChange(files) {
+            var me = this;
+            if (!me.activity.attachments) {
+                me.activity.attachments = [];
+            }
+            if (files && files.length > 0) {
+                files.forEach(async (file) => {
+                    const fileName = `uploads/${Date.now()}_${file.name}`;
+                    const data = await me.backend.uploadFile(fileName, file);
+                    if (data && data.path) {
+                        me.activity.attachments.push(data.path);
+                    }
+                });
+            }
+            me.$emit('update:processDefinition', me.processDefinition);
+        },
+        async openFile(path) {
+            const downloadUrl = await this.backend.getFileUrl(path);
+            window.open(downloadUrl, '_blank');
+        }
     }
 };
 </script>

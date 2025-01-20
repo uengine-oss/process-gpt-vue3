@@ -1412,6 +1412,24 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
+    async uploadFile(fileName: string, file: File) {
+        try {
+            return await storage.uploadFile(fileName, file);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getFileUrl(path: string) {
+        try {
+            return await storage.getFileUrl(path);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
 }
 
 export default ProcessGPTBackend;
