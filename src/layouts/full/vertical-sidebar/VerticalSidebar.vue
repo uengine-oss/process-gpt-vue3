@@ -61,11 +61,11 @@ const customizer = useCustomizerStore();
                     <!---End Single Item-->
                 </template>
                 <v-btn variant="text"
-                    class="text-medium-emphasis"
+                    class="text-medium-emphasis d-flex align-center"
                     :to="'/definition-map'"
                     v-if="pal"
                 >
-                    <Icons :icon="'write'" />
+                    <Icons :icon="'write'" class="mr-2" />
                     <span>{{ $t('processDefinitionMap.title') }}</span>
                 </v-btn>
                 <div

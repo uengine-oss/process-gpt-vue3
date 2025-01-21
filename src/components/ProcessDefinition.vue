@@ -81,7 +81,7 @@
                         v-on:change-shape="onChangeShape"></vue-bpmn> -->
                 </v-card>
             </v-col>
-            <div v-if="panel && !isViewMode" style="position: fixed; z-index: 999; right: 0; height: 100%">
+            <div v-if="panel && (!isViewMode || isPal) " style="position: fixed; z-index: 999; right: 0; height: 100%">
                 <v-card elevation="1">
                     <bpmn-property-panel
                         :element="element"
@@ -331,6 +331,9 @@ export default {
             } else {
                 return window.$mode;
             }
+        },
+        isPal() {
+            return window.$pal;
         },
         thisDefinition() {
             return {

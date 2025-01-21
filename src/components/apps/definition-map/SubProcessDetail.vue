@@ -41,7 +41,7 @@
 
             <div class="ml-auto d-flex">
                 <div v-if="onLoad && bpmn">
-                    <v-btn v-if="!JMS" color="primary" rounded density="comfortable" class="ml-3" @click="executeProcess">
+                    <v-btn v-if="!JMS && !Pal" color="primary" rounded density="comfortable" class="ml-3" @click="executeProcess">
                         실행
                     </v-btn>
                     <v-tooltip :text="$t('processDefinition.edit')">
@@ -86,7 +86,7 @@
 
         <v-card-text style="width:100%; height:95%; padding:10px;">
             <ProcessDefinition v-if="onLoad && bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
-                :processDefinition="processDefinition.definition" :isViewMode="isViewMode"
+                :processDefinition="processDefinitionData" :isViewMode="isViewMode"
                 v-on:openSubProcess="ele => openSubProcess(ele)">
             </ProcessDefinition>
             <div v-else-if="onLoad && !bpmn" style="height: 90%; text-align: center">
@@ -133,6 +133,7 @@ export default {
         onLoad: false,
         bpmn: null,
         processDefinition: null,
+        processDefinitionData: null,
         selectedProc: {
             mega: null,
             major: null,
@@ -149,6 +150,9 @@ export default {
         },
         JMS() {
             return window.$jms;
+        },
+        Pal() {
+            return window.$pal;
         }
     },
     watch: {
@@ -229,7 +233,12 @@ export default {
                     } else {
                         me.bpmn = null;
                     }
-                    me.processDefinition = obj
+                    me.processDefinition = obj;
+                    
+                    const value = await backend.getRawDefinition(me.processDefinition.id);
+                    if (value) {
+                        me.processDefinitionData = value.definition;
+                    }
                     me.onLoad = true;
                 }
             });
