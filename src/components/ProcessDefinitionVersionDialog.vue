@@ -199,7 +199,14 @@ export default {
                                 });
                                 console.log(versionInfo);
                                 if(versionInfo) {
-                                    versionInfo.sort((a, b) => parseFloat(b.version) - parseFloat(a.version));
+                                    versionInfo.sort((a, b) => {
+                                        const [majorA, minorA] = a.version.split('.').map(Number);
+                                        const [majorB, minorB] = b.version.split('.').map(Number);
+                                        if (majorA === majorB) {
+                                            return minorB - minorA;
+                                        }
+                                        return majorB - majorA;
+                                    });
                                     const highestVersion = versionInfo.length > 0 ? versionInfo[0].version : null;
                                     me.information.version = highestVersion
                                 } else {

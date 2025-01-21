@@ -1,7 +1,6 @@
 <template>
     <div>
         <div class="mb-2 mt-4">
-            
             <v-row class="ma-0 pa-0">
                 <v-col cols="3" class="pa-0 pr-2">
                     <v-autocomplete
@@ -22,7 +21,7 @@
                 :details="methodTypeDescription"
             />
         </div>
-        <div style="height: 40%" v-if="copyUengineProperties.httpMethods != 'GET'">
+        <div style="height: 40%" v-if="copyUengineProperties.method != 'GET'">
             <v-row class="ma-0 pa-0" style="height: 100%">
                 <vue-monaco-editor
                     v-model:value="copyUengineProperties.inputPayloadTemplate"
@@ -111,9 +110,9 @@ export default {
         }
         this.storage = StorageBaseFactory.getStorage();
         this.openaiToken = await this.getToken();
-        Object.keys(this.requiredKeyLists).forEach((key) => {
-            this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
-        });
+        // Object.keys(this.requiredKeyLists).forEach((key) => {
+        //     this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
+        // });
     },
     data() {
         return {
@@ -221,6 +220,7 @@ export default {
 
                     return null;
                 };
+                
 
                 me.replaceToExpandableNode = function (nodeKey) {
                     if (nodeKey.indexOf(`[${key}].`) != -1) {

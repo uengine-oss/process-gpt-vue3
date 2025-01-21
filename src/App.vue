@@ -19,7 +19,7 @@
                 {{ show ? '자세히 보기' : '자세히 보기' }}
             </v-btn>
             <v-expand-transition>
-                <div v-if="snackbarColor == 'error' && show">{{ snackbarMessageDetail }}</div>
+                <div v-if="snackbarColor == 'error' && show" style="text-align: left;">{{ snackbarMessageDetail }}</div>
             </v-expand-transition>
             <template v-slot:actions v-if="!snackbarSuccessStatus">
                 <v-btn color="pink" variant="text" @click="snackbar = false">x </v-btn>
