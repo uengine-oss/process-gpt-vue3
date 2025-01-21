@@ -44,7 +44,7 @@ const sidebarItems = ref<SidebarItem[]>([
         icon: 'chat-round-unread-line-duotone',
         to: '/chats',
         disable: false,
-        isVisible: window.$mode === 'ProcessGPT' && !window.$pal
+        isVisible: window.$mode === 'ProcessGPT'
     },
     {
         title: 'headerMenu.todoList',
