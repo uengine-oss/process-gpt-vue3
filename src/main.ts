@@ -83,7 +83,7 @@ declare global {
 }
 
 Object.defineProperty(window, '$pal', {
-    value: true,
+    value: false,
     writable: false,
     configurable: false
 });
