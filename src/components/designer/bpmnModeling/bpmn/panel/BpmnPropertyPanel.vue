@@ -1,13 +1,20 @@
 <template>
     <div style="height: calc(100vh - 155px)">
-        <v-btn @click="save" icon variant="text" density="comfortable" class="panel-close-btn">
-            <Icons :icon="'close'" class="cursor-pointer" :size="16"/>
-        </v-btn>
-        <v-card-text class="delete-input-details pt-3" style="overflow: auto; width: 700px; height: 100%;">
+        <v-row class="ma-0 pa-4 pb-0">
+            <v-card-title v-if="isViewMode" class="pa-0">{{ name }}</v-card-title>
+            <v-text-field v-else v-model="name" :label="$t('BpmnPropertyPanel.name')" 
+                :disabled="isViewMode" ref="cursor" 
+                class="bpmn-property-panel-name mb-3 delete-input-details"
+            ></v-text-field>
+            <v-spacer></v-spacer>
+            <v-btn @click="save" icon variant="text" density="comfortable" class="panel-close-btn">
+                <Icons :icon="'close'" class="cursor-pointer" :size="16"/>
+            </v-btn>
+        </v-row>
+        <v-card-text class="delete-input-details pa-4 pt-0" style="overflow: auto; width: 700px; height:calc(100% - 60px);">
             <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')" class="mt-4">
                 <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
                 <div class="mb-3">{{ $t('BpmnPropertyPanel.role') }}: {{ role.name }}</div>
-                <v-text-field v-model="name" :label="$t('BpmnPropertyPanel.name')" :disabled="isViewMode" ref="cursor" class="bpmn-property-panel-name mb-3"></v-text-field>
             </div>
             <component
                 style="height: 100%"
@@ -262,11 +269,5 @@ export default {
 </script>
 
 <style>
-.panel-close-btn {
-    position: absolute;
-    top: 10px;
-    right: 20px;
-    z-index: 1000;
-}
 </style>
 

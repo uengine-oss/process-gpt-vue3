@@ -81,7 +81,30 @@
                         v-on:change-shape="onChangeShape"></vue-bpmn> -->
                 </v-card>
             </v-col>
-            <div v-if="panel && (!isViewMode || isPal) " style="position: fixed; z-index: 999; right: 0; height: 100%">
+            <div v-if="panel && !isViewMode " style="position: fixed; z-index: 999; right: 0; height: 100%">
+                <v-card elevation="1">
+                    <bpmn-property-panel
+                        :element="element"
+                        @close="closePanel"
+                        :roles="roles"
+                        :process-variables="processVariables"
+                        :key="element.id"
+                        :isViewMode="isViewMode"
+                        v-on:updateElement="(val) => updateElement(val)"
+                        :definition="thisDefinition"
+                        :processDefinitionId="definitionPath"
+                        :processDefinition="processDefinition"
+                        :validationList="validationList"
+                        :isPreviewMode="isPreviewMode"
+                        v-on:change-sequence="onChangeSequence"
+                        v-on:remove-shape="onRemoveShape"
+                        v-on:change-shape="onChangeShape"
+                        @addUengineVariable="addUengineVariable"
+                    ></bpmn-property-panel>
+                    <!-- {{ definition }} -->
+                </v-card>
+            </div>
+            <div v-else-if="panel && isPal && isViewMode" style="position: fixed; z-index: 999; right: 0; top:123px; height: 100%">
                 <v-card elevation="1">
                     <bpmn-property-panel
                         :element="element"

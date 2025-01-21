@@ -1,24 +1,24 @@
 <template>
-    
-    <div class="gpt-user-task-panel ma-0">
-        <quill-editor
-            :content="activity.description"
-            content-type="html"
-            class="mb-4"
-            style="height: 50vh;"
-            :options="options"
-            @update:content="onTextChange"
-        ></quill-editor>
-        <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4"></Checkpoints>
-        
-        <div class="d-flex justify-space-between align-center">
-            <h6 class="text-body-1 ml-2">첨부파일</h6>
-            <v-btn
-                @click="$refs.fileInput.click()"
-            >
-                + 
-            </v-btn>
+    <div>
+        <div :class="isViewMode ? 'quill-editor-view-mode' : 'quill-editor-edit-mode'">
+            <quill-editor
+                :content="activity.description"
+                content-type="html"
+                class="mb-4"
+                style="max-height: 400px; overflow:auto"
+                :style="isViewMode ? 'border-radius:10px;' : ''"
+                :options="options"
+                @update:content="onTextChange"
+            ></quill-editor>
         </div>
+        <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4" :isViewMode="isViewMode"></Checkpoints>
+        <v-row class="ma-0 pa-0 align-center">
+            <h6 class="text-body-1">첨부파일</h6>
+            <v-spacer></v-spacer>
+            <v-btn v-if="!isViewMode" icon density="compact" variant="text">
+                <v-icon @click="$refs.fileInput.click()">mdi-plus</v-icon>
+            </v-btn>
+        </v-row>
         <v-file-input
             ref="fileInput"
             type="file"
@@ -26,12 +26,23 @@
             style="display: none"
             @update:modelValue="onFileChange"
         />
-        <div v-if="activity.attachments && activity.attachments.length > 0" style="border: 1px solid lightgray;">
+        <div v-if="activity.attachments && activity.attachments.length > 0"
+            style="border: 1px solid lightgray; border-radius: 10px; padding: 8px;"
+        >
             <div v-for="(attachment, index) in activity.attachments" :key="index">
-                <div class="d-flex align-center cursor-pointer">
-                    <v-icon @click="openFile(attachment)">mdi-file-document-outline</v-icon>
-                    <div class="ml-2 mr-auto" @click="openFile(attachment)">{{ replaceText(attachment) }}</div>
-                    <v-icon v-if="!isViewMode" @click="activity.attachments = activity.attachments.filter(a => a !== attachment)">mdi-delete-outline</v-icon>
+                <div class="d-flex pa-0 align-center">
+                    <div class="d-flex attached-file-text pa-2 cursor-pointer">
+                        <v-icon @click="openFile(attachment)">mdi-file-document-outline</v-icon>
+                        <div class="ml-2 mr-auto" @click="openFile(attachment)">{{ replaceText(attachment) }}</div>
+                    </div>
+                    <v-spacer></v-spacer>
+                    <v-btn v-if="!isViewMode"
+                        @click="activity.attachments = activity.attachments.filter(a => a !== attachment)"
+                        icon variant="text" type="file" class="text-medium-emphasis" 
+                        density="comfortable"
+                    >
+                        <TrashIcon size="16" style="color:#FB977D"/>
+                    </v-btn>
                 </div>
             </div>
         </div>
@@ -164,8 +175,21 @@ export default {
 };
 </script>
 
-<style scoped>
-.gpt-user-task-panel {
-    margin: -16px;
+<style>
+.attached-file-text:hover {
+    background-color:rgba(var(--v-theme-primary), 0.2);
+    border-radius: 10px;
+}
+
+.quill-editor-view {
+    border-radius: 10px !important;
+}
+.quill-editor-edit-mode .ql-container {
+    border-bottom-left-radius : 10px;
+    border-bottom-right-radius : 10px;
+}
+.quill-editor-edit-mode .ql-toolbar {
+    border-top-left-radius : 10px;
+    border-top-right-radius : 10px;
 }
 </style>
