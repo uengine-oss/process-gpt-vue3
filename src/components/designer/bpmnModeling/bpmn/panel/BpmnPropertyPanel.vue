@@ -17,7 +17,6 @@
                 <div class="mb-3">{{ $t('BpmnPropertyPanel.role') }}: {{ role.name }}</div>
             </div>
             <component
-                style="height: 100%"
                 :is="panelName"
                 :isViewMode="isViewMode"
                 :isPreviewMode="isPreviewMode"
