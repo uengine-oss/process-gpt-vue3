@@ -125,8 +125,14 @@ export default {
         isGPTMode() {
             return this.mode == 'ProcessGPT';
         },
+        isPALMode() {
+            return window.$pal;
+        },
         panelName() {
             var type = _.kebabCase(this.element.$type.split(':')[1])
+            if(type.indexOf('task') > -1 && this.isPALMode) {
+                type = 'pal-user-task';
+            }
             if (type == 'user-task' && this.isGPTMode) {
                 type = 'gpt-user-task';
             }
@@ -181,6 +187,10 @@ export default {
             this.uengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
         },
         async save() {
+            if(window.$pal && this.isViewMode) {
+                this.$emit('close');
+                return;
+            }
             if (this.$refs.panelComponent && this.$refs.panelComponent.beforeSave) {
                 await this.$refs.panelComponent.beforeSave();
                 console.log(this.uengineProperties)

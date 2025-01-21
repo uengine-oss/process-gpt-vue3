@@ -122,7 +122,8 @@
         "xml2js": "^0.6.2",
         "yamljs": "^0.3.0",
         "yup": "^0.32.11",
-        "@vue-js-cron/core": "^5.3.1"
+        "@vue-js-cron/core": "^5.3.1",
+        "@vueup/vue-quill": "^1.2.0"
     },
     "devDependencies": {
         "@4tw/cypress-drag-drop": "^2.2.5",
@@ -177,13 +178,18 @@
         "vue-tsc": "^2.1.10",
         "vue3-treeview": "^0.4.2",
         "vuetify": "3.4.10",
-        "@vue-js-cron/core": "^5.3.1"
+        "@vue-js-cron/core": "^5.3.1",
+        "@vueup/vue-quill": "^1.2.0"
     },
     "packageManager": "yarn@1.22.18",
     "resolutions": {
         "vue": "3.2.31",
         "postcss": "8",
         "stylelint-order": "5",
-        "postcss-sorting": "^7.0.1"
+        "postcss-sorting": "^7.0.1",
+        "quill": "^2.0.2"
+    },
+    "overrides": {
+        "quill": "^2.0.2"
     }
 }

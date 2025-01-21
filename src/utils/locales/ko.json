@@ -771,5 +771,8 @@
     },
     "DryRunProcess": {
         "notFound": "워크아이템을 찾을 수 없습니다."
+    },
+    "PALUserTaskPanel": {
+        "insertDescription": "태스크 설명을 넣어주세요"
     }
 }

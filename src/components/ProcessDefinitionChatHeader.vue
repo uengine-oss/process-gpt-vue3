@@ -108,7 +108,7 @@
                         </div>
                         
                         <!-- 실행 관련 버튼  -->
-                        <div class="mr-4 d-flex">
+                        <div class="mr-4 d-flex" v-if="!Pal">
                             <!-- 시뮬레이션 아이콘 -->
                             <v-tooltip location="bottom" :text="$t('processDefinition.simulate')">
                                 <template v-slot:activator="{ props }">
@@ -166,6 +166,9 @@ export default {
         }
     },
     computed: {
+        Pal() {
+            return window.$pal;
+        },
         modelValueStyle() {
             if(this.modelValue && this.modelValue !== '' && !this.lock && this.editUser != '' && this.editUser == this.userInfo.name) {
                 return true
